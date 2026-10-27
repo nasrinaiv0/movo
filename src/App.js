@@ -28,6 +28,28 @@ function readStorage(key, fallback) {
   }
 }
 
+function readTransactions() {
+  const stored = readStorage(STORAGE.transactions, seedTransactions);
+  if (!Array.isArray(stored)) return seedTransactions;
+  const valid = stored.filter((item) =>
+    item && typeof item.id === 'string' &&
+    typeof item.merchant === 'string' && item.merchant.trim().length > 0 &&
+    Number.isFinite(Number(item.amount)) && Number(item.amount) > 0 &&
+    (item.type === 'income' || item.type === 'expense') &&
+    typeof item.date === 'string' && !Number.isNaN(Date.parse(item.date))
+  ).map((item) => ({
+    id: item.id.slice(0, 100),
+    merchant: item.merchant.trim().slice(0, 80),
+    category: typeof item.category === 'string' ? item.category.slice(0, 40) : 'Other',
+    amount: Math.round(Number(item.amount) * 100) / 100,
+    type: item.type,
+    account: typeof item.account === 'string' ? item.account.slice(0, 60) : 'Manual entry',
+    date: item.date,
+    source: item.source === 'Sample' ? 'Sample' : 'Manual',
+  }));
+  return valid;
+}
+
 function Icon({ name, size = 22, strokeWidth = 1.8, className = '' }) {
   const paths = {
     home: <><path d="m3 10 9-7 9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></>,
@@ -59,7 +81,7 @@ function App() {
   const [dark, setDark] = useState(() => readStorage(STORAGE.theme, false));
   const [accent, setAccent] = useState(() => readStorage(STORAGE.accent, 'blue'));
   const [showBalance, setShowBalance] = useState(() => readStorage(STORAGE.balanceVisible, true));
-  const [transactions, setTransactions] = useState(() => readStorage(STORAGE.transactions, seedTransactions));
+  const [transactions, setTransactions] = useState(() => readTransactions());
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [menu, setMenu] = useState('');
