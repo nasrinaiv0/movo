@@ -109,7 +109,8 @@ describe('MOVO reference-screen frontend', () => {
     clickButton(container, 'Appearance settings');
     expect(container.querySelector('h1').textContent).toBe('Notifications');
     clickButton(container, 'Unread');
-    clickButton(container, 'Mark all as read');
     expect(container.textContent).toContain('Payment Successful');
+    clickButton(container, 'Mark all as read');
+    expect(container.textContent).not.toContain('Payment Successful');
   });
 });
