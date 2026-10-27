@@ -553,3 +553,53 @@ input,select,textarea { border-radius:13px; }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; }
 }
+
+
+/* Wallet screen components */
+.wallet-filter-row { display:flex;gap:8px;overflow-x:auto;padding:3px 1px 12px;margin:4px 0 12px;scrollbar-width:none; }
+.wallet-filter-row::-webkit-scrollbar { display:none; }
+.wallet-filter-row button { flex:0 0 auto;padding:10px 15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.72);color:var(--muted);font-size:11px;white-space:nowrap;cursor:pointer; }
+.wallet-filter-row button.selected { background:#151820;color:#fff;border-color:#151820;box-shadow:0 4px 12px rgba(15,20,32,.12); }
+.wallet-total-card { position:relative;overflow:hidden;padding:20px 22px;border-radius:22px;background:linear-gradient(115deg,#fff 0%,#f2f6ff 100%);border:1px solid rgba(255,255,255,.95);box-shadow:var(--shadow);margin:3px 0 18px; }
+.wallet-total-card .balance-label { display:flex;align-items:center;gap:7px; }
+.wallet-total-card > strong { display:block;margin:8px 0 7px;font:800 clamp(26px,4vw,34px)/1.2 'Manrope',sans-serif;letter-spacing:-1px; }
+.wallet-total-card > small { color:var(--muted);font-size:11px; }
+.wallet-total-orb { position:absolute;right:20px;top:25px;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:#fff;background:linear-gradient(145deg,#438bff,#6153ee);box-shadow:0 6px 20px rgba(67,110,245,.24); }
+.wallet-section-title { display:flex;justify-content:space-between;align-items:center;margin:23px 0 12px; }
+.wallet-section-title h2 { font-size:17px; }
+.wallet-section-title > span { color:var(--muted);font-size:11px; }
+.wallet-account-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px; }
+.wallet-account-card { position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left;padding:16px;border:1px solid rgba(255,255,255,.95);border-radius:19px;background:rgba(255,255,255,.88);box-shadow:0 6px 20px rgba(20,30,50,.025);cursor:pointer;transition:transform .16s ease,border-color .16s ease; }
+.wallet-account-card:hover { transform:translateY(-1px); }
+.wallet-account-card.account-selected { border-color:rgba(var(--accent-rgb),.55);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.09); }
+.wallet-account-card .account-icon { margin-bottom:12px; }
+.wallet-account-type { color:var(--muted);font-size:10px;margin-bottom:4px; }
+.wallet-account-card > strong { width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px; }
+.wallet-account-card > small { width:100%;margin-top:4px;color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.wallet-account-card > b { margin-top:12px;font:800 16px 'Manrope',sans-serif;letter-spacing:-.35px; }
+.account-icon-card { background:#edf2ff;color:#2868f5; }
+.account-icon-bank { background:#eaf8f2;color:#079c70; }
+.account-icon-e_wallet { background:#e7f5ff;color:#1675d1; }
+.account-icon-cash { background:#fff3df;color:#bc7a17; }
+.selected-check { position:absolute;right:12px;top:12px;display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:var(--accent);color:#fff; }
+.wallet-detail-card { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding:17px;border:1px solid var(--line);border-radius:19px;background:var(--surface-solid); }
+.wallet-detail-card > div { flex:1;min-width:120px; }
+.wallet-detail-card h2 { font-size:16px;margin-bottom:4px; }
+.wallet-detail-card > strong { font:800 17px 'Manrope',sans-serif; }
+.wallet-detail-card .secondary-button { width:100%;justify-content:center; }
+.wallet-quick-actions { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line); }
+.wallet-quick-actions button { display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 3px;border:0;background:transparent;color:var(--muted);font-size:10px;cursor:pointer; }
+.wallet-quick-actions button > span { display:grid;place-items:center;width:43px;height:43px;border:1px solid var(--line);border-radius:50%;background:var(--surface-solid);color:var(--text);box-shadow:0 4px 14px rgba(20,30,50,.035); }
+.wallet-quick-actions button:disabled { opacity:.45;cursor:not-allowed; }
+.theme-dark .wallet-filter-row button { background:#20232b;color:#b4bac7;border-color:rgba(255,255,255,.07); }
+.theme-dark .wallet-filter-row button.selected { background:#f5f6f8;color:#111318; }
+.theme-dark .wallet-total-card { background:linear-gradient(115deg,#20232b,#1b2435);border-color:rgba(255,255,255,.07); }
+.theme-dark .wallet-account-card,.theme-dark .wallet-detail-card { background:#1d2028;border-color:rgba(255,255,255,.07); }
+@media (max-width:640px) {
+  .wallet-filter-row button { padding:9px 13px; }
+  .wallet-total-card { padding:18px 17px;border-radius:20px; }
+  .wallet-account-grid { gap:9px; }
+  .wallet-account-card { padding:13px;border-radius:17px; }
+  .wallet-account-card > b { font-size:14px; }
+  .wallet-quick-actions button > span { width:39px;height:39px; }
+}
