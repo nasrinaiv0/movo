@@ -1,5 +1,18 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
+
+// Keep UI tests deterministic even when deployment environments contain real
+// Supabase configuration. Authenticated flows are tested separately.
+jest.mock('./lib/supabaseClient', () => ({ supabase: null, supabaseConfigured: false }));
+jest.mock('./lib/financeRepository', () => ({
+  getCurrentSession: jest.fn().mockResolvedValue(null),
+  listAccounts: jest.fn().mockResolvedValue([]),
+  listTransactions: jest.fn().mockResolvedValue([]),
+  createAccount: jest.fn(),
+  createTransaction: jest.fn(),
+  deleteTransaction: jest.fn(),
+  signOut: jest.fn()
+}));
 import App from './App';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -44,7 +57,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Appearance & preferences');
     expect(container.querySelector('h1').textContent).toBe('Settings');
   });
-  test('search filters transaction records and can be cleared', () => {
+  test('search filters transaction records', () => {
     clickButton(container, 'Transactions');
     const input=container.querySelector('[aria-label="Filter transactions"]');
     act(()=>{ const setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set; setter.call(input,'Netflix'); input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true})); });
