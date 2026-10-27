@@ -51,6 +51,7 @@ function App() {
   const [tab, setTab] = useState('Home');
   const [notificationFilter, setNotificationFilter] = useState('All');
   const [readNotifications, setReadNotifications] = useState([]);
+  const [settingsSearch, setSettingsSearch] = useState('');
   const [dark, setDark] = useState(() => !!readPrefs().dark);
   const [accent, setAccent] = useState(() => readPrefs().accent || 'blue');
   const [showBalance, setShowBalance] = useState(() => readPrefs().showBalance !== false);
