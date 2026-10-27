@@ -603,3 +603,74 @@ input,select,textarea { border-radius:13px; }
   .wallet-account-card > b { font-size:14px; }
   .wallet-quick-actions button > span { width:39px;height:39px; }
 }
+
+
+/* Responsive and accessibility polish: keep the approved visual language intact. */
+:where(button, a, input, select, textarea, [role="button"]):focus-visible {
+  outline: 3px solid rgba(var(--accent-rgb), .62);
+  outline-offset: 3px;
+}
+:where(button, input, select, textarea) { min-width: 0; }
+button:disabled { cursor: not-allowed; opacity: .58; }
+input, select, textarea {
+  max-width: 100%;
+  background-color: var(--surface-solid);
+  color: var(--text);
+  border-color: var(--line);
+}
+::placeholder { color: var(--muted); opacity: .82; }
+.page-panel, .profile-card, .account-row, .wallet-account-card,
+.transaction-card, .spending-card, .stat-card { min-width: 0; }
+.page-panel, .profile-card, .account-row, .wallet-account-card,
+.transaction-info, .section-heading > div { overflow-wrap: anywhere; }
+.theme-dark .page-panel,
+.theme-dark .profile-card,
+.theme-dark .account-row,
+.theme-dark .search-box,
+.theme-dark .secondary-button,
+.theme-dark .settings-list button,
+.theme-dark .settings-group button {
+  background-color: var(--surface-solid);
+  color: var(--text);
+  border-color: var(--line);
+}
+.theme-dark input,
+.theme-dark select,
+.theme-dark textarea { background: #171a21; color: var(--text); border-color: var(--line); }
+.wallet-filter-row button,
+.segmented-control button,
+.nav-item { touch-action: manipulation; }
+@media (max-width: 380px) {
+  .movo-app { padding-left: 12px; padding-right: 12px; }
+  .top-search { width: min(35vw, 132px); padding: 0 10px; }
+  .topbar-right { gap: 5px; }
+  .icon-button { width: 36px; height: 36px; }
+  .greeting-row { align-items: flex-start; }
+  .avatar { flex: 0 0 42px; width: 42px; height: 42px; }
+  .balance-card { padding-left: 16px; padding-right: 16px; }
+  .balance-foot { left: 16px; right: 14px; }
+  .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .stat-card { padding: 11px 7px; }
+  .stat-card > strong { font-size: 12px; letter-spacing: -.35px; }
+  .stat-caption { font-size: 10px; }
+  .spending-content { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 20px 0; }
+  .category-row { grid-template-columns: 8px minmax(70px, .8fr) minmax(35px, 1fr) 30px; gap: 7px; }
+  .bottom-nav { width: calc(100% - 16px); padding-left: 2px; padding-right: 2px; }
+  .nav-label { font-size: 8px; }
+  .nav-center .nav-icon, .nav-center .nav-icon .nasrinai-orb { width: 47px; height: 47px; }
+  .nav-center .nav-icon { margin-top: -20px; }
+  .wallet-account-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wallet-account-card { padding: 11px; }
+  .wallet-quick-actions { gap: 5px; }
+}
+@media (max-width: 640px) {
+  .modal-backdrop { align-items: flex-end; padding: 12px; }
+  .transaction-modal { width: 100%; max-width: 100%; max-height: calc(100dvh - 24px); overflow-y: auto; border-radius: 24px 24px 18px 18px; }
+}
+@media (min-width: 641px) and (max-width: 899px) {
+  .app-shell { max-width: 760px; }
+  .spending-content { gap: 20px; }
+}
+@media (hover: none) {
+  .icon-button:hover, .wallet-account-card:hover { transform: none; }
+}
