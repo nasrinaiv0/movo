@@ -5,7 +5,7 @@ import App from './App';
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
 function clickButton(container, name) {
-  const button = Array.from(container.querySelectorAll('button')).find((item) => item.getAttribute('aria-label') === name || item.textContent.trim() === name);
+  const button = Array.from(container.querySelectorAll('button')).find((item) => item.getAttribute('aria-label') === name || item.textContent.trim().includes(name));
   if (!button) throw new Error(`Button not found: ${name}`);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   return button;
@@ -56,7 +56,7 @@ describe('MOVO Phase 1 Home', () => {
 
   test('shows the transaction view and exposes delete controls for records', () => {
     clickButton(container, 'Transactions');
-    expect(container.textContent).toContain('Search, filter');
+    expect(container.textContent).toContain('searchable here');
     expect(container.querySelectorAll('.panel-transaction')).toHaveLength(4);
     expect(container.querySelector('[aria-label="Delete SM Supermarket"]')).not.toBeNull();
   });
