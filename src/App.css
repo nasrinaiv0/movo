@@ -432,3 +432,174 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
  .form-grid { grid-template-columns:minmax(0,1fr); }
 }
 @media (prefers-reduced-motion:reduce) { .spinner { animation:none; } }
+
+
+/* Reference-matched MOVO iOS finance UI — visual system v1 */
+:root {
+  --accent: #2868f5; --accent-rgb: 40,104,245;
+  --bg: #f4f5f8; --surface: rgba(255,255,255,.84); --surface-solid: #fff;
+  --text: #10131a; --muted: #707786; --line: rgba(17,24,39,.065);
+  --shadow: 0 10px 32px rgba(26,35,54,.045);
+}
+body { background:var(--bg); }
+.movo-app { padding:0 20px 118px; background:linear-gradient(145deg,#f8f9fb 0%,#f0f2f6 100%); }
+.app-shell { max-width:920px; }
+.topbar { height:76px; border-bottom:0; }
+.brand-mark { width:42px;height:42px;border-radius:15px;background:linear-gradient(145deg,#5e8cff,#4f46e5);color:white;box-shadow:0 7px 18px rgba(65,103,242,.22);font-size:25px; }
+.icon-button { width:44px;height:44px;border:0;background:rgba(255,255,255,.8);box-shadow:0 3px 14px rgba(20,30,50,.035); }
+main { padding-top:22px; }
+h1 { font-size:clamp(27px,3.2vw,34px);letter-spacing:-1.3px; }
+h2 { font-size:20px;letter-spacing:-.7px; }
+.eyebrow { letter-spacing:.65px; }
+.balance-card { min-height:198px;padding:25px 26px 15px;border-radius:25px;background:linear-gradient(125deg,rgba(255,255,255,.97) 0%,rgba(249,251,255,.94) 64%,rgba(226,237,255,.75) 100%);box-shadow:0 12px 34px rgba(27,39,67,.055); }
+.balance-amount { font-size:clamp(32px,5vw,43px);letter-spacing:-1.8px; }
+.balance-label { color:#6d7482;font-size:14px; }
+.balance-change { background:#e8f8ef;color:#14895e;border-radius:16px;font-size:12px;padding:8px 12px; }
+.stat-grid { gap:12px;margin-top:13px; }
+.stat-card { border:1px solid rgba(255,255,255,.94);border-radius:22px;background:rgba(255,255,255,.84);padding:17px 16px 15px;box-shadow:0 7px 24px rgba(25,34,54,.025); }
+.stat-top { gap:8px;margin-bottom:12px; }
+.stat-icon { width:30px;height:30px;border-radius:50%; }
+.stat-card > strong { font-size:clamp(15px,1.9vw,20px);letter-spacing:-.55px; }
+.section-block { margin-top:34px; }
+.section-heading { margin-bottom:14px;align-items:center; }
+.text-button { font-size:13px;font-weight:600; }
+.spending-card,.transaction-card { border:1px solid rgba(255,255,255,.96);border-radius:24px;background:rgba(255,255,255,.86);box-shadow:0 8px 28px rgba(25,34,54,.025); }
+.spending-card { padding:20px 20px 15px; }
+.donut { box-shadow:inset 0 0 0 1px rgba(255,255,255,.5); }
+.transaction-card { overflow:hidden; }
+.transaction-row { padding:15px 18px;gap:13px;border-bottom:1px solid rgba(30,41,59,.055); }
+.transaction-row:last-child { border-bottom:0; }
+.merchant-logo { width:44px;height:44px;border-radius:14px;font-weight:800; }
+.transaction-info strong { font-size:14px;letter-spacing:-.2px; }
+.transaction-info small { font-size:11px;line-height:1.5; }
+.transaction-amount { font-size:14px;letter-spacing:-.3px; }
+.bottom-nav { position:fixed;z-index:30;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(600px,calc(100% - 28px));padding:9px 10px 8px;border:1px solid rgba(255,255,255,.9);border-radius:30px;background:rgba(255,255,255,.86);box-shadow:0 12px 40px rgba(23,32,50,.13);backdrop-filter:blur(24px) saturate(1.45);-webkit-backdrop-filter:blur(24px) saturate(1.45); }
+.nav-item { min-height:57px;gap:4px;border-radius:18px; }
+.nav-icon { width:36px;height:32px; }
+.nav-label { font-size:10px;font-weight:500; }
+.nav-active .nav-label { color:#10131a;font-weight:700; }
+.nav-indicator { width:5px;height:5px;bottom:0;background:#2868f5; }
+.nav-center .nav-icon { width:58px;height:58px;margin-top:-28px;border-radius:50%;background:linear-gradient(145deg,#4d8cff,#4d46ed);box-shadow:0 0 0 8px rgba(255,255,255,.8),0 8px 24px rgba(70,91,245,.32); }
+.nav-center .nav-icon .nasrinai-orb { width:58px;height:58px;border:0;background:transparent;box-shadow:none;color:#fff; }
+.nav-center .nav-label { margin-top:3px;font-weight:700;color:var(--text); }
+.nav-center.nav-active .nav-indicator { display:none; }
+.page-panel { padding:24px;border:1px solid rgba(255,255,255,.9);border-radius:26px;background:rgba(255,255,255,.74);box-shadow:var(--shadow); }
+.account-row { display:flex;align-items:center;gap:14px;padding:17px 15px;margin:10px 0;border:1px solid rgba(255,255,255,.95);border-radius:18px;background:rgba(255,255,255,.88); }
+.account-icon { display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#edf3ff;color:#2868f5; }
+.account-info { flex:1;min-width:0;display:flex;flex-direction:column;gap:4px; }
+.account-info strong { font-size:14px; }
+.account-info small { color:var(--muted);font-size:11px; }
+.primary-button { border-radius:14px;background:linear-gradient(135deg,#3478ff,#4e5cf4);box-shadow:0 5px 14px rgba(40,104,245,.16); }
+.secondary-button { border-radius:14px;background:rgba(255,255,255,.82); }
+.toolbar { gap:10px; }
+.search-box { border-radius:15px;background:rgba(255,255,255,.9); }
+.settings-list button,.settings-group button { border-radius:15px; }
+.profile-card { border-radius:20px;background:rgba(255,255,255,.9); }
+.ai-panel { border-radius:24px; }
+.insight-banner { border-radius:22px;background:linear-gradient(115deg,rgba(255,255,255,.95),rgba(228,237,255,.8)); }
+.modal-backdrop { backdrop-filter:blur(8px); }
+.transaction-modal { border:1px solid rgba(255,255,255,.9);border-radius:26px;box-shadow:0 24px 90px rgba(20,30,50,.24); }
+input,select,textarea { border-radius:13px; }
+.theme-dark .bottom-nav { background:rgba(25,27,34,.88);border-color:rgba(255,255,255,.08); }
+.theme-dark .nav-active .nav-label { color:#fff; }
+.theme-dark .balance-card { background:linear-gradient(125deg,#20232b 0%,#1c2434 100%);border-color:rgba(255,255,255,.07); }
+.theme-dark .stat-card,.theme-dark .spending-card,.theme-dark .transaction-card,.theme-dark .page-panel { background:rgba(29,32,40,.88);border-color:rgba(255,255,255,.06); }
+@media (min-width:900px) {
+  .app-shell { max-width:900px; }
+  main { padding-top:28px; }
+}
+@media (max-width:640px) {
+  .movo-app { padding:0 16px calc(108px + env(safe-area-inset-bottom)); }
+  .app-shell { width:100%; }
+  .topbar { height:65px; }
+  .topbar-right { gap:7px; }
+  .icon-button { width:39px;height:39px; }
+  main { padding-top:19px; }
+  .greeting-row { margin-bottom:19px; }
+  .balance-card { min-height:184px;padding:22px 20px 14px;border-radius:23px; }
+  .balance-art { width:43%;right:-8px;opacity:.6; }
+  .balance-art button { width:36px;height:36px; }
+  .balance-foot { left:20px;right:18px;bottom:13px;font-size:10px; }
+  .stat-grid { gap:9px; }
+  .stat-card { padding:13px 10px 12px;border-radius:19px; }
+  .stat-top { gap:6px;margin-bottom:10px; }
+  .stat-icon { width:27px;height:27px; }
+  .stat-caption { font-size:11px; }
+  .stat-card > strong { font-size:clamp(13px,3.6vw,17px); }
+  .stat-trend { font-size:9px;padding:4px 6px; }
+  .section-block { margin-top:29px; }
+  .section-heading { margin-bottom:13px; }
+  h2 { font-size:18px; }
+  .spending-card { padding:15px 14px 12px; }
+  .transaction-row { padding:13px 12px;gap:10px; }
+  .merchant-logo { width:38px;height:38px;border-radius:12px; }
+  .transaction-info strong { font-size:12px; }
+  .transaction-info small { font-size:10px; }
+  .transaction-amount { font-size:12px; }
+  .row-action { margin-left:0; }
+  .bottom-nav { width:calc(100% - 22px);bottom:max(7px,env(safe-area-inset-bottom));padding:7px 5px 6px;border-radius:26px; }
+  .nav-item { min-height:51px;gap:3px; }
+  .nav-label { font-size:9px; }
+  .nav-icon { width:31px;height:28px; }
+  .nav-center .nav-icon,.nav-center .nav-icon .nasrinai-orb { width:52px;height:52px; }
+  .nav-center .nav-icon { margin-top:-24px; }
+  .page-panel { padding:18px 15px;border-radius:22px; }
+  .page-panel .section-heading { align-items:flex-start; }
+  .page-panel .section-heading .primary-button { padding:10px 11px;font-size:11px; }
+  .toolbar { flex-wrap:wrap; }
+  .toolbar .search-box { flex:1 1 100%; }
+  .toolbar .secondary-button { margin-left:auto; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; }
+}
+
+
+/* Wallet screen components */
+.wallet-filter-row { display:flex;gap:8px;overflow-x:auto;padding:3px 1px 12px;margin:4px 0 12px;scrollbar-width:none; }
+.wallet-filter-row::-webkit-scrollbar { display:none; }
+.wallet-filter-row button { flex:0 0 auto;padding:10px 15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.72);color:var(--muted);font-size:11px;white-space:nowrap;cursor:pointer; }
+.wallet-filter-row button.selected { background:#151820;color:#fff;border-color:#151820;box-shadow:0 4px 12px rgba(15,20,32,.12); }
+.wallet-total-card { position:relative;overflow:hidden;padding:20px 22px;border-radius:22px;background:linear-gradient(115deg,#fff 0%,#f2f6ff 100%);border:1px solid rgba(255,255,255,.95);box-shadow:var(--shadow);margin:3px 0 18px; }
+.wallet-total-card .balance-label { display:flex;align-items:center;gap:7px; }
+.wallet-total-card > strong { display:block;margin:8px 0 7px;font:800 clamp(26px,4vw,34px)/1.2 'Manrope',sans-serif;letter-spacing:-1px; }
+.wallet-total-card > small { color:var(--muted);font-size:11px; }
+.wallet-total-orb { position:absolute;right:20px;top:25px;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:#fff;background:linear-gradient(145deg,#438bff,#6153ee);box-shadow:0 6px 20px rgba(67,110,245,.24); }
+.wallet-section-title { display:flex;justify-content:space-between;align-items:center;margin:23px 0 12px; }
+.wallet-section-title h2 { font-size:17px; }
+.wallet-section-title > span { color:var(--muted);font-size:11px; }
+.wallet-account-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px; }
+.wallet-account-card { position:relative;display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left;padding:16px;border:1px solid rgba(255,255,255,.95);border-radius:19px;background:rgba(255,255,255,.88);box-shadow:0 6px 20px rgba(20,30,50,.025);cursor:pointer;transition:transform .16s ease,border-color .16s ease; }
+.wallet-account-card:hover { transform:translateY(-1px); }
+.wallet-account-card.account-selected { border-color:rgba(var(--accent-rgb),.55);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.09); }
+.wallet-account-card .account-icon { margin-bottom:12px; }
+.wallet-account-type { color:var(--muted);font-size:10px;margin-bottom:4px; }
+.wallet-account-card > strong { width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px; }
+.wallet-account-card > small { width:100%;margin-top:4px;color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.wallet-account-card > b { margin-top:12px;font:800 16px 'Manrope',sans-serif;letter-spacing:-.35px; }
+.account-icon-card { background:#edf2ff;color:#2868f5; }
+.account-icon-bank { background:#eaf8f2;color:#079c70; }
+.account-icon-e_wallet { background:#e7f5ff;color:#1675d1; }
+.account-icon-cash { background:#fff3df;color:#bc7a17; }
+.selected-check { position:absolute;right:12px;top:12px;display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:var(--accent);color:#fff; }
+.wallet-detail-card { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding:17px;border:1px solid var(--line);border-radius:19px;background:var(--surface-solid); }
+.wallet-detail-card > div { flex:1;min-width:120px; }
+.wallet-detail-card h2 { font-size:16px;margin-bottom:4px; }
+.wallet-detail-card > strong { font:800 17px 'Manrope',sans-serif; }
+.wallet-detail-card .secondary-button { width:100%;justify-content:center; }
+.wallet-quick-actions { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:20px;padding-top:18px;border-top:1px solid var(--line); }
+.wallet-quick-actions button { display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 3px;border:0;background:transparent;color:var(--muted);font-size:10px;cursor:pointer; }
+.wallet-quick-actions button > span { display:grid;place-items:center;width:43px;height:43px;border:1px solid var(--line);border-radius:50%;background:var(--surface-solid);color:var(--text);box-shadow:0 4px 14px rgba(20,30,50,.035); }
+.wallet-quick-actions button:disabled { opacity:.45;cursor:not-allowed; }
+.theme-dark .wallet-filter-row button { background:#20232b;color:#b4bac7;border-color:rgba(255,255,255,.07); }
+.theme-dark .wallet-filter-row button.selected { background:#f5f6f8;color:#111318; }
+.theme-dark .wallet-total-card { background:linear-gradient(115deg,#20232b,#1b2435);border-color:rgba(255,255,255,.07); }
+.theme-dark .wallet-account-card,.theme-dark .wallet-detail-card { background:#1d2028;border-color:rgba(255,255,255,.07); }
+@media (max-width:640px) {
+  .wallet-filter-row button { padding:9px 13px; }
+  .wallet-total-card { padding:18px 17px;border-radius:20px; }
+  .wallet-account-grid { gap:9px; }
+  .wallet-account-card { padding:13px;border-radius:17px; }
+  .wallet-account-card > b { font-size:14px; }
+  .wallet-quick-actions button > span { width:39px;height:39px; }
+}
