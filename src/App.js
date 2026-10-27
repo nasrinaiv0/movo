@@ -179,7 +179,7 @@ function App() {
                 <div className="balance-amount">{showBalance ? money(totals.totalBalance) : '₱ ••••••••'}</div>
                 <div className="balance-change"><span className="change-icon"><Icon name="check" size={15} /></span><strong>{transactions.length} records</strong><span>stored on this device</span></div>
               </div>
-              <div className="balance-art" aria-hidden="true"><div className="art-orb" /><svg viewBox="0 0 260 140" preserveAspectRatio="none"><path d="M0 112 C25 105 28 80 55 91 S90 63 111 75 S151 40 173 55 S215 16 260 8" /></svg><button type="button" aria-label="View wallet" onClick={() => setActiveTab('Wallet')}><Icon name="arrow" /></button></div>
+              <div className="balance-art"><div className="art-orb" aria-hidden="true" /><svg aria-hidden="true" viewBox="0 0 260 140" preserveAspectRatio="none"><path d="M0 112 C25 105 28 80 55 91 S90 63 111 75 S151 40 173 55 S215 16 260 8" /></svg><button type="button" aria-label="View wallet" onClick={() => setActiveTab('Wallet')}><Icon name="arrow" /></button></div>
               <div className="balance-foot"><span><span className="status-pulse" /> Local records only</span><button type="button" onClick={() => setActiveTab('Wallet')}>View wallet <Icon name="chevron" size={15} /></button></div>
             </section>
 
