@@ -1,0 +1,14 @@
+
+/* Reference parity screens: notifications, expanded settings and theme controls. */
+.reference-page{padding:clamp(18px,3vw,30px)}
+.reference-chips{display:flex;gap:8px;overflow-x:auto;padding:8px 0 18px;scrollbar-width:none}
+.reference-chips button{white-space:nowrap;border:1px solid var(--line);background:var(--surface);border-radius:22px;padding:10px 16px;color:var(--muted);font-size:13px}
+.reference-chips button.selected{background:#171a22;color:#fff;border-color:#171a22}
+.notification-row{display:flex;align-items:center;gap:13px;width:100%;text-align:left;padding:15px 4px;border:0;border-bottom:1px solid var(--line);background:transparent;min-width:0}
+.notification-icon{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:14px;background:rgba(var(--accent-rgb),.1);color:var(--accent)}
+.notification-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:5px}.notification-copy strong{font-size:14px}.notification-copy small{color:var(--muted);font-size:12px;line-height:1.45}
+.notification-time{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:11px;white-space:nowrap}.notification-time i{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.setting-toggle{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}.setting-toggle>span{display:flex;flex-direction:column;gap:4px}.setting-toggle strong{font-size:14px}.setting-toggle small{font-size:12px;color:var(--muted)}.setting-toggle input{accent-color:var(--accent);width:20px;height:20px;flex-shrink:0}
+.theme-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0 18px}.theme-option{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:12px 8px;text-align:center;font-size:12px}.theme-option.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.13)}.theme-swatch{height:38px;border-radius:10px;margin-bottom:8px;background:linear-gradient(135deg,#f8f9fc,#dce5f6)}.theme-swatch.dark{background:linear-gradient(135deg,#111318,#2e3544)}.theme-swatch.blue{background:linear-gradient(135deg,#dcecff,#2875ff)}.theme-swatch.purple{background:linear-gradient(135deg,#f2e8ff,#7b4ce0)}.theme-swatch.orange{background:linear-gradient(135deg,#fff0dd,#e77d32)}.theme-swatch.mono{background:linear-gradient(135deg,#f2f3f5,#737987)}
+.settings-search{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);margin:14px 0 20px}
+@media(max-width:540px){.reference-page{padding:16px 13px}.notification-row{gap:9px}.notification-icon{flex-basis:38px;width:38px;height:38px}.notification-time{font-size:10px}.theme-options{grid-template-columns:repeat(3,minmax(0,1fr))}}
