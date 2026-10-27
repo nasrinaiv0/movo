@@ -1,0 +1,29 @@
+name: MOVO Phase 1 CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "feat/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test -- --runInBand
+      - name: Build production bundle
+        run: npm run build
