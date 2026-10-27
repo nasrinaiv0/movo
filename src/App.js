@@ -9,6 +9,16 @@ const money = (value, currency = 'PHP') => new Intl.NumberFormat('en-PH', { styl
 const today = () => new Date().toLocaleDateString('en-CA');
 const categories = ['Groceries', 'Food & drinks', 'Transport', 'Shopping', 'Bills', 'Subscriptions', 'Health', 'Education', 'Entertainment', 'Other'];
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
+const demoAccounts = [
+  { id:'demo-account-metrobank', name:'Metrobank Savings', account_type:'bank', institution_name:'Metrobank', opening_balance:42350, currency:'PHP' },
+  { id:'demo-account-bpi', name:'BPI Savings', account_type:'bank', institution_name:'BPI', opening_balance:28600, currency:'PHP' },
+  { id:'demo-account-gotyme', name:'GoTyme Bank', account_type:'bank', institution_name:'GoTyme', opening_balance:18450, currency:'PHP' },
+  { id:'demo-account-gcash', name:'GCash', account_type:'e_wallet', institution_name:'GCash', opening_balance:14400, currency:'PHP' },
+  { id:'demo-account-maya', name:'Maya', account_type:'e_wallet', institution_name:'Maya', opening_balance:8750, currency:'PHP' },
+  { id:'demo-account-visa', name:'Metrobank Visa', account_type:'card', institution_name:'Visa •••• 1234', opening_balance:12500, currency:'PHP' },
+  { id:'demo-account-mastercard', name:'Mastercard', account_type:'card', institution_name:'•••• 3456', opening_balance:8250, currency:'PHP' },
+  { id:'demo-account-cash', name:'Cash', account_type:'cash', institution_name:'Wallet cash', opening_balance:5150, currency:'PHP' },
+];
 const demo = [
   { id: 'demo-1', merchant: 'SM Supermarket', category: 'Groceries', amount: 1250, transaction_type: 'expense', account_id: 'local', account: 'Metrobank Visa', occurred_at: '2026-10-28T10:24:00+08:00', source: 'Sample' },
   { id: 'demo-2', merchant: 'Grab', category: 'Transport', amount: 320, transaction_type: 'expense', account_id: 'local', account: 'Apple Pay', occurred_at: '2026-10-28T08:12:00+08:00', source: 'Sample' },
@@ -40,7 +50,7 @@ function App() {
   const [accent, setAccent] = useState(() => readPrefs().accent || 'blue');
   const [showBalance, setShowBalance] = useState(() => readPrefs().showBalance !== false);
   const [transactions, setTransactions] = useState(demo);
-  const [accounts, setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState(demoAccounts);
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState('This month');
   const [walletFilter, setWalletFilter] = useState('All');
