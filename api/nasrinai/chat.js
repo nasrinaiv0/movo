@@ -242,11 +242,6 @@ module.exports = async function handler(req, res) {
     if (mappingResult.error) throw new Error('upstream_mapping_lookup_failed');
     const upstreamConversation = mappingResult.data;
 
-    const userMessage = await db.from('movo_ai_messages').insert({
-      conversation_id: conversation.id, user_id: userId, role: 'user', content: message
-    });
-    if (userMessage.error) throw new Error('message_save_failed');
-
     const upstreamBody = { message: buildPrompt(message, context) };
     if (upstreamConversation?.nasrinai_conversation_id) {
       upstreamBody.conversation_id = upstreamConversation.nasrinai_conversation_id;
@@ -282,6 +277,14 @@ module.exports = async function handler(req, res) {
       });
       if (mapped.error) throw new Error('upstream_mapping_save_failed');
     }
+    // Persist the turn only after NasrinAI successfully produced a reply.
+    // Failed/rate-limited upstream calls must not leave a misleading user-only
+    // message in MOVO history.
+    const userMessage = await db.from('movo_ai_messages').insert({
+      conversation_id: conversation.id, user_id: userId, role: 'user', content: message
+    });
+    if (userMessage.error) throw new Error('message_save_failed');
+
     const conversationUpdate = await db.from('movo_ai_conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversation.id).eq('user_id', userId);
