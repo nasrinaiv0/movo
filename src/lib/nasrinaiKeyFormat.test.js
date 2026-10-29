@@ -1,4 +1,4 @@
-const { classifyNasrinAIKeyFormat } = require('./nasrinaiKeyFormat');
+const { classifyNasrinAIKeyFormat } = require('../../api/nasrinai/key-format.cjs');
 
 describe('classifyNasrinAIKeyFormat', () => {
   test('recognizes a server-to-server secret without returning credential data', () => {
