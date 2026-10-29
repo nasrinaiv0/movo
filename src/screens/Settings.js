@@ -70,7 +70,7 @@ export default function Settings({ c }) {
   const sections = [
     { title: 'Account', rows: [
       { icon: 'user', title: 'Profile', sub: 'Personal information', onClick: () => go('EditProfile') },
-      { icon: 'database', title: 'Plan & Usage', sub: 'Manage your plan and tokens', onClick: () => go('EditProfile') },
+      { icon: 'database', title: 'Plan & Usage', sub: 'Usage dashboard is not available yet', onClick: () => c.notify('Plan and token usage reporting is not implemented yet. No billing action was taken.') },
       { icon: 'layout', title: 'Connected Accounts', sub: 'Banks, cards, e-wallets, email', onClick: () => go('Wallet') },
     ] },
     { title: 'Appearance', rows: [
@@ -79,20 +79,20 @@ export default function Settings({ c }) {
       { icon: 'layout', title: 'Display & Layout', sub: 'Customize your experience', onClick: () => go('Appearance') },
     ] },
     { title: 'Notifications', rows: [
-      { icon: 'bell', title: 'Push Notifications', sub: 'Transaction alerts, reminders', toggle: 'push' },
-      { icon: 'mail', title: 'Email Notifications', sub: 'Statements, reports, security', toggle: 'email' },
-      { icon: 'message', title: 'In-App Alerts', sub: 'Budgets, insights, updates', toggle: 'inapp' },
+      { icon: 'bell', title: 'Push Notifications', sub: 'Preference saved locally; push delivery is not connected', toggle: 'push' },
+      { icon: 'mail', title: 'Email Notifications', sub: 'Preference saved locally; email delivery is not connected', toggle: 'email' },
+      { icon: 'message', title: 'In-App Alerts', sub: 'Preference saved locally; alert filtering is not fully connected', toggle: 'inapp' },
     ] },
     { title: 'Security & Privacy', rows: [
-      { icon: 'face', title: 'Face ID / Touch ID', sub: 'Use biometrics to unlock', toggle: 'biometrics' },
+      { icon: 'face', title: 'Face ID / Touch ID', sub: 'Not supported in this browser yet', onClick: () => c.notify('Biometric unlock is not implemented for the web app yet. MOVO is not using biometrics to protect this session.') },
       { icon: 'lock', title: 'App Lock', sub: 'Require authentication', onClick: () => c.notify('App lock needs device support and is not available in the browser.') },
       { icon: 'shield', title: 'Privacy & Data', sub: 'Manage your data and permissions', onClick: () => { c.setShow(!c.show); c.notify(c.show ? 'Balances are hidden.' : 'Balances are visible.'); } },
       { icon: 'trash', title: 'Clear Local Data', sub: 'Remove cached data', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
     { title: 'Data & Sync', rows: [
-      { icon: 'cloud', title: 'Cloud Sync', sub: 'Backup and sync your data', toggle: 'cloudSync' },
-      { icon: 'database', title: 'Local Storage', sub: 'Store data on this device', toggle: 'localStorage' },
-      { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatically categorize transactions', toggle: 'autocat' },
+      { icon: 'cloud', title: 'Cloud Sync', sub: 'Depends on sign-in and cloud configuration', onClick: () => c.notify('Cloud-backed records are available when you are signed in and the cloud database is configured. This setting does not switch storage modes.') },
+      { icon: 'database', title: 'Local Storage', sub: 'Local-only mode stores records in this browser', onClick: () => c.notify('Local-only records are browser-specific. Use sign-in and configured cloud mode for cross-device sync; this row does not migrate existing data.') },
+      { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet', onClick: () => c.notify('Transactions currently use the category selected during entry or import. Automatic categorization is not active yet.') },
     ] },
     { title: 'Help & Support', rows: [
       { icon: 'help', title: 'Help Center', sub: 'FAQs, guides and tutorials', onClick: () => c.notify('Help Center is not available yet.') },
