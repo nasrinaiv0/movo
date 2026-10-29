@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import Settings from './Settings';
+import Settings, { ThemePicker, ThemeSheet } from './Settings';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -26,6 +26,57 @@ function findCloudSyncRow(container) {
   return Array.from(container.querySelectorAll('.menu-row'))
     .find(row => row.querySelector('strong')?.textContent === 'Cloud Sync');
 }
+
+
+describe('Keyboard-accessible appearance controls', () => {
+  let container;
+  let root;
+  let context;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    context = makeContext(false);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    if (root) act(() => root.unmount());
+    container.remove();
+    root = null;
+  });
+
+  test('accent color radio group uses roving focus and arrow-key selection', () => {
+    act(() => root.render(<ThemePicker c={context} />));
+    const blue = container.querySelector('[data-radio-key="blue"]');
+    const purple = container.querySelector('[data-radio-key="purple"]');
+    expect(blue.tabIndex).toBe(0);
+    expect(purple.tabIndex).toBe(-1);
+
+    act(() => blue.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
+
+    expect(context.setPref).toHaveBeenCalledWith('accent', 'purple');
+    expect(document.activeElement).toBe(purple);
+  });
+
+  test('theme sheet radio group supports arrow navigation and Home/End', () => {
+    context.prefs.theme = 'system';
+    act(() => root.render(<ThemeSheet c={context} />));
+    const system = container.querySelector('[data-radio-key="system"]');
+    const light = container.querySelector('[data-radio-key="light"]');
+    const orange = container.querySelector('[data-radio-key="orange"]');
+    expect(system.tabIndex).toBe(0);
+    expect(light.tabIndex).toBe(-1);
+
+    act(() => system.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })));
+    expect(context.setPref).toHaveBeenCalledWith('theme', 'light');
+    expect(document.activeElement).toBe(light);
+
+    act(() => light.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true })));
+    expect(context.setPref).toHaveBeenCalledWith('theme', 'orange');
+    expect(document.activeElement).toBe(orange);
+  });
+});
 
 describe('Cloud Sync setting semantics', () => {
   let container;
