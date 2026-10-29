@@ -27,7 +27,7 @@ After setting variables, redeploy the Vercel project. The repository change cann
 
 ## Indexing and retrieval
 
-The migration adds composite indexes for user-scoped conversation/message retrieval and idempotently ensures the existing transaction-by-user/date/category/account and account/budget indexes. Each chat request retrieves at most 80 recent transactions, 50 accounts, and 50 active budgets. This is indexed relational retrieval, not a vector-embedding index; semantic vector indexing should only be added with a separately reviewed per-user embedding schema and retrieval policies.
+The migrations add user-first indexes for chat history and finance lookups, plus covering indexes for the composite message/conversation ownership foreign keys and the upstream-mapping user foreign key. Each request reads at most 250 recent transactions from the current user's RLS-filtered rows, then sends at most 40 selected transactions, 50 accounts, and 50 active budgets to NasrinAI. This is indexed relational retrieval, not a vector-embedding index; semantic vector indexing should only be added with a separately reviewed per-user embedding schema and retrieval policies.
 
 ## Limits and safety
 
@@ -35,7 +35,7 @@ User messages are capped at 1,600 characters and the full upstream prompt is tri
 
 ## Deployment verification checklist
 
-1. Apply `supabase/migrations/20261029000100_nasrinai_chat_isolation.sql` to the dedicated MOVO Supabase project.
+1. The dedicated MOVO Supabase project has applied `20261029013604_nasrinai_chat_isolation.sql` and `20261029013801_nasrinai_chat_fk_indexes.sql`. Apply these migrations in version order to any other environment.
 2. Configure the server-only Vercel variables above and redeploy.
 3. Test with two MOVO users: each must see only their own conversations and finance context; using the other user's conversation UUID must return 404.
 4. Confirm an unauthenticated request returns 401, a foreign origin returns 403, and an unconfigured upstream returns 503.
