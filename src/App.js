@@ -631,7 +631,7 @@ function App() {
           <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
         </div>
       </Sheet>}
-      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes locally stored financial records and accounts. Cloud records are not affected." onClose={() => setSheet(null)}>
+      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes local financial records, accounts, and custom sticker artwork. Cloud records are not affected." onClose={() => setSheet(null)}>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Cancel</button><button type="button" className="danger-button" onClick={clearLocal}>Clear data</button></div>
       </Sheet>}
 
