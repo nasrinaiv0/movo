@@ -73,9 +73,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 
 ## Current deployment and validation snapshot (2026-10-29)
 
-- Current branch head: `d7c2314e4a731dcf24f26f565ebd151d24718ad9` (documentation-only follow-up to source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867`).
-- Vercel preview: [`movo-2l51sx0ff-nasrin-ai.vercel.app`](https://movo-2l51sx0ff-nasrin-ai.vercel.app) — READY; root and bundle returned HTTP 200; build logs confirm `tsc --noEmit`, 11 suites / 49 tests, and successful production compilation.
-- GitHub Actions run `40819303718` completed successfully for the current documentation-only head; runs `40819172799` and `40819177992` completed successfully for the source-code head.
+- Source-code validation head: `80c5c257ce7348b4e645e9a14b16c37b73d37867`; subsequent audit-only commits `d7c2314e4a731dcf24f26f565ebd151d24718ad9` and `ee57f37f5c67d99928e4b547dd6619c407685f64` were also validated successfully.
+- Vercel previews for audit-only commits `d7c2314e4a731dcf24f26f565ebd151d24718ad9` and `ee57f37f5c67d99928e4b547dd6619c407685f64` both reached READY. The latest preview [`movo-36mt48v41-nasrin-ai.vercel.app`](https://movo-36mt48v41-nasrin-ai.vercel.app) returned HTTP 200; build logs confirm `tsc --noEmit`, 11 suites / 49 tests, and successful production compilation.
+- GitHub Actions runs `40819303718` (audit-only commit `d7c2314`) and `40819503245` (audit-only commit `ee57f37`) completed successfully; runs `40819172799` and `40819177992` passed for the source-code head.
 - The production domain still points to the existing `main` deployment; do not promote this PR to production until legal/security blockers and review of PR #19 are resolved.
 
 - [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
