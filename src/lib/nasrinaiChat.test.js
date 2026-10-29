@@ -18,7 +18,7 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     const context = buildFinancialContext({
       accounts: [{
         id: 'a1',
-        name: 'Main account\\nsecond line',
+        name: 'Main account' + String.fromCharCode(10) + 'second line',
         account_type: 'bank',
         currency: 'usd',
         opening_balance: 'not-a-number',
@@ -39,7 +39,7 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
           transaction_type: 'expense',
           amount: '12.50',
           currency: 'usd',
-          merchant: 'Shop\\nnotes',
+          merchant: 'Shop' + String.fromCharCode(10) + 'notes',
           category: 'Food',
           occurred_at: '2026-10-28T00:00:00Z',
           note: 'must not be shared'
