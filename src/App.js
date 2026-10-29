@@ -506,6 +506,7 @@ function App() {
           const active = activeTab === target; const center = target === 'NasrinAI';
           return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={24} /></span> : <Icon name={icon} size={24} strokeWidth={1.8} filled={active} />}</span>
+            {target === 'Home' && unread && <i className="nav-badge" aria-label="New activity" />}
           </button>;
         })}
       </nav>
@@ -578,7 +579,7 @@ function App() {
       </Sheet>}
 
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
-      {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
+      {toast && <div className={`toast${busy ? ' raised' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> Syncing securely…</div>}
     </div>
   </div>;

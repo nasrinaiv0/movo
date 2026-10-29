@@ -941,3 +941,13 @@ html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reve
 /* ===== Wallpaper stickers ===== */
 .credit-card video.sticker-art { pointer-events: none; }
 .cc-live { position: absolute; z-index: 3; top: 3.4cqw; left: 50%; transform: translateX(-50%); padding: .6cqw 1.8cqw; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 2.6cqw; font-weight: 800; letter-spacing: .08em; }
+
+/* ===== Hairline boxes, centered status, nav activity badge ===== */
+:root { --hair: .25px; }
+:is(.card, .account-row, .sheet-card, .round-button, .chip-row button, .month-pill, .theme-segments button, .movo-ai-welcome, .movo-ai-privacy, .movo-ai-message.assistant, .movo-ai-composer, .movo-ai-reset, .movo-ai-open-site, .movo-ai-thinking, .legal-intro, .legal-section, .legal-contact, .legal-nav, .wide-button, .sync-indicator, .app-alert, .auth-legal) { border-width: var(--hair) !important; }
+.glass-on .sheet { border-width: var(--hair); }
+.sync-indicator { right: auto; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); --dx: 0px; animation-name: sync-in; }
+@keyframes sync-in { from { opacity: 0; translate: 0 10px; } }
+.toast { bottom: calc(96px + env(safe-area-inset-bottom)); }
+.toast.raised { bottom: calc(146px + env(safe-area-inset-bottom)); }
+.nav-badge { position: absolute; top: 10px; left: calc(50% + 7px); width: 8px; height: 8px; border-radius: 50%; background: #ff3b30; box-shadow: 0 0 0 2px var(--nav-bg); pointer-events: none; animation: pop-in .3s var(--spring) both; }
