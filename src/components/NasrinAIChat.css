@@ -1,0 +1,19 @@
+.movo-ai-consent-reason {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: 2px 6px 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.movo-ai-composer {
+  flex-wrap: wrap;
+}
+.movo-ai-consent-reason + .sr-only {
+  margin-top: 0;
+}
+@media (max-width: 480px) {
+  .movo-ai-consent-reason {
+    font-size: 12px;
+  }
+}
