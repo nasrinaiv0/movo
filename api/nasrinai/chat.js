@@ -96,6 +96,7 @@ function createUserClient(url, anonKey, token) {
 module.exports = async function handler(req, res) {
   res.setHeader('Vary', 'Origin');
   res.setHeader('Cache-Control', 'no-store, private');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
   if (!allowedOrigin(req)) return json(res, 403, { error: 'origin_not_allowed' });
   if (!['GET', 'POST'].includes(req.method)) {
     res.setHeader('Allow', 'GET, POST');
@@ -136,6 +137,7 @@ module.exports = async function handler(req, res) {
       const conversationResult = await query.maybeSingle();
       if (conversationResult.error) throw new Error('conversation_lookup_failed');
       const conversation = conversationResult.data;
+      if (!conversation && requested) return json(res, 404, { error: 'conversation_not_found' });
       if (!conversation) return json(res, 200, { conversationId: null, title: null, messages: [] });
       const messagesResult = await db.from('movo_ai_messages')
         .select('id,role,content,created_at')
