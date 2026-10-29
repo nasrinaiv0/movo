@@ -14,27 +14,33 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Buttons use 44 px touch targets, iOS-style press feedback, filled SF-style tab icons, and squircle icon tiles.
 - Preferences are stored under `movo.preferences.v3` (v2 values are migrated).
 
-## Phase 1 — Home dashboard MVP
+## Current functional scope
 
-### Functional in this phase
+### Implemented frontend behavior
 - Responsive Home dashboard and five-item navigation.
 - Balance visibility toggle that masks balances and transaction amounts.
 - Income, expense, and net-activity totals calculated from stored records.
 - Week/month/year period selection and spending-category breakdown.
-- Add and delete transaction records.
-- Transaction search and recent activity list.
-- Light/dark appearance and selectable accent colors, persisted in this browser.
-- Transaction, theme, and balance-visibility preferences persisted in browser local storage.
+- Create, edit, and delete transaction records; create, edit, and archive tracked accounts.
+- Record income, expenses, and transfers; transfer records do not move money between financial institutions.
+- Search and filter transactions, review recent activity, and view calculated totals and category breakdowns.
+- Import CSV statements through a local parsing and review step; export available records to CSV.
+- Email/password and Google authentication paths, subject to deployment configuration and provider availability.
+- Optional cloud account/transaction storage through the authenticated repository with Supabase Row Level Security (RLS); local-only mode remains browser-specific.
+- Separate, explicit consent for sharing a limited user-scoped financial snapshot with NasrinAI. Production chat authentication still requires verification.
+- Terms of Service, Privacy Policy, Help Center, onboarding acknowledgement, and privacy-request contact links.
+- Light/dark/system appearance, accent colors, balance visibility, and browser preferences.
+- Accessible sheets with keyboard focus handling and Escape dismissal, plus automated UI tests and a production build gate.
 - Baseline HTTP security headers on Vercel.
-- Automated UI tests and a production build gate.
 
 ### Data and privacy boundaries
 - First-launch records are clearly marked **Sample** and can be removed from the Appearance menu.
-- Manually added records are stored in the current browser's local storage. They are not encrypted by this app and do not sync to other devices.
-- Do not enter sensitive financial details or account credentials in this MVP.
-- No live bank, card, Apple Pay, wallet, notification-reading, Supabase, or AI integration is active.
-- Displayed totals are calculated from tracked records; they are not verified bank balances.
-- This phase has no authentication or server-side financial data store.
+- Local-only records are stored in this browser's local storage and persist across reloads in the same browser profile. They are not encrypted by MOVO itself and do not sync to other devices. Clearing browser data can remove them.
+- In cloud mode, account and transaction requests use the authenticated MOVO repository; access depends on the deployed Supabase configuration and database RLS policies. Do not assume cloud access is available until sign-in and owner-isolation checks have been verified in the target deployment.
+- NasrinAI chat requires a signed-in cloud session and a separate, explicit consent step. The intended payload is the user's message plus a limited, user-scoped snapshot—not general database access. Production upstream authentication was returning HTTP 401 on 2026-10-29, so live chat must be treated as unverified until a successful authenticated request is confirmed.
+- MOVO does not currently connect to banks, read private Apple Pay history, initiate payments, or control/block cards. Push and email notification delivery are not connected; in-app notifications are not an urgent-alert service.
+- Displayed balances and totals are calculated from available records and are not verified bank balances or proof that money moved.
+- CSV exports can contain sensitive financial information. Store and share exported files carefully; CSV import is parsed locally and reviewed before saving.
 
 ### Local development
 ```sh
@@ -46,13 +52,15 @@ npm start
 
 Production builds run the test suite before building. GitHub Actions also runs the test suite and build on feature-branch pushes and pull requests targeting `main`.
 
-## Before production use
+## Remaining production-readiness requirements
 
-1. Resolve and verify the dependency vulnerabilities reported by npm audit; do not blindly apply breaking upgrades.
-2. Introduce authenticated server-side storage with row-level access controls before syncing financial data.
-3. Implement account linking through supported provider APIs and explicit user consent; never scrape banking credentials.
-4. Define encryption, retention, export/deletion, audit logging, and incident-response policies.
-5. Add end-to-end and accessibility checks across supported mobile and desktop browsers.
+1. Publish and review the operator/data-controller's formal legal identity, registered address where required, verified retention schedule, and actual provider disclosures. The in-app legal pages currently warn that these launch details remain incomplete; do not use MOVO with real or highly sensitive financial data until resolved.
+2. Enable Supabase Auth leaked-password protection. The Security Advisor reported it disabled on 2026-10-29.
+3. Review and remediate the dependency vulnerabilities reported by `npm audit` using targeted upgrades and regression tests; do not blindly force major upgrades.
+4. Resolve the NasrinAI upstream HTTP 401 and verify an authenticated production request without exposing credentials.
+5. Re-run owner-isolation/RLS checks and test authentication, financial writes, consent, import/export, and deletion behavior in the actual production deployment.
+6. Add or complete end-to-end accessibility checks across supported mobile and desktop browsers.
+7. Implement supported bank integrations only through documented provider APIs and explicit consent; never collect or scrape banking credentials.
 
 ## Icons
 
