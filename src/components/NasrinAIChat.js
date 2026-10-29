@@ -7,6 +7,7 @@ import './NasrinAIChat.css';
 function friendlyError(code) {
   if (code === 'sign_in_required' || code === 'invalid_session') return 'Sign in to MOVO to use your private financial copilot.';
   if (code === 'nasrinai_not_configured') return 'NasrinAI is not configured on the MOVO server yet.';
+  if (code === 'nasrinai_scope_unconfirmed') return 'MOVO could not verify that NasrinAI kept this request isolated to MOVO. No answer was accepted. Please try again later.';
   if (code === 'conversation_not_found') return 'This conversation is not available in your account.';
   if (code === 'financial_context_consent_required') return 'Please confirm consent before sharing financial context with NasrinAI.';
   if (code === 'nasrinai_auth_rejected') return 'MOVO reached NasrinAI, but the service rejected its server authentication. This is a configuration issue; please try again later.';
@@ -127,7 +128,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     </header>
     <div className="movo-ai-privacy" id="movo-ai-context-disclosure" role="note">
       <span className="movo-ai-privacy-icon" aria-hidden="true"><Icon name="lock" size={16} strokeWidth={2} /></span>
-      <span><strong>What you share when you opt in.</strong> When you check the box and send a message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI to generate a reply. This is separate from accepting the Terms of Service. You can use the rest of MOVO without this chat-specific consent. <strong>Your account stays isolated.</strong> The context is limited to your own account-scoped records; other users are not given access to your accounts, transactions, budgets, or chats.</span>
+      <span><strong>What you share when you opt in.</strong> When you check the box and send a message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI to generate a reply. This is separate from accepting the Terms of Service. You can use the rest of MOVO without this chat-specific consent. <strong>Your account stays isolated.</strong> The context is limited to your own account-scoped records; other users are not given access to your accounts, transactions, budgets, or chats. <strong>Conversation isolation.</strong> Each message is processed independently; earlier replies shown in this thread are not sent to NasrinAI as context. If this thread contains unrelated older replies, use the + button to start a clean MOVO chat.</span>
     </div>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label="Conversation">
       {!messages.length && <div className="movo-ai-welcome">
