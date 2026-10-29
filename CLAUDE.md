@@ -14,7 +14,7 @@ CI=true npx react-scripts build  # strict build: lint warnings fail, same as CI
 npm run build                  # prebuild runs typecheck + tests first
 npm start
 ```
-CI (`.github/workflows/ci.yml`, job `verify`) runs install → tests → build on PRs to `main` and pushes to `main`/`feat/**`. Vercel builds a preview per PR.
+CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → build on PRs to `main` and pushes to `main`/`feat/**`. Vercel builds a preview per PR.
 
 ## Layout
 - `src/App.js` — app shell: state, preferences, navigation (`go()`), sheets, bottom dock, theme/glass variables.
