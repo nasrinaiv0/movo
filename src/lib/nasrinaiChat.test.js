@@ -31,6 +31,15 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     expect(prompt).toContain('Summarize my spending');
   });
 
+  test('keeps the complete prompt below NasrinAI message limits by trimming context', () => {
+    const context = {
+      accounts: Array.from({ length: 50 }, (_, i) => ({ name: 'Account ' + i, type: 'bank', currency: 'PHP', opening_balance: 1000, archived: false })),
+      recent_transactions: Array.from({ length: 40 }, (_, i) => ({ date: '2026-10-28', description: 'Transaction ' + i + ' with a long merchant name', category: 'Groceries', type: 'expense', amount: 1234, currency: 'PHP', account: 'Main account' })),
+      budgets: Array.from({ length: 50 }, (_, i) => ({ category: 'Category ' + i, monthly_limit: 10000, currency: 'PHP', starts_on: '2026-10-01', active: true }))
+    };
+    expect(buildPrompt('x'.repeat(1600), context).length).toBeLessThanOrEqual(3800);
+  });
+
   test('extracts only a bounded reply string', () => {
     expect(extractReply({ reply: '  Hello MOVO  ' })).toBe('Hello MOVO');
     expect(extractReply({ conversation_id: 'upstream-id', message: { content: 'Structured reply' } })).toBe('Structured reply');
