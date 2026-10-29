@@ -70,7 +70,7 @@ export function EditProfile({ c }) {
     <span className="field-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} onChange={e => setPref(key, e.target.value)} /></span></label>;
   return <>
     <SubHeader title="Profile" onBack={() => go('Profile')} right={<button type="button" className="link-button strong" onClick={() => { c.notify('Profile saved on this device.'); go('Profile'); }}>Save</button>} />
-    <div className="avatar-edit"><span className="avatar huge">{user.initial}<i><Icon name="camera" size={16} /></i></span></div>
+    <div className="avatar-edit"><span className="avatar huge">{user.initial}</span></div>
     <section className="card form-card">
       {field('Full Name', 'profileName', prefs.profileName || user.name)}
       {field('Email', 'email', user.email, true)}
@@ -84,7 +84,7 @@ export function EditProfile({ c }) {
     </section>
     <SectionTitle>Connected Accounts</SectionTitle>
     <section className="card menu-card">
-      {[['mail', 'Google', session?.user?.app_metadata?.provider === 'google' ? session.user.email : 'Google sign-in is available', session?.user?.app_metadata?.provider === 'google'], ['phone', 'Apple', 'Apple sign-in is not available in MOVO yet', false], ['message', 'Facebook', 'Facebook sign-in is not available in MOVO yet', false]].map(([icon, name, sub, on]) =>
+      {[['mail', 'Google', session?.user?.app_metadata?.provider === 'google' ? session.user.email : c.supabaseConfigured ? 'Google sign-in is available' : 'Google sign-in is not configured', session?.user?.app_metadata?.provider === 'google'], ['phone', 'Apple', 'Apple sign-in is not available in MOVO yet', false], ['message', 'Facebook', 'Facebook sign-in is not available in MOVO yet', false]].map(([icon, name, sub, on]) =>
         <div className="menu-row" key={name}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{name}</strong>{sub && <small>{sub}</small>}</span><em className={`pill ${on ? 'tone-green' : 'tone-gray'}`}>{on ? 'Connected' : name === 'Google' ? 'Not connected' : 'Unavailable'}</em></div>)}
     </section>
   </>;
