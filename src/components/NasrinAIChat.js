@@ -1,6 +1,7 @@
 import Icon, { NasrinMark } from './Icon';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import './NasrinAIChat.css';
 
 function friendlyError(code) {
   if (code === 'sign_in_required' || code === 'invalid_session') return 'Sign in to MOVO to use your private financial copilot.';
@@ -123,9 +124,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noopener noreferrer" aria-label="Open NasrinAI.com in a new tab" title="NasrinAI.com"><Icon name="external" size={17} strokeWidth={2} /></a>
       <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label="Start a new chat" title="Start a new chat"><Icon name="plus" size={18} strokeWidth={2} /></button>
     </header>
-    <div className="movo-ai-privacy" role="note">
+    <div className="movo-ai-privacy" id="movo-ai-context-disclosure" role="note">
       <span className="movo-ai-privacy-icon" aria-hidden="true"><Icon name="lock" size={16} strokeWidth={2} /></span>
-      <span><strong>Your account stays isolated.</strong> When you opt in, MOVO sends a limited selection of your own records to NasrinAI for the reply. Other users cannot access your accounts, transactions, budgets, or chats.</span>
+      <span><strong>What you share when you opt in.</strong> When you check the box and send a message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI to generate a reply. This is separate from accepting the Terms of Service. You can use the rest of MOVO without this chat-specific consent. <strong>Your account stays isolated.</strong> The context is limited to your own account-scoped records; other users are not given access to your accounts, transactions, budgets, or chats.</span>
     </div>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label="Conversation">
       {!messages.length && <div className="movo-ai-welcome">
@@ -146,12 +147,13 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     </div>
     {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label="Dismiss message" onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}
     {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="primary-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
-      <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to share limited financial context with NasrinAI for this conversation.</label></div>
+      <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" aria-describedby="movo-ai-context-disclosure" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to share my message and limited financial context with NasrinAI for this conversation.</label></div>
       <div className="movo-ai-legal-links"><button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>Privacy Policy</button><span aria-hidden="true">·</span><button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>Terms of Service</button></div>
       <form className="movo-ai-composer" onSubmit={send}>
+        <p id="movo-ai-send-disabled-reason" className="movo-ai-consent-reason">{!privacyAccepted ? 'To send a message, review the Privacy Policy and explicitly opt in above. MOVO does not send your chat message or financial context until you submit it with consent checked.' : !draft.trim() ? 'Enter a message to enable Send. Your message and limited financial context are shared only when you submit with consent checked.' : busy ? 'NasrinAI is responding; Send is unavailable until the reply finishes.' : 'Ready to send: your message and limited financial context will be shared with NasrinAI for this reply.'}</p>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
         <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="1600" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
-        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message">{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={18} strokeWidth={2.2} />}</button>
+        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message" aria-describedby="movo-ai-send-disabled-reason" aria-busy={busy}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={18} strokeWidth={2.2} />}</button>
       </form></>}
     <p className="movo-ai-footnote">AI can make mistakes. Verify important calculations. Financial actions are not performed from chat.</p>
   </section>;
