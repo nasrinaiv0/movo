@@ -76,7 +76,7 @@ This is a **working phase breakdown derived from the current implementation hand
 - If a result applies to a previous commit, state that clearly; do not attribute it to a later documentation or code commit.
 - Record failures, known limitations, and accepted risks alongside successes.
 
-## 4. Relevant open MOVO pull requests at snapshot time
+## 4. Relevant MOVO pull requests at snapshot time (historical; recheck live state)
 
 The following open PRs were returned by the GitHub repository search on 2026-10-30. Recheck live PR state, latest head SHA, checks, and review comments before acting.
 
@@ -92,14 +92,17 @@ Reported scope:
 - Clean up newly created empty conversations after upstream failures without deleting existing conversations.
 - Add regression tests for payload shape, context bounds, scope confirmation, and UI disclosure.
 
-Reported validation in the PR description:
-- Recorded MOVO commit: `ffee00e027694c6ef19467d3376976d09ba78baf`.
-- TypeScript typecheck passed.
-- Jest: 17 suites / 93 tests passed.
-- Production build compiled successfully.
-- A Vercel preview was reported READY.
+Latest MOVO-only update (2026-10-30):
+- Branch head: `3d0578236b9891c92aa063e9818b47274ae4ed97`.
+- The branch was reconciled on top of current main after rich reply rendering merged, preserving `NasrinAIMessage`, chart styles, and the existing renderer.
+- Added a fail-closed UI regression test: if the upstream omits `context_scope: "movo"`, no assistant answer is rendered, the isolation error is shown, and the user's draft is restored.
+- Added a per-user, one-time clean-chat rollout for the first cloud-mode visit. It does not delete legacy chat rows; it avoids automatically restoring a possibly contaminated legacy thread in that browser.
+- Added a layout-effect account-switch reset so prior-user messages, conversation ID, unsent draft, error, and chat consent are cleared before the next paint. Browser-storage failures default to a clean chat.
+- Updated `docs/NASRINAI_CHAT_INTEGRATION.md` with the legacy-thread, account-switch, and fail-closed behavior.
+- Exact-head GitHub Actions run [40938090222](https://github.com/nasrinaiv0/movo/actions/runs/40938090222) passed: **17 suites / 95 tests**, `tsc --noEmit`, and production compilation. Matching Vercel deployment [dpl_6FGjf6QXzZDLwbHMTCXeKMUemPtR](https://vercel.com/nasrin-ai/movo/6FGjf6QXzZDLwbHMTCXeKMUemPtR) reached READY for the same SHA.
+- The PR remains draft and unmerged.
 
-**Explicitly unverified in that PR description:** live authenticated end-to-end chat, deployed upstream enforcement, and manual browser/keyboard/mobile checks. The PR author says to keep it in draft until the companion upstream change is merged/deployed and the scoped integration is verified.
+**Still unverified:** the upstream scope contract's deployed behavior, authenticated live end-to-end chat, and manual browser/keyboard/screen-reader/mobile checks. The code intentionally rejects replies without scope confirmation. Do not merge/promote until the required upstream contract is deployed and the integration is verified.
 
 ### Companion dependency — NasrinAI PR #699 (separate repository)
 URL: https://github.com/nasrinaiv0/nasrinAI/pull/699
@@ -108,8 +111,10 @@ This is **not a MOVO PR**. Track it only as an external dependency. Its describe
 
 The PR description reports tests and repository gates passed at SHA `14d27bea72c04183c8e5c27f199130c71b261330`, but also says a deployed integration smoke test remains outstanding. Verify current state before relying on this description.
 
-### PR #50 — Render NasrinAI replies with charts and rich formatting
+### PR #50 — Render NasrinAI replies with charts and rich formatting (merged)
 URL: https://github.com/nasrinaiv0/movo/pull/50
+
+Status update (2026-10-29): merged into main as `94d089d35483558b320f751cf122aa68755ef0eb`; main CI run [40937026212](https://github.com/nasrinaiv0/movo/actions/runs/40937026212) completed successfully. The current branch must preserve this renderer while adding context isolation.
 
 Reported scope:
 - Readable Markdown rendering (headings, lists, quotes, links, code blocks, responsive tables).
@@ -275,4 +280,26 @@ Append a new entry for every material implementation change. Do not overwrite ea
 
 ## 10. Snapshot disclaimer
 
-This is a handoff snapshot based on repository/PR descriptions available on 2026-10-30. The current live status may have changed. Claude must re-check branch heads, PR states, CI, deployment, production configuration, and existing roadmap documents before treating any item as current. This file itself is documentation only; it does not implement fixes, run tests, merge PRs, or prove production behavior.
+This handoff began as a snapshot based on repository/PR descriptions available on 2026-10-30. See the appended latest-run update below for subsequent verified work. The current live status may still have changed. Claude must re-check branch heads, PR states, CI, deployment, production configuration, and existing roadmap documents before treating any item as current. This file itself is documentation only; it does not implement fixes, run tests, merge PRs, or prove production behavior.
+
+
+## 11. Latest run update — 2026-10-30 (MOVO repository only)
+
+### Context-isolation implementation status
+- MOVO PR #48 remains **open, draft, mergeable**, with current code/test head `3d0578236b9891c92aa063e9818b47274ae4ed97`.
+- The exact-head GitHub Actions run passed 17 test suites / 95 tests, TypeScript typecheck, and production compilation. The matching Vercel preview is READY. This is preview/build evidence, not production integration proof.
+- The UI now starts a clean chat on the first cloud-mode visit per signed-in user after the rollout marker is applied. Legacy rows are not deleted; the app avoids automatically loading the potentially contaminated latest thread in that browser.
+- Switching signed-in users clears the previous user's visible chat state before paint. Regression tests cover a pending history request for the next user and the fail-closed scope-confirmation error.
+- The current branch retains the rich reply renderer merged in PR #50. Do not replace the component wholesale with an older version when resolving conflicts.
+
+### Current release gates
+- [ ] Confirm the upstream `context_scope: "movo"` enforcement is deployed and a live authenticated request succeeds. This is an external integration dependency; this MOVO-only workflow did not modify the separate repository.
+- [ ] Verify production behavior with two distinct MOVO test accounts and a redacted canary test; never log credentials, financial payloads, or full prompts.
+- [ ] Complete manual keyboard, screen-reader, mobile, and real-data chart rendering smoke tests.
+- [ ] Complete whole-frontend control audit and final legal review. Operator identity/address, actual retention schedule, providers/recipients, and jurisdiction-specific legal wording must be owner/legal verified; do not invent them.
+- [ ] Resolve Supabase leaked-password protection and targeted dependency vulnerability findings through authorized configuration and regression-tested upgrades.
+- [ ] Keep PR #48 in draft until its upstream dependency and end-to-end acceptance criteria are verified.
+
+### No changes in this run
+- No production financial records, Supabase schema/RLS/grants, provider secrets, or production configuration were changed.
+- The upstream conversation mapping remains server-only; do not add browser policies to silence an informational RLS-without-policy finding.
