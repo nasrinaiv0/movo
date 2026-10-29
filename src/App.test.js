@@ -79,6 +79,20 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]').textContent).toContain('Your Cards');
   });
 
+  test('card issuer actions are disabled with a visible, accessible explanation', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    const blockCard = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Block Card'));
+    const limits = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Limits'));
+    expect(blockCard).toBeTruthy();
+    expect(limits).toBeTruthy();
+    expect(blockCard.disabled).toBe(true);
+    expect(limits.disabled).toBe(true);
+    expect(blockCard.getAttribute('aria-describedby')).toBe('card-control-limitations');
+    expect(limits.getAttribute('aria-describedby')).toBe('card-control-limitations');
+    expect(container.querySelector('#card-control-limitations').textContent).toContain('cannot block an actual card or change issuer limits');
+  });
+
   test('wallet transfer actions open a transfer form rather than an expense form', () => {
     nav(container, 'Wallet');
     clickButton(container, 'Record Transfer');
