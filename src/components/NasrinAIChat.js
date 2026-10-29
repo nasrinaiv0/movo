@@ -5,6 +5,7 @@ function friendlyError(code) {
   if (code === 'sign_in_required' || code === 'invalid_session') return 'Sign in to MOVO to use your private financial copilot.';
   if (code === 'nasrinai_not_configured') return 'NasrinAI is not configured on the MOVO server yet.';
   if (code === 'conversation_not_found') return 'This conversation is not available in your account.';
+  if (code === 'financial_context_consent_required') return 'Please confirm consent before sharing financial context with NasrinAI.';
   return 'NasrinAI could not answer right now. Please try again shortly.';
 }
 
@@ -67,7 +68,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
       const response = await fetch('/api/nasrinai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
-        body: JSON.stringify({ message, conversationId })
+        body: JSON.stringify({ message, conversationId, consent: privacyAccepted })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
