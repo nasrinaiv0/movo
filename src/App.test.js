@@ -467,19 +467,22 @@ describe('MOVO finance frontend', () => {
       return originalSetItem.call(this, key, value);
     });
 
-    nav(container, 'Transactions');
-    clickButton(container, 'See All');
-    clickButton(container, 'SM Supermarket, −₱1,250.00');
-    clickButton(container, 'Edit');
-    setInputValue(container.querySelector('input[placeholder="e.g. Grocery shopping"]'), 'Storage warning regression');
-    clickButton(container, 'Save changes');
+    try {
+      nav(container, 'Transactions');
+      clickButton(container, 'See All');
+      clickButton(container, 'SM Supermarket, −₱1,250.00');
+      clickButton(container, 'Edit');
+      setInputValue(container.querySelector('input[placeholder="e.g. Grocery shopping"]'), 'Storage warning regression');
+      clickButton(container, 'Save changes');
 
-    expect(container.textContent).toContain('Local changes may not be saved.');
-    expect(container.textContent).toContain('Important records may not survive a reload.');
-    clickButton(container, 'Retry save');
-    expect(container.textContent).toContain('Browser storage is still unavailable or full.');
+      expect(container.textContent).toContain('Local changes may not be saved.');
+      expect(container.textContent).toContain('Important records may not survive a reload.');
+      clickButton(container, 'Retry save');
+      expect(container.textContent).toContain('Browser storage is still unavailable or full.');
+    } finally {
+      spy.mockRestore();
+    }
 
-    spy.mockRestore();
     clickButton(container, 'Retry save');
     expect(container.textContent).not.toContain('Local changes may not be saved.');
     expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Storage warning regression');
