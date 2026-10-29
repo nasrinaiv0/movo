@@ -53,14 +53,13 @@ export function SectionTitle({ children, action, onAction }) {
 
 export function Sheet({ title, subtitle, onClose, children, label }) {
   const dialogRef = useRef(null);
-  const previousFocusRef = useRef(null);
+  const previousFocusRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return undefined;
-    previousFocusRef.current = document.activeElement;
     const getFocusable = () => Array.from(dialog.querySelectorAll(
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )).filter(element => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');

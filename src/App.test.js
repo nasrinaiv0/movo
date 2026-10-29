@@ -230,7 +230,9 @@ describe('MOVO finance frontend', () => {
   test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    clickButton(container, 'Switch card');
+    const trigger = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === 'Switch card' || item.textContent.trim() === 'Switch card');
+    expect(trigger).toBeTruthy();
+    act(() => { trigger.focus(); trigger.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
     expect(dialog.contains(document.activeElement)).toBe(true);
@@ -243,5 +245,6 @@ describe('MOVO finance frontend', () => {
     expect(document.activeElement).toBe(focusable[0]);
     act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
   });
 });
