@@ -15,6 +15,7 @@ import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from '.
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import NasrinAIChat from './components/NasrinAIChat';
+import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -25,7 +26,7 @@ const DEFAULTS = {
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [],
 };
-const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile' };
+const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile', TermsOfService: 'Profile', PrivacyPolicy: 'Profile' };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
 const today = () => new Date().toLocaleDateString('en-CA');
 
@@ -60,6 +61,7 @@ function App() {
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
   const [view, setView] = useState('Home');
+  const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [prefs, setPrefs] = useState(readPrefs);
   const [cloudAccounts, setCloudAccounts] = useState([]);
   const [rawTxs, setRawTxs] = useState(demoTransactions);
@@ -197,6 +199,10 @@ function App() {
     if (next !== 'Settings') setQuery('');
     try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
   }, []);
+  const openLegal = useCallback((next) => {
+    if (!['TermsOfService', 'PrivacyPolicy'].includes(view)) setLegalReturnView(view);
+    go(next);
+  }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
   const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id })); setSheet({ name: 'transaction' }); };
@@ -247,7 +253,7 @@ function App() {
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
-    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv,
+    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch,
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
@@ -279,8 +285,10 @@ function App() {
       case 'Notifications': return <Notifications c={c} />;
       case 'NotificationDetail': return <NotificationDetail c={c} />;
       case 'NotificationSettings': return <NotificationSettings c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} accounts={accountsView} transactions={txs} stats={homeMonth} />;
-      case 'Sign in': return <AuthPanel onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify('Continuing in local-only mode.'); }} />;
+      case 'TermsOfService': return <TermsOfService c={c} />;
+      case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} accounts={accountsView} transactions={txs} stats={homeMonth} onOpenLegal={openLegal} />;
+      case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify('Continuing in local-only mode.'); }} />;
       default: return <Home c={c} />;
     }
   })();
