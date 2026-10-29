@@ -63,7 +63,7 @@ export default function Wallet({ c }) {
       </section>
       <SectionTitle>Quick Actions</SectionTitle>
       <section className="quick-actions">
-        {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Record Transfer', () => openForm('transfer')], ['transfer', 'Transfer', () => openForm('transfer')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+        {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Record Transfer', () => openForm('transfer')], ['plus', 'Add Transaction', () => openForm('expense')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><span><Icon name={icon} size={20} /></span>{label}</button>)}
       </section>
       <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Activity</SectionTitle>
