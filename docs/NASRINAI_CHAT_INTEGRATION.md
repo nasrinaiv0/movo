@@ -31,7 +31,7 @@ The migration adds composite indexes for user-scoped conversation/message retrie
 
 ## Limits and safety
 
-Messages are capped at 4,000 characters; upstream requests time out after 25 seconds. The chat is read-only and does not execute transactions or change budgets. Financial records and chat history are private application data and must never be publicly indexed by search engines. Public SEO indexing applies only to public marketing pages, not authenticated MOVO screens or API routes.
+User messages are capped at 1,600 characters and the full upstream prompt is trimmed to 3,800 characters to stay below NasrinAI's default 4,000-character limit; upstream requests time out after 25 seconds. The chat is read-only and does not execute transactions or change budgets. Financial records and chat history are private application data and must never be publicly indexed by search engines. Public SEO indexing applies only to public marketing pages, not authenticated MOVO screens or API routes.
 
 ## Deployment verification checklist
 
