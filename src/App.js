@@ -97,6 +97,7 @@ function App() {
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
   const [toast, setToast] = useState('');
+  const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
@@ -116,10 +117,29 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
-  useEffect(() => { saveLocalTransactions(rawTxs, cloudMode); }, [rawTxs, cloudMode]);
-  useEffect(() => { saveLocalAccounts(localAccounts); }, [localAccounts]);
-  useEffect(() => { setSamplesEnabled(samplesOn); }, [samplesOn]);
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
+  useEffect(() => {
+    const samplesSaved = setSamplesEnabled(samplesOn);
+    if (cloudMode) {
+      setLocalPersistenceWarning(false);
+      return;
+    }
+    const transactionsSaved = saveLocalTransactions(rawTxs, false);
+    const accountsSaved = saveLocalAccounts(localAccounts);
+    setLocalPersistenceWarning(!transactionsSaved || !accountsSaved || !samplesSaved);
+  }, [rawTxs, localAccounts, samplesOn, cloudMode]);
+  const retryLocalPersistence = useCallback(() => {
+    if (cloudMode) {
+      setLocalPersistenceWarning(false);
+      return;
+    }
+    const transactionsSaved = saveLocalTransactions(rawTxs, false);
+    const accountsSaved = saveLocalAccounts(localAccounts);
+    const samplesSaved = setSamplesEnabled(samplesOn);
+    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    setLocalPersistenceWarning(!saved);
+    notify(saved ? 'Local records saved on this device.' : 'Browser storage is still unavailable or full.');
+  }, [rawTxs, localAccounts, samplesOn, cloudMode, notify]);
 
   const refreshCloud = useCallback(async (user) => {
     if (!user) return;
@@ -433,7 +453,20 @@ function App() {
     setSheet(null); notify('CSV export prepared.');
   };
   const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed. Your manually entered records are kept.'); };
-  const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } clearLocalFinanceData(); setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setLocalAccounts([]); setSamplesOn(false); setSheet(null); notify('Local transactions, accounts and preferences cleared. Cloud records are unchanged.'); };
+  const clearLocal = () => {
+    let preferencesCleared = true;
+    try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { preferencesCleared = false; }
+    const recordsCleared = clearLocalFinanceData();
+    setPrefs({ ...DEFAULTS });
+    setRawTxs(cloudMode ? rawTxs : []);
+    setLocalAccounts([]);
+    setSamplesOn(false);
+    setLocalPersistenceWarning(!preferencesCleared || !recordsCleared);
+    setSheet(null);
+    notify(preferencesCleared && recordsCleared
+      ? 'Local transactions, accounts and preferences cleared. Cloud records are unchanged.'
+      : 'MOVO could not confirm that all local data was cleared. Check browser storage and clear this site’s data manually if needed.');
+  };
   const signOutNow = async () => { try { await signOut(); setSession(null); setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); go('Home'); notify('Signed out securely.'); } catch { notify('Could not sign out. Please try again.'); } };
 
   const c = {
@@ -488,6 +521,10 @@ function App() {
     {prefs.glass && <div className="glass-bg" aria-hidden="true"><i /><i /><i /></div>}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
+        {localPersistenceWarning && !cloudMode && <div className="app-alert storage-warning" role="alert">
+          <span><strong>Local changes may not be saved.</strong> Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.</span>
+          <button type="button" className="retry-save" onClick={retryLocalPersistence}>Retry save</button>
+        </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label="Dismiss error" onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
       </main>
