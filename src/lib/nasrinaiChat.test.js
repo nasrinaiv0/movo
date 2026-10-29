@@ -122,8 +122,9 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     expect(extractReply({ text: 'x'.repeat(13000) })).toHaveLength(12000);
   });
 
-  test('rejects foreign production origins', () => {
+  test('allows the documented MOVO production origins and rejects foreign origins', () => {
     expect(allowedOrigin({ headers: { origin: 'https://evil.example' } })).toBe(false);
+    expect(allowedOrigin({ headers: { origin: 'https://movo.nasrinai.com' } })).toBe(true);
     expect(allowedOrigin({ headers: { origin: 'https://movo-lime.vercel.app' } })).toBe(true);
   });
 });
