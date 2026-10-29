@@ -36,7 +36,7 @@ export default function Transactions({ c }) {
       <select aria-label="Select month" value={month} onChange={e => setMonth(e.target.value)}>{months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select>
     </label>
   );
-  const sliders = <button type="button" className="round-button flat" aria-label="Filters and actions" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
+  const sliders = <button type="button" className="round-button flat" aria-label="Quick actions" title="Quick actions" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
 
   return <>
     <RootHeader title="Transactions" onSearch={() => c.setSheet({ name: 'search' })} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />

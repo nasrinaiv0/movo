@@ -22,9 +22,11 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Verify production RLS remains enabled on profiles, finance tables, and NasrinAI chat tables, and verify authenticated CRUD grants remain while TRUNCATE and mapping-table access are absent.
 - [x] Re-audit Home, Wallet, Transactions, Profile, Settings, Notifications, Auth, and NasrinAI controls against current source; fixed misleading Plan & Usage navigation and added visible unavailable states for unsupported settings.
 - [x] Add modal keyboard handling: initial focus, Tab/Shift+Tab focus containment, Escape dismissal, and focus restoration.
+- [x] Include transfer records in the in-app notification feed and add regression coverage for transfer-specific notices.
+- [x] Rename the Transactions action control to match its actual Quick actions sheet and protect CSV exports from spreadsheet formula injection; delay object-URL revocation for browser download compatibility.
 - [ ] Obtain and publish the formal controller/operator legal name and registered address; review the privacy contact, provider/retention details, lawful bases, and jurisdiction-specific language with qualified counsel before production. The legal pages now disclose this unresolved identity requirement rather than implying the controller is identified.
 - [x] Verify current PR head CI: GitHub Actions run 40812940506 completed successfully on commit 9994eb1dec71ca487b34d57b062091c276490432; the verify job's test and production-build steps succeeded. The package build lifecycle runs typecheck and the test suite before bundling.
-- [ ] Re-run current-head CI after the accessibility and settings changes, then verify Supabase RLS checks and live deployment behavior.
+- [ ] Run current-head CI after the accessibility, settings, notification, and CSV-safety changes; verify Supabase RLS checks and live deployment behavior. Earlier runs are not evidence for this newer commit.
 
 ## Controls requiring follow-up audit
 

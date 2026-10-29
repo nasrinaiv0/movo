@@ -101,7 +101,7 @@ describe('MOVO finance frontend', () => {
 
   test('opens and closes the add-transaction sheet', () => {
     nav(container, 'Transactions');
-    clickButton(container, 'Filters and actions');
+    clickButton(container, 'Quick actions');
     clickButton(container, 'Add transaction');
     expect(container.querySelector('[role="dialog"][aria-label="Add transaction"]')).not.toBeNull();
     clickButton(container, 'Close Add transaction');

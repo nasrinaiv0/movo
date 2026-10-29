@@ -16,6 +16,7 @@ import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKET
 import { ACCENTS } from './screens/Settings';
 import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
+import { buildCsv } from './lib/csvExport';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -258,9 +259,11 @@ function App() {
   };
   const exportCsv = () => {
     const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, t.category, t.type, t.amount, t.currency || 'PHP', t.accountName])];
-    const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const csv = buildCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click(); URL.revokeObjectURL(url); setSheet(null); notify('CSV export prepared.');
+    const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setSheet(null); notify('CSV export prepared.');
   };
   const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed.'); };
   const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setSamplesOn(false); setSheet(null); notify('Local data cleared.'); };

@@ -7,7 +7,7 @@ const FILTERS = [{ key: 'All', label: 'All' }, { key: 'Unread', label: 'Unread',
 
 /** Build the notification feed from real transactions plus any sample system notices. */
 export function buildNotifications(txs, extras, show = true) {
-  const fromTx = txs.filter(t => t.type !== 'transfer').slice(0, 5).map(t => {
+  const fromTx = txs.slice(0, 5).map(t => {
     const isIn = t.type === 'income'; const isTransfer = t.type === 'transfer';
     return {
       id: `tx-${t.id}`, kind: 'Transactions', txId: t.id, at: t.date, tone: isIn ? 'green' : 'blue', icon: isIn ? 'arrowDown' : isTransfer ? 'transfer' : 'card',
