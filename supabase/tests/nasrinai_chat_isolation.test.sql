@@ -70,4 +70,14 @@ begin
   if not exists (select 1 from pg_indexes where schemaname='public' and indexname='movo_ai_upstream_conversations_user_idx') then
     raise exception 'Expected upstream user foreign-key index is missing';
   end if;
+
+  if exists (
+    select 1 from information_schema.role_table_grants
+    where table_schema = 'public'
+      and grantee in ('anon', 'authenticated')
+      and privilege_type in ('TRUNCATE', 'TRIGGER', 'REFERENCES')
+      and table_name in ('budgets', 'financial_accounts', 'movo_ai_conversations', 'movo_ai_messages', 'profiles', 'transactions')
+  ) then
+    raise exception 'Browser roles must not have TRUNCATE, TRIGGER, or REFERENCES privileges on private tables';
+  end if;
 end $$;
