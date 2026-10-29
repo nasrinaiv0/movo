@@ -9,6 +9,7 @@ jest.mock('./lib/financeRepository', () => ({
   listAccounts: jest.fn().mockResolvedValue([]),
   listTransactions: jest.fn().mockResolvedValue([]),
   createAccount: jest.fn(),
+  updateAccount: jest.fn(),
   createTransaction: jest.fn(),
   updateTransaction: jest.fn(),
   deleteTransaction: jest.fn(),
