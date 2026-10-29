@@ -97,6 +97,44 @@ describe('NasrinAI consent and legal links', () => {
     expect(container.querySelector('#movo-ai-send-disabled-reason').textContent).toContain('Enter a message to enable Send.');
   });
 
+  test('clears the previous account chat before loading another account history', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ conversationId: 'conversation-user-1', reply: 'Private reply from account one.' })
+    });
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Summarize my spending');
+    act(() => container.querySelector('#movo-ai-consent').click());
+
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(container.textContent).toContain('Private reply from account one.');
+
+    let resolveHistory;
+    global.fetch.mockImplementationOnce(() => new Promise(resolve => { resolveHistory = resolve; }));
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: { session: { access_token: 'user-2-access-token' } },
+      error: null
+    });
+    act(() => {
+      root.render(<NasrinAIChat
+        session={{ user: { id: 'user-2' }, access_token: 'user-2-access-token' }}
+        cloudMode
+        onOpenLegal={onOpenLegal}
+      />);
+    });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+
+    expect(container.textContent).not.toContain('Private reply from account one.');
+    expect(container.querySelectorAll('.movo-ai-message.assistant')).toHaveLength(0);
+
+    await act(async () => {
+      resolveHistory({ ok: true, json: async () => ({ conversationId: 'conversation-user-2', messages: [] }) });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+  });
+
   test('fails closed when the upstream cannot confirm MOVO context isolation', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
