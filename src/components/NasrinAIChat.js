@@ -18,7 +18,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
+  useEffect(() => { if (typeof endRef.current?.scrollIntoView === 'function') endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
 
   useEffect(() => {
     let active = true;
