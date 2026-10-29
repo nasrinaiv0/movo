@@ -5,6 +5,14 @@
 The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends the actual question separately from a bounded financial context to `https://nasrinai.com/v1/chat` using the server-only `context_scope: "movo"` contract. MOVO accepts a reply only when the upstream explicitly returns `context_scope: "movo"`; older upstream deployments fail closed and their reply is not shown or saved. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
 
 
+## Financial context normalization
+
+- The server constructs an explicit allowlist of account, transaction, and budget fields; free-form transaction notes and unexpected database columns are never forwarded.
+- Account/merchant/category labels have control characters and line breaks normalized before serialization.
+- Transaction amounts must be finite numbers and transaction types must be recognized (`income`, `expense`, or `transfer`); malformed entries are excluded rather than converted to zero.
+- Missing or invalid balances and budget limits remain `null`, and unknown currencies remain `null` instead of being silently relabeled as PHP. Invalid timestamps/date-only values remain `null` rather than being presented as a valid date.
+- These checks improve accuracy and limit accidental context expansion. They do not replace server-derived user identity, owner-scoped queries, Supabase RLS, or the upstream MOVO-only context contract.
+
 ## Legacy conversation and account-switch isolation
 
 - On the first cloud-mode visit per authenticated MOVO user after this context-isolation rollout, the UI starts a clean chat instead of restoring the latest legacy thread. The one-time marker is keyed by the signed-in user ID in browser storage; if storage is unavailable, the UI defaults to a clean chat.
