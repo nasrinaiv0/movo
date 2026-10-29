@@ -1,4 +1,4 @@
-const { buildFinancialContext, buildPrompt, buildUpstreamBody, extractReply, allowedOrigin, selectRelevantTransactions } = require('../../api/nasrinai/chat');
+const { buildFinancialContext, buildPrompt, buildUpstreamBody, buildContextPayload, hasConfirmedMovoScope, extractReply, allowedOrigin, selectRelevantTransactions } = require('../../api/nasrinai/chat');
 
 describe('MOVO NasrinAI chat isolation helpers', () => {
   test('builds a bounded financial context from only the supplied user-scoped rows', () => {
@@ -35,13 +35,27 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     expect(prompt).not.toContain('Nasrin\'s portfolio');
   });
 
-  test('never sends an upstream conversation ID that could restore external history', () => {
-    const body = buildUpstreamBody('Summarize my spending', {
-      accounts: [], recent_transactions: [], budgets: []
-    });
-    expect(Object.keys(body)).toEqual(['message']);
+  test('sends the actual question and bounded finance context through the isolated MOVO scope', () => {
+    const context = { accounts: [{ name: 'Main' }], recent_transactions: [], budgets: [] };
+    const body = buildUpstreamBody('Summarize my spending', context);
+    expect(Object.keys(body)).toEqual(['message', 'context_scope', 'context']);
+    expect(body.message).toBe('Summarize my spending');
+    expect(body.context_scope).toBe('movo');
+    expect(JSON.parse(body.context)).toEqual(context);
     expect(body).not.toHaveProperty('conversation_id');
-    expect(body.message).toContain('stateless MOVO request');
+    expect(body.message).not.toContain('global or personal memory');
+    expect(buildContextPayload({
+      accounts: Array.from({ length: 50 }, (_, i) => ({ name: 'Account ' + i, details: 'x'.repeat(250) })),
+      recent_transactions: Array.from({ length: 40 }, (_, i) => ({ merchant: 'Transaction ' + i, note: 'x'.repeat(250) })),
+      budgets: Array.from({ length: 50 }, (_, i) => ({ category: 'Category ' + i, note: 'x'.repeat(250) }))
+    }).length).toBeLessThanOrEqual(3800);
+  });
+
+  test('fails closed unless the upstream explicitly confirms MOVO context scope', () => {
+    expect(hasConfirmedMovoScope({ context_scope: 'movo' })).toBe(true);
+    expect(hasConfirmedMovoScope({ data: { context_scope: 'movo' } })).toBe(true);
+    expect(hasConfirmedMovoScope({ message: { content: 'answer' } })).toBe(false);
+    expect(hasConfirmedMovoScope({ context_scope: 'default' })).toBe(false);
   });
 
   test('keeps the complete prompt below NasrinAI message limits by trimming context', () => {
