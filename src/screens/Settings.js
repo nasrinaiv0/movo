@@ -1,5 +1,5 @@
 import React from 'react';
-import Icon from '../components/Icon';
+import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 
 export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
@@ -52,7 +52,7 @@ export function ThemeSheet({ c }) {
 export function NavPreview({ accentName }) {
   return <div className={`nav-preview accent-${accentName}`} aria-label="Navigation preview">
     {[['home', 'Home', true], ['wallet', 'Wallet'], ['spark', ''], ['list', 'Transactions'], ['user', 'Profile']].map(([icon, label, on], i) => i === 2
-      ? <span key="orb" className="orb small"><Icon name="spark" size={22} filled /></span>
+      ? <span key="orb" className="orb small"><NasrinMark size={30} /></span>
       : <span key={label} className={on ? 'on' : ''}><Icon name={icon} size={20} filled={on} />{label}</span>)}
   </div>;
 }

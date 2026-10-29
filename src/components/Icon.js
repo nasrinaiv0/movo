@@ -69,3 +69,22 @@ export default function Icon({ name, size = 20, strokeWidth = 1.8, filled = fals
     </svg>
   );
 }
+
+/** NasrinAI mark: a sphere of dots, drawn as vector so it stays sharp at any size. */
+const DOTS = (() => {
+  const n = 54; const golden = Math.PI * (3 - Math.sqrt(5)); const out = [];
+  for (let i = 0; i < n; i += 1) {
+    const y = 1 - (i / (n - 1)) * 2; const r = Math.sqrt(1 - y * y); const t = golden * i;
+    const x = Math.cos(t) * r; const z = Math.sin(t) * r;
+    if (z > -0.1) out.push({ cx: +(12 + x * 9.2).toFixed(2), cy: +(12 + y * 9.2).toFixed(2), r: +(0.8 + ((z + 0.1) / 1.1) * 1.15).toFixed(2), o: +(0.55 + ((z + 0.1) / 1.1) * 0.45).toFixed(2) });
+  }
+  return out;
+})();
+
+export function NasrinMark({ size = 26, className = '' }) {
+  return (
+    <svg className={`nasrin-mark ${className}`.trim()} width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+      {DOTS.map((d, i) => <circle key={i} cx={d.cx} cy={d.cy} r={d.r} opacity={d.o} />)}
+    </svg>
+  );
+}

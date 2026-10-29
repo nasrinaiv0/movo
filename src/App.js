@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
-import Icon from './components/Icon';
+import Icon, { NasrinMark } from './components/Icon';
 import { Sheet, Toggle } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
@@ -263,7 +263,7 @@ function App() {
       case 'Notifications': return <Notifications c={c} />;
       case 'NotificationDetail': return <NotificationDetail c={c} />;
       case 'NotificationSettings': return <NotificationSettings c={c} />;
-      case 'NasrinAI': return <section className="ai-panel"><span className="orb big"><Icon name="spark" size={34} filled /></span><h1>Your financial copilot</h1><p>AI insights will be enabled when a secure finance assistant provider is configured. For now, review your spending summary and use the transaction tools to keep your records accurate.</p><div className="ai-stats"><span>Income this month<strong>{shown(show, money(homeMonth.income))}</strong></span><span>Expenses this month<strong>{shown(show, money(homeMonth.expenses))}</strong></span></div><button type="button" className="primary-button" onClick={() => go('Transactions')}>Review transactions</button></section>;
+      case 'NasrinAI': return <section className="ai-panel"><span className="orb big"><NasrinMark size={52} /></span><h1>Your financial copilot</h1><p>AI insights will be enabled when a secure finance assistant provider is configured. For now, review your spending summary and use the transaction tools to keep your records accurate.</p><div className="ai-stats"><span>Income this month<strong>{shown(show, money(homeMonth.income))}</strong></span><span>Expenses this month<strong>{shown(show, money(homeMonth.expenses))}</strong></span></div><button type="button" className="primary-button" onClick={() => go('Transactions')}>Review transactions</button></section>;
       case 'Sign in': return <AuthPanel onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify('Continuing in local-only mode.'); }} />;
       default: return <Home c={c} />;
     }
@@ -280,7 +280,7 @@ function App() {
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
           return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined}>
-            <span className="nav-icon">{center ? <span className="orb"><Icon name="spark" size={26} filled /></span> : <Icon name={icon} size={23} filled={active} strokeWidth={active ? 1.6 : 1.7} />}</span>
+            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={34} /></span> : <Icon name={icon} size={23} filled={active} strokeWidth={active ? 1.6 : 1.7} />}</span>
             <span className="nav-label">{label}</span>{active && !center && <i className="nav-dot" />}
           </button>;
         })}
