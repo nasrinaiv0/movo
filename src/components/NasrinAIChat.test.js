@@ -97,6 +97,25 @@ describe('NasrinAI consent and legal links', () => {
     expect(container.querySelector('#movo-ai-send-disabled-reason').textContent).toContain('Enter a message to enable Send.');
   });
 
+  test('fails closed when the upstream cannot confirm MOVO context isolation', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'nasrinai_scope_unconfirmed' })
+    });
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Summarize my spending');
+    act(() => container.querySelector('#movo-ai-consent').click());
+
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(container.querySelector('[role="alert"]').textContent).toContain('could not verify that NasrinAI kept this request isolated to MOVO');
+    expect(container.querySelectorAll('.movo-ai-message.assistant')).toHaveLength(0);
+    expect(container.querySelector('#movo-ai-prompt').value).toBe('Summarize my spending');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
   test('sends the chat only after explicit consent and includes the consent flag', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
