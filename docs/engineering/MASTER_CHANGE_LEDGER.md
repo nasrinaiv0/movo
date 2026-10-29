@@ -111,3 +111,12 @@ This review changed documentation only on branch docs/change-ledger-refresh-2026
 - Audit output: 31 source files; 93 buttons (9 disabled); 9 links; 5 forms; 4 interactive ARIA widgets; 2 dialogs. No obvious unhandled controls; three disabled-control explanation warnings remain at `src/App.js:596`, `:608`, and `:635`.
 - Exact-head Vercel deployment [dpl_9WXj8JdbfmMDb14TT4gr2d44A2PH](https://vercel.com/nasrin-ai/movo/9WXj8JdbfmMDb14TT4gr2d44A2PH) is READY. This is a preview, not a production release or interactive accessibility sign-off.
 - PR #55 remains a draft; PR #46 is closed as superseded, not merged. No production changes or database/security changes occurred.
+
+
+## Read-only Supabase security recheck — 2026-10-30 06:30 Asia/Manila
+
+- Queried production catalog metadata and grants for `profiles`, `financial_accounts`, `transactions`, `budgets`, `movo_ai_conversations`, `movo_ai_messages`, and `movo_ai_upstream_conversations`; no database writes were run.
+- RLS is enabled on all seven tables. The six user-facing tables have 22 policies; the policy expressions are owner-scoped to `auth.uid()` in `USING` and/or `WITH CHECK`.
+- No `anon` table grants were returned for the checked set. `authenticated` retains SELECT/INSERT/UPDATE/DELETE on the user-facing tables. The upstream conversation mapping has no client policies and its table grants are limited to `service_role`.
+- Supabase Security Advisor still reports `auth_leaked_password_protection` as WARN (disabled) and `rls_enabled_no_policy` on the upstream mapping as INFO (consistent with intended server-only isolation). Do not add a permissive browser policy to the mapping. Leaked-password protection remains an authorized configuration release blocker.
+- No RLS policies, grants, schema, financial data, or secrets were changed.
