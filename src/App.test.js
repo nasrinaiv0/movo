@@ -102,6 +102,17 @@ describe('MOVO finance frontend', () => {
     expect(transfer.getAttribute('aria-pressed')).toBe('true');
   });
 
+  test('wallet Add Transaction opens an expense form distinct from Record Transfer', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Add Transaction');
+    const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
+    expect(dialog).not.toBeNull();
+    const expense = Array.from(dialog.querySelectorAll('button')).find(item => item.textContent.trim() === 'Expense');
+    const transfer = Array.from(dialog.querySelectorAll('button')).find(item => item.textContent.trim() === 'Transfer');
+    expect(expense.getAttribute('aria-pressed')).toBe('true');
+    expect(transfer.getAttribute('aria-pressed')).toBe('false');
+  });
+
   test('transactions screen filters, groups by day and opens details', () => {
     nav(container, 'Transactions');
     expect(container.querySelector('h1').textContent).toBe('Transactions');
@@ -174,6 +185,16 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Notifications');
     expect(container.querySelector('h1').textContent).toBe('Notifications');
     expect(container.textContent).toContain('Expense Recorded');
+  });
+
+  test('notification preferences keep the Home destination selected in primary navigation', () => {
+    nav(container, 'Home');
+    clickButton(container, 'Notifications');
+    expect(container.querySelector('h1').textContent).toBe('Notifications');
+    clickButton(container, 'Settings');
+    expect(container.textContent).toContain('Notification Channels');
+    const home = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.getAttribute('aria-label') === 'Home');
+    expect(home.getAttribute('aria-current')).toBe('page');
   });
 
   test('Terms of Service and Privacy Policy are reachable and cross-linked', () => {

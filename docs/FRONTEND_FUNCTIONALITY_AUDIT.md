@@ -57,3 +57,11 @@
 - Explicitly disclosed that these editable profile fields are browser-local; the authentication email remains read-only and managed by the sign-in provider. No cloud profile write is implied.
 - Added regression tests for successful save, local persistence, trimming, and rejection of a blank name.
 - Validation completed on exact PR head `2a6ec6bb0a31a200d02298388eaa98994be515f9`: GitHub Actions [run 40845241222](https://github.com/nasrinaiv0/movo/actions/runs/40845241222) passed; Vercel preview `movo-2inoznxoq-nasrin-ai.vercel.app` reached READY and returned HTTP 200. Its build logs confirm `tsc --noEmit`, **13 test suites / 74 tests passed**, and successful production compilation. The built JavaScript includes the profile form and validation copy, with no NasrinAI server-key pattern or `NASRINAI_API_KEY` string found in the client bundle. A full interactive browser session remains unverified.
+
+## 2026-10-29 follow-up: wallet quick actions and notification navigation
+
+- The Wallet quick-actions row exposed both “Record Transfer” and “Transfer”, but both opened the exact same transfer-record form. This duplicated action was misleading because MOVO records transfers and does not move money.
+- Replaced the duplicate “Transfer” control with “Add Transaction”, which opens the expense-entry form. “Record Transfer” remains the explicit way to create a transfer record.
+- Added regression coverage proving the two wallet actions open distinct form modes.
+- Added regression coverage for the existing NotificationSettings route mapping so the Home/Notifications root remains marked as the current primary-navigation destination.
+- Validation for this follow-up is pending CI on the dedicated branch; do not treat this note as evidence of a passing test until the workflow result confirms it.
