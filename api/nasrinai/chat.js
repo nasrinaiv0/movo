@@ -1,6 +1,7 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
+const { classifyNasrinAIKeyFormat } = require('../../src/lib/nasrinaiKeyFormat.js');
 
 const MAX_MESSAGE_CHARS = 1600;
 const MAX_UPSTREAM_PROMPT_CHARS = 3800;
