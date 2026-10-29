@@ -16,7 +16,7 @@ export default function HelpCenter({ c }) {
       </section>
       <section className="legal-section">
         <h2>Where are my records stored?</h2>
-        <p>In local/demo mode, financial records are held in the current page's application state and can be lost when you refresh or close the page. Some preferences are stored in this browser. Cloud records require sign-in and a working MOVO database connection. Browser storage is not encrypted by MOVO itself.</p>
+        <p>In local/demo mode, manually entered financial records and accounts are stored in this browser's local storage and persist across reloads in the same browser profile. They are not synced to other devices and can be removed with Clear Local Data or by clearing browser storage. Cloud records require sign-in and a working MOVO database connection. Browser storage is not encrypted by MOVO itself.</p>
       </section>
       <section className="legal-section">
         <h2>Does MOVO connect to my bank or move money?</h2>
