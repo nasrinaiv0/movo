@@ -128,6 +128,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
+    expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
