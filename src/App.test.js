@@ -10,6 +10,7 @@ jest.mock('./lib/financeRepository', () => ({
   listTransactions: jest.fn().mockResolvedValue([]),
   createAccount: jest.fn(),
   createTransaction: jest.fn(),
+  updateTransaction: jest.fn(),
   deleteTransaction: jest.fn(),
   signOut: jest.fn(),
 }));
@@ -33,7 +34,8 @@ function setInputValue(input, value) {
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
-\nconst nav = (container, name) => {
+
+const nav = (container, name) => {
   const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.textContent.trim() === name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 };
@@ -140,4 +142,37 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Netflix');
     expect(container.textContent).not.toContain('Puregold');
   });
+  test('creates a local-only account and keeps it after the app remounts', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Add Card');
+    const name = container.querySelector('input[placeholder="e.g. Everyday account"]');
+    setInputValue(name, 'My Test Card');
+    clickButton(container, 'Add account');
+    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
+    clickButton(container, 'Cards');
+    expect(container.textContent).toContain('My Test Card');
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    expect(container.textContent).toContain('My Test Card');
+  });
+
+  test('edits a transaction and persists the change locally', () => {
+    nav(container, 'Transactions');
+    clickButton(container, 'See All');
+    clickButton(container, 'SM Supermarket, −₱1,250.00');
+    clickButton(container, 'Edit');
+    const description = container.querySelector('input[placeholder="e.g. Grocery shopping"]');
+    setInputValue(description, 'Edited supermarket');
+    clickButton(container, 'Save changes');
+    expect(container.textContent).toContain('Edited supermarket');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Edited supermarket');
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    expect(container.textContent).toContain('Edited supermarket');
+  });
+
 });
