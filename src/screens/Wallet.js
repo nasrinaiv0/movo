@@ -40,7 +40,7 @@ export default function Wallet({ c }) {
   const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
 
   return <>
-    <RootHeader title="Wallet" subtitle="Your accounts, cards and balances." onSearch={() => go('Transactions')} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <RootHeader title="Wallet" subtitle="Your accounts, cards and balances." onSearch={() => c.setSheet({ name: 'search' })} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <Chips label="Filter wallet accounts" items={FILTERS} value={walletFilter} onChange={setWalletFilter} />
 
     {walletFilter === 'All' && <>
