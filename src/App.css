@@ -434,6 +434,9 @@ h1, h2, h3, p { margin: 0; }
 /* Legal documents */
 .legal-page { display:flex; flex-direction:column; gap:16px; padding-bottom:24px; }
 .legal-intro { padding:21px 20px 18px; border:1px solid var(--line); border-radius:22px; background:var(--card); box-shadow:var(--shadow-sm); }
+.legal-readiness-notice { padding:14px 16px; border:1px solid #d69b36; border-radius:16px; background:color-mix(in srgb, #d69b36 10%, var(--card)); color:var(--text); }
+.legal-readiness-notice strong { display:block; margin-bottom:5px; font-size:12px; }
+.legal-readiness-notice p { margin:0; color:var(--muted); font-size:12px; line-height:1.65; overflow-wrap:anywhere; }
 .legal-eyebrow { margin:0 0 8px; color:var(--accent); font-size:10px; font-weight:800; letter-spacing:1.1px; }
 .legal-intro h2 { margin:0 0 8px; font-size:25px; letter-spacing:-.7px; }
 .legal-intro p:last-child { margin:0; color:var(--muted); font-size:12px; }
