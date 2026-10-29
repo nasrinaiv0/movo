@@ -103,8 +103,12 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Profile');
     expect(container.querySelector('h1').textContent).toBe('Profile');
     expect(container.textContent).toContain('Data & Sync');
+    expect(container.querySelector('a[href="/terms.html"]')?.textContent).toContain('Terms of Service');
+    expect(container.querySelector('a[href="/privacy.html"]')?.textContent).toContain('Privacy Policy');
     clickButton(container, 'Settings');
     expect(container.querySelector('h1').textContent).toBe('Settings');
+    expect(container.querySelector('a[href="/terms.html"]')?.textContent).toContain('Terms of Service');
+    expect(container.querySelector('a[href="/privacy.html"]')?.textContent).toContain('Privacy Policy');
     clickButton(container, 'Back');
     clickButton(container, 'Notifications');
     expect(container.querySelector('h1').textContent).toBe('Notifications');
