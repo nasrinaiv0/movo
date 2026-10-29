@@ -937,3 +937,7 @@ html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reve
 .search-overlay.closing .search-scrim { animation: fade-out .18s ease both; }
 .search-overlay.closing .search-panel { animation: search-panel-out .18s cubic-bezier(.4,0,1,1) both; }
 @keyframes search-panel-out { to { opacity: 0; transform: translateY(-12px); } }
+
+/* ===== Wallpaper stickers ===== */
+.credit-card video.sticker-art { pointer-events: none; }
+.cc-live { position: absolute; z-index: 3; top: 3.4cqw; left: 50%; transform: translateX(-50%); padding: .6cqw 1.8cqw; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 2.6cqw; font-weight: 800; letter-spacing: .08em; }

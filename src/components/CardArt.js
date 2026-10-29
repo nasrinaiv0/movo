@@ -1,6 +1,7 @@
 import React, { memo, useId } from 'react';
 import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from '../lib/stickers';
 import { money, shown } from '../lib/format';
+import { canAnimate } from '../lib/motion';
 
 const build = (node, key) => {
   if (!node) return null;
@@ -9,9 +10,13 @@ const build = (node, key) => {
 };
 
 /* Vector artwork only: crisp at any size and DPI. */
-export const StickerArt = memo(function StickerArt({ theme }) {
+export const StickerArt = memo(function StickerArt({ theme, compact }) {
   const raw = useId(); const u = `s${raw.replace(/[^a-z0-9]/gi, '')}`;
   if (theme.custom) return <img className="sticker-art" src={theme.src} alt="" draggable="false" />;
+  if (theme.wallpaper) {
+    if (theme.video && !compact && canAnimate()) return <video className="sticker-art" src={theme.video} poster={theme.src} autoPlay muted loop playsInline preload="metadata" aria-hidden="true" disablePictureInPicture />;
+    return <img className="sticker-art" src={compact ? theme.thumb : theme.src} alt="" loading="lazy" decoding="async" draggable="false" />;
+  }
   const { palette: p, motif } = theme; const r = rng(hash(theme.id));
   const light = theme.ink === 'light';
   return <svg className="sticker-art" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" shapeRendering="geometricPrecision" aria-hidden="true" focusable="false">
@@ -34,14 +39,14 @@ export const StickerArt = memo(function StickerArt({ theme }) {
 export const resolveSticker = (id, list) => findSticker(id, list);
 
 /* A bank card with reserved room for logo/name, chip, network, number and holder over any sticker. */
-export default function CardArt({ a, show, styleId, holder, preview }) {
+export default function CardArt({ a, show, styleId, holder, preview, compact }) {
   const custom = useCustomStickers();
   const sticker = resolveSticker(styleId, custom);
   const theme = sticker || (preview ? defaultThemeFor(a.id) : null);
   const ink = theme ? theme.ink : 'light';
   const number = a.mask ? `•••• •••• •••• ${a.mask}` : 'No card number';
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
-    {theme && <StickerArt theme={theme} />}
+    {theme && <StickerArt theme={theme} compact={compact} />}{theme?.video && <span className="cc-live" aria-label="Live wallpaper">LIVE</span>}
     <div className="cc-face">
     <div className="cc-top">
       <span className="cc-logo"><i aria-hidden="true">{(a.name || '?').trim().charAt(0).toUpperCase()}</i><span className="cc-name">{a.name}</span></span>

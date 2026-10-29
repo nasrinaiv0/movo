@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { WALLPAPERS } from './wallpapers';
 
 /*
  * Card sticker library.
@@ -183,6 +184,18 @@ export const MOTIFS = [
 ];
 
 export const THEMES = MOTIFS.flatMap(m => PALETTES.map(p => ({ id: `${m.id}-${p.id}`, name: `${p.n} ${m.n}`, genre: p.mono ? 'Manga' : m.genre, motif: m, palette: p, ink: p.ink })));
+/* ---------- wallpaper stickers: raster art served from /public/wallpapers, sorted by category ---------- */
+const counts = {};
+export const WALLPAPER_THEMES = WALLPAPERS.map(([key, genre, ink, title]) => {
+  const live = key.startsWith('l'); const dir = live ? 'live' : 'img';
+  counts[genre] = (counts[genre] || 0) + 1;
+  return {
+    id: `wp-${key}`, name: title || `${genre} ${String(counts[genre]).padStart(2, '0')}`, genre: live ? 'Live' : genre, ink, wallpaper: true,
+    src: `/wallpapers/${dir}/${key}.webp`, thumb: `/wallpapers/${dir}/${key}-t.webp`, video: live ? `/wallpapers/${dir}/${key}.mp4` : undefined,
+  };
+});
+export const WALLPAPER_GENRES = [...new Set(WALLPAPER_THEMES.map(t => t.genre))].sort((a, b) => (a === 'Live' ? -1 : b === 'Live' ? 1 : 0));
+
 export const defaultThemeFor = (id) => THEMES[hash(String(id || 'x')) % THEMES.length];
 
 /* ---------- custom stickers (user's own artwork, kept on the device) ---------- */
@@ -216,5 +229,5 @@ export function addCustomSticker(file) {
     img.src = url;
   });
 }
-export const findSticker = (id, list = customList) => (id ? (list.find(s => s.id === id) || THEMES.find(t => t.id === id) || null) : null);
+export const findSticker = (id, list = customList) => (id ? (list.find(s => s.id === id) || THEMES.find(t => t.id === id) || WALLPAPER_THEMES.find(t => t.id === id) || null) : null);
 export { rng, hash };
