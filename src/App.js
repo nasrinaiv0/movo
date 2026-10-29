@@ -10,7 +10,7 @@ import Profile, { EditProfile } from './screens/Profile';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, createTransaction, deleteTransaction, signOut } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
 import { ACCENTS } from './screens/Settings';
@@ -192,7 +192,16 @@ function App() {
   }, []);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
-  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id })); setSheet({ name: 'transaction' }); };
+  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id })); setSheet({ name: 'transaction', type }); };
+  const openEditTransaction = (t) => {
+    setError('');
+    setForm({
+      merchant: t.merchant || '', amount: String(t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
+      category: t.category || 'Other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
+      occurred_at: dayKey(t.date || t.occurred_at), note: t.note || '',
+    });
+    setSheet({ name: 'transaction', id: t.id });
+  };
 
   const saveTransaction = async (e) => {
     e.preventDefault(); setError('');
@@ -203,16 +212,20 @@ function App() {
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
     const occurred_at = new Date(`${form.occurred_at}T12:00:00`).toISOString();
     setBusy(true);
+    const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     try {
       if (cloudMode) {
-        const row = await createTransaction({ merchant: form.merchant.trim(), amount, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note }, session.user.id);
-        setRawTxs(cur => [row, ...cur]); notify('Transaction saved securely to your account.');
+        const payload = { merchant: form.merchant.trim(), amount, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
+        const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
+        setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
+        notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
       } else {
-        const row = { id: window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
-        setRawTxs(cur => [row, ...cur]); notify('Saved on this device only.');
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
+        setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
+        notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
       }
       setForm({ ...form, merchant: '', amount: '', note: '' }); setSheet(null);
-    } catch { setError('Could not save this transaction. Check the selected account and try again.'); }
+    } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
   };
   const saveAccount = async (e) => {
@@ -316,7 +329,7 @@ function App() {
         })}
       </nav>
 
-      {sheet?.name === 'transaction' && <Sheet title="Add transaction" subtitle={cloudMode ? 'Saved to your signed-in MOVO account.' : 'Saved only in this browser; sign in to use cloud storage.'} onClose={() => { setSheet(null); setError(''); }} label="Add transaction">
+      {sheet?.name === 'transaction' && <Sheet title={sheet.id ? "Edit transaction" : "Add transaction"} subtitle={sheet.id ? "Changes update this record." : cloudMode ? 'Saved to your signed-in MOVO account.' : 'Saved only in this browser; sign in to use cloud storage.'} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? "Edit transaction" : "Add transaction"}>
         <form className="sheet-form" onSubmit={saveTransaction}>
           <div className="seg-control" role="group" aria-label="Transaction type">{['expense', 'income', 'transfer'].map(t => <button type="button" key={t} className={form.transaction_type === t ? 'selected' : ''} aria-pressed={form.transaction_type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
           <label>Description<input autoFocus required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder="e.g. Grocery shopping" /></label>
@@ -327,7 +340,7 @@ function App() {
           {form.transaction_type === 'transfer' && formAccounts.length > 0 && <label>To account<select value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
           <label>Note (optional)<textarea rows="2" maxLength="1000" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Add a note" /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : 'Save transaction'}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Save transaction'}</button></div>
         </form>
       </Sheet>}
 
@@ -371,7 +384,7 @@ function App() {
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabel(detailTx.date)}`} onClose={() => setSheet(null)} label="Transaction details">
         <dl className="detail-list"><div><dt>Amount</dt><dd>{shown(show, money(detailTx.amount, detailTx.currency))}</dd></div><div><dt>Type</dt><dd>{detailTx.type}</dd></div><div><dt>Category</dt><dd>{detailTx.category || 'Other'}</dd></div><div><dt>Account</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>Note</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>Source</dt><dd>Sample record</dd></div>}</dl>
-        <div className="sheet-actions"><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
       </Sheet>}
 
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
