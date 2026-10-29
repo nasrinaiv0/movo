@@ -46,7 +46,7 @@ const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Hom
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Profile: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
-const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: 'PHP', mask: '', color: '', icon: '' };
+const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: 'PHP', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit' };
 const today = () => new Date().toLocaleDateString('en-CA');
 
 function readPrefs() {
@@ -191,7 +191,8 @@ function App() {
       if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + t.amount;
       return s;
     }, 0);
-    return { ...a, mask: a.mask || prefs.accountStyles?.[a.id]?.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
+    const st = prefs.accountStyles?.[a.id] || {};
+    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
   }), [baseAccounts, txs, cloudMode, prefs.accountStyles]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
@@ -285,6 +286,7 @@ function App() {
       name: account.name || '', account_type: account.account_type || 'other',
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
       currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
+      chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit',
     });
     setSheet({ name: 'account', type: account.account_type, id: account.id });
   };
@@ -399,7 +401,7 @@ function App() {
     const name = accountForm.name.trim();
     const openingBalance = evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : 'PHP';
-    const saveStyle = (id) => { const { color, icon, mask } = accountForm; if (!color && !icon && !mask) return; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask } }); };
+    const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind } : {}) } }); };
     if (!name) { setError('Enter an account name.'); return; }
     if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError('Enter exactly 4 digits for the last 4 numbers, or leave it empty.'); return; }
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }

@@ -2,6 +2,7 @@ import React, { memo, useId } from 'react';
 import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from '../lib/stickers';
 import { money, shown } from '../lib/format';
 import { canAnimate } from '../lib/motion';
+import { EmvChip, Contactless } from './EmvChip';
 
 const build = (node, key) => {
   if (!node) return null;
@@ -52,7 +53,7 @@ export default function CardArt({ a, show, styleId, holder, preview, compact }) 
       <span className="cc-logo"><i aria-hidden="true">{(a.name || '?').trim().charAt(0).toUpperCase()}</i><span className="cc-name">{a.name}</span></span>
       <span className="cc-net">{a.institution_name}</span>
     </div>
-    <span className="cc-chip" aria-hidden="true" />
+    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? 'Credit' : 'Debit'}</span>}</span>
     <div className="cc-bottom">
       <div className="cc-id"><span className="cc-number">{number}</span>{holder && <small className="cc-holder">{holder}</small>}</div>
       <b>{shown(show, money(a.balance, a.currency))}</b>

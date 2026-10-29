@@ -1229,3 +1229,21 @@ button.account-tile:active { transform: scale(.98); }
 .acct-mask span { color: var(--muted); white-space: nowrap; }
 .acct-mask input { flex: 1; min-width: 0; height: 54px; border: 0; background: transparent; color: var(--text); font-size: 16px; font-weight: 600; letter-spacing: .12em; outline: none; }
 .at-mask { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 600; letter-spacing: .1em; opacity: .85; }
+
+/* ===== EMV chip, contactless mark, card kind ===== */
+.cc-mid { display: flex; align-items: center; gap: 2.6cqw; }
+.cc-chip.emv-chip { position: static; flex: none; width: 12.6cqw; height: auto; border-radius: 0; background: none; box-shadow: none; filter: drop-shadow(0 .3cqw .6cqw rgba(0,0,0,.25)); }
+.cc-chip.emv-chip::before { display: none; }
+.cc-nfc { flex: none; width: 6.2cqw; height: 6.2cqw; transform: rotate(0deg); opacity: .95; }
+.cc-kind { margin-left: auto; padding: .5cqw 1.8cqw; border-radius: 999px; background: rgba(255,255,255,.2); font-size: 2.8cqw; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.credit-card.ink-dark .cc-kind { background: rgba(0,0,0,.1); }
+@container (max-width: 260px) { .cc-nfc, .cc-kind { display: none; } }
+.chip-picks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chip-picks button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 6px 8px; border: var(--hair) solid var(--line); border-radius: 14px; background: var(--field); color: var(--muted); font-size: 12px; font-weight: 600; }
+.chip-picks button.on { color: var(--text); box-shadow: inset 0 0 0 2px var(--accent); }
+.chip-picks .emv-chip { width: 46px; height: auto; }
+.acct-toggle { min-height: 64px; }
+.acct-toggle .contactless { width: 22px; height: 22px; color: var(--text); }
+.acct-preview .credit-card { box-shadow: 0 14px 30px rgba(0,0,0,.16); }
+.acct-toggle > span:first-child { flex: none; }
+.acct-toggle > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
