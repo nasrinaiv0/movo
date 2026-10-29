@@ -167,6 +167,10 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
     expect(container.textContent).toContain('Updated Test Card');
+    clickButton(container, 'Switch card');
+    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('Updated Test Card'));
+    expect(updatedCard).toBeTruthy();
+    act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
     expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'Updated Test Card').is_archived).toBe(true);
