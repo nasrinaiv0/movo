@@ -162,3 +162,12 @@ This review changed documentation only on branch docs/change-ledger-refresh-2026
 - GitHub Actions [run 40939100412](https://github.com/nasrinaiv0/movo/actions/runs/40939100412) completed successfully: **18 suites / 99 tests passed**, typecheck passed, production compilation succeeded.
 - Vercel exact-head preview [dpl_9RQfwVQ6QChw2DrAoZw9ts6NW6ii](https://vercel.com/nasrin-ai/movo/9RQfwVQ6QChw2DrAoZw9ts6NW6ii) is READY.
 - This corrects the earlier snapshot note that PR #52's current checks had not been revalidated. Real authenticated financial-data chart smoke testing, responsive rendering, and chart-data provenance remain unverified; PR #52 stays draft.
+
+
+## Audit update — 2026-10-30 07:11 Asia/Manila — cross-project verification
+
+MOVO main and production deployment remain unchanged at `82172294f80e360af9e7043de425a454c211078c` / deployment `dpl_7XobXwSNWuLa5a9HChdafyGoECeR` (READY). PR #56 remains open/draft at `c93b2393133f6b200f5ace83a8d5f78d1441e626`; exact-head Actions run [40966718902](https://github.com/nasrinaiv0/movo/actions/runs/40966718902) remains successful (17 suites / 96 tests, typecheck and build as recorded in the PR). No fresh run was returned for that unchanged SHA, and no authenticated production isolation test was performed.
+
+NasrinAI upstream main advanced to `52392234ce7583303d4d25880296c06d7ad529b1` after PR #707's schema/security reconciliation. This does not itself deploy MOVO's context-isolation client. The current MOVO application-code baseline is still PR #50 merge `94d089d35483558b320f751cf122aa68755ef0eb`; issue #47 remains unresolved until authenticated canary testing proves the complete boundary.
+
+Detailed checkpoint: [Audit delta](https://github.com/nasrinaiv0/movo/blob/docs/change-ledger-refresh-2026-10-30-0614/docs/engineering/updates/2026-10-30-0711-cross-project-monitoring.md) (commit 1f9f2c0f992fe4e595718404fc25750fdddd9dd1). No MOVO code, database, financial data, production settings, or PR states were changed.
