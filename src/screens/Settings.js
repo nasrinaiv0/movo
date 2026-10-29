@@ -97,6 +97,10 @@ export default function Settings({ c }) {
     { title: 'Help & Support', rows: [
       { icon: 'help', title: 'Help Center', sub: 'FAQs, guides and tutorials', onClick: () => c.notify('Help Center is not available yet.') },
     ] },
+    { title: 'Legal', rows: [
+      { icon: 'doc', title: 'Terms of Service', sub: 'Rules for using MOVO', onClick: () => { window.location.assign('/terms.html'); } },
+      { icon: 'shield', title: 'Privacy Policy', sub: 'How your information is handled', onClick: () => { window.location.assign('/privacy.html'); } },
+    ] },
   ];
   const q = query.trim().toLowerCase();
   const shown = sections.map(s => ({ ...s, rows: s.rows.filter(r => !q || `${r.title} ${r.sub}`.toLowerCase().includes(q)) })).filter(s => s.rows.length);
