@@ -1213,3 +1213,15 @@ button.account-tile:active { transform: scale(.98); }
 .scan-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 4px; border: 0; border-bottom: var(--hair) solid var(--line); background: transparent; text-align: left; color: var(--text); }
 .scan-row img, .scan-row-icon { flex: none; width: 42px; height: 42px; border-radius: 10px; object-fit: cover; display: grid; place-items: center; background: var(--field); }
 .scan-row b { font-size: 14px; }
+
+/* ===== Payment log prompt + automation setup ===== */
+.log-prompt { position: fixed; z-index: 75; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; width: min(398px, calc(100vw - 28px)); padding: 10px 10px 10px 12px; border: var(--hair) solid var(--line); border-radius: 20px; background: var(--card-solid); box-shadow: 0 14px 40px rgba(0,0,0,.18); animation: sync-in .35s var(--spring) both; }
+.log-prompt-icon { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 12px; background: var(--accent); color: var(--on-accent); }
+.log-prompt .menu-main strong { font-size: 14.5px; }
+.log-prompt .menu-main small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-prompt button { flex: none; min-height: 38px !important; padding: 0 12px; border-radius: 12px !important; font-size: 13.5px; }
+.setup-steps { margin: 14px 0; padding-left: 20px; display: grid; gap: 10px; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.setup-steps strong { color: var(--text); }
+.setup-steps em { font-style: normal; font-weight: 600; color: var(--text); }
+.setup-link { padding: 12px; border-radius: 12px; background: var(--field); overflow-x: auto; }
+.setup-link code { font-size: 12px; white-space: nowrap; }

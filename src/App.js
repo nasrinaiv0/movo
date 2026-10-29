@@ -16,6 +16,8 @@ import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
 import ScannerSheet from './components/ScannerSheet';
+import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate } from './lib/autoLog';
+import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
@@ -38,7 +40,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], mascot: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], mascot: '', autoLog: false, autoLogKey: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile', HelpCenter: 'Profile', TermsOfService: 'Profile', PrivacyPolicy: 'Profile' };
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -109,6 +111,7 @@ function App() {
   const [nFilter, setNFilter] = useState('All');
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
+  const [pendingLog, setPendingLog] = useState(null);
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -474,6 +477,42 @@ function App() {
   };
   const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed. Your manually entered records are kept.'); };
   const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } clearLocalFinanceData(); setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setLocalAccounts([]); setSamplesOn(false); setSheet(null); notify('Local transactions, accounts and preferences cleared. Cloud records are unchanged.'); };
+  /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
+  const autoLogFor = useCallback(async (entry) => {
+    const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
+    if (cloudMode && !account) { setPendingLog(entry); return; }
+    const payload = { merchant: entry.merchant, amount: entry.amount, transaction_type: 'expense', category: guessCategory(entry.merchant), account_id: account?.id || 'local', occurred_at: new Date().toISOString(), note: `Logged from ${entry.source}${entry.card ? ` · ${entry.card}` : ''}` };
+    try {
+      if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); setRawTxs(cur => [row, ...cur]); }
+      else setRawTxs(cur => [{ ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }, ...cur]);
+      notify(`Logged ${money(entry.amount)} at ${entry.merchant} from ${entry.source}.`);
+    } catch { setPendingLog(entry); }
+  }, [accountsView, cloudMode, session, notify]);
+  const handledLink = useRef('');
+  useEffect(() => {
+    if (!authReady || (session?.user && !cloudMode)) return undefined;
+    const handle = () => {
+      const hash = window.location.hash;
+      const entry = readLogLink(hash);
+      if (!entry || handledLink.current === hash) return;
+      handledLink.current = hash;
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      if (entry.invalid) { notify('That payment link had no valid amount, so nothing was logged.'); return; }
+      if (isRepeat(entry)) return;
+      const trusted = sameKey(entry.key, prefs.autoLogKey);
+      if (trusted && prefs.autoLog) autoLogFor(entry);
+      else setPendingLog({ ...entry, trusted });
+    };
+    handle();
+    window.addEventListener('hashchange', handle);
+    return () => window.removeEventListener('hashchange', handle);
+  }, [authReady, session, cloudMode, prefs.autoLog, prefs.autoLogKey, autoLogFor, notify]);
+  const reviewPending = () => {
+    const e = pendingLog; setPendingLog(null); setError('');
+    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: today(), note: `From ${e.source}${e.card ? ` · ${e.card}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
+    setSheet({ name: 'transaction', type: 'expense' });
+  };
+
   const signOutNow = async () => { try { await signOut(); setSession(null); setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); go('Home'); notify('Signed out securely.'); } catch { notify('Could not sign out. Please try again.'); } };
 
   const c = {
@@ -482,7 +521,7 @@ function App() {
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
-    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }), openScanner: () => setSheet({ name: 'scanner' }),
+    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -590,6 +629,22 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
       </Sheet>}
 
+      {pendingLog && <div className="log-prompt" role="alertdialog" aria-label="Log this payment?">
+        <span className="log-prompt-icon"><Icon name="card" size={18} /></span>
+        <span className="menu-main"><strong>{pendingLog.source}: {shown(show, money(pendingLog.amount))}</strong><small>{pendingLog.merchant}{pendingLog.trusted ? '' : ' · from a link, please confirm'}</small></span>
+        <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label="Dismiss payment">Skip</button>
+        <button type="button" className="primary-button" onClick={reviewPending}>Log</button>
+      </div>}
+      {sheet?.name === 'autolog' && <Sheet title="Automatic logging" subtitle="Log Apple Pay and Google Pay payments from your phone's automations." onClose={() => setSheet(null)} label="Automatic logging">
+        <div className="card menu-card"><div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>Log without asking</strong><small>{prefs.autoLog ? 'Payments are added instantly.' : 'MOVO asks you to confirm each payment.'}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label="Log without asking" /></div></div>
+        <ol className="setup-steps">
+          <li><strong>iPhone (Apple Pay):</strong> open <em>Shortcuts</em> → Automation → New → <em>Transaction</em>. Pick your cards, choose <em>Run Immediately</em>, then add <em>Open URLs</em> with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.</li>
+          <li><strong>Android (Google Pay / bank alerts):</strong> in an automation app such as MacroDroid or Tasker, trigger on a Google Wallet or bank notification and open the link below with <em>src=googlepay</em>, filling in the amount and merchant from the notification.</li>
+          <li>Keep this link private. It contains a key unique to this device; links without it always ask first.</li>
+        </ol>
+        <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify('New link created. Update your automations; the old link now asks first.'); }}>Reset key</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify('Link copied.'), () => notify('Copy failed. Select the link and copy it manually.')); }}>Copy link</button></div>
+      </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       {toast && <div className={`toast${busy ? ' raised' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> Syncing securely…</div>}

@@ -97,6 +97,11 @@ export default function Settings({ c }) {
       { icon: 'database', title: 'Local Storage', sub: 'Browser storage is managed automatically; this switch is not available.', toggle: 'localStorage' },
       { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet.', toggle: 'autocat' },
     ] },
+    { title: 'Automatic Logging', rows: [
+      { icon: 'refresh', title: 'Auto-log Apple Pay & Google Pay', sub: 'When on, payments from your phone automation are logged instantly; when off, MOVO asks you to confirm each one.', toggle: 'autoLog' },
+      { icon: 'link', title: 'Set Up Phone Automation', sub: 'Connect an iPhone Shortcuts or Android automation to MOVO', onClick: () => c.openAutoLog?.() },
+      { icon: 'scan', title: 'Receipt Scanner', sub: 'Scan receipts and payment screenshots; see your scan log', onClick: () => c.openScanner?.() },
+    ] },
     { title: 'Help & Support', rows: [
       { icon: 'help', title: 'Help Center', sub: 'Answers about transactions, storage, privacy, and NasrinAI.', onClick: () => go('HelpCenter') },
     ] },
