@@ -1,4 +1,4 @@
-import { createAccount, createTransaction, updateTransaction } from './financeRepository';
+import { createAccount, updateAccount, createTransaction, updateTransaction } from './financeRepository';
 jest.mock('./supabaseClient', () => ({ supabase: null }));
 
 describe('finance repository validation', () => {
@@ -25,6 +25,13 @@ describe('finance repository validation', () => {
   });
   test('requires a different destination when updating a transfer', async () => {
     await expect(updateTransaction('transaction-id', { amount: 100, merchant: 'Move money', transaction_type: 'transfer', account_id: 'same', transfer_to_account_id: 'same' })).rejects.toThrow('two different accounts');
+  });
+
+  test('rejects invalid account updates before contacting Supabase', async () => {
+    await expect(updateAccount('account-id', { name: '   ' })).rejects.toThrow('Account name');
+  });
+  test('rejects unsupported account types when updating', async () => {
+    await expect(updateAccount('account-id', { account_type: 'unsupported' })).rejects.toThrow('valid account type');
   });
 
 });
