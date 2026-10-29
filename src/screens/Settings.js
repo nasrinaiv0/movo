@@ -71,11 +71,11 @@ export default function Settings({ c }) {
     { title: 'Account', rows: [
       { icon: 'user', title: 'Profile', sub: 'Personal information', onClick: () => go('EditProfile') },
       { icon: 'database', title: 'Plan & Usage', sub: 'Manage your plan and tokens', onClick: () => go('EditProfile') },
-      { icon: 'layout', title: 'Connected Accounts', sub: 'Banks, cards, e-wallets, email', onClick: () => go('Wallet') },
+      { icon: 'layout', title: 'Connected Accounts', sub: 'Manually tracked accounts; no bank connection is active.', onClick: () => go('Wallet') },
     ] },
     { title: 'Appearance', rows: [
       { icon: 'palette', title: 'Theme', sub: 'Light, Dark or Custom', onClick: () => go('Appearance') },
-      { icon: 'globe', title: 'App Language', sub: 'English (Philippines)', onClick: () => c.notify('English (Philippines) is the only language right now.') },
+      { icon: 'globe', title: 'App Language', sub: 'English (Philippines) is the only available language.' },
       { icon: 'layout', title: 'Display & Layout', sub: 'Customize your experience', onClick: () => go('Appearance') },
     ] },
     { title: 'Notifications', rows: [
@@ -85,7 +85,7 @@ export default function Settings({ c }) {
     ] },
     { title: 'Security & Privacy', rows: [
       { icon: 'face', title: 'Face ID / Touch ID', sub: 'Unavailable in a browser; native biometric unlock is not connected.', toggle: 'biometrics' },
-      { icon: 'lock', title: 'App Lock', sub: 'Require authentication', onClick: () => c.notify('App lock needs device support and is not available in the browser.') },
+      { icon: 'lock', title: 'App Lock', sub: 'Unavailable in this browser build; no separate app-lock feature is connected.' },
       { icon: 'shield', title: 'Privacy & Data', sub: 'Read how MOVO handles your information', onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'trash', title: 'Clear Local Data', sub: 'Remove cached data', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
@@ -126,9 +126,9 @@ export function Appearance({ c }) {
     <section className="card menu-card">
       <Row icon="layout" title="Compact Mode" sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label="Compact Mode" />} />
       <Row icon="palette" title="Show Category Colors" sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label="Show Category Colors" />} />
-      <Row icon="card" title="Card View Style" sub="Rounded (Default)" onClick={() => c.notify('Rounded is the only card style right now.')} />
-      <Row icon="calendar" title="Date Format" sub="Oct 27, 2026 (Default)" onClick={() => c.notify('Oct 27, 2026 is the only date format right now.')} />
-      <Row icon="coin" title="Currency Format" sub="PHP (₱)" onClick={() => c.notify('Philippine peso is the only currency right now.')} />
+      <Row icon="card" title="Card View Style" sub="Rounded is the only available style." />
+      <Row icon="calendar" title="Date Format" sub="Oct 27, 2026 is the only available format." />
+      <Row icon="coin" title="Currency Format" sub="Philippine peso is the only available currency." />
     </section>
   </>;
 }
