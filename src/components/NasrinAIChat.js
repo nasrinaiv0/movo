@@ -1,12 +1,13 @@
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import './NasrinAIChat.css';
 
 function friendlyError(code) {
   if (code === 'sign_in_required' || code === 'invalid_session') return 'Sign in to MOVO to use your private financial copilot.';
   if (code === 'nasrinai_not_configured') return 'NasrinAI is not configured on the MOVO server yet.';
+  if (code === 'nasrinai_scope_unconfirmed') return 'MOVO could not verify that NasrinAI kept this request isolated to MOVO. No answer was accepted. Please try again later.';
   if (code === 'conversation_not_found') return 'This conversation is not available in your account.';
   if (code === 'financial_context_consent_required') return 'Please confirm consent before sharing financial context with NasrinAI.';
   if (code === 'nasrinai_auth_rejected') return 'MOVO reached NasrinAI, but the service rejected its server authentication. This is a configuration issue; please try again later.';
@@ -19,6 +20,26 @@ function friendlyError(code) {
 
 const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
 
+function readNewConversationPending(userId, cloudMode) {
+  if (!userId) return false;
+  const pendingKey = 'movo.ai.newConversation.' + userId;
+  try {
+    if (window.sessionStorage.getItem(pendingKey) === 'true') return true;
+    if (!cloudMode) return false;
+    const isolationKey = 'movo.ai.contextIsolation.v1.' + userId;
+    if (window.localStorage.getItem(isolationKey) !== 'true') {
+      // Mark the one-time privacy rollout before any legacy conversation can
+      // load. If either storage operation fails, default to a clean chat.
+      window.sessionStorage.setItem(pendingKey, 'true');
+      window.localStorage.setItem(isolationKey, 'true');
+      return true;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -26,12 +47,29 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [newConversationPending, setNewConversationPending] = useState(() => {
-    try { return !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { return false; }
-  });
+  const [initialNewConversationPending] = useState(() => readNewConversationPending(session?.user?.id, cloudMode));
+  const newConversationPendingRef = useRef(initialNewConversationPending);
   const [phase, setPhase] = useState('reading');
   const endRef = useRef(null);
   const inputRef = useRef(null);
+  const visibleUserIdRef = useRef(session?.user?.id || null);
+
+  // Clear the previous account's visible chat before paint when identity or
+  // storage mode changes. Never leave one user's messages on screen while the
+  // next user's history request is still in flight.
+  useLayoutEffect(() => {
+    const userId = session?.user?.id || null;
+    const identityChanged = visibleUserIdRef.current !== userId;
+    visibleUserIdRef.current = userId;
+    if (identityChanged || !cloudMode) {
+      setMessages([]);
+      setConversationId(null);
+      setDraft('');
+      setError('');
+      setPrivacyAccepted(false);
+    }
+    newConversationPendingRef.current = readNewConversationPending(userId, cloudMode);
+  }, [session?.user?.id, cloudMode]);
 
   useEffect(() => {
     if (!busy) return undefined;
@@ -48,7 +86,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const loadHistory = async () => {
       setPrivacyAccepted(false);
       if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
-      if (newConversationPending) { setMessages([]); setConversationId(null); return; }
+      let storedNewConversation = false;
+      try { storedNewConversation = !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { storedNewConversation = true; }
+      if (newConversationPendingRef.current || storedNewConversation) { setMessages([]); setConversationId(null); return; }
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
@@ -66,7 +106,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     };
     loadHistory();
     return () => { active = false; };
-  }, [session?.user?.id, cloudMode, newConversationPending]);
+  }, [session?.user?.id, cloudMode]);
 
   const send = async (event) => {
     event?.preventDefault();
@@ -96,7 +136,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
       if (result.conversationId) setConversationId(result.conversationId);
-      setNewConversationPending(false);
+      newConversationPendingRef.current = false;
       try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
     } catch (cause) {
@@ -114,7 +154,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     setConversationId(null);
     setDraft('');
     setError('');
-    setNewConversationPending(true);
+    newConversationPendingRef.current = true;
     try { if (session?.user?.id) window.sessionStorage.setItem('movo.ai.newConversation.' + session.user.id, 'true'); } catch { /* storage unavailable */ }
   };
 
@@ -127,7 +167,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     </header>
     <div className="movo-ai-privacy" id="movo-ai-context-disclosure" role="note">
       <span className="movo-ai-privacy-icon" aria-hidden="true"><Icon name="lock" size={16} strokeWidth={2} /></span>
-      <span><strong>What you share when you opt in.</strong> When you check the box and send a message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI to generate a reply. This is separate from accepting the Terms of Service. You can use the rest of MOVO without this chat-specific consent. <strong>Your account stays isolated.</strong> The context is limited to your own account-scoped records; other users are not given access to your accounts, transactions, budgets, or chats.</span>
+      <span><strong>What you share when you opt in.</strong> When you check the box and send a message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI to generate a reply. This is separate from accepting the Terms of Service. You can use the rest of MOVO without this chat-specific consent. <strong>Your account stays isolated.</strong> The context is limited to your own account-scoped records; other users are not given access to your accounts, transactions, budgets, or chats. <strong>Conversation isolation.</strong> Each message is processed independently; earlier replies shown in this thread are not sent to NasrinAI as context. If this thread contains unrelated older replies, use the + button to start a clean MOVO chat.</span>
     </div>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label="Conversation">
       {!messages.length && <div className="movo-ai-welcome">
