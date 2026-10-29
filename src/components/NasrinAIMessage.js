@@ -83,8 +83,17 @@ function renderInline(line, key) {
   return <React.Fragment key={key}><InlineText text={line} /></React.Fragment>;
 }
 
+// Defensive presentation guard: the financial chat must not show unrelated document-retrieval
+// disclaimers in a user's answer. This does not replace server-side context isolation.
+function removeIrrelevantDocumentDisclaimers(value) {
+  return String(value || '').replace(
+    /(?:^|\n)\s*(?:>\s*)?Note:\s*The document\s+["“][^\n"”]+["”][\s\S]*?does not contain information about your personal finances and was not used to generate this summary\.?\s*(?=\n\s*\n|$)/gi,
+    '\n'
+  );
+}
+
 export default function NasrinAIMessage({ content }) {
-  const source = String(content || '').replace(/\r\n?/g, '\n');
+  const source = removeIrrelevantDocumentDisclaimers(content).replace(/\r\n?/g, '\n');
   const lines = source.split('\n');
   const blocks = [];
   let i = 0;
