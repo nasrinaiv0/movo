@@ -43,6 +43,16 @@ npm start
 
 Production builds run the test suite before building. GitHub Actions also runs the test suite and build on feature-branch pushes and pull requests targeting `main`.
 
+## Local data behavior and CSV import
+
+- Manually created local transactions and accounts persist in this browser using local storage. They do not sync across browsers/devices and are not encrypted by this app.
+- Sample/demo records are kept separate from saved user records. Removing sample data persists across reloads and does not remove manually entered records.
+- Use **More → Import CSV** to choose a statement export. MOVO parses the file locally and shows a review step before any row is saved.
+- Required CSV columns: `Date`, `Description`, `Type`, and `Amount`. Supported type values include income/credit/deposit, expense/debit/purchase/payment, and transfer.
+- Optional columns: `Currency`, `Category`, `Account`, `To Account`, and `Note`. Account names should match tracked accounts, or select a default account in the import review.
+- Invalid rows and likely duplicates are skipped and reported. Transfers require distinct tracked source and destination accounts.
+- In cloud mode, imported rows are written through the authenticated finance repository and protected by Supabase RLS. A successful import does not mean the originating bank verified the records.
+
 ## Before production use
 
 1. Resolve and verify the dependency vulnerabilities reported by npm audit; do not blindly apply breaking upgrades.
