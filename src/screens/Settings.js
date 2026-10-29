@@ -79,23 +79,27 @@ export default function Settings({ c }) {
       { icon: 'layout', title: 'Display & Layout', sub: 'Customize your experience', onClick: () => go('Appearance') },
     ] },
     { title: 'Notifications', rows: [
-      { icon: 'bell', title: 'Push Notifications', sub: 'Transaction alerts, reminders', toggle: 'push' },
-      { icon: 'mail', title: 'Email Notifications', sub: 'Statements, reports, security', toggle: 'email' },
-      { icon: 'message', title: 'In-App Alerts', sub: 'Budgets, insights, updates', toggle: 'inapp' },
+      { icon: 'bell', title: 'Push Notifications', sub: 'Not available in this web build; no push delivery service is connected.', toggle: 'push' },
+      { icon: 'mail', title: 'Email Notifications', sub: 'Not available yet; MOVO does not send email alerts.', toggle: 'email' },
+      { icon: 'message', title: 'In-App Alerts', sub: 'Show or hide the in-app notification feed.', toggle: 'inapp' },
     ] },
     { title: 'Security & Privacy', rows: [
-      { icon: 'face', title: 'Face ID / Touch ID', sub: 'Use biometrics to unlock', toggle: 'biometrics' },
+      { icon: 'face', title: 'Face ID / Touch ID', sub: 'Unavailable in a browser; native biometric unlock is not connected.', toggle: 'biometrics' },
       { icon: 'lock', title: 'App Lock', sub: 'Require authentication', onClick: () => c.notify('App lock needs device support and is not available in the browser.') },
-      { icon: 'shield', title: 'Privacy & Data', sub: 'Manage your data and permissions', onClick: () => { c.setShow(!c.show); c.notify(c.show ? 'Balances are hidden.' : 'Balances are visible.'); } },
+      { icon: 'shield', title: 'Privacy & Data', sub: 'Read how MOVO handles your information', onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'trash', title: 'Clear Local Data', sub: 'Remove cached data', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
     { title: 'Data & Sync', rows: [
       { icon: 'cloud', title: 'Cloud Sync', sub: 'Backup and sync your data', toggle: 'cloudSync' },
-      { icon: 'database', title: 'Local Storage', sub: 'Store data on this device', toggle: 'localStorage' },
-      { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatically categorize transactions', toggle: 'autocat' },
+      { icon: 'database', title: 'Local Storage', sub: 'Browser storage is managed automatically; this switch is not available.', toggle: 'localStorage' },
+      { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet.', toggle: 'autocat' },
     ] },
     { title: 'Help & Support', rows: [
-      { icon: 'help', title: 'Help Center', sub: 'FAQs, guides and tutorials', onClick: () => c.notify('Help Center is not available yet.') },
+      { icon: 'help', title: 'Help Center', sub: 'Help articles are not available yet.' },
+    ] },
+    { title: 'Legal', rows: [
+      { icon: 'doc', title: 'Terms of Service', sub: 'Rules for using MOVO', onClick: () => c.openLegal?.('TermsOfService') },
+      { icon: 'shield', title: 'Privacy Policy', sub: 'How MOVO handles your information', onClick: () => c.openLegal?.('PrivacyPolicy') },
     ] },
   ];
   const q = query.trim().toLowerCase();
@@ -104,7 +108,7 @@ export default function Settings({ c }) {
     <SubHeader title="Settings" onBack={() => go('Profile')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label="Search settings" placeholder="Search settings" value={query} onChange={e => setQuery(e.target.value)} /></label>
     {shown.map(s => <section key={s.title}><h2 className="group-title">{s.title}</h2>
-      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
+      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
     {!shown.length && <p className="empty">No settings match “{query}”.</p>}
   </>;
 }
@@ -131,15 +135,15 @@ export function Appearance({ c }) {
 
 export function NotificationSettings({ c }) {
   const { prefs, setPref, go } = c;
-  const T = (key, label) => <Toggle checked={prefs[key]} onChange={v => setPref(key, v)} label={label} />;
-  const item = (icon, title, sub, key, tone) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong><small>{sub}</small></span>{T(key, title)}</div>;
+  const T = (key, label, disabled = false) => <Toggle checked={prefs[key]} onChange={v => setPref(key, v)} label={label} disabled={disabled} reason="This delivery method is not connected in the current web build." />;
+  const item = (icon, title, sub, key, tone, disabled = false) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong><small>{sub}</small></span>{T(key, title, disabled)}</div>;
   return <>
     <SubHeader title="Notifications" onBack={() => go('Notifications')} />
     <section className="card menu-card">{item('bell', 'Notifications', 'Manage how you receive notifications', 'notifications')}</section>
     <h2 className="group-title">Notification Channels</h2>
     <section className="card menu-card">
-      {item('phone', 'Push Notifications', 'Receive notifications in the app', 'push')}
-      {item('mail', 'Email Notifications', 'Receive important updates via email', 'email')}
+      {item('phone', 'Push Notifications', 'Push delivery is not available in this web build.', 'push', undefined, true)}
+      {item('mail', 'Email Notifications', 'Email delivery is not connected yet.', 'email', undefined, true)}
       {item('message', 'In-App Alerts', 'Show alerts inside the app', 'inapp')}
     </section>
     <h2 className="group-title">Notification Categories</h2>
@@ -150,6 +154,6 @@ export function NotificationSettings({ c }) {
       {item('tag', 'Promotions', 'Special offers and discounts', 'catPromo', 'gray')}
       {item('doc', 'Reports', 'Monthly summaries and insights', 'catReports', 'teal')}
     </section>
-    <section className="card menu-card gap"><Row icon="moon" title="Quiet Hours" sub="Disable non-urgent notifications" right={<span className="muted-end">10:00 PM – 7:00 AM</span>} onClick={() => c.notify('Quiet hours are set to 10:00 PM – 7:00 AM.')} /></section>
+    <section className="card menu-card gap"><Row icon="moon" title="Quiet Hours" sub="Scheduling is not available in this web build." right={<span className="muted-end">Unavailable</span>} chevron={false} /></section>
   </>;
 }
