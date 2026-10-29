@@ -1,4 +1,4 @@
-import { THEMES, findSticker, defaultThemeFor, addCustomSticker } from './stickers';
+import { THEMES, findSticker, defaultThemeFor, addCustomSticker, clearCustomStickers } from './stickers';
 
 test('sticker library has 250+ unique themes', () => {
   expect(THEMES.length).toBeGreaterThanOrEqual(250);
@@ -23,4 +23,10 @@ test('rejects oversized custom sticker files before decoding', async () => {
 
 test('rejects empty custom sticker files before decoding', async () => {
   await expect(addCustomSticker({ name: 'empty.png', type: 'image/png', size: 0 })).rejects.toThrow('empty or unreadable');
+});
+
+test('clears custom sticker artwork from browser storage', () => {
+  window.localStorage.setItem('movo.customStickers.v1', JSON.stringify([{ id: 'custom-test', name: 'Test', src: 'data:image/jpeg;base64,AA==', ink: 'light', custom: true }]));
+  expect(clearCustomStickers()).toBe(true);
+  expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
 });
