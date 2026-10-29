@@ -76,8 +76,10 @@ export default function Wallet({ c }) {
       </div>
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
       <section className="card action-strip">
-        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card', () => notify('MOVO tracks records only, so cards cannot be blocked here.')], ['sliders', 'Limits', () => notify('Spending limits are not available yet.')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
-          <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{label}</button>)}
+        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card (Unavailable)', () => {}], ['sliders', 'Limits (Unavailable)', () => {}], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) => {
+          const unavailable = label.includes('(Unavailable)');
+          return <button type="button" key={label} onClick={fn} disabled={unavailable} title={unavailable ? 'MOVO records card activity but cannot control your actual card or issuer limits.' : undefined}><Icon name={icon} size={20} />{label}</button>;
+        })}
       </section>
       <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label="Switch card">
         <span><small>Available Balance</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
