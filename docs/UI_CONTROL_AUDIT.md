@@ -8,18 +8,24 @@ Run `npm run audit:controls` to scan production JSX source with the TypeScript p
 
 The scanner checks for:
 - Native buttons without a click/keyboard action, an associated handled submit form, or an explicit disabled state.
-- Anchors without an `href` or click action.
+- Anchors without an `href` or click action, and literal placeholder links (`href="#"` or `javascript:`) without a click handler.
 - Forms without an `onSubmit` handler or native `action`.
-- Non-native elements with `role="button"` that lack click and keyboard handlers.
-- Disabled buttons that do not have an associated description/title or a transient busy state, which are printed for human review.
+- Non-native interactive ARIA roles (button, link, tab, menuitem, switch, checkbox, radio, option, menuitemcheckbox, menuitemradio, and treeitem) without both click and keyboard handlers, unless disabled.
+- Tabs without explicit `aria-selected` state.
+- Switch/checkbox/radio roles without explicit checked state, and options without selected state.
+- Dialog/alertdialog roles without an accessible name via `aria-label` or `aria-labelledby`.
+- Disabled buttons and ARIA-disabled controls without an associated description/title or transient busy state, which are printed for human review.
+- Dialogs without an explicit `aria-modal` attribute, which are printed for human review because modal versus non-modal behavior and focus management must be confirmed.
 
 External submit controls using `form="some-form-id"` are recognized when the referenced form has an `onSubmit` handler or native action.
+
+The scanner's source-analysis helper is covered by `src/lib/uiControlAudit.test.js`, including placeholder links, custom tab keyboard/state behavior, checked state, dialog naming, and valid named controls.
 
 ## Limits
 
 This is a static guardrail, not proof that a control works at runtime. It cannot determine whether a callback does the correct business action, whether a visible disabled explanation is truthful, or whether a custom React component is wired correctly. It does not replace interactive checks of tabs, menus, dialogs, settings, navigation, keyboard/focus behavior, screen readers, responsive layouts, authentication, financial writes, CSV import/export, or production behavior.
 
-Review every disabled-control warning against the actual UI. Do not suppress warnings by adding misleading titles or client-side workarounds. When a control has no supported backend behavior, leave it visibly disabled with an accurate explanation.
+Review every disabled-control and dialog warning against the actual UI. Do not suppress warnings by adding misleading titles or client-side workarounds. When a control has no supported backend behavior, leave it visibly disabled with an accurate explanation.
 
 ## Security boundaries
 
@@ -29,13 +35,11 @@ The audit script is read-only. This PR does not change authentication, ownership
 
 The frontend is not declared complete by this static check. Legal publication still depends on verifying the operator/controller identity and address, retention schedule, provider/data-recipient details, and jurisdiction-specific terms. Manual browser/accessibility testing, Supabase leaked-password protection, dependency remediation, and successful authenticated production NasrinAI verification remain separate release requirements.
 
+## Previous reconciled audit snapshot — 2026-10-30
 
-## Latest reconciled audit snapshot — 2026-10-30
-
-- Exact reconciled source head: `4e87f9bc2bf23c1779ba313a33616ad97526ce66`.
-- GitHub Actions [run 40958277651](https://github.com/nasrinaiv0/movo/actions/runs/40958277651) passed: **17 suites / 93 tests**, `tsc --noEmit`, the static control audit, and production compilation.
-- Vercel exact-head deployment [dpl_9dYXuUiNJkMNBUra86W5pLUxzWJJ](https://vercel.com/nasrin-ai/movo/9dYXuUiNJkMNBUra86W5pLUxzWJJ) reached READY.
-- Snapshot output: **31 source files; 93 buttons (9 disabled); 9 links; 5 forms**. No obvious unhandled native buttons, anchors, or forms were found.
-- Three disabled-control warnings remain at `src/App.js:596`, `src/App.js:608`, and `src/App.js:635` (transaction save, account save, CSV import). These are human-review warnings, not evidence that the controls are dead. PR #43 contains the related busy-state/CSV guidance improvements but is still a draft while finance currency correctness is unresolved.
-- The audit remains static; it cannot prove callback correctness, actual accessibility-tree behavior, or end-to-end finance operations. Continue browser, keyboard, screen-reader, mobile, and authenticated finance-flow verification before production sign-off.
-
+- Prior reconciled source head: `4e87f9bc2bf23c1779ba313a33616ad97526ce66`.
+- GitHub Actions [run 40958277651](https://github.com/nasrinaiv0/movo/actions/runs/40958277651) passed: **17 suites / 93 tests**, `tsc --noEmit`, the previous static control audit, and production compilation.
+- Vercel deployment [dpl_9dYXuUiNJkMNBUra86W5pLUxzWJJ](https://vercel.com/nasrin-ai/movo/9dYXuUiNJkMNBUra86W5pLUxzWJJ) reached READY for that earlier head.
+- Previous snapshot output: **31 source files; 93 buttons (9 disabled); 9 links; 5 forms**. No obvious unhandled native buttons, anchors, or forms were found.
+- Three disabled-control warnings were recorded at `src/App.js:596`, `src/App.js:608`, and `src/App.js:635` (transaction save, account save, CSV import). These are human-review warnings, not proof that the controls are dead. PR #43 contains related busy-state/CSV guidance improvements but remains a draft while finance currency correctness is unresolved.
+- The current expanded audit and its new regression tests are awaiting exact-head CI and preview validation. Do not reuse the previous counts or checks as evidence for the expanded scanner.
