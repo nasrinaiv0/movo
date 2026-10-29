@@ -83,17 +83,43 @@ function renderInline(line, key) {
   return <React.Fragment key={key}><InlineText text={line} /></React.Fragment>;
 }
 
-// Defensive presentation guard: the financial chat must not show unrelated document-retrieval
-// disclaimers in a user's answer. This does not replace server-side context isolation.
+// Defensive presentation guard for a known upstream regression. This removes only a paragraph
+// that both describes an unrelated development-services document and explicitly disclaims
+// financial relevance. It is not the context-isolation boundary; the API must enforce that.
 function removeIrrelevantDocumentDisclaimers(value) {
-  return String(value || '').replace(
-    /(?:^|\n)\s*(?:>\s*)?Note:\s*The document\s+["“][^\n"”]+["”][\s\S]*?does not contain information about your personal finances and was not used to generate this summary\.?\s*(?=\n\s*\n|$)/gi,
-    '\n'
-  );
+  const chunks = String(value || '').replace(/\r\n?/g, '\n').split(/(\n[ \t]*\n)/);
+  let inFence = false;
+
+  return chunks.map(chunk => {
+    if (/^\n[ \t]*\n$/.test(chunk)) return chunk;
+
+    const hasFence = /(^|\n)\s*```/.test(chunk);
+    const wasInFence = inFence;
+    for (const line of chunk.split('\n')) {
+      if (/^\s*```/.test(line)) inFence = !inFence;
+    }
+    if (wasInFence || inFence || hasFence) return chunk;
+
+    const normalized = chunk.replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim();
+    const referencesUnrelatedDocument =
+      /\b(?:document|file)\b/i.test(normalized) &&
+      /\b(?:provided(?: in (?:your )?prompt)?|portfolio)\b/i.test(normalized);
+    const describesDevelopmentServices =
+      /\b(?:development options?|development service|agencies|freelancers)\b/i.test(normalized);
+    const explicitlyDisclaimsFinancialRelevance =
+      /\b(?:does not contain information about your personal financial|not related to your personal financial records|was not used to generate this summary)\b/i.test(normalized);
+
+    const legacyDisclaimer =
+      /^Note:\s*The document\s+["“][^"\n”]+["”][\s\S]*?does not contain information about your personal finances and was not used to generate this summary\.?$/i.test(normalized);
+
+    return (referencesUnrelatedDocument && describesDevelopmentServices && explicitlyDisclaimsFinancialRelevance) || legacyDisclaimer
+      ? ''
+      : chunk;
+  }).join('').replace(/\n{3,}/g, '\n\n');
 }
 
 export default function NasrinAIMessage({ content }) {
-  const source = removeIrrelevantDocumentDisclaimers(content).replace(/\r\n?/g, '\n');
+  const source = removeIrrelevantDocumentDisclaimers(content);
   const lines = source.split('\n');
   const blocks = [];
   let i = 0;
