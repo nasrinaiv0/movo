@@ -38,8 +38,15 @@ export default function Profile({ c }) {
 
     <SectionTitle>Data & Sync</SectionTitle>
     <section className="card menu-card">
-      {[['cloud', 'Cloud Sync', 'Backup and sync your data', 'cloud'], ['database', 'Local Storage', 'Store data on this device', 'local'], ['refresh', 'Auto Categorization', 'Automatically categorize transactions', 'autocat']].map(([icon, title, sub, key]) =>
-        <div className="menu-row" key={key}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong><small>{sub}</small></span><Toggle checked={key === 'cloud' ? prefs.cloudSync && c.cloudMode : prefs[key === 'local' ? 'localStorage' : 'autocat']} onChange={v => (key === 'cloud' ? (c.cloudMode ? setPref('cloudSync', v) : go('Sign in')) : setPref(key === 'local' ? 'localStorage' : 'autocat', v))} label={title} /></div>)}
+      <button type="button" className="menu-row" onClick={() => session ? c.notify(c.cloudMode ? 'Cloud mode is active for this signed-in session.' : 'You are signed in, but cloud records are not currently loaded.') : go('Sign in')}>
+        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>Cloud Sync</strong><small>{session ? (c.cloudMode ? 'Signed in · cloud mode active' : 'Signed in · cloud mode unavailable') : 'Local-only · sign in to check cloud availability'}</small></span><Icon name="chevron" size={16} />
+      </button>
+      <button type="button" className="menu-row" onClick={() => c.notify('Local-only records are stored in this browser and do not automatically sync to other devices.')}>
+        <span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>Local Storage</strong><small>Browser-specific storage; clearing browser data may erase local records</small></span><Icon name="chevron" size={16} />
+      </button>
+      <button type="button" className="menu-row" onClick={() => c.notify('Automatic categorization is not active. Choose a category when adding or importing a transaction.')}>
+        <span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>Auto Categorization</strong><small>Not active in this build</small></span><Icon name="chevron" size={16} />
+      </button>
     </section>
 
     <SectionTitle>About</SectionTitle>
