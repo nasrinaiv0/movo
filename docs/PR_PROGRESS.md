@@ -1,27 +1,57 @@
 # MOVO Pull Request Progress Register
 
-Last reconciled: 2026-10-29 (UTC date; update this register whenever PR state changes).
-
-This is the repository's durable, human-readable index of pull requests. GitHub's PR page, commits, reviews, and Actions runs remain the authoritative event-by-event history; this register is the cross-PR summary.
+**Last reconciled:** 2026-10-29 (UTC)  
+**Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
 
-| PR | Title | Scope | Progress / evidence | Remaining work / risk | Status |
-|---|---|---|---|---|---|
-| [#12](https://github.com/nasrinaiv0/movo/pull/12) | feat: match MOVO MVP to reference UI with demo finance data | Responsive reference-screen UI and clearly labeled local sample finance data | PR description records scope and validation expectations. Available checks reported for the reviewed SHA were successful; a Vercel status reported “Canceled by Ignored Build Step,” so that status is not proof of a fresh preview deployment. | Confirm latest-head CI and production build; review UI against reference screenshots; preserve sample-data/privacy boundaries. | Open; do not treat as merged or fully accepted. |
-| [#13](https://github.com/nasrinaiv0/movo/pull/13) | feat: expand MOVO reference screen parity | Notifications, filters/read state, preference toggles, quiet-hours UI | PR description records scope and notes that notifications/preferences are mock/UI state, not backed by delivery services. Available checks reported for the reviewed SHA were successful; a Vercel status reported “Canceled by Ignored Build Step,” so that status is not proof of a fresh preview deployment. | Confirm latest-head CI and production build; test notification filters/read state; backend delivery and persistence remain unimplemented unless separately verified. | Open; do not treat as merged or fully accepted. |
-| [#18](https://github.com/nasrinaiv0/movo/pull/18) | chore: document and standardize PR progress tracking | Central register, lifecycle guide, and PR template | Documentation-only PR with CI in progress at last check. | Confirm CI, review rendered Markdown, and merge; then use the register for all subsequent PRs. | Open draft. |
-| [#19](https://github.com/nasrinaiv0/movo/pull/19) | feat: make core finance actions functional and persistent | Local finance persistence; local account create/edit/archive; transaction editing; CSV import preview/parser, validation, duplicate skipping, and cloud idempotency reference; unit/UI tests | Progress comments added. CI tests passed on head `fa3b466`; final build was still running, and newer icon-only commit `b207b43` requires its own CI confirmation. | Verify latest-head tests/build, fix failures, then continue richer transaction filters, notification persistence/delivery, and server-side NasrinAI integration. | Open draft; implementation in progress. |
-| [#20](https://github.com/nasrinaiv0/movo/pull/20) | feat: connect MOVO to NasrinAI with private chat isolation | Authenticated NasrinAI proxy; Google OAuth UI/PKCE flow and safe callback error handling; server-enforced consent; explicit user-scoped finance queries; per-user chat history/RLS; server-only upstream ID mapping; retrieval/FK indexes; noindex protections | Supabase schema/index migrations applied; RLS isolation checks and SQL assertion test passed. Current head `1261f04` passed Jest and production build in [run 40803192270](https://github.com/nasrinaiv0/movo/actions/runs/40803192270). Production Vercel records now exist for `NASRINAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY`; values are encrypted and cannot be validated from a masked listing. `MOVO_ALLOWED_ORIGINS` is configured. Latest production deployment still serves `main` at `c93d3ee` and does not contain PR #20. PR branch Vercel deployments were skipped/canceled by the ignored-build step, not verified previews. | Enable/verify Google OAuth in Supabase with Google client ID/secret and redirect allowlist; confirm server secrets are valid (not merely present); merge/deploy the reviewed PR; validate live Google sign-in, authenticated chat, upstream response parsing, and cross-user denial. Review Supabase leaked-password protection warning. | Open draft; CI/build and database isolation pass, production chat not yet deployed or E2E verified. |
+| PR | Scope | Current state | Next action |
+|---|---|---|---|
+| [#18 — PR progress register and template](https://github.com/nasrinaiv0/movo/pull/18) | This register, lifecycle notes, and a reusable PR template. | Open; current branch is `chore/pr-progress-documentation`. | Confirm the latest-head CI and Vercel preview, then merge. |
 
-## Historical PRs
+No other pull requests were open when this register was reconciled.
 
-Add one row for every closed, merged, or declined PR. Keep the PR number, title, scope, final disposition, merge/close date, merge commit (if any), validation evidence, and any follow-up issues. Never delete old rows; amend only to correct factual errors and note the correction.
+## Recent merged implementation
 
-| PR | Title | Scope | Final disposition | Validation / follow-up |
-|---|---|---|---|---|
-| _No historical entries reconciled in this register yet._ | | | | |
+| PR | Result | Validation / notes |
+|---|---|---|
+| [#34 — Wallet validation and security status](https://github.com/nasrinaiv0/movo/pull/34) | Merged as `e43670bb56295e2fcf881b0c897d8d808b81bedc`. | Documentation refresh. Main CI [run 40852563341](https://github.com/nasrinaiv0/movo/actions/runs/40852563341) passed 13 suites / 76 tests, typecheck, and production build. Vercel production deployment `dpl_61HwBdJZwg1hpQZshMH8SB4uZr2p` is READY with `movo.nasrinai.com` attached. |
+| [#33 — Wallet quick-action correction](https://github.com/nasrinaiv0/movo/pull/33) | Merged as `8fed594d571602c8d7f0cdca55afb286d47dabab`. | Replaced the duplicate Transfer action with Add Transaction. CI [run 40851881401](https://github.com/nasrinaiv0/movo/actions/runs/40851881401) passed 13 suites / 76 tests, typecheck, and production build; preview reached READY. |
+| [#32 — Validated profile form](https://github.com/nasrinaiv0/movo/pull/32) | Merged as `782ac74568570ef27cc942f7e7a1bc5147ddd7a6`. | Profile editing now validates and saves browser-local fields; CI [run 40845667667](https://github.com/nasrinaiv0/movo/actions/runs/40845667667) passed 13 suites / 74 tests and build. |
+| [#31 — Accessibility verification notes](https://github.com/nasrinaiv0/movo/pull/31) | Merged. | Documented disabled-setting accessibility and release limitations. |
+| [#30 — Disabled-setting explanations](https://github.com/nasrinaiv0/movo/pull/30) | Merged. | Associated disabled settings with visible explanatory text for assistive technology; regression tests added. |
+| [#29 — Inactive unsupported controls](https://github.com/nasrinaiv0/movo/pull/29) | Merged. | Unsupported card/issuer controls are disabled and explained. |
+| [#28 — Frontend audit refresh](https://github.com/nasrinaiv0/movo/pull/28) | Merged. | Updated validation evidence and release blockers. |
+| [#27 — Storage disclosure](https://github.com/nasrinaiv0/movo/pull/27) | Merged. | Corrected browser-local storage wording and related documentation/tests. |
+| [#26 — Reconciled frontend/legal/finance implementation](https://github.com/nasrinaiv0/movo/pull/26) | Merged. | Combined frontend controls, legal/help flows, finance actions, accessibility, CSV hardening, and server-only NasrinAI mapping restrictions. |
+| [#21 — NasrinAI upstream diagnostics](https://github.com/nasrinaiv0/movo/pull/21) | Merged. | Added safe upstream diagnostics. Production authentication still needs successful end-to-end verification. |
+| [#20 — Authenticated NasrinAI integration](https://github.com/nasrinaiv0/movo/pull/20) | Merged. | Server-side chat proxy, user-scoped context/history, consent enforcement, and server-only upstream mapping. A production upstream HTTP 401 remains unresolved. |
 
-## Update rule
+## Closed without merge / superseded
 
-For every PR, record progress when it is opened, materially updated, reviewed, blocked, ready for review, merged, or closed. Update this register in the same change where practical, and leave a concise PR timeline comment linking to the relevant commit/checks. Do not report a check as passing unless its result corresponds to the current PR head SHA. Record skipped, canceled, and unavailable checks explicitly. See [PR workflow](PR_WORKFLOW.md) and the [pull request template](../.github/PULL_REQUEST_TEMPLATE.md).
+| PR | Disposition |
+|---|---|
+| [#19 — Functional finance core](https://github.com/nasrinaiv0/movo/pull/19) | Closed without merge after reconciliation; useful local finance persistence, editing, transfer validation, CSV import/export, and regression coverage were carried forward into the reconciled frontend work. |
+| [#23 — Earlier frontend completion](https://github.com/nasrinaiv0/movo/pull/23) | Closed without merge; superseded by the reconciled PR #26 and follow-up fixes. |
+| [#22 — Earlier legal/help pages](https://github.com/nasrinaiv0/movo/pull/22) | Closed without merge; legal/help functionality was consolidated into the in-app Legal and Help Center screens to avoid duplicate policy sources. |
+| [#12 and #13 — Reference UI / notification parity](https://github.com/nasrinaiv0/movo/pull/12) | Closed without merge; superseded by the later merged responsive frontend and notification implementations. |
+
+## Current release blockers
+
+These are not resolved by a green frontend CI run or a READY deployment:
+
+- **Legal readiness:** Formal operator/data-controller identity and address, actual retention periods, provider details, and jurisdiction-specific disclosures still need verification and legal review. The in-app pages explicitly warn users about the missing details; do not invent them.
+- **Supabase Auth:** Security Advisor still reports leaked-password protection disabled. Enable it through authorized project settings: [Supabase password-security guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- **Dependencies:** Latest main CI install reports 34 npm audit findings (16 low, 5 moderate, 13 high). Review advisories and use targeted upgrades with regression tests rather than a blind forced upgrade.
+- **NasrinAI chat:** Production logs show 7 upstream HTTP 401 responses in the last 24-hour window, last observed at 2026-10-29T05:42:54Z. No successful authenticated production chat request has been confirmed in this run; never expose or log credential values.
+- **Interactive verification:** Full browser smoke tests on the production custom domain, including mobile, auth, consent, financial writes, CSV flows, and keyboard/focus behavior, remain unverified.
+- **Data isolation:** Read-only production catalog checks confirm RLS enabled on profiles, financial accounts, transactions, budgets, and NasrinAI chat tables. Owner-scoped policies are present; the upstream mapping intentionally has no browser policy/grants and remains server-only.
+
+## Required PR lifecycle
+
+1. Review open PRs before starting duplicate work; update an existing branch when scopes overlap.
+2. Use a dedicated branch and keep the PR summary, known limitations, and progress evidence current.
+3. Run typecheck, the complete test suite, production build, and relevant security/data-isolation checks on the exact head SHA.
+4. Verify the preview deployment for that exact SHA. A canceled/ignored Vercel build is not successful verification.
+5. Merge only after checks pass and the PR is conflict-free. Verify the merge commit and resulting deployment separately.
+6. Never include secrets, credentials, private financial data, or unverifiable legal details in code or documentation.
