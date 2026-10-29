@@ -713,3 +713,45 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .movo-ai-message.user { --dx: 14px; } .movo-ai-message.assistant { --dx: -14px; }
 .movo-ai-send:active, .movo-ai-reset:active { transform: scale(.92); }
 .movo-ai-send { min-width: 44px; min-height: 44px; border-radius: 16px; transition: transform .16s var(--spring-bounce), opacity .2s; }
+
+/* =====================================================================
+   Icon-only dock: capsule highlight, hover glow, big smooth glyphs
+   ===================================================================== */
+.bottom-nav { height: 66px; padding: 7px 6px; align-items: center; border-radius: 999px; }
+.bottom-nav .nav-item { justify-content: center; height: 52px; min-height: 52px; gap: 0; border-radius: 999px; color: var(--nav-muted); }
+.bottom-nav .nav-item.nav-active { color: var(--nav-active); }
+.bottom-nav .nav-icon { margin: 0; display: grid; place-items: center; transition: transform .35s var(--spring-bounce), color .25s ease; }
+.bottom-nav .nav-center .nav-icon { margin: 0; }
+.bottom-nav .nav-item .movo-icon { transition: transform .3s var(--spring-bounce); }
+.nav-pill { top: 7px; height: 52px; left: 6px; margin-left: 2px; width: calc((100% - 12px) / 5 - 4px); border-radius: 999px; transform: translateX(calc(var(--idx, 0) * 100% + var(--idx, 0) * 4px)); background: rgba(120,128,145,.17); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
+.glass-on .nav-pill { background: rgba(var(--glass-ink), .09); box-shadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(255,255,255,.2); }
+.theme-dark .nav-pill, .theme-dark.glass-on .nav-pill { background: rgba(255,255,255,.14); }
+/* hover: a lighter capsule fades and swells in behind the hovered icon */
+.bottom-nav .nav-item::before { content: ''; position: absolute; inset: 0 2px; border-radius: 999px; background: rgba(120,128,145,.11); opacity: 0; scale: .78; transition: opacity .3s ease, scale .4s var(--spring-bounce); z-index: -1; display: block !important; }
+.bottom-nav .nav-item.nav-active::before, .bottom-nav .nav-center::before { display: none !important; }
+@media (hover: hover) {
+  .bottom-nav .nav-item:not(.nav-active):hover::before { opacity: 1; scale: 1; }
+  .bottom-nav .nav-item:not(.nav-active):hover { color: var(--text); }
+  .bottom-nav .nav-item:hover .movo-icon { transform: scale(1.1); }
+  .bottom-nav .nav-center:hover .orb { filter: brightness(1.08) saturate(1.1); scale: 1.06; }
+}
+.bottom-nav .nav-item:active .nav-icon { transform: scale(.86); }
+/* the AI orb sits in the dock, same height as the capsule */
+.bottom-nav .orb { width: 48px; height: 48px; margin: 0; transform: none; box-shadow: inset 0 1px 1px rgba(255,255,255,.6), inset 0 -5px 10px rgba(0,0,0,.12), 0 6px 16px rgba(var(--accent-rgb), .42); }
+.nav-center.nav-active .orb { box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .22), inset 0 1px 1px rgba(255,255,255,.6), 0 8px 20px rgba(var(--accent-rgb), .5); }
+.nav-preview { border-radius: 999px; padding: 8px; }
+.nav-preview > span { padding: 12px 0; flex: 1; align-items: center; border-radius: 999px; }
+.nav-preview > span.on { background: rgba(120,128,145,.17); }
+.nav-preview .orb.small { margin: 0 auto; width: 46px; height: 46px; flex: none; padding: 0; background: radial-gradient(circle at 30% 25%, #7aa2ff, var(--accent) 55%, var(--accent-2)); }
+.movo-icon { transition: transform .3s var(--spring-bounce); }
+
+/* every icon: smooth hover/press response on anything tappable */
+@media (hover: hover) {
+  button:not(:disabled):hover > .movo-icon, button:not(:disabled):hover .stat-icon .movo-icon, .menu-row:hover .menu-icon .movo-icon, .tx-row:hover .tile .movo-icon { transform: scale(1.1); }
+  .round-button:hover, .quick-actions button:hover span, .back-button:hover { background-color: rgba(var(--accent-rgb), .08); }
+  .back-button:hover { border-radius: 50%; }
+  .quick-actions button:hover span { box-shadow: 0 8px 20px rgba(var(--accent-rgb), .18); }
+  .menu-row:hover .menu-icon, .tx-row:hover .tile { transform: scale(1.04); }
+}
+.menu-icon, .tile { transition: transform .35s var(--spring-bounce); }
+.movo-icon * { vector-effect: none; }
