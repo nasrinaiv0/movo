@@ -3,7 +3,7 @@
 :root {
   --accent: #2f6bff; --accent-rgb: 47,107,255; --accent-2: #6a5cff;
   --bg: #f3f3f7; --bg-grad: radial-gradient(120% 60% at 80% -10%, rgba(var(--accent-rgb),.07), transparent 60%), radial-gradient(90% 50% at -10% 30%, rgba(255,160,120,.06), transparent 60%);
-  --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #7d8294; --line: rgba(20,24,40,.07);
+  --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #7d8294; --line: rgba(20,24,40,.045);
   --shadow: 0 8px 28px rgba(30,38,70,.06); --shadow-sm: 0 2px 10px rgba(30,38,70,.05);
   --green: #12a566; --green-bg: rgba(18,165,102,.12); --red: #e5484d; --red-bg: rgba(229,72,77,.1);
   --nav-bg: rgba(255,255,255,.92); --nav-active: #14161f; --nav-muted: #7d8294; --chip-bg: rgba(255,255,255,.8);
@@ -17,7 +17,7 @@
 .accent-slate { --accent: #334155; --accent-rgb: 51,65,85; --accent-2: #64748b; }
 .theme-dark {
   --bg: #0d0f15; --bg-grad: radial-gradient(120% 50% at 80% -10%, rgba(var(--accent-rgb),.14), transparent 60%);
-  --card: rgba(28,31,42,.92); --card-solid: #1b1e29; --text: #f4f5f9; --muted: #98a0b4; --line: rgba(255,255,255,.08);
+  --card: rgba(28,31,42,.92); --card-solid: #1b1e29; --text: #f4f5f9; --muted: #98a0b4; --line: rgba(255,255,255,.05);
   --shadow: 0 10px 30px rgba(0,0,0,.3); --shadow-sm: 0 2px 10px rgba(0,0,0,.25);
   --green: #3ddc97; --green-bg: rgba(61,220,151,.14); --red: #ff6b72; --red-bg: rgba(255,107,114,.14);
   --nav-bg: rgba(24,27,37,.94); --nav-active: #fff; --nav-muted: #8d95a9; --chip-bg: rgba(255,255,255,.07);
@@ -67,7 +67,7 @@ h1, h2, h3, p { margin: 0; }
 .home-header .round-button { width: 44px; height: 44px; }
 
 /* cards */
-.card { background: var(--card); border: 1px solid rgba(255,255,255,.7); border-radius: 22px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
+.card { background: var(--card); border: 1px solid rgba(255,255,255,.35); border-radius: 22px; box-shadow: var(--shadow); backdrop-filter: blur(8px); }
 .theme-dark .card { border-color: var(--line); }
 .card.pad { padding: 16px; }
 .balance-card { position: relative; overflow: hidden; padding: 20px 20px 18px; margin-bottom: 14px; background: linear-gradient(120deg, var(--card-solid) 30%, rgba(var(--accent-rgb),.07)); }
@@ -191,7 +191,7 @@ h1, h2, h3, p { margin: 0; }
 .quick-actions button { display: flex; flex-direction: column; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; }
 .quick-actions span { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--card-solid); box-shadow: var(--shadow-sm); color: var(--text); }
 .account-list { display: grid; gap: 12px; }
-.account-row, .sheet-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1px solid rgba(255,255,255,.7); border-radius: 20px; background: var(--card); box-shadow: var(--shadow); text-align: left; }
+.account-row, .sheet-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; border: 1px solid rgba(255,255,255,.35); border-radius: 20px; background: var(--card); box-shadow: var(--shadow); text-align: left; }
 .theme-dark .account-row { border-color: var(--line); }
 .account-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .account-main strong { font-size: 16px; font-weight: 600; }
@@ -471,7 +471,7 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
   backdrop-filter: blur(var(--glass-blur)) saturate(185%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%);
   border: 1px solid rgba(255,255,255,var(--glass-edge));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 -1px 0 rgba(255,255,255,.12), inset 1px 0 0 rgba(255,255,255,.25), 0 10px 32px rgba(var(--glass-ink),.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(255,255,255,.06), inset 1px 0 0 rgba(255,255,255,.12), 0 10px 32px rgba(var(--glass-ink),.1);
 }
 .theme-dark.glass-on :is(.card, .round-button, .chip-row button, .month-pill, .account-row, .sheet-card, .search-field, .theme-segments button, .quick-actions span, .nav-preview) {
   background-image: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,0) 42%);
@@ -523,7 +523,7 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 
 /* accessibility: honour reduced transparency, and browsers without backdrop-filter */
 @media (prefers-reduced-transparency: reduce) {
-  .glass-on { --glass-blur: 0px; --glass-fill: .94; --glass-sheet-fill: 1; --glass-edge: .5; }
+  .glass-on { --glass-blur: 0px; --glass-fill: .94; --glass-sheet-fill: 1; --glass-edge: .2; }
   .glass-bg { display: none; }
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
@@ -707,7 +707,7 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .movo-ai-consent input { flex:none; margin:2px 0 0; accent-color:var(--accent); }
 
 /* NasrinAI chat: glass surfaces + motion consistent with the rest of the app */
-.glass-on :is(.movo-ai-welcome, .movo-ai-message.assistant, .movo-ai-composer, .movo-ai-privacy, .movo-ai-suggestions button, .movo-ai-reset) { background-color: rgba(var(--glass-tint), var(--glass-fill)); backdrop-filter: blur(var(--glass-blur)) saturate(185%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%); border: 1px solid rgba(255,255,255,var(--glass-edge)); box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 8px 26px rgba(var(--glass-ink), .08); }
+.glass-on :is(.movo-ai-welcome, .movo-ai-message.assistant, .movo-ai-composer, .movo-ai-privacy, .movo-ai-suggestions button, .movo-ai-reset) { background-color: rgba(var(--glass-tint), var(--glass-fill)); backdrop-filter: blur(var(--glass-blur)) saturate(185%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%); border: 1px solid rgba(255,255,255,var(--glass-edge)); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 8px 26px rgba(var(--glass-ink), .08); }
 .movo-ai-avatar .nasrin-mark { animation: mark-spin 40s linear infinite; }
 .movo-ai-message { animation: item-in .45s var(--spring) both; --dx: 0px; --dy: 12px; }
 .movo-ai-message.user { --dx: 14px; } .movo-ai-message.assistant { --dx: -14px; }
@@ -798,7 +798,7 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .credit-card::after { display: none; }
 .credit-card.has-sticker { background: #111; }
 .sticker-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; z-index: 0; user-select: none; -webkit-user-drag: none; }
-.credit-card::before { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), inset 0 1px 0 rgba(255,255,255,.5); }
+.credit-card::before { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), inset 0 1px 0 rgba(255,255,255,.3); }
 .cc-face { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 6.4cqw 6.8cqw; }
 .cc-top, .cc-bottom { display: flex; justify-content: space-between; align-items: center; gap: 3cqw; }
 .cc-bottom { align-items: flex-end; }
@@ -818,7 +818,7 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .credit-card.has-sticker { box-shadow: 0 16px 34px rgba(10,20,50,.3); }
 .card-scroller.mini .card-slide { flex-basis: 78%; padding: 0; border: 0; background: none; text-align: left; border-radius: 22px; }
 .card-slide { container-type: normal; }
-.style-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px; border-radius: 16px; font-weight: 600; font-size: 15px; background: rgba(var(--accent-rgb), .1); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), .2); }
+.style-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px; border-radius: 16px; font-weight: 600; font-size: 15px; background: rgba(var(--accent-rgb), .1); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), .1); }
 .empty-preview { width: min(300px, 82%); margin: 0 auto 14px; --cr: 16px; }
 .style-preview { margin: 4px 0 14px; }
 .style-search { display: flex; align-items: center; gap: 10px; padding: 0 14px; margin-bottom: 10px; border-radius: 16px; background: var(--field); color: var(--muted); }
@@ -857,3 +857,12 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .nav-item.nav-active:not(.nav-center) .nav-icon, .orb, .ai-panel .orb.big, .loading-screen .brand-mark { animation: none; }
 .ai-panel .orb.big { animation: item-in .7s var(--spring) both; }
 .hero-badge { animation: pop-in .5s var(--spring) .1s both; }
+
+/* ===== Softer borders; fields lose their border while typing ===== */
+.sheet-form :is(input, select, textarea), .search-field, .style-search, .movo-ai-composer, .auth-card input { transition: border-color .2s, box-shadow .2s, background-color .2s; }
+:is(input, textarea, select):focus, :is(input, textarea, select):focus-visible { outline: none; border-color: transparent !important; box-shadow: none !important; }
+.movo-ai-composer textarea:focus-visible { outline: none; }
+:is(.search-field, .style-search, .movo-ai-composer, .field-row):focus-within { border-color: transparent !important; box-shadow: none !important; outline: none; }
+.sheet-form :is(input, select, textarea):focus, .auth-card input:focus, :is(.search-field, .style-search):focus-within { background-color: rgba(var(--accent-rgb), .06); }
+.glass-on .movo-ai-composer:focus-within { box-shadow: 0 8px 26px rgba(var(--glass-ink), .08) !important; }
+.style-tile.upload .upload-box { border-color: rgba(var(--accent-rgb), .3); }
