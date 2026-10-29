@@ -209,4 +209,37 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Sign in to MOVO');
     expect(container.querySelector('h2').textContent).toBe('Welcome back');
   });
+
+  test('unsupported Plan & Usage and Help Center rows are clearly unavailable, not dead navigation buttons', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const rows = Array.from(container.querySelectorAll('.menu-row'));
+    const plan = rows.find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
+    const help = rows.find(row => row.querySelector('strong')?.textContent === 'Help Center');
+    expect(plan).toBeTruthy();
+    expect(plan.tagName).toBe('DIV');
+    expect(plan.getAttribute('aria-disabled')).toBe('true');
+    expect(plan.textContent).toContain('Unavailable');
+    expect(plan.textContent).toContain('Billing and token usage are not connected');
+    expect(help).toBeTruthy();
+    expect(help.tagName).toBe('DIV');
+    expect(help.textContent).toContain('Unavailable');
+  });
+
+  test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Switch card');
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).toBeTruthy();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    const focusable = Array.from(dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+    expect(focusable.length).toBeGreaterThan(1);
+    act(() => {
+      focusable[focusable.length - 1].focus();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    });
+    expect(document.activeElement).toBe(focusable[0]);
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
 });
