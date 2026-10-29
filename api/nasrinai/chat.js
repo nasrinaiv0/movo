@@ -3,7 +3,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const MAX_MESSAGE_CHARS = 4000;
-const MAX_CONTEXT_TRANSACTIONS = 80;
+const MAX_CONTEXT_TRANSACTIONS = 40;
 const MAX_RESPONSE_CHARS = 12000;
 const DEFAULT_NASRINAI_URL = 'https://nasrinai.com';
 
@@ -29,6 +29,20 @@ function safeText(value, max = 4000) {
   return typeof value === 'string'
     ? value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max)
     : '';
+}
+
+function selectRelevantTransactions(transactions, message, accounts = []) {
+  const stopWords = new Set(['about','after','again','also','amount','and','are','can','could','did','does','for','from','have','help','how','into','last','most','much','my','please','show','spending','summarize','that','the','their','then','this','transactions','what','when','which','with','would','your']);
+  const tokens = String(message || '').toLowerCase().match(/[a-z0-9]{3,}/g) || [];
+  const terms = [...new Set(tokens.filter((word) => !stopWords.has(word)))].slice(0, 8);
+  const rows = Array.isArray(transactions) ? transactions : [];
+  const matched = terms.length ? rows.filter((row) => {
+    const account = accounts.find((item) => item.id === row.account_id);
+    const haystack = [row.merchant, row.category, row.transaction_type, account?.name].join(' ').toLowerCase();
+    return terms.some((term) => haystack.includes(term));
+  }) : [];
+  const selected = matched.length ? matched : rows;
+  return selected.slice(0, MAX_CONTEXT_TRANSACTIONS);
 }
 
 function buildFinancialContext({ accounts = [], transactions = [], budgets = [] }) {
@@ -175,7 +189,7 @@ module.exports = async function handler(req, res) {
         .order('display_order', { ascending: true }).limit(50),
       db.from('transactions')
         .select('account_id,transaction_type,amount,currency,merchant,category,note,occurred_at')
-        .order('occurred_at', { ascending: false }).limit(MAX_CONTEXT_TRANSACTIONS),
+        .order('occurred_at', { ascending: false }).limit(250),
       db.from('budgets')
         .select('category,monthly_limit,currency,starts_on,is_active')
         .eq('is_active', true).order('starts_on', { ascending: false }).limit(50)
@@ -185,7 +199,7 @@ module.exports = async function handler(req, res) {
     }
     const context = buildFinancialContext({
       accounts: accountResult.data || [],
-      transactions: transactionResult.data || [],
+      transactions: selectRelevantTransactions(transactionResult.data || [], message, accountResult.data || []),
       budgets: budgetResult.data || []
     });
 
@@ -247,6 +261,7 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports.buildFinancialContext = buildFinancialContext;
+module.exports.selectRelevantTransactions = selectRelevantTransactions;
 module.exports.buildPrompt = buildPrompt;
 module.exports.extractReply = extractReply;
 module.exports.allowedOrigin = allowedOrigin;
