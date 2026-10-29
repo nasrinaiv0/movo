@@ -81,6 +81,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
 
 - [x] Clarify Clear Local Data behavior: it resets preferences to defaults, removes local/demo records in the current session, and does not affect cloud records; add a regression test for the confirmation copy, preference reset, and sample removal.
+- [x] Detect localStorage quota/security failures instead of reporting local persistence or data clearing as successful; show an accessible warning with a retry action and test both failure and recovery paths.
+- [x] Validate custom card-sticker uploads by raster MIME type, 10 MB file size, and 24 MP decoded-pixel limit; surface local save/removal errors and include uploaded artwork in Clear Local Data and the Privacy Policy.
+- [x] Validate custom card-sticker uploads by raster MIME type, 10 MB file limit, and 24 MP decoded-pixel limit; report local-storage save/removal failures and keep sticker changes rolled back when they cannot be persisted.
 
 ## Additional increment — local finance persistence and CSV import (2026-10-29)
 

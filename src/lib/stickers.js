@@ -187,33 +187,112 @@ export const defaultThemeFor = (id) => THEMES[hash(String(id || 'x')) % THEMES.l
 
 /* ---------- custom stickers (user's own artwork, kept on the device) ---------- */
 const CUSTOM_KEY = 'movo.customStickers.v1';
+const MAX_CUSTOM_STICKER_BYTES = 10 * 1024 * 1024;
+const MAX_CUSTOM_STICKER_PIXELS = 24_000_000;
+const ALLOWED_CUSTOM_STICKER_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']);
 let customList = [];
 try { customList = JSON.parse(localStorage.getItem(CUSTOM_KEY)) || []; } catch { customList = []; }
 const listeners = new Set();
-const saveCustom = () => { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customList)); } catch { /* too large or blocked */ } listeners.forEach(fn => fn(customList)); };
+const saveCustom = () => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(customList));
+    listeners.forEach(fn => fn(customList));
+    return true;
+  } catch { return false; }
+};
 export function useCustomStickers() {
   const [list, setList] = useState(customList);
   useEffect(() => { listeners.add(setList); setList(customList); return () => listeners.delete(setList); }, []);
   return list;
 }
-export const removeCustomSticker = (id) => { customList = customList.filter(s => s.id !== id); saveCustom(); };
+export const removeCustomSticker = (id) => {
+  const previous = customList;
+  const next = previous.filter(s => s.id !== id);
+  if (next.length === previous.length) return true;
+  customList = next;
+  if (!saveCustom()) {
+    customList = previous;
+    return false;
+  }
+  return true;
+};
 
-/* Crop to the card ratio at 2x (1712x1080) so uploaded art stays crisp, then work out whether the text should be light or dark. */
+export const clearCustomStickers = () => {
+  const previous = customList;
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    window.localStorage.removeItem(CUSTOM_KEY);
+    customList = [];
+    listeners.forEach(fn => fn(customList));
+    return true;
+  } catch {
+    customList = previous;
+    return false;
+  }
+};
+
+/* Crop to the card ratio at 2x (1712x1080), while bounding input size and decoded pixels. */
 export function addCustomSticker(file) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file); const img = new Image();
+    if (!file) { reject(new Error('Choose an image file.')); return; }
+    if (!ALLOWED_CUSTOM_STICKER_TYPES.has(String(file.type || '').toLowerCase())) {
+      reject(new Error('Choose a PNG, JPEG, WebP, GIF, or AVIF image. SVG and other formats are not supported.'));
+      return;
+    }
+    if (!Number.isFinite(file.size) || file.size <= 0) {
+      reject(new Error('The selected image is empty or unreadable.'));
+      return;
+    }
+    if (file.size > MAX_CUSTOM_STICKER_BYTES) {
+      reject(new Error('Images must be 10 MB or smaller.'));
+      return;
+    }
+
+    let url;
+    try { url = URL.createObjectURL(file); } catch {
+      reject(new Error('This browser could not open the selected image.'));
+      return;
+    }
+    const img = new Image();
     img.onload = () => {
-      const cw = W * 2; const ch = H * 2; const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
-      const ctx = canvas.getContext('2d'); const scale = Math.max(cw / img.width, ch / img.height);
-      const dw = img.width * scale; const dh = img.height * scale;
-      ctx.imageSmoothingQuality = 'high'; ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh); URL.revokeObjectURL(url);
-      const px = ctx.getImageData(0, Math.round(ch * 0.62), cw, Math.round(ch * 0.38)).data; let lum = 0; let n = 0;
-      for (let i = 0; i < px.length; i += 64) { lum += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]; n += 1; }
-      const sticker = { id: `custom-${Date.now()}`, name: file.name.replace(/\.[^.]+$/, '').slice(0, 24) || 'My sticker', src: canvas.toDataURL('image/jpeg', 0.92), ink: lum / n > 150 ? 'dark' : 'light', custom: true };
-      customList = [sticker, ...customList].slice(0, 8); saveCustom(); resolve(sticker);
+      try {
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+        if (!width || !height || width * height > MAX_CUSTOM_STICKER_PIXELS) {
+          throw new Error('Image dimensions are too large. Choose an image under 24 megapixels.');
+        }
+        const cw = W * 2; const ch = H * 2;
+        const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('This browser could not process the image. Try a different image format.');
+        const scale = Math.max(cw / width, ch / height);
+        const dw = width * scale; const dh = height * scale;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+        const px = ctx.getImageData(0, Math.round(ch * 0.62), cw, Math.round(ch * 0.38)).data;
+        let lum = 0; let n = 0;
+        for (let i = 0; i < px.length; i += 64) { lum += 0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]; n += 1; }
+        const baseName = String(file.name || '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\.[^.]+$/, '').trim();
+        const sticker = { id: `custom-${Date.now()}`, name: baseName.slice(0, 24) || 'My sticker', src: canvas.toDataURL('image/jpeg', 0.92), ink: n && lum / n > 150 ? 'dark' : 'light', custom: true };
+        const previous = customList;
+        customList = [sticker, ...previous].slice(0, 8);
+        if (!saveCustom()) {
+          customList = previous;
+          throw new Error('The sticker could not be saved on this device. Browser storage may be full or unavailable; remove a large sticker or free storage, then try again.');
+        }
+        resolve(sticker);
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error('Could not process that image. Try another file.'));
+      } finally {
+        URL.revokeObjectURL(url);
+      }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image.')); };
-    img.src = url;
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image. Choose a supported PNG, JPEG, WebP, GIF, or AVIF file.')); };
+    try { img.src = url; } catch {
+      URL.revokeObjectURL(url);
+      reject(new Error('This browser could not open the selected image.'));
+    }
   });
 }
 export const findSticker = (id, list = customList) => (id ? (list.find(s => s.id === id) || THEMES.find(t => t.id === id) || null) : null);

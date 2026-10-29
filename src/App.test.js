@@ -202,11 +202,13 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
     expect(container.textContent).toContain('Effective date: October 29, 2026');
+    expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
     expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
+    expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
@@ -304,7 +306,8 @@ describe('MOVO finance frontend', () => {
     });
   });
 
-  test('Clear Local Data resets preferences and removes local/demo records without affecting cloud records', () => {
+  test('Clear Local Data resets preferences and removes local/demo records and sticker artwork without affecting cloud records', () => {
+    window.localStorage.setItem('movo.customStickers.v1', JSON.stringify([{ id: 'custom-test', name: 'Test', src: 'data:image/jpeg;base64,AA==', ink: 'light', custom: true }]));
     nav(container, 'Profile');
     clickButton(container, 'Settings');
     const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
@@ -313,9 +316,11 @@ describe('MOVO finance frontend', () => {
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
     expect(dialog.textContent).toContain('Resets browser preferences to defaults');
+    expect(dialog.textContent).toContain('custom sticker artwork');
     expect(dialog.textContent).toContain('Cloud records are not affected');
     clickButton(container, 'Clear data');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
+    expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');
     expect(container.textContent).not.toContain('SM Supermarket');
   });
@@ -456,6 +461,36 @@ describe('MOVO finance frontend', () => {
     root = createRoot(container);
     act(() => root.render(<App />));
     expect(container.textContent).toContain('Edited supermarket');
+  });
+
+  test('warns when local financial records cannot be saved and retries after storage recovers', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (['movo.local.transactions.v1', 'movo.local.accounts.v1', 'movo.samples.enabled.v1'].includes(String(key))) {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    try {
+      nav(container, 'Transactions');
+      clickButton(container, 'See All');
+      clickButton(container, 'SM Supermarket, −₱1,250.00');
+      clickButton(container, 'Edit');
+      setInputValue(container.querySelector('input[placeholder="e.g. Grocery shopping"]'), 'Storage warning regression');
+      clickButton(container, 'Save changes');
+
+      expect(container.textContent).toContain('Local changes may not be saved.');
+      expect(container.textContent).toContain('Important records may not survive a reload.');
+      clickButton(container, 'Retry save');
+      expect(container.textContent).toContain('Browser storage is still unavailable or full.');
+    } finally {
+      spy.mockRestore();
+    }
+
+    clickButton(container, 'Retry save');
+    expect(container.textContent).not.toContain('Local changes may not be saved.');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Storage warning regression');
   });
 
   test('CSV import action opens a review-first import sheet', () => {

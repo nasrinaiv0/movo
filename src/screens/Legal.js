@@ -54,6 +54,7 @@ export function TermsOfService({ c }) {
     <section className="legal-section">
       <h2>3. Local data, cloud accounts, and exports</h2>
       <p>Local/demo mode stores manually entered financial records and accounts in this browser's local storage. They persist across page reloads in the same browser profile, but they are not synced to another device and can be removed by clearing browser data or using Clear Local Data. Browser storage is not encrypted by MOVO itself. Keep a separate copy of important records.</p>
+      <p>Custom card-sticker artwork is cropped in your browser and saved in browser storage on this device. MOVO does not send that artwork to its cloud database or sync it to another device. Clear Local Data removes custom sticker artwork as well as local financial records.</p>
       <p>When cloud features are available and you sign in, records are stored in MOVO's configured cloud database and access is restricted by account-scoped authorization controls. Keep your own records where needed. CSV exports are generated from the records currently available to your session and may contain sensitive financial information; store and share them carefully.</p>
     </section>
     <section className="legal-section">
@@ -107,7 +108,7 @@ export function PrivacyPolicy({ c }) {
       <ul>
         <li><strong>Account information:</strong> email address and, if provided, display name and profile details returned by your sign-in provider.</li>
         <li><strong>Financial records:</strong> account labels and types, institution names, opening balances, transaction descriptions, amounts, dates, categories, notes, and other details you manually enter or import.</li>
-        <li><strong>Preferences:</strong> theme, accent color, display choices, and notification read-state or settings saved by the app.</li>
+        <li><strong>Preferences and artwork:</strong> theme, accent color, display choices, notification read-state or settings, card-style selections, and custom card-sticker artwork saved in browser storage.</li>
         <li><strong>NasrinAI chat:</strong> your message, conversation identifier, assistant reply, and—only after you affirm the relevant consent—the limited financial context needed for the request.</li>
         <li><strong>Technical information:</strong> basic request and error metadata needed to operate and protect the service. MOVO's chat error logging is designed to avoid recording prompts, financial records, or secret values.</li>
       </ul>
@@ -116,6 +117,7 @@ export function PrivacyPolicy({ c }) {
     <section className="legal-section">
       <h2>3. Local mode and cloud mode</h2>
       <p>In local/demo mode, manually entered financial records and accounts are stored in this browser's local storage and persist across page reloads in the same browser profile. They are not synced to other devices and can be removed by clearing browser data or using Clear Local Data. MOVO does not encrypt browser storage itself; anyone with access to your unlocked device or browser profile may be able to inspect locally stored information.</p>
+      <p>Custom card-sticker artwork is processed in your browser and saved locally on this device, including when you are signed in. It is not sent to MOVO's cloud database. You can remove individual stickers from Card Style or remove all local sticker artwork with Clear Local Data. Browser storage can be unavailable or full; MOVO will show an error when it cannot confirm that a sticker was saved or removed.</p>
       <p>When you sign in and use cloud features, MOVO uses its configured authentication and database services. Database policies and server-side ownership checks are intended to restrict records to the authenticated account. Do not use cloud features on a shared device unless you can sign out and protect the device afterward.</p>
     </section>
     <section className="legal-section">
@@ -137,7 +139,7 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>6. Retention and deletion</h2>
-      <p>Local browser preferences, manually entered financial records, and manually created accounts are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Local records are not included in cloud-account deletion requests. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.</p>
+      <p>Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear Local Data resets preferences and removes local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Local records are not included in cloud-account deletion requests. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.</p>
       <p>To request access, correction, export, blocking, or deletion of cloud data, email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.</p>
     </section>
     <section className="legal-section">

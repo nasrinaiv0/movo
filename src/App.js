@@ -20,6 +20,7 @@ import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
+import { clearCustomStickers } from './lib/stickers';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -97,6 +98,8 @@ function App() {
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
   const [toast, setToast] = useState('');
+  const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
+  const pendingLocalDataRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
@@ -116,10 +119,36 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
-  useEffect(() => { saveLocalTransactions(rawTxs, cloudMode); }, [rawTxs, cloudMode]);
-  useEffect(() => { saveLocalAccounts(localAccounts); }, [localAccounts]);
-  useEffect(() => { setSamplesEnabled(samplesOn); }, [samplesOn]);
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
+  useEffect(() => {
+    const samplesSaved = setSamplesEnabled(samplesOn);
+    if (cloudMode) {
+      if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
+      return;
+    }
+    const transactionsSaved = saveLocalTransactions(rawTxs, false);
+    const accountsSaved = saveLocalAccounts(localAccounts);
+    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    if (saved) pendingLocalDataRef.current = null;
+    else pendingLocalDataRef.current = { transactions: rawTxs, accounts: localAccounts, samplesOn };
+    setLocalPersistenceWarning(!saved);
+  }, [rawTxs, localAccounts, samplesOn, cloudMode]);
+  const retryLocalPersistence = useCallback(() => {
+    const pending = pendingLocalDataRef.current;
+    if (cloudMode && !pending) {
+      setLocalPersistenceWarning(false);
+      return;
+    }
+    const transactionsSaved = saveLocalTransactions(pending?.transactions || rawTxs, false);
+    const accountsSaved = saveLocalAccounts(pending?.accounts || localAccounts);
+    const samplesSaved = setSamplesEnabled(pending ? pending.samplesOn : samplesOn);
+    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    if (saved) pendingLocalDataRef.current = null;
+    setLocalPersistenceWarning(!saved);
+    notify(saved
+      ? (pending ? 'Your local-only records were saved on this device. They are not synced to your cloud account.' : 'Local records saved on this device.')
+      : 'Browser storage is still unavailable or full.');
+  }, [rawTxs, localAccounts, samplesOn, cloudMode, notify]);
 
   const refreshCloud = useCallback(async (user) => {
     if (!user) return;
@@ -156,7 +185,14 @@ function App() {
     getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user) refreshCloud(s.user); }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!mounted) return; setSession(s);
-      if (s?.user) refreshCloud(s.user); else { setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); }
+      if (s?.user) refreshCloud(s.user); else {
+        const pending = pendingLocalDataRef.current;
+        setCloudMode(false);
+        setCloudAccounts([]);
+        setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions));
+        setLocalAccounts(pending?.accounts || loadLocalAccounts());
+        setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
+      }
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud]);
@@ -433,8 +469,40 @@ function App() {
     setSheet(null); notify('CSV export prepared.');
   };
   const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed. Your manually entered records are kept.'); };
-  const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } clearLocalFinanceData(); setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setLocalAccounts([]); setSamplesOn(false); setSheet(null); notify('Local transactions, accounts and preferences cleared. Cloud records are unchanged.'); };
-  const signOutNow = async () => { try { await signOut(); setSession(null); setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); go('Home'); notify('Signed out securely.'); } catch { notify('Could not sign out. Please try again.'); } };
+  const clearLocal = () => {
+    pendingLocalDataRef.current = null;
+    let preferencesCleared = true;
+    try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { preferencesCleared = false; }
+    const recordsCleared = clearLocalFinanceData();
+    const stickersCleared = clearCustomStickers();
+    const allLocalDataCleared = preferencesCleared && recordsCleared && stickersCleared;
+    setPrefs({ ...DEFAULTS });
+    setRawTxs(cloudMode ? rawTxs : []);
+    setLocalAccounts([]);
+    setSamplesOn(false);
+    setLocalPersistenceWarning(!preferencesCleared || !recordsCleared);
+    setSheet(null);
+    if (allLocalDataCleared) {
+      setError('');
+      notify('Local transactions, accounts, custom stickers and preferences cleared. Cloud records are unchanged.');
+    } else {
+      setError('MOVO could not confirm that all local data was cleared. Custom sticker images or local records may remain. Check browser storage and clear this site’s data manually if needed.');
+    }
+  };
+  const signOutNow = async () => {
+    try {
+      await signOut();
+      const pending = pendingLocalDataRef.current;
+      setSession(null);
+      setCloudMode(false);
+      setCloudAccounts([]);
+      setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions));
+      setLocalAccounts(pending?.accounts || loadLocalAccounts());
+      setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
+      go('Home');
+      notify('Signed out securely.');
+    } catch { notify('Could not sign out. Please try again.'); }
+  };
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
@@ -488,6 +556,10 @@ function App() {
     {prefs.glass && <div className="glass-bg" aria-hidden="true"><i /><i /><i /></div>}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
+        {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
+          <span><strong>{cloudMode && pendingLocalDataRef.current ? 'Local-only records were not saved before cloud sign-in.' : 'Local changes may not be saved.'}</strong> {cloudMode && pendingLocalDataRef.current ? 'These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.' : 'Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.'}</span>
+          <button type="button" className="retry-save" onClick={retryLocalPersistence}>Retry save</button>
+        </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label="Dismiss error" onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
       </main>
@@ -559,7 +631,7 @@ function App() {
           <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
         </div>
       </Sheet>}
-      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes locally stored financial records and accounts. Cloud records are not affected." onClose={() => setSheet(null)}>
+      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes local financial records, accounts, and custom sticker artwork. Cloud records are not affected." onClose={() => setSheet(null)}>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Cancel</button><button type="button" className="danger-button" onClick={clearLocal}>Clear data</button></div>
       </Sheet>}
 
