@@ -44,7 +44,9 @@ export default function Profile({ c }) {
 
     <SectionTitle>About</SectionTitle>
     <section className="card menu-card">
-      {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => <div className="menu-row" key={title}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong>{sub && <small>{sub}</small>}</span><Icon name="chevron" size={16} /></div>)}
+      <div className="menu-row"><span className="menu-icon bare"><Icon name="star" size={20} /></span><span className="menu-main"><strong>MOVO App</strong><small>Version 1.0.0</small></span></div>
+      <a className="menu-row" href="/terms.html"><span className="menu-icon bare"><Icon name="doc" size={20} /></span><span className="menu-main"><strong>Terms of Service</strong></span><Icon name="chevron" size={16} /></a>
+      <a className="menu-row" href="/privacy.html"><span className="menu-icon bare"><Icon name="shield" size={20} /></span><span className="menu-main"><strong>Privacy Policy</strong></span><Icon name="chevron" size={16} /></a>
     </section>
     <section className="card menu-card gap">
       <button type="button" className="menu-row" onClick={exportCsv}><span className="menu-icon bare"><Icon name="download" size={20} /></span><span className="menu-main"><strong>Export transactions (CSV)</strong></span><Icon name="chevron" size={16} /></button>
@@ -68,10 +70,10 @@ export function EditProfile({ c }) {
       {field('Phone Number', 'phone', prefs.phone, false, <span className="flag">🇵🇭 <small>–</small></span>)}
       {field('Location', 'location', prefs.location, false, <Icon name="pin" size={17} />)}
     </section>
-    <SectionTitle action="Manage Plan" onAction={() => c.notify('Plans are not available yet.')}>Plan & Usage</SectionTitle>
+    <SectionTitle>Plan & Usage</SectionTitle>
     <section className="card plan-card">
-      <div className="plan-top"><span className="tile tone-violet"><Icon name="diamond" size={22} /></span><span><strong>NasrinAI Max</strong><small>Your current plan</small></span><Icon name="chevron" size={18} /></div>
-      <div className="usage"><div><b>Usage This Month</b><span>68%</span></div><div className="meter"><i style={{ width: '68%' }} /></div><div><small>342,000 / 500,000 tokens</small><button type="button" className="pill tone-blue" onClick={() => c.notify('Usage details are not available yet.')}>View Details</button></div></div>
+      <div className="plan-top"><span className="tile tone-violet"><Icon name="diamond" size={22} /></span><span><strong>MOVO Personal</strong><small>Finance tracking workspace</small></span></div>
+      <div className="usage"><div><b>AI usage reporting</b><span>Not connected</span></div><p className="fineprint">MOVO does not currently retrieve verified NasrinAI plan or token-usage data. No quota or billing status is implied by this screen.</p><button type="button" className="pill tone-blue" onClick={() => c.notify('Usage reporting is not connected yet. This screen does not estimate or change your NasrinAI allowance.')}>Usage details</button></div>
     </section>
     <SectionTitle>Connected Accounts</SectionTitle>
     <section className="card menu-card">
