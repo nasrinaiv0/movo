@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed } from '../lib/format';
 
@@ -52,8 +52,55 @@ export function SectionTitle({ children, action, onAction }) {
 }
 
 export function Sheet({ title, subtitle, onClose, children, label }) {
-  return <div className="sheet-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <section className="sheet" role="dialog" aria-modal="true" aria-label={label || title}>
+  const dialogRef = useRef(null);
+  const previousFocusRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return undefined;
+    previousFocusRef.current = document.activeElement;
+    const getFocusable = () => Array.from(dialog.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(element => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+    if (!dialog.contains(document.activeElement)) {
+      const first = getFocusable()[0];
+      if (first) first.focus();
+      else dialog.focus();
+    }
+
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose?.();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = getFocusable();
+      if (!focusable.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      const previous = previousFocusRef.current;
+      if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus();
+    };
+  }, [onClose]);
+
+  return <div className="sheet-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose?.(); }}>
+    <section ref={dialogRef} className="sheet" role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}>
       <span className="sheet-grabber" />
       <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={onClose}><Icon name="close" size={18} /></button>
       {title && <h2 className="sheet-title">{title}</h2>}
