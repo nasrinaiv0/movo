@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { evaluate, press, tokenize } from '../lib/calc';
-import { currencySymbol, number } from '../lib/format';
+import { currencySymbol, number, getFormatLocale } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 export const CATEGORY_ICONS = [
   ['Food & drinks', 'Food', 'food', 'orange'], ['Groceries', 'Groceries', 'cart', 'green'], ['Transport', 'Transport', 'transfer', 'blue'],
@@ -12,17 +13,17 @@ export const CATEGORY_ICONS = [
 const KEYS = [['⌫', 'AC', '%', '÷'], ['7', '8', '9', '×'], ['4', '5', '6', '−'], ['1', '2', '3', '+'], ['00', '0', '.', '=']];
 const TYPE_LABEL = { expense: 'Expense', income: 'Income', transfer: 'Transfer' };
 const keyFor = (k) => ({ '*': '×', x: '×', '/': '÷', '-': '−', Enter: '=', Backspace: '⌫', Escape: null, Delete: 'AC' }[k] ?? k);
-const pretty = (expr) => tokenize(expr).map(t => (/^\d/.test(t) || t.startsWith('.') ? Number(t).toLocaleString('en-PH', { maximumFractionDigits: 2 }) + (t.endsWith('.') ? '.' : '') : ` ${t} `)).join('');
+const pretty = (expr) => tokenize(expr).map(t => (/^\d/.test(t) || t.startsWith('.') ? Number(t).toLocaleString(getFormatLocale(), { maximumFractionDigits: 2 }) + (t.endsWith('.') ? '.' : '') : ` ${t} `)).join('');
 
 /** Calculator-first add/edit transaction sheet: type the amount on the keypad, pick a category, save. */
 export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan }) {
   const [expr, setExpr] = useState(form.amount ? String(Number(form.amount)) : '');
   const [allCats, setAllCats] = useState(false);
   const [padOpen, setPadOpen] = useState(true);
-  const [now, setNow] = useState(() => new Date().toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
+  const [now, setNow] = useState(() => new Date().toLocaleTimeString(getFormatLocale(), { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
   useEffect(() => {
     if (form.time) return undefined;
-    const t = setInterval(() => setNow(new Date().toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', second: '2-digit' })), 1000);
+    const t = setInterval(() => setNow(new Date().toLocaleTimeString(getFormatLocale(), { hour: 'numeric', minute: '2-digit', second: '2-digit' })), 1000);
     return () => clearInterval(t);
   }, [form.time]);
   const value = evaluate(expr);
@@ -49,7 +50,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     <div className="tx-top">
       <button type="button" className="tx-round" onClick={close} aria-label={`Close ${label}`}><Icon name="close" size={18} /></button>
       <div className="tx-seg" role="group" aria-label="Transaction type">
-        {Object.keys(TYPE_LABEL).map(t => <button type="button" key={t} className={type === t ? 'selected' : ''} aria-pressed={type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{TYPE_LABEL[t]}</button>)}
+        {Object.keys(TYPE_LABEL).map(t => <button type="button" key={t} className={type === t ? 'selected' : ''} aria-pressed={type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{tr(TYPE_LABEL[t])}</button>)}
       </div>
       {onScan ? <button type="button" className="tx-round" onClick={onScan} aria-label="Scan a receipt"><Icon name="scan" size={18} /></button> : <span className="tx-round ghost" />}
     </div>
@@ -62,18 +63,18 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
       </div>
     </div>
 
-    <label className="tx-note"><Icon name="doc" size={18} /><input aria-label="Description" required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder={type === 'income' ? 'Where is it from?' : type === 'transfer' ? 'What is the transfer for?' : 'What was it for?'} /></label>
+    <label className="tx-note"><Icon name="doc" size={18} /><input aria-label="Description" required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? 'What is the transfer for?' : tr('What was it for?')} /></label>
 
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label="Category">
-      <div className="tx-cats-head"><span>Category</span><button type="button" onClick={() => setAllCats(v => !v)}>{allCats ? 'Less' : 'View all'}<Icon name="down" size={14} className={allCats ? 'flip' : ''} /></button></div>
-      <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={form.category === value ? 'selected' : ''} aria-pressed={form.category === value} onClick={() => setForm({ ...form, category: value })}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{name}</button>)}</div>
+      <div className="tx-cats-head"><span>{tr('Category')}</span><button type="button" onClick={() => setAllCats(v => !v)}>{allCats ? tr('Less') : tr('View all')}<Icon name="down" size={14} className={allCats ? 'flip' : ''} /></button></div>
+      <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={form.category === value ? 'selected' : ''} aria-pressed={form.category === value} onClick={() => setForm({ ...form, category: value })}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{tr(name)}</button>)}</div>
     </section>}
 
     <div className="tx-meta">
-      <label><span>Date</span><input type="date" required value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label>
-      {form.time ? <label><span>Time</span><input type="time" step="1" aria-label="Time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></label>
-        : <button type="button" className="tx-clock" onClick={() => setForm({ ...form, time: new Date().toTimeString().slice(0, 8) })} aria-label={`Time recorded automatically when saved, now ${now}. Tap to set a time.`}><span>Time · auto</span><b>{now}</b></button>}
-      {type === 'transfer' && accounts.length > 0 && <label><span>To account</span><select aria-label="To account" value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">Choose</option>{accounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+      <label><span>{tr('Date')}</span><input type="date" required value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label>
+      {form.time ? <label><span>{tr('Time')}</span><input type="time" step="1" aria-label="Time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></label>
+        : <button type="button" className="tx-clock" onClick={() => setForm({ ...form, time: new Date().toTimeString().slice(0, 8) })} aria-label={`Time recorded automatically when saved, now ${now}. Tap to set a time.`}><span>{tr('Time · auto')}</span><b>{now}</b></button>}
+      {type === 'transfer' && accounts.length > 0 && <label><span>{tr('To account')}</span><select aria-label="To account" value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">{tr('Choose account')}</option>{accounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
     </div>
 
     {padOpen ? <div className="tx-pad" role="group" aria-label="Amount keypad">
@@ -83,8 +84,8 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
 
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="tx-bottom">
-      {(cloudMode || accounts.length > 0) ? <label className="tx-account"><span>{type === 'transfer' ? 'From' : 'Account'}</span><select aria-label={type === 'transfer' ? 'From account' : 'Account'} required={cloudMode} value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">Choose account</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label> : <p className="tx-local">Saved on this device</p>}
-      <button type="submit" className="primary-button tx-save" disabled={!canSave}>{busy ? 'Saving…' : editing ? 'Save changes' : `Save ${TYPE_LABEL[type]}`}</button>
+      {(cloudMode || accounts.length > 0) ? <label className="tx-account"><span>{type === 'transfer' ? tr('From') : tr('Account')}</span><select aria-label={type === 'transfer' ? 'From account' : 'Account'} required={cloudMode} value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">{tr('Choose account')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label> : <p className="tx-local">{tr('Saved on this device')}</p>}
+      <button type="submit" className="primary-button tx-save" disabled={!canSave}>{busy ? 'Saving…' : editing ? tr('Save changes') : tr(`Save ${TYPE_LABEL[type]}`)}</button>
     </div>
   </form>}</Sheet>;
 }

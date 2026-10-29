@@ -2,6 +2,7 @@ import Icon, { NasrinMark } from './Icon';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { readImageText } from '../lib/ocr';
+import { t as tr } from '../lib/i18n';
 
 const ackKey = (id) => `movo.ai.ack.v1.${id}`;
 const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) === '1'; } catch { return false; } };
@@ -184,7 +185,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     </header>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label="Conversation">
       {!messages.length && <div className="movo-ai-welcome">
-        <h2>Your money, with context.</h2>
+        <h2>{tr('Your money, with context.')}</h2>
         <p>Ask about spending, income, categories, accounts, or budgets. NasrinAI receives a limited, user-scoped snapshot—not access to your MOVO database.</p>
         <div className="movo-ai-suggestions">
           {['Summarize my recent spending', 'Which categories cost me the most?', 'How am I doing against my budgets?'].map((prompt) =>
@@ -201,7 +202,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       <div ref={endRef} />
     </div>
     {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label="Dismiss message" onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}
-    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="primary-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
+    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="primary-button" onClick={onSignIn}>{tr('Sign in to MOVO')}</button></div> : <>
       {!privacyAccepted && <button type="button" className="movo-ai-review" onClick={() => setConsentOpen(true)}><Icon name="lock" size={16} strokeWidth={2} />Review and accept to start chatting</button>}
       <form className="movo-ai-composer" onSubmit={send}>
         <input ref={fileRef} type="file" accept="image/*,.txt,.csv,text/plain,text/csv" hidden onChange={attach} aria-label="Attach a photo or file" />

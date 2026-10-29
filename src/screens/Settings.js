@@ -1,6 +1,7 @@
 import React from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
+import { t as tr } from '../lib/i18n';
 
 export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
 export const THEMES = [
@@ -63,7 +64,7 @@ function Row({ icon, title, sub, right, onClick, chevron = true, danger, status 
   const descriptionId = sub ? settingDescriptionId(title) : undefined;
   return <Tag type={onClick ? 'button' : undefined} aria-disabled={!onClick && status ? 'true' : undefined} className={`menu-row${danger ? ' danger' : ''}${status ? ' unavailable-row' : ''}`} onClick={onClick}>
     <span className="menu-icon bare"><Icon name={icon} size={20} /></span>
-    <span className="menu-main"><strong>{title}</strong>{sub && <small id={descriptionId}>{sub}</small>}</span>{right}{status && <span className="pill tone-gray">{status}</span>}{chevron && onClick && <Icon name="chevron" size={16} />}
+    <span className="menu-main"><strong>{tr(title)}</strong>{sub && <small id={descriptionId}>{sub}</small>}</span>{right}{status && <span className="pill tone-gray">{status}</span>}{chevron && onClick && <Icon name="chevron" size={16} />}
   </Tag>;
 }
 
@@ -114,9 +115,9 @@ export default function Settings({ c }) {
   const q = query.trim().toLowerCase();
   const shown = sections.map(s => ({ ...s, rows: s.rows.filter(r => !q || `${r.title} ${r.sub}`.toLowerCase().includes(q)) })).filter(s => s.rows.length);
   return <>
-    <SubHeader title="Settings" onBack={() => go('Profile')} />
-    <label className="search-field"><Icon name="search" size={18} /><input aria-label="Search settings" placeholder="Search settings" value={query} onChange={e => setQuery(e.target.value)} /></label>
-    {shown.map(s => <section key={s.title}><h2 className="group-title">{s.title}</h2>
+    <SubHeader title={tr('Settings')} onBack={() => go('Profile')} />
+    <label className="search-field"><Icon name="search" size={18} /><input aria-label="Search settings" placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} /></label>
+    {shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
       <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={!['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) && prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
     {!shown.length && <p className="empty">No settings match “{query}”.</p>}
   </>;
@@ -125,8 +126,8 @@ export default function Settings({ c }) {
 export function Appearance({ c }) {
   const { prefs, setPref, go } = c;
   return <>
-    <SubHeader title="Appearance" onBack={() => go('Settings')} />
-    <h2 className="group-title">Theme</h2>
+    <SubHeader title={tr('Appearance')} onBack={() => go('Settings')} />
+    <h2 className="group-title">{tr('Theme')}</h2>
     <div className="card pad"><ThemePicker c={c} />
       <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>All themes <Icon name="chevron" size={14} /></button></div>
     <h2 className="group-title">Liquid Glass</h2>
@@ -153,9 +154,9 @@ export function Appearance({ c }) {
 export function NotificationSettings({ c }) {
   const { prefs, setPref, go } = c;
   const T = (key, label, disabled = false, reason = 'This delivery method is not connected in the current web build.') => <Toggle checked={!disabled && prefs[key]} onChange={v => setPref(key, v)} label={label} describedBy={`notification-setting-${key}-description`} disabled={disabled} reason={reason} />;
-  const item = (icon, title, sub, key, tone, disabled = false, reason) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong><small id={`notification-setting-${key}-description`}>{sub}</small></span>{T(key, title, disabled, reason)}</div>;
+  const item = (icon, title, sub, key, tone, disabled = false, reason) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong><small id={`notification-setting-${key}-description`}>{sub}</small></span>{T(key, title, disabled, reason)}</div>;
   return <>
-    <SubHeader title="Notifications" onBack={() => go('Notifications')} />
+    <SubHeader title={tr('Notifications')} onBack={() => go('Notifications')} />
     <section className="card menu-card">{item('bell', 'Notifications', 'Manage how you receive notifications', 'notifications')}</section>
     <h2 className="group-title">Notification Channels</h2>
     <section className="card menu-card">

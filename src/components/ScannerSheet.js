@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { readImageText, parseReceipt, guessCategory } from '../lib/ocr';
-import { money, shown } from '../lib/format';
+import { money, shown, getFormatLocale } from '../lib/format';
 
 const KEY = 'movo.scans.v1';
 export const loadScans = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
@@ -96,7 +96,7 @@ export default function ScannerSheet({ show, onLog, onClose }) {
       <div className="scan-log-head"><h3>Scan log</h3><button type="button" className="link-button" onClick={() => update([])}>Clear</button></div>
       {scans.map(s => <button type="button" key={s.id} className="scan-row" onClick={() => { setActive(s); setMode('review'); }}>
         {s.thumb ? <img src={s.thumb} alt="" /> : <span className="scan-row-icon"><Icon name="receipt" size={18} /></span>}
-        <span className="menu-main"><strong>{s.merchant || 'Receipt'}</strong><small>{new Date(s.at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {s.status === 'logged' ? 'Logged' : 'Needs review'}</small></span>
+        <span className="menu-main"><strong>{s.merchant || 'Receipt'}</strong><small>{new Date(s.at).toLocaleString(getFormatLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {s.status === 'logged' ? 'Logged' : 'Needs review'}</small></span>
         <b>{s.amount ? shown(show, money(s.amount)) : '—'}</b>
       </button>)}
     </section>}

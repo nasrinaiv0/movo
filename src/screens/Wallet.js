@@ -6,6 +6,7 @@ import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet
 import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
 import { money, shown } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets', 'Cash & Other'];
 const typeOf = { Cards: ['card'], 'Bank Accounts': ['bank'], 'E-Wallets': ['e_wallet'], 'Cash & Other': ['cash', 'investment', 'other'] };
@@ -57,51 +58,51 @@ export default function Wallet({ c }) {
 
   const boxes = [
     { id: 'balance', label: 'Total balance', node: <section className="card balance-card compact" aria-label="Total balance">
-      <div className="balance-label">Total Balance <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
+      <div className="balance-label">{tr('Total Balance')} <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
-      {c.deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={12} /> +{c.deltas.balance}% vs last month</span>}
+      {c.deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={12} /> +{c.deltas.balance}% {tr('vs last month')}</span>}
       <div className="balance-art"><Sparkline values={stats.trend} width={200} height={90} /></div>
     </section> },
     { id: 'actions', label: 'Quick actions', node: <section aria-label="Quick actions">
-      <SectionTitle action="More" onAction={() => setSheet({ name: 'actions' })}>Quick Actions</SectionTitle>
-      <div className="qa-grid">{actions.map(([icon, label, fn]) => <button type="button" key={label} className="qa-button" onClick={fn}><span className="qa-icon"><Icon name={icon} size={20} strokeWidth={2} /></span>{label}</button>)}</div>
+      <SectionTitle action={tr('More')} onAction={() => setSheet({ name: 'actions' })}>{tr('Quick Actions')}</SectionTitle>
+      <div className="qa-grid">{actions.map(([icon, label, fn]) => <button type="button" key={label} className="qa-button" onClick={fn}><span className="qa-icon"><Icon name={icon} size={20} strokeWidth={2} /></span>{tr(label)}</button>)}</div>
     </section> },
     { id: 'types', label: 'Balance by type', node: <section className="mini-grid" aria-label="Balance by account type">
       {groups.map(([label, items, icon]) => {
         const sum = items.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
         return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label)}>
-          <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{label}</small></span>
+          <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{tr(label)}</small></span>
           <strong className={sum < 0 ? 'neg' : ''}><Money value={sum} show={show} digits={0} /></strong>
-          {sum > 0 && total > 0 && <em className="pct">{Math.round((sum / total) * 100)}%</em>}{sum < 0 && <em className="pct owed">Owed</em>}
+          {sum > 0 && total > 0 && <em className="pct">{Math.round((sum / total) * 100)}%</em>}{sum < 0 && <em className="pct owed">{tr('Owed')}</em>}
         </button>;
       })}
     </section> },
     { id: 'cards', label: 'My cards', node: cards.length > 0 && <section aria-label="My cards">
-      <SectionTitle action="See All" onAction={() => setWalletFilter('Cards')}>My Cards</SectionTitle>
+      <SectionTitle action={tr('See All')} onAction={() => setWalletFilter('Cards')}>{tr('My Cards')}</SectionTitle>
       <div className="card-scroller mini" aria-label="Your cards">
         {cards.map(a => <button type="button" className="card-slide" key={a.id} aria-label={`Open ${a.name} card`} onClick={() => { setSelectedCardId(a.id); setWalletFilter('Cards'); }}>{cardVisual(a)}</button>)}
       </div>
     </section> },
     { id: 'accounts', label: 'Accounts', node: <section aria-label="Accounts">
-      <SectionTitle>Accounts</SectionTitle>
+      <SectionTitle>{tr('Accounts')}</SectionTitle>
       {list.filter(a => a.account_type !== 'card').length ? renderAccounts(list.filter(a => a.account_type !== 'card')) : <p className="empty">No bank, e-wallet or cash accounts yet.</p>}
     </section> },
     { id: 'recent', label: 'Recent activity', node: <section aria-label="Recent activity">
-      <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Activity</SectionTitle>
+      <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Activity')}</SectionTitle>
       <div className="card list-card">{recent.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}</div>
     </section> },
   ];
 
   return <>
-    <RootHeader title="Wallet" subtitle="Your accounts, cards and balances." onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
-    <Chips label="Filter wallet accounts" items={FILTERS} value={walletFilter} onChange={setWalletFilter} />
+    <RootHeader title={tr('Wallet')} subtitle={tr('Your accounts, cards and balances.')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <Chips label="Filter wallet accounts" items={FILTERS.map(key => ({ key, label: tr(key) }))} value={walletFilter} onChange={setWalletFilter} />
     <div className="wallet-tools" role="toolbar" aria-label="Wallet view">
-      <button type="button" className="tool-pill" onClick={() => setSheet({ name: 'walletView' })} aria-label="Sort and view options"><Icon name="sort" size={15} />{SORTS.find(x => x[0] === wv.sort)?.[1]}</button>
+      <button type="button" className="tool-pill" onClick={() => setSheet({ name: 'walletView' })} aria-label="Sort and view options"><Icon name="sort" size={15} />{tr(SORTS.find(x => x[0] === wv.sort)?.[1] || '')}</button>
       <div className="tool-seg" role="group" aria-label="Layout">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} aria-pressed={wv.view === key} aria-label={`${label} view`} onClick={() => setWv({ view: key })}><Icon name={icon} size={16} /></button>)}</div>
       {walletFilter === 'All' && <button type="button" className="tool-pill icon" onClick={() => setEditing(v => !v)} aria-pressed={editing} aria-label="Customize wallet"><Icon name="edit" size={15} /></button>}
     </div>
 
-    {walletFilter === 'All' && <EditableBoxes title="Wallet" boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
+    {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
 
     {walletFilter === 'Cards' && (cards.length ? <>
       <div className="card-scroller" ref={scroller} onScroll={onScroll} aria-label="Your cards">
@@ -117,9 +118,9 @@ export default function Wallet({ c }) {
       </section>
       <p id="card-control-limitations" className="fineprint">MOVO cannot block an actual card or change issuer limits. Use your bank or card issuer's app for those actions.</p>
       <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label="Switch card">
-        <span><small>Available Balance</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
+        <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>
-      <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Transactions</SectionTitle>
+      <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">No transactions for this card yet.</p>}</section>
     </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>No cards yet</h3><p>Add a card, then dress it with any of 270+ stickers.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>Add card</button></div>)}
 
@@ -129,11 +130,11 @@ export default function Wallet({ c }) {
       {!list.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>No {walletFilter.toLowerCase()} yet</h3><p>Add an account to start organizing your finances.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: walletFilter === 'Bank Accounts' ? 'bank' : walletFilter === 'E-Wallets' ? 'e_wallet' : 'cash' })}>Add account</button></div>}
     </>}
 
-    {sheet?.name === 'walletView' && <Sheet title="Sort & view" subtitle="Choose how accounts and cards appear in your wallet." onClose={() => setSheet(null)} label="Sort and view">
+    {sheet?.name === 'walletView' && <Sheet title={tr('Sort & view')} subtitle="Choose how accounts and cards appear in your wallet." onClose={() => setSheet(null)} label="Sort and view">
       <p className="mini-title">Sort accounts by</p>
-      <div className="sheet-list">{SORTS.map(([key, label]) => <button type="button" key={key} className={`sheet-card${wv.sort === key ? ' selected' : ''}`} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span className="account-main"><strong>{label}</strong></span>{wv.sort === key && <Icon name="check" size={18} />}</button>)}</div>
+      <div className="sheet-list">{SORTS.map(([key, label]) => <button type="button" key={key} className={`sheet-card${wv.sort === key ? ' selected' : ''}`} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span className="account-main"><strong>{tr(label)}</strong></span>{wv.sort === key && <Icon name="check" size={18} />}</button>)}</div>
       <p className="mini-title">Layout</p>
-      <div className="seg-control">{VIEWS.map(([key, , label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}>{label}</button>)}</div>
+      <div className="seg-control">{VIEWS.map(([key, , label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}>{tr(label)}</button>)}</div>
       <p className="mini-title">Card format</p>
       <div className="format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
         {key === 'card' ? <CardArt a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 12500, currency: 'PHP' }} show={show} styleId="" /> : <AccountTile a={{ name: 'Your Bank', account_type: 'card', balance: 12500, currency: 'PHP' }} show={show} size="preview" />}<span>{label}</span></button>)}</div>

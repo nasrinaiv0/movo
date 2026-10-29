@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
 import { Tile } from './ui';
 import { relativeDay, shown, signed } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 const LIMIT = 40;
 /* Amounts are only searchable while balances are visible, so a hidden balance can't be probed by typing numbers. */
@@ -54,13 +55,13 @@ export default function SearchOverlay({ txs, show, refDate, onOpen, onClose }) {
       <div className="search-top">
         <label className="search-bar">
           <Icon name="search" size={18} />
-          <input ref={inputRef} type="search" enterKeyHint="search" autoComplete="off" spellCheck="false" aria-label="Filter transactions" placeholder="Search transactions" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input ref={inputRef} type="search" enterKeyHint="search" autoComplete="off" spellCheck="false" aria-label="Filter transactions" placeholder={tr('Search transactions')} value={query} onChange={(e) => setQuery(e.target.value)} />
           {query && <button type="button" className="search-clear" aria-label="Clear search" onClick={() => { setQuery(''); inputRef.current?.focus(); }}><Icon name="close" size={14} strokeWidth={2.2} /></button>}
         </label>
-        <button type="button" className="search-cancel" onClick={() => close()}>Cancel</button>
+        <button type="button" className="search-cancel" onClick={() => close()}>{tr('Cancel')}</button>
       </div>
       <div className="search-results" aria-live="polite">
-        <p className="search-caption">{terms.length ? `${results.length} ${results.length === 1 ? 'result' : 'results'}` : 'Recent'}</p>
+        <p className="search-caption">{terms.length ? (results.length === 1 ? tr('1 result') : tr('{n} results', { n: results.length })) : tr('Recent')}</p>
         {terms.length > 0 && !results.length && <div className="search-empty"><Icon name="search" size={22} /><p>No transactions match “{query.trim()}”</p></div>}
         {results.slice(0, LIMIT).map((t, i) => <button type="button" key={t.id} className="search-row" style={{ '--i': Math.min(i, 8) }} onClick={() => close(() => onOpen(t))}>
           <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} size={38} />

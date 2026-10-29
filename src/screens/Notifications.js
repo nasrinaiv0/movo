@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, SubHeader, Chips, Tile } from '../components/ui';
 import { money, shown, timeLabel, longDate, chipLabel, chipTone, dayKey, relativeDay } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 const FILTERS = [{ key: 'All', label: 'All' }, { key: 'Unread', label: 'Unread', dot: true }, { key: 'Transactions', label: 'Transactions' }, { key: 'Account', label: 'Account' }, { key: 'System', label: 'System' }];
 
@@ -24,7 +25,7 @@ export default function Notifications({ c }) {
   const groups = [];
   list.forEach(n => { const label = relativeDay(n.at, refDate); let g = groups.find(x => x.label === label); if (!g) { g = { label, items: [] }; groups.push(g); } g.items.push(n); });
   return <>
-    <RootHeader title="Notifications" onSearch={c.openSearch} onSettings={() => go('NotificationSettings')} unread={false} hideBell />
+    <RootHeader title={tr('Notifications')} onSearch={c.openSearch} onSettings={() => go('NotificationSettings')} unread={false} hideBell />
     <Chips label="Filter notifications" items={FILTERS} value={nFilter} onChange={setNFilter} />
     {groups.map((g, i) => <section key={g.label}>
       <div className="section-title"><h2>{g.label}</h2>{i === 0 && <button type="button" className="link-button" onClick={markAllRead}>Mark all as read</button>}</div>
@@ -52,8 +53,8 @@ export function NotificationDetail({ c }) {
       <div className="detail-row"><Tile name={t.merchant} size={42} radius={13} /><span><small>Merchant</small><strong>{t.merchant}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="coin" size={22} /></span><span><small>Amount</small><strong>{shown(show, money(t.amount, t.currency))}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="calendar" size={22} /></span><span><small>Date & Time</small><strong>{longDate(t.date)}, {timeLabel(t.date)}</strong></span></div>
-      <div className="detail-row"><span className="menu-icon bare"><Icon name="card" size={22} /></span><span><small>Account</small><strong>{account ? `${account.name}${account.mask ? ` •••• ${account.mask}` : ''}` : t.accountName}</strong></span></div>
-      <div className="detail-row"><span className="menu-icon bare"><Icon name="cart" size={22} /></span><span><small>Category</small><strong>{t.category}</strong></span><em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em></div>
+      <div className="detail-row"><span className="menu-icon bare"><Icon name="card" size={22} /></span><span><small>{tr('Account')}</small><strong>{account ? `${account.name}${account.mask ? ` •••• ${account.mask}` : ''}` : t.accountName}</strong></span></div>
+      <div className="detail-row"><span className="menu-icon bare"><Icon name="cart" size={22} /></span><span><small>{tr('Category')}</small><strong>{t.category}</strong></span><em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em></div>
     </section>}
     {t && <button type="button" className="wide-button" onClick={() => { setTxFilter('All'); c.setSearch(t.merchant); go('Transactions'); }}><Icon name="list" size={18} /> View in Transactions</button>}
   </>;

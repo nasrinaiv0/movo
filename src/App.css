@@ -1318,3 +1318,4 @@ button.account-tile:active { transform: scale(.98); }
 [dir="rtl"] .balance-go { right: auto; left: 18px; }
 [dir="rtl"] .toggle.on span { transform: translateX(-20px); }
 [dir="rtl"] .toggle span { left: auto; right: 2px; }
+.tx-pad, .acct-pad { direction: ltr; }

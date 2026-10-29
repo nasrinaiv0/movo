@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { RootHeader, SubHeader, SectionTitle } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
+import { t as tr } from '../lib/i18n';
 
 const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad ? 'bad' : 'good'}`}><Icon name={bad ? 'arrowDown' : 'arrowUp'} size={11} strokeWidth={2.4} />{v}%</span>);
 
@@ -12,7 +13,7 @@ export default function Profile({ c }) {
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
-    <RootHeader title="Profile" onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <RootHeader title={tr('Profile')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label="Edit profile">
       <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
       <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="info" size={13} /> Plan details unavailable</em></span>
@@ -23,7 +24,7 @@ export default function Profile({ c }) {
         <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{label}</small><strong>{shown(show, money(value))}</strong><Delta v={d} bad={bad} /></article>)}
     </section>
 
-    <SectionTitle action="See All" onAction={() => go('Wallet')}>Accounts</SectionTitle>
+    <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
     <section className="card menu-card">
       {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
         <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{label}</strong><small>{list.length} {list.length === 1 ? 'account' : 'accounts'}</small></span><b>{shown(show, money(sum(list)))}</b><Icon name="chevron" size={16} />
@@ -33,10 +34,10 @@ export default function Profile({ c }) {
       {menu.map(([icon, label, view]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{label}</strong></span><Icon name="chevron" size={16} /></button>)}
     </section>
 
-    <SectionTitle action="See All" onAction={() => go('Appearance')}>App Appearance</SectionTitle>
+    <SectionTitle action={tr('See All')} onAction={() => go('Appearance')}>App Appearance</SectionTitle>
     <ThemePicker c={c} compact />
 
-    <SectionTitle>Data & Sync</SectionTitle>
+    <SectionTitle>{tr('Data & Sync')}</SectionTitle>
     <section className="card menu-card">
       <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go('Sign in')}>
         <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>Cloud Sync</strong><small>{c.cloudMode ? 'Active for your signed-in account' : 'Sign in to use cloud storage'}</small></span><span className="pill tone-blue">{c.cloudMode ? 'Active' : 'Sign in'}</span><Icon name="chevron" size={16} />
@@ -92,7 +93,7 @@ export function EditProfile({ c }) {
   const field = (label, key, value, readOnly, extra, maxLength) => <label className="field-row"><span>{label}</span>
     <span className="field-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} maxLength={maxLength} onChange={e => setDraft(current => ({ ...current, [key]: e.target.value }))} /></span></label>;
   return <>
-    <SubHeader title="Profile" onBack={() => go('Profile')} right={<button type="submit" form="movo-profile-form" className="link-button strong">Save</button>} />
+    <SubHeader title={tr('Profile')} onBack={() => go('Profile')} right={<button type="submit" form="movo-profile-form" className="link-button strong">{tr('Save')}</button>} />
     <div className="avatar-edit"><span className="avatar huge">{(draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span></div>
     <form id="movo-profile-form" className="card form-card" onSubmit={saveProfile} noValidate>
       <p className="fineprint">Name, phone number, and location are saved in this browser only. Your sign-in email is managed by your authentication provider.</p>

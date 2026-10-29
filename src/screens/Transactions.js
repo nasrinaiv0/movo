@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money } from '../components/ui';
 import { money, shown, monthRange, monthLabel, dayKey, relativeDay, longDate } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
 const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
@@ -40,7 +41,7 @@ export default function Transactions({ c }) {
   const sliders = <button type="button" className="round-button flat" aria-label="Quick actions" title="Quick actions" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
 
   return <>
-    <RootHeader title="Transactions" onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
+    <RootHeader title={tr('Transactions')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
     <Chips label="Filter transactions by type" items={FILTERS} value={txFilter} onChange={setTxFilter} trailing={sliders} />
     {txFilter !== 'All' && dateRange}
     {c.search && <p className="search-note">Showing results for “{c.search}” <button type="button" className="link-button" onClick={() => c.setSearch('')}>Clear</button></p>}
@@ -76,7 +77,7 @@ export default function Transactions({ c }) {
     </section>}
 
     {txFilter !== 'All' && <Chips label="Sort transactions" items={sorts} value={sort} onChange={setSortKey} />}
-    {txFilter === 'All' ? <SectionTitle action={expanded ? 'Show less' : 'See All'} onAction={() => setExpanded(!expanded)}>Recent Transactions</SectionTitle>
+    {txFilter === 'All' ? <SectionTitle action={expanded ? 'Show less' : 'See All'} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
       : sort === 'Date' && <div className="month-total"><span>{monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
 
     <div className="tx-groups">

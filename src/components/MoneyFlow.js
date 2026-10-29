@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Money } from './ui';
-import { dayKey } from '../lib/format';
+import { dayKey, getFormatLocale } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 const RANGES = [['day', 'Days'], ['week', 'Weeks'], ['month', 'Months'], ['year', 'Years'], ['custom', 'Custom']];
 const DAY = 86400000;
 const startOfWeek = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
-const fmt = (d, opts) => new Date(d).toLocaleDateString('en-PH', opts);
+const fmt = (d, opts) => new Date(d).toLocaleDateString(getFormatLocale(), opts);
 
 /** Builds income/expense buckets for the chosen granularity, ending at `ref`. */
 export function buildFlow(txs, range, ref = new Date(), custom = {}) {
@@ -51,12 +52,12 @@ export default function MoneyFlow({ txs, refDate, show }) {
   const net = totals.income - totals.expense;
   return <section className="card flow-card" aria-label="Money flow">
     <div className="flow-head">
-      <div><h2>Money Flow</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
+      <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
     </div>
-    <div className="flow-ranges" role="group" aria-label="Money flow range">{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); }}>{l}</button>)}</div>
-    {range === 'custom' && <div className="flow-custom"><label>From<input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label>To<input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
-    <div className="flow-legend"><span><i className="in" />In <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />Out <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
+    <div className="flow-ranges" role="group" aria-label="Money flow range">{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); }}>{tr(l)}</button>)}</div>
+    {range === 'custom' && <div className="flow-custom"><label>{tr('From')}<input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label>{tr('To')}<input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
+    <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
     <div className="flow-plot" role="list">
       {data.map((b, i) => <button type="button" role="listitem" key={b.key} className={`flow-col${pick === i ? ' on' : ''}`} style={{ '--i': i }} onClick={() => setPick(pick === i ? -1 : i)} aria-label={`${b.title}: in ${Math.round(b.income)}, out ${Math.round(b.expense)}`}>
         <span className="flow-bars"><i className="in" style={{ height: `${(b.income / max) * 100}%` }} /><i className="out" style={{ height: `${(b.expense / max) * 100}%` }} /></span>

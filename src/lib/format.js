@@ -55,7 +55,7 @@ export function relativeDay(date, ref = new Date()) {
 
 export const greeting = (date = new Date()) => {
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(date)) % 24;
-  return hour < 12 ? t('Good morning,') : hour < 18 ? t('Good afternoon,') : t('Good evening,');
+  return `${hour < 12 ? t('Good morning') : hour < 18 ? t('Good afternoon') : t('Good evening')},`;
 };
 
 export const signed = (type, amount, currency = BASE) =>

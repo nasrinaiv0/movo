@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { Sheet, Money } from './ui';
 import { CATEGORY_ICONS } from './TransactionSheet';
 import { evaluate } from '../lib/calc';
+import { t as tr } from '../lib/i18n';
 
 const iconFor = (cat) => CATEGORY_ICONS.find(c => c[0] === cat) || ['Other', cat, 'layout', 'gray'];
 const pct = (a, b) => (b > 0 ? Math.min(999, Math.round((a / b) * 100)) : 0);
@@ -21,16 +22,16 @@ export function budgetProgress(budgets, monthList) {
 export function BudgetsCard({ progress, plans, show, onOpen }) {
   const watch = [...progress].sort((a, b) => b.percent - a.percent).slice(0, 3);
   return <section className="card budget-card" aria-label="Budgets and plans">
-    <div className="budget-head"><h2>Budgets & Plans</h2><button type="button" className="link-button" onClick={onOpen}>Manage <Icon name="chevron" size={14} /></button></div>
-    {!progress.length && !plans.length && <button type="button" className="budget-empty" onClick={onOpen}><Icon name="target" size={20} /><span><strong>Set a monthly limit</strong><small>Get a heads-up before a category runs over, and plan savings goals.</small></span></button>}
+    <div className="budget-head"><h2>{tr('Budgets & Plans')}</h2><button type="button" className="link-button" onClick={onOpen}>{tr('Manage')} <Icon name="chevron" size={14} /></button></div>
+    {!progress.length && !plans.length && <button type="button" className="budget-empty" onClick={onOpen}><Icon name="target" size={20} /><span><strong>{tr('Set a monthly limit')}</strong><small>{tr('Get a heads-up before a category runs over, and plan savings goals.')}</small></span></button>}
     {watch.map(b => { const [, name, icon, tone] = iconFor(b.category); return <div className={`budget-row ${b.level}`} key={b.id}>
       <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
-      <span className="budget-main"><span><strong>{name}</strong><small>{b.level === 'over' ? 'Over by ' : ''}<Money value={Math.abs(b.left)} show={show} digits={0} />{b.level === 'over' ? '' : ' left'}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
+      <span className="budget-main"><span><strong>{tr(name)}</strong><small>{b.level === 'over' ? `${tr('Over by')} ` : ''}<Money value={Math.abs(b.left)} show={show} digits={0} />{b.level === 'over' ? '' : ` ${tr('left')}`}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
       <b>{b.percent}%</b>
     </div>; })}
     {plans.slice(0, 2).map(p => <div className="budget-row plan" key={p.id}>
       <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
-      <span className="budget-main"><span><strong>{p.name}</strong><small><Money value={p.saved} show={show} digits={0} /> of <Money value={p.target} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
+      <span className="budget-main"><span><strong>{p.name}</strong><small><Money value={p.saved} show={show} digits={0} /> {tr('of')} <Money value={p.target} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
       <b>{pct(p.saved, p.target)}%</b>
     </div>)}
   </section>;
@@ -57,12 +58,12 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
       setDraft(null);
     } catch (cause) { setErr(cause.message || 'Could not save. Please try again.'); }
   };
-  return <Sheet title="Budgets & Plans" subtitle={tab === 'budgets' ? `Monthly limits per category${cloudMode ? ', synced to your account' : ', saved on this device'}.` : 'Savings goals with a target and optional date, saved on this device.'} onClose={onClose} label="Budgets and plans" center>
-    <div className="seg-control two" role="group" aria-label="Section">{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{l}</button>)}</div>
+  return <Sheet title={tr('Budgets & Plans')} subtitle={tab === 'budgets' ? `Monthly limits per category${cloudMode ? ', synced to your account' : ', saved on this device'}.` : 'Savings goals with a target and optional date, saved on this device.'} onClose={onClose} label="Budgets and plans" center>
+    <div className="seg-control two" role="group" aria-label="Section">{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{tr(l)}</button>)}</div>
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>
         <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
-        <span className="budget-main"><span><strong>{name}</strong><small><Money value={b.spent} show={show} digits={0} /> of <Money value={b.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{name}</strong><small><Money value={b.spent} show={show} digits={0} /> {tr('of')} <Money value={b.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
         <b>{b.percent}%</b></button>; })}
       {tab === 'plans' && plans.map(p => { const need = Math.max(0, p.target - p.saved); const m = monthsLeft(p.due); return <button type="button" key={p.id} className="sheet-card budget-item" onClick={() => setDraft({ ...p, target: String(p.target), saved: String(p.saved) })}>
         <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
@@ -72,7 +73,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
     </div>}
     {draft && <form className="sheet-form" onSubmit={save}>
       {tab === 'budgets' ? <>
-        <label>Category<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === draft.category || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{c[1]}</option>)}</select></label>
+        <label>{tr('Category')}<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === draft.category || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{c[1]}</option>)}</select></label>
         <label>Monthly limit (PHP)<input inputMode="decimal" autoFocus value={draft.limit} onChange={e => setDraft({ ...draft, limit: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 5000" /></label>
       </> : <>
         <label>Plan name<input autoFocus maxLength={60} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Emergency fund, Japan trip" /></label>
@@ -82,8 +83,8 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
       </>}
       {err && <p className="form-error" role="alert">{err}</p>}
       <div className="sheet-actions">
-        {draft.id ? <button type="button" className="danger-button" onClick={async () => { try { if (tab === 'budgets') await onDeleteBudget(draft.id); else onDeletePlan(draft.id); setDraft(null); } catch { setErr('Could not remove it. Please try again.'); } }}>Remove</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>Cancel</button>}
-        <button type="submit" className="primary-button">Save</button>
+        {draft.id ? <button type="button" className="danger-button" onClick={async () => { try { if (tab === 'budgets') await onDeleteBudget(draft.id); else onDeletePlan(draft.id); setDraft(null); } catch { setErr('Could not remove it. Please try again.'); } }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
+        <button type="submit" className="primary-button">{tr('Save')}</button>
       </div>
     </form>}
   </Sheet>;

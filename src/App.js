@@ -13,7 +13,7 @@ import Notifications, { NotificationDetail, buildNotifications } from './screens
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
-import { LANGUAGES, detectLanguage, setLanguage, t } from './lib/i18n';
+import { LANGUAGES, detectLanguage, setLanguage, t as tr } from './lib/i18n';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
@@ -92,10 +92,10 @@ function useSystemDark() {
 function CurrencySheet({ value, fx, locale, onPick, onClose }) {
   const [q, setQ] = useState('');
   const list = CURRENCIES.map(code => ({ code, name: currencyName(code, locale) })).filter(c => !q || `${c.code} ${c.name}`.toLowerCase().includes(q.trim().toLowerCase()));
-  return <Sheet title={t('Home currency')} subtitle={t('Totals, budgets and charts are shown in this currency. Each account keeps its own currency.')} onClose={onClose} label="Home currency">
-    <label className="search-field"><Icon name="search" size={18} /><input aria-label={t('Search currencies')} placeholder={t('Search currencies')} value={q} onChange={e => setQ(e.target.value)} /></label>
+  return <Sheet title={tr('Home currency')} subtitle={tr('Totals, budgets and charts are shown in this currency. Each account keeps its own currency.')} onClose={onClose} label="Home currency">
+    <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search currencies')} placeholder={tr('Search currencies')} value={q} onChange={e => setQ(e.target.value)} /></label>
     <div className="sheet-list">{list.map(c => <button type="button" key={c.code} className={`sheet-card${value === c.code ? ' selected' : ''}`} aria-pressed={value === c.code} onClick={() => onPick(c.code)}><span className="currency-code">{c.code}</span><span className="account-main"><strong>{c.name}</strong><small>{money(1234.5, c.code)}</small></span>{value === c.code && <Icon name="check" size={18} />}</button>)}</div>
-    <p className="fineprint">{fx.live ? t('Exchange rates updated {date}. Conversions are estimates for tracking only.', { date: formatDate(fx.at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }) : t('Using approximate built-in exchange rates until live rates load. Conversions are estimates for tracking only.')}</p>
+    <p className="fineprint">{fx.live ? tr('Exchange rates updated {date}. Conversions are estimates for tracking only.', { date: formatDate(fx.at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }) : tr('Using approximate built-in exchange rates until live rates load. Conversions are estimates for tracking only.')}</p>
   </Sheet>;
 }
 
@@ -626,7 +626,7 @@ function App() {
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={24} /></span> : <Icon name={icon} size={24} strokeWidth={1.8} filled={active} />}</span>
             {target === 'Home' && unread && <i className="nav-badge" aria-label="New activity" />}
           </button>;
@@ -651,8 +651,8 @@ function App() {
       </Sheet>}
 
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
-      {sheet?.name === 'language' && <Sheet title={t('Language')} subtitle={t('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label="Language">
-        <div className="sheet-list">{[{ code: '', name: t('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>
+      {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label="Language">
+        <div className="sheet-list">{[{ code: '', name: tr('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>
       </Sheet>}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'budgets' && <BudgetsSheet progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
@@ -663,7 +663,7 @@ function App() {
           <label>Choose CSV file<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
           <p className="form-note">Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.</p>
           {csvFileName && <p className="form-note">File: {csvFileName}</p>}
-          {formAccounts.length > 0 && <label>Default account (used when the CSV account name does not match)<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+          {formAccounts.length > 0 && <label>Default account (used when the CSV account name does not match)<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">{tr('Choose account')}</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
           {csvRows.length > 0 && <section className="card pad" aria-label="CSV import preview"><strong>Preview · {csvRows.length} valid row(s)</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{row.transaction_type} · {row.category} · {row.account_name || 'default account'}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">Showing the first 5 rows. All valid rows will be processed.</p>}</section>}
           {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
           {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>Rows needing attention</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>Row {item.line}: {item.message}</li>)}</ul>{csvErrors.length > 8 && <p>And {csvErrors.length - 8} more row(s).</p>}</div>}
@@ -675,17 +675,17 @@ function App() {
           <p className="form-note">Export a CSV first if you want a copy. This cannot be undone.</p>
           <label>Type DELETE to confirm<input aria-label="Type DELETE to confirm" autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder="DELETE" /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>Cancel</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? 'Deleting…' : 'Clear all data'}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? 'Deleting…' : 'Clear all data'}</button></div>
         </form>
       </Sheet>}
 
       {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label="Account details">
-        <dl className="detail-list"><div><dt>Institution</dt><dd>{accountChoice.institution_name || 'Personal account'}</dd></div><div><dt>Number</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>Balance</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
+        <dl className="detail-list"><div><dt>Institution</dt><dd>{accountChoice.institution_name || 'Personal account'}</dd></div><div><dt>Number</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>{tr('Balance')}</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
         <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> Edit account</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> Archive account</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>Add transaction</button></div>
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label="Transaction details">
-        <dl className="detail-list"><div><dt>Amount</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>Type</dt><dd>{detailTx.type}</dd></div><div><dt>Category</dt><dd>{detailTx.category || 'Other'}</dd></div><div><dt>Account</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>Note</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>Source</dt><dd>Sample record</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>Amount</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>Type</dt><dd>{detailTx.type}</dd></div><div><dt>{tr('Category')}</dt><dd>{detailTx.category || 'Other'}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>Note</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>Source</dt><dd>Sample record</dd></div>}</dl>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
       </Sheet>}
 
