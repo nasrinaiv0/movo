@@ -11,8 +11,8 @@ export function buildNotifications(txs, extras, show = true) {
     const isIn = t.type === 'income'; const isTransfer = t.type === 'transfer';
     return {
       id: `tx-${t.id}`, kind: 'Transactions', txId: t.id, at: t.date, tone: isIn ? 'green' : 'blue', icon: isIn ? 'arrowDown' : isTransfer ? 'transfer' : 'card',
-      title: isIn ? 'Money Received' : isTransfer ? 'Transfer Completed' : 'Payment Successful',
-      body: isIn ? `You received ${money(t.amount)} ${t.merchant.replace(/^Received from /, 'from ')}`.replace('from Salary', 'as salary') : isTransfer ? `${money(t.amount)} · ${t.merchant}` : `${money(t.amount)} paid at ${t.merchant}`,
+      title: isIn ? 'Income Recorded' : isTransfer ? 'Transfer Recorded' : 'Expense Recorded',
+      body: isIn ? `${money(t.amount)} income recorded · ${t.merchant}` : isTransfer ? `${money(t.amount)} transfer recorded · ${t.merchant}` : `${money(t.amount)} expense recorded · ${t.merchant}`,
     };
   });
   return [...fromTx, ...extras].sort((a, b) => new Date(b.at) - new Date(a.at));
@@ -46,7 +46,7 @@ export function NotificationDetail({ c }) {
   return <>
     <SubHeader title="" onBack={() => go('Notifications')} right={<button type="button" className="round-button flat" aria-label="More" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="more" size={20} /></button>} />
     <section className="card detail-hero"><span className={`hero-badge tone-${t ? 'green' : n.tone}`}><Icon name={t ? 'check' : n.icon} size={34} strokeWidth={2.6} /></span>
-      <h2>{t ? (t.type === 'income' ? 'Payment Received' : 'Payment Successful') : n.title}</h2>
+      <h2>{t ? (t.type === 'income' ? 'Income Recorded' : t.type === 'transfer' ? 'Transfer Recorded' : 'Expense Recorded') : n.title}</h2>
       <p>{t ? (show ? n.body : n.body.replace(/₱[\d,.]+/g, '₱ ••••••')) : n.body}</p><small>{longDate(n.at)} · {timeLabel(n.at)}</small></section>
     {t && <section className="card detail-card">
       <div className="detail-row"><Tile name={t.merchant} size={42} radius={13} /><span><small>Merchant</small><strong>{t.merchant}</strong></span></div>

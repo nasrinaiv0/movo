@@ -117,7 +117,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Back');
     clickButton(container, 'Notifications');
     expect(container.querySelector('h1').textContent).toBe('Notifications');
-    expect(container.textContent).toContain('Payment Successful');
+    expect(container.textContent).toContain('Expense Recorded');
   });
 
   test('Terms of Service and Privacy Policy are reachable and cross-linked', () => {
@@ -188,7 +188,7 @@ describe('MOVO finance frontend', () => {
     act(() => inAppToggle.click());
     clickButton(container, 'Back');
     expect(container.textContent).toContain('In-app alerts are turned off');
-    expect(container.textContent).not.toContain('Payment Successful');
+    expect(container.textContent).not.toContain('Expense Recorded');
   });
 
   test('transaction search filters records', () => {
