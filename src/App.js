@@ -182,7 +182,18 @@ function App() {
   const recent = useMemo(() => txs.filter(t => t.type !== 'transfer').slice(0, 4), [txs]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
-  const notifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
+  const allNotifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
+  const notifications = useMemo(() => {
+    if (!prefs.notifications || !prefs.inapp) return [];
+    return allNotifications.filter(n => {
+      if (n.kind === 'Transactions') return prefs.catTransactions;
+      if (n.kind === 'Account') return prefs.catAccount;
+      if (n.kind === 'System' && /nasrinai/i.test(n.title)) return prefs.catAi;
+      if (n.kind === 'System' && /offer|promotion/i.test(n.title)) return prefs.catPromo;
+      if (n.kind === 'System' && /summary|report/i.test(n.title)) return prefs.catReports;
+      return true;
+    });
+  }, [allNotifications, prefs.notifications, prefs.inapp, prefs.catTransactions, prefs.catAccount, prefs.catAi, prefs.catPromo, prefs.catReports]);
   const unread = notifications.some(n => !prefs.readIds.includes(n.id));
   const activeNotification = notifications.find(n => n.id === activeNotificationId);
   const markAllRead = () => setPref('readIds', notifications.map(n => n.id));
