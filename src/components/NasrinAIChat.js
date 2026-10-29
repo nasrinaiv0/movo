@@ -1,3 +1,4 @@
+import { NasrinMark } from './Icon';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -93,7 +94,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
 
   return <section className="movo-ai-chat" aria-label="NasrinAI financial copilot">
     <header className="movo-ai-chat-header">
-      <div className="movo-ai-avatar" aria-hidden="true">N</div>
+      <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={26} /></div>
       <div className="movo-ai-heading"><h1>NasrinAI</h1><p>Private financial copilot · MOVO</p></div>
       <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noreferrer">NasrinAI.com ↗</a>
       <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label="Start a new chat" title="Start a new chat">＋</button>

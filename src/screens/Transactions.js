@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow } from '../components/ui';
+import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money } from '../components/ui';
 import { money, shown, monthRange, monthLabel, dayKey, relativeDay, longDate } from '../lib/format';
 
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
@@ -47,14 +47,14 @@ export default function Transactions({ c }) {
     {txFilter === 'All' && <>
       <section className="card total-card" aria-label="Total spent">
         <div><div className="balance-label">Total Spent <Icon name="eye" size={17} /></div>
-          <div className="balance-amount md">{shown(show, money(monthStats.expenses))}</div>
+          <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
           {deltas.spent != null && <span className="chip-bad"><Icon name="arrowUp" size={12} /> {deltas.spent}% vs last month</span>}</div>
         <Bars values={monthStats.bars} startLabel={monthLabel(month).split(' ')[0]} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
       </section>
       <section className="stat-grid" aria-label="Income, expenses and transfers">
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
           <article className={`card stat-card tint-${tone}`} key={label}><div className="stat-head"><span className={`stat-icon tone-${tone}`}><Icon name={icon} size={15} strokeWidth={2.2} /></span><span>{label}</span></div>
-            <strong>{shown(show, money(value, 'PHP', 0))}</strong>{d != null && <span className={`delta ${label === 'Expenses' ? 'bad' : 'good'}`}>+{d}%</span>}</article>)}
+            <strong><Money value={value} show={show} digits={0} /></strong>{d != null && <span className={`delta ${label === 'Expenses' ? 'bad' : 'good'}`}>+{d}%</span>}</article>)}
       </section>
     </>}
 
