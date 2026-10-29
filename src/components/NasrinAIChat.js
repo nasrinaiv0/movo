@@ -121,7 +121,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     </div>
     {error && <p className="movo-ai-error" role="alert">{error}</p>}
     {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p></div> : <>
-      <label className="movo-ai-consent"><input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /> <span>I agree to send the limited financial context needed to answer my question to NasrinAI.</span></label>
+      <label className="movo-ai-consent"><input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /> <span>I agree to send the limited financial context needed to answer my question to NasrinAI. See the <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.</span></label>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
         <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="1600" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
