@@ -90,3 +90,15 @@ Evidence: [PR #46](https://github.com/nasrinaiv0/movo/pull/46).
 ## Change-control statement
 
 This review changed documentation only on branch docs/change-ledger-refresh-2026-10-30-0614. No application code, database settings, migrations, deployments, PR states, or financial data were changed. The documentation branch is for review and has not been merged.
+
+
+## Change record — 2026-10-30 06:29 Asia/Manila — UI audit expansion
+
+- Opened [PR #55](https://github.com/nasrinaiv0/movo/pull/55) from `chore/aria-control-audit-current-main`, based directly on main `82172294f80e360af9e7043de425a454c211078c`.
+- Expanded the TypeScript-AST scanner to cover placeholder links, non-native interactive ARIA roles, tab selection state, checked/selected state, dialog accessible names, and human-review warnings for disabled explanations and dialog modality/focus.
+- Added `src/lib/uiControlAudit.test.js` and wired `npm run audit:controls` into the production prebuild gate after typecheck and the full Jest suite.
+- Updated `docs/UI_CONTROL_AUDIT.md` with scanner scope and limitations.
+- Closed PR #46 as superseded (not merged) to avoid duplicate open audit implementations; its useful changes were copied to the current-main branch and expanded.
+- Exact head `76851d33b07126a63c34922adedc04464995e157`: GitHub Actions run [40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) was still installing dependencies at the 06:29 check. Tests, the audit gate and production build had not yet completed; Vercel preview was queued/building, not READY. Do not claim validation until exact-head checks finish.
+- No application finance logic, auth, RLS, database, secrets, or production configuration changed. Issue #47 and PR #48 remain separate privacy work; this static audit does not fix context isolation.
+- Detailed delta: `docs/engineering/updates/2026-10-30-0629-ui-audit-delta.md`.
