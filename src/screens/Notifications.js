@@ -19,7 +19,7 @@ export function buildNotifications(txs, extras, show = true) {
 }
 
 export default function Notifications({ c }) {
-  const { notifications, readIds, nFilter, setNFilter, refDate, go, markAllRead, openNotification, show } = c;
+  const { notifications, readIds, nFilter, setNFilter, refDate, go, markAllRead, openNotification, show, notificationsEnabled } = c;
   const list = useMemo(() => notifications.filter(n => nFilter === 'All' || (nFilter === 'Unread' ? !readIds.includes(n.id) : n.kind === nFilter)), [notifications, readIds, nFilter]);
   const groups = [];
   list.forEach(n => { const label = relativeDay(n.at, refDate); let g = groups.find(x => x.label === label); if (!g) { g = { label, items: [] }; groups.push(g); } g.items.push(n); });
@@ -34,7 +34,7 @@ export default function Notifications({ c }) {
         <Icon name="chevron" size={16} />
       </button>)}</div>
     </section>)}
-    {!groups.length && <div className="card empty-card"><Icon name="bell" size={28} /><h3>You’re all caught up</h3><p>New alerts about your money will show up here.</p></div>}
+    {!groups.length && <div className="card empty-card"><Icon name="bell" size={28} /><h3>{notificationsEnabled === false ? 'In-app alerts are turned off' : 'You’re all caught up'}</h3><p>{notificationsEnabled === false ? 'Turn them back on to see transaction and account alerts here.' : 'New alerts about your money will show up here.'}</p>{notificationsEnabled === false && <button type="button" className="primary-button" onClick={() => go('NotificationSettings')}>Manage notification settings</button>}</div>}
   </>;
 }
 
