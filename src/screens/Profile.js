@@ -21,7 +21,7 @@ export default function Profile({ c }) {
     </button>
     <section className="stat-grid" aria-label="Profile summary">
       {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance, false], ['Total Income', 'arrowUp', 'green', stats.income, deltas.income, false], ['Total Expense', 'arrowDown', 'red', stats.expenses, deltas.expenses, true]].map(([label, icon, tone, value, d, bad]) =>
-        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{label}</small><strong>{shown(show, money(value))}</strong><Delta v={d} bad={bad} /></article>)}
+        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{label}</small><strong>{shown(show, money(value, undefined, 0))}</strong><Delta v={d} bad={bad} /></article>)}
     </section>
 
     <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>

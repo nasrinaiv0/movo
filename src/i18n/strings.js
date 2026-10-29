@@ -54,6 +54,7 @@ const T = {
   // wallet
   All: ['Lahat', 'الكل', '全部', 'Todo', 'Tutti', 'Alle', 'Tout', 'Todos', 'すべて', '전체', 'सभी'],
   Cards: ['Mga Card', 'البطاقات', '卡片', 'Tarjetas', 'Carte', 'Karten', 'Cartes', 'Cartões', 'カード', '카드', 'कार्ड'],
+  Banks: ['Mga Bangko', 'البنوك', '银行', 'Bancos', 'Banche', 'Banken', 'Banques', 'Bancos', '銀行', '은행', 'बैंक'],
   'Bank Accounts': ['Mga Bank Account', 'الحسابات المصرفية', '银行账户', 'Cuentas bancarias', 'Conti bancari', 'Bankkonten', 'Comptes bancaires', 'Contas bancárias', '銀行口座', '은행 계좌', 'बैंक खाते'],
   'E-Wallets': ['Mga E-Wallet', 'المحافظ الإلكترونية', '电子钱包', 'Monederos', 'E-wallet', 'E-Wallets', 'Portefeuilles', 'Carteiras digitais', '電子マネー', '전자지갑', 'ई-वॉलेट'],
   'Cash & Other': ['Cash at Iba Pa', 'نقد وغيره', '现金及其他', 'Efectivo y otros', 'Contanti e altro', 'Bargeld & Sonstiges', 'Espèces et autres', 'Dinheiro e outros', '現金・その他', '현금 및 기타', 'नकद व अन्य'],

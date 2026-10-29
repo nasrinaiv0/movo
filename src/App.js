@@ -622,6 +622,7 @@ function App() {
         {screen}
       </main>
 
+      <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
       <nav className="bottom-nav" aria-label="Main navigation">
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {

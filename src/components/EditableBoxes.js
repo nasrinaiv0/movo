@@ -63,11 +63,12 @@ export default function EditableBoxes({ boxes, layout = {}, editing, onChange, o
       <button type="button" className="primary-button" onClick={onDone}>Done</button>
     </div>
     {visible.map((b, i) => <div key={b.id} ref={el => { els.current[b.id] = el; }} className={`edit-box${dragId === b.id ? ' dragging' : ''}`} style={{ '--d': `${(i % 3) * 60}ms`, ...(dragId === b.id ? { transform: `translateY(${dy}px)` } : {}) }}>
-      <button type="button" className="edit-grip" aria-label={`Drag to move ${b.label}`} onPointerDown={e => down(e, b.id)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}><Icon name="grip" size={16} /></button>
-      <button type="button" className="edit-remove" aria-label={`Remove ${b.label}`} onClick={() => hide(b.id)}><Icon name="close" size={12} strokeWidth={3} /></button>
-      <div className="edit-move">
-        <button type="button" aria-label={`Move ${b.label} up`} disabled={i === 0} onClick={() => move(b.id, -1)}><Icon name="arrowUp" size={14} strokeWidth={2.4} /></button>
-        <button type="button" aria-label={`Move ${b.label} down`} disabled={i === visible.length - 1} onClick={() => move(b.id, 1)}><Icon name="arrowDown" size={14} strokeWidth={2.4} /></button>
+      <div className="edit-tools">
+        <button type="button" className="edit-remove" aria-label={`Remove ${b.label}`} onClick={() => hide(b.id)}><Icon name="minus" size={14} strokeWidth={3} /></button>
+        <span className="edit-name">{b.label}</span>
+        <button type="button" className="edit-tool" aria-label={`Move ${b.label} up`} disabled={i === 0} onClick={() => move(b.id, -1)}><Icon name="arrowUp" size={14} strokeWidth={2.4} /></button>
+        <button type="button" className="edit-tool" aria-label={`Move ${b.label} down`} disabled={i === visible.length - 1} onClick={() => move(b.id, 1)}><Icon name="arrowDown" size={14} strokeWidth={2.4} /></button>
+        <button type="button" className="edit-tool edit-grip" aria-label={`Drag to move ${b.label}`} onPointerDown={e => down(e, b.id)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}><Icon name="grip" size={16} /></button>
       </div>
       <div className="edit-content" inert="">{b.node}</div>
     </div>)}

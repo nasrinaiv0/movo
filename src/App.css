@@ -1319,3 +1319,64 @@ button.account-tile:active { transform: scale(.98); }
 [dir="rtl"] .toggle.on span { transform: translateX(-20px); }
 [dir="rtl"] .toggle span { left: auto; right: 2px; }
 .tx-pad, .acct-pad { direction: ltr; }
+
+/* =====================================================================
+   Overlap & blend pass: nothing sits on top of anything it shouldn't;
+   edges fade into the page colour instead of cutting off.
+   ===================================================================== */
+/* Floating nav: content fades into the page colour before it reaches the bar */
+.bottom-fade { position: fixed; z-index: 35; left: 50%; bottom: 0; width: min(430px, 100%); height: calc(108px + env(safe-area-inset-bottom)); transform: translateX(-50%); pointer-events: none; background: linear-gradient(to bottom, transparent, var(--bg) 64%); }
+.bottom-fade.chat { height: calc(76px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 55%); }
+.screen { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
+
+/* Scrolled headers: solid page colour with a soft fade underneath (no see-through bleed) */
+.is-scrolled .screen-header, .glass-on .is-scrolled .screen-header { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+.screen-header::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 24px; background: linear-gradient(to bottom, var(--bg), transparent); opacity: 0; transition: opacity .3s ease; pointer-events: none; }
+.is-scrolled .screen-header::after { opacity: 1; }
+.home-header .mascot { transition: width .3s var(--spring), height .3s var(--spring); }
+.is-scrolled .home-header .mascot { width: 44px; height: 44px; font-size: 18px; }
+.is-scrolled .home-header .hello.bubble p { display: none; }
+.is-scrolled .home-header .hello.bubble { padding: 6px 12px; }
+
+/* Balance card: chart fades in from behind the text and never crosses the chip or the button */
+.balance-card .balance-art { width: 48%; height: 54%; -webkit-mask-image: linear-gradient(to right, transparent, #000 45%); mask-image: linear-gradient(to right, transparent, #000 45%); }
+[dir="rtl"] .balance-card .balance-art { -webkit-mask-image: linear-gradient(to left, transparent, #000 45%); mask-image: linear-gradient(to left, transparent, #000 45%); }
+.balance-card .chip-good, .balance-card .chip-bad { position: relative; z-index: 1; }
+.balance-card .chip-good { background: color-mix(in srgb, var(--green) 13%, var(--card-solid)); }
+.balance-card .balance-amount { position: relative; z-index: 1; }
+.balance-go { top: 14px; right: 14px; transform: none; width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+[dir="rtl"] .balance-go { right: auto; left: 14px; }
+
+/* Horizontal scrollers fade at their edges instead of slicing items */
+.chip-row, .card-scroller, .tx-chips { -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); }
+
+/* Text never runs past its box */
+.stat-head span:last-child, .mini-head small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-card strong, .mini-card strong { font-variant-numeric: tabular-nums; }
+
+/* Card art: a soft scrim keeps names and numbers readable over any wallpaper */
+.credit-card.has-sticker .cc-face { background: linear-gradient(to top, rgba(0,0,0,.46), transparent 50%), linear-gradient(to bottom, rgba(0,0,0,.24), transparent 32%); }
+.credit-card.has-sticker.ink-dark .cc-face { background: linear-gradient(to top, rgba(255,255,255,.55), transparent 50%), linear-gradient(to bottom, rgba(255,255,255,.32), transparent 32%); }
+
+/* Sheet action bars: content fades out above them */
+.tx-bottom { border-top: 0 !important; }
+.tx-bottom::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 22px; background: linear-gradient(to bottom, transparent, var(--sheet-bg)); pointer-events: none; }
+.acct-sheet .tx-bottom::before { background: linear-gradient(to bottom, transparent, var(--bg)); }
+.glass-on .tx-sheet .tx-bottom::before { display: none; }
+
+/* Customize mode: controls live in a slim bar above each box, never on top of it */
+.edit-box { margin-bottom: 18px; }
+.edit-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 0 2px; }
+.edit-tools .edit-remove { position: static; width: 26px; height: 26px; min-height: 26px; background: var(--red); border: 0 !important; backdrop-filter: none; box-shadow: none; }
+.edit-tools .edit-remove::after { inset: -9px; }
+.edit-name { flex: 1; min-width: 0; color: var(--muted); font-size: 12.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.edit-tool, .edit-tools .edit-grip { position: static; transform: none; display: grid; place-items: center; width: 32px; height: 32px; min-height: 32px; padding: 0; border: var(--hair) solid var(--line); border-radius: 10px; background: var(--card-solid); color: var(--text); box-shadow: none; }
+.edit-tool:disabled { opacity: .35; }
+.edit-tools .edit-grip { color: var(--muted); touch-action: none; cursor: grab; }
+.edit-box.dragging .edit-tools .edit-grip { color: var(--accent); cursor: grabbing; }
+.edit-content { transform: none; opacity: .94; }
+.edit-box .section-title { padding-right: 0; }
+.stat-card { padding: 12px 11px 11px; }
+.stat-head { gap: 6px; font-size: 12px; }
+.stat-head .stat-icon { width: 22px; height: 22px; }
+.stat-head .stat-icon .movo-icon { width: 13px; height: 13px; }

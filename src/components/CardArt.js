@@ -45,7 +45,7 @@ export default function CardArt({ a, show, styleId, holder, preview, compact }) 
   const sticker = resolveSticker(styleId, custom);
   const theme = sticker || (preview ? defaultThemeFor(a.id) : null);
   const ink = theme ? theme.ink : 'light';
-  const number = a.mask ? `•••• •••• •••• ${a.mask}` : 'No card number';
+  const number = `•••• •••• •••• ${a.mask || '••••'}`;
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
     {theme && <StickerArt theme={theme} compact={compact} />}{theme?.video && <span className="cc-live" aria-label="Live wallpaper">LIVE</span>}
     <div className="cc-face">
