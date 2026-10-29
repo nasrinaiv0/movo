@@ -35,11 +35,11 @@ This audit is a working register, not a claim that the entire frontend is comple
 
 - Notification push/email delivery and biometric lock are not backed by a delivery/native-device service; these controls are now disabled with explanatory copy.
 - Plan/token management is not connected to a billing service; the profile no longer shows fabricated plan or usage values, and Settings marks Plan & Usage as unavailable instead of navigating to an unrelated screen.
-- App language, card style, date format, currency selection, and quiet hours are read-only and labelled as single-option/unavailable rather than fake controls.
+- Display Currency is now a working preference in Settings → Appearance. It scopes Home/Transactions summary figures and Wallet accounts to one currency at a time without FX conversion. App language, card style, date format, and quiet hours remain read-only/unavailable and are not presented as working controls.
 - Connected account rows no longer imply Apple/Facebook linking; only Google sign-in is implemented.
 - Cloud sync follows authenticated cloud mode and is not presented as a freely toggleable switch when a cloud session is active.
 - Actual bank linking, real money movement, card blocking, issuer spending limits, push/email delivery, biometric lock, and automated categorization remain unsupported. An in-app Help Center now provides accurate guidance for current storage, export, consent, and notification behavior.
-- Local/demo financial records are not guaranteed to persist in the deployed main build; do not rely on them as a backup.
+- Local/demo financial records persist in this browser's localStorage when writes succeed, but are not encrypted by MOVO, synced to another device, or backed up. Clearing browser data may remove them; use the explicit CSV export as a separate backup.
 - NasrinAI upstream authentication is still known to return HTTP 401 in production logs; safe key-format diagnostics are in the PR, but a successful authenticated request is still required. See docs/NASRINAI_MOVO_INTEGRATION.md.
 - Production migration `20261029032314_revoke_excess_table_privileges` is applied. The latest validated preview build passed its embedded test/typecheck/build lifecycle; the matching GitHub Actions run is still pending.
 - GitHub Actions dependency installation reports 34 npm audit findings (16 low, 5 moderate, 13 high). Review and remediate dependency upgrades in a dedicated change; do not blindly run `npm audit fix --force`.
@@ -60,11 +60,11 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Replace the unavailable Help Center row with a real in-app screen and navigation route.
 - [x] Document current behavior without promising unimplemented persistence, bank connectivity, payment execution, or notification delivery.
 - [x] Add a regression test for Settings → Help Center and its Privacy Policy cross-link.
-- [ ] Reconcile PR #19 finance persistence/import changes before finalizing the local-storage disclosure; its branch is three commits behind and conflicts with current `main` changes to `src/App.js` and `src/App.test.js`.
+- [x] PR #19 was closed without merge. The current frontend work carries the local persistence/import behavior forward; the legal disclosure states that browser-local records are unencrypted and device-specific. No separate PR #19 merge is required.
 
 ## Dependency-install reliability follow-up (2026-10-29)
 
-- [ ] Current-head CI failed during `npm install` before tests ran: the npm registry returned HTTP 404 for `@types/estree@1.0.10`, a version not listed as the published latest release in the registry's package page. A conservative npm override pins this transitive type package to published version `1.0.9`; subsequent Vercel installation and build completed successfully.
+- [x] The earlier npm-registry 404 for transitive `@types/estree@1.0.10` was addressed by pinning the override to published `1.0.9`. The current finance source/test head `1daa34918648b09debfded89d3934746635b0599` passed GitHub Actions run [40913286682](https://github.com/nasrinaiv0/movo/actions/runs/40913286682): 15 suites / 97 tests, `tsc --noEmit`, and production compilation.
 
 - [x] Correct the Help Center regression test to activate the row by its visible title; the first preview run showed the generic helper compared the row's full accessible text (title plus description) to the title alone. This was a test-selector mismatch, not a dead frontend action.
 
@@ -92,8 +92,8 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Add local account creation/edit/archive, transaction editing, and review-first CSV import with a 5 MB limit, validation, preview, duplicate fingerprints, and per-row errors.
 - [x] Align Terms, Privacy Policy, and Help Center with actual browser-local persistence and its unencrypted, device-specific nature.
 - [x] Add unit and UI coverage for local persistence, CSV parsing, account/transaction editing, and import review.
-- [ ] Fresh final-head CI/preview verification is pending.
-- [ ] Release blockers remain: publish verified controller identity/legal disclosures, enable leaked-password protection, review dependency audit findings, resolve NasrinAI upstream 401, and reconcile PR #24 without duplicating UI work.
+- [x] Currency-scoped finance source/test validation completed for `1daa34918648b09debfded89d3934746635b0599`; the exact Vercel preview deployment reached READY and its root returned HTTP 200. The current documentation-only follow-up is also covered by the repository's CI workflow.
+- [ ] Release blockers remain: publish verified controller identity/legal disclosures; enable leaked-password protection; review dependency audit findings; resolve the NasrinAI upstream HTTP 401; and complete manual browser, keyboard, screen-reader, mobile, and production smoke tests. PR #24 is merged; do not list it as an open reconciliation task.
 
 
 ## Scheduled implementation pass — 2026-10-29 06:05 UTC
@@ -116,3 +116,26 @@ This audit is a working register, not a claim that the entire frontend is comple
 - The Vercel team deployment listing was denied for missing team authorization during this run, so a preview deployment for this PR is **not verified here**. Do not infer deployment success from GitHub CI alone.
 - Release blockers remain: publish verified operator/controller identity and complete retention/provider/legal disclosures; enable Supabase leaked-password protection; review and remediate dependency audit findings; resolve the NasrinAI upstream HTTP 401 and verify an authenticated request; complete interactive browser testing of the deployed app.
 
+
+
+## Currency-scoped finance update — 2026-10-30
+
+- [x] Add a persistent Display Currency selector and keep financial summaries, Wallet account groups, and Transactions views currency-scoped. Account creation supports common currencies; account currency is immutable after creation; new manual transactions and single-currency imports switch to the relevant currency; multi-currency imports explain how to review currencies separately. No FX conversion is invented.
+- [x] Keep invalid cross-currency transfer effects out of account balances; the transaction write path continues to reject cross-currency transfers.
+- [x] Fix the Money Flow chart's accessible name so it does not reveal numeric values while the hide-balances preference is off.
+- [x] Validate source/test head `d81c132a0b8838546529c5d4bb0046d4220a7b54` with GitHub Actions run [40915604400](https://github.com/nasrinaiv0/movo/actions/runs/40915604400): 15 suites / 101 tests, typecheck, and production build passed. Vercel deployment `dpl_9eyh5aWxPcj6XaRL34VRTi6Y6cZi` reached READY for the same source/test head; preview root and JavaScript bundle returned HTTP 200 and the bundle contains account-currency creation, display-currency scope, and privacy-safe chart text. This is deployment/bundle verification, not a manual interactive walkthrough.
+- [x] Read-only Supabase checks on 2026-10-30: RLS enabled on profiles, financial accounts, transactions, budgets, and NasrinAI conversation/message tables; owner-scoped authenticated policies and grants remain; no `anon` table grants were found for the checked tables. `movo_ai_upstream_conversations` remains service-role-only with no browser grants or policies.
+- [ ] Owner action required: enable Supabase Auth leaked-password protection. The Security Advisor still reports it disabled.
+- [ ] Owner/legal review required: verify and publish the formal data-controller/operator identity and address, retention schedule, provider/data-recipient details, and jurisdiction-specific legal terms. Do not invent these details.
+- [ ] Still unverified: interactive currency-switching walkthrough, keyboard/screen-reader testing, and production smoke tests. The legal/auth/dependency/upstream-auth blockers prevent marking MOVO fully production-ready.
+
+
+## Settings selector accessibility follow-up — 2026-10-30
+
+- [x] Replace incomplete ARIA radio semantics on Appearance theme choices, accent choices, and the Choose Theme sheet with native buttons exposing their current selected state through `aria-pressed`.
+- [x] Expose the Custom theme control as a button that opens a dialog, rather than as a radio option that does not directly select a theme.
+- [x] Add regression tests in `src/screens/Settings.accessibility.test.js` for accessible grouping, selected states, Custom's dialog affordance, accent selection updates, and theme-sheet semantics.
+- [x] Validate exact head `893287ec7f967a16e32a948644322a3ef5731c51` with GitHub Actions run [40917235005](https://github.com/nasrinaiv0/movo/actions/runs/40917235005): 16 suites / 104 tests, TypeScript typecheck, and production build passed.
+- [x] Verify preview deployment [dpl_JBsdhj8aNJYACGEsMgzvAyG89bcp](https://vercel.com/nasrin-ai/movo/JBsdhj8aNJYACGEsMgzvAyG89bcp) reached READY; root and JavaScript bundle returned HTTP 200 and the built bundle contains the updated button semantics.
+- [ ] Manual keyboard-only, screen-reader, and mobile browser walkthrough remains outstanding; automated DOM tests and a READY deployment do not prove those interactions.
+- [ ] Production blockers remain unchanged: verify/publish legal controller and retention/provider details, enable Supabase leaked-password protection, triage dependency advisories, and verify authenticated production NasrinAI requests. Preserve server-only secrets and existing ownership/RLS boundaries.

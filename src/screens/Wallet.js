@@ -4,6 +4,7 @@ import CardArt from '../components/CardArt';
 import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet, Money } from '../components/ui';
 import { money, shown } from '../lib/format';
+import { sumMoneyValues } from '../lib/financeCalculations';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets'];
 const typeOf = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_wallet' };
@@ -14,14 +15,14 @@ function AccountRow({ a, show, onClick }) {
   return <button type="button" className="account-row" onClick={onClick}>
     <Tile name={a.name} size={46} radius={14} />
     <span className="account-main"><strong>{a.name}</strong><small>{subtitle(a)} {mask(a)}</small></span>
-    <b>{shown(show, money(a.balance, a.currency))}</b>
+    <b>{shown(show, money(a.balance, a.currency), a.currency)}</b>
   </button>;
 }
 
 export default function Wallet({ c }) {
-  const { prefs, setPref, show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
+  const { prefs, setPref, show, setShow, stats, accountsByType, walletFilter, setWalletFilter, displayAccountsView, displayCurrency, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
   const scroller = useRef(null);
-  const list = walletFilter === 'All' ? accountsView : accountsView.filter(a => a.account_type === typeOf[walletFilter]);
+  const list = walletFilter === 'All' ? displayAccountsView : displayAccountsView.filter(a => a.account_type === typeOf[walletFilter]);
   const total = stats.balance || 1;
   const cards = accountsByType.card;
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
@@ -40,21 +41,22 @@ export default function Wallet({ c }) {
   return <>
     <RootHeader title="Wallet" subtitle="Your accounts, cards and balances." onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <Chips label="Filter wallet accounts" items={FILTERS} value={walletFilter} onChange={setWalletFilter} />
+    <p className="currency-scope">Showing {displayCurrency} accounts and activity only. Change Display Currency in Settings → Appearance to view another currency. No currency conversion is performed.</p>
 
     {walletFilter === 'All' && <>
       <section className="card balance-card compact" aria-label="Total balance">
         <div className="balance-label">Total Balance <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
-        <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
+        <div className="balance-amount"><Money value={stats.balance} show={show} currency={stats.currency} /></div>
         {c.deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={12} /> +{c.deltas.balance}% vs last month</span>}
         <div className="balance-art"><Sparkline values={stats.trend} width={200} height={90} /></div>
       </section>
       <section className="mini-grid" aria-label="Balance by account type">
         {groups.map(([label, items, icon]) => {
-          const sum = items.reduce((s, a) => s + a.balance, 0);
+          const sum = sumMoneyValues(items.map(a => a.balance));
           return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label)}>
             <span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={17} /></span>
             <small>{label === 'Bank Accounts' ? 'Bank Accounts' : label}</small>
-            <strong><Money value={sum} show={show} digits={0} /></strong>
+            <strong><Money value={sum} show={show} digits={0} currency={displayCurrency} /></strong>
             <em className="pct">{Math.round((sum / total) * 100)}%</em>
           </button>;
         })}
@@ -88,11 +90,11 @@ export default function Wallet({ c }) {
       </section>
       <p id="card-control-limitations" className="fineprint">MOVO cannot block an actual card or change issuer limits. Use your bank or card issuer's app for those actions.</p>
       <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label="Switch card">
-        <span><small>Available Balance</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
+        <span><small>Available Balance</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency), selectedCard?.currency || displayCurrency)}</strong></span><Icon name="chevron" size={18} />
       </button>
       <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Transactions</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">No transactions for this card yet.</p>}</section>
-    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>No cards yet</h3><p>Add a card, then dress it with any of 270+ stickers.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>Add card</button></div>)}
+    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: displayCurrency }} holder={holder} /></div><h3>No cards in {displayCurrency}</h3><p>Add a card, then dress it with any of 270+ stickers.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>Add card</button></div>)}
 
     {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets') && <>
       <SectionTitle>{walletFilter}</SectionTitle>
@@ -104,7 +106,7 @@ export default function Wallet({ c }) {
 
     {sheet?.name === 'cards' && <Sheet title="Your Cards" onClose={() => setSheet(null)}>
       <div className="sheet-list">{cards.map(a => <button type="button" key={a.id} className={`sheet-card${a.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => { setSelectedCardId(a.id); setSheet(null); }}>
-        <Tile name={a.name} size={46} radius={13} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency))}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
+        <Tile name={a.name} size={46} radius={13} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency), a.currency)}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
       </button>)}</div>
       <button type="button" className="manage-button" onClick={() => setSheet({ name: 'account', type: 'card' })}><Icon name="card" size={18} /> Manage Cards</button>
     </Sheet>}

@@ -6,7 +6,7 @@ import { canAnimate, useCountUp } from '../lib/motion';
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency = 'PHP' }) {
   const v = useCountUp(Number(value) || 0);
-  return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : HIDDEN}</span>;
+  return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : (currency === 'PHP' ? HIDDEN : `${currency} ••••••`)}</span>;
 }
 
 export function Toggle({ checked, onChange, label, disabled = false, reason, describedBy }) {
@@ -140,12 +140,12 @@ export function Bars({ values, startLabel, endLabel }) {
   </div>;
 }
 
-export function Donut({ data, total, caption, show, size = 132 }) {
+export function Donut({ data, total, caption, show, size = 132, currency = 'PHP' }) {
   let acc = 0;
   const stops = data.length ? data.map(d => { const from = acc; acc += d.percent; return `${d.color} ${from}% ${acc}%`; }).join(',') : '#d7dbe6 0 100%';
   return <div className="donut" style={{ width: size, height: size }}>
     <i className="donut-ring" style={{ background: `conic-gradient(${stops})` }} />
-    <div className="donut-hole"><strong><Money value={total} show={show} digits={0} /></strong><span>{caption}</span></div>
+    <div className="donut-hole"><strong><Money value={total} show={show} digits={0} currency={currency} /></strong><span>{caption}</span></div>
   </div>;
 }
 
@@ -159,7 +159,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   return <button type="button" className="tx-row" aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
     <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} tone="blue" />
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
-    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em>}</span>
+    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency), t.currency || 'PHP')}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em>}</span>
   </button>;
 }
 
