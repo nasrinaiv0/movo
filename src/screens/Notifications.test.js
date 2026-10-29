@@ -15,7 +15,6 @@ describe('buildNotifications', () => {
     expect(result[0].body).toContain('Transfer to BPI');
     expect(result[0].body).toContain('transfer recorded');
   });
-});
 
   test('describes income and expense as recorded entries rather than verified payments', () => {
     const result = buildNotifications([
@@ -26,3 +25,4 @@ describe('buildNotifications', () => {
     expect(result[0].body).toContain('income recorded');
     expect(result[1].body).toContain('expense recorded');
   });
+});
