@@ -1,6 +1,6 @@
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import './NasrinAIChat.css';
 
@@ -33,6 +33,28 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [phase, setPhase] = useState('reading');
   const endRef = useRef(null);
   const inputRef = useRef(null);
+  const visibleUserIdRef = useRef(session?.user?.id || null);
+
+  // Clear the previous account's visible chat before paint when identity or
+  // storage mode changes. Never leave one user's messages on screen while the
+  // next user's history request is still in flight.
+  useLayoutEffect(() => {
+    const userId = session?.user?.id || null;
+    const identityChanged = visibleUserIdRef.current !== userId;
+    visibleUserIdRef.current = userId;
+    if (identityChanged || !cloudMode) {
+      setMessages([]);
+      setConversationId(null);
+      setDraft('');
+      setError('');
+      setPrivacyAccepted(false);
+    }
+    try {
+      setNewConversationPending(!!userId && window.sessionStorage.getItem('movo.ai.newConversation.' + userId) === 'true');
+    } catch {
+      setNewConversationPending(false);
+    }
+  }, [session?.user?.id, cloudMode]);
 
   useEffect(() => {
     if (!busy) return undefined;
