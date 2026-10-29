@@ -1,4 +1,4 @@
-import { createAccount, createTransaction } from './financeRepository';
+import { createAccount, createTransaction, updateTransaction } from './financeRepository';
 jest.mock('./supabaseClient', () => ({ supabase: null }));
 
 describe('finance repository validation', () => {
