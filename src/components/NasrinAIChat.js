@@ -6,16 +6,24 @@ function friendlyError(code) {
   if (code === 'nasrinai_not_configured') return 'NasrinAI is not configured on the MOVO server yet.';
   if (code === 'conversation_not_found') return 'This conversation is not available in your account.';
   if (code === 'financial_context_consent_required') return 'Please confirm consent before sharing financial context with NasrinAI.';
+  if (code === 'nasrinai_auth_rejected') return 'MOVO reached NasrinAI, but the service rejected its server authentication. This is a configuration issue; please try again later.';
+  if (code === 'nasrinai_rate_limited') return 'NasrinAI is temporarily busy. Please wait a moment and try again.';
+  if (code === 'nasrinai_timeout') return 'NasrinAI took too long to respond. Your request was not saved; please try again.';
+  if (code === 'nasrinai_unreachable') return 'MOVO could not connect to NasrinAI. Please check your connection and try again.';
+  if (code === 'nasrinai_request_rejected' || code === 'invalid_nasrinai_response' || code === 'nasrinai_conversation_missing') return 'NasrinAI could not process this request format. Please try a shorter question or contact support if it continues.';
   return 'NasrinAI could not answer right now. Please try again shortly.';
 }
 
-export default function NasrinAIChat({ session, cloudMode, accounts = [], transactions = [], stats = {}, onOpenLegal }) {
+export default function NasrinAIChat({ session, cloudMode, accounts = [], transactions = [], stats = {}, onOpenLegal, onSignIn }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [newConversationPending, setNewConversationPending] = useState(() => {
+    try { return !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { return false; }
+  });
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -26,6 +34,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     const loadHistory = async () => {
       setPrivacyAccepted(false);
       if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
+      if (newConversationPending) { setMessages([]); setConversationId(null); return; }
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
@@ -43,7 +52,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     };
     loadHistory();
     return () => { active = false; };
-  }, [session?.user?.id, cloudMode]);
+  }, [session?.user?.id, cloudMode, newConversationPending]);
 
   const send = async (event) => {
     event?.preventDefault();
@@ -73,6 +82,8 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
       if (result.conversationId) setConversationId(result.conversationId);
+      setNewConversationPending(false);
+      try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
     } catch (cause) {
       setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
@@ -89,6 +100,8 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     setConversationId(null);
     setDraft('');
     setError('');
+    setNewConversationPending(true);
+    try { if (session?.user?.id) window.sessionStorage.setItem('movo.ai.newConversation.' + session.user.id, 'true'); } catch { /* storage unavailable */ }
   };
 
   return <section className="movo-ai-chat" aria-label="NasrinAI financial copilot">
@@ -120,7 +133,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
       <div ref={endRef} />
     </div>
     {error && <p className="movo-ai-error" role="alert">{error}</p>}
-    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p></div> : <>
+    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="wide-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
       <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to send the limited financial context needed to answer this question to NasrinAI.</label></div>
       <div className="movo-ai-legal-links"><button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>Privacy Policy</button><span aria-hidden="true">·</span><button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>Terms of Service</button></div>
       <form className="movo-ai-composer" onSubmit={send}>
