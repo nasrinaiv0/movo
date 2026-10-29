@@ -30,6 +30,18 @@ describe('MOVO NasrinAI API security boundary', () => {
     expect(res.headers['x-robots-tag']).toContain('noindex');
   });
 
+
+  test('requires explicit financial-context consent on authenticated chat requests', async () => {
+    const res = response();
+    await handler({
+      method: 'POST',
+      headers: { authorization: 'Bearer abcdefghijklmnopqrstuvwxyz' },
+      body: { message: 'Summarize my spending', consent: false }
+    }, res);
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toEqual({ error: 'financial_context_consent_required' });
+  });
+
   test('rejects unsupported methods', async () => {
     const res = response();
     await handler({ method: 'PUT', headers: {} }, res);
