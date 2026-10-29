@@ -147,12 +147,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label="Dismiss message" onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}
     {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="primary-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
       <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to share limited financial context with NasrinAI for this conversation.</label></div>
-      <p id="movo-ai-send-guidance" className="movo-ai-consent-guidance">Enter a message and check consent to enable Send. When you send, your message and limited financial context are shared with NasrinAI for this reply.</p>
       <div className="movo-ai-legal-links"><button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>Privacy Policy</button><span aria-hidden="true">·</span><button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>Terms of Service</button></div>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
         <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="1600" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
-        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message" aria-describedby="movo-ai-send-guidance" aria-busy={busy}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={18} strokeWidth={2.2} />}</button>
+        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message">{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={18} strokeWidth={2.2} />}</button>
       </form></>}
     <p className="movo-ai-footnote">AI can make mistakes. Verify important calculations. Financial actions are not performed from chat.</p>
   </section>;
