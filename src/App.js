@@ -98,6 +98,21 @@ function App() {
     finally { setBusy(false); setAuthReady(true); }
   }, []);
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const searchParams = new URLSearchParams(window.location.search);
+    const oauthError = hashParams.get('error') || hashParams.get('error_code')
+      || searchParams.get('error') || searchParams.get('error_code');
+    if (!oauthError) return;
+    setView('Sign in');
+    setError('Google sign-in could not be completed. Check the Google provider and redirect URL settings, then try again.');
+    const url = new URL(window.location.href);
+    ['error', 'error_code', 'error_description'].forEach((key) => url.searchParams.delete(key));
+    url.hash = '';
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
     getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user) refreshCloud(s.user); }).catch(() => { if (mounted) setAuthReady(true); });
