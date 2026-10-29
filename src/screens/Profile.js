@@ -12,7 +12,7 @@ export default function Profile({ c }) {
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
-    <RootHeader title="Profile" onSearch={() => go('Transactions')} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <RootHeader title="Profile" onSearch={() => c.setSheet({ name: 'search' })} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label="Edit profile">
       <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
       <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="info" size={13} /> Plan details unavailable</em></span>
