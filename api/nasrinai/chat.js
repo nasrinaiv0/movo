@@ -139,6 +139,9 @@ module.exports = async function handler(req, res) {
   const authHeader = String(req.headers.authorization || '');
   const match = /^Bearer ([\w.-]{20,4096})$/.exec(authHeader);
   if (!match) return json(res, 401, { error: 'sign_in_required' });
+  if (req.method === 'POST' && req.body?.consent !== true) {
+    return json(res, 400, { error: 'financial_context_consent_required' });
+  }
   const rawMessage = req.body?.message;
   if (req.method === 'POST' && typeof rawMessage === 'string' && rawMessage.trim().length > MAX_MESSAGE_CHARS) {
     return json(res, 400, { error: 'message_too_long' });
@@ -210,13 +213,16 @@ module.exports = async function handler(req, res) {
     const [accountResult, transactionResult, budgetResult] = await Promise.all([
       db.from('financial_accounts')
         .select('id,name,account_type,currency,opening_balance,is_archived')
+        .eq('user_id', userId)
         .order('display_order', { ascending: true }).limit(50),
       db.from('transactions')
         .select('account_id,transaction_type,amount,currency,merchant,category,occurred_at')
+        .eq('user_id', userId)
         .order('occurred_at', { ascending: false }).limit(250),
       db.from('budgets')
         .select('category,monthly_limit,currency,starts_on,is_active')
-        .eq('is_active', true).order('starts_on', { ascending: false }).limit(50)
+        .eq('user_id', userId).eq('is_active', true)
+        .order('starts_on', { ascending: false }).limit(50)
     ]);
     if (accountResult.error || transactionResult.error || budgetResult.error) {
       throw new Error('financial_context_lookup_failed');
