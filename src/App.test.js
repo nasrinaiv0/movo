@@ -229,6 +229,7 @@ describe('MOVO finance frontend', () => {
 
   test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
     nav(container, 'Wallet');
+    clickButton(container, 'Cards');
     clickButton(container, 'Switch card');
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
