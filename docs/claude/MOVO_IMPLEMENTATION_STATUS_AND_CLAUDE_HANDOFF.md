@@ -348,3 +348,5 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Updated PR #53's validation notes with exact-head evidence. PR #53 remains draft; it is not production and not the root-cause fix.
 - Dependency installation still reports 34 audit findings (16 low, 5 moderate, 13 high). Keep this release blocker visible; do not use `npm audit fix --force` as a blanket remedy.
 - Added a progress comment to issue #47. The issue remains open pending source-level context isolation and authenticated end-to-end verification.
+
+- Preview asset check: using the Vercel authenticated fetch on 2026-10-30, the exact-head preview root and built JavaScript bundle returned HTTP 200; the bundle contained the renderer guard. This is not interactive signed-in chat verification.
