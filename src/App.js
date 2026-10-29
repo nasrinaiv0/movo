@@ -14,6 +14,7 @@ import { getCurrentSession, listAccounts, listTransactions, createAccount, creat
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
 import { ACCENTS } from './screens/Settings';
+import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -61,8 +62,9 @@ function App() {
   const [view, setView] = useState('Home');
   const [prefs, setPrefs] = useState(readPrefs);
   const [cloudAccounts, setCloudAccounts] = useState([]);
-  const [rawTxs, setRawTxs] = useState(demoTransactions);
-  const [samplesOn, setSamplesOn] = useState(true);
+  const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
+  const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
+  const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
   const [txFilter, setTxFilter] = useState('All');
@@ -85,6 +87,13 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
+  useEffect(() => { saveLocalTransactions(rawTxs, cloudMode); }, [rawTxs, cloudMode]);
+  useEffect(() => { saveLocalAccounts(localAccounts); }, [localAccounts]);
+  useEffect(() => { setSamplesEnabled(samplesOn); }, [samplesOn]);
+  useEffect(() => {
+    if (sheet?.name === 'account' && sheet.type) setAccountForm(cur => ({ ...cur, account_type: sheet.type }));
+    if (sheet?.name === 'transaction' && sheet.type) setForm(cur => ({ ...cur, transaction_type: sheet.type }));
+  }, [sheet?.name, sheet?.type]);
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
 
   const refreshCloud = useCallback(async (user) => {
@@ -102,13 +111,13 @@ function App() {
     getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user) refreshCloud(s.user); }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!mounted) return; setSession(s);
-      if (s?.user) refreshCloud(s.user); else { setCloudMode(false); setCloudAccounts([]); setRawTxs(samplesOn ? demoTransactions : []); }
+      if (s?.user) refreshCloud(s.user); else { setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); }
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud]);
 
   /* ---------- derived data ---------- */
-  const baseAccounts = cloudMode ? cloudAccounts : (samplesOn ? demoAccounts : []);
+  const baseAccounts = cloudMode ? cloudAccounts : [...(samplesOn ? demoAccounts : []), ...localAccounts];
   const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts]);
   const accountsView = useMemo(() => baseAccounts.map(a => {
     const delta = txs.reduce((s, t) => {
@@ -189,8 +198,8 @@ function App() {
     e.preventDefault(); setError('');
     const amount = Number(form.amount); const type = form.transaction_type;
     if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError('Enter a description and a valid positive amount.'); return; }
-    if (cloudMode && !form.account_id) { setError('Create or select an account before saving a cloud transaction.'); return; }
-    if (type === 'transfer' && accountsView.length && (!form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError('Choose two different accounts for a transfer.'); return; }
+    if ((cloudMode || formAccounts.length > 0) && !form.account_id) { setError('Choose an account before saving this transaction.'); return; }
+    if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError('Choose two different accounts for a transfer.'); return; }
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
     const occurred_at = new Date(`${form.occurred_at}T12:00:00`).toISOString();
     setBusy(true);
@@ -208,11 +217,32 @@ function App() {
   };
   const saveAccount = async (e) => {
     e.preventDefault(); setError('');
-    if (!accountForm.name.trim()) { setError('Enter an account name.'); return; }
-    if (!cloudMode || !session?.user) { setError('Sign in to create a cloud account.'); return; }
+    const name = accountForm.name.trim();
+    const openingBalance = Number(accountForm.opening_balance || 0);
+    if (!name) { setError('Enter an account name.'); return; }
+    if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }
     setBusy(true);
-    try { const a = await createAccount(accountForm, session.user.id); setCloudAccounts(cur => [...cur, a]); setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' }); setSheet(null); notify('Account added.'); }
-    catch { setError('Could not add account. Please review the details and try again.'); } finally { setBusy(false); }
+    try {
+      if (cloudMode && session?.user) {
+        const a = await createAccount({ ...accountForm, opening_balance: openingBalance }, session.user.id);
+        setCloudAccounts(cur => [...cur, a]);
+        notify('Account added to your signed-in MOVO account.');
+      } else {
+        const a = {
+          id: window.crypto?.randomUUID?.() || `local-account-${Date.now()}`,
+          name: name.slice(0, 100),
+          account_type: accountForm.account_type || sheet?.type || 'other',
+          institution_name: accountForm.institution_name.trim().slice(0, 100),
+          currency: 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
+          balance: Math.round(openingBalance * 100) / 100, is_archived: false, mask: '', brand: 'blue', source: 'Manual',
+        };
+        setLocalAccounts(cur => [...cur, a]);
+        notify('Account saved on this device only.');
+      }
+      setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
+      setSheet(null);
+    } catch { setError('Could not add account. Please review the details and try again.'); }
+    finally { setBusy(false); }
   };
   const removeTransaction = async (t) => {
     if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
@@ -225,9 +255,9 @@ function App() {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click(); URL.revokeObjectURL(url); setSheet(null); notify('CSV export prepared.');
   };
-  const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed.'); };
-  const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setSamplesOn(false); setSheet(null); notify('Local data cleared.'); };
-  const signOutNow = async () => { try { await signOut(); setSession(null); setCloudMode(false); setCloudAccounts([]); setRawTxs(samplesOn ? demoTransactions : []); go('Home'); notify('Signed out securely.'); } catch { notify('Could not sign out. Please try again.'); } };
+  const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed. Your manually entered records are kept.'); };
+  const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } clearLocalFinanceData(); setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setLocalAccounts([]); setSamplesOn(false); setSheet(null); notify('Local transactions, accounts and preferences cleared. Cloud records are unchanged.'); };
+  const signOutNow = async () => { try { await signOut(); setSession(null); setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); go('Home'); notify('Signed out securely.'); } catch { notify('Could not sign out. Please try again.'); } };
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
