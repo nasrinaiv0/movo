@@ -104,10 +104,36 @@ function buildPrompt(message, context) {
   return assemble();
 }
 
-// Deliberately omit upstream conversation identifiers. MOVO owns its own
-// history; reusing a provider conversation can import context outside MOVO.
+// Send the actual question separately from bounded finance context. The upstream
+// MOVO scope treats context as transient data and suppresses platform retrieval.
+function buildContextPayload(context) {
+  const compact = {
+    accounts: (context.accounts || []).slice(0, 12),
+    recent_transactions: (context.recent_transactions || []).slice(0, MAX_CONTEXT_TRANSACTIONS),
+    budgets: (context.budgets || []).slice(0, 12)
+  };
+  const assemble = () => JSON.stringify(compact);
+  while (assemble().length > MAX_UPSTREAM_PROMPT_CHARS) {
+    if (compact.recent_transactions.length) compact.recent_transactions.pop();
+    else if (compact.budgets.length) compact.budgets.pop();
+    else if (compact.accounts.length) compact.accounts.pop();
+    else break;
+  }
+  return assemble();
+}
+
+// Never attach upstream conversation identifiers. A server-only scope flag
+// makes the upstream API reject non-service use and disables external context.
 function buildUpstreamBody(message, context) {
-  return { message: buildPrompt(message, context) };
+  return {
+    message: safeText(message, MAX_MESSAGE_CHARS),
+    context_scope: 'movo',
+    context: buildContextPayload(context)
+  };
+}
+
+function hasConfirmedMovoScope(payload) {
+  return payload?.context_scope === 'movo' || payload?.data?.context_scope === 'movo';
 }
 
 function extractReply(data) {
@@ -297,6 +323,13 @@ module.exports = async function handler(req, res) {
       console.error('[movo-nasrinai-upstream]', 'invalid_json_response', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
       return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
     }
+    if (!hasConfirmedMovoScope(payload)) {
+      console.error('[movo-nasrinai-upstream]', 'scope_unconfirmed', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+      return json(res, 502, {
+        error: 'nasrinai_scope_unconfirmed',
+        message: 'MOVO could not verify isolated context processing by NasrinAI. No reply was accepted; please try again later.'
+      });
+    }
     const reply = extractReply(payload);
     if (!reply) {
       console.error('[movo-nasrinai-upstream]', 'missing_reply', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
@@ -338,5 +371,7 @@ module.exports.buildFinancialContext = buildFinancialContext;
 module.exports.selectRelevantTransactions = selectRelevantTransactions;
 module.exports.buildPrompt = buildPrompt;
 module.exports.buildUpstreamBody = buildUpstreamBody;
+module.exports.buildContextPayload = buildContextPayload;
+module.exports.hasConfirmedMovoScope = hasConfirmedMovoScope;
 module.exports.extractReply = extractReply;
 module.exports.allowedOrigin = allowedOrigin;
