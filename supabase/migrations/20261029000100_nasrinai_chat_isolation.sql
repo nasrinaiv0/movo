@@ -88,6 +88,6 @@ drop policy if exists movo_ai_messages_delete_own on public.movo_ai_messages;
 create policy movo_ai_messages_delete_own on public.movo_ai_messages
   for delete to authenticated using (user_id = (select auth.uid()));
 
-revoke all on public.movo_ai_conversations, public.movo_ai_messages from anon;
+revoke all on public.movo_ai_conversations, public.movo_ai_messages from public, anon;
 grant select, insert, update, delete on public.movo_ai_conversations to authenticated;
 grant select, insert, delete on public.movo_ai_messages to authenticated;
