@@ -17,7 +17,7 @@ After setting variables, redeploy the Vercel project. The repository change cann
 
 ## Google sign-in (Supabase OAuth)
 
-MOVO uses Supabase Auth with Google as the OAuth provider. The sign-in screen includes a **Continue with Google** action; it starts `signInWithOAuth({ provider: 'google' })` and returns to the current MOVO origin. Supabase owns the OAuth code exchange and browser session persistence; Google tokens are not stored in MOVO application tables.
+MOVO uses Supabase Auth with Google as the OAuth provider. The sign-in screen includes a **Continue with Google** action; it starts `signInWithOAuth({ provider: 'google' })` and returns to the current MOVO origin. The chat API independently requires `consent: true` on every POST and explicitly filters finance queries by the authenticated `user_id` in addition to relying on RLS. Supabase owns the OAuth code exchange and browser session persistence; Google tokens are not stored in MOVO application tables.
 
 Configure this in the dedicated MOVO Supabase project (`cjsjmorqvuvvwbfyztiz`):
 
