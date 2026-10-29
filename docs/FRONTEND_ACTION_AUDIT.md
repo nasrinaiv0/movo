@@ -1,8 +1,16 @@
 # MOVO Frontend Action Audit
 
-Last updated: 2026-10-29
+Last updated: 2026-10-30
 
 This audit is a working register, not a claim that the entire frontend is complete. Each visible control must either perform a verified action or be visibly disabled with a clear reason. Re-check the live branch and deployment after every meaningful change.
+
+## Current increment: repeatable control audit
+
+- [x] Add `npm run audit:controls`, a TypeScript-AST-based static scan over production source files for native buttons without an action/submit/disabled state, anchors without navigation/action, forms without submit/action, and non-native `role="button"` elements without click and keyboard handlers.
+- [x] Run the audit as part of the production build preflight after typecheck and the full test suite, so obvious dead-control regressions are caught in CI/build workflows that invoke `npm run build`.
+- [x] Report disabled native buttons lacking `aria-describedby` or `title` for human review; the scan does not treat those warnings as proof of an accessible visible explanation.
+- [ ] Confirm the audit on the exact PR head through GitHub Actions and address any false positives or actual findings before merging.
+- [ ] Continue runtime keyboard, screen-reader, mobile, and visible disabled-reason verification; static parsing cannot prove those behaviors.
 
 ## Current increment: legal access and honest feature status
 
