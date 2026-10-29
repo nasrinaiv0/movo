@@ -15,6 +15,7 @@ import { revealChange } from './lib/motion';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
+import ScannerSheet from './components/ScannerSheet';
 import { evaluate } from './lib/calc';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
@@ -481,7 +482,7 @@ function App() {
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
-    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }),
+    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }), openScanner: () => setSheet({ name: 'scanner' }),
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -542,13 +543,15 @@ function App() {
         })}
       </nav>
 
-      {sheet?.name === 'transaction' && <TransactionSheet form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} />}
+      {sheet?.name === 'transaction' && <TransactionSheet form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { setError(''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
       {sheet?.name === 'account' && <AccountSheet form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title="Quick actions" onClose={() => setSheet(null)}>
         <div className="sheet-menu">
           <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />Add transaction</button>
+          <button type="button" onClick={() => setSheet({ name: 'scanner' })}><Icon name="scan" size={20} />Scan receipt</button>
           <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />Add account</button>
           <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />Import CSV</button>
           <button type="button" onClick={exportCsv}><Icon name="download" size={20} />Export CSV</button>

@@ -25,7 +25,7 @@ async function prepare(file) {
 }
 
 export async function readImageText(file) {
-  if (!file || !/^image\//.test(file.type)) throw new Error('Choose a photo or image file.');
+  if (!file || !/^image\//.test(file.type || '')) throw new Error('Choose a photo or image file.');
   if (file.size > 15 * 1024 * 1024) throw new Error('That image is larger than 15 MB.');
   const [worker, image] = await Promise.all([getWorker(), prepare(file).catch(() => file)]);
   const { data } = await worker.recognize(image);
@@ -56,3 +56,15 @@ export function parseReceipt(text = '') {
   const merchant = (lines.find(l => /[a-z]{3}/i.test(l) && !/\d{4,}|receipt|invoice|official|tin\b|vat|date|time|cashier/i.test(l)) || '').replace(/[^\w&'.\- ]/g, '').trim().slice(0, 60);
   return { amount: Math.round(amount * 100) / 100, merchant, date: findDate(text) };
 }
+
+const GUESS = [
+  ['Food & drinks', /jollibee|mcdo|mcdonald|kfc|chowking|starbucks|coffee|cafe|restaurant|grill|pizza|burger|inasal|greenwich|bakery|milk ?tea/i],
+  ['Groceries', /supermarket|grocery|puregold|savemore|robinsons|landmark|7-?eleven|alfamart|ministop|market/i],
+  ['Transport', /grab|angkas|joyride|shell|petron|caltex|seaoil|toll|easytrip|autosweep|lrt|mrt|parking|fuel|gas/i],
+  ['Bills', /meralco|maynilad|manila water|pldt|globe|smart|converge|sky|electric|water|internet|bill/i],
+  ['Subscriptions', /netflix|spotify|youtube|disney|apple\.com|icloud|google|prime/i],
+  ['Health', /mercury|watsons|southstar|pharma|drug|clinic|hospital|dental|medical/i],
+  ['Shopping', /lazada|shopee|uniqlo|h&m|zara|miniso|mall|department|store/i],
+  ['Entertainment', /cinema|movie|ticket|concert|game|steam|playstation/i],
+];
+export const guessCategory = (text = '') => (GUESS.find(([, re]) => re.test(text)) || ['Other'])[0];

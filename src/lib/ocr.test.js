@@ -8,3 +8,10 @@ test('reads total, merchant and date from receipt text', () => {
 test('falls back to the largest amount and ISO dates', () => {
   expect(parseReceipt('Jollibee\n2026-01-05\n1 Chickenjoy 99.00\n2 Spaghetti 120.00')).toEqual({ amount: 120, merchant: 'Jollibee', date: '2026-01-05' });
 });
+
+test('guesses categories from merchant names', () => {
+  const { guessCategory } = require('./ocr');
+  expect(guessCategory('JOLLIBEE QC')).toBe('Food & drinks');
+  expect(guessCategory('Petron station 12')).toBe('Transport');
+  expect(guessCategory('Unknown merchant')).toBe('Other');
+});
