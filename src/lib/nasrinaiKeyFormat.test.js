@@ -1,4 +1,4 @@
-import { classifyNasrinAIKeyFormat } from './nasrinaiKeyFormat';
+const { classifyNasrinAIKeyFormat } = require('./nasrinaiKeyFormat');
 
 describe('classifyNasrinAIKeyFormat', () => {
   test('recognizes a server-to-server secret without returning credential data', () => {
