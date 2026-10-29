@@ -66,7 +66,7 @@ function MiniChart({ spec }) {
       const p1 = point(angle), p2 = point(next);
       const path = slice.fraction >= 0.999 ? 'M 100 24 A 76 76 0 1 1 99.99 24' : `M 100 100 L ${p1[0]} ${p1[1]} A 76 76 0 ${slice.fraction > .5 ? 1 : 0} 1 ${p2[0]} ${p2[1]} Z`;
       angle = next;
-      return <path key={i} d={path} fill={slice.color} stroke="var(--surface, #fff)" strokeWidth="2"><title>{slice.label}: {formatChartValue(slice.value, valueSeries)}</title></path>;
+      return <path key={i} d={path} fill={slice.color} stroke="var(--surface, #fff)" strokeWidth="2"><title>{`${slice.label}: ${formatChartValue(slice.value, valueSeries)}`}</title></path>;
     });
     return <section className="movo-ai-chart-card" aria-label={spec.meta?.title || 'Financial chart'}>
       <div className="movo-ai-chart-heading"><h3>{spec.meta?.title || 'Financial breakdown'}</h3>{spec.meta?.description && <p>{spec.meta.description}</p>}</div>
@@ -102,11 +102,11 @@ function MiniChart({ spec }) {
         const groupW = plotW / rows.length, barW = Math.min(28, groupW * .72 / numericSeries.length);
         return <g key={i}>{numericSeries.map((s, j) => {
           const v = Number(row[s.dataKey]) || 0, baseline = y(0), yy = y(v);
-          return <rect key={s.dataKey} x={left + i*groupW + groupW/2 - (barW*numericSeries.length)/2 + j*barW} y={Math.min(yy,baseline)} width={Math.max(2,barW-3)} height={Math.max(1,Math.abs(baseline-yy))} rx="3" fill={colors[j%colors.length]}><title>{String(row[xKey])}: {s.label || s.dataKey} {formatChartValue(v, s)}</title></rect>;
+          return <rect key={s.dataKey} x={left + i*groupW + groupW/2 - (barW*numericSeries.length)/2 + j*barW} y={Math.min(yy,baseline)} width={Math.max(2,barW-3)} height={Math.max(1,Math.abs(baseline-yy))} rx="3" fill={colors[j%colors.length]}><title>{`${String(row[xKey])}: ${s.label || s.dataKey} ${formatChartValue(v, s)}`}</title></rect>;
         })}<text x={left+i*groupW+groupW/2} y={chartH-18} textAnchor="middle" fontSize="10" fill="currentColor">{String(row[xKey] ?? '').slice(0,12)}</text></g>;
       }) : numericSeries.map((s, si) => {
         const pts = rows.map((row, i) => [left+(rows.length===1?plotW/2:i*plotW/(rows.length-1)), y(Number(row[s.dataKey])||0)]);
-        return <g key={s.dataKey}><polyline points={pts.map(p=>p.join(',')).join(' ')} fill="none" stroke={colors[si%colors.length]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />{pts.map((p,i)=><circle key={i} cx={p[0]} cy={p[1]} r="4" fill={colors[si%colors.length]}><title>{String(rows[i][xKey])}: {formatChartValue(Number(rows[i][s.dataKey]), s)}</title></circle>)}</g>;
+        return <g key={s.dataKey}><polyline points={pts.map(p=>p.join(',')).join(' ')} fill="none" stroke={colors[si%colors.length]} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />{pts.map((p,i)=><circle key={i} cx={p[0]} cy={p[1]} r="4" fill={colors[si%colors.length]}><title>{`${String(rows[i][xKey])}: ${formatChartValue(Number(rows[i][s.dataKey]), s)}`}</title></circle>)}</g>;
       })}
       {type === 'line' && rows.map((row,i)=><text key={i} x={left+(rows.length===1?plotW/2:i*plotW/(rows.length-1))} y={chartH-18} textAnchor="middle" fontSize="10" fill="currentColor">{String(row[xKey] ?? '').slice(0,12)}</text>)}
     </svg></div>
