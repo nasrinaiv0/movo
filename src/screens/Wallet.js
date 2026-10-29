@@ -19,12 +19,12 @@ function AccountRow({ a, show, onClick }) {
 export function CardArt({ a, show }) {
   return <div className={`credit-card brand-${a.brand || 'blue'}`}>
     <div className="cc-top"><span className="cc-name">{a.name}</span><span className="cc-net">{a.institution_name}</span></div>
-    <div className="cc-bottom"><span>•••• {a.mask || '0000'}</span><b>{shown(show, money(a.balance, a.currency))}</b></div>
+    <div className="cc-bottom"><span>{a.mask ? `•••• ${a.mask}` : 'No card number'}</span><b>{shown(show, money(a.balance, a.currency))}</b></div>
   </div>;
 }
 
 export default function Wallet({ c }) {
-  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, sheet, setSheet, notify } = c;
+  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
   const scroller = useRef(null);
   const list = walletFilter === 'All' ? accountsView : accountsView.filter(a => a.account_type === typeOf[walletFilter]);
   const total = stats.balance || 1;
@@ -40,7 +40,7 @@ export default function Wallet({ c }) {
   const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
 
   return <>
-    <RootHeader title="Wallet" subtitle="Your accounts, cards and balances." onSearch={() => go('Transactions')} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <RootHeader title="Wallet" subtitle="Your accounts, cards and balances." onSearch={() => c.setSheet({ name: 'search' })} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <Chips label="Filter wallet accounts" items={FILTERS} value={walletFilter} onChange={setWalletFilter} />
 
     {walletFilter === 'All' && <>
@@ -63,7 +63,7 @@ export default function Wallet({ c }) {
       </section>
       <SectionTitle>Quick Actions</SectionTitle>
       <section className="quick-actions">
-        {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Send Money', () => setSheet({ name: 'transaction', type: 'transfer' })], ['transfer', 'Transfer', () => setSheet({ name: 'transaction', type: 'transfer' })], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+        {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Record Transfer', () => openForm('transfer')], ['transfer', 'Transfer', () => openForm('transfer')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><span><Icon name={icon} size={20} /></span>{label}</button>)}
       </section>
       <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Activity</SectionTitle>
@@ -76,8 +76,10 @@ export default function Wallet({ c }) {
       </div>
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
       <section className="card action-strip">
-        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card', () => notify('MOVO tracks records only, so cards cannot be blocked here.')], ['sliders', 'Limits', () => notify('Spending limits are not available yet.')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
-          <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{label}</button>)}
+        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card (Unavailable)', () => {}], ['sliders', 'Limits (Unavailable)', () => {}], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) => {
+          const unavailable = label.includes('(Unavailable)');
+          return <button type="button" key={label} onClick={fn} disabled={unavailable} title={unavailable ? 'MOVO records card activity but cannot control your actual card or issuer limits.' : undefined}><Icon name={icon} size={20} />{label}</button>;
+        })}
       </section>
       <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label="Switch card">
         <span><small>Available Balance</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />

@@ -21,7 +21,7 @@ export default function Home({ c }) {
       <button type="button" className="avatar" aria-label="Open profile" onClick={() => go('Profile')}>{user.initial}</button>
       <div className="hello"><small>{greeting(refDate)}</small><h1>{user.firstName} <span aria-hidden="true">☀️</span></h1></div>
       <div className="header-actions">
-        <IconButton icon="search" label="Search" onClick={() => go('Transactions')} />
+        <IconButton icon="search" label="Search" onClick={() => c.setSheet({ name: 'search' })} />
         <IconButton icon="bell" label="Notifications" onClick={() => go('Notifications')} dot={unread} />
         <IconButton icon="gear" label="Settings" onClick={() => go('Settings')} />
       </div>

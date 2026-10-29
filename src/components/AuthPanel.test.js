@@ -15,6 +15,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 describe('MOVO Google OAuth sign-in', () => {
   let container;
   let root;
+  let onOpenLegal;
 
   beforeEach(() => {
     container = document.createElement('div');
@@ -22,7 +23,8 @@ describe('MOVO Google OAuth sign-in', () => {
     root = createRoot(container);
     signInWithGoogle.mockClear();
     signInWithGoogle.mockResolvedValue({ provider: 'google', url: 'https://accounts.google.com/' });
-    act(() => root.render(<AuthPanel />));
+    onOpenLegal = jest.fn();
+    act(() => root.render(<AuthPanel onOpenLegal={onOpenLegal} />));
   });
 
   afterEach(() => {
@@ -37,13 +39,29 @@ describe('MOVO Google OAuth sign-in', () => {
     expect(button.disabled).toBe(false);
   });
 
-  test('starts Supabase Google OAuth when clicked', async () => {
+  test('requires explicit legal acknowledgement before starting Google OAuth', async () => {
     const button = Array.from(container.querySelectorAll('button'))
       .find((item) => item.textContent.includes('Continue with Google'));
     await act(async () => {
       button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await Promise.resolve();
     });
+    expect(signInWithGoogle).not.toHaveBeenCalled();
+    expect(container.textContent).toContain('Please review and accept the Terms of Service');
+    const consent = container.querySelector('input[aria-label="Accept MOVO Terms of Service and Privacy Policy"]');
+    act(() => consent.click());
+    await act(async () => {
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await Promise.resolve();
+    });
     expect(signInWithGoogle).toHaveBeenCalledTimes(1);
+  });
+
+  test('onboarding links open the correct legal documents', () => {
+    const terms = Array.from(container.querySelectorAll('button')).find(item => item.textContent.trim() === 'Terms of Service');
+    const privacy = Array.from(container.querySelectorAll('button')).find(item => item.textContent.trim() === 'Privacy Policy');
+    act(() => { terms.click(); privacy.click(); });
+    expect(onOpenLegal).toHaveBeenNthCalledWith(1, 'TermsOfService');
+    expect(onOpenLegal).toHaveBeenNthCalledWith(2, 'PrivacyPolicy');
   });
 });
