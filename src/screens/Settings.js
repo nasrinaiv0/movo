@@ -149,10 +149,10 @@ export function NotificationSettings({ c }) {
     <h2 className="group-title">Notification Categories</h2>
     <section className="card menu-card">
       {item('card', 'Transactions', 'Payments, transfers, receipts', 'catTransactions', 'blue')}
-      {item('chart', 'Account & Security', 'Logins, security alerts, account updates', 'catAccount', 'blue')}
-      {item('spark', 'NasrinAI Updates', 'New features, tips, and improvements', 'catAi', 'violet')}
-      {item('tag', 'Promotions', 'Special offers and discounts', 'catPromo', 'gray')}
-      {item('doc', 'Reports', 'Monthly summaries and insights', 'catReports', 'teal')}
+      {item('chart', 'Account & Security', c.demoAlertsAvailable ? 'Sample account alerts in demo mode.' : 'Live account alerts are not connected.', 'catAccount', 'blue', !c.demoAlertsAvailable)}
+      {item('spark', 'NasrinAI Updates', c.demoAlertsAvailable ? 'Sample AI notices in demo mode.' : 'Live NasrinAI notices are not connected.', 'catAi', 'violet', !c.demoAlertsAvailable)}
+      {item('tag', 'Promotions', c.demoAlertsAvailable ? 'Sample offers in demo mode.' : 'Live promotional alerts are not connected.', 'catPromo', 'gray', !c.demoAlertsAvailable)}
+      {item('doc', 'Reports', c.demoAlertsAvailable ? 'Sample report notices in demo mode.' : 'Live report notifications are not connected.', 'catReports', 'teal', !c.demoAlertsAvailable)}
     </section>
     <section className="card menu-card gap"><Row icon="moon" title="Quiet Hours" sub="Scheduling is not available in this web build." right={<span className="muted-end">Unavailable</span>} chevron={false} /></section>
   </>;
