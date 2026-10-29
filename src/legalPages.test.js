@@ -21,6 +21,16 @@ describe('MOVO public legal pages', () => {
     expect(html).toContain('access, correction, export, or deletion');
   });
 
+
+  test('Help Center answers common storage, AI consent, and notification questions', () => {
+    const html = readPublicPage('help.html');
+    expect(html).toContain('<title>Help Center · MOVO</title>');
+    expect(html).toContain('does not automatically read private Apple Pay history');
+    expect(html).toContain('push and email delivery are not connected');
+    expect(html).toContain('href="/terms.html"');
+    expect(html).toContain('href="/privacy.html"');
+  });
+
   test('legal pages are responsive and do not claim to be an authorization boundary', () => {
     for (const name of ['terms.html', 'privacy.html']) {
       const html = readPublicPage(name);
