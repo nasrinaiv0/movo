@@ -186,7 +186,7 @@ describe('MOVO finance frontend', () => {
     const inAppToggle = container.querySelector('button[aria-label="In-App Alerts"]');
     act(() => inAppToggle.click());
     clickButton(container, 'Back');
-    expect(container.textContent).toContain('You’re all caught up');
+    expect(container.textContent).toContain('In-app alerts are turned off');
     expect(container.textContent).not.toContain('Payment Successful');
   });
 
