@@ -1,19 +1,8 @@
 # MOVO Frontend Action Audit
 
-Last updated: 2026-10-30
+Last updated: 2026-10-29
 
 This audit is a working register, not a claim that the entire frontend is complete. Each visible control must either perform a verified action or be visibly disabled with a clear reason. Re-check the live branch and deployment after every meaningful change.
-
-## Current increment: repeatable control audit
-
-- [x] Add `npm run audit:controls`, a TypeScript-AST-based static scan over production source files for native buttons without an action/submit/disabled state, anchors without navigation/action, forms without submit/action, and non-native `role="button"` elements without click and keyboard handlers.
-- [x] Run the audit as part of the production build preflight after typecheck and the full test suite, so obvious dead-control regressions are caught in CI/build workflows that invoke `npm run build`.
-- [x] Report disabled native buttons lacking `aria-describedby` or `title` for human review; the scan does not treat those warnings as proof of an accessible visible explanation.
-- [x] Validate exact source/test head `32d71dc725b58cfc046d1f7b3f6ecd98b2a5c54d` through Vercel: `tsc --noEmit`, the full Jest command, `npm run audit:controls`, and optimized production compilation completed in the successful build chain. The audit reported 30 source files, 93 native buttons (9 disabled), 8 links, and 5 forms, with no obvious unhandled native buttons, anchors, or forms. The latest exact-head Vercel status is success / READY.
-- [x] Correct the scanner's initial false positive for the Profile Save button, which validly submits a form through its `form="movo-profile-form"` association rather than nesting inside the form.
-- [x] Link disabled cloud-auth controls to the visible configuration note, link the disabled NasrinAI Send action to its consent/message prerequisites, and expose transient save/import busy states to assistive technology.
-- [x] Run a read-only production Supabase catalog check on 2026-10-30: RLS remains enabled for profiles, financial accounts, transactions, budgets, and NasrinAI conversation/message/mapping tables. Authenticated owner-scoped policies and CRUD grants remain on user-owned tables; no `anon` table grants were returned for the checked tables. The upstream mapping remains service-role-only with no browser policies/grants. No database writes or policy changes were made.
-- [ ] Continue runtime keyboard, screen-reader, mobile, and visible disabled-reason verification; static parsing cannot prove those behaviors.
 
 ## Current increment: legal access and honest feature status
 
