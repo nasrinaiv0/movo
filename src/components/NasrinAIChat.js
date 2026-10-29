@@ -14,7 +14,7 @@ function friendlyError(code) {
   return 'NasrinAI could not answer right now. Please try again shortly.';
 }
 
-export default function NasrinAIChat({ session, cloudMode, accounts = [], transactions = [], stats = {}, onOpenLegal, onSignIn }) {
+export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [draft, setDraft] = useState('');
