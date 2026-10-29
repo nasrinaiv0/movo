@@ -90,7 +90,7 @@ export default function Settings({ c }) {
       { icon: 'face', title: 'Face ID / Touch ID', sub: 'Unavailable in a browser; native biometric unlock is not connected.', toggle: 'biometrics' },
       { icon: 'lock', title: 'App Lock', sub: 'Unavailable in this browser build; no separate app-lock feature is connected.', status: 'Unavailable' },
       { icon: 'shield', title: 'Privacy & Data', sub: 'Read how MOVO handles your information', onClick: () => c.openLegal?.('PrivacyPolicy') },
-      { icon: 'trash', title: 'Clear Local Data', sub: 'Reset preferences to defaults and remove local/demo records', onClick: () => c.setSheet({ name: 'clear' }) },
+      { icon: 'trash', title: 'Clear Local Data', sub: 'Reset preferences and remove local/demo records and custom sticker images', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
     { title: 'Data & Sync', rows: [
       { icon: 'cloud', title: 'Cloud Sync', sub: 'Active while signed in; sign out to use local-only mode.', toggle: 'cloudSync' },
