@@ -27,9 +27,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Sort Transfers by the actual source/target account names and show the route in transaction metadata; use neutral “Account” wording in notification details.
 - [x] Rename the Transactions action control to match its actual Quick actions sheet and protect CSV exports from spreadsheet formula injection; delay object-URL revocation for browser download compatibility.
 - [ ] Obtain and publish the formal controller/operator legal name and registered address; review the privacy contact, provider/retention details, lawful bases, and jurisdiction-specific language with qualified counsel before production. The legal pages now disclose this unresolved identity requirement rather than implying the controller is identified.
-- [x] Verify source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867` through the Vercel preview build: `tsc --noEmit` completed, 11 test suites and 49 tests passed, and the production bundle compiled successfully. The latest GitHub Actions run for that source commit is still in progress and must be checked before merge.
+- [x] Verify source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867` through the Vercel preview build: `tsc --noEmit` completed, 11 test suites and 49 tests passed, and the production bundle compiled successfully. GitHub Actions push run `40819172799` and PR run `40819177992` both completed successfully for this source-code head.
 - [x] Run a read-only production Supabase catalog check on 2026-10-29: RLS is enabled on profiles, financial accounts, transactions, budgets, and NasrinAI chat tables; user-owned tables have ownership policies; the upstream conversation mapping has no browser-role grants and intentionally has no client policies; browser roles have no TRUNCATE, TRIGGER, or REFERENCES grants.
-- [x] Verify the preview deployment for source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867`: Vercel deployment `dpl_Apb9dQoNgVZexP9F6jVcTYGUkiQB` reached READY on 2026-10-29; the preview root returned HTTP 200, and the delivered client bundle contains Help Center, Terms, Privacy, and financial-consent UI text without server-side secret names or a NasrinAI secret-key pattern. This verifies the built preview, not a full interactive browser session or production deployment. The ignored-build-step setting was cleared after confirmed cancellation of earlier previews.
+- [x] Verify the latest preview deployment for documentation head `d7c2314e4a731dcf24f26f565ebd151d24718ad9`: Vercel deployment `dpl_Xo7HUEgZNf1RyPTmCsGy8m8oz6Dm` reached READY on 2026-10-29; the preview root and JavaScript bundle returned HTTP 200, and the bundle contains Help Center, Terms, Privacy, and financial-consent UI text without server-side secret names or a NasrinAI secret-key pattern. Build logs confirm typecheck, 11 suites / 49 tests, and production compilation. This verifies the built preview, not a full interactive browser session or production deployment. The ignored-build-step setting was cleared after confirmed cancellation of earlier previews.
 
 ## Controls requiring follow-up audit
 
@@ -73,7 +73,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 
 ## Current deployment and validation snapshot (2026-10-29)
 
-- Source-code validation: `80c5c257ce7348b4e645e9a14b16c37b73d37867`.
-- Vercel preview: [`movo-ah27mu26z-nasrin-ai.vercel.app`](https://movo-ah27mu26z-nasrin-ai.vercel.app) — READY; build logs confirm `tsc --noEmit`, 11 suites / 49 tests, and successful production compilation.
-- GitHub Actions run `40819172799` was still in progress when this snapshot was written; do not mark the latest GitHub Actions check complete until its conclusion is available.
+- Current branch head: `d7c2314e4a731dcf24f26f565ebd151d24718ad9` (documentation-only follow-up to source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867`).
+- Vercel preview: [`movo-2l51sx0ff-nasrin-ai.vercel.app`](https://movo-2l51sx0ff-nasrin-ai.vercel.app) — READY; root and bundle returned HTTP 200; build logs confirm `tsc --noEmit`, 11 suites / 49 tests, and successful production compilation.
+- GitHub Actions run `40819303718` completed successfully for the current documentation-only head; runs `40819172799` and `40819177992` completed successfully for the source-code head.
 - The production domain still points to the existing `main` deployment; do not promote this PR to production until legal/security blockers and review of PR #19 are resolved.
+
+- [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
