@@ -82,3 +82,27 @@ export async function deleteTransaction(transactionId) {
 export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
 }
+
+export async function updateTransaction(transactionId, transaction) {
+  if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
+  const amount = Number(transaction?.amount);
+  const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
+  const type = transaction?.transaction_type;
+  if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Transaction amount must be greater than zero.');
+  if (!merchant || merchant.length > 160) throw new Error('Description must be between 1 and 160 characters.');
+  if (!['income', 'expense', 'transfer'].includes(type)) throw new Error('Choose a valid transaction type.');
+  if (!transaction.account_id) throw new Error('Choose an account for this transaction.');
+  if (type === 'transfer' && (!transaction.transfer_to_account_id || transaction.transfer_to_account_id === transaction.account_id)) throw new Error('Transfers need two different accounts.');
+  if (type !== 'transfer' && transaction.transfer_to_account_id) throw new Error('Only transfers can have a destination account.');
+  const currency = /^[A-Z]{3}$/.test(transaction.currency || 'PHP') ? (transaction.currency || 'PHP') : 'PHP';
+  const occurredAt = transaction.occurred_at || new Date().toISOString();
+  if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
+  return unwrap(await requireClient().from('transactions').update({
+    account_id: transaction.account_id,
+    transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
+    transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
+    category: typeof transaction.category === 'string' ? transaction.category.trim().slice(0, 60) || 'Other' : 'Other',
+    note: typeof transaction.note === 'string' ? transaction.note.trim().slice(0, 1000) || null : null,
+    occurred_at: occurredAt,
+  }).eq('id', transactionId).select().single());
+}
