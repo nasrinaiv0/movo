@@ -57,11 +57,11 @@ export function NavPreview({ accentName }) {
   </div>;
 }
 
-function Row({ icon, title, sub, right, onClick, chevron = true, danger }) {
+function Row({ icon, title, sub, right, onClick, chevron = true, danger, status }) {
   const Tag = onClick ? 'button' : 'div';
-  return <Tag type={onClick ? 'button' : undefined} className={`menu-row${danger ? ' danger' : ''}`} onClick={onClick}>
+  return <Tag type={onClick ? 'button' : undefined} aria-disabled={!onClick && status ? 'true' : undefined} className={`menu-row${danger ? ' danger' : ''}${status ? ' unavailable-row' : ''}`} onClick={onClick}>
     <span className="menu-icon bare"><Icon name={icon} size={20} /></span>
-    <span className="menu-main"><strong>{title}</strong>{sub && <small>{sub}</small>}</span>{right}{chevron && onClick && <Icon name="chevron" size={16} />}
+    <span className="menu-main"><strong>{title}</strong>{sub && <small>{sub}</small>}</span>{right}{status && <span className="pill tone-gray">{status}</span>}{chevron && onClick && <Icon name="chevron" size={16} />}
   </Tag>;
 }
 
@@ -70,12 +70,12 @@ export default function Settings({ c }) {
   const sections = [
     { title: 'Account', rows: [
       { icon: 'user', title: 'Profile', sub: 'Personal information', onClick: () => go('EditProfile') },
-      { icon: 'database', title: 'Plan & Usage', sub: 'Manage your plan and tokens', onClick: () => go('EditProfile') },
+      { icon: 'database', title: 'Plan & Usage', sub: 'Billing and token usage are not connected in this build.', status: 'Unavailable' },
       { icon: 'layout', title: 'Connected Accounts', sub: 'Manually tracked accounts; no bank connection is active.', onClick: () => go('Wallet') },
     ] },
     { title: 'Appearance', rows: [
       { icon: 'palette', title: 'Theme', sub: 'Light, Dark or Custom', onClick: () => go('Appearance') },
-      { icon: 'globe', title: 'App Language', sub: 'English (Philippines) is the only available language.' },
+      { icon: 'globe', title: 'App Language', sub: 'English (Philippines) is the only available language.', status: 'Single option' },
       { icon: 'layout', title: 'Display & Layout', sub: 'Customize your experience', onClick: () => go('Appearance') },
     ] },
     { title: 'Notifications', rows: [
@@ -85,7 +85,7 @@ export default function Settings({ c }) {
     ] },
     { title: 'Security & Privacy', rows: [
       { icon: 'face', title: 'Face ID / Touch ID', sub: 'Unavailable in a browser; native biometric unlock is not connected.', toggle: 'biometrics' },
-      { icon: 'lock', title: 'App Lock', sub: 'Unavailable in this browser build; no separate app-lock feature is connected.' },
+      { icon: 'lock', title: 'App Lock', sub: 'Unavailable in this browser build; no separate app-lock feature is connected.', status: 'Unavailable' },
       { icon: 'shield', title: 'Privacy & Data', sub: 'Read how MOVO handles your information', onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'trash', title: 'Clear Local Data', sub: 'Remove local preferences and local/demo records', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
@@ -95,7 +95,7 @@ export default function Settings({ c }) {
       { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet.', toggle: 'autocat' },
     ] },
     { title: 'Help & Support', rows: [
-      { icon: 'help', title: 'Help Center', sub: 'Help articles are not available yet.' },
+      { icon: 'help', title: 'Help Center', sub: 'Help articles are not published in this build yet.', status: 'Unavailable' },
     ] },
     { title: 'Legal', rows: [
       { icon: 'doc', title: 'Terms of Service', sub: 'Rules for using MOVO', onClick: () => c.openLegal?.('TermsOfService') },
