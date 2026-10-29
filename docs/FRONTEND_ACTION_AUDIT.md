@@ -27,9 +27,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Sort Transfers by the actual source/target account names and show the route in transaction metadata; use neutral “Account” wording in notification details.
 - [x] Rename the Transactions action control to match its actual Quick actions sheet and protect CSV exports from spreadsheet formula injection; delay object-URL revocation for browser download compatibility.
 - [ ] Obtain and publish the formal controller/operator legal name and registered address; review the privacy contact, provider/retention details, lawful bases, and jurisdiction-specific language with qualified counsel before production. The legal pages now disclose this unresolved identity requirement rather than implying the controller is identified.
-- [x] Verify the latest source-code head `12ff5e106f4ecec26dcb302e4194bdc187f22ffa`: GitHub Actions run `40814383703` passed; 11 test suites and 49 tests passed, the production bundle compiled, and the build lifecycle's typecheck passed before bundling.
+- [x] Verify source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867` through the Vercel preview build: `tsc --noEmit` completed, 11 test suites and 49 tests passed, and the production bundle compiled successfully. The latest GitHub Actions run for that source commit is still in progress and must be checked before merge.
 - [x] Run a read-only production Supabase catalog check on 2026-10-29: RLS is enabled on profiles, financial accounts, transactions, budgets, and NasrinAI chat tables; user-owned tables have ownership policies; the upstream conversation mapping has no browser-role grants and intentionally has no client policies; browser roles have no TRUNCATE, TRIGGER, or REFERENCES grants.
-- [ ] Verify deployed preview behavior. Both automatic and manually triggered Vercel preview deployments were cancelled by the project's ignored-build step. The currently READY production deployment is still on `main` commit `07e3ec9f6724a0e526f94a6a3a288fff624681bf`, so it does not validate this PR's UI changes.
+- [x] Verify the preview deployment for source-code head `80c5c257ce7348b4e645e9a14b16c37b73d37867`: Vercel deployment `dpl_Apb9dQoNgVZexP9F6jVcTYGUkiQB` reached READY on 2026-10-29; the preview root returned HTTP 200, and the delivered client bundle contains Help Center, Terms, Privacy, and financial-consent UI text without server-side secret names or a NasrinAI secret-key pattern. This verifies the built preview, not a full interactive browser session or production deployment. The ignored-build-step setting was cleared after confirmed cancellation of earlier previews.
 
 ## Controls requiring follow-up audit
 
@@ -41,7 +41,7 @@ This audit is a working register, not a claim that the entire frontend is comple
 - Actual bank linking, real money movement, card blocking, issuer spending limits, push/email delivery, biometric lock, and automated categorization remain unsupported. An in-app Help Center now provides accurate guidance for current storage, export, consent, and notification behavior.
 - Local/demo financial records are not guaranteed to persist in the deployed main build; do not rely on them as a backup.
 - NasrinAI upstream authentication is still known to return HTTP 401 in production logs; safe key-format diagnostics are in the PR, but a successful authenticated request is still required. See docs/NASRINAI_MOVO_INTEGRATION.md.
-- Production migration `20261029032314_revoke_excess_table_privileges` is applied. The latest source-code head passed CI; the Vercel preview remains unverified because it was cancelled.
+- Production migration `20261029032314_revoke_excess_table_privileges` is applied. The latest validated preview build passed its embedded test/typecheck/build lifecycle; the matching GitHub Actions run is still pending.
 - GitHub Actions dependency installation reports 34 npm audit findings (16 low, 5 moderate, 13 high). Review and remediate dependency upgrades in a dedicated change; do not blindly run `npm audit fix --force`.
 - Supabase Security Advisor reports leaked-password protection is disabled. Enable it in Supabase Auth before production sign-off; this frontend PR does not change that project setting.
 - Supabase Security Advisor flags `movo_ai_upstream_conversations` for RLS-without-policy. This is intentional server-only isolation: browser roles have no grants, so do not add a client policy merely to silence the informational warning.
@@ -64,8 +64,16 @@ This audit is a working register, not a claim that the entire frontend is comple
 
 ## Dependency-install reliability follow-up (2026-10-29)
 
-- [ ] Current-head CI failed during `npm install` before tests ran: the npm registry returned HTTP 404 for `@types/estree@1.0.10`, a version not listed as the published latest release in the registry's package page. A conservative npm override pins this transitive type package to published version `1.0.9`; rerun installation, tests, and build before treating the change as validated.
+- [ ] Current-head CI failed during `npm install` before tests ran: the npm registry returned HTTP 404 for `@types/estree@1.0.10`, a version not listed as the published latest release in the registry's package page. A conservative npm override pins this transitive type package to published version `1.0.9`; subsequent Vercel installation and build completed successfully.
 
 - [x] Correct the Help Center regression test to activate the row by its visible title; the first preview run showed the generic helper compared the row's full accessible text (title plus description) to the title alone. This was a test-selector mismatch, not a dead frontend action.
 
 - [x] Align Help Center regression assertions with the actual visible copy (transfer records do not move money; local/demo records may be lost on refresh/close), avoiding false failures from wording mismatches.
+
+
+## Current deployment and validation snapshot (2026-10-29)
+
+- Source-code validation: `80c5c257ce7348b4e645e9a14b16c37b73d37867`.
+- Vercel preview: [`movo-ah27mu26z-nasrin-ai.vercel.app`](https://movo-ah27mu26z-nasrin-ai.vercel.app) — READY; build logs confirm `tsc --noEmit`, 11 suites / 49 tests, and successful production compilation.
+- GitHub Actions run `40819172799` was still in progress when this snapshot was written; do not mark the latest GitHub Actions check complete until its conclusion is available.
+- The production domain still points to the existing `main` deployment; do not promote this PR to production until legal/security blockers and review of PR #19 are resolved.
