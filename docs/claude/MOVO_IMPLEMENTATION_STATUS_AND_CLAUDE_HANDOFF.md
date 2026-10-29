@@ -8,7 +8,19 @@
 
 > **Scope boundary:** This document is for the MOVO repository only. Do not mix MOVO implementation notes, financial records, app state, deployment settings, or product requirements with the separate NasrinAI repository. NasrinAI is relevant only where MOVO intentionally calls its API. Cross-repository changes must be explicitly identified and tracked as dependencies.
 
-## 1. Executive status
+## Latest audit addendum — 2026-10-30 06:14 Asia/Manila
+
+- **Current main:** 82172294f80e360af9e7043de425a454c211078c (documentation-only PR #51 merge).
+- **Production deployment:** dpl_7XobXwSNWuLa5a9HChdafyGoECeR is READY at current main SHA. The #51 diff only adds this handoff document; the effective application-code baseline remains PR #50 merge 94d089d35483558b320f751cf122aa68755ef0eb.
+- **Critical issue #47 remains open.** The production MOVO client does not yet include PR #48's scoped request/fail-closed implementation. The server-side contract in NasrinAI PR #699 is now merged and deployed, but the complete request/response flow is not live end-to-end.
+- **PR #48 preview:** dpl_Ei7vXK2BVanYgcZWBhiuY6j9LZrH is READY for SHA 6b4f0bb809151ffe7e3aa78494e7b651cdcbcba5. The PR body reports 17 suites / 96 tests passed and successful typecheck/build. Combined status for that SHA reports a successful Vercel check.
+- **PR #48 branch drift:** comparing current main to fix/movo-nasrinai-context-isolation reports 36 commits ahead and 11 behind, with merge base 94d089d35483558b320f751cf122aa68755ef0eb. This contradicts older wording that the branch is fully current. Reconcile to current main and rerun all gates on the resulting exact SHA before considering merge.
+- **No authenticated production smoke test was run.** A READY preview and passing tests do not establish that a portfolio canary is excluded from retrieval, prompt, transcript, cache, response, and logs.
+- **PR #52** chart/currency correctness, **PR #53** known-disclaimer filtering, and **PR #46** static UI control audit remain open. The disclaimer filter is presentation-only, not a security boundary.
+- **Security carry-forward:** earlier PR docs report leaked-password protection disabled and 34 npm audit findings (16 low, 5 moderate, 13 high). These were not freshly re-queried at 06:14. Earlier read-only catalog checks reported owner-scoped RLS and no anon grants in the checked set; re-query before release.
+- **Audit docs:** [Master Change Ledger](engineering/MASTER_CHANGE_LEDGER.md) and [06:14 Audit Delta](engineering/updates/2026-10-30-0614-audit-delta.md), both on branch docs/change-ledger-refresh-2026-10-30-0614 and not merged.
+
+## 1. Executive status — original handoff baseline (superseded by latest audit addendum)
 
 MOVO is **not yet verified as fully functional or production-ready**. The current critical path is to secure the MOVO-specific NasrinAI context boundary, verify correct rendering of AI responses, finish the frontend control audit, and clear security/legal/release gates.
 
