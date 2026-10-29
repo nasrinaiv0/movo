@@ -15,6 +15,8 @@ function friendlyError(code) {
   return 'NasrinAI could not answer right now. Please try again shortly.';
 }
 
+const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
+
 export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -25,8 +27,17 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [newConversationPending, setNewConversationPending] = useState(() => {
     try { return !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { return false; }
   });
+  const [phase, setPhase] = useState('reading');
   const endRef = useRef(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!busy) return undefined;
+    setPhase('reading');
+    const toThinking = setTimeout(() => setPhase('thinking'), 1400);
+    const toAlmost = setTimeout(() => setPhase('almost'), 7000);
+    return () => { clearTimeout(toThinking); clearTimeout(toAlmost); };
+  }, [busy]);
 
   useEffect(() => { if (typeof endRef.current?.scrollIntoView === 'function') endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
 
@@ -107,7 +118,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   return <section className="movo-ai-chat" aria-label="NasrinAI financial copilot">
     <header className="movo-ai-chat-header">
-      <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={22} /></div>
+      <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={24} state={busy ? phase : undefined} /></div>
       <div className="movo-ai-heading"><h1>NasrinAI</h1><p>Private financial copilot · MOVO</p></div>
       <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noopener noreferrer" aria-label="Open NasrinAI.com in a new tab" title="NasrinAI.com"><Icon name="external" size={17} strokeWidth={2} /></a>
       <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label="Start a new chat" title="Start a new chat"><Icon name="plus" size={18} strokeWidth={2} /></button>
@@ -130,7 +141,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <span className="movo-ai-message-label">{message.role === 'user' ? 'You' : 'NasrinAI'}</span>
         <p>{message.content}</p>
       </article>)}
-      {busy && <div className="movo-ai-thinking" role="status"><i /><i /><i /> NasrinAI is thinking…</div>}
+      {busy && <div className="movo-ai-thinking" role="status"><span className="movo-ai-thinking-orb" aria-hidden="true"><NasrinMark size={22} state={phase} /></span><span key={phase} className="movo-ai-thinking-label">{PHASE_LABELS[phase]}</span></div>}
       <div ref={endRef} />
     </div>
     {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label="Dismiss message" onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}

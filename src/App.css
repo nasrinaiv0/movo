@@ -902,3 +902,8 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
 html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reveal *::after { transition: none !important; }
+
+/* ===== NasrinAI 3D sphere: live status while reading, thinking, almost done ===== */
+.movo-ai-thinking { gap: 10px; align-self: flex-start; padding: 8px 14px 8px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font-weight: 500; }
+.movo-ai-thinking-orb { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.movo-ai-thinking-label { animation: item-in .32s var(--spring) both; --dx: 0px; --dy: 6px; }
