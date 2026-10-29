@@ -316,9 +316,8 @@ function App() {
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => { haptic(); go(target); }} aria-current={active ? 'page' : undefined}>
-            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={34} /></span> : <Icon name={icon} size={25} filled={active} />}</span>
-            <span className="nav-label">{label}</span>{active && !center && <i className="nav-dot" />}
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => { haptic(); go(target); }} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
+            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={30} /></span> : <Icon name={icon} size={28} strokeWidth={1.9} filled={active} />}</span>
           </button>;
         })}
       </nav>

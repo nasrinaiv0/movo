@@ -53,3 +53,7 @@ Production builds run the test suite before building. GitHub Actions also runs t
 3. Implement account linking through supported provider APIs and explicit user consent; never scrape banking credentials.
 4. Define encryption, retention, export/deletion, audit logging, and incident-response policies.
 5. Add end-to-end and accessibility checks across supported mobile and desktop browsers.
+
+## Icons
+
+All icons share one smooth, rounded iOS-style set (`src/components/Icon.js`): round caps and joins, soft corner radii, filled variants for the active tab. The bottom dock is icon-only with a sliding capsule highlight, a hover capsule and a spring-scaled icon; every tappable icon elsewhere scales smoothly on hover and press.

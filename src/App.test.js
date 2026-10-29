@@ -24,7 +24,7 @@ function clickButton(container, name) {
   return button;
 }
 const nav = (container, name) => {
-  const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.textContent.trim() === name);
+  const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.getAttribute('aria-label') === name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 };
 

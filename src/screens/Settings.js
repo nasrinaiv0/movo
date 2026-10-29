@@ -51,9 +51,9 @@ export function ThemeSheet({ c }) {
 
 export function NavPreview({ accentName }) {
   return <div className={`nav-preview accent-${accentName}`} aria-label="Navigation preview">
-    {[['home', 'Home', true], ['wallet', 'Wallet'], ['spark', ''], ['list', 'Transactions'], ['user', 'Profile']].map(([icon, label, on], i) => i === 2
-      ? <span key="orb" className="orb small"><NasrinMark size={30} /></span>
-      : <span key={label} className={on ? 'on' : ''}><Icon name={icon} size={20} filled={on} />{label}</span>)}
+    {[['home', true], ['wallet'], ['spark'], ['list'], ['user']].map(([icon, on], i) => i === 2
+      ? <span key="orb" className="orb small"><NasrinMark size={26} /></span>
+      : <span key={icon} className={on ? 'on' : ''}><Icon name={icon} size={26} strokeWidth={1.9} filled={on} /></span>)}
   </div>;
 }
 
