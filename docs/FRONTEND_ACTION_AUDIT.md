@@ -67,3 +67,5 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [ ] Current-head CI failed during `npm install` before tests ran: the npm registry returned HTTP 404 for `@types/estree@1.0.10`, a version not listed as the published latest release in the registry's package page. A conservative npm override pins this transitive type package to published version `1.0.9`; rerun installation, tests, and build before treating the change as validated.
 
 - [x] Correct the Help Center regression test to activate the row by its visible title; the first preview run showed the generic helper compared the row's full accessible text (title plus description) to the title alone. This was a test-selector mismatch, not a dead frontend action.
+
+- [x] Align Help Center regression assertions with the actual visible copy (transfer records do not move money; local/demo records may be lost on refresh/close), avoiding false failures from wording mismatches.

@@ -225,8 +225,8 @@ describe('MOVO finance frontend', () => {
     expect(helpRow).toBeTruthy();
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
-    expect(container.textContent).toContain('MOVO does not move money');
-    expect(container.textContent).toContain('Local/demo records can be lost when you refresh');
+    expect(container.textContent).toContain('does not move money between banks');
+    expect(container.textContent).toContain('can be lost when you refresh or close the page');
     expect(container.textContent).toContain('NasrinAI');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
