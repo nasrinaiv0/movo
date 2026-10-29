@@ -97,16 +97,19 @@ module.exports = async function handler(req, res) {
   res.setHeader('Vary', 'Origin');
   res.setHeader('Cache-Control', 'no-store, private');
   if (!allowedOrigin(req)) return json(res, 403, { error: 'origin_not_allowed' });
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+  if (!['GET', 'POST'].includes(req.method)) {
+    res.setHeader('Allow', 'GET, POST');
     return json(res, 405, { error: 'method_not_allowed' });
   }
   const authHeader = String(req.headers.authorization || '');
   const match = /^Bearer ([\w.-]{20,4096})$/.exec(authHeader);
   if (!match) return json(res, 401, { error: 'sign_in_required' });
-  const message = safeText(req.body?.message, MAX_MESSAGE_CHARS);
-  if (!message) return json(res, 400, { error: 'message_required' });
-  if (message.length > MAX_MESSAGE_CHARS) return json(res, 400, { error: 'message_too_long' });
+  const rawMessage = req.body?.message;
+  if (req.method === 'POST' && typeof rawMessage === 'string' && rawMessage.trim().length > MAX_MESSAGE_CHARS) {
+    return json(res, 400, { error: 'message_too_long' });
+  }
+  const message = safeText(rawMessage, MAX_MESSAGE_CHARS);
+  if (req.method === 'POST' && !message) return json(res, 400, { error: 'message_required' });
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -122,6 +125,29 @@ module.exports = async function handler(req, res) {
     const { data: authData, error: authError } = await db.auth.getUser(token);
     if (authError || !authData?.user?.id) return json(res, 401, { error: 'invalid_session' });
     const userId = authData.user.id;
+
+    if (req.method === 'GET') {
+      const requested = safeText(req.query?.conversationId, 64);
+      let query = db.from('movo_ai_conversations')
+        .select('id,user_id,title,created_at,updated_at')
+        .eq('user_id', userId);
+      if (requested) query = query.eq('id', requested);
+      else query = query.order('updated_at', { ascending: false }).limit(1);
+      const conversationResult = await query.maybeSingle();
+      if (conversationResult.error) throw new Error('conversation_lookup_failed');
+      const conversation = conversationResult.data;
+      if (!conversation) return json(res, 200, { conversationId: null, title: null, messages: [] });
+      const messagesResult = await db.from('movo_ai_messages')
+        .select('id,role,content,created_at')
+        .eq('user_id', userId).eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: true }).limit(200);
+      if (messagesResult.error) throw new Error('message_history_lookup_failed');
+      return json(res, 200, {
+        conversationId: conversation.id,
+        title: conversation.title,
+        messages: (messagesResult.data || []).map((item) => ({ role: item.role, content: item.content, createdAt: item.created_at }))
+      });
+    }
 
     const requestedConversationId = safeText(req.body?.conversationId, 64);
     let conversation = null;
