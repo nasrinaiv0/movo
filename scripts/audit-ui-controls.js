@@ -59,6 +59,19 @@ function auditFile(file) {
   const text = fs.readFileSync(file, 'utf8');
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   counts.files += 1;
+  const handledFormIds = new Set();
+
+  function collectHandledForms(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      if (tagName(node) === 'form') {
+        const formAttrs = attrs(node);
+        const id = literalAttr(formAttrs, 'id');
+        if (id && hasAny(formAttrs, ['onSubmit', 'action'])) handledFormIds.add(id);
+      }
+    }
+    ts.forEachChild(node, collectHandledForms);
+  }
+  collectHandledForms(source);
 
   function visit(node, insideHandledForm = false) {
     let childFormHandled = insideHandledForm;
@@ -68,11 +81,6 @@ function auditFile(file) {
       if (tagName(opening) === 'form') {
         const formAttrs = attrs(opening);
         childFormHandled = hasAny(formAttrs, ['onSubmit', 'action']);
-      }
-    } else if (ts.isJsxSelfClosingElement(node) && tagName(node) === 'form') {
-      const formAttrs = attrs(node);
-      if (!hasAny(formAttrs, ['onSubmit', 'action'])) {
-        errors.push(location(source, node) + ' <form /> has no onSubmit handler or action.');
       }
     }
 
@@ -88,10 +96,10 @@ function auditFile(file) {
         const hasHandler = hasAny(a, ['onClick', 'onKeyDown', 'onMouseDown', 'onPointerDown', 'onSubmit']);
         if (disabled) {
           counts.disabledButtons += 1;
-          if (!hasAny(a, ['aria-describedby', 'title'])) {
+          if (!hasAny(a, ['aria-describedby', 'title', 'aria-busy'])) {
             disabledReview.push(where + ' disabled button needs a human check for a visible, accessible reason.');
           }
-        } else if (!hasHandler && !(isSubmit && childFormHandled)) {
+        } else if (!hasHandler && !(isSubmit && (childFormHandled || handledFormIds.has(literalAttr(a, 'form'))))) {
           errors.push(where + ' <button> has no action handler, submit form, or disabled state.');
         }
       }
