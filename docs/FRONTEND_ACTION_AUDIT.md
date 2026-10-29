@@ -17,6 +17,7 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Make in-app notification master/category preferences affect the feed; disable push/email and native biometric controls that have no backing service.
 - [x] Remove fabricated plan/token figures; mark unavailable card controls disabled and remove misleading chevrons from read-only settings/provider rows.
 - [x] Add a sign-in CTA to the local-mode NasrinAI screen and preserve a new-chat intent across navigation.
+- [x] Add a server-side-only NasrinAI key-format diagnostic that logs classification only, never the key or its identifier.
 - [x] Revoke unnecessary TRUNCATE, TRIGGER, and REFERENCES grants from anon/authenticated on finance/profile/chat tables; keep the upstream conversation mapping server-role-only.
 - [x] Verify production RLS remains enabled on profiles, finance tables, and NasrinAI chat tables, and verify authenticated CRUD grants remain while TRUNCATE and mapping-table access are absent.
 - [ ] Validate every remaining frontend control across Home, Wallet, Transactions, Profile, Settings, Notifications, Auth, and NasrinAI on the current PR head.
@@ -32,7 +33,7 @@ This audit is a working register, not a claim that the entire frontend is comple
 - Cloud sync follows authenticated cloud mode and is not presented as a freely toggleable switch when a cloud session is active.
 - Actual bank linking, real money movement, card blocking, issuer spending limits, push/email delivery, biometric lock, automated categorization, and a Help Center remain unsupported.
 - Local/demo financial records are not guaranteed to persist in the deployed main build; do not rely on them as a backup.
-- NasrinAI upstream authentication is still known to return HTTP 401 in production logs; the UI integration must not be considered live-verified until a successful authenticated request is observed.
+- NasrinAI upstream authentication is still known to return HTTP 401 in production logs; safe key-format diagnostics are in the PR, but a successful authenticated request is still required. See docs/NASRINAI_MOVO_INTEGRATION.md.
 - Production migration 20261029032314_revoke_excess_table_privileges has been applied; the current-head frontend CI and deployment checks are still pending.
 
 ## Security invariants
