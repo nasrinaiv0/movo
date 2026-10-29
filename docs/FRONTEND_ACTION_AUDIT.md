@@ -61,3 +61,7 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Document current behavior without promising unimplemented persistence, bank connectivity, payment execution, or notification delivery.
 - [x] Add a regression test for Settings → Help Center and its Privacy Policy cross-link.
 - [ ] Reconcile PR #19 finance persistence/import changes before finalizing the local-storage disclosure; its branch is three commits behind and conflicts with current `main` changes to `src/App.js` and `src/App.test.js`.
+
+## Dependency-install reliability follow-up (2026-10-29)
+
+- [ ] Current-head CI failed during `npm install` before tests ran: the npm registry returned HTTP 404 for `@types/estree@1.0.10`, a version not listed as the published latest release in the registry's package page. A conservative npm override pins this transitive type package to published version `1.0.9`; rerun installation, tests, and build before treating the change as validated.
