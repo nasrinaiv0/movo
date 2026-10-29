@@ -31,6 +31,12 @@ describe('UI control audit', () => {
     expect(result.errors.some((error) => error.includes('must have an accessible name'))).toBe(true);
   });
 
+  test('accepts disabled controls with accessible explanations or busy state', () => {
+    const result = scan('<><button type="submit" disabled aria-busy={true}>Saving</button><button disabled aria-describedby="reason">Import</button><p id="reason">Choose a valid file first.</p></>');
+    expect(result.disabledReview).toEqual([]);
+    expect(result.errors).toEqual([]);
+  });
+
   test('accepts named modal dialogs and named native radio controls', () => {
     const result = scan('<><div role="dialog" aria-modal="true" aria-label="Preferences" /><button type="button" role="radio" aria-checked={true} onClick={() => {}}>Dark</button></>');
     expect(result.errors).toEqual([]);
