@@ -93,3 +93,53 @@ export async function deleteTransaction(transactionId) {
 export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
 }
+
+export async function updateTransaction(transactionId, transaction) {
+  if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
+  const amount = Number(transaction?.amount);
+  const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
+  const type = transaction?.transaction_type;
+  if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Transaction amount must be greater than zero.');
+  if (!merchant || merchant.length > 160) throw new Error('Description must be between 1 and 160 characters.');
+  if (!['income', 'expense', 'transfer'].includes(type)) throw new Error('Choose a valid transaction type.');
+  if (!transaction.account_id) throw new Error('Choose an account for this transaction.');
+  if (type === 'transfer' && (!transaction.transfer_to_account_id || transaction.transfer_to_account_id === transaction.account_id)) throw new Error('Transfers need two different accounts.');
+  if (type !== 'transfer' && transaction.transfer_to_account_id) throw new Error('Only transfers can have a destination account.');
+  const currency = /^[A-Z]{3}$/.test(transaction.currency || 'PHP') ? (transaction.currency || 'PHP') : 'PHP';
+  const occurredAt = transaction.occurred_at || new Date().toISOString();
+  if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
+  return unwrap(await requireClient().from('transactions').update({
+    account_id: transaction.account_id,
+    transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
+    transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
+    category: typeof transaction.category === 'string' ? transaction.category.trim().slice(0, 60) || 'Other' : 'Other',
+    note: typeof transaction.note === 'string' ? transaction.note.trim().slice(0, 1000) || null : null,
+    occurred_at: occurredAt,
+  }).eq('id', transactionId).select().single());
+}
+
+export async function updateAccount(accountId, account) {
+  if (typeof accountId !== 'string' || !accountId) throw new Error('An account ID is required.');
+  const update = {};
+  if (typeof account?.name === 'string') {
+    const name = account.name.trim();
+    if (!name || name.length > 100) throw new Error('Account name must be between 1 and 100 characters.');
+    update.name = name;
+  }
+  if (account?.account_type !== undefined) {
+    const allowedTypes = ['bank', 'card', 'e_wallet', 'cash', 'investment', 'other'];
+    if (!allowedTypes.includes(account.account_type)) throw new Error('Choose a valid account type.');
+    update.account_type = account.account_type;
+  }
+  if (account?.institution_name !== undefined) {
+    update.institution_name = typeof account.institution_name === 'string' ? account.institution_name.trim().slice(0, 100) || null : null;
+  }
+  if (account?.opening_balance !== undefined) {
+    const openingBalance = Number(account.opening_balance);
+    if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) throw new Error('Enter a valid opening balance.');
+    update.opening_balance = Math.round(openingBalance * 100) / 100;
+  }
+  if (typeof account?.is_archived === 'boolean') update.is_archived = account.is_archived;
+  if (!Object.keys(update).length) throw new Error('Provide at least one account change.');
+  return unwrap(await requireClient().from('financial_accounts').update(update).eq('id', accountId).select().single());
+}

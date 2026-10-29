@@ -6,18 +6,19 @@ import { money, shown, monthRange, monthLabel, dayKey, relativeDay, longDate } f
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
 const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
 
-function sortList(list, sort) {
+export function sortList(list, sort) {
   const copy = list.slice();
   if (sort === 'Amount') return copy.sort((a, b) => b.amount - a.amount);
   if (sort === 'Category') return copy.sort((a, b) => (a.category || '').localeCompare(b.category || ''));
-  if (sort === 'Merchant' || sort === 'From/To') return copy.sort((a, b) => a.merchant.localeCompare(b.merchant));
+  if (sort === 'From/To') return copy.sort((a, b) => `${a.accountName || ''} ${a.transferToAccountName || ''}`.localeCompare(`${b.accountName || ''} ${b.transferToAccountName || ''}`));
+  if (sort === 'Merchant') return copy.sort((a, b) => a.merchant.localeCompare(b.merchant));
   if (sort === 'Account') return copy.sort((a, b) => (a.accountName || '').localeCompare(b.accountName || ''));
   return copy;
 }
 const net = (list) => list.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : t.amount), 0);
 
 export default function Transactions({ c }) {
-  const { show, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
+  const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
   const sorts = SORTS[txFilter];
   const sort = sorts.includes(sortKey) ? sortKey : 'Date';
   const sorted = useMemo(() => sortList(monthTxs, sort), [monthTxs, sort]);
@@ -36,7 +37,7 @@ export default function Transactions({ c }) {
       <select aria-label="Select month" value={month} onChange={e => setMonth(e.target.value)}>{months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select>
     </label>
   );
-  const sliders = <button type="button" className="round-button flat" aria-label="Filters and actions" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
+  const sliders = <button type="button" className="round-button flat" aria-label="Quick actions" title="Quick actions" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
 
   return <>
     <RootHeader title="Transactions" onSearch={() => c.setSheet({ name: 'search' })} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
@@ -46,7 +47,7 @@ export default function Transactions({ c }) {
 
     {txFilter === 'All' && <>
       <section className="card total-card" aria-label="Total spent">
-        <div><div className="balance-label">Total Spent <Icon name="eye" size={17} /></div>
+        <div><div className="balance-label">Total Spent <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
           {deltas.spent != null && <span className="chip-bad"><Icon name="arrowUp" size={12} /> {deltas.spent}% vs last month</span>}</div>
         <Bars values={monthStats.bars} startLabel={monthLabel(month).split(' ')[0]} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
@@ -59,7 +60,7 @@ export default function Transactions({ c }) {
     </>}
 
     {txFilter === 'Expenses' && <section className="card breakdown-card" aria-label="Expenses breakdown">
-      <div className="breakdown-head"><h2>Expenses Breakdown</h2><Icon name="chevron" size={18} /></div>
+      <div className="breakdown-head"><h2>Expenses Breakdown</h2></div>
       {breakdown.data.length ? <div className="breakdown-body"><Donut data={breakdown.data} total={breakdown.total} caption="Total Spent" show={show} size={124} /><Legend data={breakdown.data} /></div> : <p className="empty">No expenses in this month.</p>}
     </section>}
 
@@ -81,7 +82,7 @@ export default function Transactions({ c }) {
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
         {g.label && <div className="group-head"><span><b>{g.label}</b>{g.label !== g.date && <> · {g.date}</>}</span><span>{shown(show, `${txFilter === 'Transfers' ? '' : g.total < 0 ? '−' : '+'}${money(Math.abs(g.total))}`)}</span></div>}
-        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} onOpen={c.openTx} />)}</div>
+        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : undefined} onOpen={c.openTx} />)}</div>
       </section>)}
       {!monthTxs.length && <div className="card empty-card"><Icon name="list" size={28} /><h3>No transactions</h3><p>Nothing matches this view. Try another month or filter, or add a record.</p><button type="button" className="primary-button" onClick={() => c.setSheet({ name: 'transaction' })}><Icon name="plus" size={16} /> Add transaction</button></div>}
     </div>

@@ -9,7 +9,9 @@ jest.mock('./lib/financeRepository', () => ({
   listAccounts: jest.fn().mockResolvedValue([]),
   listTransactions: jest.fn().mockResolvedValue([]),
   createAccount: jest.fn(),
+  updateAccount: jest.fn(),
   createTransaction: jest.fn(),
+  updateTransaction: jest.fn(),
   deleteTransaction: jest.fn(),
   signOut: jest.fn(),
 }));
@@ -23,6 +25,16 @@ function clickButton(container, name) {
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   return button;
 }
+function setInputValue(input, value) {
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')?.set
+      || Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
 const nav = (container, name) => {
   const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.getAttribute('aria-label') === name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -67,6 +79,15 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]').textContent).toContain('Your Cards');
   });
 
+  test('wallet transfer actions open a transfer form rather than an expense form', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Record Transfer');
+    const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
+    expect(dialog).not.toBeNull();
+    const transfer = Array.from(dialog.querySelectorAll('button')).find(item => item.textContent.trim() === 'Transfer');
+    expect(transfer.getAttribute('aria-pressed')).toBe('true');
+  });
+
   test('transactions screen filters, groups by day and opens details', () => {
     nav(container, 'Transactions');
     expect(container.querySelector('h1').textContent).toBe('Transactions');
@@ -92,7 +113,7 @@ describe('MOVO finance frontend', () => {
 
   test('opens and closes the add-transaction sheet', () => {
     nav(container, 'Transactions');
-    clickButton(container, 'Filters and actions');
+    clickButton(container, 'Quick actions');
     clickButton(container, 'Add transaction');
     expect(container.querySelector('[role="dialog"][aria-label="Add transaction"]')).not.toBeNull();
     clickButton(container, 'Close Add transaction');
@@ -108,7 +129,32 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Back');
     clickButton(container, 'Notifications');
     expect(container.querySelector('h1').textContent).toBe('Notifications');
-    expect(container.textContent).toContain('Payment Successful');
+    expect(container.textContent).toContain('Expense Recorded');
+  });
+
+  test('Terms of Service and Privacy Policy are reachable and cross-linked', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Terms of Service');
+    expect(container.querySelector('h1').textContent).toBe('Terms of Service');
+    expect(container.textContent).toContain('Effective date: October 29, 2026');
+    clickButton(container, 'Privacy Policy');
+    expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
+    expect(container.textContent).toContain('Data Privacy Act of 2012');
+    expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
+    clickButton(container, 'Back');
+    expect(container.querySelector('h1').textContent).toBe('Profile');
+  });
+
+  test('Settings Privacy & Data opens the privacy policy instead of changing balance visibility', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const privacyRow = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Privacy & Data');
+    expect(privacyRow).toBeTruthy();
+    const before = JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance;
+    act(() => privacyRow.click());
+    expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance).toBe(before);
   });
 
   test('theme choices update the app theme and persist preferences', () => {
@@ -119,6 +165,59 @@ describe('MOVO finance frontend', () => {
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('dark');
     clickButton(container, 'purple accent');
     expect(container.firstChild.className).toContain('accent-purple');
+  });
+
+  test('search from Home opens the search sheet and shows filtered transaction results', () => {
+    clickButton(container, 'Search');
+    const input = container.querySelector('[aria-label="Filter transactions"]');
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, 'Netflix');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    clickButton(container, 'Show results');
+    expect(container.querySelector('h1').textContent).toBe('Transactions');
+    expect(container.textContent).toContain('Netflix');
+    expect(container.textContent).not.toContain('Puregold');
+  });
+
+  test('unsupported notification and device-security settings are disabled', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    ['Push Notifications', 'Email Notifications', 'Face ID / Touch ID', 'Local Storage', 'Auto Categorization'].forEach(label => {
+      const toggle = container.querySelector('button[aria-label="' + label + '"]');
+      expect(toggle).toBeTruthy();
+      expect(toggle.disabled).toBe(true);
+    });
+    expect(container.textContent).toContain('no push delivery service is connected');
+    expect(container.textContent).toContain('native biometric unlock is not connected');
+  });
+
+  test('Clear Local Data resets preferences and removes local/demo records without affecting cloud records', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    expect(clearRow).toBeTruthy();
+    act(() => clearRow.click());
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).toBeTruthy();
+    expect(dialog.textContent).toContain('Resets browser preferences to defaults');
+    expect(dialog.textContent).toContain('Cloud records are not affected');
+    clickButton(container, 'Clear data');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
+    nav(container, 'Home');
+    expect(container.textContent).not.toContain('SM Supermarket');
+  });
+
+  test('turning off in-app alerts hides the notification feed', () => {
+    nav(container, 'Profile');
+    const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Notifications');
+    act(() => notificationSettings.click());
+    const inAppToggle = container.querySelector('button[aria-label="In-App Alerts"]');
+    act(() => inAppToggle.click());
+    clickButton(container, 'Back');
+    expect(container.textContent).toContain('In-app alerts are turned off');
+    expect(container.textContent).not.toContain('Expense Recorded');
   });
 
   test('transaction search filters records', () => {
@@ -146,11 +245,114 @@ describe('MOVO finance frontend', () => {
     expect(container.firstChild.className).not.toContain('glass-on');
   });
 
-  test('NasrinAI opens the private chat and blocks local/demo sessions', () => {
+  test('NasrinAI opens the private chat and provides a sign-in action in local/demo mode', () => {
     nav(container, 'NasrinAI');
     expect(container.querySelector('h1').textContent).toBe('NasrinAI');
     expect(container.textContent).toContain('Your account stays isolated.');
     expect(container.textContent).toContain('Sign in to securely connect your MOVO finances.');
     expect(container.querySelector('textarea#' + 'movo-ai-prompt')).toBeNull();
+    clickButton(container, 'Sign in to MOVO');
+    expect(container.querySelector('h2').textContent).toBe('Welcome back');
+  });
+
+  test('unsupported Plan & Usage is clearly unavailable while Help Center opens useful guidance', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const rows = Array.from(container.querySelectorAll('.menu-row'));
+    const plan = rows.find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
+    expect(plan).toBeTruthy();
+    expect(plan.tagName).toBe('DIV');
+    expect(plan.getAttribute('aria-disabled')).toBe('true');
+    expect(plan.textContent).toContain('Unavailable');
+    expect(plan.textContent).toContain('Billing and token usage are not connected');
+    const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
+    expect(helpRow).toBeTruthy();
+    act(() => helpRow.click());
+    expect(container.querySelector('h1').textContent).toBe('Help Center');
+    expect(container.textContent).toContain('does not move money between banks');
+    expect(container.textContent).toContain('persist across reloads in the same browser profile');
+    expect(container.textContent).toContain('NasrinAI');
+    clickButton(container, 'Privacy Policy');
+    expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+  });
+
+  test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    const trigger = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === 'Switch card' || item.textContent.trim() === 'Switch card');
+    expect(trigger).toBeTruthy();
+    act(() => { trigger.focus(); trigger.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).toBeTruthy();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    const focusable = Array.from(dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+    expect(focusable.length).toBeGreaterThan(1);
+    act(() => {
+      focusable[focusable.length - 1].focus();
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    });
+    expect(document.activeElement).toBe(focusable[0]);
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  test('creates, edits and archives a local-only account across reloads', () => {
+    window.confirm = jest.fn(() => true);
+    nav(container, 'Wallet');
+    clickButton(container, 'Add Card');
+    const name = container.querySelector('input[placeholder="e.g. Everyday account"]');
+    setInputValue(name, 'My Test Card');
+    clickButton(container, 'Add account');
+    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
+    clickButton(container, 'Cards');
+    clickButton(container, 'Switch card');
+    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('My Test Card'));
+    expect(targetCard).toBeTruthy();
+    act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'View Details');
+    clickButton(container, 'Edit account');
+    setInputValue(container.querySelector('input[placeholder="e.g. Everyday account"]'), 'Updated Test Card');
+    clickButton(container, 'Save changes');
+    expect(container.textContent).toContain('Updated Test Card');
+    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    expect(container.textContent).toContain('Updated Test Card');
+    clickButton(container, 'Switch card');
+    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('Updated Test Card'));
+    expect(updatedCard).toBeTruthy();
+    act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'View Details');
+    clickButton(container, 'Archive account');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'Updated Test Card').is_archived).toBe(true);
+  });
+
+  test('edits a transaction and persists the change locally', () => {
+    nav(container, 'Transactions');
+    clickButton(container, 'See All');
+    clickButton(container, 'SM Supermarket, −₱1,250.00');
+    clickButton(container, 'Edit');
+    const description = container.querySelector('input[placeholder="e.g. Grocery shopping"]');
+    setInputValue(description, 'Edited supermarket');
+    clickButton(container, 'Save changes');
+    expect(container.textContent).toContain('Edited supermarket');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Edited supermarket');
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    expect(container.textContent).toContain('Edited supermarket');
+  });
+
+  test('CSV import action opens a review-first import sheet', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'More');
+    clickButton(container, 'Import CSV');
+    expect(container.querySelector('[role="dialog"][aria-label="Import transactions"]')).not.toBeNull();
+    expect(container.querySelector('input[type="file"][accept=".csv,text/csv"]')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Import 0 transaction(s)') && button.disabled)).toBe(true);
   });
 });
