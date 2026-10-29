@@ -16,7 +16,8 @@ import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
 import { evaluate } from './lib/calc';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget } from './lib/financeRepository';
+import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
@@ -36,6 +37,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], mascot: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile', HelpCenter: 'Profile', TermsOfService: 'Profile', PrivacyPolicy: 'Profile' };
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -90,6 +92,7 @@ function App() {
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [prefs, setPrefs] = useState(readPrefs);
   const [cloudAccounts, setCloudAccounts] = useState([]);
+  const [cloudBudgets, setCloudBudgets] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
   const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
@@ -139,6 +142,7 @@ function App() {
     try {
       const [a, t] = await Promise.all([listAccounts(), listTransactions()]);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudMode(true);
+      listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
     } catch { setError('Could not load cloud records. Check your connection and try again.'); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
   }, []);
@@ -228,6 +232,9 @@ function App() {
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => txs.filter(t => t.type !== 'transfer').slice(0, 4), [txs]);
+  const budgets = cloudMode ? cloudBudgets : (prefs.budgets || []);
+  const budgetList = useMemo(() => budgetProgress(budgets, homeMonth.list), [budgets, homeMonth]);
+  const plans = prefs.plans || [];
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const allNotifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
@@ -440,6 +447,22 @@ function App() {
     try { if (cloudMode) await deleteTransaction(t.id); setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null); notify('Transaction deleted.'); }
     catch { notify('Could not delete this transaction.'); }
   };
+  const saveBudget = async ({ id, category, monthly_limit }) => {
+    if (cloudMode && session?.user) {
+      const row = id ? await updateBudget(id, { category, monthly_limit }) : await createBudget({ category, monthly_limit }, session.user.id);
+      setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
+    } else {
+      const row = { id: id || window.crypto?.randomUUID?.() || `budget-${Date.now()}`, category, monthly_limit };
+      setPref('budgets', [...(prefs.budgets || []).filter(b => b.id !== row.id), row]);
+    }
+    notify('Budget saved.');
+  };
+  const deleteBudget = async (id) => {
+    if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); } else setPref('budgets', (prefs.budgets || []).filter(b => b.id !== id));
+    notify('Budget removed.');
+  };
+  const savePlan = (plan) => { const row = { ...plan, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify('Plan saved.'); };
+  const deletePlan = (id) => { setPref('plans', plans.filter(p => p.id !== id)); notify('Plan removed.'); };
   const exportCsv = () => {
     const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, t.category, t.type, t.amount, t.currency || 'PHP', t.accountName])];
     const csv = buildCsv(rows);
@@ -458,6 +481,7 @@ function App() {
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
+    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }),
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -534,6 +558,7 @@ function App() {
       </Sheet>}
 
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
+      {sheet?.name === 'budgets' && <BudgetsSheet progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 
 
       {sheet?.name === 'importCsv' && <Sheet title="Import transactions" subtitle="CSV is parsed in this browser. Nothing is uploaded until you confirm the import." onClose={() => setSheet(null)} label="Import transactions">
