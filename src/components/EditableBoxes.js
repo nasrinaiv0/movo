@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import Icon from './Icon';
 
 /** Applies a saved layout ({ order, hidden }) to a list of boxes, keeping any new boxes at their default spot. */
@@ -26,13 +26,44 @@ export default function EditableBoxes({ boxes, layout = {}, editing, onChange, o
   const hide = (id) => save({ hidden: [...hidden, id] });
   const show = (id) => save({ hidden: [...hidden].filter(x => x !== id), order: [...visible.map(b => b.id), id, ...ordered.filter(b => hidden.has(b.id) && b.id !== id).map(b => b.id)] });
 
+  /* Drag to reorder: the grip follows the finger; passing a neighbour's midpoint swaps the two boxes. */
+  const els = useRef({});
+  const drag = useRef(null);
+  const [dragId, setDragId] = useState('');
+  const [dy, setDy] = useState(0);
+  const down = (e, id) => {
+    e.preventDefault();
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* unsupported */ }
+    drag.current = { id, startY: e.clientY, ids: visible.map(b => b.id) };
+    setDragId(id); setDy(0);
+  };
+  const moveDrag = (e) => {
+    const d = drag.current; if (!d) return;
+    let offset = e.clientY - d.startY;
+    const i = d.ids.indexOf(d.id);
+    const neighbour = offset > 0 ? d.ids[i + 1] : d.ids[i - 1];
+    const el = neighbour && els.current[neighbour];
+    if (el) {
+      const h = el.getBoundingClientRect().height + 14;
+      if (Math.abs(offset) > h / 2) {
+        const j = offset > 0 ? i + 1 : i - 1;
+        [d.ids[i], d.ids[j]] = [d.ids[j], d.ids[i]];
+        d.startY += offset > 0 ? h : -h; offset = e.clientY - d.startY;
+        save({ order: [...d.ids, ...ordered.filter(b => hidden.has(b.id)).map(b => b.id)] });
+      }
+    }
+    setDy(offset);
+  };
+  const endDrag = () => { drag.current = null; setDragId(''); setDy(0); };
+
   if (!editing) return visible.map(b => <React.Fragment key={b.id}>{b.node}</React.Fragment>);
   return <>
     <div className="edit-bar" role="toolbar" aria-label={`Customize ${title}`}>
-      <span><strong>Customize {title}</strong><small>Remove, restore or move boxes.</small></span>
+      <span><strong>Customize {title}</strong><small>Drag to move, tap − to remove.</small></span>
       <button type="button" className="primary-button" onClick={onDone}>Done</button>
     </div>
-    {visible.map((b, i) => <div key={b.id} className="edit-box" style={{ '--d': `${(i % 3) * 60}ms` }}>
+    {visible.map((b, i) => <div key={b.id} ref={el => { els.current[b.id] = el; }} className={`edit-box${dragId === b.id ? ' dragging' : ''}`} style={{ '--d': `${(i % 3) * 60}ms`, ...(dragId === b.id ? { transform: `translateY(${dy}px)` } : {}) }}>
+      <button type="button" className="edit-grip" aria-label={`Drag to move ${b.label}`} onPointerDown={e => down(e, b.id)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}><Icon name="grip" size={16} /></button>
       <button type="button" className="edit-remove" aria-label={`Remove ${b.label}`} onClick={() => hide(b.id)}><Icon name="close" size={12} strokeWidth={3} /></button>
       <div className="edit-move">
         <button type="button" aria-label={`Move ${b.label} up`} disabled={i === 0} onClick={() => move(b.id, -1)}><Icon name="arrowUp" size={14} strokeWidth={2.4} /></button>

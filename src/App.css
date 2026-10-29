@@ -1286,3 +1286,20 @@ button.account-tile:active { transform: scale(.98); }
 .tx-clock { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 8px 12px; border: var(--hair) solid var(--line); border-radius: 14px; background: var(--card-solid); color: var(--muted); text-align: left; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; min-height: 0; }
 .tx-clock b { color: var(--text); font-size: 15px; font-weight: 600; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
 .glass-on .tx-sheet .tx-clock { background-color: var(--card-solid); }
+
+/* ===== Compact balance-by-type boxes ===== */
+.mini-card { gap: 4px; padding: 10px 11px; border-radius: 18px; }
+.mini-head { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; }
+.mini-head .tile.small { width: 24px; height: 24px; flex: none; }
+.mini-head small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+.mini-card strong { font-size: 15px; }
+.mini-card strong.neg { color: var(--red); }
+.mini-card .pct { padding: 1px 6px; font-size: 10.5px; }
+.pct.owed { background: var(--red-bg); color: var(--red); }
+.edit-grip { position: absolute; z-index: 4; top: 50%; right: -4px; transform: translateY(-50%); display: grid; place-items: center; width: 30px; height: 44px; min-height: 44px; padding: 0; border: var(--hair) solid var(--line); border-radius: 12px; background: var(--card-solid); color: var(--muted); box-shadow: 0 2px 8px rgba(0,0,0,.12); touch-action: none; cursor: grab; }
+.edit-box.dragging { z-index: 20; transition: none; animation: none; }
+.edit-box.dragging .edit-content { transform: scale(1.01); opacity: 1; filter: drop-shadow(0 16px 26px rgba(0,0,0,.18)); }
+.edit-box.dragging .edit-grip { cursor: grabbing; color: var(--accent); }
+.edit-box:not(.dragging) { transition: transform .25s var(--spring); }
+.mini-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mini-card strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }

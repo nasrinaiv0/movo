@@ -70,10 +70,9 @@ export default function Wallet({ c }) {
       {groups.map(([label, items, icon]) => {
         const sum = items.reduce((s, a) => s + a.balance, 0);
         return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label)}>
-          <span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={17} /></span>
-          <small>{label}</small>
-          <strong><Money value={sum} show={show} digits={0} /></strong>
-          <em className="pct">{Math.round((sum / total) * 100)}%</em>
+          <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{label}</small></span>
+          <strong className={sum < 0 ? 'neg' : ''}><Money value={sum} show={show} digits={0} /></strong>
+          {sum > 0 && total > 0 && <em className="pct">{Math.round((sum / total) * 100)}%</em>}{sum < 0 && <em className="pct owed">Owed</em>}
         </button>;
       })}
     </section> },
