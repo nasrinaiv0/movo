@@ -9,7 +9,7 @@ function friendlyError(code) {
   return 'NasrinAI could not answer right now. Please try again shortly.';
 }
 
-export default function NasrinAIChat({ session, cloudMode, accounts = [], transactions = [], stats = {} }) {
+export default function NasrinAIChat({ session, cloudMode, accounts = [], transactions = [], stats = {}, onOpenLegal }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -121,7 +121,8 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     </div>
     {error && <p className="movo-ai-error" role="alert">{error}</p>}
     {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p></div> : <>
-      <label className="movo-ai-consent"><input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /> <span>I agree to send the limited financial context needed to answer my question to NasrinAI.</span></label>
+      <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to send the limited financial context needed to answer this question to NasrinAI.</label></div>
+      <div className="movo-ai-legal-links"><button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>Privacy Policy</button><span aria-hidden="true">·</span><button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>Terms of Service</button></div>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
         <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="1600" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
