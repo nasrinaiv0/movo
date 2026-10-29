@@ -65,6 +65,7 @@ describe('NasrinAI consent and legal links', () => {
 
     expect(disclosure.textContent).toContain('your message');
     expect(disclosure.textContent).toContain('recent transactions');
+    expect(disclosure.textContent).toContain('each message is processed independently');
     expect(disclosure.textContent).toContain('separate from accepting the Terms of Service');
     expect(consent.checked).toBe(false);
     expect(consent.getAttribute('aria-describedby')).toBe('movo-ai-context-disclosure');
