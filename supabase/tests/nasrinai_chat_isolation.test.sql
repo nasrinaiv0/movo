@@ -50,4 +50,24 @@ begin
   if not exists (select 1 from pg_indexes where schemaname='public' and indexname='transactions_user_occurred_at_idx') then
     raise exception 'Expected finance retrieval index is missing';
   end if;
+
+  if not has_table_privilege('anon', 'public.movo_ai_conversations', 'SELECT')
+    or not has_table_privilege('anon', 'public.movo_ai_messages', 'SELECT') then
+    raise exception 'Anonymous users must not have SELECT privileges on private chat tables';
+  end if;
+
+  if has_table_privilege('authenticated', 'public.movo_ai_upstream_conversations', 'SELECT')
+    or has_table_privilege('authenticated', 'public.movo_ai_upstream_conversations', 'INSERT') then
+    raise exception 'Authenticated users must not access upstream conversation mappings';
+  end if;
+
+  if not exists (select 1 from pg_indexes where schemaname='public' and indexname='movo_ai_messages_conversation_owner_idx') then
+    raise exception 'Expected message ownership foreign-key index is missing';
+  end if;
+  if not exists (select 1 from pg_indexes where schemaname='public' and indexname='movo_ai_upstream_conversations_owner_idx') then
+    raise exception 'Expected upstream ownership foreign-key index is missing';
+  end if;
+  if not exists (select 1 from pg_indexes where schemaname='public' and indexname='movo_ai_upstream_conversations_user_idx') then
+    raise exception 'Expected upstream user foreign-key index is missing';
+  end if;
 end $$;
