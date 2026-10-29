@@ -2,7 +2,7 @@
 
 ## Request path
 
-The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. It sends a bounded financial context and the message to `https://nasrinai.com/v1/chat` through a server-only API credential.
+The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends a bounded financial context and the message to `https://nasrinai.com/v1/chat` through a server-only API credential. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
 
 ## Required Vercel environment variables
 
@@ -21,6 +21,7 @@ After setting variables, redeploy the Vercel project. The repository change cann
 - Conversation and message rows include `user_id`, RLS policies use `auth.uid()`, and a composite foreign key prevents attaching messages to another user's conversation.
 - Every conversation lookup/update includes the authenticated user's ID. An unknown or other user's conversation ID returns 404.
 - The upstream NasrinAI API key remains server-only. The API forwards a bounded context from the authenticated user's own rows and never exposes raw database access to NasrinAI.
+- The UI requires explicit consent before sending finance context. The upstream NasrinAI chat service may retain the prompt/context as part of its conversation history under NasrinAI's configured retention policy; confirm that policy and communicate it to users before enabling this in production. MOVO also stores the user/assistant messages in the private MOVO chat tables.
 - Chat responses are marked `Cache-Control: no-store`; server logs include only stable error codes, never tokens, financial context, or message content.
 
 ## Indexing and retrieval
