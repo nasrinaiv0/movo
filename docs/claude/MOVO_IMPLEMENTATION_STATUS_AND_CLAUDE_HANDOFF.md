@@ -292,6 +292,17 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Switching signed-in users clears the previous user's visible chat state before paint. Regression tests cover a pending history request for the next user and the fail-closed scope-confirmation error.
 - The current branch retains the rich reply renderer merged in PR #50. Do not replace the component wholesale with an older version when resolving conflicts.
 
+### Additional frontend increment — PR #52 (chart correctness)
+
+- PR: https://github.com/nasrinaiv0/movo/pull/52 (open draft; MOVO repository only).
+- Current head: `58b7a9e32dac650d517aa99bf7bfb94c4b39ac01`.
+- Preserves currency/value formatting in axis ticks, bar/line tooltips, and pie values.
+- Rejects missing, non-numeric, malformed, or inconsistent-unit chart data instead of converting missing values to zero or comparing unlike units in one chart.
+- Aggregates pie categories beyond the first seven into an explicit `Other` slice so the legend/percentages do not silently omit the remainder.
+- Fixed an SVG `<title>` child warning observed in an earlier preview by rendering each title as one text node.
+- Exact-head Vercel deployment [dpl_9RQfwVQ6QChw2DrAoZw9ts6NW6ii](https://vercel.com/nasrin-ai/movo/9RQfwVQ6QChw2DrAoZw9ts6NW6ii) reached READY; logs confirm typecheck, **18 suites / 99 tests passed**, and production compilation. GitHub Actions run [40939100412](https://github.com/nasrinaiv0/movo/actions/runs/40939100412) was still in progress at last poll.
+- Manual verification of actual model-generated chart payloads, accessible SVG labels, and mobile overflow remains outstanding. This PR does not prove the model's values are real or authorized.
+
 ### Current release gates
 - [ ] Confirm the upstream `context_scope: "movo"` enforcement is deployed and a live authenticated request succeeds. This is an external integration dependency; this MOVO-only workflow did not modify the separate repository.
 - [ ] Verify production behavior with two distinct MOVO test accounts and a redacted canary test; never log credentials, financial payloads, or full prompts.
