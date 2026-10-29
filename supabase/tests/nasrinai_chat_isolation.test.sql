@@ -1,4 +1,4 @@
--- Run after applying 20261029000100_nasrinai_chat_isolation.sql in a test project.
+-- Run after applying 20261029013604_nasrinai_chat_isolation.sql, 20261029013801_nasrinai_chat_fk_indexes.sql, and 20261029032314_revoke_excess_table_privileges.sql in a test project.
 do $$
 declare
   conversations_rls boolean;
