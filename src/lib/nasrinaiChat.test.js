@@ -14,6 +14,74 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     expect(JSON.stringify(context)).not.toContain('user_id');
   });
 
+  test('keeps unknown currencies unknown and rejects malformed financial amounts', () => {
+    const context = buildFinancialContext({
+      accounts: [{
+        id: 'a1',
+        name: 'Main account\\nsecond line',
+        account_type: 'bank',
+        currency: 'usd',
+        opening_balance: 'not-a-number',
+        is_archived: false
+      }],
+      transactions: [
+        {
+          account_id: 'a1',
+          transaction_type: 'expense',
+          amount: 'not-a-number',
+          currency: '???',
+          merchant: 'Malformed row',
+          category: 'Food',
+          occurred_at: 'not-a-date'
+        },
+        {
+          account_id: 'a1',
+          transaction_type: 'expense',
+          amount: '12.50',
+          currency: 'usd',
+          merchant: 'Shop\\nnotes',
+          category: 'Food',
+          occurred_at: '2026-10-28T00:00:00Z',
+          note: 'must not be shared'
+        },
+        {
+          account_id: 'a1',
+          transaction_type: 'unexpected-type',
+          amount: '99',
+          currency: 'USD',
+          merchant: 'Unrecognized type',
+          category: 'Other',
+          occurred_at: '2026-10-28T00:00:00Z'
+        }
+      ],
+      budgets: [{
+        category: 'Food',
+        monthly_limit: 'invalid-limit',
+        currency: '',
+        starts_on: '2026-02-30',
+        is_active: true
+      }]
+    });
+
+    expect(context.accounts[0].name).toBe('Main account second line');
+    expect(context.accounts[0].currency).toBe('USD');
+    expect(context.accounts[0].opening_balance).toBeNull();
+    expect(context.recent_transactions).toHaveLength(1);
+    expect(context.recent_transactions[0]).toMatchObject({
+      date: '2026-10-28T00:00:00.000Z',
+      description: 'Shop notes',
+      amount: 12.5,
+      currency: 'USD',
+      type: 'expense'
+    });
+    expect(context.budgets[0].monthly_limit).toBeNull();
+    expect(context.budgets[0].currency).toBeNull();
+    expect(context.budgets[0].starts_on).toBeNull();
+    expect(JSON.stringify(context)).not.toContain('must not be shared');
+    expect(JSON.stringify(context)).not.toContain('Malformed row');
+    expect(JSON.stringify(context)).not.toContain('Unrecognized type');
+  });
+
   test('retrieval prioritizes transactions matching the current question', () => {
     const rows = [
       { merchant: 'Groceries Market', category: 'Food', transaction_type: 'expense' },
