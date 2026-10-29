@@ -20,6 +20,7 @@ import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
+import { clearCustomStickers } from './lib/stickers';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -473,15 +474,20 @@ function App() {
     let preferencesCleared = true;
     try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { preferencesCleared = false; }
     const recordsCleared = clearLocalFinanceData();
+    const stickersCleared = clearCustomStickers();
+    const allLocalDataCleared = preferencesCleared && recordsCleared && stickersCleared;
     setPrefs({ ...DEFAULTS });
     setRawTxs(cloudMode ? rawTxs : []);
     setLocalAccounts([]);
     setSamplesOn(false);
     setLocalPersistenceWarning(!preferencesCleared || !recordsCleared);
     setSheet(null);
-    notify(preferencesCleared && recordsCleared
-      ? 'Local transactions, accounts and preferences cleared. Cloud records are unchanged.'
-      : 'MOVO could not confirm that all local data was cleared. Check browser storage and clear this site’s data manually if needed.');
+    if (allLocalDataCleared) {
+      setError('');
+      notify('Local transactions, accounts, custom stickers and preferences cleared. Cloud records are unchanged.');
+    } else {
+      setError('MOVO could not confirm that all local data was cleared. Custom sticker images or local records may remain. Check browser storage and clear this site’s data manually if needed.');
+    }
   };
   const signOutNow = async () => {
     try {
