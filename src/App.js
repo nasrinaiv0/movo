@@ -200,7 +200,7 @@ function App() {
   }, [allNotifications, prefs.notifications, prefs.inapp, prefs.catTransactions, prefs.catAccount, prefs.catAi, prefs.catPromo, prefs.catReports]);
   const unread = notifications.some(n => !prefs.readIds.includes(n.id));
   const activeNotification = notifications.find(n => n.id === activeNotificationId);
-  const markAllRead = () => setPref('readIds', notifications.map(n => n.id));
+  const markAllRead = () => setPref('readIds', Array.from(new Set([...prefs.readIds, ...allNotifications.map(n => n.id)])));
 
   const metaName = session?.user?.user_metadata?.full_name;
   const email = session?.user?.email || (samplesOn ? 'nasrin@nasrinai.com' : 'Local-only session');
