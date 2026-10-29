@@ -18,9 +18,11 @@ Track implementation and verification of every user-visible control and legal pa
 ## Legal pages
 - [x] public/terms.html — Terms of Service drafted
 - [x] public/privacy.html — Privacy Policy drafted
+- [x] public/help.html — Help Center with finance-storage, AI-consent, notification, and export guidance
 - Pages are marked noindex because this is a private finance workspace. This is not an authorization boundary.
 - The operator must validate real deployment data flows, retention, provider contracts, contact channel, and jurisdiction-specific requirements with qualified counsel before treating the policies as final.
 - [x] Link legal pages from sign-in, Profile > About, Settings, NasrinAI consent, and Help Center.
+- [x] Remove the inactive bell action from the Notifications screen instead of rendering a dead control.
 - [ ] Review final wording against actual production data flows and qualified legal guidance.
 
 ## Required verification before completion
