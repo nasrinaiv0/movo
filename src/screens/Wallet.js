@@ -24,7 +24,7 @@ export function CardArt({ a, show }) {
 }
 
 export default function Wallet({ c }) {
-  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet, notify } = c;
+  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
   const scroller = useRef(null);
   const list = walletFilter === 'All' ? accountsView : accountsView.filter(a => a.account_type === typeOf[walletFilter]);
   const total = stats.balance || 1;
