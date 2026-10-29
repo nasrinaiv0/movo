@@ -20,4 +20,11 @@ describe('finance repository validation', () => {
   test('rejects writes without an authenticated identity', async () => {
     await expect(createTransaction({ amount: 100, merchant: 'Coffee', transaction_type: 'expense', account_id: 'account-id' }, '')).rejects.toThrow('signed-in user');
   });
+  test('rejects invalid transaction updates before contacting Supabase', async () => {
+    await expect(updateTransaction('transaction-id', { amount: 0, merchant: 'Coffee', transaction_type: 'expense', account_id: 'account-id' })).rejects.toThrow('greater than zero');
+  });
+  test('requires a different destination when updating a transfer', async () => {
+    await expect(updateTransaction('transaction-id', { amount: 100, merchant: 'Move money', transaction_type: 'transfer', account_id: 'same', transfer_to_account_id: 'same' })).rejects.toThrow('two different accounts');
+  });
+
 });
