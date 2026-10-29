@@ -17,7 +17,7 @@ function sortList(list, sort) {
 const net = (list) => list.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : t.amount), 0);
 
 export default function Transactions({ c }) {
-  const { show, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
+  const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
   const sorts = SORTS[txFilter];
   const sort = sorts.includes(sortKey) ? sortKey : 'Date';
   const sorted = useMemo(() => sortList(monthTxs, sort), [monthTxs, sort]);
@@ -46,7 +46,7 @@ export default function Transactions({ c }) {
 
     {txFilter === 'All' && <>
       <section className="card total-card" aria-label="Total spent">
-        <div><div className="balance-label">Total Spent <Icon name="eye" size={17} /></div>
+        <div><div className="balance-label">Total Spent <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md">{shown(show, money(monthStats.expenses))}</div>
           {deltas.spent != null && <span className="chip-bad"><Icon name="arrowUp" size={12} /> {deltas.spent}% vs last month</span>}</div>
         <Bars values={monthStats.bars} startLabel={monthLabel(month).split(' ')[0]} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
@@ -59,7 +59,7 @@ export default function Transactions({ c }) {
     </>}
 
     {txFilter === 'Expenses' && <section className="card breakdown-card" aria-label="Expenses breakdown">
-      <div className="breakdown-head"><h2>Expenses Breakdown</h2><Icon name="chevron" size={18} /></div>
+      <div className="breakdown-head"><h2>Expenses Breakdown</h2></div>
       {breakdown.data.length ? <div className="breakdown-body"><Donut data={breakdown.data} total={breakdown.total} caption="Total Spent" show={show} size={124} /><Legend data={breakdown.data} /></div> : <p className="empty">No expenses in this month.</p>}
     </section>}
 
