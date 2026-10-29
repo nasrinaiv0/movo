@@ -422,3 +422,14 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Exact head `76851d33b07126a63c34922adedc04464995e157`; Actions run [40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) was still installing dependencies at the last check. No exact-head test/typecheck/audit/build success is claimed yet. Preview was queued/building, not READY.
 - No financial data, application API logic, auth, RLS, database schema/grants, secrets, or production settings changed.
 - Broader completion still blocked by interactive browser/accessibility verification, legal controller/provider/retention disclosures, leaked-password protection, dependency remediation, and authenticated production NasrinAI context-isolation verification. The static audit is a guardrail only.
+
+
+### Validation update — expanded UI control audit — 2026-10-30 06:30 Asia/Manila
+
+- PR #55 exact head: `76851d33b07126a63c34922adedc04464995e157`.
+- GitHub Actions [run 40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) completed successfully.
+- Exact confirmed results: `tsc --noEmit` passed; **18 test suites / 99 tests passed**; `npm run audit:controls` passed; optimized production bundle compiled.
+- Exact-head Vercel preview [dpl_9WXj8JdbfmMDb14TT4gr2d44A2PH](https://vercel.com/nasrin-ai/movo/9WXj8JdbfmMDb14TT4gr2d44A2PH) is READY.
+- Audit snapshot: 31 source files; 93 buttons (9 disabled); 9 links; 5 forms; 4 interactive ARIA widgets; 2 dialogs. Three disabled-control warnings remain in `src/App.js` at lines 596, 608 and 635. The static scanner cannot verify callback semantics, visual truthfulness, modal focus behavior, or actual screen-reader output.
+- PR #55 remains draft. PR #46 was closed as superseded, not merged, to avoid duplicate open work.
+- This PR changes only the audit script, tests, build script and documentation. It does not resolve issue #47 or replace PR #48's server-side context-isolation requirement.
