@@ -43,3 +43,14 @@ The frontend is not declared complete by this static check. Legal publication st
 - Previous snapshot output: **31 source files; 93 buttons (9 disabled); 9 links; 5 forms**. No obvious unhandled native buttons, anchors, or forms were found.
 - Three disabled-control warnings were recorded at `src/App.js:596`, `src/App.js:608`, and `src/App.js:635` (transaction save, account save, CSV import). These are human-review warnings, not proof that the controls are dead. PR #43 contains related busy-state/CSV guidance improvements but remains a draft while finance currency correctness is unresolved.
 - The current expanded audit and its new regression tests are awaiting exact-head CI and preview validation. Do not reuse the previous counts or checks as evidence for the expanded scanner.
+
+
+## Latest implementation and validation — 2026-10-30
+
+- Added roving tab focus and Arrow/Home/End navigation to the accent-color and theme radio groups. The appearance segment containing the “Custom” dialog opener now uses a normal button group with `aria-pressed`, rather than incorrectly presenting a dialog-opening action as a radio option.
+- Added regression tests for arrow navigation, focus movement, Home/End selection, and accessible explanations for disabled controls.
+- Transaction/account save buttons now expose `aria-busy` while saving. CSV import explains the precondition for enabling Import and associates the explanation with the button.
+- Exact code/test head before this documentation-only update: `f610a8c44a024f6e674d1bf2a848f1f716f8cd52`.
+- GitHub Actions run [40972518116](https://github.com/nasrinaiv0/movo/actions/runs/40972518116) passed **18 suites / 102 tests**, TypeScript typecheck, the control audit, and production compilation. The audit output reported no obvious unhandled controls and no disabled-control explanation warnings.
+- Vercel status for that exact code/test head is success: [deployment details](https://vercel.com/nasrin-ai/movo/GAP7WjRzb2AbgYTXD2EKAa6tewXA).
+- This confirms static analysis and automated tests only. Manual browser, keyboard, screen-reader, mobile, and authenticated finance-flow verification remain required. The legal publication and production NasrinAI isolation gates remain separate.
