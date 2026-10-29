@@ -6,15 +6,11 @@ create table if not exists public.movo_ai_conversations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   title text not null default 'New conversation' check (char_length(title) <= 120),
-  nasrinai_conversation_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (id, user_id)
 );
 
-create unique index if not exists movo_ai_conversations_upstream_id_unique
-  on public.movo_ai_conversations(nasrinai_conversation_id)
-  where nasrinai_conversation_id is not null;
 create index if not exists movo_ai_conversations_user_updated_idx
   on public.movo_ai_conversations(user_id, updated_at desc);
 
@@ -29,6 +25,23 @@ create table if not exists public.movo_ai_messages (
     foreign key (conversation_id, user_id)
     references public.movo_ai_conversations(id, user_id) on delete cascade
 );
+
+-- Upstream IDs are server-only metadata. A client-visible conversation row
+-- must never let an authenticated user redirect the proxy to another user's
+-- NasrinAI conversation by editing a provider conversation ID.
+create table if not exists public.movo_ai_upstream_conversations (
+  conversation_id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  nasrinai_conversation_id text not null unique check (char_length(nasrinai_conversation_id) <= 200),
+  created_at timestamptz not null default now(),
+  constraint movo_ai_upstream_conversation_owner_fk
+    foreign key (conversation_id, user_id)
+    references public.movo_ai_conversations(id, user_id) on delete cascade
+);
+
+alter table public.movo_ai_upstream_conversations enable row level security;
+revoke all on public.movo_ai_upstream_conversations from public, anon, authenticated;
+grant select, insert, update, delete on public.movo_ai_upstream_conversations to service_role;
 
 create index if not exists movo_ai_messages_user_conversation_created_idx
   on public.movo_ai_messages(user_id, conversation_id, created_at asc);
