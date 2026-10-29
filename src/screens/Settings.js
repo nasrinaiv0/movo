@@ -95,7 +95,7 @@ export default function Settings({ c }) {
       { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet', onClick: () => c.notify('Transactions currently use the category selected during entry or import. Automatic categorization is not active yet.') },
     ] },
     { title: 'Help & Support', rows: [
-      { icon: 'help', title: 'Help Center', sub: 'FAQs, guides and tutorials', onClick: () => c.notify('Help Center is not available yet.') },
+      { icon: 'help', title: 'Help Center', sub: 'FAQs, data storage, AI consent, and exports', onClick: () => { window.location.assign('/help.html'); } },
     ] },
     { title: 'Legal', rows: [
       { icon: 'doc', title: 'Terms of Service', sub: 'Rules for using MOVO', onClick: () => { window.location.assign('/terms.html'); } },
