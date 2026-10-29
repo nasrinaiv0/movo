@@ -246,28 +246,80 @@ module.exports = async function handler(req, res) {
     if (upstreamConversation?.nasrinai_conversation_id) {
       upstreamBody.conversation_id = upstreamConversation.nasrinai_conversation_id;
     }
-    const upstream = await fetch(nasrinBase + '/v1/chat', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + nasrinKey,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Client-Info': 'movo-financial-copilot'
-      },
-      body: JSON.stringify(upstreamBody),
-      signal: AbortSignal.timeout(25000)
-    });
-    const payload = await upstream.json().catch(() => null);
+    const upstreamStartedAt = Date.now();
+    let upstream;
+    let responseText = '';
+    let payload = null;
+    try {
+      upstream = await fetch(nasrinBase + '/v1/chat', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + nasrinKey,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Client-Info': 'movo-financial-copilot'
+        },
+        body: JSON.stringify(upstreamBody),
+        signal: AbortSignal.timeout(25000)
+      });
+      responseText = await upstream.text();
+      try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
+    } catch (error) {
+      const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+      console.error('[movo-nasrinai-upstream]', timeout ? 'timeout' : 'network_error');
+      return json(res, 502, {
+        error: timeout ? 'nasrinai_timeout' : 'nasrinai_unreachable',
+        message: timeout
+          ? 'NasrinAI took too long to respond. Please try again.'
+          : 'MOVO could not connect to NasrinAI. Please try again shortly.'
+      });
+    }
+    const elapsedMs = Date.now() - upstreamStartedAt;
     if (!upstream.ok) {
-      // Do not forward upstream errors; they may contain internal details.
-      return json(res, upstream.status === 429 ? 429 : 502, {
-        error: upstream.status === 429 ? 'nasrinai_rate_limited' : 'nasrinai_request_failed',
+      // Log only status/latency: never log prompts, financial context, keys, or upstream body.
+      console.error('[movo-nasrinai-upstream]', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+      if (upstream.status === 401 || upstream.status === 403) {
+        return json(res, 502, {
+          error: 'nasrinai_auth_rejected',
+          message: 'MOVO could not authenticate with NasrinAI. Please contact support.'
+        });
+      }
+      if (upstream.status === 429) {
+        return json(res, 429, {
+          error: 'nasrinai_rate_limited',
+          message: 'NasrinAI is temporarily busy. Please try again shortly.'
+        });
+      }
+      if (upstream.status === 400 || upstream.status === 413 || upstream.status === 422) {
+        return json(res, 502, {
+          error: 'nasrinai_request_rejected',
+          message: 'NasrinAI rejected the request format. The issue has been recorded for troubleshooting.'
+        });
+      }
+      return json(res, 502, {
+        error: 'nasrinai_request_failed',
         message: 'NasrinAI could not answer right now. Please try again shortly.'
       });
     }
+    if (!payload || typeof payload !== 'object') {
+      console.error('[movo-nasrinai-upstream]', 'invalid_json_response', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+      return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
+    }
     const reply = extractReply(payload);
-    if (!reply) return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
-    const upstreamConversationId = safeText(payload?.conversation_id || payload?.data?.conversation_id, 200);
+    if (!reply) {
+      console.error('[movo-nasrinai-upstream]', 'missing_reply', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+      return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
+    }
+    const upstreamConversationId = safeText(
+      payload?.conversation_id
+        || payload?.conversationId
+        || payload?.data?.conversation_id
+        || payload?.data?.conversationId
+        || payload?.conversation?.id
+        || payload?.data?.conversation?.id,
+      200
+    );
+    console.info('[movo-nasrinai-upstream]', 'success', 'latency_ms_' + elapsedMs);
     if (!upstreamConversation?.nasrinai_conversation_id && !upstreamConversationId) {
       return json(res, 502, { error: 'nasrinai_conversation_missing', message: 'NasrinAI did not return a conversation reference. Please retry.' });
     }
