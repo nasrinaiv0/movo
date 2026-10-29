@@ -366,7 +366,7 @@ function App() {
 
       {sheet?.name === 'search' && <Sheet title="Search transactions" onClose={() => setSheet(null)}>
         <label className="search-field"><Icon name="search" size={18} /><input autoFocus aria-label="Filter transactions" placeholder="Search description, category, account" value={search} onChange={e => setSearch(e.target.value)} /></label>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSearch('')}>Clear</button><button type="button" className="primary-button" onClick={() => setSheet(null)}>Show results</button></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSearch('')}>Clear</button><button type="button" className="primary-button" onClick={() => go('Transactions')}>Show results</button></div>
       </Sheet>}
 
       {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="This removes preferences and sample records stored in this browser. Cloud records are not affected." onClose={() => setSheet(null)}>
