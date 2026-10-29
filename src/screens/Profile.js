@@ -7,7 +7,7 @@ import { ThemePicker } from './Settings';
 const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad ? 'bad' : 'good'}`}>{bad ? '↓' : '↑'} {v}%</span>);
 
 export default function Profile({ c }) {
-  const { show, stats, deltas, user, accountsByType, prefs, setPref, go, session, signOutNow, exportCsv } = c;
+  const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
   const sum = (arr) => arr.reduce((s, a) => s + a.balance, 0);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
