@@ -25,8 +25,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Include transfer records in the in-app notification feed and add regression coverage for transfer-specific notices.
 - [x] Rename the Transactions action control to match its actual Quick actions sheet and protect CSV exports from spreadsheet formula injection; delay object-URL revocation for browser download compatibility.
 - [ ] Obtain and publish the formal controller/operator legal name and registered address; review the privacy contact, provider/retention details, lawful bases, and jurisdiction-specific language with qualified counsel before production. The legal pages now disclose this unresolved identity requirement rather than implying the controller is identified.
-- [x] Verify current PR head CI: GitHub Actions run 40812940506 completed successfully on commit 9994eb1dec71ca487b34d57b062091c276490432; the verify job's test and production-build steps succeeded. The package build lifecycle runs typecheck and the test suite before bundling.
-- [ ] Run current-head CI after the accessibility, settings, notification, and CSV-safety changes; verify Supabase RLS checks and live deployment behavior. Earlier runs are not evidence for this newer commit.
+- [x] Verify the latest source-code head `35d358fbe7a7058ce08a068834988e4b650e7cd1`: GitHub Actions run `40813756745` passed; 10 test suites and 46 tests passed, the production bundle compiled, and the build lifecycle's typecheck passed before bundling.
+- [x] Run a read-only production Supabase catalog check on 2026-10-29: RLS is enabled on profiles, financial accounts, transactions, budgets, and NasrinAI chat tables; user-owned tables have ownership policies; the upstream conversation mapping has no browser-role grants and intentionally has no client policies; browser roles have no TRUNCATE, TRIGGER, or REFERENCES grants.
+- [ ] Verify deployed preview behavior. The branch's Vercel preview was cancelled by the ignored-build step; the currently READY production deployment is still on `main` commit `07e3ec9f6724a0e526f94a6a3a288fff624681bf`, so it does not validate this PR's UI changes.
 
 ## Controls requiring follow-up audit
 
@@ -38,7 +39,11 @@ This audit is a working register, not a claim that the entire frontend is comple
 - Actual bank linking, real money movement, card blocking, issuer spending limits, push/email delivery, biometric lock, automated categorization, and a Help Center remain unsupported.
 - Local/demo financial records are not guaranteed to persist in the deployed main build; do not rely on them as a backup.
 - NasrinAI upstream authentication is still known to return HTTP 401 in production logs; safe key-format diagnostics are in the PR, but a successful authenticated request is still required. See docs/NASRINAI_MOVO_INTEGRATION.md.
-- Production migration 20261029032314_revoke_excess_table_privileges has been applied; the current-head frontend CI and deployment checks are still pending.
+- Production migration `20261029032314_revoke_excess_table_privileges` is applied. The latest source-code head passed CI; the Vercel preview remains unverified because it was cancelled.
+- GitHub Actions dependency installation reports 34 npm audit findings (16 low, 5 moderate, 13 high). Review and remediate dependency upgrades in a dedicated change; do not blindly run `npm audit fix --force`.
+- Supabase Security Advisor reports leaked-password protection is disabled. Enable it in Supabase Auth before production sign-off; this frontend PR does not change that project setting.
+- Supabase Security Advisor flags `movo_ai_upstream_conversations` for RLS-without-policy. This is intentional server-only isolation: browser roles have no grants, so do not add a client policy merely to silence the informational warning.
+- Supabase Performance Advisor reports seven unused indexes; review query evidence before considering any removal.
 
 ## Security invariants
 
