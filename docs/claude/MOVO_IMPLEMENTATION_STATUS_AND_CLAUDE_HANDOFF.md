@@ -484,3 +484,11 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - GitHub Actions [run 40939100412](https://github.com/nasrinaiv0/movo/actions/runs/40939100412) completed successfully: **18 suites / 99 tests passed**, typecheck passed, production compilation succeeded.
 - Vercel exact-head preview [dpl_9RQfwVQ6QChw2DrAoZw9ts6NW6ii](https://vercel.com/nasrin-ai/movo/9RQfwVQ6QChw2DrAoZw9ts6NW6ii) is READY.
 - This corrects the earlier snapshot note that PR #52's current checks had not been revalidated. Real authenticated financial-data chart smoke testing, responsive rendering, and chart-data provenance remain unverified; PR #52 stays draft.
+
+
+## Cross-project monitoring update — 2026-10-30 07:11 Asia/Manila
+
+- MOVO main/production remain at `82172294f80e360af9e7043de425a454c211078c` / `dpl_7XobXwSNWuLa5a9HChdafyGoECeR` READY. PR #56 remains draft at `c93b2393133f6b200f5ace83a8d5f78d1441e626`; existing exact-head CI [40966718902](https://github.com/nasrinaiv0/movo/actions/runs/40966718902) passed, but no authenticated production isolation canary test has been performed.
+- NasrinAI upstream main is now `52392234ce7583303d4d25880296c06d7ad529b1` after PR #707. This does not change MOVO's client integration status. Issue #47 remains open.
+- Detailed checkpoint: `docs/engineering/updates/2026-10-30-0711-cross-project-monitoring.md` (commit 1f9f2c0f992fe4e595718404fc25750fdddd9dd1); master ledger update commit c0ab1fcbd3d002a30a4a038b3f01634a5774a2a9.
+- This is documentation-only; no MOVO runtime, database, finance data, production settings, or PR state was changed.
