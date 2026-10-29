@@ -14,6 +14,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -22,6 +23,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
   useEffect(() => {
     let active = true;
     const loadHistory = async () => {
+      setPrivacyAccepted(false);
       if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
@@ -48,6 +50,10 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     if (!message || busy) return;
     if (!session?.user || !cloudMode || !supabase) {
       setError('Sign in to MOVO first. Private financial chat is disabled in local/demo mode.');
+      return;
+    }
+    if (!privacyAccepted) {
+      setError('Please confirm that you want to share limited financial context with NasrinAI for this chat.');
       return;
     }
     setError('');
@@ -113,12 +119,13 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
       <div ref={endRef} />
     </div>
     {error && <p className="movo-ai-error" role="alert">{error}</p>}
-    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p></div> :
+    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p></div> : <>
+      <label className="movo-ai-consent"><input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /> <span>I agree to send the limited financial context needed to answer my question to NasrinAI.</span></label>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
         <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="4000" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
-        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim()} aria-label="Send message">{busy ? '…' : '↑'}</button>
-      </form>}
+        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message">{busy ? '…' : '↑'}</button>
+      </form></>}
     <p className="movo-ai-footnote">AI can make mistakes. Verify important calculations. Financial actions are not performed from chat.</p>
   </section>;
 }
