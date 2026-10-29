@@ -452,7 +452,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'See All');
     clickButton(container, 'SM Supermarket, −₱1,250.00');
     clickButton(container, 'Edit');
-    const description = container.querySelector('input[placeholder="e.g. Grocery shopping"]');
+    const description = container.querySelector('input[aria-label="Description"]');
     setInputValue(description, 'Edited supermarket');
     clickButton(container, 'Save changes');
     expect(container.textContent).toContain('Edited supermarket');

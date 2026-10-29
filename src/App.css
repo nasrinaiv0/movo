@@ -973,3 +973,57 @@ html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reve
 .movo-ai-consent-dialog li .movo-icon { margin-top: 2px; color: var(--text); }
 .movo-ai-consent-legal { margin-top: 14px; color: var(--muted); font-size: 12.5px; line-height: 1.55; }
 .movo-ai-consent-legal button { padding: 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ===== Calculator-first transaction sheet ===== */
+.tx-sheet { --tone: var(--red); --tone-bg: var(--red-bg); padding-top: 10px; max-height: 94vh; max-height: 94dvh; }
+.tx-sheet.tone-income { --tone: var(--green); --tone-bg: var(--green-bg); }
+.tx-sheet.tone-transfer { --tone: var(--accent); --tone-bg: rgba(var(--accent-rgb), .12); }
+.tx-form { display: flex; flex-direction: column; gap: 14px; }
+.tx-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tx-round { display: grid; place-items: center; flex: none; width: 40px; height: 40px; min-height: 40px; padding: 0; border: var(--hair) solid var(--line); border-radius: 50%; background: var(--card-solid); color: var(--text); }
+.tx-round.ghost { border: 0; background: none; }
+.tx-seg { display: flex; padding: 3px; border: var(--hair) solid var(--line); border-radius: 14px; background: var(--card-solid); }
+.tx-seg button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); font-size: 14px; font-weight: 700; transition: background-color .2s, color .2s; }
+.tx-seg button.selected { background: var(--tone); color: #fff; }
+.tx-amount { display: flex; align-items: center; gap: 10px; min-height: 92px; padding: 0 4px; }
+.tx-currency { color: var(--muted); font-size: 22px; font-weight: 700; }
+.tx-figures { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; }
+.tx-expr { color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tx-value { font-size: 52px; font-weight: 800; letter-spacing: -1.6px; line-height: 1.05; font-variant-numeric: tabular-nums; color: var(--text); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-value.empty { color: var(--muted); opacity: .35; }
+.tx-note { display: flex; align-items: center; gap: 10px; padding: 0 14px; min-height: 50px; border-radius: 16px; background: var(--card-solid); color: var(--muted); border: var(--hair) solid var(--line); }
+.tx-note input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 15px; outline: none; padding: 14px 0; }
+.tx-cats-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+.tx-cats-head button { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; border: 0; background: none; color: var(--accent); font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.tx-cats-head .flip { transform: rotate(180deg); }
+.tx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tx-chips button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px 0 6px; border: var(--hair) solid var(--line); border-radius: 12px; background: var(--card-solid); color: var(--text); font-size: 14px; font-weight: 500; }
+.tx-chips button.selected { border-color: var(--tone); box-shadow: inset 0 0 0 1px var(--tone); }
+.tx-chip-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; }
+.tx-meta { display: flex; gap: 8px; }
+.tx-meta label { flex: 1; display: flex; flex-direction: column; gap: 3px; padding: 8px 12px; border-radius: 14px; background: var(--card-solid); border: var(--hair) solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.tx-meta input, .tx-meta select, .tx-account select { border: 0; padding: 0; background: transparent; color: var(--text); font-size: 15px; font-weight: 600; text-transform: none; letter-spacing: 0; outline: none; min-height: 24px; width: 100%; }
+.tx-pad { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 10px 10px 28px; border-radius: 22px; background: var(--card-solid); border: var(--hair) solid var(--line); }
+.tx-pad .k { min-height: 50px; border: 0; border-radius: 14px; background: var(--field); color: var(--text); font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; display: grid; place-items: center; }
+.tx-pad .k.op { background: rgba(var(--accent-rgb), .1); color: var(--accent); font-size: 22px; }
+.tx-pad .k.clear { background: var(--red-bg); color: var(--red); font-size: 20px; }
+.tx-pad .k.eq { background: var(--accent); color: var(--on-accent); font-size: 26px; }
+.tx-pad .k:active { transform: scale(.95); filter: brightness(.94); }
+.tx-pad-toggle { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); display: grid; place-items: center; width: 44px; height: 26px; min-height: 26px; padding: 0; border: 0; background: none; color: var(--muted); }
+.tx-pad-show { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: var(--hair) dashed var(--line); border-radius: 14px; background: none; color: var(--muted); font-weight: 600; }
+.tx-bottom { position: sticky; bottom: calc(-24px - env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: stretch; margin: 0 -20px calc(-24px - env(safe-area-inset-bottom)); padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); background: var(--sheet-bg); border-top: var(--hair) solid var(--line); }
+.tx-account { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 6px 14px; border-radius: 16px; border: var(--hair) solid var(--line); background: var(--card-solid); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+.tx-local { flex: 1; align-self: center; color: var(--muted); font-size: 13px; }
+.tx-save { flex: 1; min-height: 54px; border-radius: 16px; background: var(--tone); }
+.tx-save:disabled { background: var(--field); color: var(--muted); opacity: 1; }
+.glass-on .tx-sheet .tx-note, .glass-on .tx-sheet .tx-chips button, .glass-on .tx-sheet .tx-meta label, .glass-on .tx-sheet .tx-account, .glass-on .tx-sheet .tx-pad, .glass-on .tx-sheet .tx-seg, .glass-on .tx-sheet .tx-round:not(.ghost) { background-color: var(--card-solid); }
+.glass-on .tx-sheet .tx-bottom { background: transparent; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.tx-form { gap: 12px; }
+.tx-amount { min-height: 72px; }
+.tx-value { font-size: 46px; }
+.tx-pad { gap: 6px; padding: 8px 8px 26px; }
+.tx-pad .k { min-height: 46px; font-size: 22px; }
+.tx-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -20px; padding: 0 20px 2px; scrollbar-width: none; }
+.tx-chips::-webkit-scrollbar { display: none; }
+.tx-chips button { flex: none; }
+.tx-cats.all .tx-chips { flex-wrap: wrap; overflow: visible; }

@@ -13,6 +13,7 @@ import Notifications, { NotificationDetail, buildNotifications } from './screens
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
 import SearchOverlay from './components/SearchOverlay';
+import TransactionSheet from './components/TransactionSheet';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
@@ -26,7 +27,6 @@ import { buildCsv } from './lib/csvExport';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
-const categories = ['Groceries', 'Food & drinks', 'Transport', 'Shopping', 'Bills', 'Subscriptions', 'Health', 'Education', 'Entertainment', 'Other'];
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
@@ -511,20 +511,7 @@ function App() {
         })}
       </nav>
 
-      {sheet?.name === 'transaction' && <Sheet title={sheet.id ? 'Edit transaction' : 'Add transaction'} subtitle={sheet.id ? 'Changes update this record.' : cloudMode ? 'Saved to your signed-in MOVO account.' : 'Saved on this device only; sign in to use cloud storage.'} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? 'Edit transaction' : 'Add transaction'}>
-        <form className="sheet-form" onSubmit={saveTransaction}>
-          <div className="seg-control" role="group" aria-label="Transaction type">{['expense', 'income', 'transfer'].map(t => <button type="button" key={t} className={form.transaction_type === t ? 'selected' : ''} aria-pressed={form.transaction_type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
-          <label>Description<input autoFocus required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder="e.g. Grocery shopping" /></label>
-          <div className="form-grid"><label>Amount (PHP)<input required type="number" min="0.01" max="999999999999" step="0.01" inputMode="decimal" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" /></label>
-            <label>Date<input required type="date" value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label></div>
-          {form.transaction_type === 'expense' && <label>Category<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(x => <option key={x}>{x}</option>)}</select></label>}
-          {(cloudMode || formAccounts.length > 0) && <label>{form.transaction_type === 'transfer' ? 'From account' : 'Account'}<select required={cloudMode} value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
-          {form.transaction_type === 'transfer' && formAccounts.length > 0 && <label>To account<select value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
-          <label>Note (optional)<textarea rows="2" maxLength="1000" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Add a note" /></label>
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Save transaction'}</button></div>
-        </form>
-      </Sheet>}
+      {sheet?.name === 'transaction' && <TransactionSheet form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} />}
 
       {sheet?.name === 'account' && <Sheet title={sheet.id ? 'Edit account' : 'Add account'} subtitle={sheet.id ? 'Update the name, type, institution or opening balance.' : 'Track a card, bank account or e-wallet.'} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? 'Edit account' : 'Add account'}>
         <form className="sheet-form" onSubmit={saveAccount}>
