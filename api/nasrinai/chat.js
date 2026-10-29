@@ -230,9 +230,17 @@ module.exports = async function handler(req, res) {
       budgets: budgetResult.data || []
     });
 
-    // Never attach an upstream conversation ID. Each provider request starts
-    // from an isolated MOVO prompt, preventing provider-side conversation
-    // history from being reused across projects or imported into this chat.
+    // Remove empty newly-created conversations on failed upstream requests.
+    // Existing conversations are never deleted by this helper.
+    const cleanupNewConversation = async () => {
+      if (requestedConversationId) return;
+      const cleanup = await db.from('movo_ai_conversations')
+        .delete().eq('id', conversation.id).eq('user_id', userId);
+      if (cleanup.error) console.error('[movo-nasrinai-upstream]', 'empty_conversation_cleanup_failed');
+    };
+    // Never attach an upstream conversation ID. The upstream receives the
+    // current question and bounded finance context through its enforced MOVO
+    // scope, with no prior provider conversation history.
     const upstreamBody = buildUpstreamBody(message, context);
     const upstreamStartedAt = Date.now();
     let upstream;
@@ -253,6 +261,7 @@ module.exports = async function handler(req, res) {
       responseText = await upstream.text();
       try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
     } catch (error) {
+      await cleanupNewConversation();
       const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
       console.error('[movo-nasrinai-upstream]', timeout ? 'timeout' : 'network_error');
       return json(res, 502, {
@@ -264,6 +273,7 @@ module.exports = async function handler(req, res) {
     }
     const elapsedMs = Date.now() - upstreamStartedAt;
     if (!upstream.ok) {
+      await cleanupNewConversation();
       // Log only status/latency: never log prompts, financial context, keys, or upstream body.
       console.error('[movo-nasrinai-upstream]', 'http_' + upstream.status, 'key_format_' + classifyNasrinAIKeyFormat(nasrinKey), 'latency_ms_' + elapsedMs);
       if (upstream.status === 401 || upstream.status === 403) {
@@ -290,17 +300,12 @@ module.exports = async function handler(req, res) {
       });
     }
     if (!payload || typeof payload !== 'object') {
+      await cleanupNewConversation();
       console.error('[movo-nasrinai-upstream]', 'invalid_json_response', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
       return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
     }
     if (!hasConfirmedMovoScope(payload)) {
-      // A brand-new conversation has no saved messages yet. Remove its empty
-      // row when an older upstream cannot prove that it enforced MOVO scope.
-      if (!requestedConversationId) {
-        const cleanup = await db.from('movo_ai_conversations')
-          .delete().eq('id', conversation.id).eq('user_id', userId);
-        if (cleanup.error) console.error('[movo-nasrinai-upstream]', 'empty_conversation_cleanup_failed');
-      }
+      await cleanupNewConversation();
       console.error('[movo-nasrinai-upstream]', 'scope_unconfirmed', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
       return json(res, 502, {
         error: 'nasrinai_scope_unconfirmed',
@@ -309,6 +314,7 @@ module.exports = async function handler(req, res) {
     }
     const reply = extractReply(payload);
     if (!reply) {
+      await cleanupNewConversation();
       console.error('[movo-nasrinai-upstream]', 'missing_reply', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
       return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
     }
