@@ -339,3 +339,12 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 3. Test that unrelated document text is absent while the finance summary and charts remain intact.
 4. Continue the server-side context-isolation work in PR #48 and keep the production issue open until the upstream scope contract and authenticated end-to-end tests pass.
 5. Re-run the full control audit and legal/security release checklist; a successful renderer test does not complete the frontend.
+
+
+### Exact-head validation follow-up — 2026-10-30
+- Renderer guard head `37c6d60acb3c6f1a57e10cccc5845d2d21a8c5d9` has now completed GitHub Actions run [40949265879](https://github.com/nasrinaiv0/movo/actions/runs/40949265879) successfully.
+- Exact-head Vercel deployment [dpl_4MuQ78S3YXsoF6m54EtWdxWG41yF](https://vercel.com/nasrin-ai/movo/4MuQ78S3YXsoF6m54EtWdxWG41yF) reached READY; preview alias: [movo-git-fix-filter-unrelated-document-notes-nasrin-ai.vercel.app](https://movo-git-fix-filter-unrelated-document-notes-nasrin-ai.vercel.app).
+- The Vercel build log confirms TypeScript typecheck, **18 suites / 98 tests passed**, and production compilation succeeded. The fifth new test suite assertion group is included in `src/components/NasrinAIMessage.test.js`.
+- Updated PR #53's validation notes with exact-head evidence. PR #53 remains draft; it is not production and not the root-cause fix.
+- Dependency installation still reports 34 audit findings (16 low, 5 moderate, 13 high). Keep this release blocker visible; do not use `npm audit fix --force` as a blanket remedy.
+- Added a progress comment to issue #47. The issue remains open pending source-level context isolation and authenticated end-to-end verification.
