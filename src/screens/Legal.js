@@ -86,6 +86,7 @@ export function TermsOfService({ c }) {
     <section className="legal-section">
       <h2>11. Contact</h2>
       <p>For questions about these terms, email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>.</p>
+      <p>The formal legal name and registered address of the service operator are not displayed in this release. These details and jurisdiction-specific terms must be verified before production use with real financial data.</p>
     </section>
   </LegalPage>;
 }
@@ -94,7 +95,8 @@ export function PrivacyPolicy({ c }) {
   return <LegalPage c={c} title="Privacy Policy" current="PrivacyPolicy">
     <section className="legal-section">
       <h2>1. Who is responsible for your data</h2>
-      <p>The MOVO service operator is responsible for the personal information handled through MOVO. For privacy questions or requests, contact <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>. This policy is intended to explain MOVO's current product behavior and should be read with applicable privacy laws, including the Philippines' Data Privacy Act of 2012 where it applies.</p>
+      <p>The legal name and registered address of the MOVO data controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the service operator must publish its formal identity and any required privacy contact details. For privacy questions or requests, contact <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>. This policy describes MOVO's current product behavior and should be read with applicable privacy laws, including the Philippines' Data Privacy Act of 2012 where it applies.</p>
+      <p><strong>Important:</strong> Until the controller identity and required disclosures are published and reviewed, avoid entering real or highly sensitive financial information.</p>
     </section>
     <section className="legal-section">
       <h2>2. Information MOVO may handle</h2>
