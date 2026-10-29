@@ -95,7 +95,7 @@ export default function Settings({ c }) {
       { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet.', toggle: 'autocat' },
     ] },
     { title: 'Help & Support', rows: [
-      { icon: 'help', title: 'Help Center', sub: 'Help articles are not published in this build yet.', status: 'Unavailable' },
+      { icon: 'help', title: 'Help Center', sub: 'Answers about transactions, storage, privacy, and NasrinAI.', onClick: () => go('HelpCenter') },
     ] },
     { title: 'Legal', rows: [
       { icon: 'doc', title: 'Terms of Service', sub: 'Rules for using MOVO', onClick: () => c.openLegal?.('TermsOfService') },

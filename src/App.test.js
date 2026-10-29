@@ -211,20 +211,23 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('h2').textContent).toBe('Welcome back');
   });
 
-  test('unsupported Plan & Usage and Help Center rows are clearly unavailable, not dead navigation buttons', () => {
+  test('unsupported Plan & Usage is clearly unavailable while Help Center opens useful guidance', () => {
     nav(container, 'Profile');
     clickButton(container, 'Settings');
     const rows = Array.from(container.querySelectorAll('.menu-row'));
     const plan = rows.find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
-    const help = rows.find(row => row.querySelector('strong')?.textContent === 'Help Center');
     expect(plan).toBeTruthy();
     expect(plan.tagName).toBe('DIV');
     expect(plan.getAttribute('aria-disabled')).toBe('true');
     expect(plan.textContent).toContain('Unavailable');
     expect(plan.textContent).toContain('Billing and token usage are not connected');
-    expect(help).toBeTruthy();
-    expect(help.tagName).toBe('DIV');
-    expect(help.textContent).toContain('Unavailable');
+    clickButton(container, 'Help Center');
+    expect(container.querySelector('h1').textContent).toBe('Help Center');
+    expect(container.textContent).toContain('MOVO does not move money');
+    expect(container.textContent).toContain('Local/demo records can be lost when you refresh');
+    expect(container.textContent).toContain('NasrinAI');
+    clickButton(container, 'Privacy Policy');
+    expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });
 
   test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
