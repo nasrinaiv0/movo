@@ -4,7 +4,7 @@ import { RootHeader, SubHeader, SectionTitle } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 
-const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad ? 'bad' : 'good'}`}>{bad ? '↓' : '↑'} {v}%</span>);
+const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad ? 'bad' : 'good'}`}><Icon name={bad ? 'arrowDown' : 'arrowUp'} size={11} strokeWidth={2.4} />{v}%</span>);
 
 export default function Profile({ c }) {
   const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;

@@ -485,7 +485,6 @@ function App() {
   })();
 
   return <div className={rootClass} style={rootStyle}>
-    {prefs.glass && <div className="glass-bg" aria-hidden="true"><i /><i /><i /></div>}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label="Dismiss error" onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
@@ -497,7 +496,7 @@ function App() {
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
           return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
-            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={30} /></span> : <Icon name={icon} size={28} strokeWidth={1.9} filled={active} />}</span>
+            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={24} /></span> : <Icon name={icon} size={24} strokeWidth={1.8} filled={active} />}</span>
           </button>;
         })}
       </nav>

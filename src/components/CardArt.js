@@ -16,7 +16,6 @@ export const StickerArt = memo(function StickerArt({ theme }) {
   const light = theme.ink === 'light';
   return <svg className="sticker-art" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" shapeRendering="geometricPrecision" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id={`${u}bg`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={p.bg[0]} /><stop offset=".55" stopColor={p.bg[1]} /><stop offset="1" stopColor={p.bg[2]} /></linearGradient>
       <radialGradient id={`${u}m`} cx=".38" cy=".34"><stop offset="0" stopColor="#fff" /><stop offset="1" stopColor={p.c} /></radialGradient>
       <radialGradient id={`${u}b`} cx=".35" cy=".3"><stop offset="0" stopColor="#fff" stopOpacity=".55" /><stop offset="1" stopColor={p.g} stopOpacity=".18" /></radialGradient>
       <linearGradient id={`${u}fl`} x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor={p.g} /><stop offset=".6" stopColor={p.c} stopOpacity=".8" /><stop offset="1" stopColor={p.c} stopOpacity="0" /></linearGradient>
@@ -25,12 +24,10 @@ export const StickerArt = memo(function StickerArt({ theme }) {
       <filter id="blur6" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" /></filter>
       <filter id="blur24" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="24" /></filter>
       <linearGradient id={`${u}sc`} x1="0" y1="0" x2="0" y2="1"><stop offset=".5" stopColor={light ? '#000' : '#fff'} stopOpacity="0" /><stop offset="1" stopColor={light ? '#000' : '#fff'} stopOpacity={light ? '.5' : '.55'} /></linearGradient>
-      <linearGradient id={`${u}sh`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".3" /><stop offset=".35" stopColor="#fff" stopOpacity="0" /></linearGradient>
     </defs>
-    <rect width={W} height={H} fill={`url(#${u}bg)`} />
+    <rect width={W} height={H} fill={p.bg[1]} />
     {build(motif.draw(r, p, u), 'm')}
     <rect width={W} height={H} fill={`url(#${u}sc)`} />
-    <rect width={W} height={H} fill={`url(#${u}sh)`} />
   </svg>;
 });
 

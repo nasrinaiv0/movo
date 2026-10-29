@@ -1,4 +1,4 @@
-import { NasrinMark } from './Icon';
+import Icon, { NasrinMark } from './Icon';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -107,13 +107,13 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   return <section className="movo-ai-chat" aria-label="NasrinAI financial copilot">
     <header className="movo-ai-chat-header">
-      <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={26} /></div>
+      <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={22} /></div>
       <div className="movo-ai-heading"><h1>NasrinAI</h1><p>Private financial copilot · MOVO</p></div>
-      <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noreferrer">NasrinAI.com ↗</a>
-      <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label="Start a new chat" title="Start a new chat">＋</button>
+      <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noopener noreferrer" aria-label="Open NasrinAI.com in a new tab" title="NasrinAI.com"><Icon name="external" size={17} strokeWidth={2} /></a>
+      <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label="Start a new chat" title="Start a new chat"><Icon name="plus" size={18} strokeWidth={2} /></button>
     </header>
     <div className="movo-ai-privacy" role="note">
-      <span aria-hidden="true">🔒</span>
+      <span className="movo-ai-privacy-icon" aria-hidden="true"><Icon name="lock" size={16} strokeWidth={2} /></span>
       <span><strong>Your account stays isolated.</strong> When you opt in, MOVO sends a limited selection of your own records to NasrinAI for the reply. Other users cannot access your accounts, transactions, budgets, or chats.</span>
     </div>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label="Conversation">
@@ -122,7 +122,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <p>Ask about spending, income, categories, accounts, or budgets. NasrinAI receives a limited, user-scoped snapshot—not access to your MOVO database.</p>
         <div className="movo-ai-suggestions">
           {['Summarize my recent spending', 'Which categories cost me the most?', 'How am I doing against my budgets?'].map((prompt) =>
-            <button key={prompt} type="button" onClick={() => setDraft(prompt)}>{prompt}</button>
+            <button key={prompt} type="button" onClick={() => { setDraft(prompt); inputRef.current?.focus(); }}><span>{prompt}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
           )}
         </div>
       </div>}
@@ -130,17 +130,17 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <span className="movo-ai-message-label">{message.role === 'user' ? 'You' : 'NasrinAI'}</span>
         <p>{message.content}</p>
       </article>)}
-      {busy && <div className="movo-ai-thinking" role="status"><span /><span /><span /> NasrinAI is thinking…</div>}
+      {busy && <div className="movo-ai-thinking" role="status"><i /><i /><i /> NasrinAI is thinking…</div>}
       <div ref={endRef} />
     </div>
-    {error && <p className="movo-ai-error" role="alert">{error}</p>}
-    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="wide-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
+    {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label="Dismiss message" onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}
+    {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="primary-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
       <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to share limited financial context with NasrinAI for this conversation.</label></div>
       <div className="movo-ai-legal-links"><button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>Privacy Policy</button><span aria-hidden="true">·</span><button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>Terms of Service</button></div>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
         <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="1600" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
-        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message">{busy ? '…' : '↑'}</button>
+        <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message">{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={18} strokeWidth={2.2} />}</button>
       </form></>}
     <p className="movo-ai-footnote">AI can make mistakes. Verify important calculations. Financial actions are not performed from chat.</p>
   </section>;

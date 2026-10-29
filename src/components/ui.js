@@ -128,8 +128,7 @@ export function Sheet({ title, subtitle, onClose, children, label }) {
 export function Sparkline({ values, width = 170, height = 70 }) {
   const d = smoothPath(values, width, height);
   return <svg className="sparkline" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
-    <defs><linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--accent)" stopOpacity=".22" /><stop offset="1" stopColor="var(--accent)" stopOpacity="0" /></linearGradient></defs>
-    {d && <><path d={`${d}L${width - 6} ${height}L6 ${height}Z`} fill="url(#spark-fill)" stroke="none" /><path d={d} className="spark-line" /></>}
+    {d && <><path d={`${d}L${width - 6} ${height}L6 ${height}Z`} fill="var(--accent)" fillOpacity=".08" stroke="none" /><path d={d} className="spark-line" /></>}
   </svg>;
 }
 
