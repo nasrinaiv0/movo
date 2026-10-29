@@ -87,9 +87,9 @@ function buildPrompt(message, context) {
     'Never disclose or speculate about another MOVO user’s data. Avoid repeating unnecessary sensitive details.',
     '',
     'User-scoped MOVO financial context (JSON):'
-  ].join('\\n');
-  const suffix = '\\n\\nUser question:\\n' + safeText(message, MAX_MESSAGE_CHARS);
-  const assemble = () => prefix + '\\n' + JSON.stringify(compact) + suffix;
+  ].join('\n');
+  const suffix = '\n\nUser question:\n' + safeText(message, MAX_MESSAGE_CHARS);
+  const assemble = () => prefix + '\n' + JSON.stringify(compact) + suffix;
   // NasrinAI's configured message limit defaults to 4,000 characters. Keep
   // a safety margin and drop the least-relevant/oldest context first.
   while (assemble().length > MAX_UPSTREAM_PROMPT_CHARS) {
