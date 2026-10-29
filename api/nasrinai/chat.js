@@ -106,6 +106,13 @@ function createUserClient(url, anonKey, token) {
   });
 }
 
+function createAdminClient(url, serviceRoleKey) {
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { headers: { 'X-Client-Info': 'movo-nasrinai-server-mapping' } }
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Vary', 'Origin');
   res.setHeader('Cache-Control', 'no-store, private');
@@ -168,7 +175,7 @@ module.exports = async function handler(req, res) {
     let conversation = null;
     if (requestedConversationId) {
       const found = await db.from('movo_ai_conversations')
-        .select('id,user_id,title,nasrinai_conversation_id')
+        .select('id,user_id,title')
         .eq('id', requestedConversationId).eq('user_id', userId).maybeSingle();
       if (found.error) throw new Error('conversation_lookup_failed');
       conversation = found.data;
@@ -177,7 +184,7 @@ module.exports = async function handler(req, res) {
       const title = message.replace(/\s+/g, ' ').slice(0, 80) || 'New conversation';
       const created = await db.from('movo_ai_conversations')
         .insert({ user_id: userId, title })
-        .select('id,user_id,title,nasrinai_conversation_id').single();
+        .select('id,user_id,title').single();
       if (created.error || !created.data) throw new Error('conversation_create_failed');
       conversation = created.data;
     }
@@ -202,13 +209,24 @@ module.exports = async function handler(req, res) {
       budgets: budgetResult.data || []
     });
 
+    // The admin client is deliberately used only for the server-only mapping
+    // table. All financial data, conversations and messages use the user's JWT.
+    const admin = createAdminClient(supabaseUrl, serviceRoleKey);
+    const mappingResult = await admin.from('movo_ai_upstream_conversations')
+      .select('nasrinai_conversation_id')
+      .eq('conversation_id', conversation.id).eq('user_id', userId).maybeSingle();
+    if (mappingResult.error) throw new Error('upstream_mapping_lookup_failed');
+    const upstreamConversation = mappingResult.data;
+
     const userMessage = await db.from('movo_ai_messages').insert({
       conversation_id: conversation.id, user_id: userId, role: 'user', content: message
     });
     if (userMessage.error) throw new Error('message_save_failed');
 
     const upstreamBody = { message: buildPrompt(message, context) };
-    if (conversation.nasrinai_conversation_id) upstreamBody.conversation_id = conversation.nasrinai_conversation_id;
+    if (upstreamConversation?.nasrinai_conversation_id) {
+      upstreamBody.conversation_id = upstreamConversation.nasrinai_conversation_id;
+    }
     const upstream = await fetch(nasrinBase + '/v1/chat', {
       method: 'POST',
       headers: {
@@ -231,15 +249,19 @@ module.exports = async function handler(req, res) {
     const reply = extractReply(payload);
     if (!reply) return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
     const upstreamConversationId = safeText(payload?.conversation_id || payload?.data?.conversation_id, 200);
-    if (upstreamConversationId && upstreamConversationId !== conversation.nasrinai_conversation_id) {
-      const update = await db.from('movo_ai_conversations')
-        .update({ nasrinai_conversation_id: upstreamConversationId, updated_at: new Date().toISOString() })
-        .eq('id', conversation.id).eq('user_id', userId);
-      if (update.error) throw new Error('conversation_update_failed');
-    } else {
-      await db.from('movo_ai_conversations').update({ updated_at: new Date().toISOString() })
-        .eq('id', conversation.id).eq('user_id', userId);
+    if (!upstreamConversation?.nasrinai_conversation_id && !upstreamConversationId) {
+      return json(res, 502, { error: 'nasrinai_conversation_missing', message: 'NasrinAI did not return a conversation reference. Please retry.' });
     }
+    if (!upstreamConversation?.nasrinai_conversation_id && upstreamConversationId) {
+      const mapped = await admin.from('movo_ai_upstream_conversations').insert({
+        conversation_id: conversation.id, user_id: userId, nasrinai_conversation_id: upstreamConversationId
+      });
+      if (mapped.error) throw new Error('upstream_mapping_save_failed');
+    }
+    const conversationUpdate = await db.from('movo_ai_conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversation.id).eq('user_id', userId);
+    if (conversationUpdate.error) throw new Error('conversation_update_failed');
     const assistantMessage = await db.from('movo_ai_messages').insert({
       conversation_id: conversation.id, user_id: userId, role: 'assistant', content: reply
     });
