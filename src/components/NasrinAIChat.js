@@ -20,6 +20,26 @@ function friendlyError(code) {
 
 const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
 
+function readNewConversationPending(userId, cloudMode) {
+  if (!userId) return false;
+  const pendingKey = 'movo.ai.newConversation.' + userId;
+  try {
+    if (window.sessionStorage.getItem(pendingKey) === 'true') return true;
+    if (!cloudMode) return false;
+    const isolationKey = 'movo.ai.contextIsolation.v1.' + userId;
+    if (window.localStorage.getItem(isolationKey) !== 'true') {
+      // Mark the one-time privacy rollout before any legacy conversation can
+      // load. If either storage operation fails, default to a clean chat.
+      window.sessionStorage.setItem(pendingKey, 'true');
+      window.localStorage.setItem(isolationKey, 'true');
+      return true;
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -27,9 +47,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [newConversationPending, setNewConversationPending] = useState(() => {
-    try { return !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { return false; }
-  });
+  const [newConversationPending, setNewConversationPending] = useState(() => readNewConversationPending(session?.user?.id, cloudMode));
   const [phase, setPhase] = useState('reading');
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -49,11 +67,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError('');
       setPrivacyAccepted(false);
     }
-    try {
-      setNewConversationPending(!!userId && window.sessionStorage.getItem('movo.ai.newConversation.' + userId) === 'true');
-    } catch {
-      setNewConversationPending(false);
-    }
+    setNewConversationPending(readNewConversationPending(userId, cloudMode));
   }, [session?.user?.id, cloudMode]);
 
   useEffect(() => {
@@ -71,7 +85,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const loadHistory = async () => {
       setPrivacyAccepted(false);
       if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
-      if (newConversationPending) { setMessages([]); setConversationId(null); return; }
+      let storedNewConversation = false;
+      try { storedNewConversation = !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { storedNewConversation = true; }
+      if (newConversationPending || storedNewConversation) { setMessages([]); setConversationId(null); return; }
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
@@ -89,7 +105,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     };
     loadHistory();
     return () => { active = false; };
-  }, [session?.user?.id, cloudMode, newConversationPending]);
+  }, [session?.user?.id, cloudMode]);
 
   const send = async (event) => {
     event?.preventDefault();
