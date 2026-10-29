@@ -364,7 +364,7 @@ describe('MOVO finance frontend', () => {
   test('NasrinAI opens the private chat and provides a sign-in action in local/demo mode', () => {
     nav(container, 'NasrinAI');
     expect(container.querySelector('h1').textContent).toBe('NasrinAI');
-    expect(container.textContent).toContain('Your account stays isolated.');
+    expect(container.textContent).toContain('user-scoped snapshot');
     expect(container.textContent).toContain('Sign in to securely connect your MOVO finances.');
     expect(container.querySelector('textarea#' + 'movo-ai-prompt')).toBeNull();
     clickButton(container, 'Sign in to MOVO');
