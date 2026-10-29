@@ -54,6 +54,8 @@ export function SectionTitle({ children, action, onAction }) {
 export function Sheet({ title, subtitle, onClose, children, label }) {
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -71,7 +73,7 @@ export function Sheet({ title, subtitle, onClose, children, label }) {
     const handleKeyDown = event => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -97,7 +99,7 @@ export function Sheet({ title, subtitle, onClose, children, label }) {
       const previous = previousFocusRef.current;
       if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus();
     };
-  }, [onClose]);
+  }, []);
 
   return <div className="sheet-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose?.(); }}>
     <section ref={dialogRef} className="sheet" role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1}>
