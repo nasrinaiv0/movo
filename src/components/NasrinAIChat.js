@@ -19,6 +19,29 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
 
+  useEffect(() => {
+    let active = true;
+    const loadHistory = async () => {
+      if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession();
+        const token = data?.session?.access_token || session?.access_token;
+        if (sessionError || !token) return;
+        const response = await fetch('/api/nasrinai/chat', { headers: { Authorization: 'Bearer ' + token } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'history_load_failed');
+        if (active) {
+          setConversationId(result.conversationId || null);
+          setMessages(Array.isArray(result.messages) ? result.messages.map((item) => ({ role: item.role, content: item.content })) : []);
+        }
+      } catch {
+        if (active) setError('Your previous chat could not be loaded. You can still start a new conversation.');
+      }
+    };
+    loadHistory();
+    return () => { active = false; };
+  }, [session?.user?.id, cloudMode]);
+
   const send = async (event) => {
     event?.preventDefault();
     const message = draft.trim();
