@@ -35,6 +35,9 @@ describe('NasrinAI consent and legal links', () => {
       error: null
     });
     window.sessionStorage.removeItem('movo.ai.newConversation.user-1');
+    window.localStorage.removeItem('movo.ai.contextIsolation.v1.user-1');
+    window.localStorage.removeItem('movo.ai.contextIsolation.v1.user-2');
+    window.sessionStorage.removeItem('movo.ai.newConversation.user-2');
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -55,6 +58,9 @@ describe('NasrinAI consent and legal links', () => {
     container.remove();
     global.fetch = originalFetch;
     window.sessionStorage.removeItem('movo.ai.newConversation.user-1');
+    window.sessionStorage.removeItem('movo.ai.newConversation.user-2');
+    window.localStorage.removeItem('movo.ai.contextIsolation.v1.user-1');
+    window.localStorage.removeItem('movo.ai.contextIsolation.v1.user-2');
     jest.clearAllMocks();
   });
 
@@ -68,6 +74,8 @@ describe('NasrinAI consent and legal links', () => {
     expect(disclosure.textContent).toContain('Each message is processed independently');
     expect(disclosure.textContent).toContain('start a clean MOVO chat');
     expect(disclosure.textContent).toContain('separate from accepting the Terms of Service');
+    expect(window.sessionStorage.getItem('movo.ai.newConversation.user-1')).toBe('true');
+    expect(window.localStorage.getItem('movo.ai.contextIsolation.v1.user-1')).toBe('true');
     expect(consent.checked).toBe(false);
     expect(consent.getAttribute('aria-describedby')).toBe('movo-ai-context-disclosure');
 
@@ -111,6 +119,8 @@ describe('NasrinAI consent and legal links', () => {
     });
     expect(container.textContent).toContain('Private reply from account one.');
 
+    window.localStorage.setItem('movo.ai.contextIsolation.v1.user-2', 'true');
+    window.sessionStorage.removeItem('movo.ai.newConversation.user-2');
     let resolveHistory;
     global.fetch.mockImplementationOnce(() => new Promise(resolve => { resolveHistory = resolve; }));
     supabase.auth.getSession.mockResolvedValueOnce({
