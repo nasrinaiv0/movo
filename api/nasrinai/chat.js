@@ -339,7 +339,6 @@ module.exports = async function handler(req, res) {
 
 module.exports.buildFinancialContext = buildFinancialContext;
 module.exports.selectRelevantTransactions = selectRelevantTransactions;
-module.exports.buildPrompt = buildPrompt;
 module.exports.buildUpstreamBody = buildUpstreamBody;
 module.exports.buildContextPayload = buildContextPayload;
 module.exports.hasConfirmedMovoScope = hasConfirmedMovoScope;
