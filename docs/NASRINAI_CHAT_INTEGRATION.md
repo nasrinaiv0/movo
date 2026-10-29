@@ -10,7 +10,7 @@ The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The
 - The server constructs an explicit allowlist of account, transaction, and budget fields; free-form transaction notes and unexpected database columns are never forwarded.
 - Account/merchant/category labels have control characters and line breaks normalized before serialization.
 - Transaction amounts must be finite numbers and transaction types must be recognized (`income`, `expense`, or `transfer`); malformed entries are excluded rather than converted to zero.
-- Missing or invalid balances and budget limits remain `null`, and unknown currencies remain `null` instead of being silently relabeled as PHP. Invalid timestamps/date-only values remain `null` rather than being presented as a valid date.
+- Missing or invalid balances and budget limits remain `null`. Missing or malformed currency values remain `null`; syntactically valid three-letter codes are normalized to uppercase rather than silently relabeled as PHP. Invalid timestamps/date-only values remain `null` rather than being presented as a valid date.
 - These checks improve accuracy and limit accidental context expansion. They do not replace server-derived user identity, owner-scoped queries, Supabase RLS, or the upstream MOVO-only context contract.
 
 ## Legacy conversation and account-switch isolation
