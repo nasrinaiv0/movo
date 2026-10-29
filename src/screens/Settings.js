@@ -93,7 +93,7 @@ export default function Settings({ c }) {
       { icon: 'trash', title: 'Clear Local Data', sub: 'Reset preferences and remove local/demo records and custom sticker images', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
     { title: 'Data & Sync', rows: [
-      { icon: 'cloud', title: 'Cloud Sync', sub: 'Active while signed in; sign out to use local-only mode.', toggle: 'cloudSync' },
+      { icon: 'cloud', title: 'Cloud Sync', sub: c.cloudMode ? 'Cloud sync is active for your signed-in account.' : 'Sign in to enable secure cloud sync.', onClick: c.cloudMode ? undefined : () => go('Sign in'), status: c.cloudMode ? undefined : 'Sign in required' },
       { icon: 'database', title: 'Local Storage', sub: 'Browser storage is managed automatically; this switch is not available.', toggle: 'localStorage' },
       { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet.', toggle: 'autocat' },
     ] },
