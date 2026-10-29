@@ -2,14 +2,13 @@
 
 ## Request path
 
-The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends a bounded financial context and the message to `https://nasrinai.com/v1/chat` through a server-only API credential. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
+The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends the actual question separately from a bounded financial context to `https://nasrinai.com/v1/chat` using the server-only `context_scope: "movo"` contract. MOVO accepts a reply only when the upstream explicitly returns `context_scope: "movo"`; older upstream deployments fail closed and their reply is not shown or saved. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
 
 ## Required Vercel environment variables
 
 - `SUPABASE_URL` (or existing `REACT_APP_SUPABASE_URL`)
 - `SUPABASE_ANON_KEY` (or existing `REACT_APP_SUPABASE_ANON_KEY`)
-- `SUPABASE_SERVICE_ROLE_KEY`: server-only key used exclusively to write/read the opaque upstream conversation mapping table. Never use it for finance queries and never expose it to the browser.
-- `NASRINAI_API_KEY`: a NasrinAI server-side credential with permission to call `POST /v1/chat`. Never use a publishable widget key as a bearer credential and never expose this value through a `REACT_APP_*` variable.
+- `NASRINAI_API_KEY`: a NasrinAI server-side secret service key with permission to call `POST /v1/chat` and use the MOVO context scope. Never use a publishable widget key as a bearer credential and never expose this value through a `REACT_APP_*` variable. The upstream must run the companion MOVO-scope implementation and return `context_scope: "movo"`; otherwise MOVO rejects the reply.
 - Optional `NASRINAI_BASE_URL` (defaults to `https://nasrinai.com`)
 - Optional `MOVO_ALLOWED_ORIGINS` (comma-separated exact origins; default production origin is `https://movo-lime.vercel.app`).
 
@@ -34,20 +33,25 @@ The repository implementation is complete for initiating Google OAuth, but enabl
 ## Data isolation
 
 - The server verifies the bearer token against MOVO Supabase Auth; client-provided user IDs are never trusted.
-- The API creates a Supabase client carrying the user's JWT for financial data, conversations, and messages, so RLS applies to those queries. A server-only service-role client is used only for the opaque upstream-conversation mapping table, which has RLS enabled and no policies or grants for `anon`/`authenticated`.
-- Conversation and message rows include `user_id`, RLS policies use `auth.uid()`, and a composite foreign key prevents attaching messages to another user's conversation. The upstream NasrinAI conversation ID is stored in a separate server-only mapping table so clients cannot alter it to point the proxy at another user's upstream conversation.
+- Financial data, conversations and messages are read and written through a Supabase client carrying the authenticated user's JWT; queries also filter by the server-verified `user_id`, and RLS remains active.
+- MOVO never sends an upstream NasrinAI `conversation_id`. Each request is stateless. The user question is sent separately from a bounded JSON payload, and the upstream's server-enforced MOVO scope disables platform/founder knowledge, memory, Library, prior-chat recall, shared learning, web search, tools, and answer caches for that turn. The financial JSON is transient and must not be persisted in upstream history.
+- The MOVO route fails closed if the upstream response does not explicitly confirm `context_scope: "movo"`. This response marker is not a substitute for the server-side scope enforcement described in the companion upstream change.
+- Existing rows in the legacy server-only mapping table are ignored by this route; keep that table inaccessible to browser roles.
+- Conversation and message rows include `user_id`, RLS policies use `auth.uid()`, and a composite foreign key prevents attaching messages to another user's conversation. The client cannot supply or select an upstream conversation ID.
 - Every conversation lookup/update includes the authenticated user's ID. An unknown or other user's conversation ID returns 404.
 - The upstream NasrinAI API key remains server-only. The API forwards a bounded context from the authenticated user's own rows and never exposes raw database access to NasrinAI.
-- The UI requires explicit consent before sending finance context. The upstream NasrinAI chat service may retain the prompt/context as part of its conversation history under NasrinAI's configured retention policy; confirm that policy and communicate it to users before enabling this in production. MOVO also stores the user/assistant messages in the private MOVO chat tables.
+- The UI requires explicit consent before sending finance context. The bounded financial JSON is appended only to the in-memory provider request and is not persisted in the upstream conversation transcript. The upstream still stores the user's question and assistant reply as a separate conversation; confirm that text-message retention policy and communicate it to users before enabling this in production. MOVO also stores the user/assistant messages in its private MOVO chat tables.
 - Chat responses are marked `Cache-Control: no-store`; server logs include only stable error codes, never tokens, financial context, or message content.
 
 ## Indexing and retrieval
 
-The migrations add user-first indexes for chat history and finance lookups, plus covering indexes for the composite message/conversation ownership foreign keys and the upstream-mapping user foreign key. Each request reads at most 250 recent transactions from the current user's RLS-filtered rows, then sends at most 40 selected transactions, 50 accounts, and 50 active budgets to NasrinAI. This is indexed relational retrieval, not a vector-embedding index; semantic vector indexing should only be added with a separately reviewed per-user embedding schema and retrieval policies.
+The migrations add user-first indexes for chat history and finance lookups, plus covering indexes for the composite message/conversation ownership foreign keys and the legacy upstream-mapping user foreign key. Each request reads at most 250 recent transactions from the current user's RLS-filtered rows, then sends at most 40 selected transactions, 50 accounts, and 50 active budgets to NasrinAI. This is indexed relational retrieval, not a vector-embedding index.
+
+**Important upstream requirement:** the server-enforced MOVO context scope is implemented in [nasrinAI PR #699](https://github.com/nasrinaiv0/nasrinAI/pull/699). It must be deployed before MOVO chat is enabled; the MOVO route rejects any reply without the explicit scope marker. Use a least-privilege server-side service key with chat permission only, and do not rely on prompt text or tenant separation alone as the context boundary.
 
 ## Limits and safety
 
-User messages are capped at 1,600 characters and the full upstream prompt is trimmed to 3,800 characters to stay below NasrinAI's default 4,000-character limit; upstream requests time out after 25 seconds. The chat is read-only and does not execute transactions or change budgets. Financial records and chat history are private application data and must never be publicly indexed by search engines. Public SEO indexing applies only to public marketing pages, not authenticated MOVO screens or API routes.
+User messages are capped at 1,600 characters and the separate JSON finance context is trimmed to at most 3,800 characters; upstream requests time out after 25 seconds. The chat is read-only and does not execute transactions or change budgets. Financial records and chat history are private application data and must never be publicly indexed by search engines. Public SEO indexing applies only to public marketing pages, not authenticated MOVO screens or API routes.
 
 ## Deployment verification checklist
 
@@ -55,4 +59,4 @@ User messages are capped at 1,600 characters and the full upstream prompt is tri
 2. Configure the server-only Vercel variables above and redeploy.
 3. Test with two MOVO users: each must see only their own conversations and finance context; using the other user's conversation UUID must return 404.
 4. Confirm an unauthenticated request returns 401, a foreign origin returns 403, and an unconfigured upstream returns 503.
-5. Verify the Vercel deployment's runtime route can reach `https://nasrinai.com/v1/chat` and that the chosen NasrinAI credential has chat scope.
+5. Verify the Vercel deployment's runtime route can reach `https://nasrinai.com/v1/chat`, that the chosen NasrinAI service credential has chat scope, and that the response includes `context_scope: "movo"`.
