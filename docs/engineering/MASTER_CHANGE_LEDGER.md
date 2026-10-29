@@ -129,3 +129,12 @@ This review changed documentation only on branch docs/change-ledger-refresh-2026
 - Vercel deployment [dpl_3Aey3AMPgXCrdSdjk6QkNAdSvyiB](https://vercel.com/nasrin-ai/movo/3Aey3AMPgXCrdSdjk6QkNAdSvyiB) is READY for that exact SHA.
 - Updated PR #43's body to replace the stale statement that CI was still running.
 - PR #43 remains a draft pending manual authenticated finance-flow, currency presentation, keyboard/screen-reader and mobile verification. No production merge occurred.
+
+
+## Status correction — 2026-10-30 06:35 Asia/Manila
+
+- **PR #55 — UI audit expansion:** exact head `76851d33b07126a63c34922adedc04464995e157`; Actions [40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) passed **18 suites / 99 tests**, typecheck, `audit:controls`, and production build. Exact-head Vercel preview [dpl_9WXj8JdbfmMDb14TT4gr2d44A2PH](https://vercel.com/nasrin-ai/movo/9WXj8JdbfmMDb14TT4gr2d44A2PH) is READY. Three human-review warnings remain for disabled finance controls. PR #55 remains draft.
+- **PR #56 — context-isolation current-main reconciliation:** exact head `c93b2393133f6b200f5ace83a8d5f78d1441e626`; Actions [40966718902](https://github.com/nasrinaiv0/movo/actions/runs/40966718902) passed **17 suites / 96 tests**, typecheck, and production build. Exact-head Vercel preview [dpl_9u9GwG5BRYPn3eqGci5uZGR3kVbk](https://vercel.com/nasrin-ai/movo/9u9GwG5BRYPn3eqGci5uZGR3kVbk) is READY. PR #56 remains draft pending authenticated end-to-end context-canary verification.
+- **PR #43 — finance calculations/currency:** exact head `7f073831833a4078ef428632cafa69bfdb1f63eb`; Actions [40930065725](https://github.com/nasrinaiv0/movo/actions/runs/40930065725) passed **19 suites / 111 tests**, typecheck, and production build. Vercel preview [dpl_3Aey3AMPgXCrdSdjk6QkNAdSvyiB](https://vercel.com/nasrin-ai/movo/3Aey3AMPgXCrdSdjk6QkNAdSvyiB) is READY. PR #43 remains draft pending manual finance/accessibility verification.
+- **Superseded branches:** PR #46 and PR #48 are closed as superseded, not merged; their current-main replacements are #55 and #56.
+- **Production boundary:** all three implementation PRs remain preview-only. Issue #47 remains open until authenticated deployed context-isolation testing proves the MOVO scope is enforced end-to-end.
