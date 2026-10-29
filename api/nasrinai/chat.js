@@ -20,7 +20,7 @@ function allowedOrigin(req) {
   if (!origin) return true; // native/server-to-server clients still need bearer auth
   let parsed;
   try { parsed = new URL(origin); } catch { return false; }
-  const configured = String(process.env.MOVO_ALLOWED_ORIGINS || 'https://movo-lime.vercel.app')
+  const configured = String(process.env.MOVO_ALLOWED_ORIGINS || 'https://movo.nasrinai.com,https://movo-lime.vercel.app')
     .split(',').map((s) => s.trim()).filter(Boolean);
   if (process.env.NODE_ENV !== 'production') configured.push('http://localhost:3000');
   return parsed.protocol === 'https:' && configured.includes(parsed.origin)
