@@ -33,6 +33,7 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
 
   test('extracts only a bounded reply string', () => {
     expect(extractReply({ reply: '  Hello MOVO  ' })).toBe('Hello MOVO');
+    expect(extractReply({ conversation_id: 'upstream-id', message: { content: 'Structured reply' } })).toBe('Structured reply');
     expect(extractReply({ reply: { text: 'not a string' } })).toBe('');
     expect(extractReply({ text: 'x'.repeat(13000) })).toHaveLength(12000);
   });
