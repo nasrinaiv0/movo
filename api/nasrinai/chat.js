@@ -47,30 +47,77 @@ function selectRelevantTransactions(transactions, message, accounts = []) {
   return selected.slice(0, MAX_CONTEXT_TRANSACTIONS);
 }
 
-function buildFinancialContext({ accounts = [], transactions = [], budgets = [] }) {
+function safeFieldText(value, max = 100) {
+  return safeText(value, max).replace(/[\\r\\n\\t]+/g, ' ').replace(/\\s{2,}/g, ' ').trim();
+}
+
+function finiteNumber(value) {
+  if (value === null || value === undefined || typeof value === 'boolean') return null;
+  if (typeof value === 'string' && !value.trim()) return null;
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function safeCurrency(value) {
+  const currency = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  return /^[A-Z]{3}$/.test(currency) ? currency : null;
+}
+
+function safeTimestamp(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
+}
+
+function safeDateOnly(value) {
+  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return null;
+  const date = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+}
+
+function safeTransactionType(value) {
+  const type = safeFieldText(value, 20).toLowerCase();
+  return ['income', 'expense', 'transfer'].includes(type) ? type : null;
+}
+
+function buildFinancialContext(input = {}) {
+  const source = input && typeof input === 'object' ? input : {};
+  const accounts = Array.isArray(source.accounts) ? source.accounts : [];
+  const transactions = Array.isArray(source.transactions) ? source.transactions : [];
+  const budgets = Array.isArray(source.budgets) ? source.budgets : [];
+
   const safeAccounts = accounts.slice(0, 50).map((a) => ({
-    name: safeText(a.name, 100),
-    type: safeText(a.account_type, 30),
-    currency: /^[A-Z]{3}$/.test(a.currency || '') ? a.currency : 'PHP',
-    opening_balance: Number(a.opening_balance || 0),
-    archived: Boolean(a.is_archived)
+    name: safeFieldText(a?.name, 100),
+    type: safeFieldText(a?.account_type, 30),
+    // Unknown currency stays unknown; never silently label an amount as PHP.
+    currency: safeCurrency(a?.currency),
+    opening_balance: finiteNumber(a?.opening_balance),
+    archived: Boolean(a?.is_archived)
   }));
-  const safeTransactions = transactions.slice(0, MAX_CONTEXT_TRANSACTIONS).map((t) => ({
-    date: t.occurred_at,
-    description: safeText(t.merchant, 120),
-    category: safeText(t.category, 60),
-    type: t.transaction_type,
-    amount: Number(t.amount),
-    currency: /^[A-Z]{3}$/.test(t.currency || '') ? t.currency : 'PHP',
-    account: safeText((accounts.find((a) => a.id === t.account_id) || {}).name || 'Account', 100)
-  }));
+
+  const safeTransactions = transactions.slice(0, MAX_CONTEXT_TRANSACTIONS)
+    .map((t) => ({
+      date: safeTimestamp(t?.occurred_at),
+      description: safeFieldText(t?.merchant, 120),
+      category: safeFieldText(t?.category, 60),
+      type: safeTransactionType(t?.transaction_type),
+      amount: finiteNumber(t?.amount),
+      currency: safeCurrency(t?.currency),
+      account: safeFieldText((accounts.find((a) => a?.id === t?.account_id) || {}).name || 'Account', 100)
+    }))
+    // Do not turn invalid/missing amounts into zero or pass unknown transaction
+    // types to the model as if they were recognized ledger entries.
+    .filter((transaction) => transaction.amount !== null && transaction.type !== null);
+
   const safeBudgets = budgets.slice(0, 50).map((b) => ({
-    category: safeText(b.category, 60),
-    monthly_limit: Number(b.monthly_limit),
-    currency: /^[A-Z]{3}$/.test(b.currency || '') ? b.currency : 'PHP',
-    starts_on: b.starts_on,
-    active: Boolean(b.is_active)
+    category: safeFieldText(b?.category, 60),
+    monthly_limit: finiteNumber(b?.monthly_limit),
+    currency: safeCurrency(b?.currency),
+    starts_on: safeDateOnly(b?.starts_on),
+    active: Boolean(b?.is_active)
   }));
+
   return { accounts: safeAccounts, recent_transactions: safeTransactions, budgets: safeBudgets };
 }
 
