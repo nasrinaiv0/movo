@@ -23,7 +23,7 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [],
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile' };
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };

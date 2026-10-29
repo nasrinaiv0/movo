@@ -755,3 +755,62 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 }
 .menu-icon, .tile { transition: transform .35s var(--spring-bounce); }
 .movo-icon * { vector-effect: none; }
+
+/* ===== Card stickers: HD vector artwork with reserved room for logo, chip, number and name ===== */
+.credit-card { container-type: inline-size; display: block; position: relative; width: 100%; min-height: 0; padding: 0; aspect-ratio: 856 / 540; border-radius: var(--cr, 22px); overflow: hidden; isolation: isolate; color: #fff; }
+.credit-card::after { display: none; }
+.credit-card.has-sticker { background: #111; }
+.sticker-art { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; z-index: 0; user-select: none; -webkit-user-drag: none; }
+.credit-card::before { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.28), inset 0 1px 0 rgba(255,255,255,.5); }
+.cc-face { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 6.4cqw 6.8cqw; }
+.cc-top, .cc-bottom { display: flex; justify-content: space-between; align-items: center; gap: 3cqw; }
+.cc-bottom { align-items: flex-end; }
+.cc-logo { display: inline-flex; align-items: center; gap: 2.4cqw; min-width: 0; }
+.cc-logo i { flex: none; display: grid; place-items: center; width: 8.6cqw; height: 8.6cqw; border-radius: 28%; font-style: normal; font-weight: 800; font-size: 4.6cqw; background: rgba(255,255,255,.24); box-shadow: inset 0 0 0 1px rgba(255,255,255,.4); backdrop-filter: blur(6px); }
+.cc-name { font-size: 5cqw; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-net { font-size: 5cqw; font-weight: 800; font-style: italic; letter-spacing: -.04em; opacity: .95; white-space: nowrap; }
+.cc-chip { align-self: flex-start; width: 12.6cqw; height: 9.6cqw; border-radius: 16%; background: linear-gradient(135deg, #f4e4b0, #c8a95a 55%, #efdb9c); box-shadow: inset 0 0 0 1px rgba(90,60,0,.35), 0 1px 3px rgba(0,0,0,.25); position: relative; }
+.cc-chip::before { content: ''; position: absolute; inset: 22% 14%; border-radius: 10%; background: repeating-linear-gradient(90deg, transparent 0 28%, rgba(90,60,0,.35) 28% 32%), repeating-linear-gradient(0deg, transparent 0 40%, rgba(90,60,0,.35) 40% 46%); }
+.cc-id { display: flex; flex-direction: column; gap: 1.2cqw; min-width: 0; }
+.cc-number { font-size: 5.2cqw; font-weight: 600; letter-spacing: .09em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cc-holder { font-size: 3.1cqw; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; opacity: .92; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-bottom b { font-size: 4.2cqw; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.credit-card.ink-light .cc-face { color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+.credit-card.ink-dark .cc-face { color: #101317; text-shadow: 0 1px 6px rgba(255,255,255,.55); }
+.credit-card.ink-dark .cc-logo i { background: rgba(0,0,0,.1); box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+.credit-card.has-sticker { box-shadow: 0 16px 34px rgba(10,20,50,.3); }
+.card-scroller.mini .card-slide { flex-basis: 78%; padding: 0; border: 0; background: none; text-align: left; border-radius: 22px; }
+.card-slide { container-type: normal; }
+.style-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 0 0 12px; border-radius: 16px; font-weight: 600; font-size: 15px; background: rgba(var(--accent-rgb), .1); color: var(--accent); border: 1px solid rgba(var(--accent-rgb), .2); }
+.empty-preview { width: min(300px, 82%); margin: 0 auto 14px; --cr: 16px; }
+.style-preview { margin: 4px 0 14px; }
+.style-search { display: flex; align-items: center; gap: 10px; padding: 0 14px; margin-bottom: 10px; border-radius: 16px; background: var(--field); color: var(--muted); }
+.style-search input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 14px 0; font-size: 15px; color: var(--text); outline: none; }
+.style-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 12px; margin: 14px 0; }
+.style-cell { position: relative; }
+.style-tile { --cr: 12px; position: relative; display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0; border: 0; background: none; color: var(--text); font-size: 12.5px; font-weight: 600; text-align: left; border-radius: 14px; transition: transform .25s var(--spring-bounce); }
+.style-tile > .credit-card { box-shadow: 0 6px 14px rgba(10,20,50,.16); outline: 2px solid transparent; outline-offset: 2px; transition: outline-color .2s; }
+.style-tile.selected > .credit-card { outline-color: var(--accent); }
+.style-tile > span:not(.upload-box) { padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.style-tile:active { transform: scale(.97); }
+@media (hover: hover) { .style-tile:hover { transform: translateY(-2px); } }
+.style-check { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.style-tile.upload .upload-box { display: grid; place-items: center; aspect-ratio: 856 / 540; border-radius: 12px; border: 1.5px dashed rgba(var(--accent-rgb), .5); background: rgba(var(--accent-rgb), .06); color: var(--accent); }
+.style-remove { position: absolute; top: 8px; left: 8px; display: grid; place-items: center; width: 26px; height: 26px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; }
+.style-note { margin: 8px 2px 4px; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.form-error { color: #d92d3f; font-size: 13px; margin: 6px 0; }
+@container (max-width: 260px) { .cc-bottom b, .cc-holder, .cc-chip { display: none; } .cc-face { padding: 7cqw 7.6cqw; } .cc-logo i { width: 9.6cqw; height: 9.6cqw; font-size: 5.4cqw; } .cc-name, .cc-net { font-size: 6.4cqw; } .cc-number { font-size: 6.2cqw; } }
+.card-scroller { margin-top: 12px; }
+
+/* ===== Consistency system: one shape language ===== */
+:root { --r-card: 22px; --r-tile: 30%; --r-pill: 999px; }
+.stat-icon, .stat-icon.big { width: 32px; height: 32px; border-radius: var(--r-tile); }
+.stat-icon .movo-icon { width: 17px; height: 17px; }
+.tile, .tile.small, .tile.big, .menu-icon { border-radius: var(--r-tile); }
+.delta { border-radius: var(--r-pill); padding: 3px 10px; }
+.card, .credit-card { --cr: var(--r-card); }
+.style-tile, .card-scroller.mini .card-slide { --cr: 12px; }
+.empty-preview { --cr: 16px; }
+.credit-card { border-radius: var(--cr, var(--r-card)); }
+.style-button, .manage-button, .primary-button, .secondary-button, .danger-button, .wide-button { border-radius: 16px; min-height: 48px; }
+.chip-row button, .month-pill { border-radius: var(--r-pill); }
