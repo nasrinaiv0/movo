@@ -382,7 +382,7 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSearch('')}>Clear</button><button type="button" className="primary-button" onClick={() => go('Transactions')}>Show results</button></div>
       </Sheet>}
 
-      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="This clears browser preferences and local/demo financial records for this session. Cloud records are not affected." onClose={() => setSheet(null)}>
+      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes local/demo financial records for this session. Cloud records are not affected." onClose={() => setSheet(null)}>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Cancel</button><button type="button" className="danger-button" onClick={clearLocal}>Clear data</button></div>
       </Sheet>}
 

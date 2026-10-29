@@ -32,7 +32,7 @@ export default function HelpCenter({ c }) {
       </section>
       <section className="legal-section">
         <h2>How do I export or clear data?</h2>
-        <p>Use the CSV export action in Profile when available. The exported file can contain sensitive financial information, so store and share it carefully. Clear Local Data removes local preferences and local/demo records handled by that control; it does not delete cloud records. To request access, correction, or deletion of cloud data, contact the support address below.</p>
+        <p>Use the CSV export action in Profile when available. The exported file can contain sensitive financial information, so store and share it carefully. Clear Local Data resets preferences to defaults and removes local/demo records handled by that control; it does not delete cloud records. To request access, correction, or deletion of cloud data, contact the support address below.</p>
       </section>
       <section className="legal-section">
         <h2>Policies and privacy requests</h2>

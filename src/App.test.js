@@ -180,6 +180,22 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('native biometric unlock is not connected');
   });
 
+  test('Clear Local Data resets preferences and removes local/demo records without affecting cloud records', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    expect(clearRow).toBeTruthy();
+    act(() => clearRow.click());
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).toBeTruthy();
+    expect(dialog.textContent).toContain('Resets browser preferences to defaults');
+    expect(dialog.textContent).toContain('Cloud records are not affected');
+    clickButton(container, 'Clear data');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
+    nav(container, 'Home');
+    expect(container.textContent).not.toContain('SM Supermarket');
+  });
+
   test('turning off in-app alerts hides the notification feed', () => {
     nav(container, 'Profile');
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Notifications');

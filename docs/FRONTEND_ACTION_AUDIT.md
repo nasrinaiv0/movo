@@ -79,3 +79,5 @@ This audit is a working register, not a claim that the entire frontend is comple
 - The production domain still points to the existing `main` deployment; do not promote this PR to production until legal/security blockers and review of PR #19 are resolved.
 
 - [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
+
+- [x] Clarify Clear Local Data behavior: it resets preferences to defaults, removes local/demo records in the current session, and does not affect cloud records; add a regression test for the confirmation copy, preference reset, and sample removal.

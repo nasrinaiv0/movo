@@ -133,7 +133,7 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>6. Retention and deletion</h2>
-      <p>Local browser preferences remain until changed or cleared. Local/demo financial records are not guaranteed to persist in this version. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.</p>
+      <p>Local browser preferences are stored in this browser and can be reset from Settings. Local/demo financial records are not guaranteed to persist in this version. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.</p>
       <p>To request access, correction, export, blocking, or deletion of cloud data, email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.</p>
     </section>
     <section className="legal-section">
