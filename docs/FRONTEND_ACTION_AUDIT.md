@@ -73,9 +73,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 
 ## Current deployment and validation snapshot (2026-10-29)
 
-- Source-code validation head: `80c5c257ce7348b4e645e9a14b16c37b73d37867`; subsequent audit-only commits `d7c2314e4a731dcf24f26f565ebd151d24718ad9` and `ee57f37f5c67d99928e4b547dd6619c407685f64` were also validated successfully.
-- Vercel previews for audit-only commits `d7c2314e4a731dcf24f26f565ebd151d24718ad9` and `ee57f37f5c67d99928e4b547dd6619c407685f64` both reached READY. The latest preview [`movo-36mt48v41-nasrin-ai.vercel.app`](https://movo-36mt48v41-nasrin-ai.vercel.app) returned HTTP 200; build logs confirm `tsc --noEmit`, 11 suites / 49 tests, and successful production compilation.
-- GitHub Actions runs `40819303718` (audit-only commit `d7c2314`) and `40819503245` (audit-only commit `ee57f37`) completed successfully; runs `40819172799` and `40819177992` passed for the source-code head.
+- Source-code validation head: `3cfc23d079d1c39bca897425ef760a006937553b`. Earlier audit-only commits `d7c2314e4a731dcf24f26f565ebd151d24718ad9` and `ee57f37f5c67d99928e4b547dd6619c407685f64` also passed their checks.
+- Vercel preview for source-code head `3cfc23d079d1c39bca897425ef760a006937553b` (deployment `dpl_GUiGKLB5sK969XTfWpwztY746onu`) reached READY. The preview [`movo-ycz2bgmz0-nasrin-ai.vercel.app`](https://movo-ycz2bgmz0-nasrin-ai.vercel.app) returned HTTP 200; build logs confirm `tsc --noEmit`, 11 suites / 50 tests, and successful production compilation. Earlier audit-only preview builds also passed.
+- GitHub Actions runs `40819303718` (audit-only commit `d7c2314`) and `40819503245` (audit-only commit `ee57f37`) completed successfully; runs `40819172799` and `40819177992` passed for the earlier source-code head. Run `40819718693` for source-code head `3cfc23d` was still in progress when this snapshot was written; the matching Vercel build had already passed 50 tests, typecheck, and production compilation.
 - The production domain still points to the existing `main` deployment; do not promote this PR to production until legal/security blockers and review of PR #19 are resolved.
 
 - [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
