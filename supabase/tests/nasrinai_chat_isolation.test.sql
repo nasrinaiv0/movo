@@ -51,8 +51,8 @@ begin
     raise exception 'Expected finance retrieval index is missing';
   end if;
 
-  if not has_table_privilege('anon', 'public.movo_ai_conversations', 'SELECT')
-    or not has_table_privilege('anon', 'public.movo_ai_messages', 'SELECT') then
+  if has_table_privilege('anon', 'public.movo_ai_conversations', 'SELECT')
+    or has_table_privilege('anon', 'public.movo_ai_messages', 'SELECT') then
     raise exception 'Anonymous users must not have SELECT privileges on private chat tables';
   end if;
 
