@@ -19,7 +19,7 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: {
       ...(redirectTo ? { redirectTo } : {}),
-      queryParams: { access_type: 'offline', prompt: 'select_account' },
+      queryParams: { prompt: 'select_account' },
     },
   }));
 }
