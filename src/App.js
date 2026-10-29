@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
@@ -10,6 +11,8 @@ import Profile, { EditProfile } from './screens/Profile';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
+import { revealChange } from './lib/motion';
+import SearchOverlay from './components/SearchOverlay';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
@@ -26,6 +29,8 @@ const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
 const categories = ['Groceries', 'Food & drinks', 'Transport', 'Shopping', 'Bills', 'Subscriptions', 'Health', 'Education', 'Entertainment', 'Other'];
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
+/* Changing these fills the new look in from the tap point. */
+const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
@@ -87,6 +92,7 @@ function App() {
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
   const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [txFilter, setTxFilter] = useState('All');
   const [sortKey, setSortKey] = useState('Date');
@@ -115,7 +121,10 @@ function App() {
     const onScroll = () => setScrolled(window.scrollY > 6);
     window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll);
   }, []);
-  const setPref = useCallback((key, value) => setPrefs(cur => ({ ...cur, [key]: value })), []);
+  const setPref = useCallback((key, value) => {
+    const apply = () => setPrefs(cur => ({ ...cur, [key]: value }));
+    if (APPEARANCE_KEYS.has(key)) revealChange(apply, flushSync); else apply();
+  }, []);
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
@@ -508,7 +517,7 @@ function App() {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
-    txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch,
+    txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
   };
   c.txBreakdown = txBreakdown;
@@ -553,7 +562,6 @@ function App() {
   })();
 
   return <div className={rootClass} style={rootStyle}>
-    {prefs.glass && <div className="glass-bg" aria-hidden="true"><i /><i /><i /></div>}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
@@ -569,7 +577,7 @@ function App() {
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
           return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
-            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={30} /></span> : <Icon name={icon} size={28} strokeWidth={1.9} filled={active} />}</span>
+            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={24} /></span> : <Icon name={icon} size={24} strokeWidth={1.8} filled={active} />}</span>
           </button>;
         })}
       </nav>
@@ -614,10 +622,6 @@ function App() {
 
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
 
-      {sheet?.name === 'search' && <Sheet title="Search transactions" onClose={() => setSheet(null)}>
-        <label className="search-field"><Icon name="search" size={18} /><input autoFocus aria-label="Filter transactions" placeholder="Search description, category, account" value={search} onChange={e => setSearch(e.target.value)} /></label>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSearch('')}>Clear</button><button type="button" className="primary-button" onClick={() => go('Transactions')}>Show results</button></div>
-      </Sheet>}
 
       {sheet?.name === 'importCsv' && <Sheet title="Import transactions" subtitle="CSV is parsed in this browser. Nothing is uploaded until you confirm the import." onClose={() => setSheet(null)} label="Import transactions">
         <div className="sheet-form">
@@ -645,6 +649,7 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
       </Sheet>}
 
+      {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> Syncing securely…</div>}
     </div>

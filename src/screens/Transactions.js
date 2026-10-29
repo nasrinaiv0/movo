@@ -40,7 +40,7 @@ export default function Transactions({ c }) {
   const sliders = <button type="button" className="round-button flat" aria-label="Quick actions" title="Quick actions" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
 
   return <>
-    <RootHeader title="Transactions" onSearch={() => c.setSheet({ name: 'search' })} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
+    <RootHeader title="Transactions" onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
     <Chips label="Filter transactions by type" items={FILTERS} value={txFilter} onChange={setTxFilter} trailing={sliders} />
     {txFilter !== 'All' && dateRange}
     {c.search && <p className="search-note">Showing results for “{c.search}” <button type="button" className="link-button" onClick={() => c.setSearch('')}>Clear</button></p>}

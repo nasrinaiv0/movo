@@ -1,4 +1,5 @@
 import React from 'react';
+import { canAnimate } from '../lib/motion';
 
 const FILLED = {
   home: <path d="M3.6 11.4 10.9 4.5a1.5 1.5 0 0 1 2.2 0l7.3 6.9a1.5 1.5 0 0 1 .5 1.1V19a2.2 2.2 0 0 1-2.2 2.2h-3.2a.9.9 0 0 1-.9-.9v-3.6a2.2 2.2 0 0 0-2.2-2.2h-.0a2.2 2.2 0 0 0-2.2 2.2v3.6a.9.9 0 0 1-.9.9H5.3A2.2 2.2 0 0 1 3.1 19v-6.5a1.5 1.5 0 0 1 .5-1.1Z" />,
@@ -67,6 +68,7 @@ const P = {
   logout: <><path d="m10 16.5 4.5-4.5L10 7.5M14.5 12H3.5" /><path d="M12.5 3.5h5a2.5 2.5 0 0 1 2.5 2.5v12a2.5 2.5 0 0 1-2.5 2.5h-5" /></>,
   edit: <path d="M4 20h3.6L19 8.6a2.3 2.3 0 0 0-3.2-3.2L4.4 16.8zM14.5 7.2l3.3 3.3" />,
   phone: <><rect x="6.8" y="2.6" width="10.4" height="18.8" rx="3.2" /><path d="M11 18.4h2" /></>,
+  external: <path d="M14 4.5h5.5V10M19.5 4.5 11 13M18 14v3.5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2H10" />,
   diamond: <path d="M7 4h10l4 5.3a1 1 0 0 1 0 1.3l-8.4 9.8a1 1 0 0 1-1.2 0L2.6 10.6a1 1 0 0 1 0-1.3Z M2.8 9.8h18.4M9 4l-.8 5.8L12 20M15 4l.8 5.8L12 20" />,
 };
 
@@ -80,21 +82,67 @@ export default function Icon({ name, size = 20, strokeWidth = 1.7, filled = fals
   );
 }
 
-/** NasrinAI mark: a sphere of dots, drawn as vector so it stays sharp at any size. */
-const DOTS = (() => {
-  const n = 54; const golden = Math.PI * (3 - Math.sqrt(5)); const out = [];
+/** NasrinAI mark: a 3D sphere of dots. Static by default; pass `state` to animate it. */
+const SPHERE = (() => {
+  const n = 64; const golden = Math.PI * (3 - Math.sqrt(5)); const out = [];
   for (let i = 0; i < n; i += 1) {
     const y = 1 - (i / (n - 1)) * 2; const r = Math.sqrt(1 - y * y); const t = golden * i;
-    const x = Math.cos(t) * r; const z = Math.sin(t) * r;
-    if (z > -0.1) out.push({ cx: +(12 + x * 9.2).toFixed(2), cy: +(12 + y * 9.2).toFixed(2), r: +(0.8 + ((z + 0.1) / 1.1) * 1.15).toFixed(2), o: +(0.55 + ((z + 0.1) / 1.1) * 0.45).toFixed(2) });
+    out.push({ x: Math.cos(t) * r, y, z: Math.sin(t) * r });
   }
   return out;
 })();
+const TILT = -0.38;
+/* Per-state motion targets: spin speed (rad/s), scan band, ripple and contraction. */
+const STATES = {
+  idle: { speed: 0.3, scan: 0, ripple: 0, pull: 0 },
+  reading: { speed: 0.7, scan: 1, ripple: 0, pull: 0 },
+  thinking: { speed: 1.5, scan: 0, ripple: 1, pull: 0 },
+  almost: { speed: 2.3, scan: 0, ripple: 0.35, pull: 1 },
+};
 
-export function NasrinMark({ size = 26, className = '' }) {
+function project(p, angle, time, m) {
+  const ca = Math.cos(angle); const sa = Math.sin(angle);
+  const x1 = p.x * ca + p.z * sa; const z1 = -p.x * sa + p.z * ca;
+  const ct = Math.cos(TILT); const st = Math.sin(TILT);
+  const y2 = p.y * ct - z1 * st; const z2 = p.y * st + z1 * ct;
+  const depth = (z2 + 1) / 2;
+  const scanY = Math.sin(time * 2.4) * 0.85;
+  const lit = m.scan * Math.max(0, 1 - Math.abs(y2 - scanY) / 0.24);
+  const scale = (1 + m.ripple * 0.07 * Math.sin(time * 4.2 + p.y * 5)) * (1 - m.pull * (0.1 + 0.04 * Math.sin(time * 7)));
+  return {
+    cx: 12 + x1 * 9.4 * scale, cy: 12 + y2 * 9.4 * scale,
+    r: (0.45 + depth * 1.05) * (1 + lit * 0.45),
+    o: Math.min(1, 0.16 + depth * 0.84 + lit * 0.6 + m.pull * 0.15),
+  };
+}
+const STILL = SPHERE.map(p => project(p, 0.6, 0, STATES.idle));
+
+export function NasrinMark({ size = 26, className = '', state }) {
+  const ref = React.useRef(null);
+  const target = STATES[state];
+  const live = React.useRef({ ...STATES.idle, angle: 0.6, time: 0 });
+  React.useEffect(() => {
+    const svg = ref.current;
+    if (!target || !svg || !canAnimate()) return undefined;
+    const dots = svg.children; const m = live.current; let raf; let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const k = 1 - Math.exp(-dt * 4);
+      ['speed', 'scan', 'ripple', 'pull'].forEach(key => { m[key] += (target[key] - m[key]) * k; });
+      m.angle += m.speed * dt; m.time += dt;
+      for (let i = 0; i < SPHERE.length; i += 1) {
+        const d = project(SPHERE[i], m.angle, m.time, m);
+        dots[i].setAttribute('cx', d.cx.toFixed(2)); dots[i].setAttribute('cy', d.cy.toFixed(2));
+        dots[i].setAttribute('r', d.r.toFixed(2)); dots[i].setAttribute('opacity', d.o.toFixed(2));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
   return (
-    <svg className={`nasrin-mark ${className}`.trim()} width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
-      {DOTS.map((d, i) => <circle key={i} cx={d.cx} cy={d.cy} r={d.r} opacity={d.o} />)}
+    <svg ref={ref} className={`nasrin-mark ${className}`.trim()} width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+      {STILL.map((d, i) => <circle key={i} cx={d.cx.toFixed(2)} cy={d.cy.toFixed(2)} r={d.r.toFixed(2)} opacity={d.o.toFixed(2)} />)}
     </svg>
   );
 }

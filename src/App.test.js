@@ -234,7 +234,7 @@ describe('MOVO finance frontend', () => {
     expect(container.firstChild.className).toContain('accent-purple');
   });
 
-  test('search from Home opens the search sheet and shows filtered transaction results', () => {
+  test('search from Home expands a search bar with live matching results', () => {
     clickButton(container, 'Search');
     const input = container.querySelector('[aria-label="Filter transactions"]');
     act(() => {
@@ -242,10 +242,10 @@ describe('MOVO finance frontend', () => {
       setter.call(input, 'Netflix');
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
-    clickButton(container, 'Show results');
-    expect(container.querySelector('h1').textContent).toBe('Transactions');
-    expect(container.textContent).toContain('Netflix');
-    expect(container.textContent).not.toContain('Puregold');
+    const results = container.querySelector('.search-results');
+    expect(results.textContent).toContain('Netflix');
+    expect(results.textContent).not.toContain('Puregold');
+    expect(container.textContent).not.toContain('Show results');
   });
 
   test('unsupported notification and device-security settings are disabled', () => {
@@ -336,14 +336,19 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('Expense Recorded');
   });
 
-  test('transaction search filters records', () => {
+  test('choosing a live search result opens its transaction', () => {
     nav(container, 'Transactions');
     clickButton(container, 'Search');
     const input = container.querySelector('[aria-label="Filter transactions"]');
     act(() => { const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(input, 'Netflix'); input.dispatchEvent(new Event('input', { bubbles: true })); });
-    clickButton(container, 'Show results');
-    expect(container.textContent).toContain('Netflix');
-    expect(container.textContent).not.toContain('Puregold');
+    const row = Array.from(container.querySelectorAll('.search-row')).find(b => b.textContent.includes('Netflix'));
+    expect(container.querySelector('.search-results').textContent).not.toContain('Puregold');
+    jest.useFakeTimers();
+    act(() => { row.click(); });
+    act(() => { jest.advanceTimersByTime(250); });
+    jest.useRealTimers();
+    expect(container.querySelector('.search-overlay')).toBeNull();
+    expect(container.querySelector('[aria-label="Transaction details"], .sheet').textContent).toContain('Netflix');
   });
 
   test('liquid glass can be switched off and its clarity adjusted', () => {
