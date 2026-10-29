@@ -388,3 +388,13 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 3. Production remains on main commit `94d089d35483558b320f751cf122aa68755ef0eb`; these changes are preview-only.
 4. Continue the whole-frontend interaction/accessibility audit, legal publication verification, leaked-password protection configuration, dependency remediation, and production security checks.
 
+
+
+### UI audit branch reconciliation — 2026-10-30
+
+- Reconciled PR #46 branch `chore/repeatable-ui-control-audit` with current `main` by creating merge commit `4e87f9bc2bf23c1779ba313a33616ad97526ce66`; the PR diff remains limited to `scripts/audit-ui-controls.js`, `docs/UI_CONTROL_AUDIT.md`, and `package.json`.
+- Exact-head Vercel deployment [dpl_9dYXuUiNJkMNBUra86W5pLUxzWJJ](https://vercel.com/nasrin-ai/movo/9dYXuUiNJkMNBUra86W5pLUxzWJJ) is READY. Its build log confirms `tsc --noEmit`, 17 suites / 93 tests, the audit command, and production compilation all completed successfully.
+- The reconciled scanner now reports **3 disabled-control explanation warnings**, all in `src/App.js` for finance transaction save, account save, and CSV import. These are not unhandled buttons; they require a visible, accessible explanation or busy-state evidence. PR #43 contains the related `aria-busy` and CSV guidance fixes but remains a draft while mixed-currency finance behavior is unresolved.
+- GitHub Actions run [40958277651](https://github.com/nasrinaiv0/movo/actions/runs/40958277651) remains in progress at dependency installation. Do not report that workflow as passed; the exact-head Vercel prebuild is the completed validation evidence.
+- The static audit is not an interactive browser test. Keyboard/focus, screen-reader, mobile, modal, settings, and real finance-flow verification remain required.
+
