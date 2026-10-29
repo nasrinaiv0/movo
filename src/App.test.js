@@ -221,7 +221,9 @@ describe('MOVO finance frontend', () => {
     expect(plan.getAttribute('aria-disabled')).toBe('true');
     expect(plan.textContent).toContain('Unavailable');
     expect(plan.textContent).toContain('Billing and token usage are not connected');
-    clickButton(container, 'Help Center');
+    const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
+    expect(helpRow).toBeTruthy();
+    act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('MOVO does not move money');
     expect(container.textContent).toContain('Local/demo records can be lost when you refresh');
