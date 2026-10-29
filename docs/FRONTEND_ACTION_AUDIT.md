@@ -20,14 +20,16 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Add a server-side-only NasrinAI key-format diagnostic that logs classification only, never the key or its identifier.
 - [x] Revoke unnecessary TRUNCATE, TRIGGER, and REFERENCES grants from anon/authenticated on finance/profile/chat tables; keep the upstream conversation mapping server-role-only.
 - [x] Verify production RLS remains enabled on profiles, finance tables, and NasrinAI chat tables, and verify authenticated CRUD grants remain while TRUNCATE and mapping-table access are absent.
-- [ ] Validate every remaining frontend control across Home, Wallet, Transactions, Profile, Settings, Notifications, Auth, and NasrinAI on the current PR head.
+- [x] Re-audit Home, Wallet, Transactions, Profile, Settings, Notifications, Auth, and NasrinAI controls against current source; fixed misleading Plan & Usage navigation and added visible unavailable states for unsupported settings.
+- [x] Add modal keyboard handling: initial focus, Tab/Shift+Tab focus containment, Escape dismissal, and focus restoration.
 - [ ] Verify legal contact/operator identity and retention language with the service operator/legal reviewer before production.
-- [ ] Verify current-head CI, typecheck, tests, production build, Supabase RLS checks, and live deployment behavior.
+- [x] Verify current PR head CI: GitHub Actions run 40812940506 completed successfully on commit 9994eb1dec71ca487b34d57b062091c276490432; the verify job's test and production-build steps succeeded. The package build lifecycle runs typecheck and the test suite before bundling.
+- [ ] Re-run current-head CI after the accessibility and settings changes, then verify Supabase RLS checks and live deployment behavior.
 
 ## Controls requiring follow-up audit
 
 - Notification push/email delivery and biometric lock are not backed by a delivery/native-device service; these controls are now disabled with explanatory copy.
-- Plan/token management is not connected to a billing service; the profile no longer shows fabricated plan or usage values.
+- Plan/token management is not connected to a billing service; the profile no longer shows fabricated plan or usage values, and Settings marks Plan & Usage as unavailable instead of navigating to an unrelated screen.
 - App language, card style, date format, currency selection, and quiet hours are read-only and labelled as single-option/unavailable rather than fake controls.
 - Connected account rows no longer imply Apple/Facebook linking; only Google sign-in is implemented.
 - Cloud sync follows authenticated cloud mode and is not presented as a freely toggleable switch when a cloud session is active.
