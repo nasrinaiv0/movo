@@ -896,3 +896,9 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .glass-on .movo-ai-chat .movo-ai-suggestions button { background-color: var(--field); border-color: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .glass-on .donut .donut-hole { background: var(--card-solid); backdrop-filter: none; -webkit-backdrop-filter: none; }
 .movo-ai-signin .primary-button { width: 100%; margin-top: 12px; }
+
+/* ===== Appearance change: new look fills in as a circle from the tap point ===== */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reveal *::after { transition: none !important; }
