@@ -10,7 +10,7 @@ describe('buildCsv', () => {
     expect(buildCsv([['Description', 'Amount'], ['=HYPERLINK("https://example.invalid")', -42]]))
       .toBe('"Description","Amount"\r\n"\'=HYPERLINK(""https://example.invalid"")","-42"');
     expect(buildCsv([['@SUM(1,1)', '+cmd', '-not a formula', '  =1+1']]))
-      .toBe('"Description"');
+      .toBe('"\'@SUM(1,1)","\'+cmd","\'-not a formula","\'  =1+1"');
   });
 
   test('converts nullish values to empty cells', () => {
