@@ -294,6 +294,13 @@ module.exports = async function handler(req, res) {
       return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
     }
     if (!hasConfirmedMovoScope(payload)) {
+      // A brand-new conversation has no saved messages yet. Remove its empty
+      // row when an older upstream cannot prove that it enforced MOVO scope.
+      if (!requestedConversationId) {
+        const cleanup = await db.from('movo_ai_conversations')
+          .delete().eq('id', conversation.id).eq('user_id', userId);
+        if (cleanup.error) console.error('[movo-nasrinai-upstream]', 'empty_conversation_cleanup_failed');
+      }
       console.error('[movo-nasrinai-upstream]', 'scope_unconfirmed', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
       return json(res, 502, {
         error: 'nasrinai_scope_unconfirmed',
