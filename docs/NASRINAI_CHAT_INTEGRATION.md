@@ -2,13 +2,13 @@
 
 ## Request path
 
-The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends a bounded financial context and the message to `https://nasrinai.com/v1/chat` through a server-only API credential. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
+The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends the actual question separately from a bounded financial context to `https://nasrinai.com/v1/chat` using the server-only `context_scope: "movo"` contract. MOVO accepts a reply only when the upstream explicitly returns `context_scope: "movo"`; older upstream deployments fail closed and their reply is not shown or saved. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
 
 ## Required Vercel environment variables
 
 - `SUPABASE_URL` (or existing `REACT_APP_SUPABASE_URL`)
 - `SUPABASE_ANON_KEY` (or existing `REACT_APP_SUPABASE_ANON_KEY`)
-- `NASRINAI_API_KEY`: a NasrinAI server-side credential with permission to call `POST /v1/chat`. Never use a publishable widget key as a bearer credential and never expose this value through a `REACT_APP_*` variable.
+- `NASRINAI_API_KEY`: a NasrinAI server-side secret service key with permission to call `POST /v1/chat` and use the MOVO context scope. Never use a publishable widget key as a bearer credential and never expose this value through a `REACT_APP_*` variable. The upstream must run the companion MOVO-scope implementation and return `context_scope: "movo"`; otherwise MOVO rejects the reply.
 - Optional `NASRINAI_BASE_URL` (defaults to `https://nasrinai.com`)
 - Optional `MOVO_ALLOWED_ORIGINS` (comma-separated exact origins; default production origin is `https://movo-lime.vercel.app`).
 
@@ -34,7 +34,9 @@ The repository implementation is complete for initiating Google OAuth, but enabl
 
 - The server verifies the bearer token against MOVO Supabase Auth; client-provided user IDs are never trusted.
 - Financial data, conversations and messages are read and written through a Supabase client carrying the authenticated user's JWT; queries also filter by the server-verified `user_id`, and RLS remains active.
-- MOVO never sends an upstream NasrinAI `conversation_id`. Each request is stateless, so provider-side conversation history cannot be reattached to a MOVO turn. Existing rows in the legacy server-only mapping table are ignored by this route; keep that table inaccessible to browser roles.
+- MOVO never sends an upstream NasrinAI `conversation_id`. Each request is stateless. The user question is sent separately from a bounded JSON payload, and the upstream's server-enforced MOVO scope disables platform/founder knowledge, memory, Library, prior-chat recall, shared learning, web search, tools, and answer caches for that turn. The financial JSON is transient and must not be persisted in upstream history.
+- The MOVO route fails closed if the upstream response does not explicitly confirm `context_scope: "movo"`. This response marker is not a substitute for the server-side scope enforcement described in the companion upstream change.
+- Existing rows in the legacy server-only mapping table are ignored by this route; keep that table inaccessible to browser roles.
 - Conversation and message rows include `user_id`, RLS policies use `auth.uid()`, and a composite foreign key prevents attaching messages to another user's conversation. The client cannot supply or select an upstream conversation ID.
 - Every conversation lookup/update includes the authenticated user's ID. An unknown or other user's conversation ID returns 404.
 - The upstream NasrinAI API key remains server-only. The API forwards a bounded context from the authenticated user's own rows and never exposes raw database access to NasrinAI.
