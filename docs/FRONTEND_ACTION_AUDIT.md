@@ -24,6 +24,7 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Add modal keyboard handling: initial focus, Tab/Shift+Tab focus containment, Escape dismissal, and focus restoration.
 - [x] Include transfer records in the in-app notification feed and add regression coverage for transfer-specific notices.
 - [x] Label in-app income, expense, and transfer notices as recorded entries rather than implying that MOVO verified a payment or moved money.
+- [x] Sort Transfers by the actual source/target account names and show the route in transaction metadata; use neutral “Account” wording in notification details.
 - [x] Rename the Transactions action control to match its actual Quick actions sheet and protect CSV exports from spreadsheet formula injection; delay object-URL revocation for browser download compatibility.
 - [ ] Obtain and publish the formal controller/operator legal name and registered address; review the privacy contact, provider/retention details, lawful bases, and jurisdiction-specific language with qualified counsel before production. The legal pages now disclose this unresolved identity requirement rather than implying the controller is identified.
 - [x] Verify the latest source-code head `3809a24c1cf12b67d55f2fcb5e6f8bc223a7aa57`: GitHub Actions run `40814024273` passed; 10 test suites and 47 tests passed, the production bundle compiled, and the build lifecycle's typecheck passed before bundling.

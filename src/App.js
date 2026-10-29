@@ -44,7 +44,15 @@ const monthsBack = (key, n) => { const [y, m] = key.split('-').map(Number); cons
 const pctChange = (now, before) => (before > 0 ? Math.round(((now - before) / before) * 100) : null);
 const normalize = (t, accounts) => {
   const account = accounts.find(a => a.id === t.account_id);
-  return { ...t, type: t.transaction_type || t.type, date: t.occurred_at || t.date, amount: Number(t.amount), accountName: account?.name || t.account || 'Manual entry' };
+  const transferTarget = accounts.find(a => a.id === t.transfer_to_account_id);
+  return {
+    ...t,
+    type: t.transaction_type || t.type,
+    date: t.occurred_at || t.date,
+    amount: Number(t.amount),
+    accountName: account?.name || t.account || 'Manual entry',
+    transferToAccountName: transferTarget?.name || (t.transfer_to_account_id ? 'Unknown account' : ''),
+  };
 };
 
 function useSystemDark() {

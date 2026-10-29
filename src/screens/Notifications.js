@@ -52,7 +52,7 @@ export function NotificationDetail({ c }) {
       <div className="detail-row"><Tile name={t.merchant} size={42} radius={13} /><span><small>Merchant</small><strong>{t.merchant}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="coin" size={22} /></span><span><small>Amount</small><strong>{shown(show, money(t.amount, t.currency))}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="calendar" size={22} /></span><span><small>Date & Time</small><strong>{longDate(t.date)}, {timeLabel(t.date)}</strong></span></div>
-      <div className="detail-row"><span className="menu-icon bare"><Icon name="card" size={22} /></span><span><small>Payment Method</small><strong>{account ? `${account.name}${account.mask ? ` •••• ${account.mask}` : ''}` : t.accountName}</strong></span></div>
+      <div className="detail-row"><span className="menu-icon bare"><Icon name="card" size={22} /></span><span><small>Account</small><strong>{account ? `${account.name}${account.mask ? ` •••• ${account.mask}` : ''}` : t.accountName}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="cart" size={22} /></span><span><small>Category</small><strong>{t.category}</strong></span><em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em></div>
     </section>}
     {t && <button type="button" className="wide-button" onClick={() => { setTxFilter('All'); c.setSearch(t.merchant); go('Transactions'); }}><Icon name="list" size={18} /> View in Transactions</button>}
