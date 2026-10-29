@@ -254,7 +254,7 @@ describe('MOVO finance frontend', () => {
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('does not move money between banks');
-    expect(container.textContent).toContain('persist across page reloads in the same browser profile');
+    expect(container.textContent).toContain('persist across reloads in the same browser profile');
     expect(container.textContent).toContain('NasrinAI');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
