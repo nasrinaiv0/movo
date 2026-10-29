@@ -907,3 +907,33 @@ html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reve
 .movo-ai-thinking { gap: 10px; align-self: flex-start; padding: 8px 14px 8px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font-weight: 500; }
 .movo-ai-thinking-orb { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
 .movo-ai-thinking-label { animation: item-in .32s var(--spring) both; --dx: 0px; --dy: 6px; }
+
+/* ===== Search: the header icon expands into a top search bar with live results ===== */
+.search-overlay { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-start; justify-content: center; }
+.search-scrim { position: absolute; inset: 0; min-height: 0; border: 0; padding: 0; background: var(--overlay); cursor: default; animation: fade .22s ease both; }
+.search-panel { position: relative; display: flex; flex-direction: column; width: 100%; max-width: 430px; max-height: 100%; max-height: 100dvh; background: var(--bg); box-shadow: 0 10px 30px rgba(0,0,0,.14); border-radius: 0 0 24px 24px; animation: search-panel-in .3s var(--spring) both; }
+@keyframes search-panel-in { from { clip-path: inset(0 0 calc(100% - 76px - env(safe-area-inset-top)) 0 round 0 0 24px 24px); } to { clip-path: inset(0 0 0 0 round 0 0 24px 24px); } }
+.search-top { display: flex; align-items: center; gap: 10px; padding: max(14px, env(safe-area-inset-top)) 18px 10px; }
+.search-bar { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; height: 46px; padding: 0 6px 0 14px; border-radius: 999px; background: var(--field); color: var(--muted); animation: search-grow .38s var(--spring) both; }
+@keyframes search-grow { from { clip-path: inset(0 0 0 calc(100% - 46px) round 999px); } to { clip-path: inset(0 0 0 0 round 999px); } }
+.search-bar input { flex: 1; min-width: 0; height: 100%; border: 0; padding: 0; background: transparent; color: var(--text); font-size: 16px; outline: none; -webkit-appearance: none; appearance: none; }
+.search-bar input::-webkit-search-cancel-button { display: none; }
+.search-clear { display: grid; place-items: center; flex: none; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: rgba(120,128,145,.2); color: var(--text); }
+.search-cancel { flex: none; min-height: 44px; padding: 0 2px; border: 0; background: transparent; color: var(--accent); font-size: 15px; font-weight: 600; animation: item-in .3s var(--spring) .08s both; --dx: 12px; --dy: 0px; }
+.theme-dark .search-cancel { color: var(--text); }
+.search-results { overflow-y: auto; overscroll-behavior: contain; padding: 0 18px 18px; -webkit-overflow-scrolling: touch; }
+.search-caption { margin: 4px 2px 6px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; }
+.search-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 6px; border: 0; border-radius: 14px; background: transparent; text-align: left; color: var(--text); animation: item-in .3s var(--spring) both; animation-delay: calc(var(--i, 0) * 22ms + 80ms); --dx: 0px; --dy: 8px; }
+.search-row:active { background-color: rgba(120,128,145,.12); }
+@media (hover: hover) { .search-row:hover { background-color: rgba(120,128,145,.08); } }
+.search-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.search-main strong { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-main small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-row b { flex: none; font-size: 15px; font-weight: 700; }
+.search-row b.pos { color: var(--green); }
+.search-row mark { background: rgba(var(--accent-rgb), .18); color: inherit; border-radius: 3px; }
+.theme-dark .search-row mark { background: rgba(255,255,255,.18); }
+.search-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 10px; color: var(--muted); font-size: 14px; text-align: center; }
+.search-overlay.closing .search-scrim { animation: fade-out .18s ease both; }
+.search-overlay.closing .search-panel { animation: search-panel-out .18s cubic-bezier(.4,0,1,1) both; }
+@keyframes search-panel-out { to { opacity: 0; transform: translateY(-12px); } }

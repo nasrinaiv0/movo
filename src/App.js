@@ -12,6 +12,7 @@ import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screen
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
+import SearchOverlay from './components/SearchOverlay';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
@@ -90,6 +91,7 @@ function App() {
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
   const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [txFilter, setTxFilter] = useState('All');
   const [sortKey, setSortKey] = useState('Date');
@@ -447,7 +449,7 @@ function App() {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
-    txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch,
+    txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
   };
   c.txBreakdown = txBreakdown;
@@ -548,10 +550,6 @@ function App() {
 
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
 
-      {sheet?.name === 'search' && <Sheet title="Search transactions" onClose={() => setSheet(null)}>
-        <label className="search-field"><Icon name="search" size={18} /><input autoFocus aria-label="Filter transactions" placeholder="Search description, category, account" value={search} onChange={e => setSearch(e.target.value)} /></label>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSearch('')}>Clear</button><button type="button" className="primary-button" onClick={() => go('Transactions')}>Show results</button></div>
-      </Sheet>}
 
       {sheet?.name === 'importCsv' && <Sheet title="Import transactions" subtitle="CSV is parsed in this browser. Nothing is uploaded until you confirm the import." onClose={() => setSheet(null)} label="Import transactions">
         <div className="sheet-form">
@@ -579,6 +577,7 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
       </Sheet>}
 
+      {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> Syncing securely…</div>}
     </div>
