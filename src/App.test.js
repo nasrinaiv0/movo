@@ -176,6 +176,16 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Expense Recorded');
   });
 
+  test('notification preferences keep the Home destination selected in primary navigation', () => {
+    nav(container, 'Home');
+    clickButton(container, 'Notifications');
+    expect(container.querySelector('h1').textContent).toBe('Notifications');
+    clickButton(container, 'Settings');
+    expect(container.textContent).toContain('Notification Channels');
+    const home = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.getAttribute('aria-label') === 'Home');
+    expect(home.getAttribute('aria-current')).toBe('page');
+  });
+
   test('Terms of Service and Privacy Policy are reachable and cross-linked', () => {
     nav(container, 'Profile');
     clickButton(container, 'Terms of Service');
