@@ -218,6 +218,20 @@ export const removeCustomSticker = (id) => {
   return true;
 };
 
+export const clearCustomStickers = () => {
+  const previous = customList;
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    window.localStorage.removeItem(CUSTOM_KEY);
+    customList = [];
+    listeners.forEach(fn => fn(customList));
+    return true;
+  } catch {
+    customList = previous;
+    return false;
+  }
+};
+
 /* Crop to the card ratio at 2x (1712x1080), while bounding input size and decoded pixels. */
 export function addCustomSticker(file) {
   return new Promise((resolve, reject) => {
