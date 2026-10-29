@@ -106,3 +106,29 @@ export async function updateTransaction(transactionId, transaction) {
     occurred_at: occurredAt,
   }).eq('id', transactionId).select().single());
 }
+
+export async function updateAccount(accountId, account) {
+  if (typeof accountId !== 'string' || !accountId) throw new Error('An account ID is required.');
+  const update = {};
+  if (typeof account?.name === 'string') {
+    const name = account.name.trim();
+    if (!name || name.length > 100) throw new Error('Account name must be between 1 and 100 characters.');
+    update.name = name;
+  }
+  if (account?.account_type !== undefined) {
+    const allowedTypes = ['bank', 'card', 'e_wallet', 'cash', 'investment', 'other'];
+    if (!allowedTypes.includes(account.account_type)) throw new Error('Choose a valid account type.');
+    update.account_type = account.account_type;
+  }
+  if (account?.institution_name !== undefined) {
+    update.institution_name = typeof account.institution_name === 'string' ? account.institution_name.trim().slice(0, 100) || null : null;
+  }
+  if (account?.opening_balance !== undefined) {
+    const openingBalance = Number(account.opening_balance);
+    if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) throw new Error('Enter a valid opening balance.');
+    update.opening_balance = Math.round(openingBalance * 100) / 100;
+  }
+  if (typeof account?.is_archived === 'boolean') update.is_archived = account.is_archived;
+  if (!Object.keys(update).length) throw new Error('Provide at least one account change.');
+  return unwrap(await requireClient().from('financial_accounts').update(update).eq('id', accountId).select().single());
+}
