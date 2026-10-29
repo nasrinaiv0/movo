@@ -130,4 +130,12 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Netflix');
     expect(container.textContent).not.toContain('Puregold');
   });
+
+  test('NasrinAI opens the private chat and blocks local/demo sessions', () => {
+    nav(container, 'NasrinAI');
+    expect(container.querySelector('h1').textContent).toBe('NasrinAI');
+    expect(container.textContent).toContain('Your account stays isolated.');
+    expect(container.textContent).toContain('Sign in to securely connect your MOVO finances.');
+    expect(container.querySelector('textarea#' + 'movo-ai-prompt')).toBeNull();
+  });
 });

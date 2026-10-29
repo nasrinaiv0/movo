@@ -12,6 +12,17 @@ export async function getCurrentSession() {
 export async function signInWithPassword(email, password) {
   return unwrap(await requireClient().auth.signInWithPassword({ email: email.trim(), password }));
 }
+export async function signInWithGoogle() {
+  const client = requireClient();
+  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  return unwrap(await client.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      ...(redirectTo ? { redirectTo } : {}),
+      queryParams: { prompt: 'select_account' },
+    },
+  }));
+}
 export async function signUpWithPassword(email, password, displayName = '') {
   return unwrap(await requireClient().auth.signUp({
     email: email.trim(),
