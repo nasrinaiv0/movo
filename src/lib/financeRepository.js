@@ -169,3 +169,16 @@ export async function removeBudget(budgetId) {
   if (typeof budgetId !== 'string' || !budgetId) throw new Error('A budget ID is required.');
   return unwrap(await requireClient().from('budgets').update({ is_active: false }).eq('id', budgetId).select().single());
 }
+
+/**
+ * Permanently deletes the signed-in user's own records. Row-level security limits every delete to auth.uid();
+ * the explicit user filter is a second guard. Transactions go before accounts (accounts are referenced with
+ * ON DELETE RESTRICT); deleting conversations cascades to their messages and server-side mappings.
+ */
+export async function deleteAllCloudData(userId) {
+  if (!userId) throw new Error('A signed-in user is required.');
+  const client = requireClient();
+  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
+    unwrap(await client.from(table).delete().eq('user_id', userId));
+  }
+}

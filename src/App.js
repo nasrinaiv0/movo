@@ -19,7 +19,7 @@ import ScannerSheet from './components/ScannerSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
@@ -476,7 +476,19 @@ function App() {
     setSheet(null); notify('CSV export prepared.');
   };
   const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed. Your manually entered records are kept.'); };
-  const clearLocal = () => { try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { /* ignore */ } clearLocalFinanceData(); setPrefs({ ...DEFAULTS }); setRawTxs(cloudMode ? rawTxs : []); setLocalAccounts([]); setSamplesOn(false); setSheet(null); notify('Local transactions, accounts and preferences cleared. Cloud records are unchanged.'); };
+  const [clearText, setClearText] = useState('');
+  const clearAll = async () => {
+    if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    setBusy(true); setError('');
+    try {
+      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
+      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData();
+      setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setSamplesOn(false); setPendingLog(null); setSheet(null); setClearText('');
+      notify(cloudMode ? 'All MOVO data was deleted from this device and your account.' : 'All MOVO data on this device was deleted.');
+    } catch { setError('Some cloud data could not be deleted. Nothing on this device was removed; please try again.'); }
+    finally { setBusy(false); }
+  };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
@@ -615,8 +627,13 @@ function App() {
           <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
         </div>
       </Sheet>}
-      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes locally stored financial records and accounts. Cloud records are not affected." onClose={() => setSheet(null)}>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Cancel</button><button type="button" className="danger-button" onClick={clearLocal}>Clear data</button></div>
+      {sheet?.name === 'clear' && <Sheet title="Clear all data?" subtitle={cloudMode ? 'Permanently deletes everything in your MOVO account (transactions, accounts, budgets and NasrinAI chats) and all MOVO data on this device. Your sign-in stays.' : 'Permanently deletes all MOVO data on this device: transactions, accounts, budgets, plans, scans, mascot, card styles and preferences.'} onClose={() => { setSheet(null); setClearText(''); }} label="Clear all data">
+        <form className="sheet-form" onSubmit={e => { e.preventDefault(); clearAll(); }}>
+          <p className="form-note">Export a CSV first if you want a copy. This cannot be undone.</p>
+          <label>Type DELETE to confirm<input aria-label="Type DELETE to confirm" autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder="DELETE" /></label>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>Cancel</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? 'Deleting…' : 'Clear all data'}</button></div>
+        </form>
       </Sheet>}
 
       {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label="Account details">

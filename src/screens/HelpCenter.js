@@ -16,7 +16,7 @@ export default function HelpCenter({ c }) {
       </section>
       <section className="legal-section">
         <h2>Where are my records stored?</h2>
-        <p>In local/demo mode, manually entered financial records and accounts are stored in this browser's local storage and persist across reloads in the same browser profile. They are not synced to other devices and can be removed with Clear Local Data or by clearing browser storage. Cloud records require sign-in and a working MOVO database connection. Browser storage is not encrypted by MOVO itself.</p>
+        <p>In local/demo mode, manually entered financial records and accounts are stored in this browser's local storage and persist across reloads in the same browser profile. They are not synced to other devices and can be removed with Clear All Data or by clearing browser storage. Cloud records require sign-in and a working MOVO database connection. Browser storage is not encrypted by MOVO itself.</p>
       </section>
       <section className="legal-section">
         <h2>Does MOVO connect to my bank or move money?</h2>
@@ -32,7 +32,7 @@ export default function HelpCenter({ c }) {
       </section>
       <section className="legal-section">
         <h2>How do I export or clear data?</h2>
-        <p>Use the CSV export action in Profile when available. The exported file can contain sensitive financial information, so store and share it carefully. Clear Local Data resets preferences to defaults and removes local/demo records handled by that control; it does not delete cloud records. To request access, correction, or deletion of cloud data, contact the support address below.</p>
+        <p>Use the CSV export action in Profile when available. The exported file can contain sensitive financial information, so store and share it carefully. Clear All Data permanently deletes MOVO data on this device and, when you are signed in, the records in your MOVO account. To request access, correction, or deletion of cloud data, contact the support address below.</p>
       </section>
       <section className="legal-section">
         <h2>Policies and privacy requests</h2>

@@ -284,10 +284,11 @@ describe('MOVO finance frontend', () => {
   test('unavailable notification categories explain that only demo events exist', () => {
     nav(container, 'Profile');
     clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
-    clickButton(container, 'Clear data');
+    setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'DELETE');
+    clickButton(container, 'Clear all data');
     nav(container, 'Profile');
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
     expect(notificationSettings).toBeTruthy();
@@ -304,17 +305,18 @@ describe('MOVO finance frontend', () => {
     });
   });
 
-  test('Clear Local Data resets preferences and removes local/demo records without affecting cloud records', () => {
+  test('Clear All Data requires typing DELETE, then resets preferences and removes local records', () => {
     nav(container, 'Profile');
     clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
-    expect(dialog.textContent).toContain('Resets browser preferences to defaults');
-    expect(dialog.textContent).toContain('Cloud records are not affected');
-    clickButton(container, 'Clear data');
+    expect(dialog.textContent).toContain('Permanently deletes all MOVO data on this device');
+    expect(container.querySelector('button.danger-button').disabled).toBe(true);
+    setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
+    clickButton(container, 'Clear all data');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
     nav(container, 'Home');
     expect(container.textContent).not.toContain('SM Supermarket');

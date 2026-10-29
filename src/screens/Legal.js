@@ -53,7 +53,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>3. Local data, cloud accounts, and exports</h2>
-      <p>Local/demo mode stores manually entered financial records and accounts in this browser's local storage. They persist across page reloads in the same browser profile, but they are not synced to another device and can be removed by clearing browser data or using Clear Local Data. Browser storage is not encrypted by MOVO itself. Keep a separate copy of important records.</p>
+      <p>Local/demo mode stores manually entered financial records and accounts in this browser's local storage. They persist across page reloads in the same browser profile, but they are not synced to another device and can be removed by clearing browser data or using Clear All Data. Browser storage is not encrypted by MOVO itself. Keep a separate copy of important records.</p>
       <p>When cloud features are available and you sign in, records are stored in MOVO's configured cloud database and access is restricted by account-scoped authorization controls. Keep your own records where needed. CSV exports are generated from the records currently available to your session and may contain sensitive financial information; store and share them carefully.</p>
     </section>
     <section className="legal-section">
@@ -115,7 +115,7 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>3. Local mode and cloud mode</h2>
-      <p>In local/demo mode, manually entered financial records and accounts are stored in this browser's local storage and persist across page reloads in the same browser profile. They are not synced to other devices and can be removed by clearing browser data or using Clear Local Data. MOVO does not encrypt browser storage itself; anyone with access to your unlocked device or browser profile may be able to inspect locally stored information.</p>
+      <p>In local/demo mode, manually entered financial records and accounts are stored in this browser's local storage and persist across page reloads in the same browser profile. They are not synced to other devices and can be removed by clearing browser data or using Clear All Data. MOVO does not encrypt browser storage itself; anyone with access to your unlocked device or browser profile may be able to inspect locally stored information.</p>
       <p>When you sign in and use cloud features, MOVO uses its configured authentication and database services. Database policies and server-side ownership checks are intended to restrict records to the authenticated account. Do not use cloud features on a shared device unless you can sign out and protect the device afterward.</p>
     </section>
     <section className="legal-section">
