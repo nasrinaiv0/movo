@@ -134,6 +134,34 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
+  test('profile editing saves validated fields only when the real form is submitted', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Edit profile');
+    const name = container.querySelector('input[aria-label="Full Name"]');
+    const phone = container.querySelector('input[aria-label="Phone Number"]');
+    expect(container.querySelector('#movo-profile-form')).not.toBeNull();
+    expect(container.textContent).toContain('saved in this browser only');
+    setInputValue(name, '  Nasrin Test  ');
+    setInputValue(phone, '+63 912 345 6789');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).profileName || '').not.toBe('Nasrin Test');
+    clickButton(container, 'Save');
+    expect(container.querySelector('h1').textContent).toBe('Profile');
+    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    expect(prefs.profileName).toBe('Nasrin Test');
+    expect(prefs.phone).toBe('+63 912 345 6789');
+    expect(container.textContent).toContain('Nasrin Test');
+  });
+
+  test('profile editing prevents saving a blank name', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Edit profile');
+    setInputValue(container.querySelector('input[aria-label="Full Name"]'), '   ');
+    clickButton(container, 'Save');
+    expect(container.querySelector('#movo-profile-form')).not.toBeNull();
+    expect(container.querySelector('[role="alert"]').textContent).toContain('Enter your name');
+    expect(container.querySelector('h1').textContent).toBe('Profile');
+  });
+
   test('profile, settings, appearance and notification screens are reachable', () => {
     nav(container, 'Profile');
     expect(container.querySelector('h1').textContent).toBe('Profile');
