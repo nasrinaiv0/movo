@@ -1,6 +1,6 @@
 # MOVO Pull Request Progress Register
 
-**Last reconciled:** 2026-10-29 12:32 UTC  
+**Last reconciled:** 2026-10-29 12:34 UTC  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
@@ -8,7 +8,7 @@
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
 | [#40 — UI motion refinement](https://github.com/nasrinaiv0/movo/pull/40) | Visual refinement and card-style wallpaper assets. | Open; latest reviewed head `83611002d5ba5a11a50fbe468d465c3879d7fcd2`; GitHub Actions run [40872737224](https://github.com/nasrinaiv0/movo/actions/runs/40872737224) passed. | Review the visual changes and verify the preview before merging. |
-| [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Clearer opt-in disclosure, accessible disabled-send guidance, consent/legal-link regression tests. | Open; latest-head CI and Vercel preview are being rechecked after correcting a regression assertion for the revised disclosure copy. | Confirm all tests, typecheck, production build, and preview for the exact latest head; then update this register with final evidence. |
+| [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Clearer opt-in disclosure, accessible disabled-send guidance, consent/legal-link regression tests. | Open; code/register head `554840008a24b3d5bd1da748b0cbe46ece0ad7dc` passed GitHub Actions run [40874012533](https://github.com/nasrinaiv0/movo/actions/runs/40874012533) (15 suites / 88 tests, typecheck, production build); matching Vercel preview `dpl_5ZGfJ5ufPXJGBNiozFgDwWKzkNGF` is READY. | Check required checks on the exact latest PR head and complete manual browser interaction verification before merge; production legal/Auth/provider blockers remain. |
 
 ## Recent merged implementation
 
