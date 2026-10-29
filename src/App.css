@@ -462,3 +462,5 @@ h1, h2, h3, p { margin: 0; }
 .movo-ai-consent label { cursor:pointer; }
 .movo-ai-legal-links { justify-content:flex-start; padding:0 3px 4px 25px; }
 @media (max-width:480px) { .legal-intro,.legal-section,.legal-contact { padding:15px; } .legal-intro h2 { font-size:22px; } .legal-nav button { font-size:11px; } }
+
+.action-strip button:disabled { opacity:.42; cursor:not-allowed; }
