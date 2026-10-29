@@ -145,3 +145,13 @@
 4. Never weaken tests, hide audit findings, suppress meaningful errors, relax RLS, or replace a failed integration with fake success to make CI green.
 5. If a task requires production credentials, legal facts, privileged Supabase settings, or a real owner decision, implement the safe preparatory work and record the exact authorized action still required. Do not pretend that external action was completed.
 6. Update this file as work progresses with evidence and timestamps. A checkbox may be marked complete only when the stated verification level has actually been reached.
+
+## Scheduled implementation pass — 2026-10-29 12:26 UTC
+
+- Updated the NasrinAI financial-context consent notice to explicitly name the message and limited account-scoped context categories sent for a reply (relevant account labels, recent transactions, and budgets).
+- Explicitly distinguished chat-specific consent from acceptance of the Terms of Service and stated that other MOVO features remain available without chat consent.
+- Added visible, accessible guidance explaining why Send is disabled before opt-in; linked the guidance to the disabled action with `aria-describedby` and connected the consent checkbox to the disclosure.
+- Added component regression coverage for consent-default-off, legal-document navigation, disabled-send guidance, and the consent flag on the chat request.
+- This increment does not change server authorization, financial-context selection, Supabase RLS, account ownership checks, or credentials.
+- Validation for the new branch is pending CI; do not treat the change as verified until the latest branch head has passed the full test/typecheck/build workflow.
+- Production readiness blockers remain unchanged: legal operator/controller identity and address plus verified retention/provider/jurisdiction details; Supabase leaked-password protection; targeted dependency vulnerability remediation; and successful authenticated production NasrinAI chat verification.
