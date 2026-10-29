@@ -48,7 +48,7 @@ function selectRelevantTransactions(transactions, message, accounts = []) {
 }
 
 function safeFieldText(value, max = 100) {
-  return safeText(value, max).replace(/[\\r\\n\\t]+/g, ' ').replace(/\\s{2,}/g, ' ').trim();
+  return safeText(value, max).replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
 }
 
 function finiteNumber(value) {
@@ -71,7 +71,7 @@ function safeTimestamp(value) {
 }
 
 function safeDateOnly(value) {
-  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const date = new Date(value + 'T00:00:00.000Z');
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
 }
