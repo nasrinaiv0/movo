@@ -16,11 +16,12 @@ Track implementation and verification of every user-visible control and legal pa
 - [ ] No dead links, placeholder buttons, fake success states, unhandled promise rejections, or console errors
 
 ## Legal pages
-- public/terms.html — Terms of Service
-- public/privacy.html — Privacy Policy
+- [x] public/terms.html — Terms of Service drafted
+- [x] public/privacy.html — Privacy Policy drafted
 - Pages are marked noindex because this is a private finance workspace. This is not an authorization boundary.
 - The operator must validate real deployment data flows, retention, provider contracts, contact channel, and jurisdiction-specific requirements with qualified counsel before treating the policies as final.
-- Link legal pages from sign-in/onboarding, Settings, and every applicable consent prompt.
+- [x] Link legal pages from sign-in, Profile > About, Settings, NasrinAI consent, and Help Center.
+- [ ] Review final wording against actual production data flows and qualified legal guidance.
 
 ## Required verification before completion
 1. Run npm run typecheck.
