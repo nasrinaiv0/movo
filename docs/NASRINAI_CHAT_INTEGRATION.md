@@ -29,7 +29,7 @@ The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The
 - `SUPABASE_ANON_KEY` (or existing `REACT_APP_SUPABASE_ANON_KEY`)
 - `NASRINAI_API_KEY`: a NasrinAI server-side secret service key with permission to call `POST /v1/chat` and use the MOVO context scope. Never use a publishable widget key as a bearer credential and never expose this value through a `REACT_APP_*` variable. The upstream must run the companion MOVO-scope implementation and return `context_scope: "movo"`; otherwise MOVO rejects the reply.
 - Optional `NASRINAI_BASE_URL` (defaults to `https://nasrinai.com`)
-- Optional `MOVO_ALLOWED_ORIGINS` (comma-separated exact origins; default production origin is `https://movo-lime.vercel.app`).
+- Optional `MOVO_ALLOWED_ORIGINS` (comma-separated exact origins; default allowlist includes the documented production domain `https://movo.nasrinai.com` and `https://movo-lime.vercel.app`). Set this variable explicitly to the exact deployed origins if the deployment uses different aliases.
 
 After setting variables, redeploy the Vercel project. The repository change cannot set or inspect deployment secrets.
 
