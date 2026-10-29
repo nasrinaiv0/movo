@@ -123,7 +123,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
       <label className="movo-ai-consent"><input type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /> <span>I agree to send the limited financial context needed to answer my question to NasrinAI.</span></label>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="4000" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength="1600" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask NasrinAI about your finances…" disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
         <button type="submit" className="movo-ai-send" disabled={busy || !draft.trim() || !privacyAccepted} aria-label="Send message">{busy ? '…' : '↑'}</button>
       </form></>}
     <p className="movo-ai-footnote">AI can make mistakes. Verify important calculations. Financial actions are not performed from chat.</p>
