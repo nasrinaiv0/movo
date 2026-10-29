@@ -78,9 +78,10 @@ export default function Wallet({ c }) {
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card (Unavailable)', () => {}], ['sliders', 'Limits (Unavailable)', () => {}], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) => {
           const unavailable = label.includes('(Unavailable)');
-          return <button type="button" key={label} onClick={fn} disabled={unavailable} title={unavailable ? 'MOVO records card activity but cannot control your actual card or issuer limits.' : undefined}><Icon name={icon} size={20} />{label}</button>;
+          return <button type="button" key={label} onClick={fn} disabled={unavailable} aria-describedby={unavailable ? 'card-control-limitations' : undefined} title={unavailable ? 'MOVO records card activity but cannot control your actual card or issuer limits.' : undefined}><Icon name={icon} size={20} />{label}</button>;
         })}
       </section>
+      <p id="card-control-limitations" className="fineprint">MOVO cannot block an actual card or change issuer limits. Use your bank or card issuer's app for those actions.</p>
       <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label="Switch card">
         <span><small>Available Balance</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>

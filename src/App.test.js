@@ -79,6 +79,20 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]').textContent).toContain('Your Cards');
   });
 
+  test('card issuer actions are disabled with a visible, accessible explanation', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    const blockCard = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Block Card'));
+    const limits = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Limits'));
+    expect(blockCard).toBeTruthy();
+    expect(limits).toBeTruthy();
+    expect(blockCard.disabled).toBe(true);
+    expect(limits.disabled).toBe(true);
+    expect(blockCard.getAttribute('aria-describedby')).toBe('card-control-limitations');
+    expect(limits.getAttribute('aria-describedby')).toBe('card-control-limitations');
+    expect(container.querySelector('#card-control-limitations').textContent).toContain('cannot block an actual card or change issuer limits');
+  });
+
   test('wallet transfer actions open a transfer form rather than an expense form', () => {
     nav(container, 'Wallet');
     clickButton(container, 'Record Transfer');
@@ -190,9 +204,26 @@ describe('MOVO finance frontend', () => {
       const toggle = container.querySelector('button[aria-label="' + label + '"]');
       expect(toggle).toBeTruthy();
       expect(toggle.disabled).toBe(true);
+      expect(toggle.getAttribute('aria-checked')).toBe('false');
     });
     expect(container.textContent).toContain('no push delivery service is connected');
     expect(container.textContent).toContain('native biometric unlock is not connected');
+  });
+
+  test('unavailable notification delivery controls display off and disabled', () => {
+    nav(container, 'Profile');
+    const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
+    expect(notificationSettings).toBeTruthy();
+    act(() => notificationSettings.click());
+    expect(container.textContent).toContain('Notification Channels');
+    ['Push Notifications', 'Email Notifications'].forEach(label => {
+      const toggle = container.querySelector('button[aria-label="' + label + '"]');
+      expect(toggle).toBeTruthy();
+      expect(toggle.disabled).toBe(true);
+      expect(toggle.getAttribute('aria-checked')).toBe('false');
+    });
+    expect(container.textContent).toContain('Push delivery is not available in this web build.');
+    expect(container.textContent).toContain('Email delivery is not connected yet.');
   });
 
   test('Clear Local Data resets preferences and removes local/demo records without affecting cloud records', () => {

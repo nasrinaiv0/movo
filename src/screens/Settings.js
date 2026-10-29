@@ -109,7 +109,7 @@ export default function Settings({ c }) {
     <SubHeader title="Settings" onBack={() => go('Profile')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label="Search settings" placeholder="Search settings" value={query} onChange={e => setQuery(e.target.value)} /></label>
     {shown.map(s => <section key={s.title}><h2 className="group-title">{s.title}</h2>
-      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
+      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={!['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) && prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
     {!shown.length && <p className="empty">No settings match “{query}”.</p>}
   </>;
 }
@@ -144,7 +144,7 @@ export function Appearance({ c }) {
 
 export function NotificationSettings({ c }) {
   const { prefs, setPref, go } = c;
-  const T = (key, label, disabled = false) => <Toggle checked={prefs[key]} onChange={v => setPref(key, v)} label={label} disabled={disabled} reason="This delivery method is not connected in the current web build." />;
+  const T = (key, label, disabled = false) => <Toggle checked={!disabled && prefs[key]} onChange={v => setPref(key, v)} label={label} disabled={disabled} reason="This delivery method is not connected in the current web build." />;
   const item = (icon, title, sub, key, tone, disabled = false) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong><small>{sub}</small></span>{T(key, title, disabled)}</div>;
   return <>
     <SubHeader title="Notifications" onBack={() => go('Notifications')} />
