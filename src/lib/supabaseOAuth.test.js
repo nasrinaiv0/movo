@@ -6,7 +6,10 @@ jest.mock('./supabaseClient', () => ({
 }));
 
 describe('Google OAuth configuration', () => {
-  beforeEach(() => { supabase.auth.signInWithOAuth.mockClear(); });
+  beforeEach(() => {
+    supabase.auth.signInWithOAuth.mockClear();
+    supabase.auth.signInWithOAuth.mockResolvedValue({ data: { provider: 'google' }, error: null });
+  });
 
   test('uses Google provider and redirects to the current MOVO origin', async () => {
     await signInWithGoogle();
