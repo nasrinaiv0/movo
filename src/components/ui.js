@@ -11,12 +11,12 @@ export function IconButton({ icon, label, onClick, dot, size = 20 }) {
 }
 
 /** Large-title header used by the five root screens. */
-export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch }) {
+export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell }) {
   return <header className="screen-header root">
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
       {!hideSearch && <IconButton icon="search" label="Search" onClick={onSearch} />}
-      <IconButton icon="bell" label="Notifications" onClick={onBell} dot={unread} />
+      {!hideBell && onBell && <IconButton icon="bell" label="Notifications" onClick={onBell} dot={unread} />}
       {onSettings && <IconButton icon="gear" label="Settings" onClick={onSettings} />}
     </div>
   </header>;
