@@ -13,7 +13,12 @@ function readArray(key) {
   } catch { return []; }
 }
 function writeJson(key, value) {
-  try { storage()?.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
+  try {
+    const store = storage();
+    if (!store) return false;
+    store.setItem(key, JSON.stringify(value));
+    return true;
+  } catch { return false; }
 }
 
 /** Sample rows are passed in from the demo fixture and are never persisted as user data. */
@@ -37,14 +42,19 @@ export function areSamplesEnabled() {
   try { return storage()?.getItem(SAMPLES_KEY) !== 'false'; } catch { return true; }
 }
 export function setSamplesEnabled(enabled) {
-  try { storage()?.setItem(SAMPLES_KEY, enabled ? 'true' : 'false'); return true; } catch { return false; }
-}
-export function clearLocalFinanceData() {
   try {
     const store = storage();
-    store?.removeItem(TRANSACTIONS_KEY);
-    store?.removeItem(ACCOUNTS_KEY);
-    store?.removeItem(SAMPLES_KEY);
+    if (!store) return false;
+    store.setItem(SAMPLES_KEY, enabled ? 'true' : 'false');
     return true;
   } catch { return false; }
+}
+export function clearLocalFinanceData() {
+  const store = storage();
+  if (!store) return false;
+  let cleared = true;
+  [TRANSACTIONS_KEY, ACCOUNTS_KEY, SAMPLES_KEY].forEach(key => {
+    try { store.removeItem(key); } catch { cleared = false; }
+  });
+  return cleared;
 }
