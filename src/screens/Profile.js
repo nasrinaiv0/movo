@@ -8,7 +8,7 @@ const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad 
 
 export default function Profile({ c }) {
   const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
-  const sum = (arr) => arr.reduce((s, a) => s + a.balance, 0);
+  const sum = (arr) => arr.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
@@ -26,7 +26,7 @@ export default function Profile({ c }) {
     <SectionTitle action="See All" onAction={() => go('Wallet')}>Accounts</SectionTitle>
     <section className="card menu-card">
       {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{label}</strong><small>{list.length} {list.length === 1 ? 'account' : 'accounts'}</small></span><b>{shown(show, money(sum(list), 'PHP', 2))}</b><Icon name="chevron" size={16} />
+        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{label}</strong><small>{list.length} {list.length === 1 ? 'account' : 'accounts'}</small></span><b>{shown(show, money(sum(list)))}</b><Icon name="chevron" size={16} />
       </button>)}
     </section>
     <section className="card menu-card gap">

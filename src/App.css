@@ -1303,3 +1303,18 @@ button.account-tile:active { transform: scale(.98); }
 .edit-box:not(.dragging) { transition: transform .25s var(--spring); }
 .mini-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .mini-card strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== Multi-currency + right-to-left ===== */
+.fx-note { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 500; }
+.currency-code { display: grid; place-items: center; flex: none; width: 46px; height: 34px; border-radius: 10px; background: var(--field); font-size: 12.5px; font-weight: 800; letter-spacing: .04em; }
+[dir="rtl"] .credit-card, [dir="rtl"] .tx-value, [dir="rtl"] .tx-expr, [dir="rtl"] .acct-mask, [dir="rtl"] .setup-link { direction: ltr; }
+[dir="rtl"] .nav-pill { left: auto; right: 6px; margin-left: 0; margin-right: 2px; transform: translateX(calc(var(--idx, 0) * -100% - var(--idx, 0) * 4px)); }
+[dir="rtl"] .chevron-flip, [dir="rtl"] .menu-row > .movo-icon:last-child, [dir="rtl"] .link-button .movo-icon, [dir="rtl"] .back-button .movo-icon, [dir="rtl"] .balance-go .movo-icon { transform: scaleX(-1); }
+[dir="rtl"] .hello.bubble { border-radius: 16px 16px 4px 16px; }
+[dir="rtl"] .edit-remove { left: auto; right: -6px; }
+[dir="rtl"] .edit-move { right: auto; left: -4px; }
+[dir="rtl"] .edit-grip { right: auto; left: -4px; }
+[dir="rtl"] .balance-art { right: auto; left: 0; transform: scaleX(-1); }
+[dir="rtl"] .balance-go { right: auto; left: 18px; }
+[dir="rtl"] .toggle.on span { transform: translateX(-20px); }
+[dir="rtl"] .toggle span { left: auto; right: 2px; }

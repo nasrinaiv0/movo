@@ -159,11 +159,11 @@ export async function createBudget(budget, userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const now = new Date(); const startsOn = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   // Re-adding a category removed earlier this month reactivates that row instead of hitting the unique constraint.
-  return unwrap(await requireClient().from('budgets').upsert({ user_id: userId, ...validBudget(budget?.category, budget?.monthly_limit), currency: 'PHP', starts_on: startsOn, is_active: true }, { onConflict: 'user_id,category,starts_on' }).select().single());
+  return unwrap(await requireClient().from('budgets').upsert({ user_id: userId, ...validBudget(budget?.category, budget?.monthly_limit), currency: /^[A-Z]{3}$/.test(budget?.currency || '') ? budget.currency : 'PHP', starts_on: startsOn, is_active: true }, { onConflict: 'user_id,category,starts_on' }).select().single());
 }
 export async function updateBudget(budgetId, budget) {
   if (typeof budgetId !== 'string' || !budgetId) throw new Error('A budget ID is required.');
-  return unwrap(await requireClient().from('budgets').update(validBudget(budget?.category, budget?.monthly_limit)).eq('id', budgetId).select().single());
+  return unwrap(await requireClient().from('budgets').update({ ...validBudget(budget?.category, budget?.monthly_limit), ...(/^[A-Z]{3}$/.test(budget?.currency || '') ? { currency: budget.currency } : {}) }).eq('id', budgetId).select().single());
 }
 export async function removeBudget(budgetId) {
   if (typeof budgetId !== 'string' || !budgetId) throw new Error('A budget ID is required.');

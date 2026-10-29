@@ -3,14 +3,15 @@ import Icon from './Icon';
 import CardArt from './CardArt';
 import AccountTile, { ACCOUNT_TYPES, ACCOUNT_COLORS, ACCOUNT_ICONS, typeMeta } from './AccountTile';
 import { evaluate, press } from '../lib/calc';
+import { CURRENCIES, currencyName } from '../lib/fx';
+import { currencySymbol, getFormatLocale } from '../lib/format';
 import { EmvChip, Contactless, CHIPS } from './EmvChip';
 import { Sheet, Toggle } from './ui';
 
-export const CURRENCIES = [['PHP', 'Philippine Peso', '₱'], ['USD', 'US Dollar', '$'], ['EUR', 'Euro', '€'], ['JPY', 'Japanese Yen', '¥'], ['SGD', 'Singapore Dollar', 'S$'], ['AED', 'UAE Dirham', 'د.إ'], ['SAR', 'Saudi Riyal', '﷼'], ['GBP', 'British Pound', '£']];
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
-export default function AccountSheet({ form, setForm, editing, cloudMode, busy, error, onSave, onClose }) {
+export default function AccountSheet({ base = 'PHP', form, setForm, editing, cloudMode, busy, error, onSave, onClose }) {
   const [openStyle, setOpenStyle] = useState(false);
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
@@ -18,7 +19,8 @@ export default function AccountSheet({ form, setForm, editing, cloudMode, busy, 
   const meta = typeMeta(form.account_type);
   const color = form.color || meta.color; const icon = form.icon || meta.icon;
   const balance = evaluate(String(form.opening_balance || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
-  const currency = CURRENCIES.find(c => c[0] === form.currency) || CURRENCIES[0];
+  const code = CURRENCIES.includes(form.currency) ? form.currency : base;
+  const currency = [code, currencyName(code, getFormatLocale()), currencySymbol(code)];
   const label = editing ? 'Edit account' : 'Add account';
   const set = (patch) => setForm({ ...form, ...patch });
 
@@ -49,8 +51,8 @@ export default function AccountSheet({ form, setForm, editing, cloudMode, busy, 
 
       <label className="acct-label" htmlFor="acct-currency">Account currency</label>
       <div className="acct-field select"><span><strong>{currency[0]}</strong><small>{currency[1]}</small></span><span className="acct-field-icon" style={{ color }}>{currency[2]}</span><Icon name="chevron" size={16} />
-        <select id="acct-currency" aria-label="Account currency" value={currency[0]} onChange={e => set({ currency: e.target.value })} disabled={editing && cloudMode}>{CURRENCIES.map(c => <option key={c[0]} value={c[0]}>{c[0]} · {c[1]}</option>)}</select></div>
-      <p className="acct-hint">New accounts start in pesos; change it here before saving.</p>
+        <select id="acct-currency" aria-label="Account currency" value={currency[0]} onChange={e => set({ currency: e.target.value })} disabled={editing && cloudMode}>{CURRENCIES.map(c => <option key={c} value={c}>{c} · {currencyName(c, getFormatLocale())}</option>)}</select></div>
+      <p className="acct-hint">New accounts start in your home currency ({base}); change it here before saving.</p>
 
       <div className={`acct-field acct-style${openStyle ? ' open' : ''}`}>
         <button type="button" className="acct-style-head" onClick={() => setOpenStyle(v => !v)} aria-expanded={openStyle}>

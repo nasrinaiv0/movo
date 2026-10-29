@@ -4,7 +4,7 @@ import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relati
 import { canAnimate, useCountUp } from '../lib/motion';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
-export function Money({ value, show, digits = 2, currency = 'PHP' }) {
+export function Money({ value, show, digits = 2, currency }) {
   const v = useCountUp(Number(value) || 0);
   return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : HIDDEN}</span>;
 }

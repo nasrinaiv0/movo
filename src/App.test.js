@@ -60,7 +60,7 @@ describe('MOVO finance frontend', () => {
   test('privacy toggle hides displayed balances', () => {
     expect(container.textContent).toContain('₱1,250.00');
     clickButton(container, 'Hide balances');
-    expect(container.textContent).toContain('₱ ••••••');
+    expect(container.textContent).toContain('••••••');
     expect(container.textContent).not.toContain('₱1,250.00');
     expect(container.textContent).not.toContain('₱128,450.00');
   });

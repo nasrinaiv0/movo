@@ -1,51 +1,64 @@
-export const TZ = 'Asia/Manila';
+import { t } from './i18n';
 
-export const money = (value, currency = 'PHP', digits = 2) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number(value) || 0);
+/* Dates follow the device time zone; numbers, currencies and dates follow the chosen language. */
+export const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Manila'; } catch { return 'Asia/Manila'; } })();
+let LOCALE = 'en-PH';
+let BASE = 'PHP';
+const cache = new Map();
+const cached = (key, make) => { if (!cache.has(key)) cache.set(key, make()); return cache.get(key); };
+export function setFormatLocale(locale) { if (locale && locale !== LOCALE) { LOCALE = locale; cache.clear(); } }
+export const getFormatLocale = () => LOCALE;
+export function setBaseCurrency(code) { if (/^[A-Z]{3}$/.test(code || '')) BASE = code; }
+export const baseCurrency = () => BASE;
 
-export const HIDDEN = '₱ ••••••';
+const fractionDigits = (currency) => cached(`fd:${currency}`, () => { try { return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits; } catch { return 2; } });
+export const money = (value, currency = BASE, digits = 2) => {
+  const d = Math.min(digits, fractionDigits(currency));
+  return cached(`m:${LOCALE}:${currency}:${d}`, () => new Intl.NumberFormat(LOCALE, { style: 'currency', currency, minimumFractionDigits: d, maximumFractionDigits: d })).format(Number(value) || 0);
+};
+export const currencySymbol = (currency = BASE) => cached(`sym:${LOCALE}:${currency}`, () => {
+  try { return new Intl.NumberFormat(LOCALE, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency')?.value || currency; } catch { return currency; }
+});
+export const number = (value, digits = 0) => cached(`n:${LOCALE}:${digits}`, () => new Intl.NumberFormat(LOCALE, { maximumFractionDigits: digits })).format(Number(value) || 0);
+
+export const HIDDEN = '••••••';
 export const shown = (show, text) => (show ? text : HIDDEN);
 
-const fmt = (options) => new Intl.DateTimeFormat('en-US', { timeZone: TZ, ...options });
-const dayFmt = fmt({ year: 'numeric', month: '2-digit', day: '2-digit' });
-const longDay = fmt({ month: 'short', day: 'numeric', year: 'numeric' });
-const monthYear = fmt({ month: 'short', year: 'numeric' });
-const timeFmt = fmt({ hour: 'numeric', minute: '2-digit' });
+const dayFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+const dateFmt = (name, options) => cached(`d:${LOCALE}:${name}`, () => new Intl.DateTimeFormat(LOCALE, { timeZone: TZ, ...options }));
+export const formatDate = (date, options, name = JSON.stringify(options)) => dateFmt(name, options).format(new Date(date));
 
-/** yyyy-mm-dd in the app time zone. */
+/** yyyy-mm-dd in the device time zone. */
 export function dayKey(date) {
   const parts = Object.fromEntries(dayFmt.formatToParts(new Date(date)).map(p => [p.type, p.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 export const monthKey = (date) => dayKey(date).slice(0, 7);
-export const longDate = (date) => longDay.format(new Date(date));
-export const timeLabel = (date) => timeFmt.format(new Date(date));
-const timeSecFmt = fmt({ hour: 'numeric', minute: '2-digit', second: '2-digit' });
-export const timeLabelFull = (date) => timeSecFmt.format(new Date(date));
-export const monthLabel = (key) => monthYear.format(new Date(`${key}-15T12:00:00+08:00`));
+export const longDate = (date) => dateFmt('long', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(date));
+export const timeLabel = (date) => dateFmt('time', { hour: 'numeric', minute: '2-digit' }).format(new Date(date));
+export const timeLabelFull = (date) => dateFmt('timeSec', { hour: 'numeric', minute: '2-digit', second: '2-digit' }).format(new Date(date));
+export const monthLabel = (key) => dateFmt('monthYear', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${key}-15T12:00:00Z`));
 export const monthRange = (key) => {
   const [y, m] = key.split('-').map(Number);
-  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const name = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(y, m - 1, 1)));
-  return `${name} 1, ${y} - ${name} ${last}, ${y}`;
+  const f = dateFmt('mdy', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  return `${f.format(new Date(Date.UTC(y, m - 1, 1)))} – ${f.format(new Date(Date.UTC(y, m, 0)))}`;
 };
 
-/** "Today", "Yesterday" or "Oct 26, 2026", relative to `ref`. */
+/** "Today", "Yesterday" or a short date, relative to `ref`. */
 export function relativeDay(date, ref = new Date()) {
   const key = dayKey(date);
-  const today = dayKey(ref);
-  if (key === today) return 'Today';
+  if (key === dayKey(ref)) return t('Today');
   const y = new Date(ref); y.setDate(y.getDate() - 1);
-  if (key === dayKey(y)) return 'Yesterday';
+  if (key === dayKey(y)) return t('Yesterday');
   return longDate(date);
 }
 
 export const greeting = (date = new Date()) => {
   const hour = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(date)) % 24;
-  return hour < 12 ? 'Good morning,' : hour < 18 ? 'Good afternoon,' : 'Good evening,';
+  return hour < 12 ? t('Good morning,') : hour < 18 ? t('Good afternoon,') : t('Good evening,');
 };
 
-export const signed = (type, amount, currency = 'PHP') =>
+export const signed = (type, amount, currency = BASE) =>
   (type === 'income' ? '+' : type === 'transfer' ? '' : '−') + money(amount, currency);
 
 /** Smooth SVG path through points, scaled to a w×h box. */

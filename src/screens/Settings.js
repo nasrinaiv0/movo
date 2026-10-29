@@ -78,7 +78,8 @@ export default function Settings({ c }) {
     { title: 'Appearance', rows: [
       { icon: 'palette', title: 'Theme', sub: 'Light, Dark or Custom', onClick: () => go('Appearance') },
       { icon: 'drop', title: 'Liquid Glass', sub: 'Choose how clear the glass looks', onClick: () => go('Appearance') },
-      { icon: 'globe', title: 'App Language', sub: 'English (Philippines) is the only available language.', status: 'Single option' },
+      { icon: 'globe', title: 'Language', sub: c.lang?.name || 'English', onClick: () => c.openLanguage?.() },
+      { icon: 'coin', title: 'Home Currency', sub: `${c.base || 'PHP'} · totals, budgets and charts`, onClick: () => c.openCurrency?.() },
       { icon: 'layout', title: 'Display & Layout', sub: 'Customize your experience', onClick: () => go('Appearance') },
     ] },
     { title: 'Notifications', rows: [

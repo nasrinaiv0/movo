@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, SubHeader, Chips, Tile } from '../components/ui';
-import { money, shown, relativeDay, timeLabel, longDate, chipLabel, chipTone } from '../lib/format';
+import { money, shown, timeLabel, longDate, chipLabel, chipTone, dayKey, relativeDay } from '../lib/format';
 
 const FILTERS = [{ key: 'All', label: 'All' }, { key: 'Unread', label: 'Unread', dot: true }, { key: 'Transactions', label: 'Transactions' }, { key: 'Account', label: 'Account' }, { key: 'System', label: 'System' }];
 
@@ -30,7 +30,7 @@ export default function Notifications({ c }) {
       <div className="section-title"><h2>{g.label}</h2>{i === 0 && <button type="button" className="link-button" onClick={markAllRead}>Mark all as read</button>}</div>
       <div className="card list-card">{g.items.map(n => <button type="button" key={n.id} className="note-row" onClick={() => openNotification(n)}>
         <span className="note-icon">{n.txId ? <Tile name={c.txs.find(t => t.id === n.txId)?.merchant || ''} size={46} icon={n.icon} tone={n.tone} radius={14} /> : <Tile size={46} icon={n.icon} tone={n.tone} radius={14} />}{!readIds.includes(n.id) && <i className="red-dot" aria-label="Unread" />}</span>
-        <span className="note-main"><span className="note-top"><strong>{n.title}</strong><small>{relativeDay(n.at, refDate) === 'Today' ? timeLabel(n.at) : longDate(n.at).replace(/, \d{4}/, '')}</small></span><small>{show ? n.body : n.body.replace(/₱[\d,.]+/g, '₱ ••••••')}</small></span>
+        <span className="note-main"><span className="note-top"><strong>{n.title}</strong><small>{dayKey(n.at) === dayKey(refDate) ? timeLabel(n.at) : longDate(n.at).replace(/, \d{4}/, '')}</small></span><small>{show ? n.body : n.body.replace(/[^\s\d]{0,4}\d[\d,.]*/g, '••••••')}</small></span>
         <Icon name="chevron" size={16} />
       </button>)}</div>
     </section>)}
@@ -47,7 +47,7 @@ export function NotificationDetail({ c }) {
     <SubHeader title="" onBack={() => go('Notifications')} right={<button type="button" className="round-button flat" aria-label="More" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="more" size={20} /></button>} />
     <section className="card detail-hero"><span className={`hero-badge tone-${t ? 'green' : n.tone}`}><Icon name={t ? 'check' : n.icon} size={34} strokeWidth={2.6} /></span>
       <h2>{t ? (t.type === 'income' ? 'Income Recorded' : t.type === 'transfer' ? 'Transfer Recorded' : 'Expense Recorded') : n.title}</h2>
-      <p>{t ? (show ? n.body : n.body.replace(/₱[\d,.]+/g, '₱ ••••••')) : n.body}</p><small>{longDate(n.at)} · {timeLabel(n.at)}</small></section>
+      <p>{t ? (show ? n.body : n.body.replace(/[^\s\d]{0,4}\d[\d,.]*/g, '••••••')) : n.body}</p><small>{longDate(n.at)} · {timeLabel(n.at)}</small></section>
     {t && <section className="card detail-card">
       <div className="detail-row"><Tile name={t.merchant} size={42} radius={13} /><span><small>Merchant</small><strong>{t.merchant}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="coin" size={22} /></span><span><small>Amount</small><strong>{shown(show, money(t.amount, t.currency))}</strong></span></div>

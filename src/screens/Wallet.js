@@ -68,7 +68,7 @@ export default function Wallet({ c }) {
     </section> },
     { id: 'types', label: 'Balance by type', node: <section className="mini-grid" aria-label="Balance by account type">
       {groups.map(([label, items, icon]) => {
-        const sum = items.reduce((s, a) => s + a.balance, 0);
+        const sum = items.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
         return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label)}>
           <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{label}</small></span>
           <strong className={sum < 0 ? 'neg' : ''}><Money value={sum} show={show} digits={0} /></strong>

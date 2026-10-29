@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { evaluate, press, tokenize } from '../lib/calc';
-import { money } from '../lib/format';
+import { currencySymbol, number } from '../lib/format';
 
 export const CATEGORY_ICONS = [
   ['Food & drinks', 'Food', 'food', 'orange'], ['Groceries', 'Groceries', 'cart', 'green'], ['Transport', 'Transport', 'transfer', 'blue'],
@@ -15,7 +15,7 @@ const keyFor = (k) => ({ '*': '×', x: '×', '/': '÷', '-': '−', Enter: '=', 
 const pretty = (expr) => tokenize(expr).map(t => (/^\d/.test(t) || t.startsWith('.') ? Number(t).toLocaleString('en-PH', { maximumFractionDigits: 2 }) + (t.endsWith('.') ? '.' : '') : ` ${t} `)).join('');
 
 /** Calculator-first add/edit transaction sheet: type the amount on the keypad, pick a category, save. */
-export default function TransactionSheet({ form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan }) {
+export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan }) {
   const [expr, setExpr] = useState(form.amount ? String(Number(form.amount)) : '');
   const [allCats, setAllCats] = useState(false);
   const [padOpen, setPadOpen] = useState(true);
@@ -55,10 +55,10 @@ export default function TransactionSheet({ form, setForm, editing, accounts, clo
     </div>
 
     <div className="tx-amount" aria-live="polite">
-      <span className="tx-currency">₱</span>
+      <span className="tx-currency">{currencySymbol(currency)}</span>
       <div className="tx-figures">
         {hasOp && <small className="tx-expr">{pretty(expr)}</small>}
-        <output className={`tx-value${expr ? '' : ' empty'}`} aria-label="Amount">{Number.isFinite(value) ? (expr ? money(value, 'PHP', 2).replace('₱', '') : '0') : 'Can’t divide by 0'}</output>
+        <output className={`tx-value${expr ? '' : ' empty'}`} aria-label="Amount">{Number.isFinite(value) ? (expr ? number(value, 2) : '0') : 'Can’t divide by 0'}</output>
       </div>
     </div>
 
