@@ -90,7 +90,7 @@ export default function Settings({ c }) {
       { icon: 'trash', title: 'Clear Local Data', sub: 'Remove cached data', onClick: () => c.setSheet({ name: 'clear' }) },
     ] },
     { title: 'Data & Sync', rows: [
-      { icon: 'cloud', title: 'Cloud Sync', sub: 'Backup and sync your data', toggle: 'cloudSync' },
+      { icon: 'cloud', title: 'Cloud Sync', sub: 'Active while signed in; sign out to use local-only mode.', toggle: 'cloudSync' },
       { icon: 'database', title: 'Local Storage', sub: 'Browser storage is managed automatically; this switch is not available.', toggle: 'localStorage' },
       { icon: 'refresh', title: 'Auto Categorization', sub: 'Automatic categorization is not implemented yet.', toggle: 'autocat' },
     ] },
