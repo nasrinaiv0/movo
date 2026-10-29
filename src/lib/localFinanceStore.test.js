@@ -48,6 +48,30 @@ describe('local finance persistence', () => {
     expect(areSamplesEnabled()).toBe(false);
   });
 
+  test('reports quota errors instead of claiming local writes succeeded', () => {
+    const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+    });
+    try {
+      expect(saveLocalTransactions([{ id: 'manual-1', source: 'Manual' }])).toBe(false);
+      expect(saveLocalAccounts([{ id: 'local-1', name: 'Cash' }])).toBe(false);
+      expect(setSamplesEnabled(false)).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  test('reports when local finance data cannot be removed', () => {
+    const spy = jest.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new DOMException('Storage is unavailable', 'SecurityError');
+    });
+    try {
+      expect(clearLocalFinanceData()).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   test('clears local finance records and sample preference', () => {
     saveLocalTransactions([{ id: 'manual-1', source: 'Manual' }]);
     saveLocalAccounts([{ id: 'local-1', name: 'Cash' }]);
