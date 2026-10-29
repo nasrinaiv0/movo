@@ -41,7 +41,7 @@ export default function Profile({ c }) {
       <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go('Sign in')}>
         <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>Cloud Sync</strong><small>{c.cloudMode ? 'Active for your signed-in account' : 'Sign in to use cloud storage'}</small></span><span className="pill tone-blue">{c.cloudMode ? 'Active' : 'Sign in'}</span><Icon name="chevron" size={16} />
       </button>
-      <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>Local Storage</strong><small>Preferences are stored in this browser; local finance records are not guaranteed to persist.</small></span><span className="pill tone-gray">Automatic</span></div>
+      <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>Local Storage</strong><small>Manually entered records persist across reloads in this browser; they are not synced to other devices or encrypted by MOVO.</small></span><span className="pill tone-gray">Automatic</span></div>
       <div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>Auto Categorization</strong><small>Automatic categorization is not implemented yet.</small></span><span className="pill tone-gray">Unavailable</span></div>
     </section>
 
