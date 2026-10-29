@@ -23,7 +23,17 @@ function clickButton(container, name) {
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   return button;
 }
-const nav = (container, name) => {
+
+function setInputValue(input, value) {
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')?.set
+      || Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+\nconst nav = (container, name) => {
   const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.textContent.trim() === name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 };
