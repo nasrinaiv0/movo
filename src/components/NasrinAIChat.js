@@ -134,7 +134,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     </div>
     {error && <p className="movo-ai-error" role="alert">{error}</p>}
     {!session?.user || !cloudMode ? <div className="movo-ai-signin"><p>Sign in to securely connect your MOVO finances.</p><button type="button" className="wide-button" onClick={onSignIn}>Sign in to MOVO</button></div> : <>
-      <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to send the limited financial context needed to answer this question to NasrinAI.</label></div>
+      <div className="movo-ai-consent"><input id="movo-ai-consent" type="checkbox" checked={privacyAccepted} onChange={(e) => setPrivacyAccepted(e.target.checked)} /><label htmlFor="movo-ai-consent">I consent to share limited financial context with NasrinAI for this conversation.</label></div>
       <div className="movo-ai-legal-links"><button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>Privacy Policy</button><span aria-hidden="true">·</span><button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>Terms of Service</button></div>
       <form className="movo-ai-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="movo-ai-prompt">Message NasrinAI</label>
