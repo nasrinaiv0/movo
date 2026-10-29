@@ -378,6 +378,8 @@ h1, h2, h3, p { margin: 0; }
 .toast { position: fixed; z-index: 90; bottom: 110px; left: 50%; transform: translateX(-50%); max-width: calc(100vw - 30px); padding: 12px 18px; border-radius: 14px; background: var(--text); color: var(--bg); box-shadow: var(--shadow); font-size: 13px; text-align: center; }
 .app-alert { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 16px; margin: 0 0 14px; border: 1px solid rgba(229,72,77,.25); border-radius: 14px; background: var(--red-bg); font-size: 13px; line-height: 1.5; }
 .app-alert button { border: 0; background: transparent; }
+.storage-warning { border-color: rgba(184, 120, 20, .35); background: var(--warning-bg, var(--card-solid)); }
+.storage-warning .retry-save { flex-shrink: 0; min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; font-weight: 700; color: var(--text); background: var(--card-solid); }
 .loading-screen { display: flex; min-height: 70vh; flex-direction: column; align-items: center; justify-content: center; gap: 18px; color: var(--muted); }
 .brand-mark { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; background: var(--text); color: var(--bg); font: 800 34px/1 'Inter', sans-serif; letter-spacing: -3px; padding-bottom: 5px; }
 .sync-indicator { position: fixed; z-index: 70; right: 16px; bottom: 100px; display: flex; align-items: center; gap: 9px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card-solid); box-shadow: var(--shadow); font-size: 12px; }
