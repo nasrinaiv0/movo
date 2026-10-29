@@ -433,3 +433,12 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Audit snapshot: 31 source files; 93 buttons (9 disabled); 9 links; 5 forms; 4 interactive ARIA widgets; 2 dialogs. Three disabled-control warnings remain in `src/App.js` at lines 596, 608 and 635. The static scanner cannot verify callback semantics, visual truthfulness, modal focus behavior, or actual screen-reader output.
 - PR #55 remains draft. PR #46 was closed as superseded, not merged, to avoid duplicate open work.
 - This PR changes only the audit script, tests, build script and documentation. It does not resolve issue #47 or replace PR #48's server-side context-isolation requirement.
+
+
+## Read-only Supabase security recheck — 2026-10-30 06:30 Asia/Manila
+
+- Queried production catalog metadata and grants for `profiles`, `financial_accounts`, `transactions`, `budgets`, `movo_ai_conversations`, `movo_ai_messages`, and `movo_ai_upstream_conversations`; no database writes were run.
+- RLS is enabled on all seven tables. The six user-facing tables have 22 policies; the policy expressions are owner-scoped to `auth.uid()` in `USING` and/or `WITH CHECK`.
+- No `anon` table grants were returned for the checked set. `authenticated` retains SELECT/INSERT/UPDATE/DELETE on the user-facing tables. The upstream conversation mapping has no client policies and its table grants are limited to `service_role`.
+- Supabase Security Advisor still reports `auth_leaked_password_protection` as WARN (disabled) and `rls_enabled_no_policy` on the upstream mapping as INFO (consistent with intended server-only isolation). Do not add a permissive browser policy to the mapping. Leaked-password protection remains an authorized configuration release blocker.
+- No RLS policies, grants, schema, financial data, or secrets were changed.
