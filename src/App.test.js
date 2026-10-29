@@ -111,6 +111,29 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Payment Successful');
   });
 
+  test('Terms of Service and Privacy Policy are reachable and cross-linked', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Terms of Service');
+    expect(container.querySelector('h1').textContent).toBe('Terms of Service');
+    expect(container.textContent).toContain('Effective date: October 29, 2026');
+    clickButton(container, 'Privacy Policy');
+    expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(container.textContent).toContain('Data Privacy Act of 2012');
+    clickButton(container, 'Back');
+    expect(container.querySelector('h1').textContent).toBe('Profile');
+  });
+
+  test('Settings Privacy & Data opens the privacy policy instead of changing balance visibility', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const privacyRow = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Privacy & Data');
+    expect(privacyRow).toBeTruthy();
+    const before = JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance;
+    act(() => privacyRow.click());
+    expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance).toBe(before);
+  });
+
   test('theme choices update the app theme and persist preferences', () => {
     nav(container, 'Profile');
     clickButton(container, 'Dark');
