@@ -14,10 +14,9 @@
 
 ## Verification evidence
 
-- The reconciled implementation on `main` was previously verified by CI with **13 test suites / 66 tests**, typecheck, and production compilation. This evidence is tied to the pre-follow-up implementation and does not automatically prove later commits.
+- Follow-up PR #27 was verified on exact head `0ef16b43daffafb5587f625b723d0604199cdf60`: GitHub Actions passed **13 test suites / 70 tests**, `tsc --noEmit`, and production compilation. Vercel preview reached READY for that exact head. The changes were merged as `88c9c293215496dad54f34ed3060d8f3aa1f0dd5`.
 - A static scan of 12 primary screen/component files on 2026-10-29 found no literal empty JSX click handlers and no form tags without visible submit handling. This is a useful guardrail, not a replacement for browser interaction testing.
-- PR #27 adds a regression assertion for accurate local-storage disclosure and restores four finance-repository update-validation tests. Its latest CI and preview checks are **pending** at the time of this update.
-- Vercel reported the `main` deployment for commit `b3629d093500d433479dce25964be37e568c1d18` as **READY**. An interactive end-to-end browser smoke test on the production custom domain has not been confirmed in this run.
+- Vercel reports the production deployment for merged `main` commit `88c9c293215496dad54f34ed3060d8f3aa1f0dd5` as **READY**, with `movo.nasrinai.com` attached as an alias. Deployment status is confirmed; a full interactive end-to-end browser smoke test on the custom domain remains unverified.
 
 ## Privacy and security boundaries
 
@@ -37,7 +36,8 @@
 
 ## Next-run order
 
-1. Finish CI and preview verification for PR #27; fix failures before considering merge.
-2. Confirm the README and Profile disclosures accurately describe local and cloud behavior.
-3. Continue the interactive control audit and add targeted regression tests for any discovered dead or misleading control.
-4. Resolve or explicitly track the security, legal, and NasrinAI blockers above. Do not promote to production while material release blockers remain.
+1. Resolve the NasrinAI upstream HTTP 401 and verify an authenticated production request without exposing secrets.
+2. Complete and review the operator identity, retention, provider, and jurisdiction-specific legal disclosures.
+3. Enable Supabase Auth leaked-password protection and triage dependency audit findings with targeted upgrades.
+4. Continue interactive browser checks for onboarding, consent, finance writes, import/export, accessibility, and mobile layout.
+5. Repeat CI, build, RLS/ownership, and production checks after each substantive fix. Do not describe MOVO as fully production-ready while material blockers remain.
