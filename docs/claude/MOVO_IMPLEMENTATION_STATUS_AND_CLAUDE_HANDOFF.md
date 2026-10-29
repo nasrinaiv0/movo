@@ -350,3 +350,32 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Added a progress comment to issue #47. The issue remains open pending source-level context isolation and authenticated end-to-end verification.
 
 - Preview asset check: using the Vercel authenticated fetch on 2026-10-30, the exact-head preview root and built JavaScript bundle returned HTTP 200; the bundle contained the renderer guard. This is not interactive signed-in chat verification.
+
+
+### Scheduled implementation pass — finance context normalization and origin allowlist (2026-10-30)
+
+#### Implementation
+- Updated MOVO PR #48 on branch `fix/movo-nasrinai-context-isolation`; no separate NasrinAI repository was modified.
+- In `api/nasrinai/chat.js`, added allowlisted financial-context normalization:
+  - finite amounts only; malformed amounts and unrecognized transaction types are excluded instead of being coerced to zero;
+  - missing/invalid opening balances and budget limits stay `null`;
+  - missing/malformed currency strings stay `null` instead of silently defaulting to PHP;
+  - timestamps and date-only values are normalized/validated; invalid values stay `null`;
+  - database-sourced labels have CR/LF/tab normalization; free-form transaction notes and unexpected columns remain excluded.
+- Added `https://movo.nasrinai.com` to the default exact-origin allowlist while retaining `https://movo-lime.vercel.app`. Deployments with different aliases must set `MOVO_ALLOWED_ORIGINS` explicitly.
+- Added regression coverage in `src/lib/nasrinaiChat.test.js` for malformed amounts/types, missing currency, date validation, label normalization, omitted notes, and the canonical production origin.
+- Updated `docs/NASRINAI_CHAT_INTEGRATION.md` with the normalization contract and origin configuration.
+
+#### Exact-head validation
+- Latest code/test/docs head: `078d3b90973540982c83b0eff0a67e886dd5a9fc`.
+- GitHub Actions [run 40957438087](https://github.com/nasrinaiv0/movo/actions/runs/40957438087) completed successfully: **17 test suites / 96 tests passed**, `tsc --noEmit` passed, and the production bundle compiled successfully.
+- Vercel deployment [dpl_HaKKKiDADQW2HE4kSyqXJRdw17Tz](https://vercel.com/nasrin-ai/movo/HaKKKiDADQW2HE4kSyqXJRdw17Tz) is **READY** for the exact SHA; preview alias: [movo-erelil2fp-nasrin-ai.vercel.app](https://movo-erelil2fp-nasrin-ai.vercel.app).
+- Two intermediate test heads failed because an escaped regex removed letters from account labels. The exact cause was confirmed from CI logs, corrected, and the exact latest head now passes. Earlier failures remain in GitHub Actions history for auditability.
+- The current PR is mergeable according to GitHub but remains draft. No production deployment, database write, RLS/grant change, or secret change occurred in this increment.
+
+#### Still blocking release
+1. PR #48 still requires the upstream MOVO scope enforcement to be deployed before merging; this MOVO-only workflow did not modify the separate NasrinAI repository.
+2. No authenticated end-to-end smoke test has yet confirmed that a real signed-in MOVO request receives and validates `context_scope: "movo"`.
+3. Production remains on main commit `94d089d35483558b320f751cf122aa68755ef0eb`; these changes are preview-only.
+4. Continue the whole-frontend interaction/accessibility audit, legal publication verification, leaked-password protection configuration, dependency remediation, and production security checks.
+
