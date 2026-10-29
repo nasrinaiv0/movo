@@ -1,2 +1,4 @@
+# MOVO is a private finance application. Allow crawlers to read the noindex directives
+# on HTML/API responses; robots.txt is not an access-control mechanism.
 User-agent: *
-Disallow: /
+Allow: /
