@@ -139,6 +139,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Effective date: October 29, 2026');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
     expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
     clickButton(container, 'Back');
