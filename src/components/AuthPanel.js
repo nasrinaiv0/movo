@@ -64,5 +64,6 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally }) {
     <button className="auth-switch" type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setNotice(''); }}>{mode === 'signin' ? 'New to MOVO? Create an account' : 'Already have an account? Sign in'}</button>
     {onContinueLocally && <button className="auth-local" type="button" onClick={onContinueLocally}>Continue with this device only</button>}
     <p className="auth-privacy">Never share bank passwords, card PINs, CVVs, or one-time passcodes with MOVO.</p>
+    <p className="auth-privacy auth-legal-links">By continuing, you acknowledge the <a href="/terms.html">Terms of Service</a> and have read the <a href="/privacy.html">Privacy Policy</a>.</p>
   </section>;
 }
