@@ -283,6 +283,12 @@ describe('MOVO finance frontend', () => {
 
   test('unavailable notification categories explain that only demo events exist', () => {
     nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    expect(clearRow).toBeTruthy();
+    act(() => clearRow.click());
+    clickButton(container, 'Clear data');
+    nav(container, 'Profile');
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
     expect(notificationSettings).toBeTruthy();
     act(() => notificationSettings.click());
@@ -293,7 +299,7 @@ describe('MOVO finance frontend', () => {
       const descriptionId = toggle.getAttribute('aria-describedby');
       expect(descriptionId).toBeTruthy();
       expect(container.querySelector('#' + descriptionId)?.textContent.trim()).toMatch(/not connected|sample|demo/i);
-      expect(toggle.title).toMatch(/sample\/demo data|sample\/demo data|sample\/demo/i);
+      expect(toggle.title).toMatch(/sample\/demo/i);
       expect(toggle.title).not.toContain('delivery method');
     });
   });
