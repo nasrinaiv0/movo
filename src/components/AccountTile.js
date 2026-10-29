@@ -21,7 +21,7 @@ export default function AccountTile({ a, show = true, style, size = 'tile', onCl
   const body = <>
     <span className="at-top">
       <span className="at-icon" aria-hidden="true"><Icon name={s.icon} size={size === 'grid' ? 16 : 20} strokeWidth={2} /></span>
-      <span className="at-name">{a.name || 'Account preview'}</span>
+      <span className="at-name">{a.name || 'Account preview'}{a.mask && <small className="at-mask">•••• {a.mask}</small>}</span>
       {size !== 'grid' && <span className="at-type">{typeMeta(a.account_type).label}</span>}
     </span>
     <span className="at-bottom">

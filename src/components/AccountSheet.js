@@ -10,7 +10,8 @@ const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.'
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
 export default function AccountSheet({ form, setForm, editing, cloudMode, busy, error, onSave, onClose }) {
   const [openStyle, setOpenStyle] = useState(false);
-  const [openMore, setOpenMore] = useState(!!(form.institution_name || form.mask));
+  const [openMore, setOpenMore] = useState(!!form.institution_name);
+  const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
   const [pad, setPad] = useState(false);
   const meta = typeMeta(form.account_type);
   const color = form.color || meta.color; const icon = form.icon || meta.icon;
@@ -21,7 +22,7 @@ export default function AccountSheet({ form, setForm, editing, cloudMode, busy, 
 
   return <Sheet label={label} onClose={onClose} hideClose className="acct-sheet">{(close) => <form className="acct-form" onSubmit={onSave}>
     <div className="acct-head"><button type="button" className="tx-round" onClick={close} aria-label={`Close ${label}`}><Icon name="back" size={18} /></button><h2>{editing ? 'Edit Account' : 'Add Account'}</h2><span className="tx-round ghost" /></div>
-    <div className="acct-preview"><AccountTile a={{ name: form.name.trim() || 'Account preview', account_type: form.account_type, balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" /></div>
+    <div className="acct-preview"><AccountTile a={{ name: form.name.trim() || 'Account preview', account_type: form.account_type, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" /></div>
 
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">Account type</label>
@@ -30,6 +31,12 @@ export default function AccountSheet({ form, setForm, editing, cloudMode, busy, 
 
       <label className="acct-label" htmlFor="acct-name">Account name</label>
       <input id="acct-name" className="acct-input" required maxLength="100" value={form.name} onChange={e => set({ name: e.target.value })} placeholder="Account name (e.g. BPI, GCash, Cash)" />
+
+      {hasNumber && <>
+        <label className="acct-label" htmlFor="acct-mask">{form.account_type === 'card' ? 'Card number · last 4 digits' : 'Account number · last 4 digits'}</label>
+        <div className="acct-input acct-mask"><span aria-hidden="true">•••• •••• ••••</span><input id="acct-mask" inputMode="numeric" autoComplete="off" pattern="\d{4}" title="Exactly 4 digits" value={form.mask || ''} onChange={e => set({ mask: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="1234" aria-describedby="acct-mask-hint" /></div>
+        <p className="acct-hint" id="acct-mask-hint">Optional. Only the last 4 digits, to tell your {form.account_type === 'card' ? 'cards' : 'accounts'} apart. Never enter a full number, CVV or PIN.</p>
+      </>}
 
       <label className="acct-label" htmlFor="acct-currency">Account currency</label>
       <div className="acct-field select"><span><strong>{currency[0]}</strong><small>{currency[1]}</small></span><span className="acct-field-icon" style={{ color }}>{currency[2]}</span><Icon name="chevron" size={16} />
@@ -56,12 +63,10 @@ export default function AccountSheet({ form, setForm, editing, cloudMode, busy, 
       <p className="acct-hint">Your account's starting point before expenses, income, transfers and adjustments.</p>
 
       <div className={`acct-field acct-more${openMore ? ' open' : ''}`}>
-        <button type="button" className="acct-style-head" onClick={() => setOpenMore(v => !v)} aria-expanded={openMore}><span><strong>More options</strong><small>Institution and card number display.</small></span><Icon name="down" size={16} /></button>
+        <button type="button" className="acct-style-head" onClick={() => setOpenMore(v => !v)} aria-expanded={openMore}><span><strong>More options</strong><small>Bank or institution name.</small></span><Icon name="down" size={16} /></button>
         {openMore && <div className="acct-style-body">
           <label className="acct-label" htmlFor="acct-inst">Bank / institution</label>
           <input id="acct-inst" className="acct-input" maxLength="100" value={form.institution_name} onChange={e => set({ institution_name: e.target.value })} placeholder="e.g. BPI, Metrobank, Visa" />
-          {form.account_type === 'card' && <><label className="acct-label" htmlFor="acct-mask">Last 4 digits (optional)</label><input id="acct-mask" className="acct-input" inputMode="numeric" maxLength="4" value={form.mask || ''} onChange={e => set({ mask: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="1234" /></>}
-          <p className="acct-hint">Never enter a full card number, CVV or PIN. MOVO only needs the last 4 digits to label the card.</p>
         </div>}
       </div>
       {!cloudMode && <p className="acct-hint">Stored on this device only. Sign in to sync it to your MOVO account.</p>}

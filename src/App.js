@@ -401,6 +401,7 @@ function App() {
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : 'PHP';
     const saveStyle = (id) => { const { color, icon, mask } = accountForm; if (!color && !icon && !mask) return; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask } }); };
     if (!name) { setError('Enter an account name.'); return; }
+    if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError('Enter exactly 4 digits for the last 4 numbers, or leave it empty.'); return; }
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }
     if (!accountTypes.some(type => type.value === accountForm.account_type)) { setError('Choose a valid account type.'); return; }
     const editingId = sheet?.name === 'account' ? sheet.id : null;
