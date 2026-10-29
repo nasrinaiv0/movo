@@ -83,6 +83,18 @@ describe('NasrinAI consent and legal links', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  test('explains disabled Send when consent is accepted but the draft is empty', () => {
+    const consent = container.querySelector('#movo-ai-consent');
+    const sendButton = container.querySelector('button[aria-label="Send message"]');
+
+    act(() => consent.click());
+
+    expect(consent.checked).toBe(true);
+    expect(sendButton.disabled).toBe(true);
+    expect(sendButton.getAttribute('aria-describedby')).toBe('movo-ai-send-disabled-reason');
+    expect(container.querySelector('#movo-ai-send-disabled-reason').textContent).toContain('Enter a message to enable Send.');
+  });
+
   test('sends the chat only after explicit consent and includes the consent flag', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
