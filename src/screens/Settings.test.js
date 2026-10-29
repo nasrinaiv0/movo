@@ -126,3 +126,36 @@ describe('Cloud Sync setting semantics', () => {
     expect(context.setPref).not.toHaveBeenCalledWith('cloudSync', expect.anything());
   });
 });
+
+
+describe('Legal navigation from Settings', () => {
+  let container;
+  let root;
+  let context;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    context = makeContext(false);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    if (root) act(() => root.unmount());
+    container.remove();
+    root = null;
+  });
+
+  test('Terms of Service and Privacy Policy rows open their respective pages', () => {
+    act(() => root.render(<Settings c={context} />));
+    const terms = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Terms of Service'));
+    const privacy = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Privacy Policy'));
+    expect(terms).toBeTruthy();
+    expect(privacy).toBeTruthy();
+
+    act(() => { terms.click(); privacy.click(); });
+
+    expect(context.openLegal).toHaveBeenNthCalledWith(1, 'TermsOfService');
+    expect(context.openLegal).toHaveBeenNthCalledWith(2, 'PrivacyPolicy');
+  });
+});
