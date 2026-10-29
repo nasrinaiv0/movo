@@ -2,8 +2,8 @@ import React from 'react';
 import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed } from '../lib/format';
 
-export function Toggle({ checked, onChange, label }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`toggle${checked ? ' on' : ''}`} onClick={() => onChange(!checked)}><span /></button>;
+export function Toggle({ checked, onChange, label, disabled = false, reason }) {
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} aria-disabled={disabled || undefined} disabled={disabled} title={disabled ? reason : undefined} className={`toggle${checked ? ' on' : ''}${disabled ? ' disabled' : ''}`} onClick={() => { if (!disabled) onChange(!checked); }}><span /></button>;
 }
 
 export function IconButton({ icon, label, onClick, dot, size = 20 }) {
