@@ -175,4 +175,13 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Edited supermarket');
   });
 
+  test('CSV import action opens a review-first import sheet', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'More');
+    clickButton(container, 'Import CSV');
+    expect(container.querySelector('[role="dialog"][aria-label="Import transactions"]')).not.toBeNull();
+    expect(container.querySelector('input[type="file"][accept=".csv,text/csv"]')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Import 0 transaction(s)') && button.disabled)).toBe(true);
+  });
+
 });
