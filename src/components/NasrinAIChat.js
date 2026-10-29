@@ -47,7 +47,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
-  const [newConversationPending, setNewConversationPending] = useState(() => readNewConversationPending(session?.user?.id, cloudMode));
+  const [initialNewConversationPending] = useState(() => readNewConversationPending(session?.user?.id, cloudMode));
+  const newConversationPendingRef = useRef(initialNewConversationPending);
   const [phase, setPhase] = useState('reading');
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -67,7 +68,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError('');
       setPrivacyAccepted(false);
     }
-    setNewConversationPending(readNewConversationPending(userId, cloudMode));
+    newConversationPendingRef.current = readNewConversationPending(userId, cloudMode);
   }, [session?.user?.id, cloudMode]);
 
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
       let storedNewConversation = false;
       try { storedNewConversation = !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { storedNewConversation = true; }
-      if (newConversationPending || storedNewConversation) { setMessages([]); setConversationId(null); return; }
+      if (newConversationPendingRef.current || storedNewConversation) { setMessages([]); setConversationId(null); return; }
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
@@ -135,7 +136,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
       if (result.conversationId) setConversationId(result.conversationId);
-      setNewConversationPending(false);
+      newConversationPendingRef.current = false;
       try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
     } catch (cause) {
@@ -153,7 +154,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     setConversationId(null);
     setDraft('');
     setError('');
-    setNewConversationPending(true);
+    newConversationPendingRef.current = true;
     try { if (session?.user?.id) window.sessionStorage.setItem('movo.ai.newConversation.' + session.user.id, 'true'); } catch { /* storage unavailable */ }
   };
 
