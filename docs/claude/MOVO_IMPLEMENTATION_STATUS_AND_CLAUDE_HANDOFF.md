@@ -1,0 +1,278 @@
+# MOVO Implementation Status and Claude Handoff
+
+**Repository:** `nasrinaiv0/movo`  
+**Branch:** `main` is the target branch; this document was added on a documentation-only branch.  
+**Status snapshot:** 2026-10-30  
+**Audience:** Claude / the engineer continuing implementation  
+**Purpose:** Provide a traceable, evidence-conscious handoff so work can continue without treating prior summaries or merged code as proof of end-to-end functionality.
+
+> **Scope boundary:** This document is for the MOVO repository only. Do not mix MOVO implementation notes, financial records, app state, deployment settings, or product requirements with the separate NasrinAI repository. NasrinAI is relevant only where MOVO intentionally calls its API. Cross-repository changes must be explicitly identified and tracked as dependencies.
+
+## 1. Executive status
+
+MOVO is **not yet verified as fully functional or production-ready**. The current critical path is to secure the MOVO-specific NasrinAI context boundary, verify correct rendering of AI responses, finish the frontend control audit, and clear security/legal/release gates.
+
+The following are separate states and must not be conflated:
+
+- **Implemented:** Code/configuration is present.
+- **Automated checks passed:** Tests/build passed for the exact SHA documented.
+- **Integration verified:** Connected services work together in the target environment.
+- **Manual QA passed:** Relevant browser/mobile/accessibility flows were exercised.
+- **Deployed and smoke-tested:** The intended revision is live and the required production checks passed.
+- **Complete:** All required criteria for the workstream are evidenced. A PR being open, tests passing on an older SHA, or a deployment being READY is not sufficient.
+
+No overall completion percentage is asserted because a full evidence-based inventory has not yet been completed.
+
+## 2. Priority order
+
+### P0 — NasrinAI integration correctness and isolation
+1. Verify the deployed API enforces `context_scope: "movo"`.
+2. Ensure unrelated upstream conversation history, platform/founder/portfolio knowledge, personal memory, Library, shared learning, web search, tools, and caches cannot contaminate MOVO-scoped replies.
+3. Send the user's actual question separately from a bounded finance context.
+4. Do not reuse an upstream conversation ID for MOVO-scoped requests.
+5. Fail closed unless the upstream explicitly confirms the MOVO scope.
+6. Verify failed or unscoped responses are not displayed or persisted as successful assistant replies.
+7. Run an authenticated end-to-end test against the deployed upstream and MOVO environment.
+
+### P0 — AI response rendering
+1. Render Markdown safely and legibly: headings, lists, quotes, links, code, and responsive tables.
+2. Render validated fenced `chart` JSON as responsive charts only when supported by real, authorized MOVO financial data.
+3. Never invent financial values or render malformed/untrusted chart payloads as executable markup.
+4. Verify accessible labels, data-derived legends, responsive behavior, loading/error states, and mobile layouts.
+5. Test real signed-in chat, not only component fixtures or static screenshots.
+
+### P1 — Finance, authentication, and data integrity
+Verify sign-in/session persistence, account ownership, RLS, account and transaction CRUD, budgets, wallet and dashboard summaries, imports/CSV, selected display currency, pending transaction behavior, and cross-currency restrictions. Financial summaries must use consistent ledger rules and must not silently convert unlike currencies.
+
+### P1 — Complete frontend controls
+Audit every button, link, form, navigation destination, settings control, and non-native interactive element. Confirm each action works or is explicitly disabled with a clear reason. Test keyboard/focus behavior, accessible names/states, screen readers where available, responsive layouts, loading/empty/error states, and destructive-action confirmation.
+
+### P1 — Security and legal readiness
+Resolve documented security and legal blockers before calling MOVO production-ready. Do not invent operator identity, registered address, retention schedules, data recipients, or jurisdiction-specific legal claims; obtain owner/legal review where facts are unknown.
+
+### P2 — Release verification
+Run all required tests on final candidate commits, inspect deployment results for the same commit, run authenticated production smoke tests, verify rollback instructions, and update this document with evidence and remaining risks.
+
+## 3. Operational phase tracker
+
+This is a **working phase breakdown derived from the current implementation handoff**, not a claim that the repository already has an authoritative eight-phase plan. First inspect the repository's existing roadmap/phase documents and reconcile naming without deleting historical traceability.
+
+| Phase | Workstream | Current status | Evidence / exit criteria |
+|---|---|---|---|
+| 1 | Home and Dashboard | **Partially implemented; full current state unverified** | Verify all widgets, ledger-derived values, loading/empty/error states, navigation, and selected-currency behavior against real data. |
+| 2 | Authentication and database integration | **Partially implemented; release verification outstanding** | Verify sign-in, session persistence, server-side authorization, owner filters, production RLS/grants, and unauthenticated/foreign-user denial. |
+| 3 | Core finance | **Implementation reported; full end-to-end verification outstanding** | Test accounts, transactions, budgets, wallets, CSV imports, pagination, balances, monthly summaries, pending items, and mixed-currency behavior. |
+| 4 | Settings and general UX | **Partially implemented; full frontend audit outstanding** | Verify profile/settings/theme/display currency, all controls, keyboard access, screen-reader semantics, and mobile layouts. |
+| 5 | NasrinAI integration and context isolation | **CRITICAL / NOT COMPLETE** | Deployed upstream enforcement and authenticated end-to-end scope confirmation must pass. |
+| 6 | Rich NasrinAI response presentation | **In progress; production behavior unverified** | Markdown, tables, code, and supported chart payloads render correctly with authorized MOVO data in desktop and mobile views. |
+| 7 | Security, privacy, and legal | **BLOCKED / OPEN ITEMS** | Resolve leaked-password protection, dependency audit, legal facts/review/publication, privacy/logging checks, and any new findings. |
+| 8 | Final QA, deployment, and release | **NOT COMPLETE** | Full test suite on final SHA, production build/deploy, manual QA, live smoke tests, evidence log, and rollback readiness. |
+
+### Rules for phase status
+
+- Do not mark a phase complete based on a passing build alone.
+- Record the exact commit SHA, command/workflow URL, test counts, deployment identifier, and environment for every claimed result.
+- If evidence is missing, use **Not verified** rather than assuming success.
+- If a result applies to a previous commit, state that clearly; do not attribute it to a later documentation or code commit.
+- Record failures, known limitations, and accepted risks alongside successes.
+
+## 4. Relevant open MOVO pull requests at snapshot time
+
+The following open PRs were returned by the GitHub repository search on 2026-10-30. Recheck live PR state, latest head SHA, checks, and review comments before acting.
+
+### PR #48 — Isolate MOVO NasrinAI requests from upstream conversation history
+URL: https://github.com/nasrinaiv0/movo/pull/48
+
+Reported scope:
+- Send the actual question separately from bounded finance JSON.
+- Send `context_scope: "movo"` with only accounts, recent transactions, and budgets.
+- Do not send an upstream conversation ID.
+- Fail closed unless the upstream confirms `context_scope: "movo"`.
+- Remove legacy server-role mapping-table access from the chat path.
+- Clean up newly created empty conversations after upstream failures without deleting existing conversations.
+- Add regression tests for payload shape, context bounds, scope confirmation, and UI disclosure.
+
+Reported validation in the PR description:
+- Recorded MOVO commit: `ffee00e027694c6ef19467d3376976d09ba78baf`.
+- TypeScript typecheck passed.
+- Jest: 17 suites / 93 tests passed.
+- Production build compiled successfully.
+- A Vercel preview was reported READY.
+
+**Explicitly unverified in that PR description:** live authenticated end-to-end chat, deployed upstream enforcement, and manual browser/keyboard/mobile checks. The PR author says to keep it in draft until the companion upstream change is merged/deployed and the scoped integration is verified.
+
+### Companion dependency — NasrinAI PR #699 (separate repository)
+URL: https://github.com/nasrinaiv0/nasrinAI/pull/699
+
+This is **not a MOVO PR**. Track it only as an external dependency. Its described purpose is server-enforced MOVO scope, restricted to a secret service key and stateless request, bounded finance context, disabled global retrieval/memory/tools/caches for the scoped request, and a scope confirmation in the response.
+
+The PR description reports tests and repository gates passed at SHA `14d27bea72c04183c8e5c27f199130c71b261330`, but also says a deployed integration smoke test remains outstanding. Verify current state before relying on this description.
+
+### PR #50 — Render NasrinAI replies with charts and rich formatting
+URL: https://github.com/nasrinaiv0/movo/pull/50
+
+Reported scope:
+- Readable Markdown rendering (headings, lists, quotes, links, code blocks, responsive tables).
+- Validated fenced `chart` JSON rendered as responsive bar, line, and pie charts.
+- Accessible labels and data-derived legends.
+- Guidance to use charts only when user-scoped MOVO financial data supports them.
+
+The PR description says live signed-in chat and rendering of charts backed by real financial data still require deployment verification. Check latest CI/head before merging.
+
+### PR #46 — Repeatable UI control audit
+URL: https://github.com/nasrinaiv0/movo/pull/46
+
+Reported scope:
+- Adds `scripts/audit-ui-controls.js` using TypeScript AST checks.
+- Flags native buttons without action/valid submit/disabled state, anchors without destinations, forms without handlers/actions, and custom button-role elements without click and keyboard handlers.
+- Adds `npm run audit:controls` to the build precheck and documents scope/limitations.
+
+Review the latest diff and checks. Passing a static audit is a guardrail, not proof that every control behaves correctly at runtime.
+
+### PR #43 — Synchronize finance balances and summaries from one ledger
+URL: https://github.com/nasrinaiv0/movo/pull/43
+
+Reported scope:
+- Centralized cent-safe balance/ledger/monthly-summary calculations.
+- Persisted display-currency selector and currency-aware account creation.
+- Currency-scoped Home/Money Flow, Wallet, and Transactions views.
+- No invented FX conversion; cross-currency transfers remain rejected.
+- Stable pagination for cloud transaction reads and cross-tab refresh.
+- Accessibility semantics for settings selectors.
+
+The PR description reports passing automated checks on recorded commits (including 16 suites / 104 tests, typecheck, and production compilation) and a READY preview. It also lists release blockers, including leaked-password protection, dependency audit findings, legal review/publication, and production smoke testing. Verify the latest PR head and checklist because the description may contain multiple validation snapshots.
+
+## 5. Known release blockers and risks
+
+Treat these as **previously documented issues requiring current-state verification**, not as proof that the state has remained unchanged:
+
+1. **Supabase leaked-password protection was reported disabled.** Enable it through an authorized configuration change and verify the effective production setting.
+2. **Dependency audit findings were reported as 16 low, 5 moderate, and 13 high.** Re-run the current audit; triage each finding, upgrade safely, and test regressions. Do not assume counts are still current.
+3. **NasrinAI upstream HTTP 401 was reported.** Diagnose with redacted logs and verify a successful authenticated request without exposing credentials.
+4. **Legal publication/review remains open in the reported PR description.** Verify operator/data-controller identity and address, retention schedule, provider/data-recipient details, and jurisdictional terms with the owner/legal reviewer.
+5. **Live integration testing was outstanding** for the MOVO scope boundary and chart rendering.
+6. **Full manual frontend QA was not established as complete** by the open-PR evidence.
+7. Do not weaken RLS, grants, ownership filters, or context isolation merely to make a UI flow pass.
+8. Do not log raw prompts, financial context, provider credentials, access tokens, or sensitive response payloads. Inspect logging paths and retain only necessary, privacy-safe telemetry.
+
+## 6. Required execution plan for Claude
+
+### Step A — Establish current truth before editing
+- Pull the latest `main` and inspect all open MOVO PRs and checks.
+- Inspect the repository's existing phase/roadmap docs and identify the canonical status document; reconcile this handoff with it.
+- Record current `main` SHA, each relevant PR head SHA, CI run links/results, and deployment status.
+- Confirm whether PRs #43, #46, #48, and #50 are still open and whether the descriptions above remain accurate.
+- Inspect the separate NasrinAI PR #699 only to verify the explicit integration dependency; keep MOVO and NasrinAI audit logs/docs separate.
+
+### Step B — Resolve context isolation first
+- Verify upstream PR #699 is reviewed, merged, deployed, and running the intended code before expecting MOVO scoped chat to succeed.
+- If not ready, keep MOVO PR #48 in draft and fail closed; do not bypass the scope confirmation.
+- Add/retain regression tests proving unrelated portfolio/platform context cannot be retrieved, finance context is transient and bounded, and invalid/non-service/extra-context requests are rejected.
+- Verify request authentication, no upstream conversation ID, response scope confirmation, no accidental save/display on failure, and authorized user scoping.
+- Perform a live authenticated smoke test after deployment; save sanitized evidence and exact deployment/commit identifiers.
+
+### Step C — Finish response rendering
+- Review and test PR #50 against the current codebase and latest dependency APIs.
+- Confirm Markdown is rendered safely (no unsafe raw HTML/script execution).
+- Validate chart schema, chart type, labels, finite numeric values, and sensible payload bounds before rendering.
+- Ensure charts are based only on the authenticated user's MOVO data and do not invent or infer missing financial values.
+- Test desktop/mobile, empty/invalid chart payloads, API errors, loading states, keyboard navigation, accessible descriptions, and tables that overflow narrow screens.
+- Test the actual deployed chat with real authorized finance data.
+
+### Step D — Complete finance and frontend QA
+- Review PR #43 and verify the latest exact-head checks before any merge.
+- Run the UI control audit from PR #46 and review every finding, including possible false positives and controls it cannot detect.
+- Manually exercise all primary navigation, settings, account, transaction, budget, wallet, import, and dashboard flows.
+- Test owner/user isolation and negative cases with separate test accounts.
+- Check currency calculations against hand-computed fixtures; ensure no unlike currencies are summed and no FX conversion is fabricated.
+- Fix discovered issues with focused tests. Do not silence a failure without proving the intended behavior.
+
+### Step E — Security/legal/release gates
+- Re-run dependency/security checks and remediate the current findings with regression coverage.
+- Verify production RLS/grants and leaked-password protection without weakening authorization.
+- Resolve upstream 401 using secret-safe diagnostics.
+- Finalize legal text only from confirmed owner/legal facts; publish both policies to the intended production routes and verify HTTP/status/rendering.
+- Inspect logs, errors, telemetry, and analytics for secret/financial data leakage.
+- Verify timeout, rate-limit, retry, and duplicate-action/idempotency behavior.
+
+### Step F — Release discipline
+- Run the complete test suite, typecheck, lint/static audits, and production build on the exact final candidate SHA.
+- Verify deployment belongs to that SHA and run production smoke tests.
+- Merge only when checks, required reviews, security gates, and acceptance criteria pass. Keep critical scope-isolation work unmerged or in draft if its upstream dependency is not deployed.
+- Do not claim success based solely on PR merge or a READY preview.
+- Record the final decision, known residual risks, rollback procedure, and evidence links.
+
+## 7. Acceptance checklist
+
+### NasrinAI integration
+- [ ] Upstream scope enforcement is deployed and verified.
+- [ ] MOVO request is stateless and contains only the permitted context fields.
+- [ ] Scope confirmation is required and validated.
+- [ ] Unrelated platform/portfolio/memory/Library/web/tool/cache context is excluded.
+- [ ] Unauthorized user data cannot be accessed.
+- [ ] Failure paths do not display or save an unscoped answer.
+- [ ] Live authenticated integration smoke test passes.
+
+### Rendering
+- [ ] Markdown and tables render correctly and safely.
+- [ ] Valid chart payloads render with accessible labels/legends.
+- [ ] Invalid/oversized/malformed charts fail safely.
+- [ ] Charts reflect only real authorized MOVO financial data.
+- [ ] Desktop and mobile interaction/accessibility tests pass.
+
+### Finance and frontend
+- [ ] Ledger/balance/monthly summary tests pass on the final SHA.
+- [ ] Currency separation and no-FX rules pass.
+- [ ] Core account/transaction/budget/import flows pass end to end.
+- [ ] Every UI control is accounted for and functional or explicitly disabled.
+- [ ] Keyboard, focus, screen-reader semantics, and responsive checks pass.
+
+### Security/legal/release
+- [ ] Current dependency findings are triaged and accepted/remediated.
+- [ ] Production RLS/grants and ownership boundaries are verified.
+- [ ] Leaked-password protection is enabled and verified.
+- [ ] Upstream authentication works without exposing credentials.
+- [ ] Terms of Service and Privacy Policy are reviewed, published, and verified.
+- [ ] Full tests/build/static audits pass on the exact final SHA.
+- [ ] Production smoke tests pass and rollback is documented.
+
+## 8. Evidence/change log template
+
+Append a new entry for every material implementation change. Do not overwrite earlier results; keep the history traceable.
+
+```markdown
+### YYYY-MM-DD — <workstream/change>
+- Status: Implemented / Partially implemented / Blocked / Verified / Reverted
+- Repository:
+- PR / issue:
+- Base SHA:
+- Head SHA:
+- Change summary:
+- Root cause:
+- Security/data-boundary impact:
+- Tests executed:
+- Exact results:
+- CI/workflow URL:
+- Deployment/environment:
+- Manual QA performed:
+- Not tested / limitations:
+- Risks and follow-up:
+- Rollback:
+- Next action / owner:
+```
+
+## 9. Rules for the next engineer
+
+- Work evidence-first; inspect the latest code and checks before making assumptions from this document.
+- Preserve MOVO/NasrinAI repository separation.
+- Do not expose secrets or include sensitive financial data in documentation/logs.
+- Never claim a phase is complete without evidence from the relevant acceptance checklist.
+- Fix root causes, not just symptoms; add regression tests for every reproduced defect.
+- Avoid broad rewrites when a targeted change is sufficient.
+- Do not merge around failed checks or bypass security gates.
+- Update this document after each material change and keep a separate detailed change/audit record where needed.
+- If a blocker depends on another repository or external configuration, document the exact dependency, responsible action, and verification evidence instead of pretending it is resolved.
+
+## 10. Snapshot disclaimer
+
+This is a handoff snapshot based on repository/PR descriptions available on 2026-10-30. The current live status may have changed. Claude must re-check branch heads, PR states, CI, deployment, production configuration, and existing roadmap documents before treating any item as current. This file itself is documentation only; it does not implement fixes, run tests, merge PRs, or prove production behavior.
