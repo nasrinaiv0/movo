@@ -1,4 +1,4 @@
--- Run after applying 20261029000100_nasrinai_chat_isolation.sql in a test project.
+-- Run after applying 20261029013604_nasrinai_chat_isolation.sql, 20261029013801_nasrinai_chat_fk_indexes.sql, and 20261029032314_revoke_excess_table_privileges.sql in a test project.
 do $$
 declare
   conversations_rls boolean;
@@ -69,5 +69,15 @@ begin
   end if;
   if not exists (select 1 from pg_indexes where schemaname='public' and indexname='movo_ai_upstream_conversations_user_idx') then
     raise exception 'Expected upstream user foreign-key index is missing';
+  end if;
+
+  if exists (
+    select 1 from information_schema.role_table_grants
+    where table_schema = 'public'
+      and grantee in ('anon', 'authenticated')
+      and privilege_type in ('TRUNCATE', 'TRIGGER', 'REFERENCES')
+      and table_name in ('budgets', 'financial_accounts', 'movo_ai_conversations', 'movo_ai_messages', 'profiles', 'transactions')
+  ) then
+    raise exception 'Browser roles must not have TRUNCATE, TRIGGER, or REFERENCES privileges on private tables';
   end if;
 end $$;

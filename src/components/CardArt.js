@@ -42,7 +42,7 @@ export default function CardArt({ a, show, styleId, holder, preview }) {
   const sticker = resolveSticker(styleId, custom);
   const theme = sticker || (preview ? defaultThemeFor(a.id) : null);
   const ink = theme ? theme.ink : 'light';
-  const number = `•••• •••• •••• ${a.mask || '0000'}`;
+  const number = a.mask ? `•••• •••• •••• ${a.mask}` : 'No card number';
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
     {theme && <StickerArt theme={theme} />}
     <div className="cc-face">

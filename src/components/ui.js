@@ -9,8 +9,8 @@ export function Money({ value, show, digits = 2, currency = 'PHP' }) {
   return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : HIDDEN}</span>;
 }
 
-export function Toggle({ checked, onChange, label }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`toggle${checked ? ' on' : ''}`} onClick={() => { try { navigator.vibrate?.(8); } catch { /* unsupported */ } onChange(!checked); }}><span /></button>;
+export function Toggle({ checked, onChange, label, disabled = false, reason, describedBy }) {
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} aria-describedby={describedBy || undefined} aria-disabled={disabled || undefined} disabled={disabled} title={disabled ? reason : undefined} className={`toggle${checked ? ' on' : ''}${disabled ? ' disabled' : ''}`} onClick={() => { if (disabled) return; onChange(!checked); }}><span /></button>;
 }
 
 export function IconButton({ icon, label, onClick, dot, size = 20 }) {
@@ -18,12 +18,12 @@ export function IconButton({ icon, label, onClick, dot, size = 20 }) {
 }
 
 /** Large-title header used by the five root screens. */
-export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch }) {
+export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell }) {
   return <header className="screen-header root">
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
       {!hideSearch && <IconButton icon="search" label="Search" onClick={onSearch} />}
-      <IconButton icon="bell" label="Notifications" onClick={onBell} dot={unread} />
+      {!hideBell && onBell && <IconButton icon="bell" label="Notifications" onClick={onBell} dot={unread} />}
       {onSettings && <IconButton icon="gear" label="Settings" onClick={onSettings} />}
     </div>
   </header>;
@@ -71,6 +71,8 @@ export function Sheet({ title, subtitle, onClose, children, label }) {
   const [closing, setClosing] = useState(false);
   const [dy, setDy] = useState(0);
   const drag = useRef(null);
+  const dialogRef = useRef(null);
+  const previousFocusRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
   const close = () => {
     if (closing) return;
     if (!canAnimate()) { onClose(); return; }
@@ -80,11 +82,40 @@ export function Sheet({ title, subtitle, onClose, children, label }) {
     const onKey = (e) => { if (e.key === 'Escape') close(); };
     document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey);
   }); // eslint-disable-line
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return undefined;
+    const getFocusable = () => Array.from(dialog.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(element => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
+    if (!dialog.contains(document.activeElement)) {
+      const first = getFocusable()[0];
+      if (first) first.focus();
+      else dialog.focus();
+    }
+    const handleTab = event => {
+      if (event.key !== 'Tab') return;
+      const focusable = getFocusable();
+      if (!focusable.length) { event.preventDefault(); dialog.focus(); return; }
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleTab);
+    return () => {
+      document.removeEventListener('keydown', handleTab);
+      const previous = previousFocusRef.current;
+      if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus();
+    };
+  }, []);
   const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
   const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
   const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };
   return <div className={`sheet-backdrop${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-    <section className={`sheet${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
+    <section ref={dialogRef} className={`sheet${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
       <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>
       <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={close}><Icon name="close" size={18} /></button>
       {title && <h2 className="sheet-title">{title}</h2>}

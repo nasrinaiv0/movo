@@ -1,6 +1,7 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
+const { classifyNasrinAIKeyFormat } = require('./key-format.cjs');
 
 const MAX_MESSAGE_CHARS = 1600;
 const MAX_UPSTREAM_PROMPT_CHARS = 3800;
@@ -277,7 +278,7 @@ module.exports = async function handler(req, res) {
     const elapsedMs = Date.now() - upstreamStartedAt;
     if (!upstream.ok) {
       // Log only status/latency: never log prompts, financial context, keys, or upstream body.
-      console.error('[movo-nasrinai-upstream]', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+      console.error('[movo-nasrinai-upstream]', 'http_' + upstream.status, 'key_format_' + classifyNasrinAIKeyFormat(nasrinKey), 'latency_ms_' + elapsedMs);
       if (upstream.status === 401 || upstream.status === 403) {
         return json(res, 502, {
           error: 'nasrinai_auth_rejected',
