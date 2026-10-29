@@ -314,3 +314,28 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 ### No changes in this run
 - No production financial records, Supabase schema/RLS/grants, provider secrets, or production configuration were changed.
 - The upstream conversation mapping remains server-only; do not add browser policies to silence an informational RLS-without-policy finding.
+
+
+## 12. Latest scheduled implementation run — 2026-10-30 (MOVO only)
+
+### Screenshot regression: unrelated portfolio/document text
+- User evidence: MOVO's finance chat displayed a note about "Nasrin's portfolio" and described NasrinAI as a development service. This confirms unrelated assistant output; it does not by itself prove another user's financial records were exposed.
+- Tracking issue: [#47](https://github.com/nasrinaiv0/movo/issues/47) remains open. Do not close it based on a renderer-only patch.
+- Presentation guard PR: [#53](https://github.com/nasrinaiv0/movo/pull/53), branch `fix/filter-unrelated-document-notes`, latest code/test head `37c6d60acb3c6f1a57e10cccc5845d2d21a8c5d9`.
+- The renderer guard now removes only a paragraph that (a) references a provided document/portfolio, (b) describes development services/options or agencies/freelancers, and (c) explicitly disclaims financial relevance; it also retains the older exact generic disclaimer filter. Fenced code is left untouched. Adjacent finance guidance is intended to remain visible.
+- Added `src/components/NasrinAIMessage.test.js` with five regression tests: screenshot-style parenthetical disclaimer, follow-up development-services paragraph, legacy disclaimer, fenced-code preservation, and ordinary finance guidance preservation.
+- GitHub Actions run [40949265879](https://github.com/nasrinaiv0/movo/actions/runs/40949265879) is **in progress at the time of this update**. Do not report the new tests/build as passed until the exact-head run completes successfully. Earlier CI for the previous one-file head does not validate this new code/test head.
+- PR #53 has been returned to draft while exact-head checks are pending. This is a presentation-only safety net; it cannot prevent unrelated content from entering the upstream model request.
+
+### Root-cause / privacy boundary — still open
+- [PR #48](https://github.com/nasrinaiv0/movo/pull/48) remains the primary MOVO-side request/context isolation change. It must fail closed when the upstream does not return explicit `context_scope: "movo"`.
+- The required upstream scope contract is not verified deployed by this MOVO-only run. Do not modify the separate NasrinAI repository in this workflow; track that as an external dependency and require deployment evidence plus an authenticated end-to-end smoke test.
+- The screenshot's assistant wording is not sufficient evidence to conclude cross-user financial disclosure. Root cause still requires a redacted request/retrieval trace and clean-session reproduction.
+- No production financial records, secrets, database schema, RLS/grants, or production settings were changed in this increment.
+
+### Required follow-up
+1. Wait for run 40949265879 and fix any failures before claiming validation.
+2. If the tests pass, update PR #53's validation section with the exact successful result and preview deployment for that exact SHA.
+3. Test that unrelated document text is absent while the finance summary and charts remain intact.
+4. Continue the server-side context-isolation work in PR #48 and keep the production issue open until the upstream scope contract and authenticated end-to-end tests pass.
+5. Re-run the full control audit and legal/security release checklist; a successful renderer test does not complete the frontend.
