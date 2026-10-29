@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed, HIDDEN } from '../lib/format';
 import { canAnimate, useCountUp } from '../lib/motion';
+import { t as tr } from '../lib/i18n';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency }) {
@@ -22,9 +23,9 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
   return <header className="screen-header root">
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
-      {!hideSearch && <IconButton icon="search" label="Search" onClick={onSearch} />}
-      {!hideBell && onBell && <IconButton icon="bell" label="Notifications" onClick={onBell} dot={unread} />}
-      {onSettings && <IconButton icon="gear" label="Settings" onClick={onSettings} />}
+      {!hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
+      {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
+      {onSettings && <IconButton icon="gear" label={tr('Settings')} onClick={onSettings} />}
     </div>
   </header>;
 }
@@ -32,7 +33,7 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
 /** Back-arrow header used by sub-screens. */
 export function SubHeader({ title, onBack, right }) {
   return <header className="screen-header sub">
-    <button type="button" className="back-button" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
+    <button type="button" className="back-button" aria-label={tr('Back')} onClick={onBack}><Icon name="back" size={22} /></button>
     <h1>{title}</h1>
     <div className="header-actions">{right}</div>
   </header>;
@@ -117,7 +118,7 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
   return <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
     <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
       {!center && <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>}
-      {!hideClose && <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={close}><Icon name="close" size={18} /></button>}
+      {!hideClose && <button type="button" className="sheet-close" aria-label={tr('Close {name}', { name: label || title })} onClick={close}><Icon name="close" size={18} /></button>}
       {title && <h2 className="sheet-title">{title}</h2>}
       {subtitle && <p className="sheet-sub">{subtitle}</p>}
       {typeof children === 'function' ? children(close) : children}
@@ -150,7 +151,7 @@ export function Donut({ data, total, caption, show, size = 132 }) {
 }
 
 export function Legend({ data }) {
-  return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{d.key}</span><b>{d.percent}%</b></li>)}</ul>;
+  return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{tr(d.key)}</span><b>{d.percent}%</b></li>)}</ul>;
 }
 
 export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly }) {
@@ -159,7 +160,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   return <button type="button" className="tx-row" aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
     <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} tone="blue" />
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
-    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em>}</span>
+    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
   </button>;
 }
 

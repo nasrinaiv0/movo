@@ -1,6 +1,7 @@
 import React from 'react';
 import Icon from './Icon';
 import { money, shown } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 export const ACCOUNT_TYPES = [
   { value: 'bank', label: 'Bank account', sub: 'Savings or checking', icon: 'bank', color: '#2f5fd0' },
@@ -21,15 +22,15 @@ export default function AccountTile({ a, show = true, style, size = 'tile', onCl
   const body = <>
     <span className="at-top">
       <span className="at-icon" aria-hidden="true"><Icon name={s.icon} size={size === 'grid' ? 16 : 20} strokeWidth={2} /></span>
-      <span className="at-name">{a.name || 'Account preview'}{a.mask && <small className="at-mask">•••• {a.mask}</small>}</span>
-      {size !== 'grid' && <span className="at-type">{a.account_type === 'card' && a.cardKind ? (a.cardKind === 'credit' ? 'Credit' : 'Debit') : typeMeta(a.account_type).label}</span>}
+      <span className="at-name">{a.name || tr('Account preview')}{a.mask && <small className="at-mask">•••• {a.mask}</small>}</span>
+      {size !== 'grid' && <span className="at-type">{a.account_type === 'card' && a.cardKind ? (a.cardKind === 'credit' ? tr('Credit') : tr('Debit')) : tr(typeMeta(a.account_type).label)}</span>}
     </span>
     <span className="at-bottom">
-      <small>{size === 'grid' ? typeMeta(a.account_type).label : 'Balance'}</small>
-      <b>{shown(show, money(a.balance || 0, a.currency || 'PHP'))}</b>
+      <small>{size === 'grid' ? tr(typeMeta(a.account_type).label) : tr('Balance')}</small>
+      <b>{shown(show, money(a.balance || 0, a.currency || tr('PHP')))}</b>
     </span>
   </>;
   const cls = `account-tile at-${size}`;
   const css = { '--at': s.color };
-  return onClick ? <button type="button" className={cls} style={css} onClick={onClick} aria-label={label || `${a.name}, ${typeMeta(a.account_type).label}`}>{body}</button> : <div className={cls} style={css}>{body}</div>;
+  return onClick ? <button type="button" className={cls} style={css} onClick={onClick} aria-label={label || `${a.name}, ${tr(typeMeta(a.account_type).label)}`}>{body}</button> : <div className={cls} style={css}>{body}</div>;
 }

@@ -1,3 +1,4 @@
+import { createElement, Fragment } from 'react';
 import { STRINGS } from '../i18n/strings';
 
 /*
@@ -50,4 +51,15 @@ export function t(text, vars) {
   let out = (entry && entry[current.code]) || text;
   if (vars) Object.keys(vars).forEach(k => { out = out.split(`{${k}}`).join(vars[k]); });
   return out;
+}
+
+/**
+ * Like t(), but placeholders may be React nodes (links, bold text), so whole sentences stay translatable:
+ * rich('Read the {terms} for details.', { terms: <button>Terms</button> })
+ */
+export function rich(text, vars = {}) {
+  return t(text).split(/(\{\w+\})/).filter(Boolean).map((part, i) => {
+    const m = /^\{(\w+)\}$/.exec(part);
+    return createElement(Fragment, { key: i }, m && vars[m[1]] !== undefined ? vars[m[1]] : part);
+  });
 }

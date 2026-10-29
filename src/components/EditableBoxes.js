@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Icon from './Icon';
+import { t as tr } from '../lib/i18n';
 
 /** Applies a saved layout ({ order, hidden }) to a list of boxes, keeping any new boxes at their default spot. */
 export function arrange(boxes, layout = {}) {
@@ -58,23 +59,23 @@ export default function EditableBoxes({ boxes, layout = {}, editing, onChange, o
 
   if (!editing) return visible.map(b => <React.Fragment key={b.id}>{b.node}</React.Fragment>);
   return <>
-    <div className="edit-bar" role="toolbar" aria-label={`Customize ${title}`}>
-      <span><strong>Customize {title}</strong><small>Drag to move, tap − to remove.</small></span>
-      <button type="button" className="primary-button" onClick={onDone}>Done</button>
+    <div className="edit-bar" role="toolbar" aria-label={tr('Customize {name}', { name: title })}>
+      <span><strong>{tr('Customize {name}', { name: title })}</strong><small>{tr('Drag to move, tap − to remove.')}</small></span>
+      <button type="button" className="primary-button" onClick={onDone}>{tr('Done')}</button>
     </div>
     {visible.map((b, i) => <div key={b.id} ref={el => { els.current[b.id] = el; }} className={`edit-box${dragId === b.id ? ' dragging' : ''}`} style={{ '--d': `${(i % 3) * 60}ms`, ...(dragId === b.id ? { transform: `translateY(${dy}px)` } : {}) }}>
       <div className="edit-tools">
-        <button type="button" className="edit-remove" aria-label={`Remove ${b.label}`} onClick={() => hide(b.id)}><Icon name="minus" size={14} strokeWidth={3} /></button>
+        <button type="button" className="edit-remove" aria-label={tr('Remove {name}', { name: b.label })} onClick={() => hide(b.id)}><Icon name="minus" size={14} strokeWidth={3} /></button>
         <span className="edit-name">{b.label}</span>
-        <button type="button" className="edit-tool" aria-label={`Move ${b.label} up`} disabled={i === 0} onClick={() => move(b.id, -1)}><Icon name="arrowUp" size={14} strokeWidth={2.4} /></button>
-        <button type="button" className="edit-tool" aria-label={`Move ${b.label} down`} disabled={i === visible.length - 1} onClick={() => move(b.id, 1)}><Icon name="arrowDown" size={14} strokeWidth={2.4} /></button>
-        <button type="button" className="edit-tool edit-grip" aria-label={`Drag to move ${b.label}`} onPointerDown={e => down(e, b.id)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}><Icon name="grip" size={16} /></button>
+        <button type="button" className="edit-tool" aria-label={tr('Move {name} up', { name: b.label })} disabled={i === 0} onClick={() => move(b.id, -1)}><Icon name="arrowUp" size={14} strokeWidth={2.4} /></button>
+        <button type="button" className="edit-tool" aria-label={tr('Move {name} down', { name: b.label })} disabled={i === visible.length - 1} onClick={() => move(b.id, 1)}><Icon name="arrowDown" size={14} strokeWidth={2.4} /></button>
+        <button type="button" className="edit-tool edit-grip" aria-label={tr('Drag to move {name}', { name: b.label })} onPointerDown={e => down(e, b.id)} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}><Icon name="grip" size={16} /></button>
       </div>
       <div className="edit-content" inert="">{b.node}</div>
     </div>)}
-    <section className="edit-tray" aria-label="Hidden boxes">
-      <h3>Hidden</h3>
-      {hidden.size ? <div className="edit-tray-list">{ordered.filter(b => hidden.has(b.id)).map(b => <button type="button" key={b.id} onClick={() => show(b.id)} aria-label={`Add ${b.label}`}><Icon name="plus" size={14} strokeWidth={2.4} />{b.label}</button>)}</div> : <p>Removed boxes appear here so you can add them back.</p>}
+    <section className="edit-tray" aria-label={tr('Hidden boxes')}>
+      <h3>{tr('Hidden')}</h3>
+      {hidden.size ? <div className="edit-tray-list">{ordered.filter(b => hidden.has(b.id)).map(b => <button type="button" key={b.id} onClick={() => show(b.id)} aria-label={tr('Add {name}', { name: b.label })}><Icon name="plus" size={14} strokeWidth={2.4} />{b.label}</button>)}</div> : <p>{tr('Removed boxes appear here so you can add them back.')}</p>}
     </section>
   </>;
 }

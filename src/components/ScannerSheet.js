@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { Sheet } from './ui';
 import { readImageText, parseReceipt, guessCategory } from '../lib/ocr';
 import { money, shown, getFormatLocale } from '../lib/format';
+import { t as tr } from '../lib/i18n';
 
 const KEY = 'movo.scans.v1';
 export const loadScans = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
@@ -44,17 +45,17 @@ export default function ScannerSheet({ show, onLog, onClose }) {
       stream.current = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } }, audio: false });
       setMode('camera');
       requestAnimationFrame(() => { if (video.current) { video.current.srcObject = stream.current; video.current.play().catch(() => {}); } });
-    } catch { setError('Camera access was blocked. You can choose a photo instead.'); }
+    } catch { setError(tr('Camera access was blocked. You can choose a photo instead.')); }
   };
 
   const process = async (blob) => {
-    stopCamera(); setMode('working'); setError(''); setStatus('Reading your receipt on this device…');
+    stopCamera(); setMode('working'); setError(''); setStatus(tr('Reading your receipt on this device…'));
     try {
       const text = await readImageText(blob);
       const fields = parseReceipt(text);
       const entry = { id: window.crypto?.randomUUID?.() || String(Date.now()), at: new Date().toISOString(), ...fields, category: guessCategory(`${fields.merchant}\n${text}`), text: text.slice(0, 2000), thumb: await thumb(blob), status: 'review' };
       update([entry, ...scans]); setActive(entry); setMode('review');
-    } catch (cause) { setError(cause.message || 'Could not read that image.'); setMode('home'); }
+    } catch (cause) { setError(tr(cause.message || 'Could not read that image.')); setMode('home'); }
     finally { setStatus(''); }
   };
 
@@ -70,33 +71,33 @@ export default function ScannerSheet({ show, onLog, onClose }) {
     onLog({ merchant: active.merchant || 'Receipt', amount: active.amount ? String(active.amount) : '', category: active.category, occurred_at: active.date || '', note: 'Scanned receipt' });
   };
 
-  return <Sheet title={mode === 'review' ? 'Review scan' : 'Scan receipt'} subtitle={mode === 'review' ? 'Check the details before logging.' : 'Point at a receipt or payment confirmation. Photos are read on this device and never uploaded.'} onClose={() => { stopCamera(); onClose(); }} label="Scan receipt">
-    <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={choose} aria-label="Choose a receipt photo" />
+  return <Sheet title={mode === 'review' ? tr('Review scan') : tr('Scan receipt')} subtitle={mode === 'review' ? tr('Check the details before logging.') : tr('Point at a receipt or payment confirmation. Photos are read on this device and never uploaded.')} onClose={() => { stopCamera(); onClose(); }} label={tr('Scan receipt')}>
+    <input ref={fileRef} type="file" accept="image/*" capture="environment" hidden onChange={choose} aria-label={tr('Choose a receipt photo')} />
     {mode === 'home' && <div className="scan-start">
-      <button type="button" className="scan-hero" onClick={startCamera}><span className="scan-frame"><Icon name="scan" size={34} /></span><strong>Open camera</strong><small>Best in good light, receipt filling the frame</small></button>
-      <button type="button" className="secondary-button" onClick={() => fileRef.current?.click()}><Icon name="upload" size={18} /> Choose a photo or screenshot</button>
+      <button type="button" className="scan-hero" onClick={startCamera}><span className="scan-frame"><Icon name="scan" size={34} /></span><strong>{tr('Open camera')}</strong><small>{tr('Best in good light, receipt filling the frame')}</small></button>
+      <button type="button" className="secondary-button" onClick={() => fileRef.current?.click()}><Icon name="upload" size={18} /> {tr('Choose a photo or screenshot')}</button>
     </div>}
     {mode === 'camera' && <div className="scan-camera">
-      <video ref={video} playsInline muted aria-label="Camera preview" />
+      <video ref={video} playsInline muted aria-label={tr('Camera preview')} />
       <span className="scan-guide" aria-hidden="true" />
-      <div className="scan-controls"><button type="button" className="secondary-button" onClick={() => { stopCamera(); setMode('home'); }}>Cancel</button><button type="button" className="scan-shutter" onClick={capture} aria-label="Capture receipt" /><button type="button" className="secondary-button" onClick={() => { stopCamera(); fileRef.current?.click(); }}>Photos</button></div>
+      <div className="scan-controls"><button type="button" className="secondary-button" onClick={() => { stopCamera(); setMode('home'); }}>{tr('Cancel')}</button><button type="button" className="scan-shutter" onClick={capture} aria-label={tr('Capture receipt')} /><button type="button" className="secondary-button" onClick={() => { stopCamera(); fileRef.current?.click(); }}>{tr('Photos')}</button></div>
     </div>}
     {mode === 'working' && <div className="scan-working" role="status"><span className="spinner" /> {status}</div>}
     {mode === 'review' && active && <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); log(); }}>
-      {active.thumb && <img className="scan-thumb" src={active.thumb} alt="Scanned receipt" />}
-      <label>Merchant<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder="Store or payee" /></label>
-      <div className="form-grid"><label>Amount (PHP)<input inputMode="decimal" value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label>
-        <label>Date<input type="date" value={active.date || ''} onChange={e => setActive({ ...active, date: e.target.value })} /></label></div>
-      <details className="scan-text"><summary>Text found in the photo</summary><pre>{active.text || 'No text found.'}</pre></details>
-      {!active.amount && <p className="form-note">No total was found. Enter the amount before logging.</p>}
-      <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setMode('home'); }}>Discard</button><button type="submit" className="primary-button">Log transaction</button></div>
+      {active.thumb && <img className="scan-thumb" src={active.thumb} alt={tr('Scanned receipt')} />}
+      <label>{tr('Merchant')}<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder={tr('Store or payee')} /></label>
+      <div className="form-grid"><label>{tr('Amount (PHP)')}<input inputMode="decimal" value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label>
+        <label>{tr('Date')}<input type="date" value={active.date || ''} onChange={e => setActive({ ...active, date: e.target.value })} /></label></div>
+      <details className="scan-text"><summary>{tr('Text found in the photo')}</summary><pre>{active.text || tr('No text found.')}</pre></details>
+      {!active.amount && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}
+      <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setMode('home'); }}>{tr('Discard')}</button><button type="submit" className="primary-button">{tr('Log transaction')}</button></div>
     </form>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    {mode === 'home' && scans.length > 0 && <section className="scan-log" aria-label="Scan log">
-      <div className="scan-log-head"><h3>Scan log</h3><button type="button" className="link-button" onClick={() => update([])}>Clear</button></div>
+    {mode === 'home' && scans.length > 0 && <section className="scan-log" aria-label={tr('Scan log')}>
+      <div className="scan-log-head"><h3>{tr('Scan log')}</h3><button type="button" className="link-button" onClick={() => update([])}>{tr('Clear')}</button></div>
       {scans.map(s => <button type="button" key={s.id} className="scan-row" onClick={() => { setActive(s); setMode('review'); }}>
         {s.thumb ? <img src={s.thumb} alt="" /> : <span className="scan-row-icon"><Icon name="receipt" size={18} /></span>}
-        <span className="menu-main"><strong>{s.merchant || 'Receipt'}</strong><small>{new Date(s.at).toLocaleString(getFormatLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {s.status === 'logged' ? 'Logged' : 'Needs review'}</small></span>
+        <span className="menu-main"><strong>{s.merchant || tr('Receipt')}</strong><small>{new Date(s.at).toLocaleString(getFormatLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {s.status === 'logged' ? tr('Logged') : tr('Needs review')}</small></span>
         <b>{s.amount ? shown(show, money(s.amount)) : '—'}</b>
       </button>)}
     </section>}

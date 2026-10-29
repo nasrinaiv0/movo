@@ -3,6 +3,7 @@ import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from
 import { money, shown } from '../lib/format';
 import { canAnimate } from '../lib/motion';
 import { EmvChip, Contactless } from './EmvChip';
+import { t as tr } from '../lib/i18n';
 
 const build = (node, key) => {
   if (!node) return null;
@@ -47,13 +48,13 @@ export default function CardArt({ a, show, styleId, holder, preview, compact }) 
   const ink = theme ? theme.ink : 'light';
   const number = `•••• •••• •••• ${a.mask || '••••'}`;
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
-    {theme && <StickerArt theme={theme} compact={compact} />}{theme?.video && <span className="cc-live" aria-label="Live wallpaper">LIVE</span>}
+    {theme && <StickerArt theme={theme} compact={compact} />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="cc-face">
     <div className="cc-top">
       <span className="cc-logo"><i aria-hidden="true">{(a.name || '?').trim().charAt(0).toUpperCase()}</i><span className="cc-name">{a.name}</span></span>
       <span className="cc-net">{a.institution_name}</span>
     </div>
-    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? 'Credit' : 'Debit'}</span>}</span>
+    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? tr('Credit') : tr('Debit')}</span>}</span>
     <div className="cc-bottom">
       <div className="cc-id"><span className="cc-number">{number}</span>{holder && <small className="cc-holder">{holder}</small>}</div>
       <b>{shown(show, money(a.balance, a.currency))}</b>

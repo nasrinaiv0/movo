@@ -16,7 +16,7 @@ export function buildFlow(txs, range, ref = new Date(), custom = {}) {
     for (let i = 13; i >= 0; i -= 1) { const d = new Date(end.getTime() - i * DAY); buckets.push({ key: dayKey(d), label: fmt(d, { day: 'numeric' }), title: fmt(d, { weekday: 'short', month: 'short', day: 'numeric' }) }); }
   } else if (range === 'week') {
     const w = startOfWeek(end);
-    for (let i = 7; i >= 0; i -= 1) { const d = new Date(w.getTime() - i * 7 * DAY); buckets.push({ key: dayKey(d), label: fmt(d, { month: 'numeric', day: 'numeric' }), title: `Week of ${fmt(d, { month: 'short', day: 'numeric' })}` }); }
+    for (let i = 7; i >= 0; i -= 1) { const d = new Date(w.getTime() - i * 7 * DAY); buckets.push({ key: dayKey(d), label: fmt(d, { month: 'numeric', day: 'numeric' }), title: tr('Week of {date}', { date: fmt(d, { month: 'short', day: 'numeric' }) }) }); }
   } else if (range === 'month') {
     for (let i = 11; i >= 0; i -= 1) { const d = new Date(end.getFullYear(), end.getMonth() - i, 15); buckets.push({ key: dayKey(d).slice(0, 7), label: fmt(d, { month: 'narrow' }), title: fmt(d, { month: 'long', year: 'numeric' }) }); }
   } else if (range === 'year') {
@@ -50,16 +50,16 @@ export default function MoneyFlow({ txs, refDate, show }) {
   const sel = pick >= 0 && data[pick] ? data[pick] : null;
   const totals = sel || data.reduce((s, b) => ({ income: s.income + b.income, expense: s.expense + b.expense }), { income: 0, expense: 0 });
   const net = totals.income - totals.expense;
-  return <section className="card flow-card" aria-label="Money flow">
+  return <section className="card flow-card" aria-label={tr('Money flow')}>
     <div className="flow-head">
       <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
     </div>
-    <div className="flow-ranges" role="group" aria-label="Money flow range">{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); }}>{tr(l)}</button>)}</div>
+    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); }}>{tr(l)}</button>)}</div>
     {range === 'custom' && <div className="flow-custom"><label>{tr('From')}<input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label>{tr('To')}<input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
     <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
     <div className="flow-plot" role="list">
-      {data.map((b, i) => <button type="button" role="listitem" key={b.key} className={`flow-col${pick === i ? ' on' : ''}`} style={{ '--i': i }} onClick={() => setPick(pick === i ? -1 : i)} aria-label={`${b.title}: in ${Math.round(b.income)}, out ${Math.round(b.expense)}`}>
+      {data.map((b, i) => <button type="button" role="listitem" key={b.key} className={`flow-col${pick === i ? ' on' : ''}`} style={{ '--i': i }} onClick={() => setPick(pick === i ? -1 : i)} aria-label={tr('{period}: in {income}, out {expense}', { period: b.title, income: Math.round(b.income), expense: Math.round(b.expense) })}>
         <span className="flow-bars"><i className="in" style={{ height: `${(b.income / max) * 100}%` }} /><i className="out" style={{ height: `${(b.expense / max) * 100}%` }} /></span>
         {(data.length <= 14 || i % Math.ceil(data.length / 12) === 0) && <small>{b.label}</small>}
       </button>)}

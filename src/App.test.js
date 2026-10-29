@@ -123,7 +123,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Transfers');
     expect(container.textContent).toContain('Total Transfers');
     clickButton(container, 'Transfer to BPI, ₱2,000.00');
-    expect(container.querySelector('[role="dialog"]').textContent).toContain('transfer');
+    expect(container.querySelector('[role="dialog"]').textContent).toMatch(/transfer/i);
   });
 
   test('opens a transaction, then deletes it after confirmation', () => {
@@ -228,7 +228,7 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.movo-app, .theme-dark')).not.toBeNull();
     expect(container.firstChild.className).toContain('theme-dark');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('dark');
-    clickButton(container, 'purple accent');
+    clickButton(container, 'Purple accent');
     expect(container.firstChild.className).toContain('accent-purple');
   });
 

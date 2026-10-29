@@ -21,7 +21,7 @@ export function budgetProgress(budgets, monthList) {
 
 export function BudgetsCard({ progress, plans, show, onOpen }) {
   const watch = [...progress].sort((a, b) => b.percent - a.percent).slice(0, 3);
-  return <section className="card budget-card" aria-label="Budgets and plans">
+  return <section className="card budget-card" aria-label={tr('Budgets and plans')}>
     <div className="budget-head"><h2>{tr('Budgets & Plans')}</h2><button type="button" className="link-button" onClick={onOpen}>{tr('Manage')} <Icon name="chevron" size={14} /></button></div>
     {!progress.length && !plans.length && <button type="button" className="budget-empty" onClick={onOpen}><Icon name="target" size={20} /><span><strong>{tr('Set a monthly limit')}</strong><small>{tr('Get a heads-up before a category runs over, and plan savings goals.')}</small></span></button>}
     {watch.map(b => { const [, name, icon, tone] = iconFor(b.category); return <div className={`budget-row ${b.level}`} key={b.id}>
@@ -47,19 +47,19 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
     try {
       if (tab === 'budgets') {
         const limit = evaluate(String(draft.limit || ''));
-        if (!(limit > 0)) throw new Error('Enter a monthly limit greater than zero.');
+        if (!(limit > 0)) throw new Error(tr('Enter a monthly limit greater than zero.'));
         await onSaveBudget({ id: draft.id, category: draft.category, monthly_limit: limit });
       } else {
         const target = evaluate(String(draft.target || '')); const saved = evaluate(String(draft.saved || '0'));
-        if (!draft.name.trim()) throw new Error('Name your plan.');
-        if (!(target > 0) || !(saved >= 0)) throw new Error('Enter a target above zero and a saved amount of zero or more.');
+        if (!draft.name.trim()) throw new Error(tr('Name your plan.'));
+        if (!(target > 0) || !(saved >= 0)) throw new Error(tr('Enter a target above zero and a saved amount of zero or more.'));
         onSavePlan({ id: draft.id, name: draft.name.trim().slice(0, 60), target, saved, due: draft.due || '' });
       }
       setDraft(null);
-    } catch (cause) { setErr(cause.message || 'Could not save. Please try again.'); }
+    } catch (cause) { setErr(tr(cause.message || 'Could not save. Please try again.')); }
   };
-  return <Sheet title={tr('Budgets & Plans')} subtitle={tab === 'budgets' ? `Monthly limits per category${cloudMode ? ', synced to your account' : ', saved on this device'}.` : 'Savings goals with a target and optional date, saved on this device.'} onClose={onClose} label="Budgets and plans" center>
-    <div className="seg-control two" role="group" aria-label="Section">{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{tr(l)}</button>)}</div>
+  return <Sheet title={tr('Budgets & Plans')} subtitle={tab === 'budgets' ? (cloudMode ? tr('Monthly limits per category, synced to your account.') : tr('Monthly limits per category, saved on this device.')) : tr('Savings goals with a target and optional date, saved on this device.')} onClose={onClose} label={tr('Budgets and plans')} center>
+    <div className="seg-control two" role="group" aria-label={tr('Section')}>{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{tr(l)}</button>)}</div>
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>
         <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
@@ -67,23 +67,23 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
         <b>{b.percent}%</b></button>; })}
       {tab === 'plans' && plans.map(p => { const need = Math.max(0, p.target - p.saved); const m = monthsLeft(p.due); return <button type="button" key={p.id} className="sheet-card budget-item" onClick={() => setDraft({ ...p, target: String(p.target), saved: String(p.saved) })}>
         <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
-        <span className="budget-main"><span><strong>{p.name}</strong><small>{need ? (m ? <>Save <Money value={need / m} show={show} digits={0} />/month to reach it</> : <><Money value={need} show={show} digits={0} /> to go</>) : 'Goal reached'}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{p.name}</strong><small>{need ? (m ? rich('Save {amount}/month to reach it', { amount: <Money value={need / m} show={show} digits={0} /> }) : <><Money value={need} show={show} digits={0} /> {tr('to go')}</>) : tr('Goal reached')}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
         <b>{pct(p.saved, p.target)}%</b></button>; })}
-      <button type="button" className="manage-button" onClick={() => setDraft(tab === 'budgets' ? { category: CATEGORY_ICONS.find(c => !used.has(c[0]))?.[0] || 'Other', limit: '' } : { name: '', target: '', saved: '', due: '' })}><Icon name="plus" size={18} /> {tab === 'budgets' ? 'Add budget' : 'Add plan'}</button>
+      <button type="button" className="manage-button" onClick={() => setDraft(tab === 'budgets' ? { category: CATEGORY_ICONS.find(c => !used.has(c[0]))?.[0] || 'Other', limit: '' } : { name: '', target: '', saved: '', due: '' })}><Icon name="plus" size={18} /> {tab === 'budgets' ? tr('Add budget') : tr('Add plan')}</button>
     </div>}
     {draft && <form className="sheet-form" onSubmit={save}>
       {tab === 'budgets' ? <>
         <label>{tr('Category')}<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === draft.category || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{c[1]}</option>)}</select></label>
-        <label>Monthly limit (PHP)<input inputMode="decimal" autoFocus value={draft.limit} onChange={e => setDraft({ ...draft, limit: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 5000" /></label>
+        <label>{tr('Monthly limit (PHP)')}<input inputMode="decimal" autoFocus value={draft.limit} onChange={e => setDraft({ ...draft, limit: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 5000" /></label>
       </> : <>
-        <label>Plan name<input autoFocus maxLength={60} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="e.g. Emergency fund, Japan trip" /></label>
-        <div className="form-grid"><label>Target (PHP)<input inputMode="decimal" value={draft.target} onChange={e => setDraft({ ...draft, target: e.target.value.replace(/[^\d.]/g, '') })} placeholder="50000" /></label>
-          <label>Saved so far<input inputMode="decimal" value={draft.saved} onChange={e => setDraft({ ...draft, saved: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" /></label></div>
-        <label>Target date (optional)<input type="date" value={draft.due} onChange={e => setDraft({ ...draft, due: e.target.value })} /></label>
+        <label>{tr('Plan name')}<input autoFocus maxLength={60} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder={tr('e.g. Emergency fund, Japan trip')} /></label>
+        <div className="form-grid"><label>{tr('Target (PHP)')}<input inputMode="decimal" value={draft.target} onChange={e => setDraft({ ...draft, target: e.target.value.replace(/[^\d.]/g, '') })} placeholder="50000" /></label>
+          <label>{tr('Saved so far')}<input inputMode="decimal" value={draft.saved} onChange={e => setDraft({ ...draft, saved: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" /></label></div>
+        <label>{tr('Target date (optional)')}<input type="date" value={draft.due} onChange={e => setDraft({ ...draft, due: e.target.value })} /></label>
       </>}
       {err && <p className="form-error" role="alert">{err}</p>}
       <div className="sheet-actions">
-        {draft.id ? <button type="button" className="danger-button" onClick={async () => { try { if (tab === 'budgets') await onDeleteBudget(draft.id); else onDeletePlan(draft.id); setDraft(null); } catch { setErr('Could not remove it. Please try again.'); } }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
+        {draft.id ? <button type="button" className="danger-button" onClick={async () => { try { if (tab === 'budgets') await onDeleteBudget(draft.id); else onDeletePlan(draft.id); setDraft(null); } catch { setErr(tr('Could not remove it. Please try again.')); } }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
         <button type="submit" className="primary-button">{tr('Save')}</button>
       </div>
     </form>}

@@ -49,26 +49,26 @@ export default function SearchOverlay({ txs, show, refDate, onOpen, onClose }) {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  return <div className={`search-overlay${closing ? ' closing' : ''}`} role="dialog" aria-modal="true" aria-label="Search transactions">
-    <button type="button" className="search-scrim" aria-label="Close search" tabIndex={-1} onClick={() => close()} />
+  return <div className={`search-overlay${closing ? ' closing' : ''}`} role="dialog" aria-modal="true" aria-label={tr('Search transactions')}>
+    <button type="button" className="search-scrim" aria-label={tr('Close search')} tabIndex={-1} onClick={() => close()} />
     <div className="search-panel">
       <div className="search-top">
         <label className="search-bar">
           <Icon name="search" size={18} />
-          <input ref={inputRef} type="search" enterKeyHint="search" autoComplete="off" spellCheck="false" aria-label="Filter transactions" placeholder={tr('Search transactions')} value={query} onChange={(e) => setQuery(e.target.value)} />
-          {query && <button type="button" className="search-clear" aria-label="Clear search" onClick={() => { setQuery(''); inputRef.current?.focus(); }}><Icon name="close" size={14} strokeWidth={2.2} /></button>}
+          <input ref={inputRef} type="search" enterKeyHint="search" autoComplete="off" spellCheck="false" aria-label={tr('Filter transactions')} placeholder={tr('Search transactions')} value={query} onChange={(e) => setQuery(e.target.value)} />
+          {query && <button type="button" className="search-clear" aria-label={tr('Clear search')} onClick={() => { setQuery(''); inputRef.current?.focus(); }}><Icon name="close" size={14} strokeWidth={2.2} /></button>}
         </label>
         <button type="button" className="search-cancel" onClick={() => close()}>{tr('Cancel')}</button>
       </div>
       <div className="search-results" aria-live="polite">
         <p className="search-caption">{terms.length ? (results.length === 1 ? tr('1 result') : tr('{n} results', { n: results.length })) : tr('Recent')}</p>
-        {terms.length > 0 && !results.length && <div className="search-empty"><Icon name="search" size={22} /><p>No transactions match “{query.trim()}”</p></div>}
+        {terms.length > 0 && !results.length && <div className="search-empty"><Icon name="search" size={22} /><p>{tr('No transactions match “{query}”', { query: query.trim() })}</p></div>}
         {results.slice(0, LIMIT).map((t, i) => <button type="button" key={t.id} className="search-row" style={{ '--i': Math.min(i, 8) }} onClick={() => close(() => onOpen(t))}>
           <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} size={38} />
-          <span className="search-main"><strong><Highlight text={t.merchant} terms={terms} /></strong><small><Highlight text={`${t.category || 'Other'} · ${t.accountName || t.method || ''}`} terms={terms} /> · {relativeDay(t.date, refDate)}</small></span>
+          <span className="search-main"><strong><Highlight text={t.merchant} terms={terms} /></strong><small><Highlight text={`${tr(t.category || 'Other')} · ${t.accountName || t.method || ''}`} terms={terms} /> · {relativeDay(t.date, refDate)}</small></span>
           <b className={t.type === 'income' ? 'pos' : ''}>{shown(show, signed(t.type, t.amount, t.currency))}</b>
         </button>)}
-        {results.length > LIMIT && <p className="search-caption">Keep typing to narrow {results.length - LIMIT} more</p>}
+        {results.length > LIMIT && <p className="search-caption">{tr('Keep typing to narrow {n} more', { n: results.length - LIMIT })}</p>}
       </div>
     </div>
   </div>;
