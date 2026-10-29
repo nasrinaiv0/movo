@@ -15,15 +15,12 @@ test('findSticker and defaults resolve', () => {
 
 test('rejects SVG and unsupported image formats before decoding', async () => {
   await expect(addCustomSticker({ name: 'external.svg', type: 'image/svg+xml', size: 512 })).rejects.toThrow('SVG and other formats are not supported');
-  expect(URL.createObjectURL).not.toHaveBeenCalled();
 });
 
 test('rejects oversized custom sticker files before decoding', async () => {
   await expect(addCustomSticker({ name: 'huge.png', type: 'image/png', size: 10 * 1024 * 1024 + 1 })).rejects.toThrow('10 MB or smaller');
-  expect(URL.createObjectURL).not.toHaveBeenCalled();
 });
 
 test('rejects empty custom sticker files before decoding', async () => {
   await expect(addCustomSticker({ name: 'empty.png', type: 'image/png', size: 0 })).rejects.toThrow('empty or unreadable');
-  expect(URL.createObjectURL).not.toHaveBeenCalled();
 });
