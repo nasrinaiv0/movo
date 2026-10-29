@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, SubHeader, SectionTitle, Toggle } from '../components/ui';
+import { RootHeader, SubHeader, SectionTitle } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 
@@ -15,7 +15,7 @@ export default function Profile({ c }) {
     <RootHeader title="Profile" onSearch={() => go('Transactions')} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label="Edit profile">
       <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
-      <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="diamond" size={13} /> NasrinAI Max <Icon name="chevron" size={12} /></em></span>
+      <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="info" size={13} /> Plan details unavailable</em></span>
       <Icon name="chevron" size={18} />
     </button>
     <section className="stat-grid" aria-label="Profile summary">
@@ -38,13 +38,22 @@ export default function Profile({ c }) {
 
     <SectionTitle>Data & Sync</SectionTitle>
     <section className="card menu-card">
-      {[['cloud', 'Cloud Sync', 'Backup and sync your data', 'cloud'], ['database', 'Local Storage', 'Store data on this device', 'local'], ['refresh', 'Auto Categorization', 'Automatically categorize transactions', 'autocat']].map(([icon, title, sub, key]) =>
-        <div className="menu-row" key={key}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong><small>{sub}</small></span><Toggle checked={key === 'cloud' ? prefs.cloudSync && c.cloudMode : prefs[key === 'local' ? 'localStorage' : 'autocat']} onChange={v => (key === 'cloud' ? (c.cloudMode ? setPref('cloudSync', v) : go('Sign in')) : setPref(key === 'local' ? 'localStorage' : 'autocat', v))} label={title} /></div>)}
+      <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go('Sign in')}>
+        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>Cloud Sync</strong><small>{c.cloudMode ? 'Active for your signed-in account' : 'Sign in to use cloud storage'}</small></span><span className="pill tone-blue">{c.cloudMode ? 'Active' : 'Sign in'}</span><Icon name="chevron" size={16} />
+      </button>
+      <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>Local Storage</strong><small>Preferences are stored in this browser; local finance records are not guaranteed to persist.</small></span><span className="pill tone-gray">Automatic</span></div>
+      <div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>Auto Categorization</strong><small>Automatic categorization is not implemented yet.</small></span><span className="pill tone-gray">Unavailable</span></div>
     </section>
 
     <SectionTitle>About</SectionTitle>
     <section className="card menu-card">
-      {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => <div className="menu-row" key={title}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong>{sub && <small>{sub}</small>}</span><Icon name="chevron" size={16} /></div>)}
+      {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => {
+        const action = title === 'Terms of Service' ? () => c.openLegal?.('TermsOfService') : title === 'Privacy Policy' ? () => c.openLegal?.('PrivacyPolicy') : null;
+        const Tag = action ? 'button' : 'div';
+        return <Tag key={title} type={action ? 'button' : undefined} className="menu-row" onClick={action}>
+          <span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{title}</strong>{sub && <small>{sub}</small>}</span>{action && <Icon name="chevron" size={16} />}
+        </Tag>;
+      })}
     </section>
     <section className="card menu-card gap">
       <button type="button" className="menu-row" onClick={exportCsv}><span className="menu-icon bare"><Icon name="download" size={20} /></span><span className="menu-main"><strong>Export transactions (CSV)</strong></span><Icon name="chevron" size={16} /></button>
@@ -68,15 +77,15 @@ export function EditProfile({ c }) {
       {field('Phone Number', 'phone', prefs.phone, false, <span className="flag">🇵🇭 <small>–</small></span>)}
       {field('Location', 'location', prefs.location, false, <Icon name="pin" size={17} />)}
     </section>
-    <SectionTitle action="Manage Plan" onAction={() => c.notify('Plans are not available yet.')}>Plan & Usage</SectionTitle>
+    <SectionTitle>Plan & Usage</SectionTitle>
     <section className="card plan-card">
-      <div className="plan-top"><span className="tile tone-violet"><Icon name="diamond" size={22} /></span><span><strong>NasrinAI Max</strong><small>Your current plan</small></span><Icon name="chevron" size={18} /></div>
-      <div className="usage"><div><b>Usage This Month</b><span>68%</span></div><div className="meter"><i style={{ width: '68%' }} /></div><div><small>342,000 / 500,000 tokens</small><button type="button" className="pill tone-blue" onClick={() => c.notify('Usage details are not available yet.')}>View Details</button></div></div>
+      <div className="plan-top"><span className="tile tone-gray"><Icon name="info" size={22} /></span><span><strong>Plan management unavailable</strong><small>MOVO billing and token-usage data are not connected.</small></span></div>
+      <p className="fineprint">No active plan or usage amount is asserted by this screen. Plan details will appear here when a verified billing integration is available.</p>
     </section>
     <SectionTitle>Connected Accounts</SectionTitle>
     <section className="card menu-card">
-      {[['mail', 'Google', session?.user?.app_metadata?.provider === 'google' ? session.user.email : 'Sign in with Google', session?.user?.app_metadata?.provider === 'google'], ['phone', 'Apple', 'Sign in with Apple', false], ['message', 'Facebook', '', false]].map(([icon, name, sub, on]) =>
-        <div className="menu-row" key={name}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{name}</strong>{sub && <small>{sub}</small>}</span><em className={`pill ${on ? 'tone-green' : 'tone-gray'}`}>{on ? 'Connected' : 'Not Connected'}</em><Icon name="chevron" size={16} /></div>)}
+      {[['mail', 'Google', session?.user?.app_metadata?.provider === 'google' ? session.user.email : 'Google sign-in is available', session?.user?.app_metadata?.provider === 'google'], ['phone', 'Apple', 'Apple sign-in is not available in MOVO yet', false], ['message', 'Facebook', 'Facebook sign-in is not available in MOVO yet', false]].map(([icon, name, sub, on]) =>
+        <div className="menu-row" key={name}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{name}</strong>{sub && <small>{sub}</small>}</span><em className={`pill ${on ? 'tone-green' : 'tone-gray'}`}>{on ? 'Connected' : name === 'Google' ? 'Not connected' : 'Unavailable'}</em></div>)}
     </section>
   </>;
 }
