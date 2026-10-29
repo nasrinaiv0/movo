@@ -15,6 +15,7 @@ import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from '.
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
+import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -81,6 +82,11 @@ function App() {
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
   const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'Groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), note: '' });
+  const [csvRows, setCsvRows] = useState([]);
+  const [csvErrors, setCsvErrors] = useState([]);
+  const [csvFileName, setCsvFileName] = useState('');
+  const [importAccountId, setImportAccountId] = useState('');
+  const [csvImportSummary, setCsvImportSummary] = useState('');
   const systemDark = useSystemDark();
 
   const setPref = useCallback((key, value) => setPrefs(cur => ({ ...cur, [key]: value })), []);
@@ -228,6 +234,73 @@ function App() {
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
   };
+  const handleCsvFile = (file) => {
+    setCsvFileName(file.name || 'transactions.csv');
+    setCsvRows([]); setCsvErrors([]); setCsvImportSummary('');
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const result = parseCsvTransactions(String(reader.result || ''));
+        setCsvRows(result.transactions);
+        setCsvErrors(result.errors);
+        if (!result.transactions.length && !result.errors.length) setCsvErrors([{ line: 1, message: 'No transactions were found in this file.' }]);
+      } catch (err) {
+        setCsvRows([]);
+        setCsvErrors([{ line: 1, message: err?.message || 'Could not read this CSV file.' }]);
+      }
+    };
+    reader.onerror = () => setCsvErrors([{ line: 1, message: 'Could not read this file. Please try another CSV.' }]);
+    reader.readAsText(file);
+  };
+
+  const confirmCsvImport = async () => {
+    if (!csvRows.length) return;
+    setBusy(true); setCsvImportSummary('');
+    const created = []; const errors = [...csvErrors];
+    const fingerprints = new Set(txs.map(t => transactionFingerprint(t)));
+    try {
+      for (let i = 0; i < csvRows.length; i += 1) {
+        const row = csvRows[i];
+        const matchingAccount = formAccounts.find(a => row.account_name && a.name.trim().toLowerCase() === row.account_name.trim().toLowerCase());
+        const accountId = matchingAccount?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
+        if (!accountId) { errors.push({ line: i + 2, message: `Choose a default account or match the account name for “${row.merchant}”.` }); continue; }
+        const matchingDestination = formAccounts.find(a => row.to_account_name && a.name.trim().toLowerCase() === row.to_account_name.trim().toLowerCase());
+        const destinationId = row.transaction_type === 'transfer' ? (matchingDestination?.id || '') : undefined;
+        if (row.transaction_type === 'transfer' && (!destinationId || destinationId === accountId)) {
+          errors.push({ line: i + 2, message: `Transfer “${row.merchant}” needs a different destination account that matches the CSV.` }); continue;
+        }
+        const fingerprint = transactionFingerprint({ ...row, account_id: accountId });
+        if (fingerprints.has(fingerprint)) { errors.push({ line: i + 2, message: `Possible duplicate skipped: “${row.merchant}”.` }); continue; }
+        try {
+          if (cloudMode) {
+            const saved = await createTransaction({
+              merchant: row.merchant, amount: row.amount, transaction_type: row.transaction_type, category: row.category,
+              account_id: accountId, transfer_to_account_id: destinationId, currency: row.currency,
+              occurred_at: row.occurred_at, note: row.note, source: 'csv_import', external_reference: fingerprint,
+            }, session.user.id);
+            created.push(saved);
+          } else {
+            created.push({
+              id: window.crypto?.randomUUID?.() || `csv-${Date.now()}-${i}`,
+              merchant: row.merchant, amount: row.amount, transaction_type: row.transaction_type, category: row.category,
+              account_id: accountId, transfer_to_account_id: destinationId, currency: row.currency,
+              occurred_at: row.occurred_at, note: row.note, source: 'CSV Import', external_reference: fingerprint,
+            });
+          }
+          fingerprints.add(fingerprint);
+        } catch {
+          errors.push({ line: i + 2, message: `Could not save “${row.merchant}”. It was not added.` });
+        }
+      }
+      if (created.length) setRawTxs(cur => [...created, ...cur]);
+      setCsvRows([]);
+      setCsvErrors(errors);
+      const summary = `Imported ${created.length} transaction(s). ${errors.length} row(s) skipped or need attention.`;
+      setCsvImportSummary(summary);
+      notify(summary);
+    } finally { setBusy(false); }
+  };
+
   const saveAccount = async (e) => {
     e.preventDefault(); setError('');
     const name = accountForm.name.trim();
@@ -360,6 +433,7 @@ function App() {
         <div className="sheet-menu">
           <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />Add transaction</button>
           <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />Add account</button>
+          <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />Import CSV</button>
           <button type="button" onClick={exportCsv}><Icon name="download" size={20} />Export CSV</button>
           <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />Choose theme</button>
           {!cloudMode && samplesOn && <button type="button" onClick={clearSamples}><Icon name="trash" size={20} />Remove sample data</button>}
@@ -371,6 +445,23 @@ function App() {
       {sheet?.name === 'search' && <Sheet title="Search transactions" onClose={() => setSheet(null)}>
         <label className="search-field"><Icon name="search" size={18} /><input autoFocus aria-label="Filter transactions" placeholder="Search description, category, account" value={search} onChange={e => setSearch(e.target.value)} /></label>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSearch('')}>Clear</button><button type="button" className="primary-button" onClick={() => setSheet(null)}>Show results</button></div>
+      </Sheet>}
+
+      {sheet?.name === 'importCsv' && <Sheet title="Import transactions" subtitle="CSV is parsed in this browser. Nothing is uploaded until you confirm the import." onClose={() => setSheet(null)} label="Import transactions">
+        <div className="sheet-form">
+          <label>Choose CSV file<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
+          <p className="form-note">Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.</p>
+          {csvFileName && <p className="form-note">File: {csvFileName}</p>}
+          {formAccounts.length > 0 && <label>Default account (used when the CSV account name does not match)<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+          {csvRows.length > 0 && <section className="card pad" aria-label="CSV import preview">
+            <strong>Preview · {csvRows.length} valid row(s)</strong>
+            {csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{row.transaction_type} · {row.category} · {row.account_name || 'default account'}</small></span><b>{money(row.amount, row.currency)}</b></div>)}
+            {csvRows.length > 5 && <p className="form-note">Showing the first 5 rows. All valid rows will be processed.</p>}
+          </section>}
+          {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
+          {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>Rows needing attention</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>Row {item.line}: {item.message}</li>)}</ul>{csvErrors.length > 8 && <p>And {csvErrors.length - 8} more row(s).</p>}</div>}
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
+        </div>
       </Sheet>}
 
       {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="This removes preferences and sample records stored in this browser. Cloud records are not affected." onClose={() => setSheet(null)}>
