@@ -99,7 +99,7 @@ export default function NasrinAIChat({ session, cloudMode, accounts = [], transa
     </header>
     <div className="movo-ai-privacy" role="note">
       <span aria-hidden="true">🔒</span>
-      <span><strong>Your data stays yours.</strong> Answers use only your signed-in MOVO records. Other users cannot access your accounts, transactions, budgets, or chats.</span>
+      <span><strong>Your account stays isolated.</strong> When you opt in, MOVO sends a limited selection of your own records to NasrinAI for the reply. Other users cannot access your accounts, transactions, budgets, or chats.</span>
     </div>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label="Conversation">
       {!messages.length && <div className="movo-ai-welcome">
