@@ -153,6 +153,43 @@ describe('MOVO finance frontend', () => {
     expect(container.firstChild.className).toContain('accent-purple');
   });
 
+  test('search from Home opens the search sheet and shows filtered transaction results', () => {
+    clickButton(container, 'Search');
+    const input = container.querySelector('[aria-label="Filter transactions"]');
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, 'Netflix');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    clickButton(container, 'Show results');
+    expect(container.querySelector('h1').textContent).toBe('Transactions');
+    expect(container.textContent).toContain('Netflix');
+    expect(container.textContent).not.toContain('Puregold');
+  });
+
+  test('unsupported notification and device-security settings are disabled', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    ['Push Notifications', 'Email Notifications', 'Face ID / Touch ID', 'Local Storage', 'Auto Categorization'].forEach(label => {
+      const toggle = container.querySelector('button[aria-label="' + label + '"]');
+      expect(toggle).toBeTruthy();
+      expect(toggle.disabled).toBe(true);
+    });
+    expect(container.textContent).toContain('no push delivery service is connected');
+    expect(container.textContent).toContain('native biometric unlock is not connected');
+  });
+
+  test('turning off in-app alerts hides the notification feed', () => {
+    nav(container, 'Profile');
+    const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Notifications');
+    act(() => notificationSettings.click());
+    const inAppToggle = container.querySelector('button[aria-label="In-App Alerts"]');
+    act(() => inAppToggle.click());
+    clickButton(container, 'Back');
+    expect(container.textContent).toContain('You’re all caught up');
+    expect(container.textContent).not.toContain('Payment Successful');
+  });
+
   test('transaction search filters records', () => {
     nav(container, 'Transactions');
     clickButton(container, 'Search');
@@ -163,11 +200,13 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('Puregold');
   });
 
-  test('NasrinAI opens the private chat and blocks local/demo sessions', () => {
+  test('NasrinAI opens the private chat and provides a sign-in action in local/demo mode', () => {
     nav(container, 'NasrinAI');
     expect(container.querySelector('h1').textContent).toBe('NasrinAI');
     expect(container.textContent).toContain('Your account stays isolated.');
     expect(container.textContent).toContain('Sign in to securely connect your MOVO finances.');
     expect(container.querySelector('textarea#' + 'movo-ai-prompt')).toBeNull();
+    clickButton(container, 'Sign in to MOVO');
+    expect(container.querySelector('h2').textContent).toBe('Welcome back');
   });
 });
