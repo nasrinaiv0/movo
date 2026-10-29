@@ -54,9 +54,9 @@ const P = {
   pin: <><path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" /></>,
   star: <path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z" />,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.8h.01" /></>,
-  download: <path d="M12 3.5v12m-5-5 5 5 5-5M4.5 20h15" />,
+  download: <path d="M12 3.5v12m-5-5 5 5 5-5M4.5 20h15" />,\n  upload: <path d="M12 16V4m-5 5 5-5 5 5M4.5 20h15" />,
   logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3.5h6.5A1.5 1.5 0 0 1 20 5v14a1.5 1.5 0 0 1-1.5 1.5H12" /></>,
-  edit: <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17zM14.5 7.5l3 3" />,
+  edit: <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17zM14.5 7.5l3 3" />,\n  archive: <><rect x="3" y="4.5" width="18" height="5" rx="1.5" /><path d="M5 9.5v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9M9 13h6" /></>,
   phone: <><rect x="7" y="2.5" width="10" height="19" rx="2.6" /><path d="M11 18.5h2" /></>,
   diamond: <path d="M6.5 4h11l4 5.5L12 21 2.5 9.5z M2.5 9.5h19M9 4l-1 5.5L12 21l4-11.5L15 4" />,
 };
