@@ -58,13 +58,20 @@ function normalizeDate(raw) {
 export function transactionFingerprint(transaction) {
   const date = transaction?.occurred_at || transaction?.date || '';
   const dateKey = String(date).slice(0, 10);
-  return [
+  const source = [
     String(transaction?.account_id || transaction?.account_name || '').trim().toLowerCase(),
     String(transaction?.transaction_type || transaction?.type || '').trim().toLowerCase(),
     Number(transaction?.amount || 0).toFixed(2),
     String(transaction?.merchant || '').trim().toLowerCase().replace(/\s+/g, ' '),
     dateKey,
   ].join('|');
+  // Compact stable fingerprint fits the database's 200-character external-reference limit.
+  let hash = 2166136261;
+  for (let i = 0; i < source.length; i += 1) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `movo-csv-${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
 
 /** Parses common bank-export CSVs without uploading or sending the file anywhere. */
