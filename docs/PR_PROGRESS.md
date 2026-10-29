@@ -1,16 +1,17 @@
 # MOVO Pull Request Progress Register
 
-**Last reconciled:** 2026-10-29 (UTC)  
+**Last reconciled:** 2026-10-29 13:02 UTC  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
-| [#18 — PR progress register and template](https://github.com/nasrinaiv0/movo/pull/18) | This register, lifecycle notes, and a reusable PR template. | Open; current branch is `chore/pr-progress-documentation`. | Confirm the latest-head CI and Vercel preview, then merge. |
+| [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Clearer opt-in disclosure, accessible disabled-send guidance, consent/legal-link regression tests. | Open; latest reviewed head `b93afb517dbdaad53dc07423b5b36571439d4c39`; historical CI run [40874336883](https://github.com/nasrinaiv0/movo/actions/runs/40874336883) passed 15 suites / 88 tests, typecheck, and production build. Its branch predates the latest main merge; recheck mergeability and exact-head checks. | Reconcile the branch with current main without losing the consent changes, then complete preview/browser verification. |
+| [#42 — Accessible disabled cloud-auth guidance](https://github.com/nasrinaiv0/movo/pull/42) | Associate disabled Google/email sign-in actions with visible configuration guidance and add regression tests. | Draft; branch `fix/auth-disabled-control-guidance`; exact head `e695e24ecb57dd610226ddffdb2bc1d7846d8b89` passed GitHub Actions run [40877723949](https://github.com/nasrinaiv0/movo/actions/runs/40877723949): 15 suites / 88 tests, typecheck, production build; matching Vercel preview `dpl_2vZfsvxJ77AAjnnRhnCB5QpaJwNu` is READY. | Recheck CI on the latest docs-refresh commit, then complete browser, keyboard, and screen-reader verification before marking ready. |
 
-No other pull requests were open when this register was reconciled.
-
+PR #40 (UI motion refinement) is merged into main as `f1db0aaea96f5fae9983013bb63fcf4087657187`. Reconcile this register against live GitHub state before each follow-up pass.
+  
 ## Recent merged implementation
 
 | PR | Result | Validation / notes |

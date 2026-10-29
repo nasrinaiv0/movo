@@ -145,3 +145,24 @@
 4. Never weaken tests, hide audit findings, suppress meaningful errors, relax RLS, or replace a failed integration with fake success to make CI green.
 5. If a task requires production credentials, legal facts, privileged Supabase settings, or a real owner decision, implement the safe preparatory work and record the exact authorized action still required. Do not pretend that external action was completed.
 6. Update this file as work progresses with evidence and timestamps. A checkbox may be marked complete only when the stated verification level has actually been reached.
+
+
+## Scheduled implementation pass — 2026-10-29 13:00 UTC
+
+- Reviewed live GitHub pull requests before starting: PR #40 is merged into current `main`; PR #41 remains open for the separate NasrinAI financial-context consent disclosure. This pass does not duplicate that consent work.
+- Added an accessible reason for disabled cloud-auth controls in `src/components/AuthPanel.js`: when Supabase is not configured, both Google and email sign-in actions reference the visible configuration note via `aria-describedby` and expose a concise title explanation.
+- Clarified that local-only continuation remains available while cloud sign-in and account creation are unavailable.
+- Added `src/components/AuthPanelConfig.test.js` to cover disabled states, visible explanation, accessible descriptions, and local-only continuation availability.
+- Opened draft PR #42 from dedicated branch `fix/auth-disabled-control-guidance`, based on main SHA `f1db0aaea96f5fae9983013bb63fcf4087657187`.
+- Validation completed on exact head `e695e24ecb57dd610226ddffdb2bc1d7846d8b89`: GitHub Actions run [40877723949](https://github.com/nasrinaiv0/movo/actions/runs/40877723949) passed **15 suites / 88 tests**, `tsc --noEmit`, and the production build. Vercel preview deployment `dpl_2vZfsvxJ77AAjnnRhnCB5QpaJwNu` reached READY for the same SHA at `movo-git-fix-auth-disabled-control-guidance-nasrin-ai.vercel.app`. These results verify automated checks and deployment readiness, not manual browser, keyboard, or screen-reader behavior.
+- No authentication provider settings, server routes, financial records, database schema, Supabase RLS/grants, ownership checks, or secrets were changed.
+
+
+## Read-only production Supabase check — 2026-10-29 13:00 UTC
+
+- Queried the Movo project's public-schema catalog without modifying data or schema.
+- RLS is enabled on `profiles`, `financial_accounts`, `transactions`, `budgets`, `movo_ai_conversations`, `movo_ai_messages`, and `movo_ai_upstream_conversations`.
+- Owner-scoped policies exist on the six user-facing profile/finance/chat tables. The `anon` role has no SELECT privilege on these tables.
+- `movo_ai_upstream_conversations` intentionally has no policies and neither `anon` nor `authenticated` has SELECT privilege. Preserve this server-only boundary; do not add client policies to silence the informational advisor.
+- Supabase Security Advisor still reports leaked-password protection disabled. This remains an owner-authorized Auth configuration blocker. Performance Advisor lists seven unused indexes as informational findings; do not remove them without query evidence and a reviewed migration.
+- No RLS, grants, data, auth settings, or secrets were changed.
