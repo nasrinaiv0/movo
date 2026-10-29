@@ -943,3 +943,7 @@ html.appearance-reveal *, html.appearance-reveal *::before, html.appearance-reve
 /* ===== Wallpaper stickers ===== */
 .credit-card video.sticker-art { pointer-events: none; }
 .cc-live { position: absolute; z-index: 3; top: 3.4cqw; left: 50%; transform: translateX(-50%); padding: .6cqw 1.8cqw; border-radius: 999px; background: rgba(0,0,0,.55); color: #fff; font-size: 2.6cqw; font-weight: 800; letter-spacing: .08em; }
+
+
+/* Consent/send prerequisites stay visible and linked to the disabled action. */
+.movo-ai-consent-guidance { margin: 0; padding: 0 3px 2px 29px; color: var(--muted); font-size: 11px; line-height: 1.45; }
