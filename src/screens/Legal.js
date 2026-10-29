@@ -58,25 +58,33 @@ export function TermsOfService({ c }) {
       <p>NasrinAI does not execute financial transactions for you through MOVO chat. You remain responsible for checking calculations and making financial decisions. See the <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('PrivacyPolicy')}>Privacy Policy</button> for details about data handling.</p>
     </section>
     <section className="legal-section">
-      <h2>5. Availability and changes</h2>
+      <h2>5. MOVO content and intellectual property</h2>
+      <p>Except for your own records, third-party materials, and components governed by their own licences, the MOVO name, interface, software, and documentation belong to the service operator or its licensors. You may use MOVO for your own lawful personal tracking. Do not copy, redistribute, reverse engineer, or misuse the service except where applicable law permits it.</p>
+    </section>
+    <section className="legal-section">
+      <h2>6. Availability and changes</h2>
       <p>Features may be in preview, unavailable, or changed as the service develops. We will label unsupported features where practical and may temporarily suspend functionality to maintain security, reliability, or comply with law. No particular uptime, backup, or recovery time is guaranteed.</p>
     </section>
     <section className="legal-section">
-      <h2>6. Your content and acceptable use</h2>
+      <h2>7. Your content and acceptable use</h2>
       <p>You retain responsibility for the information you enter or import and must have the rights and authority needed to use it. You authorize MOVO to process that information only as needed to provide the features you request, secure the service, and comply with applicable law. Do not upload malware, unlawful content, or another person's information without proper authority.</p>
     </section>
     <section className="legal-section">
-      <h2>7. Disclaimers and limits</h2>
+      <h2>8. Disclaimers and limits</h2>
       <p>To the extent permitted by applicable law, MOVO is provided on an “as available” basis. We do not warrant that every calculation, categorization, import, AI response, or record will be error-free. You should independently verify important information and keep backups of records that matter to you.</p>
       <p>Nothing in these terms excludes or limits a right or liability that cannot lawfully be excluded or limited. To the extent permitted by law, MOVO is not responsible for indirect losses arising from your reliance on unverified records or AI-generated information.</p>
     </section>
     <section className="legal-section">
-      <h2>8. Suspension, deletion, and changes to these terms</h2>
+      <h2>9. Suspension, deletion, and changes to these terms</h2>
       <p>You may stop using MOVO at any time. You can sign out of a cloud account or clear local browser data, but clearing local data does not delete cloud records. To request deletion of cloud account data, contact the service team and complete any reasonable identity verification. Some records may need to be retained where lawfully required or to resolve security, fraud, or legal issues.</p>
       <p>We may update these terms as the product changes. We will update the effective date above when the text changes. Continued use after an update is subject to applicable law and any consent or notice requirements that apply.</p>
     </section>
     <section className="legal-section">
-      <h2>9. Contact</h2>
+      <h2>10. Applicable law and resolving disputes</h2>
+      <p>These terms are subject to the laws and mandatory consumer protections that apply to the service and your use of it. If a concern arises, please contact the service team first so we can try to resolve it. Nothing in these terms removes rights that cannot be waived under applicable law.</p>
+    </section>
+    <section className="legal-section">
+      <h2>11. Contact</h2>
       <p>For questions about these terms, email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>.</p>
     </section>
   </LegalPage>;
