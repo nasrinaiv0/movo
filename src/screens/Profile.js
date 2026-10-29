@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, SubHeader, SectionTitle, Toggle } from '../components/ui';
+import { RootHeader, SubHeader, SectionTitle } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 
@@ -85,7 +85,7 @@ export function EditProfile({ c }) {
     <SectionTitle>Connected Accounts</SectionTitle>
     <section className="card menu-card">
       {[['mail', 'Google', session?.user?.app_metadata?.provider === 'google' ? session.user.email : 'Sign in with Google', session?.user?.app_metadata?.provider === 'google'], ['phone', 'Apple', 'Sign in with Apple', false], ['message', 'Facebook', '', false]].map(([icon, name, sub, on]) =>
-        <div className="menu-row" key={name}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{name}</strong>{sub && <small>{sub}</small>}</span><em className={`pill ${on ? 'tone-green' : 'tone-gray'}`}>{on ? 'Connected' : 'Not Connected'}</em><Icon name="chevron" size={16} /></div>)}
+        <div className="menu-row" key={name}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{name}</strong>{sub && <small>{sub}</small>}</span><em className={`pill ${on ? 'tone-green' : 'tone-gray'}`}>{on ? 'Connected' : 'Not Connected'}</em></div>)}
     </section>
   </>;
 }
