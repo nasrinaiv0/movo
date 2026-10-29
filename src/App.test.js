@@ -124,6 +124,8 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Profile');
     expect(container.querySelector('h1').textContent).toBe('Profile');
     expect(container.textContent).toContain('Data & Sync');
+    expect(container.textContent).toContain('Manually entered records persist across reloads in this browser');
+    expect(container.textContent).toContain('not synced to other devices or encrypted by MOVO');
     clickButton(container, 'Settings');
     expect(container.querySelector('h1').textContent).toBe('Settings');
     clickButton(container, 'Back');
