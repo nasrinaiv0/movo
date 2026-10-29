@@ -19,7 +19,7 @@ function AccountRow({ a, show, onClick }) {
 export function CardArt({ a, show }) {
   return <div className={`credit-card brand-${a.brand || 'blue'}`}>
     <div className="cc-top"><span className="cc-name">{a.name}</span><span className="cc-net">{a.institution_name}</span></div>
-    <div className="cc-bottom"><span>•••• {a.mask || '0000'}</span><b>{shown(show, money(a.balance, a.currency))}</b></div>
+    <div className="cc-bottom"><span>{a.mask ? `•••• ${a.mask}` : 'No card number'}</span><b>{shown(show, money(a.balance, a.currency))}</b></div>
   </div>;
 }
 
