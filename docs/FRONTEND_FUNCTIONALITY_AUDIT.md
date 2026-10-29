@@ -145,3 +145,14 @@
 4. Never weaken tests, hide audit findings, suppress meaningful errors, relax RLS, or replace a failed integration with fake success to make CI green.
 5. If a task requires production credentials, legal facts, privileged Supabase settings, or a real owner decision, implement the safe preparatory work and record the exact authorized action still required. Do not pretend that external action was completed.
 6. Update this file as work progresses with evidence and timestamps. A checkbox may be marked complete only when the stated verification level has actually been reached.
+
+
+## Scheduled implementation pass — 2026-10-29 13:00 UTC
+
+- Reviewed live GitHub pull requests before starting: PR #40 is merged into current `main`; PR #41 remains open for the separate NasrinAI financial-context consent disclosure. This pass does not duplicate that consent work.
+- Added an accessible reason for disabled cloud-auth controls in `src/components/AuthPanel.js`: when Supabase is not configured, both Google and email sign-in actions reference the visible configuration note via `aria-describedby` and expose a concise title explanation.
+- Clarified that local-only continuation remains available while cloud sign-in and account creation are unavailable.
+- Added `src/components/AuthPanelConfig.test.js` to cover disabled states, visible explanation, accessible descriptions, and local-only continuation availability.
+- Opened draft PR #42 from dedicated branch `fix/auth-disabled-control-guidance`, based on main SHA `f1db0aaea96f5fae9983013bb63fcf4087657187`.
+- Validation status for PR #42 at this timestamp: GitHub Actions and Vercel preview checks are pending; no local test run is available in this editing session. Do not treat the new tests as passed until the exact PR head's CI result confirms them.
+- No authentication provider settings, server routes, financial records, database schema, Supabase RLS/grants, ownership checks, or secrets were changed.
