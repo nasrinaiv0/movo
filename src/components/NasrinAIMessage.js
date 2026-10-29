@@ -31,6 +31,9 @@ function formatChartValue(value, series = {}) {
 
 function MiniChart({ spec }) {
   if (!spec || !Array.isArray(spec.data) || !spec.data.length) return null;
+  if (spec.data.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
+    return <p className="movo-ai-chart-note">Chart data is invalid. Use a table instead.</p>;
+  }
   const type = ['bar', 'line', 'pie'].includes(spec.chartType) ? spec.chartType : 'bar';
   const xKey = typeof spec.xKey === 'string' ? spec.xKey : Object.keys(spec.data[0])[0];
   const series = Array.isArray(spec.series) ? spec.series.filter(s => s && typeof s.dataKey === 'string').slice(0, 3) : [];
