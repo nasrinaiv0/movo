@@ -1,4 +1,4 @@
-const { buildFinancialContext, buildPrompt, extractReply, allowedOrigin } = require('./chat');
+const { buildFinancialContext, buildPrompt, extractReply, allowedOrigin, selectRelevantTransactions } = require('./chat');
 
 describe('MOVO NasrinAI chat isolation helpers', () => {
   test('builds a bounded financial context from only the supplied user-scoped rows', () => {
@@ -12,6 +12,16 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     expect(context.recent_transactions[0].amount).toBe(120);
     expect(context.budgets[0].monthly_limit).toBe(5000);
     expect(JSON.stringify(context)).not.toContain('user_id');
+  });
+
+  test('retrieval prioritizes transactions matching the current question', () => {
+    const rows = [
+      { merchant: 'Groceries Market', category: 'Food', transaction_type: 'expense' },
+      { merchant: 'Electricity Bill', category: 'Bills', transaction_type: 'expense' },
+      { merchant: 'Coffee Shop', category: 'Food', transaction_type: 'expense' }
+    ];
+    expect(selectRelevantTransactions(rows, 'show groceries spending').map((row) => row.merchant)).toEqual(['Groceries Market']);
+    expect(selectRelevantTransactions(rows, 'summarize my spending')).toHaveLength(3);
   });
 
   test('prompt treats supplied records as data and forbids cross-user disclosure', () => {
