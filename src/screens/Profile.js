@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, SubHeader, SectionTitle } from '../components/ui';
 import { money, shown } from '../lib/format';
@@ -66,17 +66,42 @@ export default function Profile({ c }) {
 
 export function EditProfile({ c }) {
   const { user, prefs, setPref, go, session } = c;
-  const field = (label, key, value, readOnly, extra) => <label className="field-row"><span>{label}</span>
-    <span className="field-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} onChange={e => setPref(key, e.target.value)} /></span></label>;
+  const [draft, setDraft] = useState(() => ({
+    profileName: prefs.profileName || user.name,
+    phone: prefs.phone || '',
+    location: prefs.location || '',
+  }));
+  const [error, setError] = useState('');
+  const saveProfile = (event) => {
+    event.preventDefault();
+    const profileName = draft.profileName.trim();
+    const phone = draft.phone.trim();
+    const location = draft.location.trim();
+    if (!profileName) { setError('Enter your name before saving.'); return; }
+    if (profileName.length > 100 || phone.length > 40 || location.length > 100) {
+      setError('Name must be 100 characters or fewer, phone 40, and location 100.');
+      return;
+    }
+    setError('');
+    setPref('profileName', profileName);
+    setPref('phone', phone);
+    setPref('location', location);
+    c.notify('Profile saved on this device.');
+    go('Profile');
+  };
+  const field = (label, key, value, readOnly, extra, maxLength) => <label className="field-row"><span>{label}</span>
+    <span className="field-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} maxLength={maxLength} onChange={e => setDraft(current => ({ ...current, [key]: e.target.value }))} /></span></label>;
   return <>
-    <SubHeader title="Profile" onBack={() => go('Profile')} right={<button type="button" className="link-button strong" onClick={() => { c.notify('Profile saved on this device.'); go('Profile'); }}>Save</button>} />
-    <div className="avatar-edit"><span className="avatar huge">{user.initial}</span></div>
-    <section className="card form-card">
-      {field('Full Name', 'profileName', prefs.profileName || user.name)}
+    <SubHeader title="Profile" onBack={() => go('Profile')} right={<button type="submit" form="movo-profile-form" className="link-button strong">Save</button>} />
+    <div className="avatar-edit"><span className="avatar huge">{(draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span></div>
+    <form id="movo-profile-form" className="card form-card" onSubmit={saveProfile} noValidate>
+      <p className="fineprint">Name, phone number, and location are saved in this browser only. Your sign-in email is managed by your authentication provider.</p>
+      {field('Full Name', 'profileName', draft.profileName, false, undefined, 100)}
       {field('Email', 'email', user.email, true)}
-      {field('Phone Number', 'phone', prefs.phone, false, <span className="flag">🇵🇭 <small>–</small></span>)}
-      {field('Location', 'location', prefs.location, false, <Icon name="pin" size={17} />)}
-    </section>
+      {field('Phone Number', 'phone', draft.phone, false, <span className="flag">🇵🇭 <small>–</small></span>, 40)}
+      {field('Location', 'location', draft.location, false, <Icon name="pin" size={17} />, 100)}
+      {error && <p className="form-error" role="alert">{error}</p>}
+    </form>
     <SectionTitle>Plan & Usage</SectionTitle>
     <section className="card plan-card">
       <div className="plan-top"><span className="tile tone-gray"><Icon name="info" size={22} /></span><span><strong>Plan management unavailable</strong><small>MOVO billing and token-usage data are not connected.</small></span></div>
