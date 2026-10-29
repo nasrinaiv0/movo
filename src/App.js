@@ -10,7 +10,7 @@ import Profile, { EditProfile } from './screens/Profile';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
 import { ACCENTS } from './screens/Settings';
@@ -125,7 +125,7 @@ function App() {
   /* ---------- derived data ---------- */
   const baseAccounts = cloudMode ? cloudAccounts : [...(samplesOn ? demoAccounts : []), ...localAccounts];
   const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts]);
-  const accountsView = useMemo(() => baseAccounts.map(a => {
+  const accountsView = useMemo(() => baseAccounts.filter(a => !a.is_archived).map(a => {
     const delta = txs.reduce((s, t) => {
       if (!cloudMode && t.source === 'Sample') return s;
       if (t.account_id === a.id) return s + (t.type === 'income' ? t.amount : -t.amount);
@@ -157,13 +157,13 @@ function App() {
   const homeMonth = useMemo(() => statsFor(refMonth), [statsFor, refMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
   const stats = useMemo(() => {
-    const balance = accountsView.length ? accountsView.reduce((s, a) => s + a.balance, 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+    const balance = baseAccounts.length ? accountsView.reduce((s, a) => s + a.balance, 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
     let running = balance - homeMonth.net; const daily = new Map();
     homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
     let points = [balance - homeMonth.net, ...daily.values()];
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
     return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeMonth]);
+  }, [accountsView, txs, homeMonth, baseAccounts.length]);
   const deltas = useMemo(() => {
     if (!cloudMode) return demoDeltas;
     const prev = statsFor(monthsBack(refMonth, 1));
@@ -199,6 +199,14 @@ function App() {
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
   const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id })); setSheet({ name: 'transaction', type }); };
+  const openEditAccount = (account) => {
+    setError('');
+    setAccountForm({
+      name: account.name || '', account_type: account.account_type || 'other',
+      institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
+    });
+    setSheet({ name: 'account', type: account.account_type, id: account.id });
+  };
   const openEditTransaction = (t) => {
     setError('');
     setForm({
@@ -307,28 +315,47 @@ function App() {
     const openingBalance = Number(accountForm.opening_balance || 0);
     if (!name) { setError('Enter an account name.'); return; }
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }
+    const editingId = sheet?.name === 'account' ? sheet.id : null;
     setBusy(true);
     try {
       if (cloudMode && session?.user) {
-        const a = await createAccount({ ...accountForm, opening_balance: openingBalance }, session.user.id);
-        setCloudAccounts(cur => [...cur, a]);
-        notify('Account added to your signed-in MOVO account.');
+        if (editingId) {
+          const a = await updateAccount(editingId, { ...accountForm, opening_balance: openingBalance });
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item));
+          notify('Account updated in your MOVO account.');
+        } else {
+          const a = await createAccount({ ...accountForm, opening_balance: openingBalance }, session.user.id);
+          setCloudAccounts(cur => [...cur, a]);
+          notify('Account added to your signed-in MOVO account.');
+        }
       } else {
+        const existing = localAccounts.find(a => a.id === editingId);
         const a = {
-          id: window.crypto?.randomUUID?.() || `local-account-${Date.now()}`,
+          ...(existing || {}),
+          id: editingId || window.crypto?.randomUUID?.() || `local-account-${Date.now()}`,
           name: name.slice(0, 100),
           account_type: accountForm.account_type || sheet?.type || 'other',
           institution_name: accountForm.institution_name.trim().slice(0, 100),
-          currency: 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
-          balance: Math.round(openingBalance * 100) / 100, is_archived: false, mask: '', brand: 'blue', source: 'Manual',
+          currency: existing?.currency || 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
+          balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
-        setLocalAccounts(cur => [...cur, a]);
-        notify('Account saved on this device only.');
+        setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
+        notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
       }
       setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
       setSheet(null);
-    } catch { setError('Could not add account. Please review the details and try again.'); }
+    } catch { setError(editingId ? 'Could not update account. Please review the details and try again.' : 'Could not add account. Please review the details and try again.'); }
     finally { setBusy(false); }
+  };
+  const archiveAccount = async (account) => {
+    if (!window.confirm(`Archive “${account.name}”? Its transaction history will remain available.`)) return;
+    try {
+      if (cloudMode) {
+        await updateAccount(account.id, { is_archived: true });
+        setCloudAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
+      } else setLocalAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
+      setSheet(null); notify('Account archived. Its transaction history was kept.');
+    } catch { notify('Could not archive this account. Please try again.'); }
   };
   const removeTransaction = async (t) => {
     if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
@@ -417,7 +444,7 @@ function App() {
         </form>
       </Sheet>}
 
-      {sheet?.name === 'account' && <Sheet title="Add account" subtitle="Track a card, bank account or e-wallet." onClose={() => { setSheet(null); setError(''); }} label="Add account">
+      {sheet?.name === 'account' && <Sheet title={sheet.id ? "Edit account" : "Add account"} subtitle={sheet.id ? "Update the name, type, institution or opening balance." : "Track a card, bank account or e-wallet."} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? "Edit account" : "Add account"}>
         <form className="sheet-form" onSubmit={saveAccount}>
           <label>Account name<input required maxLength="100" value={accountForm.name} onChange={e => setAccountForm({ ...accountForm, name: e.target.value })} placeholder="e.g. Everyday account" /></label>
           <label>Account type<select value={accountForm.account_type === 'bank' && sheet.type ? sheet.type : accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
@@ -425,7 +452,7 @@ function App() {
           <label>Opening balance (PHP)<input type="number" step="0.01" max="999999999999" value={accountForm.opening_balance} onChange={e => setAccountForm({ ...accountForm, opening_balance: e.target.value })} /></label>
           {!cloudMode && <p className="form-note">This account will be stored only on this device. Sign in to enable cloud sync.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Add account'}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Add account'}</button></div>
         </form>
       </Sheet>}
 
@@ -470,7 +497,7 @@ function App() {
 
       {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label="Account details">
         <dl className="detail-list"><div><dt>Institution</dt><dd>{accountChoice.institution_name || 'Personal account'}</dd></div><div><dt>Number</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>Balance</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
-        <div className="sheet-actions"><button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>Add transaction</button></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> Edit account</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> Archive account</button><button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>Add transaction</button></div>
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabel(detailTx.date)}`} onClose={() => setSheet(null)} label="Transaction details">
