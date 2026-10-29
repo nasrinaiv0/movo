@@ -92,7 +92,9 @@ function buildPrompt(message, context) {
 function extractReply(data) {
   const candidates = [
     data?.reply, data?.text, data?.response, data?.message,
+    data?.message?.content, data?.message?.text, data?.message?.body,
     data?.data?.reply, data?.data?.text, data?.data?.response,
+    data?.data?.message?.content, data?.data?.message?.text,
     data?.assistant?.content, data?.data?.assistant?.content
   ];
   const found = candidates.find((v) => typeof v === 'string' && v.trim());
