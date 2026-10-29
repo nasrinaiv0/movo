@@ -100,6 +100,10 @@ function App() {
     finally { setBusy(false); setAuthReady(true); }
   }, []);
   useEffect(() => {
+    if (sheet?.name === 'account' && sheet.type) setAccountForm(current => current.account_type === sheet.type ? current : { ...current, account_type: sheet.type });
+  }, [sheet?.name, sheet?.type]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const searchParams = new URLSearchParams(window.location.search);
@@ -265,7 +269,7 @@ function App() {
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView,
-    walletFilter, setWalletFilter, selectedCard, setSelectedCardId,
+    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch,
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
   };
@@ -339,7 +343,7 @@ function App() {
       {sheet?.name === 'account' && <Sheet title="Add account" subtitle="Track a card, bank account or e-wallet." onClose={() => { setSheet(null); setError(''); }} label="Add account">
         <form className="sheet-form" onSubmit={saveAccount}>
           <label>Account name<input required maxLength="100" value={accountForm.name} onChange={e => setAccountForm({ ...accountForm, name: e.target.value })} placeholder="e.g. Everyday account" /></label>
-          <label>Account type<select value={accountForm.account_type === 'bank' && sheet.type ? sheet.type : accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
+          <label>Account type<select value={accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
           <label>Bank / institution (optional)<input maxLength="100" value={accountForm.institution_name} onChange={e => setAccountForm({ ...accountForm, institution_name: e.target.value })} placeholder="Institution name" /></label>
           <label>Opening balance (PHP)<input type="number" step="0.01" max="999999999999" value={accountForm.opening_balance} onChange={e => setAccountForm({ ...accountForm, opening_balance: e.target.value })} /></label>
           {!cloudMode && <p className="form-note">Sign in to create cloud accounts.</p>}
