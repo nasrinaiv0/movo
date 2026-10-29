@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet } from '../components/ui';
+import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet, Money } from '../components/ui';
 import { money, shown } from '../lib/format';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets'];
@@ -46,7 +46,7 @@ export default function Wallet({ c }) {
     {walletFilter === 'All' && <>
       <section className="card balance-card compact" aria-label="Total balance">
         <div className="balance-label">Total Balance <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
-        <div className="balance-amount">{shown(show, money(stats.balance))}</div>
+        <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
         {c.deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={12} /> +{c.deltas.balance}% vs last month</span>}
         <div className="balance-art"><Sparkline values={stats.trend} width={200} height={90} /></div>
       </section>
@@ -56,7 +56,7 @@ export default function Wallet({ c }) {
           return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label)}>
             <span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={17} /></span>
             <small>{label === 'Bank Accounts' ? 'Bank Accounts' : label}</small>
-            <strong>{shown(show, money(sum, 'PHP', 0))}</strong>
+            <strong><Money value={sum} show={show} digits={0} /></strong>
             <em className="pct">{Math.round((sum / total) * 100)}%</em>
           </button>;
         })}

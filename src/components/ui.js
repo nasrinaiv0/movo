@@ -1,6 +1,13 @@
-import React from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
-import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed } from '../lib/format';
+import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed, HIDDEN } from '../lib/format';
+import { canAnimate, useCountUp } from '../lib/motion';
+
+/** Animated currency amount: counts up when it appears and eases between values. */
+export function Money({ value, show, digits = 2, currency = 'PHP' }) {
+  const v = useCountUp(Number(value) || 0);
+  return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : HIDDEN}</span>;
+}
 
 export function Toggle({ checked, onChange, label }) {
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`toggle${checked ? ' on' : ''}`} onClick={() => { try { navigator.vibrate?.(8); } catch { /* unsupported */ } onChange(!checked); }}><span /></button>;
@@ -38,10 +45,19 @@ export function Tile({ name, size = 44, icon, tone, radius }) {
 }
 
 export function Chips({ items, value, onChange, trailing, label }) {
-  return <div className="chip-row" role="group" aria-label={label}>
+  const row = useRef(null);
+  const [ind, setInd] = useState(null);
+  const [ready, setReady] = useState(false);
+  useLayoutEffect(() => {
+    const el = row.current?.querySelector('button[data-chip][aria-pressed="true"]');
+    if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [value, items.length]);
+  useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
+  return <div className="chip-row" role="group" aria-label={label} ref={row}>
+    {ind && <span className={`chip-ind${ready ? ' ready' : ''}`} aria-hidden="true" style={{ transform: `translateX(${ind.left}px)`, width: ind.width }} />}
     {items.map(item => {
       const key = typeof item === 'string' ? item : item.key; const text = typeof item === 'string' ? item : item.label;
-      return <button key={key} type="button" className={value === key ? 'selected' : ''} aria-pressed={value === key} onClick={() => onChange(key)}>{text}{item.dot && <i className="red-dot inline" />}</button>;
+      return <button key={key} data-chip type="button" className={value === key ? 'selected' : ''} aria-pressed={value === key} onClick={() => onChange(key)}>{text}{item.dot && <i className="red-dot inline" />}</button>;
     })}
     {trailing}
   </div>;
@@ -52,10 +68,25 @@ export function SectionTitle({ children, action, onAction }) {
 }
 
 export function Sheet({ title, subtitle, onClose, children, label }) {
-  return <div className="sheet-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <section className="sheet" role="dialog" aria-modal="true" aria-label={label || title}>
-      <span className="sheet-grabber" />
-      <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={onClose}><Icon name="close" size={18} /></button>
+  const [closing, setClosing] = useState(false);
+  const [dy, setDy] = useState(0);
+  const drag = useRef(null);
+  const close = () => {
+    if (closing) return;
+    if (!canAnimate()) { onClose(); return; }
+    setClosing(true); setTimeout(onClose, 230);
+  };
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey); return () => document.removeEventListener('keydown', onKey);
+  }); // eslint-disable-line
+  const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
+  const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
+  const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };
+  return <div className={`sheet-backdrop${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    <section className={`sheet${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
+      <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>
+      <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={close}><Icon name="close" size={18} /></button>
       {title && <h2 className="sheet-title">{title}</h2>}
       {subtitle && <p className="sheet-sub">{subtitle}</p>}
       {children}
@@ -74,7 +105,7 @@ export function Sparkline({ values, width = 170, height = 70 }) {
 export function Bars({ values, startLabel, endLabel }) {
   const max = Math.max(...values, 1); const last = values.map((v, i) => (v > 0 ? i : -1)).reduce((a, b) => Math.max(a, b), -1);
   return <div className="bars" aria-hidden="true">
-    <div className="bars-plot">{values.map((v, i) => <span key={i} className={i === last ? 'hot' : ''} style={{ height: `${Math.max(8, (v / max) * 100)}%` }} />)}</div>
+    <div className="bars-plot">{values.map((v, i) => <span key={i} className={i === last ? 'hot' : ''} style={{ height: `${Math.max(8, (v / max) * 100)}%`, '--i': i }} />)}</div>
     <div className="bars-axis"><span>{startLabel}</span><span>{endLabel}</span></div>
   </div>;
 }
@@ -82,13 +113,14 @@ export function Bars({ values, startLabel, endLabel }) {
 export function Donut({ data, total, caption, show, size = 132 }) {
   let acc = 0;
   const stops = data.length ? data.map(d => { const from = acc; acc += d.percent; return `${d.color} ${from}% ${acc}%`; }).join(',') : '#d7dbe6 0 100%';
-  return <div className="donut" style={{ width: size, height: size, background: `conic-gradient(${stops})` }}>
-    <div className="donut-hole"><strong>{show ? money(total, 'PHP', 0) : '₱ ••••'}</strong><span>{caption}</span></div>
+  return <div className="donut" style={{ width: size, height: size }}>
+    <i className="donut-ring" style={{ background: `conic-gradient(${stops})` }} />
+    <div className="donut-hole"><strong><Money value={total} show={show} digits={0} /></strong><span>{caption}</span></div>
   </div>;
 }
 
 export function Legend({ data }) {
-  return <ul className="legend">{data.map(d => <li key={d.key}><i style={{ background: d.color }} /><span>{d.key}</span><b>{d.percent}%</b></li>)}</ul>;
+  return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{d.key}</span><b>{d.percent}%</b></li>)}</ul>;
 }
 
 export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly }) {

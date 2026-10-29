@@ -1,7 +1,7 @@
 import React from 'react';
 import Icon from '../components/Icon';
-import { IconButton, SectionTitle, Sparkline, Donut, Legend, TransactionRow } from '../components/ui';
-import { money, shown, greeting } from '../lib/format';
+import { IconButton, SectionTitle, Sparkline, Donut, Legend, TransactionRow, Money } from '../components/ui';
+import { greeting } from '../lib/format';
 
 const Delta = ({ value, invert }) => {
   if (value == null) return null;
@@ -31,7 +31,7 @@ export default function Home({ c }) {
       <div className="balance-label">Total Balance
         <button type="button" className="plain-icon" aria-label={show ? 'Hide balances' : 'Show balances'} onClick={() => setShow(!show)}><Icon name="eye" size={18} /></button>
       </div>
-      <div className="balance-amount">{shown(show, money(stats.balance))}</div>
+      <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
       {deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={13} /> {deltas.balance >= 0 ? '+' : '−'}{Math.abs(deltas.balance)}% vs last month</span>}
       <div className="balance-art"><Sparkline values={stats.trend} width={260} height={110} /></div>
       <button type="button" className="round-button balance-go" aria-label="Open wallet" onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
@@ -40,7 +40,7 @@ export default function Home({ c }) {
     <section className="stat-grid" aria-label="Financial summary">
       {tiles.map(t => <article className={`card stat-card tint-${t.tone}`} key={t.label}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{t.label}</span></div>
-        <strong>{shown(show, money(t.value, 'PHP', 0))}</strong>
+        <strong><Money value={t.value} show={show} digits={0} /></strong>
         <Delta value={t.delta} invert={t.invert} />
       </article>)}
     </section>
