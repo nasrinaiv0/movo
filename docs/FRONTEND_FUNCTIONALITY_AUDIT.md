@@ -74,3 +74,74 @@
 - The Supabase Security Advisor still reports leaked-password protection disabled. It also reports the no-policy RLS finding for the upstream mapping as informational; this is intentional only while browser grants remain absent and server-side service-role access is kept private.
 - Recent production runtime errors still show 7 upstream HTTP 401 responses from `/api/nasrinai/chat` in the 24-hour window, last observed at 2026-10-29T05:42:54Z. No successful authenticated production chat request has been confirmed in this run.
 - This follow-up changed no Supabase schema, RLS policies, grants, or secrets. Do not treat the passing frontend CI or READY deployment as proof that the remaining auth/legal/security blockers are resolved.
+
+
+## Claude execution directive — production completion (2026-10-29)
+
+**This is the active execution checklist.** Claude: continue working through the tasks below in the repository; do not stop at a plan, a passing build, a preview deployment, or a documentation-only update. Work in small, reviewable commits/PRs. Re-read the live PRs and latest workflow runs before changing code because this document may lag behind GitHub. Never claim a task is complete without attached evidence from the exact tested commit or live environment.
+
+### P0 — Restore a green, reproducible baseline
+
+- [ ] Inspect the latest state and checks for [PR #38](https://github.com/nasrinaiv0/movo/pull/38) and all open PRs before editing; avoid duplicating work already present in a branch.
+- [ ] Retrieve the failed GitHub Actions job logs for the latest PR #38 run; identify the first root-cause failure, fix it, and rerun the complete CI workflow. Do not merge PR #38 while any required check is failing or pending.
+- [ ] Verify the PR's current head SHA, all required checks, and Vercel preview status after every fix. Update this audit with the actual result and exact SHA.
+- [ ] Run and record the repository's canonical commands from `package.json`: complete tests, TypeScript/typecheck, production build, lint (if configured), and dependency audit. Do not substitute a partial test run for the full suite.
+
+### P0 — Repair and verify production NasrinAI authentication
+
+- [ ] Trace the production `/api/nasrinai/chat` HTTP 401 end-to-end: browser request, server route, environment/config validation, provider authentication, and upstream response handling. Distinguish missing/invalid configuration from user/session authorization and provider-side rejection.
+- [ ] Never print, commit, return to the browser, or include secret values in logs, screenshots, PR descriptions, or tests. Log only safe metadata and redacted error details. Do not expose upstream credentials or conversation-mapping IDs to browser roles.
+- [ ] Confirm required environment variable names and configuration in deployment settings without reading or disclosing their values. If a secret is missing/invalid, document the exact variable name and request authorized owner action rather than inventing, rotating, or exposing a credential.
+- [ ] Add/adjust regression tests for missing configuration, unauthenticated requests, invalid upstream credentials, upstream non-2xx responses, timeouts, and safe user-facing errors.
+- [ ] After an authorized fix, verify a successful authenticated request against the production deployment and record timestamp, deployment/commit, HTTP outcome, and a redacted trace identifier. Until a successful live request is proven, leave this blocker open.
+
+### P0 — Close the production security gates
+
+- [ ] Re-check Supabase RLS and grants read-only first. Verify cross-user denial for profiles, financial accounts, transactions, budgets, chat records, and every new table/path. Keep upstream conversation mappings server-only; do not add browser policies merely to silence an advisor warning.
+- [ ] Enable Supabase Auth leaked-password protection through the authorized Supabase project settings owner. If Claude lacks permission, leave a precise owner-action blocker; do not claim it is enabled.
+- [ ] Re-run current dependency audit and group findings by direct/transitive dependency, exploitability, and fix availability. Prefer targeted compatible upgrades; avoid blanket forced upgrades that introduce breaking changes. Add regression coverage and rerun the complete suite after each remediation batch.
+- [ ] Check secrets in tracked files, Git history where accessible, client bundles, source maps, logs, preview output, and browser network payloads. If a credential is actually exposed, follow the authorized provider's rotation procedure; never copy the value into the repository.
+- [ ] Verify authorization on every server endpoint: authentication, owner/tenant scoping, input schema validation, rate limits where relevant, safe error responses, and no trust in client-supplied owner IDs.
+- [ ] Verify data deletion/clearing semantics, consent withdrawal, session expiry, sign-out, and local-vs-cloud boundaries. Never imply local-only data is synced, backed up, or encrypted by MOVO when it is not.
+
+### P0 — Legal publication readiness (do not fabricate facts)
+
+- [ ] Ask the product owner for missing factual/legal inputs: operator/data-controller legal name and address, contact for privacy requests, actual data retention/deletion schedule, subprocessors/providers and purposes, applicable jurisdictions/law, and user-rights handling. Do not invent a legal entity, address, retention duration, legal basis, or compliance claim.
+- [ ] Update Terms and Privacy Policy only from verified owner-approved facts. Keep any unresolved disclosure explicitly marked as a release blocker; do not remove the warning just to make the UI appear finished.
+- [ ] Verify policy links and consent wording on sign-up, Google OAuth, profile/settings, and NasrinAI financial-context consent. Terms acceptance must not silently imply optional AI financial-context consent. Confirm accessible focus order and that consent state is not preselected if optional.
+- [ ] Confirm that local financial records and custom card artwork are accurately described, including device-local storage, processing, clearing/deletion behavior, limitations, and any actual provider data flow.
+
+### P1 — Exhaustive frontend interaction audit
+
+- [ ] Inventory every route, tab, button, icon-only button, link, menu item, form, input, select, toggle, dialog, confirmation, empty state, retry action, and keyboard shortcut in the current source. Include mobile navigation and all appearance modes.
+- [ ] For every visible control, prove one of: (a) it performs the advertised action and has a tested result, or (b) it is disabled with a visible, accessible, accurate reason. No dead clicks, misleading success toasts, placeholder controls masquerading as working features, or duplicate actions with different labels.
+- [ ] Test all critical flows end-to-end: fresh visitor/onboarding; Terms acknowledgement; email/password sign-up/sign-in/sign-out; Google OAuth callback and failure; consent opt-in/opt-out; profile edit; account create/edit/archive; transaction create/edit/delete; transfer validation/recording; filters/search/sort/month changes; CSV import validation/review/commit; CSV export; sticker upload/replacement/removal; clear-local-data success and failure; preferences/theme; Help Center; legal pages; NasrinAI success/failure/retry; session expiry.
+- [ ] Test persistence boundaries: reload, new tab, sign-out/sign-in, unavailable/throwing/quota-exceeded localStorage, offline/network failure, duplicate submissions, stale state, empty data, malformed inputs, and partial failures. Make data-loss risks visible and recoverable; never claim an unsaved write succeeded.
+- [ ] Accessibility: keyboard-only operation, visible focus, focus trapping/restoration in dialogs, Escape behavior, labels and accessible names, error announcements, screen-reader descriptions for disabled controls, contrast, reduced motion/transparency, and touch target sizes.
+- [ ] Responsive/browser verification: narrow mobile viewport and iOS Safari, Android/mobile Chromium if available, desktop Chromium, and at least one additional desktop browser if available. Check overflow, safe areas, dialogs, keyboard behavior, sticky navigation, loading/error/empty states, and console/network errors.
+- [ ] Prefer automated browser tests for high-value flows. If browser automation is unavailable, record precisely what could not be tested; do not report manual/live verification as completed.
+
+### P1 — Production deployment and operational checks
+
+- [ ] Verify the deployed custom domain is serving the intended `main` commit, not merely that a Vercel deployment says READY. Record deployment URL/ID, commit SHA, timestamp, HTTP status, and basic response headers without exposing secrets.
+- [ ] Run a production smoke test for public load, auth flows, authenticated finance reads/writes, policy routes, and NasrinAI success/failure behavior using authorized test accounts and non-sensitive test data.
+- [ ] Inspect browser console/network and server logs for 4xx/5xx errors, CORS/callback errors, failed assets, hydration/runtime errors, and unexpected retries. Check caching headers and ensure personalized finance/API responses are not publicly cached.
+- [ ] Verify environment separation between preview and production, redirect/callback URLs, allowed origins, security headers, error monitoring, and safe rate-limit behavior.
+- [ ] Confirm database migrations are reconciled and applied to the intended environment before relying on schema changes. Do not run destructive migrations or alter production data without a reviewed migration and explicit authorization.
+
+### P1 — Release decision and evidence
+
+- [ ] Maintain a blocker table with: issue, severity, owner/action required, exact evidence, and status. Separate code-fixed, CI-verified, preview-verified, production-verified, and owner-action-required states.
+- [ ] Every PR must state scope, tests run, exact head SHA, security/privacy impact, deployment status, remaining limitations, and rollback approach. Link the relevant audit entries and workflow runs.
+- [ ] Re-run the full validation suite after the final code change, then re-check the exact final commit and production deployment. Do not reuse evidence from an earlier SHA.
+- [ ] Do not merge failing or pending required checks; do not bypass branch protection. Do not mark the product production-complete while any P0 security, authentication, legal, data-integrity, or critical-flow blocker remains.
+- [ ] At completion, provide a concise final report with merged PRs/SHAs, test counts, typecheck/build/audit results, production smoke-test evidence, resolved blockers, remaining owner actions, and rollback instructions.
+
+### Execution rules
+
+1. Start with live GitHub state and the failing CI logs; reconcile stale documentation before acting.
+2. Work one high-priority root cause at a time. Use focused branches/PRs and avoid unrelated visual changes while resolving security, authentication, data-loss, or test failures.
+3. Prefer safe, reversible changes; add a regression test before or alongside each bug fix.
+4. Never weaken tests, hide audit findings, suppress meaningful errors, relax RLS, or replace a failed integration with fake success to make CI green.
+5. If a task requires production credentials, legal facts, privileged Supabase settings, or a real owner decision, implement the safe preparatory work and record the exact authorized action still required. Do not pretend that external action was completed.
+6. Update this file as work progresses with evidence and timestamps. A checkbox may be marked complete only when the stated verification level has actually been reached.
