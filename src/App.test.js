@@ -142,7 +142,8 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Netflix');
     expect(container.textContent).not.toContain('Puregold');
   });
-  test('creates a local-only account and keeps it after the app remounts', () => {
+  test('creates, edits and archives a local-only account across reloads', () => {
+    window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
     clickButton(container, 'Add Card');
     const name = container.querySelector('input[placeholder="e.g. Everyday account"]');
@@ -150,13 +151,25 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Add account');
     expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
     clickButton(container, 'Cards');
-    expect(container.textContent).toContain('My Test Card');
+    clickButton(container, 'Switch card');
+    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('My Test Card'));
+    expect(targetCard).toBeTruthy();
+    act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'View Details');
+    clickButton(container, 'Edit account');
+    setInputValue(container.querySelector('input[placeholder="e.g. Everyday account"]'), 'Updated Test Card');
+    clickButton(container, 'Save changes');
+    expect(container.textContent).toContain('Updated Test Card');
+    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');
     act(() => root.unmount());
     root = createRoot(container);
     act(() => root.render(<App />));
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    expect(container.textContent).toContain('My Test Card');
+    expect(container.textContent).toContain('Updated Test Card');
+    clickButton(container, 'View Details');
+    clickButton(container, 'Archive account');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'Updated Test Card').is_archived).toBe(true);
   });
 
   test('edits a transaction and persists the change locally', () => {
