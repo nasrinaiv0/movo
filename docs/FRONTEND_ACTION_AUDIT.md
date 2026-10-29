@@ -11,17 +11,24 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Link legal pages from profile About, Settings, authentication onboarding, and NasrinAI financial-context consent.
 - [x] Remove misleading static plan/token figures from the profile flow and identify plan management as unavailable.
 - [x] Route Settings > Privacy & Data to the Privacy Policy instead of unexpectedly toggling balance visibility.
-- [ ] Validate all frontend controls across Home, Wallet, Transactions, Profile, Settings, Notifications, Auth, and NasrinAI on the current PR head.
+- [x] Make search icons open the shared search sheet and route the submitted query to filtered Transactions results.
+- [x] Fix Wallet transfer actions so they open a transfer form, and label the action as recording a transfer rather than moving money.
+- [x] Make the Transactions balance-visibility icon functional and remove a decorative chevron that looked interactive.
+- [x] Make in-app notification master/category preferences affect the feed; disable push/email and native biometric controls that have no backing service.
+- [x] Remove fabricated plan/token figures; mark unavailable card controls disabled and remove misleading chevrons from read-only settings/provider rows.
+- [x] Add a sign-in CTA to the local-mode NasrinAI screen and preserve a new-chat intent across navigation.
+- [ ] Validate every remaining frontend control across Home, Wallet, Transactions, Profile, Settings, Notifications, Auth, and NasrinAI on the current PR head.
 - [ ] Verify legal contact/operator identity and retention language with the service operator/legal reviewer before production.
 - [ ] Verify current-head CI, typecheck, tests, production build, Supabase RLS checks, and live deployment behavior.
 
 ## Controls requiring follow-up audit
 
-- Notification push/email delivery and biometric lock are not backed by a delivery/native-device service; these should be disabled with explanatory copy rather than implying delivery/security behavior.
-- Plan/token management is not connected to a billing service; do not show fabricated plan or usage values.
-- App language, card style, date format, currency selection, and quiet hours currently have only fixed-value informational behavior.
-- Connected account rows must not imply Apple/Facebook linking unless those providers are implemented.
-- Cloud sync is determined by authenticated cloud mode and should not be presented as a user-controlled switch unless disabling it truly stops sync.
+- Notification push/email delivery and biometric lock are not backed by a delivery/native-device service; these controls are now disabled with explanatory copy.
+- Plan/token management is not connected to a billing service; the profile no longer shows fabricated plan or usage values.
+- App language, card style, date format, currency selection, and quiet hours are read-only and labelled as single-option/unavailable rather than fake controls.
+- Connected account rows no longer imply Apple/Facebook linking; only Google sign-in is implemented.
+- Cloud sync follows authenticated cloud mode and is not presented as a freely toggleable switch when a cloud session is active.
+- Actual bank linking, real money movement, card blocking, issuer spending limits, push/email delivery, biometric lock, automated categorization, and a Help Center remain unsupported.
 - Local/demo financial records are not guaranteed to persist in the deployed main build; do not rely on them as a backup.
 - NasrinAI upstream authentication is still known to return HTTP 401 in production logs; the UI integration must not be considered live-verified until a successful authenticated request is observed.
 
