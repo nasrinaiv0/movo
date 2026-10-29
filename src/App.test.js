@@ -102,6 +102,17 @@ describe('MOVO finance frontend', () => {
     expect(transfer.getAttribute('aria-pressed')).toBe('true');
   });
 
+  test('wallet Add Transaction opens an expense form distinct from Record Transfer', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Add Transaction');
+    const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
+    expect(dialog).not.toBeNull();
+    const expense = Array.from(dialog.querySelectorAll('button')).find(item => item.textContent.trim() === 'Expense');
+    const transfer = Array.from(dialog.querySelectorAll('button')).find(item => item.textContent.trim() === 'Transfer');
+    expect(expense.getAttribute('aria-pressed')).toBe('true');
+    expect(transfer.getAttribute('aria-pressed')).toBe('false');
+  });
+
   test('transactions screen filters, groups by day and opens details', () => {
     nav(container, 'Transactions');
     expect(container.querySelector('h1').textContent).toBe('Transactions');
