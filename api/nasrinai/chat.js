@@ -150,7 +150,7 @@ module.exports = async function handler(req, res) {
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const nasrinKey = process.env.NASRINAI_API_KEY;
-  const nasrinBase = String(process.env.NASRINAI_BASE_URL || DEFAULT_NASRINAI_URL).replace(/\\/+$/, '');
+  const nasrinBase = String(process.env.NASRINAI_BASE_URL || DEFAULT_NASRINAI_URL).replace(/\/+$/, '');
   if (!supabaseUrl || !anonKey) {
     return json(res, 503, { error: 'movo_auth_not_configured', message: 'MOVO sign-in is not configured on the server.' });
   }
