@@ -24,7 +24,7 @@ export function CardArt({ a, show }) {
 }
 
 export default function Wallet({ c }) {
-  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, sheet, setSheet, notify } = c;
+  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet, notify } = c;
   const scroller = useRef(null);
   const list = walletFilter === 'All' ? accountsView : accountsView.filter(a => a.account_type === typeOf[walletFilter]);
   const total = stats.balance || 1;
@@ -63,7 +63,7 @@ export default function Wallet({ c }) {
       </section>
       <SectionTitle>Quick Actions</SectionTitle>
       <section className="quick-actions">
-        {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Send Money', () => setSheet({ name: 'transaction', type: 'transfer' })], ['transfer', 'Transfer', () => setSheet({ name: 'transaction', type: 'transfer' })], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+        {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Record Transfer', () => openForm('transfer')], ['transfer', 'Transfer', () => openForm('transfer')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><span><Icon name={icon} size={20} /></span>{label}</button>)}
       </section>
       <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Activity</SectionTitle>
