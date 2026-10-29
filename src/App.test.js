@@ -205,6 +205,9 @@ describe('MOVO finance frontend', () => {
       expect(toggle).toBeTruthy();
       expect(toggle.disabled).toBe(true);
       expect(toggle.getAttribute('aria-checked')).toBe('false');
+      const descriptionId = toggle.getAttribute('aria-describedby');
+      expect(descriptionId).toBeTruthy();
+      expect(container.querySelector('#' + descriptionId)?.textContent.trim()).not.toBe('');
     });
     expect(container.textContent).toContain('no push delivery service is connected');
     expect(container.textContent).toContain('native biometric unlock is not connected');
@@ -221,6 +224,9 @@ describe('MOVO finance frontend', () => {
       expect(toggle).toBeTruthy();
       expect(toggle.disabled).toBe(true);
       expect(toggle.getAttribute('aria-checked')).toBe('false');
+      const descriptionId = toggle.getAttribute('aria-describedby');
+      expect(descriptionId).toBeTruthy();
+      expect(container.querySelector('#' + descriptionId)?.textContent.trim()).not.toBe('');
     });
     expect(container.textContent).toContain('Push delivery is not available in this web build.');
     expect(container.textContent).toContain('Email delivery is not connected yet.');

@@ -41,3 +41,11 @@
 3. Enable Supabase Auth leaked-password protection and triage dependency audit findings with targeted upgrades.
 4. Continue interactive browser checks for onboarding, consent, finance writes, import/export, accessibility, and mobile layout.
 5. Repeat CI, build, RLS/ownership, and production checks after each substantive fix. Do not describe MOVO as fully production-ready while material blockers remain.
+
+
+## 2026-10-29 follow-up: accessible explanations for unavailable settings
+
+- Disabled settings switches now expose `aria-describedby` references to their visible explanatory copy, including push/email delivery, browser biometrics, local-storage controls, automatic categorization, and cloud-sync mode constraints.
+- Notification-channel switches use the same association so screen-reader users can hear why push/email delivery is unavailable instead of relying on the visual row text or a mouse-only tooltip.
+- Regression tests assert that disabled settings switches are disabled, visibly off where unsupported, and reference an existing non-empty description.
+- Validation for this follow-up is pending on branch `fix/accessible-disabled-setting-reasons`; do not treat this change as verified until the branch's CI and preview checks finish.
