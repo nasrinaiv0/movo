@@ -15,6 +15,22 @@ The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The
 
 After setting variables, redeploy the Vercel project. The repository change cannot set or inspect deployment secrets.
 
+## Google sign-in (Supabase OAuth)
+
+MOVO uses Supabase Auth with Google as the OAuth provider. The sign-in screen includes a **Continue with Google** action; it starts `signInWithOAuth({ provider: 'google' })` and returns to the current MOVO origin. Supabase owns the OAuth code exchange and browser session persistence; Google tokens are not stored in MOVO application tables.
+
+Configure this in the dedicated MOVO Supabase project (`cjsjmorqvuvvwbfyztiz`):
+
+1. In **Authentication → Sign In / Providers → Google**, enable Google and enter the Google OAuth **Web application** client ID and client secret. Use a dedicated Google OAuth client for MOVO or add the callback to an existing client only if you intentionally want to share that OAuth app.
+2. In Google Cloud Console → APIs & Services → Credentials → that OAuth client, add this **Authorized redirect URI** exactly: `https://cjsjmorqvuvvwbfyztiz.supabase.co/auth/v1/callback`. This is Supabase's callback—not MOVO's domain.
+3. In Supabase **Authentication → URL Configuration**, set the Site URL to `https://movo.nasrinai.com` and add these allowed redirect URLs:
+   - `https://movo.nasrinai.com/`
+   - `https://movo-lime.vercel.app/`
+   - `http://localhost:3000/` (local development only; do not use localhost as a production redirect)
+4. Save, then test a brand-new Google session and a returning session on the production domain. Confirm sign-out clears the session and that each Google identity maps to a separate Supabase user ID.
+
+The repository implementation is complete for initiating Google OAuth, but enabling the provider requires the Google client ID/secret and Supabase dashboard settings. Those credentials are not stored in source control or in browser environment variables. Do not put the Google client secret in Vercel `REACT_APP_*` variables; Supabase stores it in the Auth provider configuration.
+
 ## Data isolation
 
 - The server verifies the bearer token against MOVO Supabase Auth; client-provided user IDs are never trusted.
