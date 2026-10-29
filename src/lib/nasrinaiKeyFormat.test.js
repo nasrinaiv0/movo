@@ -1,4 +1,4 @@
-import { classifyNasrinAIKeyFormat } from '../../api/nasrinai/key-format';
+import { classifyNasrinAIKeyFormat } from './nasrinaiKeyFormat';
 
 describe('classifyNasrinAIKeyFormat', () => {
   test('recognizes a server-to-server secret without returning credential data', () => {
