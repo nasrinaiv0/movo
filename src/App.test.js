@@ -458,6 +458,33 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Edited supermarket');
   });
 
+  test('warns when local financial records cannot be saved and retries after storage recovers', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (['movo.local.transactions.v1', 'movo.local.accounts.v1', 'movo.samples.enabled.v1'].includes(String(key))) {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    nav(container, 'Transactions');
+    clickButton(container, 'See All');
+    clickButton(container, 'SM Supermarket, −₱1,250.00');
+    clickButton(container, 'Edit');
+    setInputValue(container.querySelector('input[placeholder="e.g. Grocery shopping"]'), 'Storage warning regression');
+    clickButton(container, 'Save changes');
+
+    expect(container.textContent).toContain('Local changes may not be saved.');
+    expect(container.textContent).toContain('Important records may not survive a reload.');
+    clickButton(container, 'Retry save');
+    expect(container.textContent).toContain('Browser storage is still unavailable or full.');
+
+    spy.mockRestore();
+    clickButton(container, 'Retry save');
+    expect(container.textContent).not.toContain('Local changes may not be saved.');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Storage warning regression');
+  });
+
   test('CSV import action opens a review-first import sheet', () => {
     nav(container, 'Wallet');
     clickButton(container, 'More');
