@@ -12,6 +12,7 @@ export function tokenize(expr) {
 export function evaluate(expr) {
   const tokens = tokenize(expr);
   if (!tokens.length) return 0;
+  if (tokens[0] === '−' || tokens[0] === '+') tokens.unshift('0');
   if (OPS[tokens[tokens.length - 1]]) tokens.pop();
   const values = []; const ops = [];
   tokens.forEach((t, i) => (i % 2 === 0 ? values.push(Number(t)) : ops.push(t)));

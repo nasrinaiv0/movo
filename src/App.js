@@ -14,6 +14,8 @@ import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
+import AccountSheet from './components/AccountSheet';
+import { evaluate } from './lib/calc';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
@@ -39,6 +41,7 @@ const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Hom
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Profile: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
+const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: 'PHP', mask: '', color: '', icon: '' };
 const today = () => new Date().toLocaleDateString('en-CA');
 
 function readPrefs() {
@@ -105,7 +108,7 @@ function App() {
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
+  const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
   const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'Groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), note: '' });
   const [csvRows, setCsvRows] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
@@ -180,8 +183,8 @@ function App() {
       if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + t.amount;
       return s;
     }, 0);
-    return { ...a, mask: a.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
-  }), [baseAccounts, txs, cloudMode]);
+    return { ...a, mask: a.mask || prefs.accountStyles?.[a.id]?.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
+  }), [baseAccounts, txs, cloudMode, prefs.accountStyles]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -270,6 +273,7 @@ function App() {
     setAccountForm({
       name: account.name || '', account_type: account.account_type || 'other',
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
+      currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
     });
     setSheet({ name: 'account', type: account.account_type, id: account.id });
   };
@@ -382,7 +386,9 @@ function App() {
   const saveAccount = async (e) => {
     e.preventDefault(); setError('');
     const name = accountForm.name.trim();
-    const openingBalance = Number(accountForm.opening_balance || 0);
+    const openingBalance = evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
+    const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : 'PHP';
+    const saveStyle = (id) => { const { color, icon, mask } = accountForm; if (!color && !icon && !mask) return; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask } }); };
     if (!name) { setError('Enter an account name.'); return; }
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }
     if (!accountTypes.some(type => type.value === accountForm.account_type)) { setError('Choose a valid account type.'); return; }
@@ -391,12 +397,12 @@ function App() {
     try {
       if (cloudMode && session?.user) {
         if (editingId) {
-          const a = await updateAccount(editingId, { ...accountForm, opening_balance: openingBalance });
-          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item));
+          const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId);
           notify('Account updated in your MOVO account.');
         } else {
-          const a = await createAccount({ ...accountForm, opening_balance: openingBalance }, session.user.id);
-          setCloudAccounts(cur => [...cur, a]);
+          const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
+          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id);
           notify('Account added to your signed-in MOVO account.');
         }
       } else {
@@ -407,13 +413,14 @@ function App() {
           name: name.slice(0, 100),
           account_type: accountForm.account_type || sheet?.type || 'other',
           institution_name: accountForm.institution_name.trim().slice(0, 100),
-          currency: existing?.currency || 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
-          balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
+          currency, opening_balance: Math.round(openingBalance * 100) / 100,
+          balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
+        saveStyle(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
       }
-      setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
+      setAccountForm(BLANK_ACCOUNT);
       setSheet(null);
     } catch { setError(editingId ? 'Could not update account. Please review the details and try again.' : 'Could not add account. Please review the details and try again.'); }
     finally { setBusy(false); }
@@ -448,7 +455,7 @@ function App() {
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
-    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
+    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
   };
@@ -513,17 +520,7 @@ function App() {
 
       {sheet?.name === 'transaction' && <TransactionSheet form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} />}
 
-      {sheet?.name === 'account' && <Sheet title={sheet.id ? 'Edit account' : 'Add account'} subtitle={sheet.id ? 'Update the name, type, institution or opening balance.' : 'Track a card, bank account or e-wallet.'} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? 'Edit account' : 'Add account'}>
-        <form className="sheet-form" onSubmit={saveAccount}>
-          <label>Account name<input required maxLength="100" value={accountForm.name} onChange={e => setAccountForm({ ...accountForm, name: e.target.value })} placeholder="e.g. Everyday account" /></label>
-          <label>Account type<select value={accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-          <label>Bank / institution (optional)<input maxLength="100" value={accountForm.institution_name} onChange={e => setAccountForm({ ...accountForm, institution_name: e.target.value })} placeholder="Institution name" /></label>
-          <label>Opening balance (PHP)<input type="number" step="0.01" max="999999999999" value={accountForm.opening_balance} onChange={e => setAccountForm({ ...accountForm, opening_balance: e.target.value })} /></label>
-          {!cloudMode && <p className="form-note">This account will be stored only on this device. Sign in to enable cloud sync.</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Add account'}</button></div>
-        </form>
-      </Sheet>}
+      {sheet?.name === 'account' && <AccountSheet form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title="Quick actions" onClose={() => setSheet(null)}>
         <div className="sheet-menu">

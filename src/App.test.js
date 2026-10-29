@@ -417,7 +417,7 @@ describe('MOVO finance frontend', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
     clickButton(container, 'Add Card');
-    const name = container.querySelector('input[placeholder="e.g. Everyday account"]');
+    const name = container.querySelector('#acct-name');
     setInputValue(name, 'My Test Card');
     clickButton(container, 'Add account');
     expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
@@ -428,7 +428,7 @@ describe('MOVO finance frontend', () => {
     act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Edit account');
-    setInputValue(container.querySelector('input[placeholder="e.g. Everyday account"]'), 'Updated Test Card');
+    setInputValue(container.querySelector('#acct-name'), 'Updated Test Card');
     clickButton(container, 'Save changes');
     expect(container.textContent).toContain('Updated Test Card');
     expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');

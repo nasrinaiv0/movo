@@ -1,0 +1,48 @@
+import React from 'react';
+import Icon from './Icon';
+
+/** Applies a saved layout ({ order, hidden }) to a list of boxes, keeping any new boxes at their default spot. */
+export function arrange(boxes, layout = {}) {
+  const order = layout.order || [];
+  const rank = (id) => { const i = order.indexOf(id); return i === -1 ? order.length + boxes.findIndex(b => b.id === id) : i; };
+  return [...boxes].sort((a, b) => rank(a.id) - rank(b.id));
+}
+
+/**
+ * Screen sections people can hide, restore and reorder, in the style of iOS Control Center editing:
+ * a minus badge removes a box, arrows move it, and hidden boxes wait in a tray at the bottom.
+ */
+export default function EditableBoxes({ boxes, layout = {}, editing, onChange, onDone, title }) {
+  const ordered = arrange(boxes.filter(b => b.node), layout);
+  const hidden = new Set(layout.hidden || []);
+  const visible = ordered.filter(b => !hidden.has(b.id));
+  const save = (next) => onChange({ order: (next.order || ordered.map(b => b.id)), hidden: next.hidden ?? [...hidden] });
+  const move = (id, dir) => {
+    const ids = visible.map(b => b.id); const i = ids.indexOf(id); const j = i + dir;
+    if (j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    save({ order: [...ids, ...ordered.filter(b => hidden.has(b.id)).map(b => b.id)] });
+  };
+  const hide = (id) => save({ hidden: [...hidden, id] });
+  const show = (id) => save({ hidden: [...hidden].filter(x => x !== id), order: [...visible.map(b => b.id), id, ...ordered.filter(b => hidden.has(b.id) && b.id !== id).map(b => b.id)] });
+
+  if (!editing) return visible.map(b => <React.Fragment key={b.id}>{b.node}</React.Fragment>);
+  return <>
+    <div className="edit-bar" role="toolbar" aria-label={`Customize ${title}`}>
+      <span><strong>Customize {title}</strong><small>Remove, restore or move boxes.</small></span>
+      <button type="button" className="primary-button" onClick={onDone}>Done</button>
+    </div>
+    {visible.map((b, i) => <div key={b.id} className="edit-box" style={{ '--d': `${(i % 3) * 60}ms` }}>
+      <button type="button" className="edit-remove" aria-label={`Remove ${b.label}`} onClick={() => hide(b.id)}><Icon name="close" size={12} strokeWidth={3} /></button>
+      <div className="edit-move">
+        <button type="button" aria-label={`Move ${b.label} up`} disabled={i === 0} onClick={() => move(b.id, -1)}><Icon name="arrowUp" size={14} strokeWidth={2.4} /></button>
+        <button type="button" aria-label={`Move ${b.label} down`} disabled={i === visible.length - 1} onClick={() => move(b.id, 1)}><Icon name="arrowDown" size={14} strokeWidth={2.4} /></button>
+      </div>
+      <div className="edit-content" inert="">{b.node}</div>
+    </div>)}
+    <section className="edit-tray" aria-label="Hidden boxes">
+      <h3>Hidden</h3>
+      {hidden.size ? <div className="edit-tray-list">{ordered.filter(b => hidden.has(b.id)).map(b => <button type="button" key={b.id} onClick={() => show(b.id)} aria-label={`Add ${b.label}`}><Icon name="plus" size={14} strokeWidth={2.4} />{b.label}</button>)}</div> : <p>Removed boxes appear here so you can add them back.</p>}
+    </section>
+  </>;
+}
