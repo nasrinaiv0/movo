@@ -64,4 +64,13 @@
 - Replaced the duplicate “Transfer” control with “Add Transaction”, which opens the expense-entry form. “Record Transfer” remains the explicit way to create a transfer record.
 - Added regression coverage proving the two wallet actions open distinct form modes.
 - Added regression coverage for the existing NotificationSettings route mapping so the Home/Notifications root remains marked as the current primary-navigation destination.
-- Validation for this follow-up is pending CI on the dedicated branch; do not treat this note as evidence of a passing test until the workflow result confirms it.
+- Validation passed on PR #33 head `cce7defdd3fcad6fd20a8bfe6a3abd69f7d3d88c`: [GitHub Actions run 40851881401](https://github.com/nasrinaiv0/movo/actions/runs/40851881401) passed **13 test suites / 76 tests**, typecheck, and production compilation. The Vercel preview for that exact head reached READY.
+- PR #33 merged as `8fed594d571602c8d7f0cdca55afb286d47dabab`. Vercel reports the production deployment for that exact `main` commit as READY and attached to `movo.nasrinai.com`. [Production deployment details](https://vercel.com/nasrin-ai/movo/4vKjo4Tj3rdY192YKrpZuTa3fPHj).
+- A full interactive browser session against the custom domain remains unverified.
+
+## 2026-10-29 security status refresh
+
+- Read-only production catalog checks confirm RLS is enabled on `profiles`, `financial_accounts`, `transactions`, `budgets`, `movo_ai_conversations`, `movo_ai_messages`, and `movo_ai_upstream_conversations`. Owner-facing tables have authenticated-role policies; the upstream conversation mapping intentionally has zero policies and remains restricted from browser roles for server-only access.
+- The Supabase Security Advisor still reports leaked-password protection disabled. It also reports the no-policy RLS finding for the upstream mapping as informational; this is intentional only while browser grants remain absent and server-side service-role access is kept private.
+- Recent production runtime errors still show 7 upstream HTTP 401 responses from `/api/nasrinai/chat` in the 24-hour window, last observed at 2026-10-29T05:42:54Z. No successful authenticated production chat request has been confirmed in this run.
+- This follow-up changed no Supabase schema, RLS policies, grants, or secrets. Do not treat the passing frontend CI or READY deployment as proof that the remaining auth/legal/security blockers are resolved.
