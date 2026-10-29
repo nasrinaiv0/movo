@@ -373,6 +373,15 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Two intermediate test heads failed because an escaped regex removed letters from account labels. The exact cause was confirmed from CI logs, corrected, and the exact latest head now passes. Earlier failures remain in GitHub Actions history for auditability.
 - The current PR is mergeable according to GitHub but remains draft. No production deployment, database write, RLS/grant change, or secret change occurred in this increment.
 
+#### Fresh read-only Supabase verification — 2026-10-30 05:26 Manila
+
+- Confirmed the MOVO project `cjsjmorqvuvvwbfyztiz` is `ACTIVE_HEALTHY`; this was a read-only inspection.
+- A catalog query found RLS enabled on all seven checked tables: `profiles` (3 policies), `financial_accounts` (4), `transactions` (4), `budgets` (4), `movo_ai_conversations` (4), `movo_ai_messages` (3), and `movo_ai_upstream_conversations` (0 policies). The 22 policies on user-facing tables reference `auth.uid()` in their `USING` or `WITH CHECK` expressions.
+- A separate role-grant query found no `anon` grants on the checked tables. `authenticated` retains SELECT/INSERT/UPDATE/DELETE on the user-facing tables; the upstream mapping grants are limited to `service_role`. This is consistent with the server-only mapping design.
+- Supabase Security Advisor still reports `auth_leaked_password_protection` as WARN and `rls_enabled_no_policy` on the upstream mapping as INFO. Do not add a browser policy to the mapping. The leaked-password setting remains an authorized dashboard/configuration task.
+- Performance Advisor still lists seven unused indexes. No indexes were dropped because usage evidence and workload impact must be reviewed first.
+- No SQL writes, schema/policy/grant changes, financial record reads, or secret reads were performed in this check.
+
 #### Still blocking release
 1. PR #48 still requires the upstream MOVO scope enforcement to be deployed before merging; this MOVO-only workflow did not modify the separate NasrinAI repository.
 2. No authenticated end-to-end smoke test has yet confirmed that a real signed-in MOVO request receives and validates `context_scope: "movo"`.
