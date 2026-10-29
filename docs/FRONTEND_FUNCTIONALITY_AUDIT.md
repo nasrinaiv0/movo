@@ -57,3 +57,9 @@
 - Explicitly disclosed that these editable profile fields are browser-local; the authentication email remains read-only and managed by the sign-in provider. No cloud profile write is implied.
 - Added regression tests for successful save, local persistence, trimming, and rejection of a blank name.
 - Validation completed on exact PR head `2a6ec6bb0a31a200d02298388eaa98994be515f9`: GitHub Actions [run 40845241222](https://github.com/nasrinaiv0/movo/actions/runs/40845241222) passed; Vercel preview `movo-2inoznxoq-nasrin-ai.vercel.app` reached READY and returned HTTP 200. Its build logs confirm `tsc --noEmit`, **13 test suites / 74 tests passed**, and successful production compilation. The built JavaScript includes the profile form and validation copy, with no NasrinAI server-key pattern or `NASRINAI_API_KEY` string found in the client bundle. A full interactive browser session remains unverified.
+
+## 2026-10-29 follow-up: notification sub-screen navigation state
+
+- The Notifications screen exposes a Settings action that opens the existing NotificationSettings screen. The route was handled by the app, but it was missing from the root-destination mapping, leaving no primary navigation item marked as current while the sub-screen was open.
+- Mapped NotificationSettings to the Home/Notifications destination and added a regression test that opens Notification Settings from the Notifications header and asserts the Home navigation item retains `aria-current="page"`.
+- Validation for this follow-up is pending CI on the dedicated branch; do not treat this note as evidence of a passing test until the workflow result confirms it.
