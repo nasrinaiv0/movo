@@ -79,7 +79,6 @@ export function TermsOfService({ c }) {
       <h2>9. Contact</h2>
       <p>For questions about these terms, email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>.</p>
     </section>
-    <p className="legal-disclaimer">These terms are product information and are not a substitute for advice from a qualified lawyer. They should be reviewed by the service operator for its legal identity, applicable jurisdictions, and final production use.</p>
   </LegalPage>;
 }
 
@@ -141,6 +140,5 @@ export function PrivacyPolicy({ c }) {
       <p>MOVO is a personal finance tool and is not designed for children. If you believe a child has provided personal information without appropriate authorization, contact the service team so the matter can be reviewed.</p>
       <p>We may update this policy as product features and legal requirements change. The effective date at the top identifies the latest published version. Material changes may require additional notice or consent where applicable.</p>
     </section>
-    <p className="legal-disclaimer">This policy describes the current implementation, not a guarantee that every planned feature is available. The service operator should confirm its legal identity, provider list, data-retention practices, and privacy-request workflow before treating this page as final legal advice.</p>
   </LegalPage>;
 }
