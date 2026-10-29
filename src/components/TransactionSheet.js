@@ -19,6 +19,12 @@ export default function TransactionSheet({ form, setForm, editing, accounts, clo
   const [expr, setExpr] = useState(form.amount ? String(Number(form.amount)) : '');
   const [allCats, setAllCats] = useState(false);
   const [padOpen, setPadOpen] = useState(true);
+  const [now, setNow] = useState(() => new Date().toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', second: '2-digit' }));
+  useEffect(() => {
+    if (form.time) return undefined;
+    const t = setInterval(() => setNow(new Date().toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', second: '2-digit' })), 1000);
+    return () => clearInterval(t);
+  }, [form.time]);
   const value = evaluate(expr);
   const hasOp = /[+−×÷]/.test(expr.replace(/^−/, ''));
   const type = form.transaction_type;
@@ -65,6 +71,8 @@ export default function TransactionSheet({ form, setForm, editing, accounts, clo
 
     <div className="tx-meta">
       <label><span>Date</span><input type="date" required value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label>
+      {form.time ? <label><span>Time</span><input type="time" step="1" aria-label="Time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></label>
+        : <button type="button" className="tx-clock" onClick={() => setForm({ ...form, time: new Date().toTimeString().slice(0, 8) })} aria-label={`Time recorded automatically when saved, now ${now}. Tap to set a time.`}><span>Time · auto</span><b>{now}</b></button>}
       {type === 'transfer' && accounts.length > 0 && <label><span>To account</span><select aria-label="To account" value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">Choose</option>{accounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
     </div>
 

@@ -20,6 +20,8 @@ export function dayKey(date) {
 export const monthKey = (date) => dayKey(date).slice(0, 7);
 export const longDate = (date) => longDay.format(new Date(date));
 export const timeLabel = (date) => timeFmt.format(new Date(date));
+const timeSecFmt = fmt({ hour: 'numeric', minute: '2-digit', second: '2-digit' });
+export const timeLabelFull = (date) => timeSecFmt.format(new Date(date));
 export const monthLabel = (key) => monthYear.format(new Date(`${key}-15T12:00:00+08:00`));
 export const monthRange = (key) => {
   const [y, m] = key.split('-').map(Number);

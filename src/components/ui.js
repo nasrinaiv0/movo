@@ -67,7 +67,7 @@ export function SectionTitle({ children, action, onAction }) {
   return <div className="section-title"><h2>{children}</h2>{action && <button type="button" className="link-button" onClick={onAction}>{action}{' '}<Icon name="chevron" size={14} /></button>}</div>;
 }
 
-export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false }) {
+export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false, center = false }) {
   const [closing, setClosing] = useState(false);
   const [dy, setDy] = useState(0);
   const drag = useRef(null);
@@ -114,9 +114,9 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
   const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
   const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
   const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };
-  return <div className={`sheet-backdrop${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-    <section ref={dialogRef} className={`sheet${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
-      <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>
+  return <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
+      {!center && <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>}
       {!hideClose && <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={close}><Icon name="close" size={18} /></button>}
       {title && <h2 className="sheet-title">{title}</h2>}
       {subtitle && <p className="sheet-sub">{subtitle}</p>}

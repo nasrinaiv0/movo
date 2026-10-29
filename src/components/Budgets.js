@@ -57,7 +57,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
       setDraft(null);
     } catch (cause) { setErr(cause.message || 'Could not save. Please try again.'); }
   };
-  return <Sheet title="Budgets & Plans" subtitle={tab === 'budgets' ? `Monthly limits per category${cloudMode ? ', synced to your account' : ', saved on this device'}.` : 'Savings goals with a target and optional date, saved on this device.'} onClose={onClose} label="Budgets and plans">
+  return <Sheet title="Budgets & Plans" subtitle={tab === 'budgets' ? `Monthly limits per category${cloudMode ? ', synced to your account' : ', saved on this device'}.` : 'Savings goals with a target and optional date, saved on this device.'} onClose={onClose} label="Budgets and plans" center>
     <div className="seg-control two" role="group" aria-label="Section">{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{l}</button>)}</div>
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>
