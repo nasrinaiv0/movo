@@ -410,3 +410,15 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - GitHub Actions run [40958277651](https://github.com/nasrinaiv0/movo/actions/runs/40958277651) remains in progress at dependency installation. Do not report that workflow as passed; the exact-head Vercel prebuild is the completed validation evidence.
 - The static audit is not an interactive browser test. Keyboard/focus, screen-reader, mobile, modal, settings, and real finance-flow verification remain required.
 
+
+
+## Scheduled implementation pass — 2026-10-30 06:29 Asia/Manila — Expanded UI audit
+
+- Created [PR #55](https://github.com/nasrinaiv0/movo/pull/55) on `chore/aria-control-audit-current-main`, based on main `82172294f80e360af9e7043de425a454c211078c`.
+- The audit script now detects placeholder anchors, non-native interactive ARIA roles without keyboard/click handling, missing tab selection state, missing checked/selected state, unnamed dialogs, disabled-control explanation gaps, and dialogs needing manual modality/focus review.
+- Added `src/lib/uiControlAudit.test.js` covering placeholder anchors, custom tab behavior, checked state, accessible dialog names, and valid controls.
+- Added `npm run audit:controls` to the production prebuild gate and expanded `docs/UI_CONTROL_AUDIT.md`.
+- Closed stale/conflicted PR #46 as superseded by #55 (not merged).
+- Exact head `76851d33b07126a63c34922adedc04464995e157`; Actions run [40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) was still installing dependencies at the last check. No exact-head test/typecheck/audit/build success is claimed yet. Preview was queued/building, not READY.
+- No financial data, application API logic, auth, RLS, database schema/grants, secrets, or production settings changed.
+- Broader completion still blocked by interactive browser/accessibility verification, legal controller/provider/retention disclosures, leaked-password protection, dependency remediation, and authenticated production NasrinAI context-isolation verification. The static audit is a guardrail only.
