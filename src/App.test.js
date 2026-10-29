@@ -202,11 +202,13 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
     expect(container.textContent).toContain('Effective date: October 29, 2026');
+    expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
     expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
+    expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
