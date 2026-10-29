@@ -2,6 +2,15 @@
 
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
 
+## UI redesign (mockup match)
+
+The front end follows the supplied mobile mockups: floating bottom navigation with the NasrinAI orb, Home, Wallet (All / Cards / Bank Accounts / E-Wallets, card carousel, "Your Cards" and "Choose Theme" sheets), Transactions (All / Income / Expenses / Transfers, month picker, breakdown, day grouping, sort chips), Profile, Edit Profile, Settings, Appearance, Notifications (list, detail, settings), and Light / Dark / System / Blue / Purple / Orange / Custom themes with six accent colours.
+
+- Sample data (`src/lib/demoData.js`) is shown until sign-in and is labelled as sample; comparison percentages in sample mode are fixed demo figures, real accounts get computed month-over-month changes.
+- Merchant logos are neutral monogram tiles; no third-party brand artwork is bundled.
+- Plan & Usage, quiet hours and some Settings rows are visual placeholders with no backend yet.
+- Preferences are stored under `movo.preferences.v3` (v2 values are migrated).
+
 ## Phase 1 — Home dashboard MVP
 
 ### Functional in this phase
