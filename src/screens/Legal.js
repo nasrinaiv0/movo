@@ -21,6 +21,10 @@ function LegalPage({ c, title, current, children }) {
         <p>Effective date: {EFFECTIVE_DATE}</p>
       </header>
       <LegalNavigation c={c} current={current} />
+      <aside className="legal-readiness-notice" role="note" aria-label="Important publication notice">
+        <strong>Important before using real financial data</strong>
+        <p>The service operator's formal legal identity and registered address have not yet been published, and the retention and provider disclosures still require final verification. Do not enter real or highly sensitive financial information until these launch disclosures are completed and reviewed.</p>
+      </aside>
       {children}
       <footer className="legal-contact">
         <h2>Questions or privacy requests?</h2>
