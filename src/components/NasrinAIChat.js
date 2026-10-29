@@ -6,6 +6,7 @@ import './NasrinAIChat.css';
 function friendlyError(code) {
   if (code === 'sign_in_required' || code === 'invalid_session') return 'Sign in to MOVO to use your private financial copilot.';
   if (code === 'nasrinai_not_configured') return 'NasrinAI is not configured on the MOVO server yet.';
+  if (code === 'nasrinai_scope_unconfirmed') return 'MOVO could not verify that NasrinAI kept this request isolated to MOVO. No answer was accepted. Please try again later.';
   if (code === 'conversation_not_found') return 'This conversation is not available in your account.';
   if (code === 'financial_context_consent_required') return 'Please confirm consent before sharing financial context with NasrinAI.';
   if (code === 'nasrinai_auth_rejected') return 'MOVO reached NasrinAI, but the service rejected its server authentication. This is a configuration issue; please try again later.';
