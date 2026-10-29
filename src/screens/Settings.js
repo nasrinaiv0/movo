@@ -75,6 +75,7 @@ export default function Settings({ c }) {
     ] },
     { title: 'Appearance', rows: [
       { icon: 'palette', title: 'Theme', sub: 'Light, Dark or Custom', onClick: () => go('Appearance') },
+      { icon: 'drop', title: 'Liquid Glass', sub: 'Choose how clear the glass looks', onClick: () => go('Appearance') },
       { icon: 'globe', title: 'App Language', sub: 'English (Philippines)', onClick: () => c.notify('English (Philippines) is the only language right now.') },
       { icon: 'layout', title: 'Display & Layout', sub: 'Customize your experience', onClick: () => go('Appearance') },
     ] },
@@ -116,6 +117,14 @@ export function Appearance({ c }) {
     <h2 className="group-title">Theme</h2>
     <div className="card pad"><ThemePicker c={c} />
       <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>All themes <Icon name="chevron" size={14} /></button></div>
+    <h2 className="group-title">Liquid Glass</h2>
+    <section className="card pad glass-settings">
+      <div className="glass-head"><span className="menu-main"><strong>Liquid Glass</strong><small>Translucent, light-bending surfaces</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label="Liquid Glass" /></div>
+      <div className={`glass-preview${prefs.glass ? '' : ' off'}`} aria-hidden="true"><i /><i /><span className="glass-chip"><Icon name="wallet" size={18} /> ₱128,450.00</span></div>
+      <label className="clarity"><span className="clarity-top"><b>Glass clarity</b><em>{prefs.clarity <= 33 ? 'Frosted' : prefs.clarity >= 67 ? 'Clear' : 'Balanced'} · {prefs.clarity}%</em></span>
+        <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label="Glass clarity" onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
+        <span className="clarity-ends"><small>Frosted</small><small>Clear</small></span></label>
+    </section>
     <h2 className="group-title">Preview</h2>
     <div className="card pad"><NavPreview accentName={prefs.accent} /></div>
     <h2 className="group-title">Display & Layout</h2>

@@ -130,4 +130,19 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Netflix');
     expect(container.textContent).not.toContain('Puregold');
   });
+
+  test('liquid glass can be switched off and its clarity adjusted', () => {
+    expect(container.firstChild.className).toContain('glass-on');
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const row = Array.from(container.querySelectorAll('button.menu-row')).find(b => b.textContent.startsWith('Liquid Glass'));
+    act(() => row.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const slider = container.querySelector('input[aria-label="Glass clarity"]');
+    act(() => { const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(slider, '90'); slider.dispatchEvent(new Event('input', { bubbles: true })); });
+    expect(container.firstChild.style.getPropertyValue('--glass-blur')).toBe('7px');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).clarity).toBe(90);
+    const toggle = container.querySelector('button[aria-label="Liquid Glass"][role="switch"]');
+    act(() => toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.firstChild.className).not.toContain('glass-on');
+  });
 });

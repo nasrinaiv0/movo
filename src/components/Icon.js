@@ -1,6 +1,15 @@
 import React from 'react';
 
+const FILLED = {
+  home: <path d="M12.7 2.6a1.1 1.1 0 0 0-1.4 0L3.4 9.2A2 2 0 0 0 2.7 10.7V19a2.5 2.5 0 0 0 2.5 2.5H8.5a1 1 0 0 0 1-1V16a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v4.5a1 1 0 0 0 1 1h3.3a2.5 2.5 0 0 0 2.5-2.5v-8.3a2 2 0 0 0-.7-1.5Z" />,
+  wallet: <path fillRule="evenodd" d="M6.5 4.5H17a2.5 2.5 0 0 1 2.5 2.5v.6A2.6 2.6 0 0 1 21.5 10v8.2a2.8 2.8 0 0 1-2.8 2.8H6.5A3.5 3.5 0 0 1 3 17.5V8A3.5 3.5 0 0 1 6.5 4.5Zm9.8 8.6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" />,
+  list: <path fillRule="evenodd" d="M8 2.5h8A3.5 3.5 0 0 1 19.5 6v12a3.5 3.5 0 0 1-3.5 3.5H8A3.5 3.5 0 0 1 4.5 18V6A3.5 3.5 0 0 1 8 2.5Zm.6 5.2a.9.9 0 0 0 0 1.8h6.8a.9.9 0 0 0 0-1.8Zm0 4a.9.9 0 0 0 0 1.8h6.8a.9.9 0 0 0 0-1.8Zm0 4a.9.9 0 0 0 0 1.8h3.8a.9.9 0 0 0 0-1.8Z" />,
+  user: <><circle cx="12" cy="7.8" r="4.3" /><path d="M3.9 20a8.1 8.1 0 0 1 16.2 0 1 1 0 0 1-1 1H4.9a1 1 0 0 1-1-1Z" /></>,
+  bell: <path d="M12 2.6a6.4 6.4 0 0 0-6.4 6.4c0 4.7-1.7 6.3-2.5 7a.9.9 0 0 0 .6 1.5h16.6a.9.9 0 0 0 .6-1.5c-.8-.7-2.5-2.3-2.5-7A6.4 6.4 0 0 0 12 2.6Zm-2.2 16.2a2.3 2.3 0 0 0 4.4 0Z" />,
+  gear: null,
+};
 const P = {
+  drop: <path d="M12 3.2c3.6 4.2 6 7.2 6 10.3a6 6 0 0 1-12 0c0-3.1 2.4-6.1 6-10.3Z M9 14.2a3 3 0 0 0 2.4 2.7" />,
   home: <path d="M3 10.6 12 3l9 7.6V19a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z" />,
   wallet: <><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18a2 2 0 0 1 2 2v1.5" /><path d="M4 7.5V17a2.5 2.5 0 0 0 2.5 2.5H19a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 6.5" /><circle cx="16.2" cy="14" r="1" /></>,
   list: <><rect x="5" y="3" width="14" height="18" rx="3" /><path d="M8.5 8h7M8.5 12h7M8.5 16h4" /></>,
@@ -61,11 +70,12 @@ const P = {
   diamond: <path d="M6.5 4h11l4 5.5L12 21 2.5 9.5z M2.5 9.5h19M9 4l-1 5.5L12 21l4-11.5L15 4" />,
 };
 
-export default function Icon({ name, size = 20, strokeWidth = 1.8, filled = false, className = '' }) {
+export default function Icon({ name, size = 20, strokeWidth = 1.7, filled = false, className = '' }) {
+  const solid = filled && FILLED[name];
   return (
     <svg className={`movo-icon ${className}`.trim()} width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'}
-      stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {P[name] || P.spark}
+      stroke={solid ? 'none' : 'currentColor'} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {solid || P[name] || P.spark}
     </svg>
   );
 }

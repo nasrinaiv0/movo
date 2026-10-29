@@ -3,7 +3,7 @@ import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed } from '../lib/format';
 
 export function Toggle({ checked, onChange, label }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`toggle${checked ? ' on' : ''}`} onClick={() => onChange(!checked)}><span /></button>;
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`toggle${checked ? ' on' : ''}`} onClick={() => { try { navigator.vibrate?.(8); } catch { /* unsupported */ } onChange(!checked); }}><span /></button>;
 }
 
 export function IconButton({ icon, label, onClick, dot, size = 20 }) {

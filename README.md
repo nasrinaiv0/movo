@@ -9,6 +9,8 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Sample data (`src/lib/demoData.js`) is shown until sign-in and is labelled as sample; comparison percentages in sample mode are fixed demo figures, real accounts get computed month-over-month changes.
 - Merchant logos are neutral monogram tiles; no third-party brand artwork is bundled.
 - Plan & Usage, quiet hours and some Settings rows are visual placeholders with no backend yet.
+- **Liquid Glass** (Settings → Appearance): translucent, blurred surfaces on cards, nav bar, buttons and sheets. A *Glass clarity* slider runs from Frosted to Clear and can be switched off entirely. Nav bar and sheets keep a minimum opacity so text stays legible, and `prefers-reduced-transparency` falls back to near-solid surfaces.
+- Buttons use 44 px touch targets, iOS-style press feedback, filled SF-style tab icons, and squircle icon tiles.
 - Preferences are stored under `movo.preferences.v3` (v2 values are migrated).
 
 ## Phase 1 — Home dashboard MVP

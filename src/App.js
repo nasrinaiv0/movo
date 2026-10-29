@@ -20,12 +20,13 @@ const OLD_PREF = 'movo.preferences.v2';
 const categories = ['Groceries', 'Food & drinks', 'Transport', 'Shopping', 'Bills', 'Subscriptions', 'Health', 'Education', 'Entertainment', 'Other'];
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
 const DEFAULTS = {
-  theme: 'system', accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [],
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile' };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
+const haptic = () => { try { navigator.vibrate?.(8); } catch { /* unsupported */ } };
 const today = () => new Date().toLocaleDateString('en-CA');
 
 function readPrefs() {
@@ -243,8 +244,10 @@ function App() {
   const resolved = prefs.theme === 'system' ? (systemDark ? 'dark' : 'light') : prefs.theme === 'dark' ? 'dark' : 'light';
   const tint = ['blue', 'purple', 'orange'].includes(prefs.theme) ? prefs.theme : '';
   const accentName = prefs.accent === 'custom' ? 'custom' : prefs.accent;
-  const rootStyle = accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : undefined;
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}`;
+  const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
+  const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.45 + 0.35 * clarity).toFixed(2) } : {};
+  const rootStyle = { ...glassVars, ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}`;
   const activeTab = ROOT_FOR[view];
 
   if (!authReady) return <div className={rootClass} style={rootStyle}><div className="loading-screen"><span className="brand-mark">m</span><p>Preparing your secure MOVO space…</p></div></div>;
@@ -270,6 +273,7 @@ function App() {
   })();
 
   return <div className={rootClass} style={rootStyle}>
+    {prefs.glass && <div className="glass-bg" aria-hidden="true"><i /><i /><i /></div>}
     <div className="app-shell">
       <main className="screen" key={view}>
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label="Dismiss error" onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
@@ -279,8 +283,8 @@ function App() {
       <nav className="bottom-nav" aria-label="Main navigation">
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined}>
-            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={34} /></span> : <Icon name={icon} size={23} filled={active} strokeWidth={active ? 1.6 : 1.7} />}</span>
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => { haptic(); go(target); }} aria-current={active ? 'page' : undefined}>
+            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={34} /></span> : <Icon name={icon} size={25} filled={active} />}</span>
             <span className="nav-label">{label}</span>{active && !center && <i className="nav-dot" />}
           </button>;
         })}
