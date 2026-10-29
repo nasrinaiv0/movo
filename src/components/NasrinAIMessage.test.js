@@ -9,6 +9,18 @@ function renderChart(spec) {
 }
 
 describe('NasrinAI chart rendering', () => {
+  test('renders a safe note instead of throwing on malformed chart rows', () => {
+    const html = renderChart({
+      chartType: 'bar',
+      xKey: 'month',
+      series: [{ dataKey: 'amount', label: 'Expenses' }],
+      data: [{ month: 'Jan', amount: 100 }, null]
+    });
+
+    expect(html).toContain('Chart data is invalid. Use a table instead.');
+    expect(html).not.toContain('<rect');
+  });
+
   test('preserves the series currency prefix on axis ticks and data tooltips', () => {
     const html = renderChart({
       chartType: 'bar',
