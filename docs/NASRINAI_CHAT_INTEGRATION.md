@@ -4,6 +4,17 @@
 
 The MOVO UI calls the same-origin Vercel function `POST /api/nasrinai/chat`. The function verifies the MOVO Supabase access token, creates a user-scoped Supabase client, and reads only that user's accounts, recent transactions, and active budgets under existing RLS. After the user explicitly opts in, it sends the actual question separately from a bounded financial context to `https://nasrinai.com/v1/chat` using the server-only `context_scope: "movo"` contract. MOVO accepts a reply only when the upstream explicitly returns `context_scope: "movo"`; older upstream deployments fail closed and their reply is not shown or saved. The context contains account labels/types/currency/opening balances, budgets, and a bounded set of recent or question-matching transaction dates, descriptions, categories, types, amounts, and account labels; transaction notes are excluded.
 
+
+## Legacy conversation and account-switch isolation
+
+- On the first cloud-mode visit per authenticated MOVO user after this context-isolation rollout, the UI starts a clean chat instead of restoring the latest legacy thread. The one-time marker is keyed by the signed-in user ID in browser storage; if storage is unavailable, the UI defaults to a clean chat.
+- This does not delete historical messages or change database retention. The old conversation remains stored under existing ownership/RLS rules, but is not automatically restored in that browser during the rollout. A new conversation becomes the latest thread after the first successful isolated turn.
+- Every upstream request is stateless and omits the provider conversation ID. Previous MOVO replies displayed in a legacy thread are never forwarded as upstream conversation history.
+- When the signed-in user changes or cloud mode is disabled, the UI clears visible messages, conversation ID, unsent draft, error, and chat-specific consent in a layout effect before the next paint. The active user's new-chat marker is then re-read before history loading.
+- The API rejects a reply unless the upstream explicitly confirms `context_scope: "movo"`. A missing confirmation is shown as a safe error, the assistant reply is not rendered or saved, and the draft is restored for retry.
+- Regression coverage is in `src/components/NasrinAIChat.test.js` and `src/lib/nasrinaiChat.test.js`: first-run clean chat, account switching while history is pending, consent, bounded request payload, and fail-closed scope confirmation.
+- This is defense in depth, not a replacement for upstream enforcement, authenticated ownership checks, or Supabase RLS. Do not merge/promote the MOVO change until the server-enforced upstream contract is deployed and a live authenticated smoke test passes.
+
 ## Required Vercel environment variables
 
 - `SUPABASE_URL` (or existing `REACT_APP_SUPABASE_URL`)
