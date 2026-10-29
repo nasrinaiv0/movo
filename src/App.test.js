@@ -9,7 +9,9 @@ jest.mock('./lib/financeRepository', () => ({
   listAccounts: jest.fn().mockResolvedValue([]),
   listTransactions: jest.fn().mockResolvedValue([]),
   createAccount: jest.fn(),
+  updateAccount: jest.fn(),
   createTransaction: jest.fn(),
+  updateTransaction: jest.fn(),
   deleteTransaction: jest.fn(),
   signOut: jest.fn(),
 }));
@@ -23,6 +25,16 @@ function clickButton(container, name) {
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   return button;
 }
+function setInputValue(input, value) {
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value')?.set
+      || Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
 const nav = (container, name) => {
   const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.textContent.trim() === name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -242,7 +254,7 @@ describe('MOVO finance frontend', () => {
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('does not move money between banks');
-    expect(container.textContent).toContain('can be lost when you refresh or close the page');
+    expect(container.textContent).toContain('persist across page reloads in the same browser profile');
     expect(container.textContent).toContain('NasrinAI');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
@@ -267,5 +279,64 @@ describe('MOVO finance frontend', () => {
     act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(container.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(trigger);
+  });
+
+  test('creates, edits and archives a local-only account across reloads', () => {
+    window.confirm = jest.fn(() => true);
+    nav(container, 'Wallet');
+    clickButton(container, 'Add Card');
+    const name = container.querySelector('input[placeholder="e.g. Everyday account"]');
+    setInputValue(name, 'My Test Card');
+    clickButton(container, 'Add account');
+    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
+    clickButton(container, 'Cards');
+    clickButton(container, 'Switch card');
+    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('My Test Card'));
+    expect(targetCard).toBeTruthy();
+    act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'View Details');
+    clickButton(container, 'Edit account');
+    setInputValue(container.querySelector('input[placeholder="e.g. Everyday account"]'), 'Updated Test Card');
+    clickButton(container, 'Save changes');
+    expect(container.textContent).toContain('Updated Test Card');
+    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    expect(container.textContent).toContain('Updated Test Card');
+    clickButton(container, 'Switch card');
+    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('Updated Test Card'));
+    expect(updatedCard).toBeTruthy();
+    act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'View Details');
+    clickButton(container, 'Archive account');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'Updated Test Card').is_archived).toBe(true);
+  });
+
+  test('edits a transaction and persists the change locally', () => {
+    nav(container, 'Transactions');
+    clickButton(container, 'See All');
+    clickButton(container, 'SM Supermarket, −₱1,250.00');
+    clickButton(container, 'Edit');
+    const description = container.querySelector('input[placeholder="e.g. Grocery shopping"]');
+    setInputValue(description, 'Edited supermarket');
+    clickButton(container, 'Save changes');
+    expect(container.textContent).toContain('Edited supermarket');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Edited supermarket');
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    expect(container.textContent).toContain('Edited supermarket');
+  });
+
+  test('CSV import action opens a review-first import sheet', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'More');
+    clickButton(container, 'Import CSV');
+    expect(container.querySelector('[role="dialog"][aria-label="Import transactions"]')).not.toBeNull();
+    expect(container.querySelector('input[type="file"][accept=".csv,text/csv"]')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Import 0 transaction(s)') && button.disabled)).toBe(true);
   });
 });
