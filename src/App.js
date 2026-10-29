@@ -14,6 +14,7 @@ import { getCurrentSession, listAccounts, listTransactions, createAccount, creat
 import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
 import { ACCENTS } from './screens/Settings';
+import NasrinAIChat from './components/NasrinAIChat';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -107,6 +108,21 @@ function App() {
     } catch { setError('Could not load cloud records. Check your connection and try again.'); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
   }, []);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const searchParams = new URLSearchParams(window.location.search);
+    const oauthError = hashParams.get('error') || hashParams.get('error_code')
+      || searchParams.get('error') || searchParams.get('error_code');
+    if (!oauthError) return;
+    setView('Sign in');
+    setError('Google sign-in could not be completed. Check the Google provider and redirect URL settings, then try again.');
+    const url = new URL(window.location.href);
+    ['error', 'error_code', 'error_description'].forEach((key) => url.searchParams.delete(key));
+    url.hash = '';
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
@@ -282,7 +298,7 @@ function App() {
       case 'Notifications': return <Notifications c={c} />;
       case 'NotificationDetail': return <NotificationDetail c={c} />;
       case 'NotificationSettings': return <NotificationSettings c={c} />;
-      case 'NasrinAI': return <section className="ai-panel"><span className="orb big"><NasrinMark size={52} /></span><h1>Your financial copilot</h1><p>AI insights will be enabled when a secure finance assistant provider is configured. For now, review your spending summary and use the transaction tools to keep your records accurate.</p><div className="ai-stats"><span>Income this month<strong>{shown(show, money(homeMonth.income))}</strong></span><span>Expenses this month<strong>{shown(show, money(homeMonth.expenses))}</strong></span></div><button type="button" className="primary-button" onClick={() => go('Transactions')}>Review transactions</button></section>;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} accounts={accountsView} transactions={txs} stats={homeMonth} />;
       case 'Sign in': return <AuthPanel onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify('Continuing in local-only mode.'); }} />;
       default: return <Home c={c} />;
     }
