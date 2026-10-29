@@ -60,8 +60,7 @@ function buildFinancialContext({ accounts = [], transactions = [], budgets = [] 
     type: t.transaction_type,
     amount: Number(t.amount),
     currency: /^[A-Z]{3}$/.test(t.currency || '') ? t.currency : 'PHP',
-    account: safeText((accounts.find((a) => a.id === t.account_id) || {}).name || 'Account', 100),
-    note: safeText(t.note, 240)
+    account: safeText((accounts.find((a) => a.id === t.account_id) || {}).name || 'Account', 100)
   }));
   const safeBudgets = budgets.slice(0, 50).map((b) => ({
     category: safeText(b.category, 60),
@@ -188,7 +187,7 @@ module.exports = async function handler(req, res) {
         .select('id,name,account_type,currency,opening_balance,is_archived')
         .order('display_order', { ascending: true }).limit(50),
       db.from('transactions')
-        .select('account_id,transaction_type,amount,currency,merchant,category,note,occurred_at')
+        .select('account_id,transaction_type,amount,currency,merchant,category,occurred_at')
         .order('occurred_at', { ascending: false }).limit(250),
       db.from('budgets')
         .select('category,monthly_limit,currency,starts_on,is_active')
