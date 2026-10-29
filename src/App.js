@@ -268,7 +268,7 @@ function App() {
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
-    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView,
+    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch,
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
