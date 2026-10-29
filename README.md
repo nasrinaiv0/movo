@@ -42,6 +42,9 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Displayed balances and totals are calculated from available records and are not verified bank balances or proof that money moved.
 - CSV exports can contain sensitive financial information. Store and share exported files carefully; CSV import is parsed locally and reviewed before saving.
 
+### Working with Claude Code
+Project rules, commands, conventions and security boundaries for Claude Code live in [`CLAUDE.md`](CLAUDE.md).
+
 ### Local development
 ```sh
 npm install
