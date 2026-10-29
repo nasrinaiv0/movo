@@ -28,13 +28,12 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [],
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile', HelpCenter: 'Profile', TermsOfService: 'Profile', PrivacyPolicy: 'Profile' };
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Profile: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
-const haptic = () => { try { navigator.vibrate?.(8); } catch { /* unsupported */ } };
 const today = () => new Date().toLocaleDateString('en-CA');
 
 function readPrefs() {
@@ -497,7 +496,7 @@ function App() {
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => { haptic(); go(target); }} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={30} /></span> : <Icon name={icon} size={28} strokeWidth={1.9} filled={active} />}</span>
           </button>;
         })}

@@ -10,7 +10,7 @@ export function Money({ value, show, digits = 2, currency = 'PHP' }) {
 }
 
 export function Toggle({ checked, onChange, label, disabled = false, reason, describedBy }) {
-  return <button type="button" role="switch" aria-checked={checked} aria-label={label} aria-describedby={describedBy || undefined} aria-disabled={disabled || undefined} disabled={disabled} title={disabled ? reason : undefined} className={`toggle${checked ? ' on' : ''}${disabled ? ' disabled' : ''}`} onClick={() => { if (disabled) return; try { navigator.vibrate?.(8); } catch { /* unsupported */ } onChange(!checked); }}><span /></button>;
+  return <button type="button" role="switch" aria-checked={checked} aria-label={label} aria-describedby={describedBy || undefined} aria-disabled={disabled || undefined} disabled={disabled} title={disabled ? reason : undefined} className={`toggle${checked ? ' on' : ''}${disabled ? ' disabled' : ''}`} onClick={() => { if (disabled) return; onChange(!checked); }}><span /></button>;
 }
 
 export function IconButton({ icon, label, onClick, dot, size = 20 }) {

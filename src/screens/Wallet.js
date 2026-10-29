@@ -1,5 +1,7 @@
 import React, { useRef } from 'react';
 import Icon from '../components/Icon';
+import CardArt from '../components/CardArt';
+import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet, Money } from '../components/ui';
 import { money, shown } from '../lib/format';
 
@@ -16,15 +18,8 @@ function AccountRow({ a, show, onClick }) {
   </button>;
 }
 
-export function CardArt({ a, show }) {
-  return <div className={`credit-card brand-${a.brand || 'blue'}`}>
-    <div className="cc-top"><span className="cc-name">{a.name}</span><span className="cc-net">{a.institution_name}</span></div>
-    <div className="cc-bottom"><span>{a.mask ? `•••• ${a.mask}` : 'No card number'}</span><b>{shown(show, money(a.balance, a.currency))}</b></div>
-  </div>;
-}
-
 export default function Wallet({ c }) {
-  const { show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
+  const { prefs, setPref, show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
   const scroller = useRef(null);
   const list = walletFilter === 'All' ? accountsView : accountsView.filter(a => a.account_type === typeOf[walletFilter]);
   const total = stats.balance || 1;
@@ -37,6 +32,9 @@ export default function Wallet({ c }) {
     const next = cards[Math.min(Math.max(idx, 0), cards.length - 1)];
     if (next && next.id !== selectedCard?.id) setSelectedCardId(next.id);
   };
+  const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
+  const holder = c.user?.name;
+  const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
   const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
 
   return <>
@@ -61,6 +59,12 @@ export default function Wallet({ c }) {
           </button>;
         })}
       </section>
+      {cards.length > 0 && <>
+        <SectionTitle action="See All" onAction={() => setWalletFilter('Cards')}>My Cards</SectionTitle>
+        <div className="card-scroller mini" aria-label="Your cards">
+          {cards.map(a => <button type="button" className="card-slide" key={a.id} aria-label={`Open ${a.name} card`} onClick={() => { setSelectedCardId(a.id); setWalletFilter('Cards'); }}><CardArt a={a} show={show} styleId={styleOf(a)} holder={holder} /></button>)}
+        </div>
+      </>}
       <SectionTitle>Quick Actions</SectionTitle>
       <section className="quick-actions">
         {[['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], ['send', 'Record Transfer', () => openForm('transfer')], ['plus', 'Add Transaction', () => openForm('expense')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
@@ -72,9 +76,10 @@ export default function Wallet({ c }) {
 
     {walletFilter === 'Cards' && (cards.length ? <>
       <div className="card-scroller" ref={scroller} onScroll={onScroll} aria-label="Your cards">
-        {cards.map(a => <div className="card-slide" key={a.id}><CardArt a={a} show={show} /></div>)}
+        {cards.map(a => <div className="card-slide" key={a.id}><CardArt a={a} show={show} styleId={styleOf(a)} holder={holder} /></div>)}
       </div>
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
+      <button type="button" className="style-button" onClick={() => setSheet({ name: 'cardStyle' })}><Icon name="palette" size={18} /> Card style</button>
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card (Unavailable)', () => {}], ['sliders', 'Limits (Unavailable)', () => {}], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) => {
           const unavailable = label.includes('(Unavailable)');
@@ -87,13 +92,15 @@ export default function Wallet({ c }) {
       </button>
       <SectionTitle action="See All" onAction={() => go('Transactions')}>Recent Transactions</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">No transactions for this card yet.</p>}</section>
-    </> : <div className="card empty-card"><Icon name="card" size={28} /><h3>No cards yet</h3><p>Add a card to track its balance and activity.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>Add card</button></div>)}
+    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>No cards yet</h3><p>Add a card, then dress it with any of 270+ stickers.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>Add card</button></div>)}
 
     {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets') && <>
       <SectionTitle>{walletFilter}</SectionTitle>
       <section className="account-list">{list.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); }} />)}</section>
       {!list.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>No {walletFilter.toLowerCase()} yet</h3><p>Add an account to start organizing your finances.</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: walletFilter === 'Bank Accounts' ? 'bank' : 'e_wallet' })}>Add account</button></div>}
     </>}
+
+    {sheet?.name === 'cardStyle' && selectedCard && <CardStyleSheet account={selectedCard} show={show} holder={holder} current={styleOf(selectedCard)} onPick={pickStyle} onClose={() => setSheet(null)} />}
 
     {sheet?.name === 'cards' && <Sheet title="Your Cards" onClose={() => setSheet(null)}>
       <div className="sheet-list">{cards.map(a => <button type="button" key={a.id} className={`sheet-card${a.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => { setSelectedCardId(a.id); setSheet(null); }}>
