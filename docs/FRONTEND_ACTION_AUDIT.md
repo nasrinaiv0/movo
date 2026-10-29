@@ -81,3 +81,13 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
 
 - [x] Clarify Clear Local Data behavior: it resets preferences to defaults, removes local/demo records in the current session, and does not affect cloud records; add a regression test for the confirmation copy, preference reset, and sample removal.
+
+## Additional increment — local finance persistence and CSV import (2026-10-29)
+
+- [x] Persist manually entered transactions and manually created accounts in browser local storage; do not persist demo rows as user data.
+- [x] Restore local records after reload/sign-out and prevent a saved user edit from duplicating a sample row with the same ID.
+- [x] Add local account creation/edit/archive, transaction editing, and review-first CSV import with a 5 MB limit, validation, preview, duplicate fingerprints, and per-row errors.
+- [x] Align Terms, Privacy Policy, and Help Center with actual browser-local persistence and its unencrypted, device-specific nature.
+- [x] Add unit and UI coverage for local persistence, CSV parsing, account/transaction editing, and import review.
+- [ ] Fresh final-head CI/preview verification is pending.
+- [ ] Release blockers remain: publish verified controller identity/legal disclosures, enable leaked-password protection, review dependency audit findings, resolve NasrinAI upstream 401, and reconcile PR #24 without duplicating UI work.
