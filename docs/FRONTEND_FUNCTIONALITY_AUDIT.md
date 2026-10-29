@@ -49,3 +49,11 @@
 - Notification-channel switches use the same association so screen-reader users can hear why push/email delivery is unavailable instead of relying on the visual row text or a mouse-only tooltip.
 - Regression tests assert that disabled settings switches are disabled, visibly off where unsupported, and reference an existing non-empty description.
 - Validation completed on PR #30 head `3ec569e9ec9aaecb37ccb315852f48bade19ea24`: [GitHub Actions run 40844002618](https://github.com/nasrinaiv0/movo/actions/runs/40844002618) passed 13 test suites / 72 tests, `tsc --noEmit`, and production compilation; the Vercel preview for that exact commit reached READY. PR #30 merged as `a6ab72d1c6ce503f1de724c0b50012d96e341938`, and Vercel reports the production deployment for that exact `main` commit READY with `movo.nasrinai.com` attached. A full interactive browser smoke test against the custom domain is still unverified.
+
+
+## 2026-10-29 follow-up: profile edit form behavior
+
+- Replaced the profile screen's notification-only Save action with a real form submit. Draft values remain in component state while editing; submit validates and trims the name, phone, and location before writing them to browser preferences.
+- Explicitly disclosed that these editable profile fields are browser-local; the authentication email remains read-only and managed by the sign-in provider. No cloud profile write is implied.
+- Added regression tests for successful save, local persistence, trimming, and rejection of a blank name.
+- Validation completed on exact PR head `2a6ec6bb0a31a200d02298388eaa98994be515f9`: GitHub Actions [run 40845241222](https://github.com/nasrinaiv0/movo/actions/runs/40845241222) passed; Vercel preview `movo-2inoznxoq-nasrin-ai.vercel.app` reached READY and returned HTTP 200. Its build logs confirm `tsc --noEmit`, **13 test suites / 74 tests passed**, and successful production compilation. The built JavaScript includes the profile form and validation copy, with no NasrinAI server-key pattern or `NASRINAI_API_KEY` string found in the client bundle. A full interactive browser session remains unverified.
