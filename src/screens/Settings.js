@@ -142,9 +142,9 @@ export function NotificationSettings({ c }) {
     <section className="card menu-card">{item('bell', 'Notifications', 'Manage how you receive notifications', 'notifications')}</section>
     <h2 className="group-title">Notification Channels</h2>
     <section className="card menu-card">
-      {item('phone', 'Push Notifications', 'Receive notifications in the app', 'push')}
-      {item('mail', 'Email Notifications', 'Receive important updates via email', 'email')}
-      {item('message', 'In-App Alerts', 'Show alerts inside the app', 'inapp')}
+      {item('phone', 'Push Notifications', 'Preference only; push delivery is not connected', 'push')}
+      {item('mail', 'Email Notifications', 'Preference only; email delivery is not connected', 'email')}
+      {item('message', 'In-App Alerts', 'Preference saved locally; alert filtering is not fully connected', 'inapp')}
     </section>
     <h2 className="group-title">Notification Categories</h2>
     <section className="card menu-card">
