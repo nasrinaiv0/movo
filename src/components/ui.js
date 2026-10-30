@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed, HIDDEN } from '../lib/format';
 import { canAnimate, useCountUp } from '../lib/motion';
 import { t as tr } from '../lib/i18n';
+import { percentLabel } from '../lib/trend';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency }) {
@@ -127,10 +128,22 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
 }
 
 export function Sparkline({ values, width = 170, height = 70 }) {
-  const d = smoothPath(values, width, height);
+  // Edge to edge: the line and its fill run to the card's right and bottom edges, leaving no gap.
+  const d = smoothPath(values, width, height, 0, 10);
   return <svg className="sparkline" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
-    {d && <><path d={`${d}L${width - 6} ${height}L6 ${height}Z`} fill="var(--accent)" fillOpacity=".08" stroke="none" /><path d={d} className="spark-line" /></>}
+    {d && <><path d={`${d}L${width} ${height}L0 ${height}Z`} fill="var(--accent)" fillOpacity=".08" stroke="none" /><path d={d} className="spark-line" /></>}
   </svg>;
+}
+
+/** Month-over-month indicator: arrow shows the direction, colour shows whether that is good (see lib/trend). */
+export function Trend({ value, chip = false, size = 12 }) {
+  if (!value) return null;
+  const pct = percentLabel(value.percent);
+  const spoken = value.direction === 'flat' ? tr('No change vs last month') : tr(value.direction === 'up' ? 'Up {n} vs last month' : 'Down {n} vs last month', { n: pct });
+  return <span className={chip ? `chip-${value.tone}` : `delta ${value.tone}`}>
+    <span aria-hidden="true" className="trend-vis"><Icon name={value.direction === 'up' ? 'arrowUp' : value.direction === 'down' ? 'arrowDown' : 'minus'} size={size} strokeWidth={2.4} />{pct}{chip ? ` ${tr('vs last month')}` : ''}</span>
+    <span className="sr-only">{spoken}</span>
+  </span>;
 }
 
 export function Bars({ values, startLabel, endLabel }) {

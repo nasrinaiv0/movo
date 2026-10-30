@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
 import CardStyleSheet from '../components/CardStyleSheet';
-import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet, Money } from '../components/ui';
+import { RootHeader, Chips, SectionTitle, Sparkline, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
 import { money, shown } from '../lib/format';
@@ -60,7 +60,7 @@ export default function Wallet({ c }) {
     { id: 'balance', label: tr('Total balance'), node: <section className="card balance-card compact" aria-label={tr('Total balance')}>
       <div className="balance-label">{tr('Total Balance')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
-      {c.deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={12} /> +{c.deltas.balance}% {tr('vs last month')}</span>}
+      <Trend value={c.deltas.balance} chip />
       <div className="balance-art"><Sparkline values={stats.trend} width={200} height={90} /></div>
     </section> },
     { id: 'actions', label: tr('Quick actions'), node: <section aria-label={tr('Quick actions')}>

@@ -49,10 +49,25 @@ export const demoTransactions = [
   tx(29, 'Transfer to GoTyme', 'Transfer', 6000, 'transfer', SAV, '2026-10-18T09:00:00+08:00', { transfer_to_account_id: GT }),
   tx(30, 'Transfer to GCash', 'Transfer', 4000, 'transfer', SAV, '2026-10-10T09:00:00+08:00', { transfer_to_account_id: GC }),
   tx(31, 'Transfer to BPI', 'Transfer', 1700, 'transfer', GT, '2026-10-04T09:00:00+08:00', { transfer_to_account_id: BPS }),
+  // September, so the month-over-month indicators have a real baseline to compare with.
+  tx(101, 'Salary', 'Income', 50000, 'income', SAV, '2026-09-26T09:00:00+08:00', { method: 'Bank Transfer' }),
+  tx(102, 'Freelance project', 'Income', 12000, 'income', SAV, '2026-09-15T11:00:00+08:00'),
+  tx(103, 'Tuition', 'Education', 6000, 'expense', SAV, '2026-09-01T09:00:00+08:00'),
+  tx(104, 'PLDT', 'Bills', 1999, 'expense', SAV, '2026-09-07T10:00:00+08:00'),
+  tx(105, 'Jollibee', 'Food & drinks', 1450, 'expense', GC, '2026-09-10T12:30:00+08:00'),
+  tx(106, 'Mercury Drug', 'Health', 1240, 'expense', MB, '2026-09-11T14:10:00+08:00'),
+  tx(107, 'Puregold', 'Groceries', 3900, 'expense', MB, '2026-09-13T18:20:00+08:00'),
+  tx(108, 'Meralco', 'Bills', 3450, 'expense', SAV, '2026-09-15T10:00:00+08:00'),
+  tx(109, 'Grab', 'Transport', 980, 'expense', MB, '2026-09-18T08:05:00+08:00', { method: 'Apple Pay' }),
+  tx(110, 'Starbucks', 'Food & drinks', 620, 'expense', MB, '2026-09-19T11:30:00+08:00'),
+  tx(111, 'Shell', 'Transport', 2300, 'expense', MB, '2026-09-22T17:00:00+08:00'),
+  tx(112, 'Shopee', 'Shopping', 2150, 'expense', BPI, '2026-09-24T21:00:00+08:00'),
+  tx(113, 'Netflix', 'Subscriptions', 549, 'expense', MB, '2026-09-25T16:20:00+08:00'),
+  tx(114, 'SM Supermarket', 'Groceries', 5400, 'expense', MB, '2026-09-27T10:15:00+08:00'),
+  tx(115, 'Transfer to GCash', 'Transfer', 4000, 'transfer', SAV, '2026-09-10T09:00:00+08:00', { transfer_to_account_id: GC }),
+  tx(116, 'Transfer to GoTyme', 'Transfer', 5000, 'transfer', SAV, '2026-09-20T09:00:00+08:00', { transfer_to_account_id: GT }),
 ];
 
-/** Sample comparison figures; real accounts get real month-over-month maths. */
-export const demoDeltas = { balance: 12, income: 8, expenses: 5, savings: 12, spent: 5, transfers: 12 };
 
 export const demoNotifications = [
   { id: 'n-login', kind: 'Account', icon: 'bell', tone: 'orange', title: 'New Login', body: 'A new login from iPhone was detected', at: '2026-10-28T08:42:00+08:00' },

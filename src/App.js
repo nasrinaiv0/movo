@@ -24,7 +24,8 @@ import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
-import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
+import { demoAccounts, demoTransactions, demoNotifications } from './lib/demoData';
+import { monthOverMonth } from './lib/trend';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
@@ -62,7 +63,6 @@ function readPrefs() {
 }
 const hexToRgb = (hex) => { const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || ''); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '47,107,255'; };
 const monthsBack = (key, n) => { const [y, m] = key.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 - n, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
-const pctChange = (now, before) => (before > 0 ? Math.round(((now - before) / before) * 100) : null);
 /* Each record keeps its original amount and currency; `amount` is converted to the home currency for totals. */
 const normalize = (t, accounts, base, rates) => {
   const account = accounts.find(a => a.id === t.account_id);
@@ -270,11 +270,7 @@ function App() {
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
     return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
   }, [accountsView, txs, homeMonth, toBase]);
-  const deltas = useMemo(() => {
-    if (!cloudMode) return demoDeltas;
-    const prev = statsFor(monthsBack(refMonth, 1));
-    return { balance: pctChange(stats.balance, stats.balance - homeMonth.net), income: pctChange(homeMonth.income, prev.income), expenses: pctChange(homeMonth.expenses, prev.expenses), savings: pctChange(homeMonth.net, prev.net), spent: pctChange(homeMonth.expenses, prev.expenses), transfers: pctChange(homeMonth.transfers, prev.transfers) };
-  }, [cloudMode, statsFor, refMonth, stats.balance, homeMonth]);
+  const deltas = useMemo(() => monthOverMonth(txs, refDate, stats.balance), [txs, refDate, stats.balance]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {

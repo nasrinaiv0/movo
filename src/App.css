@@ -94,6 +94,9 @@ h1, h2, h3, p { margin: 0; }
 .delta { align-self: flex-start; padding: 3px 9px; border-radius: 8px; font-size: 12px; font-weight: 600; }
 .delta.good { background: var(--green-bg); color: var(--green); }
 .delta.bad { background: var(--red-bg); color: var(--red); }
+.delta.neutral, .chip-neutral { background: color-mix(in srgb, var(--muted) 14%, transparent); color: var(--muted); }
+.chip-neutral { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+.trend-vis { display: inline-flex; align-items: center; gap: 3px; }
 
 /* tones */
 .tone-green { background: var(--green-bg); color: var(--green); }
@@ -1341,8 +1344,10 @@ button.account-tile:active { transform: scale(.98); }
 /* Balance card: chart fades in from behind the text and never crosses the chip or the button */
 .balance-card .balance-art { width: 48%; height: 54%; -webkit-mask-image: linear-gradient(to right, transparent, #000 45%); mask-image: linear-gradient(to right, transparent, #000 45%); }
 [dir="rtl"] .balance-card .balance-art { -webkit-mask-image: linear-gradient(to left, transparent, #000 45%); mask-image: linear-gradient(to left, transparent, #000 45%); }
-.balance-card .chip-good, .balance-card .chip-bad { position: relative; z-index: 1; }
+.balance-card .chip-good, .balance-card .chip-bad, .balance-card .chip-neutral { position: relative; z-index: 1; }
 .balance-card .chip-good { background: color-mix(in srgb, var(--green) 13%, var(--card-solid)); }
+.balance-card .chip-bad { background: color-mix(in srgb, var(--red) 13%, var(--card-solid)); }
+.balance-card .chip-neutral { background: color-mix(in srgb, var(--muted) 14%, var(--card-solid)); }
 .balance-card .balance-amount { position: relative; z-index: 1; }
 .balance-go { top: 14px; right: 14px; transform: none; width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
 [dir="rtl"] .balance-go { right: auto; left: 14px; }

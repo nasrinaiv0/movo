@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money } from '../components/ui';
-import { money, shown, monthRange, monthLabel, dayKey, relativeDay, longDate } from '../lib/format';
+import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
+import { money, shown, monthRange, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
@@ -20,6 +20,8 @@ const net = (list) => list.reduce((s, t) => s + (t.type === 'income' ? t.amount 
 
 export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
+  /* Month-over-month indicators describe the current month only; older months show their totals alone. */
+  const isCurrent = month === monthKey(refDate);
   const sorts = SORTS[txFilter];
   const sort = sorts.includes(sortKey) ? sortKey : 'Date';
   const sorted = useMemo(() => sortList(monthTxs, sort), [monthTxs, sort]);
@@ -50,13 +52,13 @@ export default function Transactions({ c }) {
       <section className="card total-card" aria-label={tr('Total spent')}>
         <div><div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
-          {deltas.spent != null && <span className="chip-bad"><Icon name="arrowUp" size={12} /> {deltas.spent}% {tr('vs last month')}</span>}</div>
+          {isCurrent && <Trend value={deltas.spent} chip />}</div>
         <Bars values={monthStats.bars} startLabel={monthLabel(month).split(' ')[0]} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
       </section>
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
           <article className={`card stat-card tint-${tone}`} key={label}><div className="stat-head"><span className={`stat-icon tone-${tone}`}><Icon name={icon} size={15} strokeWidth={2.2} /></span><span>{tr(label)}</span></div>
-            <strong><Money value={value} show={show} digits={0} /></strong>{d != null && <span className={`delta ${label === 'Expenses' ? 'bad' : 'good'}`}>+{d}%</span>}</article>)}
+            <strong><Money value={value} show={show} digits={0} /></strong>{isCurrent && <Trend value={d} />}</article>)}
       </section>
     </>}
 

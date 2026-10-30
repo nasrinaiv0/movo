@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, SubHeader, SectionTitle } from '../components/ui';
+import { RootHeader, SubHeader, SectionTitle, Trend } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
 
-const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad ? 'bad' : 'good'}`}><Icon name={bad ? 'arrowDown' : 'arrowUp'} size={11} strokeWidth={2.4} />{v}%</span>);
 
 export default function Profile({ c }) {
   const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
@@ -20,8 +19,8 @@ export default function Profile({ c }) {
       <Icon name="chevron" size={18} />
     </button>
     <section className="stat-grid" aria-label={tr('Profile summary')}>
-      {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance, false], ['Total Income', 'arrowUp', 'green', stats.income, deltas.income, false], ['Total Expense', 'arrowDown', 'red', stats.expenses, deltas.expenses, true]].map(([label, icon, tone, value, d, bad]) =>
-        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, undefined, 0))}</strong><Delta v={d} bad={bad} /></article>)}
+      {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance], ['Total Income', 'arrowDown', 'green', stats.income, deltas.income], ['Total Expense', 'arrowUp', 'red', stats.expenses, deltas.expenses]].map(([label, icon, tone, value, d]) =>
+        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, undefined, 0))}</strong><Trend value={d} size={11} /></article>)}
     </section>
 
     <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>

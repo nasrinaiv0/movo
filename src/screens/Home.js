@@ -1,17 +1,11 @@
 import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
-import { IconButton, SectionTitle, Sparkline, Donut, Legend, TransactionRow, Money, Sheet } from '../components/ui';
+import { IconButton, SectionTitle, Sparkline, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
 import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
 import { dayKey, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-
-const Delta = ({ value, invert }) => {
-  if (value == null) return null;
-  const up = value >= 0; const good = invert ? !up : up;
-  return <span className={`delta ${good ? 'good' : 'bad'}`}>{up ? '+' : '−'}{Math.abs(value)}%</span>;
-};
 
 export function timeGreeting(date = new Date()) {
   const h = date.getHours();
@@ -45,7 +39,7 @@ export default function Home({ c }) {
   const file = useRef(null);
   const tiles = [
     { label: tr('Income'), icon: 'arrowDown', tone: 'green', value: stats.income, delta: deltas.income },
-    { label: tr('Expenses'), icon: 'arrowUp', tone: 'red', value: stats.expenses, delta: deltas.expenses, invert: true },
+    { label: tr('Expenses'), icon: 'arrowUp', tone: 'red', value: stats.expenses, delta: deltas.expenses },
     { label: tr('Savings'), icon: 'bank', tone: 'slate', value: stats.savings, delta: deltas.savings },
   ];
   const todayKey = dayKey(new Date());
@@ -65,7 +59,7 @@ export default function Home({ c }) {
         <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={18} /></button>
       </div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
-      {deltas.balance != null && <span className="chip-good"><Icon name="arrowUp" size={13} /> {deltas.balance >= 0 ? '+' : '−'}{Math.abs(deltas.balance)}% {tr('vs last month')}</span>}
+      <Trend value={deltas.balance} chip size={13} />
       <div className="balance-art"><Sparkline values={stats.trend} width={260} height={110} /></div>
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
     </section> },
@@ -73,7 +67,7 @@ export default function Home({ c }) {
       {tiles.map(t => <article className={`card stat-card tint-${t.tone}`} key={t.label}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
         <strong><Money value={t.value} show={show} digits={0} /></strong>
-        <Delta value={t.delta} invert={t.invert} />
+        <Trend value={t.delta} />
       </article>)}
     </section> },
     { id: 'flow', label: tr('Money flow'), node: <MoneyFlow txs={txs} refDate={refDate} show={show} /> },

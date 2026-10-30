@@ -2,7 +2,7 @@ import Icon, { NasrinMark } from './Icon';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { readImageText } from '../lib/ocr';
-import { t as tr, rich } from '../lib/i18n';
+import { t as tr, rich, getLanguage } from '../lib/i18n';
 
 const ackKey = (id) => `movo.ai.ack.v1.${id}`;
 const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) === '1'; } catch { return false; } };
@@ -104,7 +104,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const response = await fetch('/api/nasrinai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
-        body: JSON.stringify({ message, conversationId, consent: privacyAccepted })
+        body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
