@@ -1672,3 +1672,4 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .nav-pill { top: var(--nav-pad); bottom: var(--nav-pad); left: var(--nav-pad); right: auto; height: auto; margin: 0; width: calc((100% - var(--nav-pad) * 2) / 5); transform: translateX(calc(var(--idx, 0) * 100%)); }
 [dir="rtl"] .movo-app .nav-pill, .movo-app[dir="rtl"] .nav-pill { left: auto; right: var(--nav-pad); margin: 0; transform: translateX(calc(var(--idx, 0) * -100%)); }
 .movo-app .nav-item { min-width: 0; height: 100%; justify-content: center; }
+.tour-logo { display: inline-grid; place-items: center; }

@@ -634,6 +634,14 @@ function App() {
     setRawTxs(cur => cur.filter(x => x.id !== id));
     notify(tr('Transaction removed.'));
   }, [cloudMode, notify]);
+  /* Fade out the loading screen from index.html once the app is ready; keep it at least ~0.9s so it never flashes. */
+  useEffect(() => {
+    if (!authReady) return undefined;
+    const el = document.getElementById('movo-splash');
+    if (!el) return undefined;
+    const t = setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 400); }, Math.max(0, 900 - (window.performance?.now?.() || 0)));
+    return () => clearTimeout(t);
+  }, [authReady]);
   /* First-run tour: only for people with no saved preferences, on Home, and never in tests. */
   const showTour = authReady && !prefs.onboarded && view === 'Home' && !sheet && process.env.NODE_ENV !== 'test';
   // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.

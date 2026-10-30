@@ -3,13 +3,46 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f5f8" />
-    <meta name="description" content="MOVO — a calm, premium view of your money." />
+    <meta name="theme-color" content="#f5f5f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f0f0f" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Movo — Financial Tracker. A calm, private view of your money." />
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-    <title>MOVO — Financial clarity</title>
+    <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="%PUBLIC_URL%/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <title>Movo — Financial Tracker</title>
+    <style>
+      /* Loading screen, shown before the app's JavaScript runs. The mark shifts slowly between its colourways. */
+      #movo-splash { position: fixed; inset: 0; z-index: 1000; display: grid; place-content: center; justify-items: center; gap: 6px; background: #f5f5f8; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; transition: opacity .35s ease-out; }
+      #movo-splash.leaving { opacity: 0; pointer-events: none; }
+      #movo-splash svg { width: 92px; height: 72px; margin-bottom: 12px; }
+      #movo-splash .w { font-size: 30px; font-weight: 700; letter-spacing: -.5px; color: #0d1b2a; }
+      #movo-splash .s { font-size: 13px; letter-spacing: .14em; color: #5b6472; }
+      #movo-splash .d { fill: #0b7a54; animation: mv-d 4.8s ease-in-out infinite; }
+      #movo-splash .l { stroke: #3dba78; animation: mv-l 4.8s ease-in-out infinite; }
+      #movo-splash .m { stroke: #10a866; animation: mv-m 4.8s ease-in-out infinite; }
+      @keyframes mv-d { 0%, 30%, 100% { fill: #0b7a54; } 50%, 80% { fill: #2b2b2e; } }
+      @keyframes mv-l { 0%, 30%, 100% { stroke: #3dba78; } 50%, 80% { stroke: #8a8a8a; } }
+      @keyframes mv-m { 0%, 30%, 100% { stroke: #10a866; } 50%, 80% { stroke: #555559; } }
+      @media (prefers-color-scheme: dark) {
+        #movo-splash { background: #0f0f0f; }
+        #movo-splash .w { color: #fff; }
+        #movo-splash .s { color: #8e8e93; }
+        @keyframes mv-d { 0%, 30%, 100% { fill: #0b7a54; } 50%, 80% { fill: #d4d4d8; } }
+        @keyframes mv-l { 0%, 30%, 100% { stroke: #3dba78; } 50%, 80% { stroke: #ffffff; } }
+        @keyframes mv-m { 0%, 30%, 100% { stroke: #10a866; } 50%, 80% { stroke: #e9e9ec; } }
+      }
+      @media (prefers-reduced-motion: reduce) { #movo-splash .d, #movo-splash .l, #movo-splash .m { animation: none; } #movo-splash { transition: none; } }
+    </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run MOVO.</noscript>
+    <noscript>You need to enable JavaScript to run Movo.</noscript>
+    <div id="movo-splash" role="status" aria-label="Loading Movo">
+      <svg viewBox="0 0 120 94" aria-hidden="true"><defs><clipPath id="sl"><rect width="60" height="94"/></clipPath><clipPath id="sr"><rect x="60" width="60" height="94"/></clipPath></defs><rect class="d" width="31" height="94" rx="15.5"/><rect class="d" x="89" width="31" height="94" rx="15.5"/><line class="l" x1="15.5" y1="15.5" x2="60" y2="60" stroke-width="31" stroke-linecap="round" clip-path="url(#sl)"/><line class="m" x1="104.5" y1="15.5" x2="60" y2="60" stroke-width="31" stroke-linecap="round" clip-path="url(#sr)"/></svg>
+      <span class="w">Movo</span>
+      <span class="s">FINANCIAL TRACKER</span>
+    </div>
     <div id="root"></div>
   </body>
 </html>
