@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --accent: #2f6bff; --accent-rgb: 47,107,255; --accent-2: #6a5cff;
+  --accent: #285fe8; --accent-rgb: 40,95,232; --accent-2: #6a5cff;
   --bg: #f3f3f7; --bg-grad: none;
-  --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #7d8294; --line: rgba(20,24,40,.045);
+  --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #626b7c; --line: rgba(20,24,40,.045);
   --shadow: 0 8px 28px rgba(30,38,70,.06); --shadow-sm: 0 2px 10px rgba(30,38,70,.05);
-  --green: #12a566; --green-bg: rgba(18,165,102,.12); --red: #e5484d; --red-bg: rgba(229,72,77,.1);
-  --nav-bg: rgba(255,255,255,.92); --nav-active: #14161f; --nav-muted: #7d8294; --chip-bg: rgba(255,255,255,.8);
+  --green: #087548; --green-bg: rgba(18,165,102,.12); --red: #b4232a; --red-bg: rgba(229,72,77,.1);
+  --nav-bg: rgba(255,255,255,.92); --nav-active: #14161f; --nav-muted: #626b7c; --chip-bg: rgba(255,255,255,.8);
   --sheet-bg: #fff; --overlay: rgba(15,18,30,.4); --field: rgba(20,24,40,.045); --on-accent: #fff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
-.accent-purple { --accent: #7c4dff; --accent-rgb: 124,77,255; --accent-2: #a56bff; }
-.accent-orange { --accent: #ff8a1f; --accent-rgb: 255,138,31; --accent-2: #ff5e62; }
-.accent-green { --accent: #13b45f; --accent-rgb: 19,180,95; --accent-2: #0fa3a3; }
-.accent-red { --accent: #ef4444; --accent-rgb: 239,68,68; --accent-2: #f97316; }
+.accent-purple { --accent: #6b3fd4; --accent-rgb: 107,63,212; --accent-2: #a56bff; }
+.accent-orange { --accent: #a94b00; --accent-rgb: 169,75,0; --accent-2: #ff5e62; }
+.accent-green { --accent: #087548; --accent-rgb: 8,117,72; --accent-2: #0fa3a3; }
+.accent-red { --accent: #b4232a; --accent-rgb: 180,35,42; --accent-2: #f97316; }
 .accent-slate { --accent: #334155; --accent-rgb: 51,65,85; --accent-2: #64748b; }
 .theme-dark {
   --bg: #0d0f15; --bg-grad: none;
@@ -100,11 +100,11 @@ h1, h2, h3, p { margin: 0; }
 .tone-red { background: var(--red-bg); color: var(--red); }
 .tone-blue { background: rgba(var(--accent-rgb),.12); color: var(--accent); }
 .tone-slate { background: rgba(110,120,140,.14); color: var(--muted); }
-.tone-violet { background: rgba(124,77,255,.14); color: #7c4dff; }
-.tone-orange { background: rgba(255,138,31,.16); color: #e8730c; }
-.tone-teal { background: rgba(16,185,170,.15); color: #0e9e92; }
+.tone-violet { background: rgba(107,63,212,.14); color: #6b3fd4; }
+.tone-orange { background: rgba(169,75,0,.12); color: #a94b00; }
+.tone-teal { background: rgba(11,105,114,.15); color: #0b6972; }
 .tone-gray { background: rgba(120,128,145,.14); color: var(--muted); }
-.tone-amber { background: rgba(247,183,62,.2); color: #b77900; }
+.tone-amber { background: rgba(130,83,0,.14); color: #825300; }
 
 .section-title { display: flex; align-items: center; justify-content: space-between; margin: 22px 2px 10px; }
 .section-title h2 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
