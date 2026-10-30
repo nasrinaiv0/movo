@@ -37,6 +37,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Shape language: cards `--r-card` (22px), tiles/menu/stat icons `--r-tile` (30% squircle), chips and deltas pills, buttons ≥48px tall with 16px radius.
 - Borders are soft (`--line` is very light). Inputs/search/composer show **no border, outline or ring while focused**; a faint accent tint marks the active field.
 - Motion is calm: smooth ease-out only. **No** `navigator.vibrate`, no overshooting bounce springs, no breathing/pulsing orb. Respect `prefers-reduced-motion`; animations are skipped in tests via `canAnimate()`.
+- Subscription catalog marks come from Simple Icons via the generated `src/lib/brandMarks.js` (owner-approved for identification only) and must always appear with the trademark notice (`BrandNotice`). This does not extend to card stickers.
 - Card stickers are original, procedurally generated vector art (`stickers.js`). Do not add third-party characters, franchise art or logos; users may upload their own images.
 
 ## Security (non-negotiable)

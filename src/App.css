@@ -1577,3 +1577,8 @@ button.account-tile:active { transform: scale(.98); }
 
 /* ---------- Accent swatches: always true circles (the global 44px min-height stretched them into ovals) ---------- */
 .movo-app .accent-row button { flex: none; width: 44px; height: 44px; min-width: 44px; min-height: 44px; aspect-ratio: 1; padding: 0; border-radius: 50%; }
+
+/* ---------- Subscription brand marks, catalog groups and trademark notice ---------- */
+.sub-icon.has-mark svg { display: block; }
+.catalog-group { margin: 14px 4px 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.brand-notice { margin: 14px 4px 0; font-size: 11px; line-height: 1.45; color: var(--muted); }

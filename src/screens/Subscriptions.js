@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Icon from '../components/Icon';
 import { SubHeader, Sheet, Money } from '../components/ui';
 import { formatDate, money, shown, currencySymbol } from '../lib/format';
@@ -10,12 +10,38 @@ const TABS = [['upcoming', 'Upcoming'], ['calendar', 'Calendar'], ['insights', '
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 const pad = (n) => String(n).padStart(2, '0');
 
-/** Rounded brand-coloured tile with the service's initials (no third-party logos are bundled). */
-export function SubIcon({ sub, size = 40 }) {
-  const color = sub.color || catalogFor(sub.name)?.color || '#64748b';
-  const initials = String(sub.name || '?').replace(/[^A-Za-z0-9+ ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
-  return <span className="sub-icon" style={{ width: size, height: size, background: color, fontSize: Math.round(size * 0.36) }} aria-hidden="true">{initials}</span>;
+/* Official marks load on demand in their own chunk; initials show until then and for services without a mark. */
+let MARKS = null; let marksLoading = null;
+function useMarks() {
+  const [marks, setMarks] = useState(MARKS);
+  useEffect(() => {
+    if (MARKS) return undefined;
+    let live = true;
+    marksLoading = marksLoading || import('../lib/brandMarks').then(m => { MARKS = m.BRAND_MARKS; return MARKS; }).catch(() => null);
+    marksLoading.then(m => { if (live && m) setMarks(m); });
+    return () => { live = false; };
+  }, []);
+  return marks;
 }
+const isLight = (hex) => { const n = parseInt(String(hex).slice(1), 16); if (Number.isNaN(n)) return false; return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 186; };
+
+/** Rounded brand-coloured tile with the service's mark, or its initials when there is none. */
+export function SubIcon({ sub, size = 40 }) {
+  const marks = useMarks();
+  const known = catalogFor(sub.name);
+  const color = sub.color || known?.color || '#64748b';
+  const mark = marks && known?.mark ? marks[known.mark] : null;
+  if (mark) {
+    return <span className="sub-icon has-mark" style={{ width: size, height: size, background: color }} aria-hidden="true">
+      <svg viewBox="0 0 24 24" width={Math.round(size * 0.54)} height={Math.round(size * 0.54)}><path d={mark.path} fill={isLight(color) ? '#111' : '#fff'} /></svg>
+    </span>;
+  }
+  const initials = String(sub.name || '?').replace(/[^A-Za-z0-9+ ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+  return <span className="sub-icon" style={{ width: size, height: size, background: color, color: isLight(color) ? '#111' : '#fff', fontSize: Math.round(size * 0.36) }} aria-hidden="true">{initials}</span>;
+}
+
+/** Shown wherever brand marks appear. */
+export const BrandNotice = () => <p className="form-note brand-notice">{tr('Brand names and logos are trademarks of their respective owners and are shown only to identify each service. MOVO is not affiliated with, endorsed or sponsored by, or advertising for any of these companies.')}</p>;
 
 export const whenLabel = (days) => (days === 0 ? tr('Today') : days === 1 ? tr('Tomorrow') : days === -1 ? tr('Yesterday') : days < 0 ? tr('{n} days ago', { n: -days }) : tr('in {n} days', { n: days }));
 
@@ -86,16 +112,24 @@ function Insights({ summary, show, income }) {
   </>;
 }
 
-/** Search the catalog, or start a custom subscription. */
-function CatalogSheet({ onPick, onClose }) {
+/** Search the catalog, or start a custom subscription. Services popular in the person's country come first. */
+function CatalogSheet({ onPick, onClose, country }) {
   const [q, setQ] = useState('');
-  const list = CATALOG.filter(c => `${c.name} ${tr(c.category)}`.toLowerCase().includes(q.trim().toLowerCase()));
+  const query = q.trim().toLowerCase();
+  const list = CATALOG.filter(c => `${c.name} ${tr(c.category)}`.toLowerCase().includes(query));
+  const local = country ? list.filter(c => c.region === country) : [];
+  const rest = list.filter(c => !local.includes(c));
+  const row = (c) => <button type="button" key={c.id} className="catalog-row" onClick={() => onPick({ name: c.name, category: c.category, color: c.color })}><SubIcon sub={c} /><span className="sub-main"><strong>{c.name}</strong><small>{tr(c.category)}</small></span><Icon name="chevron" size={16} /></button>;
   return <Sheet title={tr('Apps & services')} onClose={onClose} label={tr('Apps & services')}>
     <label className="search-field"><Icon name="search" size={17} /><input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={tr('Search for an app or service')} aria-label={tr('Search for an app or service')} /></label>
     <div className="sheet-list catalog-list">
       <button type="button" className="catalog-row" onClick={() => onPick({ name: q.trim(), category: 'Other' })}><span className="sub-icon custom"><Icon name="plus" size={18} /></span><span className="sub-main"><strong>{q.trim() ? tr('Add “{name}”', { name: q.trim() }) : tr('Custom subscription')}</strong><small>{tr('Anything not in the list')}</small></span><Icon name="chevron" size={16} /></button>
-      {list.map(c => <button type="button" key={c.id} className="catalog-row" onClick={() => onPick({ name: c.name, category: c.category, color: c.color })}><SubIcon sub={c} /><span className="sub-main"><strong>{c.name}</strong><small>{tr(c.category)}</small></span><Icon name="chevron" size={16} /></button>)}
+      {local.length > 0 && <h3 className="catalog-group">{tr('Popular in your region')}</h3>}
+      {local.map(row)}
+      {local.length > 0 && rest.length > 0 && <h3 className="catalog-group">{tr('More apps & services')}</h3>}
+      {rest.map(row)}
     </div>
+    <BrandNotice />
   </Sheet>;
 }
 
@@ -167,7 +201,8 @@ export default function Subscriptions({ c }) {
       </>
         : tab === 'calendar' ? <Calendar subs={subs} show={show} onOpen={open} />
           : <Insights summary={summary} show={show} income={monthStats?.income || 0} />}
-    {catalog && <CatalogSheet onPick={startNew} onClose={() => setCatalog(false)} />}
+    {subs.length > 0 && <BrandNotice />}
+    {catalog && <CatalogSheet country={c.country} onPick={startNew} onClose={() => setCatalog(false)} />}
     {draft && <SubForm draft={draft} setDraft={setDraft} base={base}
       onSave={(row) => { c.saveSubscription(row); setDraft(null); }}
       onDelete={(id) => { c.deleteSubscription(id); setDraft(null); }}

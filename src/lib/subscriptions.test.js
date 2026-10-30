@@ -44,3 +44,12 @@ test('summary converts to the home currency and lists what renews within 7 days'
   expect(s.byCategory[0]).toEqual({ category: 'AI Tools', amount: 1160 });
   expect(dayDiff('2026-10-30', '2026-11-07')).toBe(8);
 });
+
+test('catalog ids are unique, every mark exists and both US and Philippine services are listed', () => {
+  const { CATALOG } = require('./subscriptions');
+  const { BRAND_MARKS } = require('./brandMarks');
+  expect(new Set(CATALOG.map(c => c.id)).size).toBe(CATALOG.length);
+  CATALOG.filter(c => c.mark).forEach(c => expect(BRAND_MARKS[c.mark]?.path).toMatch(/^M/));
+  expect(CATALOG.filter(c => c.region === 'PH').length).toBeGreaterThan(15);
+  expect(CATALOG.filter(c => c.region === 'US').length).toBeGreaterThan(15);
+});
