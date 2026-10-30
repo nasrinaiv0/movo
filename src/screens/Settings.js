@@ -104,14 +104,14 @@ function LockSheet({ c, onClose }) {
     if (pin !== first) { setError(tr('The passcodes do not match.')); setPin(''); setStep('new'); return; }
     await setPasscode(pin); c.notify(tr('App lock is on.')); onClose();
   };
-  if (step === 'manage') return <Sheet title={tr('App Lock')} onClose={onClose} label={tr('App Lock')}>
+  if (step === 'manage') return <Sheet center title={tr('App Lock')} onClose={onClose} label={tr('App Lock')}>
     <div className="sheet-list">
       <button type="button" className="sheet-card" onClick={() => setStep('new')}><span className="account-main"><strong>{tr('Change passcode')}</strong></span></button>
       <button type="button" className="sheet-card danger-text" onClick={() => { removeLock(); c.notify(tr('App lock is off.')); onClose(); }}><span className="account-main"><strong>{tr('Turn off app lock')}</strong></span></button>
     </div>
   </Sheet>;
   const title = step === 'current' ? tr('Enter current passcode') : step === 'confirm' ? tr('Confirm passcode') : tr('Choose a passcode');
-  return <Sheet title={tr('App Lock')} subtitle={tr('Locks Movo on this device when you open it or come back after a minute. It does not encrypt your records.')} onClose={onClose} label={tr('App Lock')}>
+  return <Sheet center title={tr('App Lock')} subtitle={tr('Locks Movo on this device when you open it or come back after a minute. It does not encrypt your records.')} onClose={onClose} label={tr('App Lock')}>
     <form className="sheet-form" onSubmit={next}>
       <label>{title}<input type="password" inputMode="numeric" autoComplete="off" pattern="[0-9]*" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus aria-label={title} /></label>
       {error && <p className="form-error" role="alert">{error}</p>}
@@ -129,7 +129,7 @@ function UsageSheet({ c, onClose }) {
     [tr('Subscriptions tracked'), String(c.subscriptions?.length || 0)],
     [tr('Storage on this device'), fmtBytes(storageUsed())],
   ];
-  return <Sheet title={tr('Plan & Usage')} subtitle={tr('Movo is free. There is no paid plan or billing in this version.')} onClose={onClose} label={tr('Plan & Usage')}>
+  return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Movo is free. There is no paid plan or billing in this version.')} onClose={onClose} label={tr('Plan & Usage')}>
     <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
   </Sheet>;
 }
