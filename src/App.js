@@ -326,6 +326,12 @@ function App() {
     go(next);
   }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
+  const markNotificationUnread = () => {
+    if (!activeNotificationId) return;
+    setPref('readIds', prefs.readIds.filter(id => id !== activeNotificationId));
+    setNFilter('Unread');
+    go('Notifications');
+  };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
   const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id })); setSheet({ name: 'transaction', type }); };
   const openEditAccount = (account) => {
@@ -545,7 +551,7 @@ function App() {
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
-    notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
+    notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, markNotificationUnread, activeNotification, query, setQuery,
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -649,6 +655,13 @@ function App() {
           <button type="button" onClick={exportCsv}><Icon name="download" size={20} />Export CSV</button>
           <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />Choose theme</button>
           {!cloudMode && samplesOn && <button type="button" onClick={clearSamples}><Icon name="trash" size={20} />Remove sample data</button>}
+        </div>
+      </Sheet>}
+
+      {sheet?.name === 'notificationActions' && activeNotification && <Sheet title="Notification actions" subtitle="Manage this in-app alert." onClose={() => setSheet(null)}>
+        <div className="sheet-menu">
+          <button type="button" onClick={markNotificationUnread}>Mark as unread</button>
+          <button type="button" onClick={() => go('NotificationSettings')}>Notification settings</button>
         </div>
       </Sheet>}
 
