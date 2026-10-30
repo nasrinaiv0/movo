@@ -16,6 +16,8 @@ import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
 import AccountTile, { styleFor } from './components/AccountTile';
 import LoggedBurst from './components/LoggedBurst';
+import { useLayout } from './lib/layout';
+import { MovoMark } from './components/MovoLogo';
 import { findDuplicate } from './lib/duplicates';
 import { mergePreferences, unionById } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
@@ -199,6 +201,7 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
+  const layout = useLayout();
   const [burst, setBurst] = useState(null);
   const celebrate = useCallback((label) => setBurst({ id: Date.now(), label }), []);
   const endBurst = useCallback(() => setBurst(null), []);
@@ -855,7 +858,7 @@ function App() {
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
   const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
   const rootStyle = { ...glassVars, ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''}`;
+  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -901,7 +904,7 @@ function App() {
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
-      <nav className="bottom-nav" aria-label={tr('Main navigation')}>
+      {layout.mode === 'phone' ? <nav className="bottom-nav" aria-label={tr('Main navigation')}>
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
@@ -910,7 +913,19 @@ function App() {
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
         })}
-      </nav>
+      </nav> : <nav className="side-nav" aria-label={tr('Main navigation')}>
+        <span className="side-brand"><MovoMark size={30} /><span>Movo</span></span>
+        {NAV.map(([label, icon, target]) => {
+          const active = activeTab === target; const center = target === 'NasrinAI';
+          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} title={tr(label)}>
+            <span className="side-icon">{center ? <NasrinMark size={20} /> : <Icon name={icon} size={22} strokeWidth={1.8} filled={active} />}{target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}</span>
+            <span className="side-label">{tr(label)}</span>
+          </button>;
+        })}
+        <span className="side-spacer" />
+        <button type="button" className="side-item side-add" onClick={() => openForm('expense')} title={tr('Add transaction')}><span className="side-icon"><Icon name="plus" size={22} strokeWidth={2} /></span><span className="side-label">{tr('Add transaction')}</span></button>
+        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
+      </nav>}
 
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', date: f.occurred_at ? `${f.occurred_at}T12:00:00` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}

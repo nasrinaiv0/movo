@@ -1795,3 +1795,66 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .menu-tile { min-width: 0; height: 100%; }
 .movo-app .menu-tile :is(strong, small) { max-width: 100%; }
 .movo-app .menu-tile small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+
+/* =====================================================================
+   Adaptive layouts. phone: bottom dock (unchanged). tablet (≥768px or a
+   two-segment foldable): icon rail + wider content. desktop (≥1100px):
+   labelled sidebar, two-column dashboard, centred dialogs. Foldables and
+   dual-screen phones split two-column content along the hinge.
+   ===================================================================== */
+/* Large phones and folded-open foldables under tablet width: fill the screen, keep content readable. */
+@media (min-width: 481px) and (max-width: 767px) {
+  .movo-app.layout-phone .app-shell, .movo-app.layout-phone .scenery { max-width: none; box-shadow: none; }
+  .movo-app.layout-phone .screen { max-width: 640px; margin: 0 auto; }
+}
+.movo-app.layout-tablet { --side-w: 88px; }
+.movo-app.layout-desktop { --side-w: 236px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .app-shell { max-width: none; margin: 0; margin-inline-start: var(--side-w); box-shadow: none; }
+.movo-app:is(.layout-tablet, .layout-desktop) .scenery { max-width: none; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen { max-width: 760px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 32px 56px; }
+.movo-app.layout-desktop .screen { max-width: 1120px; padding-inline: 40px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .bottom-fade { display: none; }
+
+.side-nav { position: fixed; z-index: 40; top: 0; bottom: 0; inset-inline-start: 0; display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: var(--side-w); padding: max(20px, env(safe-area-inset-top)) 12px max(20px, env(safe-area-inset-bottom)); background: var(--card-solid); box-shadow: inset calc(var(--hair, .5px) * -1) 0 0 var(--line); }
+[dir="rtl"] .side-nav { box-shadow: inset var(--hair, .5px) 0 0 var(--line); }
+.side-brand { display: flex; align-items: center; justify-content: center; gap: 10px; height: 44px; margin-bottom: 18px; color: var(--text); font-size: 19px; font-weight: 700; letter-spacing: -.3px; }
+.side-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 8px 4px; border: 0; border-radius: 16px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; transition: background-color .2s ease-out, color .2s ease-out; }
+.side-item:hover { background: var(--field); color: var(--text); }
+.side-item.active { background: rgba(var(--accent-rgb), .12); color: var(--accent); }
+.side-icon { position: relative; display: grid; place-items: center; width: 28px; height: 28px; }
+.side-icon .nav-badge { position: absolute; top: -2px; right: -3px; }
+.side-label { font-size: 10.5px; font-weight: 600; line-height: 1.2; text-align: center; }
+.side-spacer { flex: 1; }
+.side-add { color: var(--accent); }
+.layout-tablet .side-brand > span { display: none; }
+/* Desktop: labels beside the icons. */
+.layout-desktop .side-nav { padding-inline: 16px; }
+.layout-desktop .side-brand { justify-content: flex-start; padding-inline: 10px; }
+.layout-desktop .side-item { flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 46px; padding: 8px 12px; border-radius: 14px; }
+.layout-desktop .side-label { font-size: 14px; text-align: start; }
+.layout-desktop .side-add { margin-top: 8px; background: var(--accent); color: #fff; }
+.layout-desktop .side-add:hover { background: var(--accent); color: #fff; filter: brightness(1.05); }
+
+/* Desktop dashboard: two columns; headers, chips and large boxes span both. */
+.movo-app.layout-desktop .screen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; align-content: start; }
+.movo-app.layout-desktop .screen > * { grid-column: 1 / -1; min-width: 0; }
+.movo-app.layout-desktop .screen > .box-slot:not(.size-L) { grid-column: auto; }
+.movo-app.layout-desktop .screen > .movo-ai-chat { max-width: 820px; width: 100%; justify-self: center; }
+
+/* Sheets become centred dialogs. */
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet-backdrop { align-items: center; padding: 24px; padding-inline-start: calc(var(--side-w) + 24px); }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet { max-width: 540px; max-height: 86vh; border-radius: 28px; padding-bottom: 24px; }
+
+/* Chat composer, toasts and the logged moment centre in the content area, with no dock below. */
+.movo-app:is(.layout-tablet, .layout-desktop) .movo-ai-chat .movo-ai-composer { bottom: calc(24px + env(safe-area-inset-bottom)); left: calc(var(--side-w) + (100vw - var(--side-w)) / 2); width: min(760px, calc(100vw - var(--side-w) - 64px)); }
+[dir="rtl"] .movo-app:is(.layout-tablet, .layout-desktop) .movo-ai-chat .movo-ai-composer { left: calc((100vw - var(--side-w)) / 2); }
+.movo-app:is(.layout-tablet, .layout-desktop) :is(.toast, .logged-burst) { left: calc(var(--side-w) + (100vw - var(--side-w)) / 2); }
+.movo-app:is(.layout-tablet, .layout-desktop) .toast { bottom: calc(28px + env(safe-area-inset-bottom)); }
+.movo-app:is(.layout-tablet, .layout-desktop) .toast.over-composer { bottom: calc(200px + env(safe-area-inset-bottom)); }
+
+/* Dual-screen phones and foldables with a hinge: two columns, one per screen, the gap spanning the hinge. */
+@media (horizontal-viewport-segments: 2) {
+  .movo-app.layout-dual .screen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: calc(env(viewport-segment-left 1 0, 0px) - env(viewport-segment-right 0 0, 0px) + 40px); max-width: none; align-content: start; }
+  .movo-app.layout-dual .screen > * { grid-column: 1 / -1; min-width: 0; }
+  .movo-app.layout-dual .screen > .box-slot:not(.size-L) { grid-column: auto; }
+}
