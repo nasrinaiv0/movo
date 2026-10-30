@@ -1,6 +1,6 @@
 import React from 'react';
 import { SubHeader } from '../components/ui';
-import { t as tr } from '../lib/i18n';
+import { t as tr, rich } from '../lib/i18n';
 
 export default function HelpCenter({ c }) {
   return <>
@@ -37,8 +37,8 @@ export default function HelpCenter({ c }) {
       </section>
       <section className="legal-section">
         <h2>{tr('Policies and privacy requests')}</h2>
-        <p>Read the <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('TermsOfService')}>{tr('Terms of Service')}</button> and <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button> for service terms and data-handling details.</p>
-        <p>Contact <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a>. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.</p>
+        <p>{rich('Read the {terms} and {privacy} for service terms and data-handling details.', { terms: <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('TermsOfService')}>{tr('Terms of Service')}</button>, privacy: <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button> })}</p>
+        <p>{rich('Contact {email}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { email: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
       </section>
     </article>
   </>;

@@ -1,18 +1,23 @@
-import { STRINGS } from '../i18n/strings';
-import { t, setLanguage, LANGUAGES } from './i18n';
+import { t, setLanguage, loadLanguage } from './i18n';
+const { build } = require('../../scripts/i18n-build');
+const { extract } = require('../../scripts/i18n-extract');
 
-test('every interface string has all translations', () => {
-  const codes = LANGUAGES.map(l => l.code).filter(c => c !== 'en');
-  Object.entries(STRINGS).forEach(([en, tr]) => codes.forEach(code => expect([en, code, typeof tr[code] === 'string' && tr[code].length > 0]).toEqual([en, code, true])));
+test('every interface string has all 11 translations with matching placeholders', () => {
+  const { keys, problems } = build({ write: false });
+  expect(problems).toEqual([]);
+  const missing = extract().filter(k => !keys.has(k));
+  expect(missing).toEqual([]);
 });
 
-test('translates with placeholders, falls back to English and sets direction', () => {
+test('loads a language, translates with placeholders, falls back to English and sets direction', async () => {
   setLanguage('es');
+  await loadLanguage('es');
   expect(t('Total Balance')).toBe('Saldo total');
   expect(t("You've spent {amount} today.", { amount: '€5' })).toBe('Hoy has gastado €5.');
   expect(t('Untranslated text')).toBe('Untranslated text');
   setLanguage('ar');
   expect(document.documentElement.dir).toBe('rtl');
   setLanguage('en');
+  expect(t('Total Balance')).toBe('Total Balance');
   expect(document.documentElement.dir).toBe('ltr');
 });

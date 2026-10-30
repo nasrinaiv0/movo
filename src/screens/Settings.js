@@ -2,6 +2,8 @@ import React from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 import { t as tr } from '../lib/i18n';
+import { longDate, money } from '../lib/format';
+import { countryName } from '../lib/regions';
 
 export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
 export const THEMES = [
@@ -79,6 +81,7 @@ export default function Settings({ c }) {
     { title: tr('Appearance'), rows: [
       { icon: 'palette', title: tr('Theme'), sub: tr('Light, Dark or Custom'), onClick: () => go('Appearance') },
       { icon: 'drop', title: tr('Liquid Glass'), sub: tr('Choose how clear the glass looks'), onClick: () => go('Appearance') },
+      { icon: 'pin', title: tr('Country or region'), sub: c.country ? countryName(c.country, c.lang?.locale) : tr('Not set'), onClick: () => c.openCountry?.() },
       { icon: 'globe', title: tr('Language'), sub: c.lang?.name || 'English', onClick: () => c.openLanguage?.() },
       { icon: 'coin', title: tr('Home Currency'), sub: `${c.base || 'PHP'} · totals, budgets and charts`, onClick: () => c.openCurrency?.() },
       { icon: 'layout', title: tr('Display & Layout'), sub: tr('Customize your experience'), onClick: () => go('Appearance') },
@@ -144,9 +147,11 @@ export function Appearance({ c }) {
     <section className="card menu-card">
       <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
       <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
-      <Row icon="card" title={tr('Card View Style')} sub="Rounded is the only available style." />
-      <Row icon="calendar" title={tr('Date Format')} sub="Oct 27, 2026 is the only available format." />
-      <Row icon="coin" title={tr('Currency Format')} sub="Philippine peso is the only available currency." />
+      <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
+      <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
+      <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />
+      <Row icon="calendar" title={tr('Date Format')} sub={tr('{date} · follows your language', { date: longDate(new Date()) })} />
+      <Row icon="coin" title={tr('Home Currency')} sub={`${c.base || 'PHP'} · ${money(1234.5)}`} onClick={() => c.openCurrency?.()} />
     </section>
   </>;
 }

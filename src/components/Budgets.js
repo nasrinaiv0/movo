@@ -3,7 +3,8 @@ import Icon from './Icon';
 import { Sheet, Money } from './ui';
 import { CATEGORY_ICONS } from './TransactionSheet';
 import { evaluate } from '../lib/calc';
-import { t as tr } from '../lib/i18n';
+import { baseCurrency } from '../lib/format';
+import { t as tr, rich } from '../lib/i18n';
 
 const iconFor = (cat) => CATEGORY_ICONS.find(c => c[0] === cat) || ['Other', cat, 'layout', 'gray'];
 const pct = (a, b) => (b > 0 ? Math.min(999, Math.round((a / b) * 100)) : 0);
@@ -63,7 +64,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>
         <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
-        <span className="budget-main"><span><strong>{name}</strong><small><Money value={b.spent} show={show} digits={0} /> {tr('of')} <Money value={b.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{tr(name)}</strong><small><Money value={b.spent} show={show} digits={0} /> {tr('of')} <Money value={b.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
         <b>{b.percent}%</b></button>; })}
       {tab === 'plans' && plans.map(p => { const need = Math.max(0, p.target - p.saved); const m = monthsLeft(p.due); return <button type="button" key={p.id} className="sheet-card budget-item" onClick={() => setDraft({ ...p, target: String(p.target), saved: String(p.saved) })}>
         <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
@@ -73,11 +74,11 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
     </div>}
     {draft && <form className="sheet-form" onSubmit={save}>
       {tab === 'budgets' ? <>
-        <label>{tr('Category')}<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === draft.category || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{c[1]}</option>)}</select></label>
-        <label>{tr('Monthly limit (PHP)')}<input inputMode="decimal" autoFocus value={draft.limit} onChange={e => setDraft({ ...draft, limit: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 5000" /></label>
+        <label>{tr('Category')}<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === draft.category || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{tr(c[1])}</option>)}</select></label>
+        <label>{tr('Monthly limit ({code})', { code: baseCurrency() })}<input inputMode="decimal" autoFocus value={draft.limit} onChange={e => setDraft({ ...draft, limit: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 5000" /></label>
       </> : <>
         <label>{tr('Plan name')}<input autoFocus maxLength={60} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder={tr('e.g. Emergency fund, Japan trip')} /></label>
-        <div className="form-grid"><label>{tr('Target (PHP)')}<input inputMode="decimal" value={draft.target} onChange={e => setDraft({ ...draft, target: e.target.value.replace(/[^\d.]/g, '') })} placeholder="50000" /></label>
+        <div className="form-grid"><label>{tr('Target ({code})', { code: baseCurrency() })}<input inputMode="decimal" value={draft.target} onChange={e => setDraft({ ...draft, target: e.target.value.replace(/[^\d.]/g, '') })} placeholder="50000" /></label>
           <label>{tr('Saved so far')}<input inputMode="decimal" value={draft.saved} onChange={e => setDraft({ ...draft, saved: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" /></label></div>
         <label>{tr('Target date (optional)')}<input type="date" value={draft.due} onChange={e => setDraft({ ...draft, due: e.target.value })} /></label>
       </>}

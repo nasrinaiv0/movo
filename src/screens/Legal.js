@@ -1,8 +1,9 @@
 import React from 'react';
 import { SubHeader } from '../components/ui';
-import { t as tr } from '../lib/i18n';
+import { t as tr, rich } from '../lib/i18n';
+import { formatDate } from '../lib/format';
 
-const EFFECTIVE_DATE = 'October 29, 2026';
+const EFFECTIVE_DATE = '2026-10-29T12:00:00Z';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label={tr('Legal documents')}>
@@ -19,7 +20,7 @@ function LegalPage({ c, title, current, children }) {
       <header className="legal-intro">
         <p className="legal-eyebrow">{tr('MOVO · IMPORTANT INFORMATION')}</p>
         <h2 id="legal-title">{title}</h2>
-        <p>Effective date: {EFFECTIVE_DATE}</p>
+        <p>{tr('Effective date: {date}', { date: formatDate(EFFECTIVE_DATE, { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }, 'effective') })}</p>
       </header>
       <LegalNavigation c={c} current={current} />
       <aside className="legal-readiness-notice" role="note" aria-label={tr('Important publication notice')}>
@@ -29,7 +30,7 @@ function LegalPage({ c, title, current, children }) {
       {children}
       <footer className="legal-contact">
         <h2>{tr('Questions or privacy requests?')}</h2>
-        <p>Contact the MOVO service team at <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a>. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.</p>
+        <p>{rich('Contact the MOVO service team at {link}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
       </footer>
     </article>
   </>;
@@ -60,7 +61,7 @@ export function TermsOfService({ c }) {
     <section className="legal-section">
       <h2>{tr('4. NasrinAI features')}</h2>
       <p>{tr('If you choose to use the NasrinAI financial copilot and affirm its consent checkbox, MOVO may send your question and a limited, user-scoped snapshot of relevant financial records to NasrinAI to generate a response. You can decline consent and continue using other MOVO features. Chat responses may be inaccurate, incomplete, or outdated and are for informational assistance only.')}</p>
-      <p>NasrinAI does not execute financial transactions for you through MOVO chat. You remain responsible for checking calculations and making financial decisions. See the <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button> for details about data handling.</p>
+      <p>{rich('NasrinAI does not execute financial transactions for you through MOVO chat. You remain responsible for checking calculations and making financial decisions. See the {privacy} for details about data handling.', { privacy: <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button> })}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('5. MOVO content and intellectual property')}</h2>
@@ -90,7 +91,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('11. Contact')}</h2>
-      <p>For questions about these terms, email <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a>.</p>
+      <p>{rich('For questions about these terms, email {link}.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
       <p>{tr('The formal legal name and registered address of the service operator are not displayed in this release. These details and jurisdiction-specific terms must be verified before production use with real financial data.')}</p>
     </section>
   </LegalPage>;
@@ -100,17 +101,17 @@ export function PrivacyPolicy({ c }) {
   return <LegalPage c={c} title={tr('Privacy Policy')} current="PrivacyPolicy">
     <section className="legal-section">
       <h2>{tr('1. Who is responsible for your data')}</h2>
-      <p>The legal name and registered address of the MOVO data controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the service operator must publish its formal identity and any required privacy contact details. For privacy questions or requests, contact <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a>. This policy describes MOVO's current product behavior and should be read with applicable privacy laws, including the Philippines' Data Privacy Act of 2012 where it applies.</p>
-      <p><strong>{tr('Important:')}</strong> Until the controller identity and required disclosures are published and reviewed, avoid entering real or highly sensitive financial information.</p>
+      <p>{rich('The legal name and registered address of the MOVO data controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the service operator must publish its formal identity and any required privacy contact details. For privacy questions or requests, contact {link}. This policy describes MOVO\'s current product behavior and should be read with applicable privacy laws, including the Philippines\' Data Privacy Act of 2012 where it applies.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
+      <p><strong>{tr('Important:')}</strong> {tr('Until the controller identity and required disclosures are published and reviewed, avoid entering real or highly sensitive financial information.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('2. Information MOVO may handle')}</h2>
       <ul>
-        <li><strong>{tr('Account information:')}</strong> email address and, if provided, display name and profile details returned by your sign-in provider.</li>
-        <li><strong>{tr('Financial records:')}</strong> account labels and types, institution names, opening balances, transaction descriptions, amounts, dates, categories, notes, and other details you manually enter or import.</li>
-        <li><strong>{tr('Preferences:')}</strong> theme, accent color, display choices, and notification read-state or settings saved by the app.</li>
-        <li><strong>{tr('NasrinAI chat:')}</strong> your message, conversation identifier, assistant reply, and—only after you affirm the relevant consent—the limited financial context needed for the request.</li>
-        <li><strong>{tr('Technical information:')}</strong> basic request and error metadata needed to operate and protect the service. MOVO's chat error logging is designed to avoid recording prompts, financial records, or secret values.</li>
+        <li><strong>{tr('Account information:')}</strong> {tr('email address and, if provided, display name and profile details returned by your sign-in provider.')}</li>
+        <li><strong>{tr('Financial records:')}</strong> {tr('account labels and types, institution names, opening balances, transaction descriptions, amounts, dates, categories, notes, and other details you manually enter or import.')}</li>
+        <li><strong>{tr('Preferences:')}</strong> {tr('theme, accent color, display choices, and notification read-state or settings saved by the app.')}</li>
+        <li><strong>{tr('NasrinAI chat:')}</strong> {tr('your message, conversation identifier, assistant reply, and—only after you affirm the relevant consent—the limited financial context needed for the request.')}</li>
+        <li><strong>{tr('Technical information:')}</strong> {tr('basic request and error metadata needed to operate and protect the service. MOVO\'s chat error logging is designed to avoid recording prompts, financial records, or secret values.')}</li>
       </ul>
       <p>{tr('Please do not submit passwords, card PINs, CVVs, one-time passcodes, or unnecessary sensitive personal information.')}</p>
     </section>
@@ -139,7 +140,7 @@ export function PrivacyPolicy({ c }) {
     <section className="legal-section">
       <h2>{tr('6. Retention and deletion')}</h2>
       <p>{tr('Local browser preferences, manually entered financial records, and manually created accounts are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Local records are not included in cloud-account deletion requests. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.')}</p>
-      <p>To request access, correction, export, blocking, or deletion of cloud data, email <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.</p>
+      <p>{rich('To request access, correction, export, blocking, or deletion of cloud data, email {link} from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('7. Security')}</h2>
@@ -147,8 +148,8 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('8. Your privacy rights')}</h2>
-      <p>Depending on applicable law, you may have rights to be informed, access or correct personal information, object to certain processing, request erasure or blocking, receive a portable copy, or lodge a complaint with the relevant privacy regulator. Requests can be sent to <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a>. We will assess each request under the law that applies.</p>
-      <p>For background, read the official <a href="https://privacy.gov.ph/data-privacy-act-/" target="_blank" rel="noreferrer">{tr('Philippines Data Privacy Act of 2012')}</a> information published by the National Privacy Commission.</p>
+      <p>{rich('Depending on applicable law, you may have rights to be informed, access or correct personal information, object to certain processing, request erasure or blocking, receive a portable copy, or lodge a complaint with the relevant privacy regulator. Requests can be sent to {link}. We will assess each request under the law that applies.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
+      <p>{rich('For background, read the official {link} information published by the National Privacy Commission.', { link: <a href="https://privacy.gov.ph/data-privacy-act-/" target="_blank" rel="noreferrer">{tr('Philippines Data Privacy Act of 2012')}</a> })}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('9. Children and policy updates')}</h2>

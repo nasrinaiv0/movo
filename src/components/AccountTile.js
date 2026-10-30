@@ -27,7 +27,7 @@ export default function AccountTile({ a, show = true, style, size = 'tile', onCl
     </span>
     <span className="at-bottom">
       <small>{size === 'grid' ? tr(typeMeta(a.account_type).label) : tr('Balance')}</small>
-      <b>{shown(show, money(a.balance || 0, a.currency || tr('PHP')))}</b>
+      <b>{shown(show, money(a.balance || 0, a.currency || 'PHP'))}</b>
     </span>
   </>;
   const cls = `account-tile at-${size}`;

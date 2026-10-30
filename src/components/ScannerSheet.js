@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { readImageText, parseReceipt, guessCategory } from '../lib/ocr';
-import { money, shown, getFormatLocale } from '../lib/format';
+import { money, shown, getFormatLocale, baseCurrency } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 const KEY = 'movo.scans.v1';
@@ -86,7 +86,7 @@ export default function ScannerSheet({ show, onLog, onClose }) {
     {mode === 'review' && active && <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); log(); }}>
       {active.thumb && <img className="scan-thumb" src={active.thumb} alt={tr('Scanned receipt')} />}
       <label>{tr('Merchant')}<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder={tr('Store or payee')} /></label>
-      <div className="form-grid"><label>{tr('Amount (PHP)')}<input inputMode="decimal" value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label>
+      <div className="form-grid"><label>{tr('Amount ({code})', { code: baseCurrency() })}<input inputMode="decimal" value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label>
         <label>{tr('Date')}<input type="date" value={active.date || ''} onChange={e => setActive({ ...active, date: e.target.value })} /></label></div>
       <details className="scan-text"><summary>{tr('Text found in the photo')}</summary><pre>{active.text || tr('No text found.')}</pre></details>
       {!active.amount && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}

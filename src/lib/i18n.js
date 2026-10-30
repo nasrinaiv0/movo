@@ -1,9 +1,10 @@
 import { createElement, Fragment } from 'react';
-import { STRINGS } from '../i18n/strings';
+import { VERSION } from '../i18n/locales/version';
 
 /*
- * Lightweight translation layer. English text is the key, so untranslated strings fall back to English.
- * `locale` drives number, currency and date formatting; `dir` flips the layout for right-to-left scripts.
+ * Lightweight translation layer. English text is the key, so anything untranslated falls back to English.
+ * Each language's dictionary is a separate chunk loaded on demand (and cached on the device for an instant
+ * start next time). `locale` drives number, currency and date formatting; `dir` flips right-to-left scripts.
  */
 export const LANGUAGES = [
   { code: 'en', name: 'English', locale: 'en-PH', dir: 'ltr' },
@@ -32,12 +33,17 @@ export function detectLanguage() {
 }
 
 let current = LANGUAGES[0];
+let dict = null;
+const CACHE = 'movo.i18n.cache';
+const readCache = (code) => { try { const c = JSON.parse(localStorage.getItem(CACHE)); return c && c.code === code && c.version === VERSION ? c.dict : null; } catch { return null; } };
 export const getLanguage = () => current;
 export const langInfo = (code) => LANGUAGES.find(l => l.code === code) || LANGUAGES[0];
 
-/** Switches the active language; returns the language record. */
+/** Switches the active language; returns the language record. Uses the cached dictionary when available. */
 export function setLanguage(code) {
-  current = langInfo(code);
+  const next = langInfo(code);
+  if (next.code !== current.code || (!dict && next.code !== 'en')) dict = next.code === 'en' ? null : readCache(next.code);
+  current = next;
   if (typeof document !== 'undefined') {
     document.documentElement.lang = current.code;
     document.documentElement.dir = current.dir;
@@ -45,10 +51,21 @@ export function setLanguage(code) {
   return current;
 }
 
+/** Loads (or refreshes) the active language's dictionary. Resolves true when new text became available. */
+export async function loadLanguage(code = current.code) {
+  if (code === 'en') return false;
+  const mod = await import(`../i18n/locales/${code}.json`);
+  const loaded = mod.default || mod;
+  if (current.code !== code) return false;
+  const changed = dict !== loaded && JSON.stringify(dict || {}).length !== JSON.stringify(loaded).length;
+  dict = loaded;
+  try { localStorage.setItem(CACHE, JSON.stringify({ code, version: VERSION, dict: loaded })); } catch { /* storage full or blocked */ }
+  return changed;
+}
+
 /** Translates `text`, replacing {placeholders} with values from `vars`. */
 export function t(text, vars) {
-  const entry = current.code === 'en' ? null : STRINGS[text];
-  let out = (entry && entry[current.code]) || text;
+  let out = (dict && dict[text]) || text;
   if (vars) Object.keys(vars).forEach(k => { out = out.split(`{${k}}`).join(vars[k]); });
   return out;
 }
