@@ -10,7 +10,7 @@
 ## Audit delta — 2026-10-30 15:08 Asia/Manila (07:08 UTC)
 
 ### PR #60 — Notification detail actions (new since previous checkpoint)
-- Repository: nasrinaiv0/movo. PR: https://github.com/nasrinaiv0/movo/pull/60. Current exact head: 76d8be917a27083b8c1bc557e9fc5e2de2f0fed1. PR remains open/draft; no merge or production deployment.
+- Repository: nasrinaiv0/movo. PR: https://github.com/nasrinaiv0/movo/pull/60. Validated source/test head: 76d8be917a27083b8c1bc557e9fc5e2de2f0fed1. The PR remains open/draft; this audit added documentation-only commits after that source/test head, so the current docs-only revision requires its own exact-head CI check. No merge or production deployment.
 - Source areas: src/screens/Notifications.js, src/App.js, src/App.test.js; detailed trace in docs/engineering/updates/2026-10-30-1424-notification-detail-actions.md; ledger, progress register and Claude handoff were already updated on this branch.
 - Before: the More button on a notification detail invoked the global Quick actions sheet (add transaction/account, CSV import/export, theme selection, sample-data removal), which was not appropriate for the selected notification.
 - After: the button is named Notification actions and opens a dedicated notificationActions sheet. Mark as unread removes the selected notification ID from prefs.readIds, switches the feed to Unread and returns to the list. Notification settings navigates to the existing Notification Channels screen.
