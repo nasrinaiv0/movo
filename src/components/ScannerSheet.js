@@ -78,7 +78,7 @@ export default function ScannerSheet({ show, onLog, onClose }) {
   const choose = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) process(f); };
   const log = () => {
     update(scans.map(s => (s.id === active.id ? { ...s, ...active, status: 'logged' } : s)));
-    onLog({ merchant: active.merchant || 'Receipt', amount: active.amount ? String(active.amount) : '', category: active.category, occurred_at: active.date || '', note: 'Scanned receipt' });
+    onLog({ merchant: active.merchant || 'Receipt', amount: active.amount ? String(active.amount) : '', category: active.category, occurred_at: active.date || '', time: active.time || '', ref: active.ref || '', note: active.ref ? `Scanned receipt · Ref ${active.ref}` : 'Scanned receipt' });
   };
 
   return <Sheet title={mode === 'review' ? tr('Review scan') : tr('Scan receipt')} subtitle={mode === 'review' ? tr('Check the details before logging.') : tr('Photograph or upload a receipt, invoice or payment confirmation. Files are read on this device and never uploaded.')} onClose={() => { stopCamera(); onClose(); }} label={tr('Scan receipt')}>
@@ -101,6 +101,8 @@ export default function ScannerSheet({ show, onLog, onClose }) {
       <label>{tr('Merchant')}<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder={tr('Store or payee')} /></label>
       <div className="form-grid"><label>{tr('Amount ({code})', { code: baseCurrency() })}<input inputMode="decimal" value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label>
         <label>{tr('Date')}<input type="date" value={active.date || ''} onChange={e => setActive({ ...active, date: e.target.value })} /></label></div>
+      <div className="form-grid"><label>{tr('Time')}<input type="time" step="1" value={active.time || ''} onChange={e => setActive({ ...active, time: e.target.value })} /></label>
+        <label>{tr('Reference ID')}<input value={active.ref || ''} maxLength={60} onChange={e => setActive({ ...active, ref: e.target.value.replace(/[^\w-]/g, '').toUpperCase() })} placeholder={tr('Optional')} /></label></div>
       <details className="scan-text"><summary>{tr('Text found')}</summary><pre>{active.text || tr('No text found.')}</pre></details>
       {!active.amount && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}
       <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setMode('home'); }}>{tr('Discard')}</button><button type="submit" className="primary-button">{tr('Log transaction')}</button></div>

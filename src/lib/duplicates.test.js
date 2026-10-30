@@ -22,3 +22,10 @@ test('merchant matching tolerates case, punctuation and extra words', () => {
   expect(sameMerchant('7-Eleven Store #123', '7 eleven')).toBe(true);
   expect(sameMerchant('Netflix', 'Spotify')).toBe(false);
 });
+
+test('reference IDs decide: same ref is a duplicate, different refs are two payments', () => {
+  const rows = [{ id: 'r1', merchant: 'GCash payment', amount: 500, transaction_type: 'expense', occurred_at: '2026-10-01T04:00:00Z', note: 'Scanned receipt · Ref 7781234567' }];
+  expect(findDuplicate({ merchant: 'Other name', amount: 1, type: 'expense', date: '2026-10-30T00:00:00Z', ref: '7781234567' }, rows)?.id).toBe('r1');
+  const rows2 = [{ ...rows[0], occurred_at: '2026-10-30T04:00:00Z' }];
+  expect(findDuplicate({ merchant: 'GCash payment', amount: 500, type: 'expense', date: '2026-10-30T05:00:00Z', ref: '9990001111' }, rows2)).toBeNull();
+});

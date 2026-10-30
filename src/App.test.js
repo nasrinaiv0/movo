@@ -422,11 +422,15 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Added to your transactions');
     let saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
     expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => [t.merchant, t.amount, t.category])).toEqual([['Grab', 250, 'Transport'], ['ChatGPT Plus', 699, 'Subscriptions']]);
-    await act(async () => { rows[0].querySelector('.link-button').click(); });
+    await act(async () => { Array.from(rows[0].querySelectorAll('.link-button')).find(b => b.textContent === 'Undo').click(); });
     expect(rows[0].textContent).toContain('Removed');
     saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
     expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => t.merchant)).toEqual(['ChatGPT Plus']);
-    type('How much did I spend on Grab?');
+    // Money questions are answered on this device at once; other questions still need NasrinAI (and sign-in).
+    type('How much did I spend on Grab this month?');
+    await act(async () => { container.querySelector('form.movo-ai-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(container.textContent).toMatch(/This month · Grab|No Grab records for this month/);
+    type('Should I invest in index funds?');
     await act(async () => { container.querySelector('form.movo-ai-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
     expect(container.textContent).toContain('Sign in to ask me questions about your money.');
     expect(fetchSpy).not.toHaveBeenCalled();

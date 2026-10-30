@@ -1,3 +1,5 @@
+import { findReference } from './ocr';
+
 /*
  * Payment links from phone automations, e.g. an iOS Shortcuts "Transaction" automation (Apple Pay) or an Android
  * automation reading Google Wallet / bank notifications. They open:
@@ -43,7 +45,10 @@ export function readLogLink(hash = '') {
   const merchant = (p.get('merchant') || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 160);
   if (!amount) return { invalid: true };
   const src = SOURCES[p.get('src')] ? p.get('src') : 'notification';
-  return { amount, merchant: merchant || SOURCES[src], card: (p.get('card') || '').trim().slice(0, 100), src, source: SOURCES[src], key: p.get('k') || '' };
+  const text = (p.get('text') || '').slice(0, 1000);
+  const ref = ((p.get('ref') || '').replace(/[^\w-]/g, '') || findReference(text)).toUpperCase().slice(0, 40);
+  const when = Date.parse(p.get('date') || '');
+  return { amount, merchant: merchant || SOURCES[src], card: (p.get('card') || '').trim().slice(0, 100), src, source: SOURCES[src], key: p.get('k') || '', ref, at: Number.isFinite(when) && Math.abs(Date.now() - when) < 7 * 86400000 ? new Date(when).toISOString() : '' };
 }
 
 /** Drops repeats of the same payment that arrive within two minutes (automations can fire twice). */

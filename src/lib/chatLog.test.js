@@ -47,3 +47,8 @@ test('reads Filipino logs and keeps the account out of the merchant', () => {
   expect(parseLogMessage('Magkano ang gastos ko?')).toEqual([]);
   expect(parseLogMessage('I just bought bread $30 using my BDO card')[0]).toMatchObject({ merchant: 'Bread', accountHint: 'bdo card' });
 });
+
+test('tolerates the common "ganit" typo for "gamit"', () => {
+  const [e] = parseLogMessage('Bumili ako ng saging kanina 20 pesos ganit ang savings account ko');
+  expect(e).toMatchObject({ amount: 20, merchant: 'Saging', accountHint: 'savings account' });
+});

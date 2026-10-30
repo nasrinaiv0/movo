@@ -1,7 +1,7 @@
 import { readLogLink, parseAmount, sameKey, matchAccount } from './autoLog';
 
 test('parses automation links and rejects bad amounts', () => {
-  expect(readLogLink('#log?src=applepay&k=abc&amount=%E2%82%B11%2C234.50&merchant=Jollibee%20QC&card=BPI%20Visa')).toEqual({ amount: 1234.5, merchant: 'Jollibee QC', card: 'BPI Visa', src: 'applepay', source: 'Apple Pay', key: 'abc' });
+  expect(readLogLink('#log?src=applepay&k=abc&amount=%E2%82%B11%2C234.50&merchant=Jollibee%20QC&card=BPI%20Visa')).toEqual({ amount: 1234.5, merchant: 'Jollibee QC', card: 'BPI Visa', src: 'applepay', source: 'Apple Pay', key: 'abc', ref: '', at: '' });
   expect(readLogLink('#log?amount=0&merchant=x')).toEqual({ invalid: true });
   expect(readLogLink('#settings')).toBeNull();
   expect(readLogLink('#log?amount=99&merchant=%3Cscript%3E&src=evil').src).toBe('notification');
@@ -31,4 +31,9 @@ test('the Shortcuts prompt carries the private link and names the fields to fill
   expect(text).toContain('https://movo.nasrinai.com/#log?src=applepay&k=abc123&amount=AMOUNT&merchant=MERCHANT&card=CARD');
   expect(text).toMatch(/Amount.*Merchant.*Card/);
   expect(text).toMatch(/URL-encoding/);
+});
+
+test('automation links can carry a reference ID or the raw notification text', () => {
+  expect(readLogLink('#log?src=googlepay&amount=250&merchant=Grab&ref=ab-1234').ref).toBe('AB-1234');
+  expect(readLogLink('#log?src=notification&amount=500&text=' + encodeURIComponent('You paid PHP 500.00 to Meralco. Ref No. 7781234567')).ref).toBe('7781234567');
 });

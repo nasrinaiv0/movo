@@ -4,6 +4,8 @@ const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
   return supabase;
 };
+/** PostgREST / Postgres "relation does not exist" errors. */
+export const isMissingTable = (e) => ['PGRST205', 'PGRST204', '42P01'].includes(e?.code) || e?.status === 404;
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
 
 export async function getCurrentSession() {
@@ -190,7 +192,10 @@ export async function savePreferences(userId, prefs, stickers) {
 export async function deleteAllCloudData(userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const client = requireClient();
-  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations', 'user_preferences']) {
+  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
     unwrap(await client.from(table).delete().eq('user_id', userId));
   }
+  // Synced preferences live in an optional table: if its migration is not applied yet there is nothing to delete.
+  const prefs = await client.from('user_preferences').delete().eq('user_id', userId);
+  if (prefs.error && !isMissingTable(prefs.error)) throw prefs.error;
 }

@@ -34,7 +34,7 @@ function friendlyError(code) {
 const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
 
 /** A record logged from chat: what was saved, where, and a one-tap undo. */
-function LogCard({ items, removed, show, onUndo, onLogAnyway }) {
+function LogCard({ items, removed, show, onUndo, onLogAnyway, onView }) {
   return <div className="chat-log-card">
     {items.map(row => {
       const gone = removed.includes(row.id);
@@ -47,14 +47,14 @@ function LogCard({ items, removed, show, onUndo, onLogAnyway }) {
           ? <><span className="dup"><Icon name="info" size={13} strokeWidth={2.4} />{tr('Already logged on {date}. Not added twice.', { date: formatDate(row.duplicateOf.occurred_at, { month: 'short', day: 'numeric' }, 'md') })}</span><button type="button" className="link-button" onClick={() => onLogAnyway(row)}>{tr('Log anyway')}</button></>
           : gone
           ? <span className="muted">{tr('Removed')}</span>
-          : <><span className="ok"><span className="chat-log-mark" aria-hidden="true"><MovoMark size={16} /></span>{tr('Added to your transactions')}</span><button type="button" className="link-button" onClick={() => onUndo(row.id)}>{tr('Undo')}</button></>}
+          : <><span className="ok"><span className="chat-log-mark" aria-hidden="true"><MovoMark size={16} /></span>{tr('Added to your transactions')}</span><span className="chat-log-actions">{onView && <button type="button" className="link-button" onClick={() => onView(row)}>{tr('View')}</button>}<button type="button" className="link-button" onClick={() => onUndo(row.id)}>{tr('Undo')}</button></span></>}
         </span>
       </div>;
     })}
   </div>;
 }
 
-export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, shortcuts = [], show = true }) {
+export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, shortcuts = [], show = true }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const requestEpochRef = useRef(0);
@@ -116,6 +116,12 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setConsentOpen(!!session?.user && cloudMode && !accepted);
       if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
       if (newConversationPending) { setMessages([]); setConversationId(null); return; }
+      // One clean start per account after the MOVO-only change, so an older thread that quoted outside material is not
+      // reopened (or fed back as context). Earlier chats stay in the account; they are just not reopened.
+      try {
+        const freshKey = 'movo.ai.fresh.v2.' + session.user.id;
+        if (localStorage.getItem(freshKey) !== '1') { localStorage.setItem(freshKey, '1'); setMessages([]); setConversationId(null); return; }
+      } catch { /* storage unavailable: load as usual */ }
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
@@ -135,9 +141,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     return () => { active = false; };
   }, [session?.user?.id, cloudMode, newConversationPending]);
 
-  const send = async (event) => {
-    event?.preventDefault();
-    const message = draft.trim();
+  const send = async (event, spoken) => {
+    event?.preventDefault?.();
+    const message = String(spoken ?? draft).trim();
     if (!message || busy) return;
     // Logging is handled on this device and never sent to NasrinAI, so it needs no sign-in or AI consent.
     const entries = onLog ? parseLogMessage(message) : [];
@@ -148,9 +154,20 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       try {
         const items = await onLog(entries);
         setMessages((current) => [...current, { role: 'log', items, removed: [] }]);
+        const added = items.filter(i => !i.duplicateOf).length;
+        say(added ? tr('Logged {n} record(s).', { n: added }) : tr('That was already logged, so I did not add it twice.'));
       } catch (cause) {
-        setMessages((current) => [...current, { role: 'assistant', local: true, content: cause.message === 'account_required' ? tr('Add an account in Wallet first, then I can log this for you.') : tr('That could not be saved. Please try again.') }]);
-      } finally { setBusy(false); inputRef.current?.focus(); }
+        const content = cause.message === 'account_required' ? tr('Add an account or card in Wallet first, then I can log this for you.') : tr('That could not be saved. Please try again.');
+        setMessages((current) => [...current, { role: 'assistant', local: true, content }]); say(content);
+      } finally { setBusy(false); if (!voiceRef.current) inputRef.current?.focus(); }
+      return;
+    }
+    // Common questions are answered at once from the records on this device; nothing is sent to NasrinAI.
+    const local = onLocalAnswer ? onLocalAnswer(message) : null;
+    if (local) {
+      setError(''); setDraft('');
+      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', content: local, local: true }]);
+      say(local);
       return;
     }
     if (!session?.user || !cloudMode || !supabase) {
@@ -186,6 +203,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setNewConversationPending(false);
       try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
+      say(result.reply);
     } catch (cause) {
       if (!isCurrentRequest()) return;
       setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
@@ -221,18 +239,55 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   const append = (text) => setDraft((cur) => `${cur ? `${cur.trimEnd()}\n` : ''}${text}`.slice(0, MAX));
 
-  const toggleMic = () => {
-    if (listening) { recognition.current?.stop(); return; }
-    if (!SpeechRecognition) { setError(tr('Voice input is not supported in this browser.')); return; }
-    const rec = new SpeechRecognition(); recognition.current = rec;
-    const base = draft ? `${draft.trimEnd()} ` : '';
-    rec.lang = navigator.language || 'en-US'; rec.interimResults = true; rec.continuous = false;
-    rec.onresult = (e) => setDraft(`${base}${Array.from(e.results).map(r => r[0].transcript).join('')}`.slice(0, MAX));
-    rec.onerror = (e) => { if (e.error === 'not-allowed') setError(tr('Allow microphone access to dictate your message.')); };
-    rec.onend = () => { setListening(false); inputRef.current?.focus(); };
-    setError(''); setListening(true); rec.start();
+  /* Voice conversation: the mic keeps listening, each finished sentence is sent on its own, replies are read aloud,
+     and speaking over a reply interrupts it. Speech recognition and speech output are provided by the browser. */
+  const voiceRef = useRef(false);
+  const spokenRef = useRef('');
+  const sendRef = useRef(null);
+  sendRef.current = send;
+  const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_#>`|]/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\s+/g, ' ').trim();
+  function say(text) {
+    const synth = window.speechSynthesis;
+    if (!voiceRef.current || !synth || typeof SpeechSynthesisUtterance === 'undefined') return;
+    const words = plain(text).slice(0, 600); if (!words) return;
+    synth.cancel(); spokenRef.current = words.toLowerCase();
+    const u = new SpeechSynthesisUtterance(words); u.lang = navigator.language || 'en-US';
+    u.onend = () => { spokenRef.current = ''; }; u.onerror = () => { spokenRef.current = ''; };
+    synth.speak(u);
+  }
+  // The device may hear its own voice: a "sentence" that is mostly words of the reply being read is ignored.
+  const isEcho = (heard) => {
+    const spoken = spokenRef.current; if (!spoken) return false;
+    const w = heard.toLowerCase().split(/\s+/).filter(Boolean); if (!w.length) return true;
+    return w.filter(x => spoken.includes(x)).length / w.length >= 0.7;
   };
-  useEffect(() => () => { recognition.current?.abort?.(); window.speechSynthesis?.cancel(); }, []);
+  const stopVoice = () => {
+    voiceRef.current = false; setListening(false);
+    try { recognition.current?.abort?.(); } catch { /* already stopped */ }
+    window.speechSynthesis?.cancel(); spokenRef.current = '';
+  };
+  const startVoice = () => {
+    const rec = new SpeechRecognition(); recognition.current = rec;
+    rec.lang = navigator.language || 'en-US'; rec.interimResults = true; rec.continuous = true;
+    rec.onresult = (e) => {
+      let interim = ''; let final = '';
+      for (let i = e.resultIndex; i < e.results.length; i += 1) { const r = e.results[i]; if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript; }
+      const talking = !!window.speechSynthesis?.speaking;
+      if (talking && (final || interim) && !isEcho(final || interim)) { window.speechSynthesis.cancel(); spokenRef.current = ''; }
+      if (interim) setDraft(interim.slice(0, MAX));
+      if (final.trim() && !(talking && isEcho(final))) { setDraft(''); sendRef.current?.(null, final.trim()); }
+    };
+    rec.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { setError(tr('Allow microphone access to talk with NasrinAI.')); stopVoice(); } };
+    // Browsers end recognition after a pause; keep the conversation going until the person turns the mic off.
+    rec.onend = () => { if (voiceRef.current) setTimeout(() => { if (voiceRef.current) { try { rec.start(); } catch { /* restarting */ } } }, 250); else setListening(false); };
+    try { rec.start(); } catch { /* already listening */ }
+  };
+  const toggleMic = () => {
+    if (voiceRef.current) { stopVoice(); return; }
+    if (!SpeechRecognition) { setError(tr('Voice input is not supported in this browser.')); return; }
+    setError(''); voiceRef.current = true; setListening(true); startVoice();
+  };
+  useEffect(() => () => { voiceRef.current = false; recognition.current?.abort?.(); window.speechSynthesis?.cancel(); }, []);
 
   const speak = (text, index) => {
     const synth = window.speechSynthesis; if (!synth) return;
@@ -292,7 +347,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       </div>}
       {messages.map((message, index) => message.role === 'log' ? <article key={index} className="movo-ai-message log">
         <span className="movo-ai-message-label">{tr('NasrinAI')}</span>
-        <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} onLogAnyway={(row) => logAnyway(index, row)} />
+        <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} onLogAnyway={(row) => logAnyway(index, row)} onView={onViewLog} />
       </article> : <article key={index} className={'movo-ai-message ' + message.role}>
         <span className="movo-ai-message-label">{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
@@ -316,7 +371,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <div className="movo-ai-composer-bar">
           <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
           <span className="movo-ai-composer-gap" />
-          <button type="button" className={`movo-ai-circle${listening ? ' live' : ''}`} onClick={toggleMic} disabled={busy} aria-pressed={listening} aria-label={listening ? tr('Stop dictation') : tr('Dictate a message')} title={listening ? tr('Stop dictation') : tr('Dictate a message')}><Icon name={listening ? 'stop' : 'mic'} size={16} strokeWidth={2} /></button>
+          <button type="button" className={`movo-ai-circle${listening ? ' live' : ''}`} onClick={toggleMic} disabled={busy && !listening} aria-pressed={listening} aria-label={listening ? tr('End voice conversation') : tr('Talk with NasrinAI')} title={listening ? tr('End voice conversation') : tr('Talk with NasrinAI')}><Icon name={listening ? 'stop' : 'mic'} size={16} strokeWidth={2} /></button>
           <button type="submit" className="movo-ai-circle movo-ai-send" disabled={busy || !draft.trim()} aria-label={tr('Send message')}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={16} strokeWidth={2.4} />}</button>
         </div>
       </form>

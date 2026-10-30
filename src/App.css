@@ -1931,3 +1931,40 @@ button.account-tile:active { transform: scale(.98); }
 @media (pointer: coarse) {
   :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, select) { font-size: 16px !important; }
 }
+
+/* Overlap fixes. Composer shortcuts stay inside the composer's rounded corners. */
+.movo-app .movo-ai-chat .movo-ai-shortcuts { margin: 0 0 6px; padding: 0 0 2px; border-radius: 15px; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
+/* iOS date/time fields have a wide intrinsic size and spill into the next column; keep them inside their cell. */
+.movo-app :is(input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"]) { display: block; width: 100%; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; text-align: start; }
+.movo-app input::-webkit-date-and-time-value { text-align: start; }
+.movo-app :is(.field-grid, .form-grid, .two-col, .sheet-form) > * { min-width: 0; }
+.chat-log-actions { display: inline-flex; gap: 14px; margin-inline-start: auto; }
+
+/* =====================================================================
+   Hero motion. Opening Wallet: cards rise out of the pocket one after
+   another. A new transaction slides in with a soft accent glow. The dock
+   capsule glides and the chosen icon settles in; ease-out only.
+   ===================================================================== */
+.movo-app .card-scroller { perspective: 900px; }
+.movo-app .card-scroller > .card-slide > :is(.credit-card, .account-tile) { animation: wallet-rise .72s cubic-bezier(.22,.61,.36,1) both; transform-origin: 50% 100%; }
+.movo-app .card-scroller > .card-slide:nth-child(2) > * { animation-delay: .07s; }
+.movo-app .card-scroller > .card-slide:nth-child(3) > * { animation-delay: .14s; }
+.movo-app .card-scroller > .card-slide:nth-child(n+4) > * { animation-delay: .2s; }
+@keyframes wallet-rise { from { opacity: 0; transform: translateY(48px) scale(.9) rotateX(16deg); } 60% { opacity: 1; } }
+.movo-app .tx-row.tx-fresh { animation: tx-arrive .6s cubic-bezier(.22,.61,.36,1) both, tx-glow 2.4s ease-out .2s both; }
+@keyframes tx-arrive { from { opacity: 0; transform: translateY(-12px) scale(.98); } }
+@keyframes tx-glow { from { background-color: rgba(var(--accent-rgb), .14); } to { background-color: transparent; } }
+/* Bottom dock */
+.movo-app .nav-pill { transition: transform .45s cubic-bezier(.22,.61,.36,1), opacity .25s ease-out, width .3s ease-out; }
+.movo-app .bottom-nav .nav-item .nav-icon { transition: transform .35s cubic-bezier(.22,.61,.36,1), opacity .25s ease-out; }
+.movo-app .bottom-nav .nav-item:not(.nav-active):not(.nav-center) .nav-icon { opacity: .72; }
+.movo-app .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon { animation: nav-settle .5s cubic-bezier(.22,.61,.36,1) both; }
+.movo-app .bottom-nav .nav-item:active .nav-icon { transform: scale(.86); transition-duration: .12s; }
+.movo-app .bottom-nav .nav-center .orb { transition: transform .35s cubic-bezier(.22,.61,.36,1); }
+.movo-app .bottom-nav .nav-center.nav-active .orb { transform: translateY(-2px); }
+@keyframes nav-settle { from { transform: translateY(6px) scale(.84); opacity: .4; } }
+.movo-app .side-item.active .side-icon { animation: nav-settle .45s cubic-bezier(.22,.61,.36,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .card-scroller > .card-slide > *, .movo-app .tx-row.tx-fresh, .movo-app .bottom-nav .nav-item.nav-active .nav-icon, .movo-app .side-item.active .side-icon { animation: none; }
+}
+.ref-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; }
