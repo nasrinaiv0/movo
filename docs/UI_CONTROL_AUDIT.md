@@ -75,3 +75,13 @@ The frontend is not declared complete by this static check. Legal publication st
 - Audit output: 31 source files, 94 buttons (9 disabled), 9 links, 5 forms, 3 interactive ARIA widgets, and 2 dialogs. The scanner reported “No obvious unhandled controls found” and emitted no disabled-control/dialog review warnings.
 - The scanner now catches obviously empty inline callbacks but cannot prove that named/non-empty callbacks perform the correct business action. Interactive keyboard/focus, screen-reader, responsive, and authenticated financial-flow checks remain open.
 - This entry is documentation-only; rerun CI and verify the preview for the resulting branch head before merge.
+
+
+## Latest control audit validation — 2026-10-30
+
+- Validated implementation/documentation head: `58c658a340c5758baa0456d4b4d3db43bcc24ee7`.
+- GitHub Actions run [40989112005](https://github.com/nasrinaiv0/movo/actions/runs/40989112005) passed **20 suites / 110 tests**, TypeScript typecheck, `audit:controls`, production-only dependency audit, and production build.
+- The production-only dependency audit reported **0 vulnerabilities**; the full dependency tree still has 34 reported findings (16 low, 5 moderate, 13 high) and needs separate targeted triage.
+- Vercel deployment [7Q5r4LiArsJ2scn5AWUjjdx62EdX](https://vercel.com/nasrin-ai/movo/7Q5r4LiArsJ2scn5AWUjjdx62EdX) reached **READY** for the same head.
+- Audit output: 31 source files, 94 buttons (9 disabled), 9 links, 5 forms, 3 interactive ARIA widgets, and 2 dialogs. No obvious unhandled controls were found, and no disabled-control/dialog review warnings were emitted.
+- This does not replace manual keyboard-only/focus, screen-reader, responsive, or authenticated financial-flow testing. The documentation-only commit containing this entry must be revalidated before merge.
