@@ -2,7 +2,7 @@ import React from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 
-export const ACCENTS = [['blue', '#285fe8'], ['purple', '#6b3fd4'], ['orange', '#a94b00'], ['green', '#087548'], ['red', '#b4232a'], ['slate', '#334155']];
+export const ACCENTS = [['blue', '#2454d8'], ['purple', '#6b3fd4'], ['orange', '#a94b00'], ['green', '#087548'], ['red', '#b4232a'], ['slate', '#334155']];
 export const THEMES = [
   ['system', 'System (Default)', 'Follows your device setting', 'contrast'],
   ['light', 'Light', 'Clean and minimal', 'sun'],
