@@ -1,5 +1,28 @@
 # MOVO Master Change Ledger
 
+## Latest audit snapshot — 2026-10-30 08:50 Asia/Manila (2026-10-30 00:50 UTC)
+
+**This snapshot supersedes older status rows below wherever they disagree.** The lower sections remain historical audit records and should not be read as the current PR inventory.
+
+- **Repository scope:** MOVO only. The separate NasrinAI repository is not being modified by this workflow.
+- **Current `main`:** `bbd3183553fde00206d65639ecbf042b20d28a67` (documentation-only merge of PR #54).
+- **Production:** deployment `dpl_7XobXwSNWuLa5a9HChdafyGoECeR` is READY at source SHA `82172294f80e360af9e7043de425a454c211078c`, which is behind current main by the documentation-only merge. The four application PRs below are not deployed to production.
+- **Open implementation PRs:** #43 finance ledger/currency, #52 chart formatting/validation, #55 UI control and ARIA audit, #56 MOVO-only NasrinAI context boundary. All remain drafts. No application PR was merged in this audit.
+- **PR #43:** head `7f073831833a4078ef428632cafa69bfdb1f63eb`; historical exact-head CI reported 19 suites / 111 tests, typecheck and production compilation passing. Authenticated finance-flow and responsive/accessibility verification remain unverified. Its PR description contains both a checked manual-smoke-test item and later notes saying manual verification is outstanding; the latter is the conservative release status until evidence is reconciled.
+- **PR #52:** head `58b7a9e32dac650d517aa99bf7bfb94c4b39ac01`; exact-head CI reported 18 suites / 99 tests, typecheck and production compilation passing; Vercel status success. Live authorized-finance chart verification remains unverified.
+- **PR #55:** head `dcf625c057607f6d5566054d8eba58e1a3c6a2e5`; exact-head CI reported 19 suites / 105 tests, typecheck, static control audit and production compilation passing; Vercel status success. Interactive browser, keyboard, screen-reader and mobile checks remain outstanding.
+- **PR #56:** head `62eda3c7fe763db219a5340f49cef8540c13c614`; exact-head GitHub Actions run [40979832794](https://github.com/nasrinaiv0/movo/actions/runs/40979832794) passed 17 suites / 98 tests, typecheck and production compilation; exact-head Vercel preview is READY. It adds stale-response invalidation after account/mode changes. **Authenticated deployed upstream scope confirmation and the cross-project canary are still unverified**, so keep the PR draft and do not declare issue #47 resolved.
+- **Production HTTP smoke check:** `https://movo.nasrinai.com` returned HTTP 200 at 2026-10-30 00:51 UTC. This confirms only HTML delivery, not a successful authenticated app/API flow.
+- **Production NasrinAI telemetry:** in the latest 24-hour window, Vercel grouped 8 upstream HTTP 401 events tagged `key_format_secret_format`, 7 additional upstream HTTP 401 events, one timeout, and one network error for `/api/nasrinai/chat`. The latest recorded 401 was 2026-10-29 15:37 UTC. This is evidence of previous production failures, not proof of current failure or recovery. The `NASRINAI_API_KEY` variable exists as a sensitive Production variable; its value was not decrypted. A successful authenticated request is still required.
+- **Dependency audit:** fresh install without a committed lockfile produced 34 full-tree npm advisories (16 low, 5 moderate, 13 high, 0 critical), all in the legacy `react-scripts@5.0.1` build/test dependency tree. A dedicated branch `chore/movo-runtime-dependency-scope` moves CRA to `devDependencies` and adds a production-only `npm audit --omit=dev` CI gate. In a temporary sandbox experiment, production-only audit reported zero advisories and build/typecheck/tests passed (17 suites / 98 tests); exact-branch Node 20 CI is still pending. **The 34 full build-toolchain findings are not fixed** and must not be described as resolved.
+- **Database security:** latest read-only catalog check confirmed RLS enabled on seven checked public tables, 22 owner-scoped policies across six user-facing tables, no `anon`/`PUBLIC` grants on the checked tables, and the upstream conversation mapping remains service-role-only. Supabase leaked-password protection is still disabled; no setting or policy was changed.
+- **Legal publication:** Terms/Privacy navigation and automated page tests exist, but publication is not complete. Formal operator/controller identity and address, the real retention schedule, verified provider/data-recipient disclosures, and jurisdiction-specific review are still missing. Keep the warning visible and do not invent legal facts.
+- **Next priority:** (1) complete the credential rotation/verification through the authorized secret-management path without exposing the value; (2) obtain authenticated MOVO-only canary evidence for PR #56; (3) complete interactive finance/chart/control QA; (4) resolve the full build-toolchain audit; (5) complete legal disclosures with verified facts; (6) repeat CI/security/RLS checks and merge only PRs whose own release gates are met.
+
+---
+
+# MOVO Master Change Ledger
+
 **Snapshot:** 2026-10-30 06:14 Asia/Manila (2026-10-29 22:14 UTC)  
 **Repository:** https://github.com/nasrinaiv0/movo  
 **Current main SHA:** 82172294f80e360af9e7043de425a454c211078c  
