@@ -23,4 +23,4 @@ This change upgrades MOVO's NasrinAI chat voice mode to use the authenticated Na
 - Code committed to branch feat/model-backed-continuous-voice.
 - Automated CI, browser permission behavior, mobile Safari/Chrome recording, provider availability, end-to-end STT/TTS, interruption quality, and production behavior are not yet verified at the time this document was written.
 - Do not merge or deploy until CI passes and the voice path is smoke-tested with a non-sensitive test prompt.
-- Known area for QA: browser microphone echo cancellation and VAD thresholds vary by device; verify that assistant playback does not trigger repeated STT and that user interruption works acceptably.
+- Known area for QA: browser microphone echo cancellation and VAD thresholds vary by device. To avoid feeding the assistant's own audio back into STT, capture/transcription is suppressed while model TTS is playing; true barge-in/interrupt-during-playback is not implemented yet. Verify natural turn-taking on iOS Safari and Android Chrome.
