@@ -1673,3 +1673,15 @@ button.account-tile:active { transform: scale(.98); }
 [dir="rtl"] .movo-app .nav-pill, .movo-app[dir="rtl"] .nav-pill { left: auto; right: var(--nav-pad); margin: 0; transform: translateX(calc(var(--idx, 0) * -100%)); }
 .movo-app .nav-item { min-width: 0; height: 100%; justify-content: center; }
 .tour-logo { display: inline-grid; place-items: center; }
+
+/* ---------- Receipt scanner v2: preview and controls never overlap; upload options ---------- */
+.scan-uploads { display: grid; gap: 8px; }
+.scan-up-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: var(--r-tile, 30%); background: rgba(var(--accent-rgb), .12); color: var(--accent); }
+.scan-camera { display: flex; flex-direction: column; background: #000; border-radius: 22px; overflow: hidden; }
+.scan-view { position: relative; aspect-ratio: 3 / 4; max-height: 56vh; background: #000; }
+.scan-view video { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; object-fit: cover; }
+.scan-guide { inset: 7% 8%; }
+.scan-controls { position: static; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 14px 16px 16px; background: #000; }
+.scan-text-btn { justify-self: start; min-height: 44px; padding: 0 6px; border: 0; background: none; color: #fff; font-size: 15px; font-weight: 500; }
+.scan-controls .scan-text-btn:last-child { justify-self: end; }
+.scan-shutter { width: 64px; height: 64px; border: 4px solid #fff !important; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 3px #000; }

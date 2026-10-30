@@ -13,16 +13,37 @@ function getWorker() {
   return workerPromise;
 }
 
-/** Downscale large photos first: OCR is faster and just as accurate at ~1600px. */
+/** Downscale to ~1600px and boost contrast in greyscale: OCR is faster and more accurate on clean, even text. */
 async function prepare(file) {
   const bitmap = await (window.createImageBitmap ? window.createImageBitmap(file) : Promise.reject(new Error('unsupported')));
   const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close?.();
+  return enhance(canvas);
+}
+
+/** Greyscale + contrast stretch (5th–95th percentile), in place. */
+export function enhance(canvas) {
+  try {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height); const d = img.data;
+    const hist = new Uint32Array(256);
+    for (let i = 0; i < d.length; i += 4) { const y = (d[i] * 299 + d[i + 1] * 587 + d[i + 2] * 114) / 1000 | 0; d[i] = y; hist[y] += 1; }
+    const total = d.length / 4; let lo = 0; let hi = 255; let acc = 0;
+    for (let v = 0; v < 256; v += 1) { acc += hist[v]; if (acc > total * 0.05) { lo = v; break; } }
+    acc = 0; for (let v = 255; v >= 0; v -= 1) { acc += hist[v]; if (acc > total * 0.05) { hi = v; break; } }
+    const range = Math.max(1, hi - lo);
+    for (let i = 0; i < d.length; i += 4) { const y = Math.max(0, Math.min(255, ((d[i] - lo) * 255) / range)); d[i] = y; d[i + 1] = y; d[i + 2] = y; }
+    ctx.putImageData(img, 0, 0);
+  } catch { /* canvas unavailable: use the plain image */ }
   return canvas;
 }
+
+/** Start loading the OCR engine early (e.g. when the scanner opens) so the first scan is quicker. */
+export const warmUpOcr = () => { getWorker().catch(() => {}); };
 
 export async function readImageText(file) {
   if (!file || !/^image\//.test(file.type || '')) throw new Error('Choose a photo or image file.');
@@ -31,6 +52,44 @@ export async function readImageText(file) {
   const { data } = await worker.recognize(image);
   return (data?.text || '').replace(/[ \t]+\n/g, '\n').trim();
 }
+
+/*
+ * Invoices and e-receipts as PDF, read on this device with a self-hosted pdf.js (scripts disabled). Text PDFs are
+ * read directly; scanned PDFs fall back to OCR of the first page.
+ */
+export async function readPdfText(file) {
+  if (!file || !(file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''))) throw new Error('Choose a PDF file.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('That file is larger than 15 MB.');
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = '/ocr/pdf.worker.min.mjs';
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false, disableFontFace: true, enableXfa: false }).promise;
+  try {
+    const lines = [];
+    for (let n = 1; n <= Math.min(doc.numPages, 3); n += 1) {
+      const page = await doc.getPage(n);
+      const content = await page.getTextContent();
+      let row = []; let lastY = null;
+      content.items.forEach(item => {
+        const y = Math.round(item.transform?.[5] ?? 0);
+        if (lastY !== null && Math.abs(y - lastY) > 2) { lines.push(row.join(' ')); row = []; }
+        if (item.str) row.push(item.str); lastY = y;
+      });
+      if (row.length) lines.push(row.join(' '));
+    }
+    const text = lines.map(l => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
+    if (text.replace(/\W/g, '').length >= 20) return text;
+    const page = await doc.getPage(1);
+    const viewport = page.getViewport({ scale: Math.min(2, 1600 / page.getViewport({ scale: 1 }).width) });
+    const canvas = document.createElement('canvas'); canvas.width = Math.round(viewport.width); canvas.height = Math.round(viewport.height);
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    const worker = await getWorker();
+    const { data } = await worker.recognize(enhance(canvas));
+    return (data?.text || '').replace(/[ \t]+\n/g, '\n').trim();
+  } finally { doc.destroy(); }
+}
+
+/** Any supported file: photo, screenshot, receipt image or PDF invoice. */
+export const readDocumentText = (file) => ((file?.type === 'application/pdf' || /\.pdf$/i.test(file?.name || '')) ? readPdfText(file) : readImageText(file));
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const num = (s) => Number(String(s).replace(/[,\s]/g, ''));
