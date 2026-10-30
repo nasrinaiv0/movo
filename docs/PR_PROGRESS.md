@@ -10,8 +10,6 @@
 
 ---
 
----
-
 # MOVO Pull Request Progress Register
 
 **Last reconciled:** 2026-10-29 13:02 UTC  
