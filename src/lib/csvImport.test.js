@@ -19,13 +19,13 @@ describe('CSV transaction import parser', () => {
 
 
   test('rejects malformed explicit currency instead of silently defaulting to PHP', () => {
-    const result = parseCsvTransactions('Date,Description,Type,Amount,Currency\\n2026-10-01,Coffee,expense,12.50,USDT');
+    const result = parseCsvTransactions('Date,Description,Type,Amount,Currency\n2026-10-01,Coffee,expense,12.50,USDT');
     expect(result.transactions).toEqual([]);
     expect(result.errors).toEqual([{ line: 2, message: 'Currency must be a three-letter code, for example PHP or USD.' }]);
   });
 
   test('defaults a blank optional currency to PHP', () => {
-    const result = parseCsvTransactions('Date,Description,Type,Amount,Currency\\n2026-10-01,Coffee,expense,12.50,');
+    const result = parseCsvTransactions('Date,Description,Type,Amount,Currency\n2026-10-01,Coffee,expense,12.50,');
     expect(result.errors).toEqual([]);
     expect(result.transactions[0].currency).toBe('PHP');
   });
