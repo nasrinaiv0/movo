@@ -97,6 +97,17 @@ export function TermsOfService({ c }) {
       <p>{rich('For questions about these terms, email {link}.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       <p>{tr('Privacy contact: Nasrin Abubakar, Data Protection Officer / privacy contact; telephone +63 947 387 5093; email support@nasrinai.com; address 142 Pag-asa Village, Matina Aplaya, Davao City, Philippines. The operator must verify whether a separate legal entity name or other registration details are required for the service and publish them if applicable.')}</p>
     </section>
+    <section className="legal-section">
+      <h2>{tr('12. Regional availability and app-store requirements')}</h2>
+      <p>{tr('MOVO may be offered only in countries and regions where the operator has decided to make the service available and where distribution is permitted by applicable law and the relevant platform rules. A country or region appearing in the app settings is a localization preference only; it is not a representation that MOVO has completed every legal, regulatory, tax, registration, or licensing review for that location.')}</p>
+      <p>{tr('For countries or regions not listed in the settings, MOVO will be offered only where the operator has assessed applicable local requirements and the requirements of the distribution platform, including Apple App Store and Google Play policies. If the operator cannot reasonably establish that a feature or the service may lawfully be offered, or that applicable platform requirements are met, that feature or the service may be unavailable or restricted in that location until reviewed. Platform availability or store approval does not itself establish legal compliance.')}</p>
+      <p>{tr('You must use MOVO only where you are legally permitted to do so. Mandatory rights under the laws that apply to you remain unaffected. The operator may restrict a feature or market to comply with law, platform rules, security requirements, or a regulator’s direction, and will provide notice where required by law.')}</p>
+    </section>
+    <section className="legal-section">
+      <h2>{tr('13. Automation and imported information')}</h2>
+      <p>{tr('If you configure a shortcut, link, import, or other automation to create a MOVO record, you are responsible for reviewing its permissions, setup, and source. Depending on your setup, transaction details such as a merchant, amount, date, card label, or reference may be passed through a link or automation. An incoming link or notification is not proof that a payment occurred, was authorized, cleared, or came from a financial institution.')}</p>
+      <p>{tr('Automation may create an entry without a separate confirmation when you have enabled that behavior. Check the details and correct or delete inaccurate records. Disable the automation and revoke or rotate its access key if you no longer want it to run. MOVO does not guarantee that every transaction will be detected, that duplicate or incorrect records will never occur, or that an automation can prevent, reverse, or verify a payment.')}</p>
+    </section>
   </LegalPage>;
 }
 
@@ -159,6 +170,27 @@ export function PrivacyPolicy({ c }) {
       <h2>{tr('9. Children and policy updates')}</h2>
       <p>{tr('MOVO is a personal finance tool and is not designed for children. If you believe a child has provided personal information without appropriate authorization, contact the service team so the matter can be reviewed.')}</p>
       <p>{tr('We may update this policy as product features and legal requirements change. The effective date at the top identifies the latest published version. Material changes may require additional notice or consent where applicable.')}</p>
+    </section>
+    <section className="legal-section">
+      <h2>{tr('10. International use and regional requirements')}</h2>
+      <p>{tr('MOVO may be accessed from different countries, but the laws that apply depend on the circumstances, including where you live, where the operator is established, what the service does, and where processing occurs. Selecting a country, language, or currency in Settings changes localization preferences and does not determine your legal residence, establish that a local compliance review is complete, or guarantee that every feature is available in that jurisdiction.')}</p>
+      <p>{tr('Where applicable, we will assess and respect the privacy, consumer-protection, electronic-commerce, and other mandatory requirements that apply to the service and its processing in the relevant jurisdiction. These may include rights to access, correct, delete, restrict, object to, or obtain a copy of personal data; rights to withdraw consent; and rights to complain to a competent regulator. The availability and scope of each right depend on applicable law and its lawful exceptions. We will assess requests under the law that applies rather than treating the examples in this policy as an exhaustive list.')}</p>
+      <p>{tr('For countries or regions not listed in MOVO Settings, the service or particular features will be offered only after the operator has assessed applicable local law and relevant distribution-platform requirements, including Apple App Store and Google Play policies. If those requirements have not been assessed or cannot reasonably be met, availability may be restricted until review. Neither listing a country nor platform approval is a certification of legal compliance.')}</p>
+    </section>
+    <section className="legal-section">
+      <h2>{tr('11. International transfers and service providers')}</h2>
+      <p>{tr('To operate requested features, information may be processed by hosting, authentication, database, security, support, and AI service providers, including providers configured for the deployed version of MOVO. These providers may process information in countries other than your own. Provider names, processing locations, retention terms, and transfer safeguards must be confirmed against the live configuration and applicable contracts; do not assume that all data stays in your country.')}</p>
+      <p>{tr('Where applicable law requires safeguards for international transfers, the operator will assess and implement the required legal mechanism and supplementary protections. We aim to limit each provider to the information and processing needed for its assigned service and to require appropriate confidentiality and security obligations. The actual provider inventory and transfer arrangements must be maintained and disclosed accurately.')}</p>
+    </section>
+    <section className="legal-section">
+      <h2>{tr('12. Automated features and user review')}</h2>
+      <p>{tr('MOVO may use rules, calculations, optical character recognition, categorization, reminders, shortcuts, or AI-generated responses to help organize information. These features can be incomplete or incorrect and should not be treated as independent verification of a transaction, financial account, merchant, or institution. Review extracted or automatically created records before relying on them.')}</p>
+      <p>{tr('MOVO does not intend to make a decision with legal or similarly significant effects about you solely through automated processing. If that changes, we will assess any notice, legal basis, human review, objection, or other safeguards required by applicable law before enabling the relevant feature.')}</p>
+    </section>
+    <section className="legal-section">
+      <h2>{tr('13. Account deletion and external requests')}</h2>
+      <p>{tr('You may request deletion of your account and associated personal data through the deletion options made available in MOVO or through the service team at support@nasrinai.com. If an applicable app store requires a separate external account-deletion webpage, the operator must provide and maintain a direct, publicly accessible deletion-request page and submit the required URL in the relevant developer console before publication. This policy does not mean that such an external page has been implemented unless it is actually available.')}</p>
+      <p>{tr('We will explain any material processing steps, reasonable identity checks, expected timing, and any data that must be retained under law or for legitimate security or legal purposes. Account deletion may not automatically cancel a subscription billed by Apple, Google, or another provider; manage or cancel that subscription through the relevant billing provider. Data that is lawfully retained will be limited to the applicable purpose and retention period.')}</p>
     </section>
   </LegalPage>;
 }
