@@ -188,3 +188,8 @@ Detailed evidence: [Audit delta — 2026-10-30 08:17](updates/2026-10-30-0817-mo
 ## Follow-up status after documentation commit — 2026-10-30 08:18 Asia/Manila
 
 The documentation update advanced PR #54 to head `7a0c9f4bcd032cef3268c06ee48465ccb3547feb`. The exact-head workflow run [#40979002452](https://github.com/nasrinaiv0/movo/actions/runs/40979002452) is still **in progress** (`verify` job in progress), and Vercel preview `dpl_HUmTRKLDHWy4qH9rhZjUDZN1RwYc` is **QUEUED**. The earlier head `283a740c4ab1e2b5a98215dadd01beabd95aedd6`, run #40973302563, and READY preview are prior-head evidence only. Do not claim the current documentation head is validated until the new workflow and preview finish.
+
+
+## Final documentation-head correction — 2026-10-30 08:19 Asia/Manila
+
+The SHA references in the earlier follow-up paragraphs are **intermediate commits**, not the final branch head: the master-ledger and detailed-delta updates were committed sequentially. After the last update in this checkpoint, the exact current head is the latest commit shown on [PR #54](https://github.com/nasrinaiv0/movo/pull/54). The previous workflow run was still in progress for an intermediate head, and the latest preview had been queued. Validation for the final documentation head is pending; use PR metadata and exact-head CI/Vercel status as the source of truth.
