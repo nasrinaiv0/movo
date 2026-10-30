@@ -290,3 +290,29 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - PR #56 exact-head CI #40990086352 passed (18 suites / 103 tests); authenticated context-scope/canary remains unverified. PR #60 exact-head CI #40989633601 passed (20 suites / 111 tests); manual accessibility checks remain open. PR #52's recorded exact-head run #40988481343 passed (18 suites / 101 tests); authorized financial-data chart verification remains open.
 - Full dependency tree remains 34 findings (16 low, 5 moderate, 13 high) while production-only audit reports zero; keep these scopes distinct.
 - No branch settings, code, database, secrets, or deployments were changed by monitoring.
+
+## Monitoring record — 2026-10-30 11:14 Asia/Manila
+
+### Repository/main
+- Current main: `815ab66919894b271b90a5b1570b2fae949406c9`; documentation-only PR #61 is merged. Current main deployment dpl_CcPMxYfkaTHk4sdASzTA83QNNEAb is READY.
+- All four open application PRs are zero commits behind main and mergeable, but intentionally remain drafts pending end-to-end/manual release gates.
+
+### Finance UI fix in PR #43
+- Current branch head: `600c49ab9f1b5cb0e0034afe59d00fdbd4a0d6dc`; implementation/test head: `5308948502127be913921522b598693feb21e533`.
+- Found: Profile's top summary metrics used PHP-default formatting and account-type subtotals forced PHP even when the selected display currency was USD. Hidden balances also used the PHP mask.
+- Fix: pass selected `displayCurrency` through `money()` and `shown()` for profile balance/income/expense and bank/card/e-wallet subtotals; no cross-currency aggregation or FX conversion introduced.
+- Regression uses synthetic USD/PHP accounts and transactions, verifies USD metrics/subtotal and absence of PHP contamination, then verifies the `USD ••••••` privacy mask.
+- Exact-head Actions #40996734432 (code/test head) and #40997019508 (latest docs head) passed 20 suites / 118 tests, typecheck, production-only audit (0 vulnerabilities), and production build. Latest preview dpl_FxojvcDKrnLv1rQJC1HfewT6mJwy READY.
+- Still draft: authenticated cloud writes, CSV import/export, and real owner-scoped currency isolation are not verified. Full dependency tree has 34 findings (16 low, 5 moderate, 13 high), distinct from the clean production-only audit.
+
+### Current validation snapshots
+- **PR #52** head `64cfa5b9e746b249a07735ae934badcb7d842610`; Actions #40996821611 passed 18 suites / 101 tests, typecheck, production-only audit (0), build; preview dpl_HkwPPhisFzvU6MqLCW5uXvXvKmMF READY, root HTTP 200. Authenticated chart provenance remains unverified.
+- **PR #56** head `337332bea5cabd533447e0913503b188794bca8e`; Actions #40996840860 passed 18 suites / 103 tests, typecheck, production-only audit (0), build; preview dpl_9t1ykdVhWkhHxLanDZK2xFnh33Wp READY, root HTTP 200. Authenticated scoped POST and unrelated-project canary are still absent; issue #47 remains open.
+- **PR #60** head `015c35d041972080249e0bc71a6114bbbc4e6e19`; Actions #40996861622 passed 20 suites / 111 tests, typecheck, `audit:controls`, production-only audit (0), build; preview dpl_3zM4sjjSTbQbTkrGuv9sTPZ9pnJp READY, root HTTP 200. Manual keyboard/focus, screen-reader, responsive, and finance-flow checks remain open.
+
+### Security/legal carry-forward
+- Fresh read-only catalog check: 7 checked tables with RLS enabled; 22 policies across six user-facing tables all reference `auth.uid()`; no `anon`/`PUBLIC` grants on the checked tables; upstream mapping has no policies and no authenticated grants, with service-role-only grants.
+- Security Advisor still reports leaked-password protection disabled. The available connector has no Auth-setting write action; no change was made.
+- Terms/Privacy revisions in PR #56 are not yet deployed. Keep the publication warning until operator/controller identity/address, actual retention/deletion schedule, provider/data-recipient disclosures, and jurisdiction-specific review are confirmed.
+- The protected deployment fetch in this checkpoint failed at Vercel's share-link/authentication layer before reaching the app; it is not API evidence. No authenticated chat canary was completed.
+- No production data, database/RLS/grants, Auth settings, or secrets were changed.
