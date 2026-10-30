@@ -276,3 +276,8 @@ This section supersedes any older snapshot text that still says PR #58 is awaiti
 - **Security/legal carry-forward:** Supabase leaked-password protection remains reported disabled; full-tree dependency findings and legal disclosure gaps remain open. No database/Auth/secrets changes were made in this review.
 - Full details: [10:10 monitoring delta](updates/2026-10-30-1010-monitoring-delta.md).
 
+
+
+### Exact-head follow-up — 2026-10-30 10:11 Asia/Manila
+
+Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352) has now completed successfully on exact head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c). It passed 18 suites / 103 tests, TypeScript typecheck, production-only dependency audit (0 vulnerabilities), and production compilation. Vercel check [CaaFALv6sPd7vWa1xRFqUwDRiHh2](https://vercel.com/nasrin-ai/movo/CaaFALv6sPd7vWa1xRFqUwDRiHh2) remains successful. The full dependency install still reports 34 findings (16 low, 5 moderate, 13 high), plus deprecation warnings for `glob@7.2.3`, `eslint@8.57.1`, and the Node.js 20 GitHub Actions runtime transition. These are not resolved by the clean production-only audit. The authenticated context-scope/canary gate remains unverified.
