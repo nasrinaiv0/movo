@@ -68,3 +68,12 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - **Legal:** Terms and Privacy pages and consent links were browser-verified, but publication warning remains until operator/controller identity/address, actual retention/deletion periods, providers/data recipients and jurisdiction-specific wording are confirmed.
 - **Production chat:** no-token POST returns 401 `sign_in_required`. This is an auth-gate check, not proof of authenticated MOVO context isolation. Protected preview SSO prevented the exact-head scoped POST/canary test.
 - Full detailed snapshot: `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md`.
+
+
+## PR #43 current-main reconciliation — 2026-10-30
+
+- Branch: `fix/finance-calculations-sync`; reconciliation commit: `95ac0d1cff74682d938859d1ae549e1635b34fa2`; current main parent: `ca1a680c78baf7c87347c960d56c7bc207041bc3`.
+- Current comparison: 2 commits ahead, 0 behind. The stale documentation copies from the old branch were intentionally not overlaid on current main; finance implementation details were added to `FRONTEND_FUNCTIONALITY_AUDIT.md` instead.
+- PR #59's generic demo identity and sample-data notice were explicitly restored and covered by regression tests while retaining PR #43's currency-aware calculations.
+- Latest-head CI/preview validation is pending. Older successful runs do not count for the reconciled tree.
+- **Merge blocker:** `src/lib/financeCalculations.js` currently treats non-finite monetary values as zero in `toCents`. This must be resolved or proven unreachable before merging, alongside authenticated finance-write and CSV flow verification.

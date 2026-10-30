@@ -166,3 +166,18 @@
 - `movo_ai_upstream_conversations` intentionally has no policies and neither `anon` nor `authenticated` has SELECT privilege. Preserve this server-only boundary; do not add client policies to silence the informational advisor.
 - Supabase Security Advisor still reports leaked-password protection disabled. This remains an owner-authorized Auth configuration blocker. Performance Advisor lists seven unused indexes as informational findings; do not remove them without query evidence and a reviewed migration.
 - No RLS, grants, data, auth settings, or secrets were changed.
+
+
+## Currency-safe finance calculations and current-main reconciliation — 2026-10-30
+
+**Status: implemented in the PR branch; exact-head validation and authenticated finance flows are pending. Do not mark complete yet.**
+
+- Reconciled the finance branch with current `main` `ca1a680c78baf7c87347c960d56c7bc207041bc3` using merge commit `95ac0d1cff74682d938859d1ae549e1635b34fa2`. The branch is now zero commits behind main.
+- Preserved the merged demo privacy changes while retaining finance changes: unauthenticated sample data uses `Demo User` / `demo@example.com`, a visible fictional-sample notice, a working Sign in action, mobile notice styling, and consent-aware Terms/Privacy assertions.
+- Added a shared `src/lib/financeCalculations.js` module so account balances, monthly income/expenses, net savings, chart bars, and category totals use the same integer-cent arithmetic.
+- Transfers debit the source and credit the destination without changing aggregate net worth. Pending transactions are excluded from balances and realized monthly totals.
+- Display currency is scoped by currency code; summaries and charts filter to the selected currency instead of adding unlike currencies or inventing FX rates. Transfers between currencies are rejected. Account currency is locked after transactions exist, and CSV import checks transaction/account currency consistency.
+- Relevant regression coverage in `src/lib/financeCalculations.test.js`, `src/lib/financeRepository.test.js`, and `src/screens/Settings.accessibility.test.js` covers cent-safe totals, transfers, pending rows, mixed-currency separation, currency validation, and accessible currency settings.
+- **Data-integrity follow-up found during review:** `toCents` currently maps non-finite values to zero. That can mask malformed local data rather than surfacing it. Resolve this or prove invalid values are rejected before every calculation path before merging; do not treat this branch as finance-complete until this is addressed.
+- **Validation boundary:** CI and Vercel checks on the pre-reconciliation head do not validate `95ac0d1` or later documentation commits. Wait for exact-head typecheck, full tests, production build, and production-only dependency audit. Authenticated account/transaction writes, CSV import/export, and currency isolation against real user-owned records remain unverified.
+- No Supabase schema, RLS policy, grant, production financial record, authentication setting, or provider secret was changed.
