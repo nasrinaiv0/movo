@@ -1665,3 +1665,10 @@ button.account-tile:active { transform: scale(.98); }
 .sheet.sheet-search { height: 88vh; height: 88dvh; max-height: none; display: flex; flex-direction: column; }
 .sheet.sheet-search > .sheet-list, .sheet.sheet-search > .catalog-list { flex: 1 0 auto; align-content: start; }
 .sheet-empty { margin: 28px 0 0; text-align: center; color: var(--muted); font-size: 13.5px; }
+
+/* ---------- Bottom bar: one inset all round. The capsule sits exactly --nav-pad from the bar's top, bottom and ends,
+   and each slot is exactly one capsule wide, so every tab is centred inside its highlight. ---------- */
+.movo-app .bottom-nav { --nav-pad: 5px; padding: var(--nav-pad); grid-template-columns: repeat(5, 1fr); column-gap: 0; }
+.movo-app .nav-pill { top: var(--nav-pad); bottom: var(--nav-pad); left: var(--nav-pad); right: auto; height: auto; margin: 0; width: calc((100% - var(--nav-pad) * 2) / 5); transform: translateX(calc(var(--idx, 0) * 100%)); }
+[dir="rtl"] .movo-app .nav-pill, .movo-app[dir="rtl"] .nav-pill { left: auto; right: var(--nav-pad); margin: 0; transform: translateX(calc(var(--idx, 0) * -100%)); }
+.movo-app .nav-item { min-width: 0; height: 100%; justify-content: center; }
