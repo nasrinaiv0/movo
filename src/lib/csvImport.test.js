@@ -20,9 +20,9 @@ describe('CSV transaction import parser', () => {
 
   test('rejects malformed thousands grouping and ambiguous amount formats', () => {
     const result = parseCsvTransactions(
-      'Date,Description,Type,Amount\\n' +
-      '2026-10-01,First,expense,"1,2,3"\\n' +
-      '2026-10-02,Second,expense,12.3.4\\n' +
+      'Date,Description,Type,Amount\n' +
+      '2026-10-01,First,expense,"1,2,3"\n' +
+      '2026-10-02,Second,expense,12.3.4\n' +
       '2026-10-03,Third,expense,1e3'
     );
     expect(result.transactions).toEqual([]);
@@ -32,9 +32,9 @@ describe('CSV transaction import parser', () => {
 
   test('accepts plain and correctly grouped decimal amounts', () => {
     const result = parseCsvTransactions(
-      'Date,Description,Type,Amount\\n' +
-      '2026-10-01,Plain,expense,1234.50\\n' +
-      '2026-10-02,Grouped,expense,"1,234.50"\\n' +
+      'Date,Description,Type,Amount\n' +
+      '2026-10-01,Plain,expense,1234.50\n' +
+      '2026-10-02,Grouped,expense,"1,234.50"\n' +
       '2026-10-03,Symbol,expense,"₱ 1,234.50"'
     );
     expect(result.errors).toEqual([]);
