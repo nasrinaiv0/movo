@@ -264,6 +264,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const heardSpeechRef = useRef(false);
   const lastVoiceAtRef = useRef(0);
   const transcribingRef = useRef(false);
+  const transcriptionQueueRef = useRef(Promise.resolve());
   sendRef.current = send;
   const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_#>`|]/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\s+/g, ' ').trim();
 
@@ -321,8 +322,15 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     spokenRef.current = '';
   };
 
-  const transcribeSegment = async (blob) => {
-    if (!blob || blob.size < 120 || blob.size > 2_400_000 || transcribingRef.current || !voiceRef.current) return;
+  const transcribeSegment = (blob) => {
+    if (!blob || blob.size < 120 || blob.size > 2_400_000 || !voiceRef.current) return;
+    transcriptionQueueRef.current = transcriptionQueueRef.current
+      .then(() => transcribeSegmentNow(blob))
+      .catch(() => {});
+  };
+
+  const transcribeSegmentNow = async (blob) => {
+    if (!voiceRef.current) return;
     transcribingRef.current = true;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
