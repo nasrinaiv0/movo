@@ -15,7 +15,8 @@
     "prebuild": "npm run typecheck && react-scripts test --watchAll=false --runInBand",
     "typecheck": "tsc --noEmit",
     "audit:production": "npm audit --omit=dev",
-    "i18n": "node scripts/i18n-build.js"
+    "i18n": "node scripts/i18n-build.js",
+    "brands": "node scripts/fetch-brand-logos.mjs"
   },
   "browserslist": {
     "production": [

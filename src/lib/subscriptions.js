@@ -7,70 +7,71 @@ export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly
 export const SUB_CATEGORIES = ['Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Security & VPN', 'Gaming', 'Education', 'Health', 'Food & delivery', 'Shopping', 'Phone & internet', 'News', 'Other'];
 
 /*
- * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH').
+ * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH'),
+ * official website (source of the bundled logo, see scripts/fetch-brand-logos.js).
  * Marks are trademarks of their owners, shown only to identify each service (see BRAND_NOTICE in the UI).
  */
 export const CATALOG = [
   // Video
-  ['Netflix', 'Entertainment', '#e50914', 'netflix', ''], ['YouTube Premium', 'Entertainment', '#ff0000', 'youtube', ''], ['Disney+', 'Entertainment', '#113ccf', '', ''],
-  ['Prime Video', 'Entertainment', '#1a98ff', '', ''], ['HBO Max', 'Entertainment', '#002be7', 'hbomax', ''], ['Apple TV+', 'Entertainment', '#111111', 'appletv', ''],
-  ['Crunchyroll', 'Entertainment', '#f47521', 'crunchyroll', ''], ['Paramount+', 'Entertainment', '#0064ff', 'paramountplus', 'US'], ['Hulu', 'Entertainment', '#1ce783', '', 'US'],
-  ['Peacock', 'Entertainment', '#111111', '', 'US'], ['ESPN+', 'Entertainment', '#e2231a', '', 'US'], ['YouTube TV', 'Entertainment', '#ff0000', 'youtubetv', 'US'],
-  ['Sling TV', 'Entertainment', '#1c75bc', '', 'US'], ['Fubo', 'Entertainment', '#e4002b', 'fubo', 'US'], ['Starz', 'Entertainment', '#111111', 'starz', 'US'],
-  ['MUBI', 'Entertainment', '#001489', 'mubi', ''], ['DAZN', 'Entertainment', '#0c161c', 'dazn', ''], ['Plex Pass', 'Entertainment', '#ebaf00', 'plex', ''],
-  ['Viu', 'Entertainment', '#f5b400', '', 'PH'], ['iWantTFC', 'Entertainment', '#0033a0', '', 'PH'], ['Vivamax', 'Entertainment', '#c8102e', '', 'PH'],
-  ['iQIYI', 'Entertainment', '#00be06', '', 'PH'], ['WeTV', 'Entertainment', '#ff6a00', '', 'PH'], ['Bilibili', 'Entertainment', '#00a1d6', 'bilibili', 'PH'],
-  ['Cignal Play', 'Entertainment', '#e30613', '', 'PH'], ['Twitch Turbo', 'Entertainment', '#9146ff', 'twitch', ''],
+  ['Netflix', 'Entertainment', '#e50914', 'netflix', '', 'netflix.com'], ['YouTube Premium', 'Entertainment', '#ff0000', 'youtube', '', 'youtube.com'], ['Disney+', 'Entertainment', '#113ccf', '', '', 'disneyplus.com'],
+  ['Prime Video', 'Entertainment', '#1a98ff', '', '', 'primevideo.com'], ['HBO Max', 'Entertainment', '#002be7', 'hbomax', '', 'hbomax.com'], ['Apple TV+', 'Entertainment', '#111111', 'appletv', '', 'tv.apple.com'],
+  ['Crunchyroll', 'Entertainment', '#f47521', 'crunchyroll', '', 'crunchyroll.com'], ['Paramount+', 'Entertainment', '#0064ff', 'paramountplus', 'US', 'paramountplus.com'], ['Hulu', 'Entertainment', '#1ce783', '', 'US', 'hulu.com'],
+  ['Peacock', 'Entertainment', '#111111', '', 'US', 'peacocktv.com'], ['ESPN+', 'Entertainment', '#e2231a', '', 'US', 'plus.espn.com'], ['YouTube TV', 'Entertainment', '#ff0000', 'youtubetv', 'US', 'tv.youtube.com'],
+  ['Sling TV', 'Entertainment', '#1c75bc', '', 'US', 'sling.com'], ['Fubo', 'Entertainment', '#e4002b', 'fubo', 'US', 'fubo.tv'], ['Starz', 'Entertainment', '#111111', 'starz', 'US', 'starz.com'],
+  ['MUBI', 'Entertainment', '#001489', 'mubi', '', 'mubi.com'], ['DAZN', 'Entertainment', '#0c161c', 'dazn', '', 'dazn.com'], ['Plex Pass', 'Entertainment', '#ebaf00', 'plex', '', 'plex.tv'],
+  ['Viu', 'Entertainment', '#f5b400', '', 'PH', 'viu.com'], ['iWantTFC', 'Entertainment', '#0033a0', '', 'PH', 'iwanttfc.com'], ['Vivamax', 'Entertainment', '#c8102e', '', 'PH', 'vivamax.net'],
+  ['iQIYI', 'Entertainment', '#00be06', '', 'PH', 'iq.com'], ['WeTV', 'Entertainment', '#ff6a00', '', 'PH', 'wetv.vip'], ['Bilibili', 'Entertainment', '#00a1d6', 'bilibili', 'PH', 'bilibili.tv'],
+  ['Cignal Play', 'Entertainment', '#e30613', '', 'PH', 'cignalplay.com'], ['Twitch Turbo', 'Entertainment', '#9146ff', 'twitch', '', 'twitch.tv'],
   // Music and audio
-  ['Spotify', 'Music', '#1db954', 'spotify', ''], ['Apple Music', 'Music', '#fa243c', 'applemusic', ''], ['YouTube Music', 'Music', '#ff0000', 'youtubemusic', ''],
-  ['Tidal', 'Music', '#111111', 'tidal', ''], ['Pandora', 'Music', '#224099', 'pandora', 'US'], ['SiriusXM', 'Music', '#0000eb', '', 'US'], ['Audible', 'Music', '#f8991c', 'audible', ''],
+  ['Spotify', 'Music', '#1db954', 'spotify', '', 'spotify.com'], ['Apple Music', 'Music', '#fa243c', 'applemusic', '', 'music.apple.com'], ['YouTube Music', 'Music', '#ff0000', 'youtubemusic', '', 'music.youtube.com'],
+  ['Tidal', 'Music', '#111111', 'tidal', '', 'tidal.com'], ['Pandora', 'Music', '#224099', 'pandora', 'US', 'pandora.com'], ['SiriusXM', 'Music', '#0000eb', '', 'US', 'siriusxm.com'], ['Audible', 'Music', '#f8991c', 'audible', '', 'audible.com'],
   // AI
-  ['ChatGPT Plus', 'AI Tools', '#10a37f', '', ''], ['ChatGPT Go', 'AI Tools', '#10a37f', '', ''], ['Claude', 'AI Tools', '#d97757', 'claude', ''],
-  ['Gemini Pro', 'AI Tools', '#8e75b2', 'googlegemini', ''], ['Perplexity Pro', 'AI Tools', '#1fb8cd', 'perplexity', ''], ['Midjourney', 'AI Tools', '#222222', '', ''],
-  ['Grammarly', 'AI Tools', '#027e6f', 'grammarly', ''],
+  ['ChatGPT Plus', 'AI Tools', '#10a37f', '', '', 'chatgpt.com'], ['ChatGPT Go', 'AI Tools', '#10a37f', '', '', 'chatgpt.com'], ['Claude', 'AI Tools', '#d97757', 'claude', '', 'claude.ai'],
+  ['Gemini Pro', 'AI Tools', '#8e75b2', 'googlegemini', '', 'gemini.google.com'], ['Perplexity Pro', 'AI Tools', '#1fb8cd', 'perplexity', '', 'perplexity.ai'], ['Midjourney', 'AI Tools', '#222222', '', '', 'midjourney.com'],
+  ['Grammarly', 'AI Tools', '#027e6f', 'grammarly', '', 'grammarly.com'],
   // Developer
-  ['GitHub Copilot', 'Developer', '#24292f', 'githubcopilot', ''], ['GitHub Pro', 'Developer', '#181717', 'github', ''], ['Cursor', 'Developer', '#111111', 'cursor', ''],
-  ['Vercel Pro', 'Developer', '#000000', 'vercel', ''], ['Netlify Pro', 'Developer', '#00ad9f', 'netlify', ''], ['JetBrains', 'Developer', '#000000', 'jetbrains', ''],
-  ['Docker Pro', 'Developer', '#2496ed', 'docker', ''], ['Supabase Pro', 'Developer', '#3fcf8e', 'supabase', ''],
+  ['GitHub Copilot', 'Developer', '#24292f', 'githubcopilot', '', 'github.com'], ['GitHub Pro', 'Developer', '#181717', 'github', '', 'github.com'], ['Cursor', 'Developer', '#111111', 'cursor', '', 'cursor.com'],
+  ['Vercel Pro', 'Developer', '#000000', 'vercel', '', 'vercel.com'], ['Netlify Pro', 'Developer', '#00ad9f', 'netlify', '', 'netlify.com'], ['JetBrains', 'Developer', '#000000', 'jetbrains', '', 'jetbrains.com'],
+  ['Docker Pro', 'Developer', '#2496ed', 'docker', '', 'docker.com'], ['Supabase Pro', 'Developer', '#3fcf8e', 'supabase', '', 'supabase.com'],
   // Productivity, design, storage
-  ['Notion', 'Productivity', '#191919', 'notion', ''], ['Microsoft 365', 'Productivity', '#d83b01', '', ''], ['Slack', 'Productivity', '#4a154b', '', ''],
-  ['Zoom', 'Productivity', '#0b5cff', 'zoom', ''], ['Linear', 'Productivity', '#5e6ad2', 'linear', ''], ['Evernote', 'Productivity', '#00a82d', 'evernote', ''],
-  ['Todoist', 'Productivity', '#e44332', 'todoist', ''], ['LinkedIn Premium', 'Productivity', '#0a66c2', '', ''], ['QuickBooks', 'Productivity', '#2ca01c', 'quickbooks', 'US'],
-  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', ''], ['Telegram Premium', 'Productivity', '#26a5e4', 'telegram', ''], ['Discord Nitro', 'Productivity', '#5865f2', 'discord', ''],
-  ['X Premium', 'Productivity', '#000000', 'x', ''],
-  ['Figma', 'Design', '#a259ff', 'figma', ''], ['Canva Pro', 'Design', '#00c4cc', '', ''], ['Adobe Creative Cloud', 'Design', '#da1f26', '', ''],
-  ['Google One', 'Cloud storage', '#4285f4', 'googledrive', ''], ['iCloud+', 'Cloud storage', '#3693f3', 'icloud', ''], ['Dropbox', 'Cloud storage', '#0061fe', 'dropbox', ''],
-  ['Box', 'Cloud storage', '#0061d5', 'box', ''], ['Proton', 'Cloud storage', '#6d4aff', 'proton', ''],
+  ['Notion', 'Productivity', '#191919', 'notion', '', 'notion.so'], ['Microsoft 365', 'Productivity', '#d83b01', '', '', 'microsoft365.com'], ['Slack', 'Productivity', '#4a154b', '', '', 'slack.com'],
+  ['Zoom', 'Productivity', '#0b5cff', 'zoom', '', 'zoom.us'], ['Linear', 'Productivity', '#5e6ad2', 'linear', '', 'linear.app'], ['Evernote', 'Productivity', '#00a82d', 'evernote', '', 'evernote.com'],
+  ['Todoist', 'Productivity', '#e44332', 'todoist', '', 'todoist.com'], ['LinkedIn Premium', 'Productivity', '#0a66c2', '', '', 'linkedin.com'], ['QuickBooks', 'Productivity', '#2ca01c', 'quickbooks', 'US', 'quickbooks.intuit.com'],
+  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', '', 'mailchimp.com'], ['Telegram Premium', 'Productivity', '#26a5e4', 'telegram', '', 'telegram.org'], ['Discord Nitro', 'Productivity', '#5865f2', 'discord', '', 'discord.com'],
+  ['X Premium', 'Productivity', '#000000', 'x', '', 'x.com'],
+  ['Figma', 'Design', '#a259ff', 'figma', '', 'figma.com'], ['Canva Pro', 'Design', '#00c4cc', '', '', 'canva.com'], ['Adobe Creative Cloud', 'Design', '#da1f26', '', '', 'adobe.com'],
+  ['Google One', 'Cloud storage', '#4285f4', 'googledrive', '', 'one.google.com'], ['iCloud+', 'Cloud storage', '#3693f3', 'icloud', '', 'icloud.com'], ['Dropbox', 'Cloud storage', '#0061fe', 'dropbox', '', 'dropbox.com'],
+  ['Box', 'Cloud storage', '#0061d5', 'box', '', 'box.com'], ['Proton', 'Cloud storage', '#6d4aff', 'proton', '', 'proton.me'],
   // Security
-  ['1Password', 'Security & VPN', '#3b66bc', '1password', ''], ['Bitwarden', 'Security & VPN', '#175ddc', 'bitwarden', ''], ['Dashlane', 'Security & VPN', '#0e353d', 'dashlane', ''],
-  ['LastPass', 'Security & VPN', '#d32d27', 'lastpass', ''], ['NordVPN', 'Security & VPN', '#4687ff', 'nordvpn', ''], ['ExpressVPN', 'Security & VPN', '#da3940', 'expressvpn', ''],
-  ['Surfshark', 'Security & VPN', '#178a9e', 'surfshark', ''], ['Proton VPN', 'Security & VPN', '#66deb1', 'protonvpn', ''], ['Ring Protect', 'Security & VPN', '#1c9ad6', 'ring', 'US'],
+  ['1Password', 'Security & VPN', '#3b66bc', '1password', '', '1password.com'], ['Bitwarden', 'Security & VPN', '#175ddc', 'bitwarden', '', 'bitwarden.com'], ['Dashlane', 'Security & VPN', '#0e353d', 'dashlane', '', 'dashlane.com'],
+  ['LastPass', 'Security & VPN', '#d32d27', 'lastpass', '', 'lastpass.com'], ['NordVPN', 'Security & VPN', '#4687ff', 'nordvpn', '', 'nordvpn.com'], ['ExpressVPN', 'Security & VPN', '#da3940', 'expressvpn', '', 'expressvpn.com'],
+  ['Surfshark', 'Security & VPN', '#178a9e', 'surfshark', '', 'surfshark.com'], ['Proton VPN', 'Security & VPN', '#66deb1', 'protonvpn', '', 'protonvpn.com'], ['Ring Protect', 'Security & VPN', '#1c9ad6', 'ring', 'US', 'ring.com'],
   // Gaming
-  ['Xbox Game Pass', 'Gaming', '#107c10', '', ''], ['PlayStation Plus', 'Gaming', '#0070d1', 'playstation', ''], ['Nintendo Switch Online', 'Gaming', '#e60012', '', ''],
-  ['Apple Arcade', 'Gaming', '#111111', 'applearcade', ''], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', ''], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', ''],
+  ['Xbox Game Pass', 'Gaming', '#107c10', '', '', 'xbox.com'], ['PlayStation Plus', 'Gaming', '#0070d1', 'playstation', '', 'playstation.com'], ['Nintendo Switch Online', 'Gaming', '#e60012', '', '', 'nintendo.com'],
+  ['Apple Arcade', 'Gaming', '#111111', 'applearcade', '', 'apple.com'], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', '', 'ubisoft.com'], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', '', 'play.google.com'],
   // Learning
-  ['Duolingo Super', 'Education', '#58cc02', 'duolingo', ''], ['Coursera Plus', 'Education', '#0056d2', 'coursera', ''], ['Udemy', 'Education', '#a435f0', 'udemy', ''],
-  ['Skillshare', 'Education', '#00ff84', 'skillshare', ''], ['MasterClass', 'Education', '#111111', '', 'US'], ['Medium', 'Education', '#000000', 'medium', ''], ['Patreon', 'Education', '#000000', 'patreon', ''],
+  ['Duolingo Super', 'Education', '#58cc02', 'duolingo', '', 'duolingo.com'], ['Coursera Plus', 'Education', '#0056d2', 'coursera', '', 'coursera.org'], ['Udemy', 'Education', '#a435f0', 'udemy', '', 'udemy.com'],
+  ['Skillshare', 'Education', '#00ff84', 'skillshare', '', 'skillshare.com'], ['MasterClass', 'Education', '#111111', '', 'US', 'masterclass.com'], ['Medium', 'Education', '#000000', 'medium', '', 'medium.com'], ['Patreon', 'Education', '#000000', 'patreon', '', 'patreon.com'],
   // Health
-  ['Peloton', 'Health', '#181a1d', 'peloton', 'US'], ['Strava', 'Health', '#fc4c02', 'strava', ''], ['Headspace', 'Health', '#f47d31', 'headspace', ''], ['Calm', 'Health', '#4a90e2', '', ''],
-  ['Planet Fitness', 'Health', '#5c2d91', '', 'US'], ['Anytime Fitness', 'Health', '#5e2d91', '', 'PH'], ['Gym membership', 'Health', '#ef6c00', '', ''],
+  ['Peloton', 'Health', '#181a1d', 'peloton', 'US', 'onepeloton.com'], ['Strava', 'Health', '#fc4c02', 'strava', '', 'strava.com'], ['Headspace', 'Health', '#f47d31', 'headspace', '', 'headspace.com'], ['Calm', 'Health', '#4a90e2', '', '', 'calm.com'],
+  ['Planet Fitness', 'Health', '#5c2d91', '', 'US', 'planetfitness.com'], ['Anytime Fitness', 'Health', '#5e2d91', '', 'PH', 'anytimefitness.ph'], ['Gym membership', 'Health', '#ef6c00', '', '', ''],
   // Food, delivery and shopping
-  ['DoorDash DashPass', 'Food & delivery', '#ff3008', 'doordash', 'US'], ['Uber One', 'Food & delivery', '#000000', 'uber', ''], ['Instacart+', 'Food & delivery', '#43b02a', 'instacart', 'US'],
-  ['Grubhub+', 'Food & delivery', '#ff8000', '', 'US'], ['HelloFresh', 'Food & delivery', '#99cc33', 'hellofresh', 'US'], ['GrabUnlimited', 'Food & delivery', '#00b14f', 'grab', 'PH'],
-  ['foodpanda pandapro', 'Food & delivery', '#d70f64', 'foodpanda', 'PH'],
-  ['Amazon Prime', 'Shopping', '#ff9900', '', 'US'], ['Walmart+', 'Shopping', '#0071ce', '', 'US'], ['Costco membership', 'Shopping', '#e31837', '', 'US'],
-  ['Shopee VIP', 'Shopping', '#ee4d2d', 'shopee', 'PH'], ['LazMall / LazPlus', 'Shopping', '#0f146d', '', 'PH'],
+  ['DoorDash DashPass', 'Food & delivery', '#ff3008', 'doordash', 'US', 'doordash.com'], ['Uber One', 'Food & delivery', '#000000', 'uber', '', 'uber.com'], ['Instacart+', 'Food & delivery', '#43b02a', 'instacart', 'US', 'instacart.com'],
+  ['Grubhub+', 'Food & delivery', '#ff8000', '', 'US', 'grubhub.com'], ['HelloFresh', 'Food & delivery', '#99cc33', 'hellofresh', 'US', 'hellofresh.com'], ['GrabUnlimited', 'Food & delivery', '#00b14f', 'grab', 'PH', 'grab.com'],
+  ['foodpanda pandapro', 'Food & delivery', '#d70f64', 'foodpanda', 'PH', 'foodpanda.ph'],
+  ['Amazon Prime', 'Shopping', '#ff9900', '', 'US', 'amazon.com'], ['Walmart+', 'Shopping', '#0071ce', '', 'US', 'walmart.com'], ['Costco membership', 'Shopping', '#e31837', '', 'US', 'costco.com'],
+  ['Shopee VIP', 'Shopping', '#ee4d2d', 'shopee', 'PH', 'shopee.ph'], ['LazMall / LazPlus', 'Shopping', '#0f146d', '', 'PH', 'lazada.com.ph'],
   // News
-  ['The New York Times', 'News', '#000000', 'newyorktimes', 'US'], ['The Wall Street Journal', 'News', '#0274b6', '', 'US'], ['The Washington Post', 'News', '#111111', '', 'US'],
-  ['Inquirer Plus', 'News', '#003b7b', '', 'PH'], ['Philstar+', 'News', '#c8102e', '', 'PH'],
+  ['The New York Times', 'News', '#000000', 'newyorktimes', 'US', 'nytimes.com'], ['The Wall Street Journal', 'News', '#0274b6', '', 'US', 'wsj.com'], ['The Washington Post', 'News', '#111111', '', 'US', 'washingtonpost.com'],
+  ['Inquirer Plus', 'News', '#003b7b', '', 'PH', 'inquirer.net'], ['Philstar+', 'News', '#c8102e', '', 'PH', 'philstar.com'],
   // Phone, internet and TV (US)
-  ['Verizon', 'Phone & internet', '#cd040b', 'verizon', 'US'], ['T-Mobile', 'Phone & internet', '#e20074', '', 'US'], ['AT&T', 'Phone & internet', '#00a8e0', '', 'US'], ['Xfinity', 'Phone & internet', '#6138f5', '', 'US'],
+  ['Verizon', 'Phone & internet', '#cd040b', 'verizon', 'US', 'verizon.com'], ['T-Mobile', 'Phone & internet', '#e20074', '', 'US', 't-mobile.com'], ['AT&T', 'Phone & internet', '#00a8e0', '', 'US', 'att.com'], ['Xfinity', 'Phone & internet', '#6138f5', '', 'US', 'xfinity.com'],
   // Phone, internet and TV (Philippines)
-  ['Globe Postpaid', 'Phone & internet', '#0056b8', '', 'PH'], ['Globe At Home', 'Phone & internet', '#0056b8', '', 'PH'], ['Smart Postpaid', 'Phone & internet', '#00a651', '', 'PH'],
-  ['DITO', 'Phone & internet', '#e4002b', '', 'PH'], ['PLDT Home Fiber', 'Phone & internet', '#e4002b', '', 'PH'], ['Converge FiberX', 'Phone & internet', '#5b2c86', '', 'PH'],
-  ['Sky Fiber', 'Phone & internet', '#00a3e0', '', 'PH'], ['Cignal TV', 'Phone & internet', '#e30613', '', 'PH'],
-  ['Mobile plan', 'Phone & internet', '#6d4aff', '', ''], ['Home internet', 'Phone & internet', '#0b8fd8', '', ''],
-].map(([name, category, color, mark, region]) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, category, color, mark, region }));
+  ['Globe Postpaid', 'Phone & internet', '#0056b8', '', 'PH', 'globe.com.ph'], ['Globe At Home', 'Phone & internet', '#0056b8', '', 'PH', 'globe.com.ph'], ['Smart Postpaid', 'Phone & internet', '#00a651', '', 'PH', 'smart.com.ph'],
+  ['DITO', 'Phone & internet', '#e4002b', '', 'PH', 'dito.ph'], ['PLDT Home Fiber', 'Phone & internet', '#e4002b', '', 'PH', 'pldthome.com'], ['Converge FiberX', 'Phone & internet', '#5b2c86', '', 'PH', 'convergeict.com'],
+  ['Sky Fiber', 'Phone & internet', '#00a3e0', '', 'PH', 'mysky.com.ph'], ['Cignal TV', 'Phone & internet', '#e30613', '', 'PH', 'cignal.tv'],
+  ['Mobile plan', 'Phone & internet', '#6d4aff', '', '', ''], ['Home internet', 'Phone & internet', '#0b8fd8', '', '', ''],
+].map(([name, category, color, mark, region, site]) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, category, color, mark, region, site }));
 
 const pad = (n) => String(n).padStart(2, '0');
 const parse = (day) => { const [y, m, d] = String(day).split('-').map(Number); return { y, m, d }; };

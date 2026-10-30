@@ -1603,3 +1603,7 @@ button.account-tile:active { transform: scale(.98); }
   box-shadow: none;
 }
 .movo-app.theme-dark.glass-on .bottom-nav { background-color: rgba(28,28,30, min(1, calc(var(--glass-fill) + .6))); border-color: rgba(255,255,255,.08); box-shadow: 0 10px 30px rgba(0,0,0,.55); }
+.sub-icon.has-logo { overflow: hidden; background: #fff; }
+.sub-icon.has-logo.fill { padding: 0; }
+.sub-icon.has-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.sub-icon.has-logo.fill img { object-fit: cover; }

@@ -4,6 +4,7 @@ import { SubHeader, Sheet, Money } from '../components/ui';
 import { formatDate, money, shown, currencySymbol } from '../lib/format';
 import { CATALOG, CYCLES, SUB_CATEGORIES, catalogFor, summarize, renewalsBetween, monthlyCost, toDay, dayDiff } from '../lib/subscriptions';
 import { evaluate } from '../lib/calc';
+import { BRAND_LOGOS } from '../lib/brandLogos';
 import { t as tr } from '../lib/i18n';
 
 const TABS = [['upcoming', 'Upcoming'], ['calendar', 'Calendar'], ['insights', 'Insights']];
@@ -25,12 +26,20 @@ function useMarks() {
 }
 const isLight = (hex) => { const n = parseInt(String(hex).slice(1), 16); if (Number.isNaN(n)) return false; return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 186; };
 
-/** Rounded brand-coloured tile with the service's mark, or its initials when there is none. */
+/** The service's own logo (downloaded from its website and served by MOVO), else its Simple Icons mark, else initials. */
 export function SubIcon({ sub, size = 40 }) {
   const marks = useMarks();
   const known = catalogFor(sub.name);
   const color = sub.color || known?.color || '#64748b';
   const mark = marks && known?.mark ? marks[known.mark] : null;
+  const [broken, setBroken] = useState(false);
+  const logo = known && !broken ? BRAND_LOGOS[known.id] : null;
+  if (logo) {
+    const fill = /\.(png|jpe?g|webp)$/.test(logo);
+    return <span className={`sub-icon has-logo${fill ? ' fill' : ''}`} style={{ width: size, height: size, padding: fill ? 0 : Math.round(size * 0.14) }} aria-hidden="true">
+      <img src={`${process.env.PUBLIC_URL || ''}/brands/${logo}`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+    </span>;
+  }
   if (mark) {
     return <span className="sub-icon has-mark" style={{ width: size, height: size, background: color }} aria-hidden="true">
       <svg viewBox="0 0 24 24" width={Math.round(size * 0.54)} height={Math.round(size * 0.54)}><path d={mark.path} fill={isLight(color) ? '#111' : '#fff'} /></svg>
