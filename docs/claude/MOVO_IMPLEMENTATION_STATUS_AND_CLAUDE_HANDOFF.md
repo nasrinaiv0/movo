@@ -661,3 +661,11 @@ Fresh merged catalog evidence: 7/7 checked tables RLS-enabled, 22 user-facing po
 - Security Advisor still reports `auth_leaked_password_protection` as WARN (disabled). It reports `rls_enabled_no_policy` for the upstream mapping as INFO; this is intentional for a server-only mapping, and no client policy should be added. Performance Advisor reports seven unused indexes as INFO; no index was dropped without query evidence.
 - This was read-only metadata/advisor inspection. No schema, RLS policy, grant, Auth setting, financial row, or secret was changed.
 - Release gates remain: owner-authorized leaked-password protection, legal publication facts, authenticated finance/CSV/currency verification, authenticated MOVO-scope canary, and interactive accessibility QA. The notification-action UI change is unrelated to the database boundary.
+
+
+## Production alias reconciliation — 2026-10-30 14:35 Asia/Manila
+
+- Fresh Vercel inspection confirms production alias `movo.nasrinai.com` now resolves to READY deployment `dpl_BT3wbamTQw387JDRBnXqSkUECDrK`, built from current `main` commit `86c28e90805869816c3a17dd40f6a2398d0b7291`. The production root and JavaScript asset both returned HTTP 200.
+- This supersedes the earlier issue/audit note that production was ten commits behind main. Production now matches current `main`; the four open application PRs remain draft and are **not** part of that production build.
+- The served production bundle still contains the obsolete PHP-only currency copy and does not contain PR #60's `Notification actions` / `Mark as unread` behavior. PR #43/#52/#56/#60 remain preview-only until merged. The latest MOVO scope-confirmation wording and implementation in PR #56 are also not yet in production.
+- The deployment status and bundle were inspected read-only. No production alias, deployment, environment variable, secret, database configuration, or financial data was changed.
