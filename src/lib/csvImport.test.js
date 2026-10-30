@@ -41,6 +41,21 @@ describe('CSV transaction import parser', () => {
     expect(() => parseCsvRows('Date,Description\n2026-10-01,"not closed')).toThrow('unclosed quoted field');
   });
 
+  test('rejects malformed quotes rather than silently shifting financial columns', () => {
+    expect(() => parseCsvRows('Date,Description,Type,Amount\n2026-10-01,Cafe "new",expense,12.50'))
+      .toThrow('quote inside an unquoted field');
+    expect(() => parseCsvRows('Date,Description,Type,Amount\n2026-10-01,"Coffee"extra,expense,12.50'))
+      .toThrow('unexpected characters after a closing quote');
+  });
+
+  test('accepts separator whitespace after quoted fields and quoted line breaks', () => {
+    expect(parseCsvRows('Date,Description\r\n2026-10-01,"Coffee" \t\r\n2026-10-02,"Line one\nLine two"')).toEqual([
+      ['Date', 'Description'],
+      ['2026-10-01', 'Coffee'],
+      ['2026-10-02', 'Line one\nLine two'],
+    ]);
+  });
+
   test('fingerprints equivalent records consistently', () => {
     expect(transactionFingerprint({ account_id: 'a', transaction_type: 'expense', amount: 10, merchant: 'Coffee  Shop', occurred_at: '2026-10-01T12:00:00Z' }))
       .toBe(transactionFingerprint({ account_id: 'a', type: 'expense', amount: 10, merchant: 'coffee shop', date: '2026-10-01T08:00:00Z' }));
