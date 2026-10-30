@@ -14,7 +14,8 @@ import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
 import SearchOverlay from './components/SearchOverlay';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
-import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
+import { demoAccounts, demoTransactions, demoNotifications } from './lib/demoData';
+import { calculateAccountBalances, calculateExpenseCategoryTotals, calculateLedgerNet, calculateMonthlyStats, isValidMoneyValue, sumMoneyValues } from './lib/financeCalculations';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
@@ -29,10 +30,18 @@ const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
 const categories = ['Groceries', 'Food & drinks', 'Transport', 'Shopping', 'Bills', 'Subscriptions', 'Health', 'Education', 'Entertainment', 'Other'];
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
+const ACCOUNT_CURRENCIES = {
+  PHP: 'Philippine peso', USD: 'US dollar', EUR: 'Euro', GBP: 'British pound',
+  SGD: 'Singapore dollar', JPY: 'Japanese yen', AUD: 'Australian dollar',
+  CAD: 'Canadian dollar', NZD: 'New Zealand dollar', HKD: 'Hong Kong dollar',
+  CNY: 'Chinese yuan', INR: 'Indian rupee', KRW: 'South Korean won',
+  MYR: 'Malaysian ringgit', IDR: 'Indonesian rupiah', THB: 'Thai baht',
+  AED: 'UAE dirham', SAR: 'Saudi riyal', CHF: 'Swiss franc',
+};
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true, displayCurrency: 'PHP',
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
 };
@@ -61,6 +70,7 @@ const normalize = (t, accounts) => {
     type: t.transaction_type || t.type,
     date: t.occurred_at || t.date,
     amount: Number(t.amount),
+    currency: t.currency || account?.currency || 'PHP',
     accountName: account?.name || t.account || 'Manual entry',
     transferToAccountName: transferTarget?.name || (t.transfer_to_account_id ? 'Unknown account' : ''),
   };
@@ -108,7 +118,7 @@ function App() {
   const pendingLocalDataRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
+  const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0', currency: 'PHP' });
   const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'Groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), note: '' });
   const [csvRows, setCsvRows] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
@@ -122,7 +132,13 @@ function App() {
     window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll);
   }, []);
   const setPref = useCallback((key, value) => {
-    const apply = () => setPrefs(cur => ({ ...cur, [key]: value }));
+    const apply = () => {
+      setPrefs(cur => ({ ...cur, [key]: value }));
+      if (key === 'displayCurrency') {
+        setMonth('');
+        setSelectedCardId('');
+      }
+    };
     if (APPEARANCE_KEYS.has(key)) revealChange(apply, flushSync); else apply();
   }, []);
   const show = prefs.showBalance !== false;
@@ -206,53 +222,122 @@ function App() {
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud]);
 
+  // Keep cloud-backed finance views fresh across tabs/devices while relying on
+  // Supabase RLS and user-scoped subscriptions for data isolation.
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!cloudMode || !userId || !supabase) return undefined;
+    let syncTimer;
+    const sync = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      window.clearTimeout(syncTimer);
+      syncTimer = window.setTimeout(() => refreshCloud(session.user), 150);
+    };
+    const channel = supabase.channel(`movo-finance-sync-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_accounts', filter: `user_id=eq.${userId}` }, sync)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, sync)
+      .subscribe();
+    window.addEventListener('focus', sync);
+    document.addEventListener('visibilitychange', sync);
+    return () => {
+      window.clearTimeout(syncTimer);
+      window.removeEventListener('focus', sync);
+      document.removeEventListener('visibilitychange', sync);
+      supabase.removeChannel(channel);
+    };
+  }, [cloudMode, session?.user?.id, refreshCloud]);
+
+  // Local-only records are also refreshed in another tab without sending them
+  // to the cloud or merging them into the signed-in user's account.
+  useEffect(() => {
+    if (cloudMode) return undefined;
+    const onStorage = (event) => {
+      if (event.key && !['movo.local.transactions.v1', 'movo.local.accounts.v1', 'movo.samples.enabled.v1'].includes(event.key)) return;
+      const enabled = areSamplesEnabled();
+      setSamplesOn(enabled);
+      setRawTxs(loadLocalTransactions(demoTransactions, enabled));
+      setLocalAccounts(loadLocalAccounts());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [cloudMode]);
+
   /* ---------- derived data ---------- */
   const baseAccounts = cloudMode ? cloudAccounts : [...(samplesOn ? demoAccounts : []), ...localAccounts];
   const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts]);
-  const accountsView = useMemo(() => baseAccounts.map(a => {
-    const delta = txs.reduce((s, t) => {
-      if (!cloudMode && t.source === 'Sample') return s;
-      if (t.account_id === a.id) return s + (t.type === 'income' ? t.amount : -t.amount);
-      if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + t.amount;
-      return s;
-    }, 0);
-    return { ...a, mask: a.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
-  }), [baseAccounts, txs, cloudMode]);
+  const invalidFinancialRecordCount = useMemo(() => (
+    baseAccounts.filter(account => !isValidMoneyValue(account.opening_balance ?? account.balance ?? 0)).length
+    + rawTxs.filter(transaction => !isValidMoneyValue(transaction.amount)).length
+  ), [baseAccounts, rawTxs]);
+  const accountsView = useMemo(() => calculateAccountBalances(
+    baseAccounts.map(a => ({ ...a, mask: a.mask || '', brand: a.brand || 'blue' })),
+    txs,
+  ), [baseAccounts, txs]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
-  const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
+  const displayCurrency = /^[A-Z]{3}$/.test(prefs.displayCurrency || '') ? prefs.displayCurrency : 'PHP';
+  const currencyTxs = useMemo(() => txs.filter(t => (t.currency || 'PHP') === displayCurrency), [txs, displayCurrency]);
+  const currencyAccountsView = useMemo(() => accountsView.filter(a => (a.currency || 'PHP') === displayCurrency), [accountsView, displayCurrency]);
+  const displayAccountsByType = useMemo(() => ({
+    card: currencyAccountsView.filter(a => a.account_type === 'card'),
+    bank: currencyAccountsView.filter(a => a.account_type === 'bank'),
+    e_wallet: currencyAccountsView.filter(a => a.account_type === 'e_wallet'),
+  }), [currencyAccountsView]);
+  const availableCurrencies = useMemo(() => Array.from(new Set([
+    'PHP', displayCurrency,
+    ...baseAccounts.map(a => a.currency || 'PHP'),
+    ...txs.map(t => t.currency || 'PHP'),
+  ].filter(currency => /^[A-Z]{3}$/.test(currency)))).sort(), [baseAccounts, txs, displayCurrency]);
+  // Month-to-date summaries and greetings use the actual current date, not the most recent transaction date.
+  const refDate = useMemo(() => new Date(), [txs]);
   const refMonth = monthKey(refDate);
   const activeMonth = month || refMonth;
-  const months = useMemo(() => Array.from(new Set([refMonth, ...txs.map(t => monthKey(t.date))])).sort().reverse(), [txs, refMonth]);
+  const months = useMemo(() => Array.from(new Set([refMonth, ...currencyTxs.map(t => monthKey(t.date))])).sort().reverse(), [currencyTxs, refMonth]);
 
-  const statsFor = useCallback((key) => {
-    const list = txs.filter(t => monthKey(t.date) === key);
-    const sum = (type) => list.filter(t => t.type === type).reduce((s, t) => s + t.amount, 0);
-    const [y, m] = key.split('-').map(Number); const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
-    const buckets = Array(12).fill(0);
-    list.filter(t => t.type === 'expense').forEach(t => { const d = Number(dayKey(t.date).slice(8, 10)); buckets[Math.min(11, Math.floor(((d - 1) / days) * 12))] += t.amount; });
-    const income = sum('income'); const expenses = sum('expense');
-    return { income, expenses, transfers: sum('transfer'), transferCount: list.filter(t => t.type === 'transfer').length, incomeCount: list.filter(t => t.type === 'income').length, net: income - expenses, days, bars: buckets, count: list.length, list };
-  }, [txs]);
+  const statsFor = useCallback((key) => calculateMonthlyStats(currencyTxs, key, displayCurrency), [currencyTxs, displayCurrency]);
   const breakdownFor = useCallback((key) => {
-    const totals = {}; statsFor(key).list.filter(t => t.type === 'expense').forEach(t => { const b = bucketOf(t.category); totals[b] = (totals[b] || 0) + t.amount; });
-    const total = Object.values(totals).reduce((s, v) => s + v, 0);
-    return { total, data: BUCKETS.filter(b => totals[b.key]).map(b => ({ ...b, amount: totals[b.key], percent: Math.round((totals[b.key] / total) * 100) })) };
+    const monthData = statsFor(key);
+    const totals = calculateExpenseCategoryTotals(monthData.list, bucketOf);
+    const invalid = monthData.invalidAmountCount > 0 || totals === null;
+    const safeTotals = totals || {};
+    const total = invalid ? NaN : sumMoneyValues(Object.values(safeTotals));
+    return {
+      total,
+      data: invalid ? [] : BUCKETS.filter(b => safeTotals[b.key]).map(b => ({ ...b, amount: safeTotals[b.key], percent: Math.round((safeTotals[b.key] / total) * 100) })),
+    };
   }, [statsFor]);
   const homeMonth = useMemo(() => statsFor(refMonth), [statsFor, refMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
   const stats = useMemo(() => {
-    const balance = accountsView.length ? accountsView.reduce((s, a) => s + a.balance, 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
-    let running = balance - homeMonth.net; const daily = new Map();
-    homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
-    let points = [balance - homeMonth.net, ...daily.values()];
-    for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
-    return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeMonth]);
+    const balance = currencyAccountsView.length
+      ? sumMoneyValues(currencyAccountsView.map(a => a.balance))
+      : calculateLedgerNet(currencyTxs, displayCurrency);
+    const canTrend = Number.isFinite(balance) && Number.isFinite(homeMonth.net) && homeMonth.invalidAmountCount === 0;
+    let points = [];
+    if (canTrend) {
+      let running = balance - homeMonth.net; const daily = new Map();
+      homeMonth.list.slice().reverse().forEach(t => {
+        if (t.type !== 'transfer' && isValidMoneyValue(t.amount)) {
+          running += t.type === 'income' ? t.amount : -t.amount;
+          daily.set(dayKey(t.date), running);
+        }
+      });
+      points = [balance - homeMonth.net, ...daily.values()];
+      for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
+    }
+    return { currency: displayCurrency, balance, income: homeMonth.income, expenses: homeMonth.expenses, transfers: homeMonth.transfers, savings: homeMonth.net, trend: points.length > 1 ? points : [] };
+  }, [currencyAccountsView, currencyTxs, displayCurrency, homeMonth]);
   const deltas = useMemo(() => {
-    if (!cloudMode) return demoDeltas;
     const prev = statsFor(monthsBack(refMonth, 1));
-    return { balance: pctChange(stats.balance, stats.balance - homeMonth.net), income: pctChange(homeMonth.income, prev.income), expenses: pctChange(homeMonth.expenses, prev.expenses), savings: pctChange(homeMonth.net, prev.net), spent: pctChange(homeMonth.expenses, prev.expenses), transfers: pctChange(homeMonth.transfers, prev.transfers) };
-  }, [cloudMode, statsFor, refMonth, stats.balance, homeMonth]);
+    const safePct = (current, previous) => Number.isFinite(current) && Number.isFinite(previous) ? pctChange(current, previous) : null;
+    return {
+      balance: safePct(stats.balance, stats.balance - homeMonth.net),
+      income: safePct(homeMonth.income, prev.income),
+      expenses: safePct(homeMonth.expenses, prev.expenses),
+      savings: safePct(homeMonth.net, prev.net),
+      spent: safePct(homeMonth.expenses, prev.expenses),
+      transfers: safePct(homeMonth.transfers, prev.transfers),
+    };
+  }, [statsFor, refMonth, stats.balance, homeMonth]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
@@ -260,8 +345,8 @@ function App() {
     const q = search.trim().toLowerCase();
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
-  const recent = useMemo(() => txs.filter(t => t.type !== 'transfer').slice(0, 4), [txs]);
-  const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
+  const recent = useMemo(() => currencyTxs.filter(t => t.type !== 'transfer').slice(0, 4), [currencyTxs]);
+  const selectedCard = displayAccountsByType.card.find(a => a.id === selectedCardId) || displayAccountsByType.card[0];
 
   const allNotifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
   const notifications = useMemo(() => {
@@ -307,6 +392,7 @@ function App() {
     setAccountForm({
       name: account.name || '', account_type: account.account_type || 'other',
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
+      currency: account.currency || 'PHP',
     });
     setSheet({ name: 'account', type: account.account_type, id: account.id });
   };
@@ -324,23 +410,34 @@ function App() {
     e.preventDefault(); setError('');
     const amount = Number(form.amount); const type = form.transaction_type;
     if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError('Enter a description and a valid positive amount.'); return; }
-    if ((cloudMode || formAccounts.length > 0) && !form.account_id) { setError('Choose an account before saving this transaction.'); return; }
-    if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError('Choose two different accounts for a transfer.'); return; }
+    const sourceAccount = formAccounts.find(account => account.id === form.account_id);
+    const destinationAccount = formAccounts.find(account => account.id === form.transfer_to_account_id);
+    if ((cloudMode || formAccounts.length > 0) && !sourceAccount) { setError('Choose an available account before saving this transaction.'); return; }
+    if (type === 'transfer' && (!sourceAccount || !destinationAccount || form.transfer_to_account_id === form.account_id)) {
+      setError('Transfers require two existing, different accounts. Create or select both accounts first.');
+      return;
+    }
+    const currency = sourceAccount?.currency || 'PHP';
+    if (type === 'transfer' && sourceAccount && destinationAccount && (sourceAccount.currency || 'PHP') !== (destinationAccount.currency || 'PHP')) {
+      setError('Transfers between different currencies are not supported yet. Use same-currency accounts; currency conversion is not performed.');
+      return;
+    }
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
     const occurred_at = new Date(`${form.occurred_at}T12:00:00`).toISOString();
     setBusy(true);
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     try {
       if (cloudMode) {
-        const payload = { merchant: form.merchant.trim(), amount, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
+        const payload = { merchant: form.merchant.trim(), amount, currency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
         const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency, transaction_type: type, category, account_id: sourceAccount?.id || 'local', transfer_to_account_id: type === 'transfer' ? destinationAccount.id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
       }
+      if (currency !== displayCurrency) setPref('displayCurrency', currency);
       setForm({ ...form, merchant: '', amount: '', note: '' }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
@@ -379,8 +476,15 @@ function App() {
         const matchingAccount = formAccounts.find(a => row.account_name && a.name.trim().toLowerCase() === row.account_name.trim().toLowerCase());
         const accountId = matchingAccount?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
         if (!accountId) { errors.push({ line: i + 2, message: `Choose a default account or match the account name for “${row.merchant}”.` }); continue; }
+        const sourceAccount = formAccounts.find(a => a.id === accountId);
+        if (sourceAccount && (row.currency || 'PHP') !== (sourceAccount.currency || 'PHP')) {
+          errors.push({ line: i + 2, message: `Currency mismatch for “${row.merchant}”: choose an account denominated in ${row.currency || 'PHP'}.` }); continue;
+        }
         const matchingDestination = formAccounts.find(a => row.to_account_name && a.name.trim().toLowerCase() === row.to_account_name.trim().toLowerCase());
         const destinationId = row.transaction_type === 'transfer' ? (matchingDestination?.id || '') : undefined;
+        if (row.transaction_type === 'transfer' && sourceAccount && matchingDestination && (sourceAccount.currency || 'PHP') !== (matchingDestination.currency || 'PHP')) {
+          errors.push({ line: i + 2, message: `Transfer “${row.merchant}” uses different currencies. MOVO does not convert currencies.` }); continue;
+        }
         if (row.transaction_type === 'transfer' && (!destinationId || destinationId === accountId)) {
           errors.push({ line: i + 2, message: `Transfer “${row.merchant}” needs a different destination account that matches the CSV.` }); continue;
         }
@@ -408,9 +512,12 @@ function App() {
         }
       }
       if (created.length) setRawTxs(cur => [...created, ...cur]);
+      const importedCurrencies = Array.from(new Set(created.map(row => row.currency || 'PHP')));
+      if (importedCurrencies.length === 1 && importedCurrencies[0] !== displayCurrency) setPref('displayCurrency', importedCurrencies[0]);
       setCsvRows([]);
       setCsvErrors(errors);
-      const summary = `Imported ${created.length} transaction(s). ${errors.length} row(s) skipped or need attention.`;
+      const currencyNote = importedCurrencies.length > 1 ? ' Imported records remain separated by currency; change Display Currency in Settings to review each currency.' : '';
+      const summary = `Imported ${created.length} transaction(s).${currencyNote} ${errors.length} row(s) skipped or need attention.`;
       setCsvImportSummary(summary);
       notify(summary);
     } finally { setBusy(false); }
@@ -423,7 +530,13 @@ function App() {
     if (!name) { setError('Enter an account name.'); return; }
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }
     if (!accountTypes.some(type => type.value === accountForm.account_type)) { setError('Choose a valid account type.'); return; }
+    if (!/^[A-Z]{3}$/.test(accountForm.currency || '')) { setError('Choose a valid account currency.'); return; }
     const editingId = sheet?.name === 'account' ? sheet.id : null;
+    const previousCurrency = editingId ? (accountsView.find(account => account.id === editingId)?.currency || 'PHP') : null;
+    if (editingId && previousCurrency !== accountForm.currency) {
+      setError('Account currency is fixed when the account is created. Create a new account in the other currency instead.');
+      return;
+    }
     setBusy(true);
     try {
       if (cloudMode && session?.user) {
@@ -444,13 +557,14 @@ function App() {
           name: name.slice(0, 100),
           account_type: accountForm.account_type || sheet?.type || 'other',
           institution_name: accountForm.institution_name.trim().slice(0, 100),
-          currency: existing?.currency || 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
+          currency: accountForm.currency || existing?.currency || 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
           balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
       }
-      setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
+      if ((!editingId || previousCurrency !== accountForm.currency) && accountForm.currency !== displayCurrency) setPref('displayCurrency', accountForm.currency);
+      setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0', currency: 'PHP' });
       setSheet(null);
     } catch { setError(editingId ? 'Could not update account. Please review the details and try again.' : 'Could not add account. Please review the details and try again.'); }
     finally { setBusy(false); }
@@ -515,7 +629,7 @@ function App() {
   };
 
   const c = {
-    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs: currencyTxs, accountsView, displayAccountsView: currencyAccountsView, accountsByType: displayAccountsByType, displayCurrency, availableCurrencies, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
@@ -541,6 +655,7 @@ function App() {
   const detailTx = sheet?.name === 'tx' ? txs.find(t => t.id === sheet.id) : null;
   const formAccounts = accountsView.filter(a => !a.is_archived);
   const accountChoice = sheet?.name === 'cardDetails' ? accountsView.find(a => a.id === sheet.id) || selectedCard : null;
+  const accountCurrencyLocked = Boolean(sheet?.name === 'account' && sheet.id);
 
   const screen = (() => {
     switch (view) {
@@ -569,6 +684,9 @@ function App() {
           <div><strong>Demo mode — sample data only.</strong><span>These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.</span></div>
           <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>Sign in</button>
         </aside>}
+        {invalidFinancialRecordCount > 0 && <div className="app-alert storage-warning" role="alert">
+          <span><strong>Some saved financial amounts are invalid.</strong> {invalidFinancialRecordCount} {invalidFinancialRecordCount === 1 ? 'record has' : 'records have'} been excluded from reliable totals. Affected balances and summaries show an em dash (—). Edit or remove the affected record before relying on your totals.</span>
+        </div>}
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? 'Local-only records were not saved before cloud sign-in.' : 'Local changes may not be saved.'}</strong> {cloudMode && pendingLocalDataRef.current ? 'These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.' : 'Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.'}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>Retry save</button>
@@ -591,14 +709,14 @@ function App() {
         <form className="sheet-form" onSubmit={saveTransaction}>
           <div className="seg-control" role="group" aria-label="Transaction type">{['expense', 'income', 'transfer'].map(t => <button type="button" key={t} className={form.transaction_type === t ? 'selected' : ''} aria-pressed={form.transaction_type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
           <label>Description<input autoFocus required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder="e.g. Grocery shopping" /></label>
-          <div className="form-grid"><label>Amount (PHP)<input required type="number" min="0.01" max="999999999999" step="0.01" inputMode="decimal" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" /></label>
+          <div className="form-grid"><label>Amount ({formAccounts.find(account => account.id === form.account_id)?.currency || 'PHP'})<input required type="number" min="0.01" max="999999999999" step="0.01" inputMode="decimal" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" /></label>
             <label>Date<input required type="date" value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label></div>
           {form.transaction_type === 'expense' && <label>Category<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(x => <option key={x}>{x}</option>)}</select></label>}
           {(cloudMode || formAccounts.length > 0) && <label>{form.transaction_type === 'transfer' ? 'From account' : 'Account'}<select required={cloudMode} value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
           {form.transaction_type === 'transfer' && formAccounts.length > 0 && <label>To account<select value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
           <label>Note (optional)<textarea rows="2" maxLength="1000" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Add a note" /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Save transaction'}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button type="submit" className="primary-button" disabled={busy} aria-busy={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Save transaction'}</button></div>
         </form>
       </Sheet>}
 
@@ -607,10 +725,14 @@ function App() {
           <label>Account name<input required maxLength="100" value={accountForm.name} onChange={e => setAccountForm({ ...accountForm, name: e.target.value })} placeholder="e.g. Everyday account" /></label>
           <label>Account type<select value={accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
           <label>Bank / institution (optional)<input maxLength="100" value={accountForm.institution_name} onChange={e => setAccountForm({ ...accountForm, institution_name: e.target.value })} placeholder="Institution name" /></label>
-          <label>Opening balance (PHP)<input type="number" step="0.01" max="999999999999" value={accountForm.opening_balance} onChange={e => setAccountForm({ ...accountForm, opening_balance: e.target.value })} /></label>
+          <label>Account currency<select aria-label="Account currency" aria-describedby={accountCurrencyLocked ? 'account-currency-lock-note' : undefined} value={accountForm.currency || 'PHP'} disabled={accountCurrencyLocked} onChange={e => setAccountForm({ ...accountForm, currency: e.target.value })}>
+            {Array.from(new Set([...Object.keys(ACCOUNT_CURRENCIES), ...availableCurrencies, accountForm.currency || 'PHP'])).sort().map(currency => <option key={currency} value={currency}>{ACCOUNT_CURRENCIES[currency] ? `${ACCOUNT_CURRENCIES[currency]} (${currency})` : currency}</option>)}
+          </select></label>
+          {accountCurrencyLocked && <p id="account-currency-lock-note" className="form-note">Account currency is fixed when this account is created. Create a new account in the other currency instead.</p>}
+          <label>Opening balance ({accountForm.currency || 'PHP'})<input type="number" step="0.01" max="999999999999" value={accountForm.opening_balance} onChange={e => setAccountForm({ ...accountForm, opening_balance: e.target.value })} /></label>
           {!cloudMode && <p className="form-note">This account will be stored only on this device. Sign in to enable cloud sync.</p>}
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Add account'}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button className="primary-button" type="submit" disabled={busy} aria-busy={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Add account'}</button></div>
         </form>
       </Sheet>}
 
@@ -631,13 +753,13 @@ function App() {
       {sheet?.name === 'importCsv' && <Sheet title="Import transactions" subtitle="CSV is parsed in this browser. Nothing is uploaded until you confirm the import." onClose={() => setSheet(null)} label="Import transactions">
         <div className="sheet-form">
           <label>Choose CSV file<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
-          <p className="form-note">Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.</p>
+          <p id="csv-import-guidance" className="form-note">Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.</p>
           {csvFileName && <p className="form-note">File: {csvFileName}</p>}
           {formAccounts.length > 0 && <label>Default account (used when the CSV account name does not match)<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
           {csvRows.length > 0 && <section className="card pad" aria-label="CSV import preview"><strong>Preview · {csvRows.length} valid row(s)</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{row.transaction_type} · {row.category} · {row.account_name || 'default account'}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">Showing the first 5 rows. All valid rows will be processed.</p>}</section>}
           {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
           {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>Rows needing attention</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>Row {item.line}: {item.message}</li>)}</ul>{csvErrors.length > 8 && <p>And {csvErrors.length - 8} more row(s).</p>}</div>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length} aria-describedby="csv-import-guidance" aria-busy={busy}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
         </div>
       </Sheet>}
       {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes local financial records, accounts, and custom sticker artwork. Cloud records are not affected." onClose={() => setSheet(null)}>
@@ -645,12 +767,12 @@ function App() {
       </Sheet>}
 
       {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label="Account details">
-        <dl className="detail-list"><div><dt>Institution</dt><dd>{accountChoice.institution_name || 'Personal account'}</dd></div><div><dt>Number</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>Balance</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
+        <dl className="detail-list"><div><dt>Institution</dt><dd>{accountChoice.institution_name || 'Personal account'}</dd></div><div><dt>Number</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>Balance</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency), accountChoice.currency || 'PHP')}</dd></div></dl>
         <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> Edit account</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> Archive account</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>Add transaction</button></div>
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabel(detailTx.date)}`} onClose={() => setSheet(null)} label="Transaction details">
-        <dl className="detail-list"><div><dt>Amount</dt><dd>{shown(show, money(detailTx.amount, detailTx.currency))}</dd></div><div><dt>Type</dt><dd>{detailTx.type}</dd></div><div><dt>Category</dt><dd>{detailTx.category || 'Other'}</dd></div><div><dt>Account</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>Note</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>Source</dt><dd>Sample record</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>Amount</dt><dd>{shown(show, money(detailTx.amount, detailTx.currency), detailTx.currency || 'PHP')}</dd></div><div><dt>Type</dt><dd>{detailTx.type}</dd></div><div><dt>Category</dt><dd>{detailTx.category || 'Other'}</dd></div><div><dt>Account</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>Note</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>Source</dt><dd>Sample record</dd></div>}</dl>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
       </Sheet>}
 

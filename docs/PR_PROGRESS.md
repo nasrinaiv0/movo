@@ -70,6 +70,27 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Full detailed snapshot: `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md`.
 
 
+## PR #43 current-main reconciliation — 2026-10-30
+
+- Branch: `fix/finance-calculations-sync`; reconciliation commit: `95ac0d1cff74682d938859d1ae549e1635b34fa2`; current main parent: `ca1a680c78baf7c87347c960d56c7bc207041bc3`.
+- Current comparison: 2 commits ahead, 0 behind. The stale documentation copies from the old branch were intentionally not overlaid on current main; finance implementation details were added to `FRONTEND_FUNCTIONALITY_AUDIT.md` instead.
+- PR #59's generic demo identity and sample-data notice were explicitly restored and covered by regression tests while retaining PR #43's currency-aware calculations.
+- Latest-head CI/preview validation is pending. Older successful runs do not count for the reconciled tree.
+- **Merge blocker:** `src/lib/financeCalculations.js` currently treats non-finite monetary values as zero in `toCents`. This must be resolved or proven unreachable before merging, alongside authenticated finance-write and CSV flow verification.
+
+
+## Invalid monetary value handling — validated follow-up, 2026-10-30
+
+- The prior note that `toCents` converted non-finite values to zero is superseded by code commit `05d3b2007656c467b82b95dc9574a55ffe0aeca9` and Home/accessibility follow-ups `40979b1e196051d5be8acbccbfcc05d9e6622c2c` and `ba5753cd40fca83f445cf22ef9fc2f8602c9b003`.
+- Invalid amounts now propagate as invalid instead of zero. Currency formatting and animated amounts display an em dash; account/month totals are unavailable rather than fabricated; chart/trend series are suppressed; the user sees an accessible warning. Home Money Flow changes to “Needs review” / “Summary unavailable” and does not announce NaN or misleading percentages.
+- Added regression coverage for invalid arithmetic, invalid formatting, corrupted local transaction data, and accessible Money Flow state.
+- Exact-head GitHub Actions run [40989263312](https://github.com/nasrinaiv0/movo/actions/runs/40989263312) passed **20 suites / 117 tests**, typecheck, production-only dependency audit, and production build. The production-only audit reported 0 vulnerabilities.
+- Vercel preview [dpl_3pP8bQjDFHJWQek6cmm8f5mYr35T](https://vercel.com/nasrin-ai/movo/3pP8bQjDFHJWQek6cmm8f5mYr35T) reached **READY** for `ba5753cd40fca83f445cf22ef9fc2f8602c9b003`.
+- This does not resolve the full dependency tree's 34 reported findings (16 low, 5 moderate, 13 high). Production-only audit success is not a full dependency-tree clearance.
+- Remaining gates: authenticated financial writes, CSV import/export, and real user-owned currency-isolation verification. No Supabase schema/RLS/grants, production data, auth configuration, or provider secrets changed.
+- This audit update is documentation-only; rerun exact-head CI and preview checks on the resulting branch head before merge.
+
+
 ## Current main and release-gate snapshot — 2026-10-30 10:10 Asia/Manila
 
 - **Main:** `ca1a680c78baf7c87347c960d56c7bc207041bc3`. PR #58 is merged (not open).
@@ -96,3 +117,11 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - PR #56 exact-head CI #40990086352 passed (18 suites/103 tests), but authenticated context isolation remains unverified. PR #60 exact-head CI #40989633601 passed (20 suites/111 tests), but manual accessibility checks remain open. PR #52 exact-head run #40988481343 passed (18 suites/101 tests), but authorized finance-data chart verification remains open.
 - Full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high); production-only audit reports 0. Keep scopes distinct.
 - Detail: docs/engineering/updates/2026-10-30-1035-branch-protection-and-release-control.md. No code/settings/deployments changed.
+
+## Finance UI correction — profile summaries honor selected display currency (2026-10-30 11:14 Asia/Manila)
+
+- **Issue found:** `src/screens/Profile.js` formatted profile summary metrics with the default PHP currency and forced account-type subtotals to PHP, even when MOVO's `displayCurrency` preference selected another currency. The account list was already filtered to the selected currency, so the label could be wrong without any conversion having occurred. When balances were hidden, the mask also defaulted to the PHP marker.
+- **Fix:** The Profile screen now reads `displayCurrency` from the shared app context (PHP fallback only when the context does not supply it) and passes that currency to both `money()` and `shown()` for the three summary metrics and bank/card/e-wallet subtotals. No exchange rate or cross-currency aggregation is introduced.
+- **Regression test:** `src/App.test.js` seeds synthetic USD and PHP accounts plus USD income/expense and a PHP transaction, then verifies Profile shows USD-formatted balance/income/expense and the USD bank subtotal without PHP labels. It rerenders with balances hidden and verifies the mask says `USD ••••••`, not `₱ ••••••`.
+- **Security/data:** Local synthetic test fixtures only. No production financial records, schema, RLS, grants, authentication configuration, or secrets were changed.
+- **Validation boundary:** This change has been committed to the existing finance PR branch. Fresh exact-head CI and Vercel preview checks are required; previous passing runs do not validate these new commits. Authenticated cloud CRUD/CSV and owner-scoped currency-flow verification remain release gates.

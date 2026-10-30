@@ -7,7 +7,7 @@ import { ThemePicker } from './Settings';
 const Delta = ({ v, bad }) => (v == null ? null : <span className={`delta ${bad ? 'bad' : 'good'}`}><Icon name={bad ? 'arrowDown' : 'arrowUp'} size={11} strokeWidth={2.4} />{v}%</span>);
 
 export default function Profile({ c }) {
-  const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
+  const { show, stats, deltas, user, accountsByType, displayCurrency = 'PHP', go, session, signOutNow, exportCsv } = c;
   const sum = (arr) => arr.reduce((s, a) => s + a.balance, 0);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
@@ -20,13 +20,13 @@ export default function Profile({ c }) {
     </button>
     <section className="stat-grid" aria-label="Profile summary">
       {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance, false], ['Total Income', 'arrowUp', 'green', stats.income, deltas.income, false], ['Total Expense', 'arrowDown', 'red', stats.expenses, deltas.expenses, true]].map(([label, icon, tone, value, d, bad]) =>
-        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{label}</small><strong>{shown(show, money(value))}</strong><Delta v={d} bad={bad} /></article>)}
+        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{label}</small><strong>{shown(show, money(value, displayCurrency), displayCurrency)}</strong><Delta v={d} bad={bad} /></article>)}
     </section>
 
     <SectionTitle action="See All" onAction={() => go('Wallet')}>Accounts</SectionTitle>
     <section className="card menu-card">
       {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{label}</strong><small>{list.length} {list.length === 1 ? 'account' : 'accounts'}</small></span><b>{shown(show, money(sum(list), 'PHP', 2))}</b><Icon name="chevron" size={16} />
+        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{label}</strong><small>{list.length} {list.length === 1 ? 'account' : 'accounts'}</small></span><b>{shown(show, money(sum(list), displayCurrency, 2), displayCurrency)}</b><Icon name="chevron" size={16} />
       </button>)}
     </section>
     <section className="card menu-card gap">

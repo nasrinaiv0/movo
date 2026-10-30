@@ -24,15 +24,15 @@ export function ThemePicker({ c, compact }) {
   const { prefs, setPref } = c;
   const current = segmentOf(prefs.theme);
   return <>
-    <section className="theme-segments" role="radiogroup" aria-label="App appearance">
-      {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} role="radio" aria-checked={current === key} className={current === key ? 'selected' : ''}
+    <section className="theme-segments" role="group" aria-label="App appearance">
+      {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} aria-pressed={current === key} aria-haspopup={key === 'custom' ? 'dialog' : undefined} className={current === key ? 'selected' : ''}
         onClick={() => (key === 'custom' ? c.setSheet({ name: 'themes' }) : applyTheme(c, key))}>
         <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} /></span>{label}{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}
       </button>)}
     </section>
     <h3 className="mini-title">{compact ? 'App Theme Color' : 'Accent Color'}</h3>
-    <div className="accent-row" role="radiogroup" aria-label="Accent color">
-      {ACCENTS.map(([key, color]) => <button type="button" key={key} role="radio" aria-checked={prefs.accent === key} aria-label={`${key} accent`} className={prefs.accent === key ? 'selected' : ''} style={{ '--dot': color }} onClick={() => setPref('accent', key)}>{prefs.accent === key && <Icon name="check" size={16} strokeWidth={3} />}</button>)}
+    <div className="accent-row" role="group" aria-label="Accent color">
+      {ACCENTS.map(([key, color]) => <button type="button" key={key} aria-pressed={prefs.accent === key} aria-label={`${key} accent`} className={prefs.accent === key ? 'selected' : ''} style={{ '--dot': color }} onClick={() => setPref('accent', key)}>{prefs.accent === key && <Icon name="check" size={16} strokeWidth={3} />}</button>)}
     </div>
   </>;
 }
@@ -40,8 +40,8 @@ export function ThemePicker({ c, compact }) {
 export function ThemeSheet({ c }) {
   const { prefs } = c;
   return <Sheet title="Choose Theme" subtitle="Personalize your app experience." onClose={() => c.setSheet(null)}>
-    <div className="theme-list">
-      {THEMES.map(([key, name, sub]) => <button type="button" key={key} className={`theme-option${prefs.theme === key ? ' selected' : ''}`} onClick={() => { applyTheme(c, key); c.setSheet(null); }} role="radio" aria-checked={prefs.theme === key}>
+    <div className="theme-list" role="group" aria-label="Choose a theme">
+      {THEMES.map(([key, name, sub]) => <button type="button" key={key} className={`theme-option${prefs.theme === key ? ' selected' : ''}`} onClick={() => { applyTheme(c, key); c.setSheet(null); }} aria-pressed={prefs.theme === key}>
         <span className={`theme-art art-${key}`} /><span className="account-main"><strong>{name}</strong><small>{sub}</small></span>
         <span className="radio">{prefs.theme === key && <Icon name="check" size={13} strokeWidth={3} />}</span>
       </button>)}
@@ -139,7 +139,13 @@ export function Appearance({ c }) {
       <Row icon="palette" title="Show Category Colors" sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label="Show Category Colors" />} />
       <Row icon="card" title="Card View Style" sub="Rounded is the only available style." />
       <Row icon="calendar" title="Date Format" sub="Oct 27, 2026 is the only available format." />
-      <Row icon="coin" title="Currency Format" sub="Philippine peso is the only available currency." />
+      <div className="menu-row currency-setting">
+        <span className="menu-icon bare"><Icon name="coin" size={20} /></span>
+        <span className="menu-main"><strong>Display Currency</strong><small id="setting-display-currency-description">Summary totals, Wallet accounts, and transaction lists show one currency at a time. MOVO does not convert currencies; other records remain stored.</small></span>
+        <select className="setting-select" aria-label="Display currency" aria-describedby="setting-display-currency-description" value={prefs.displayCurrency || 'PHP'} onChange={event => setPref('displayCurrency', event.target.value)}>
+          {(c.availableCurrencies || ['PHP']).map(currency => <option key={currency} value={currency}>{currency}</option>)}
+        </select>
+      </div>
     </section>
   </>;
 }

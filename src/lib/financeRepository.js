@@ -6,6 +6,23 @@ const requireClient = () => {
 };
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
 
+async function validateTransactionAccounts(client, transaction, currency) {
+  const ids = [transaction.account_id, transaction.transaction_type === 'transfer' ? transaction.transfer_to_account_id : null].filter(Boolean);
+  const { data, error } = await client.from('financial_accounts').select('id,currency').in('id', ids);
+  if (error) throw error;
+  const accounts = new Map((data || []).map(account => [account.id, account]));
+  if (ids.some(id => !accounts.has(id))) throw new Error('Choose accounts that belong to your signed-in MOVO account.');
+  const source = accounts.get(transaction.account_id);
+  const sourceCurrency = source.currency || 'PHP';
+  if (currency !== sourceCurrency) throw new Error('Transaction currency must match the selected account currency.');
+  if (transaction.transaction_type === 'transfer') {
+    const destination = accounts.get(transaction.transfer_to_account_id);
+    if ((destination.currency || 'PHP') !== sourceCurrency) {
+      throw new Error('Transfers between different currencies are not supported. Currency conversion is not performed.');
+    }
+  }
+}
+
 export async function getCurrentSession() {
   return unwrap(await requireClient().auth.getSession())?.session ?? null;
 }
@@ -41,25 +58,38 @@ export async function createAccount(account, userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const name = typeof account?.name === 'string' ? account.name.trim() : '';
   const openingBalance = Number(account?.opening_balance ?? 0);
+  const currency = account?.currency ?? 'PHP';
   if (!name || name.length > 100) throw new Error('Account name must be between 1 and 100 characters.');
   if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) throw new Error('Enter a valid opening balance.');
+  if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) throw new Error('Enter a valid three-letter account currency.');
   const allowedTypes = ['bank', 'card', 'e_wallet', 'cash', 'investment', 'other'];
   const accountType = allowedTypes.includes(account.account_type) ? account.account_type : 'other';
   return unwrap(await requireClient().from('financial_accounts').insert({
     user_id: userId, name, account_type: accountType,
     institution_name: typeof account.institution_name === 'string' ? account.institution_name.trim().slice(0, 100) || null : null,
-    currency: /^[A-Z]{3}$/.test(account.currency || 'PHP') ? (account.currency || 'PHP') : 'PHP',
+    currency,
     opening_balance: Math.round(openingBalance * 100) / 100,
   }).select().single());
 }
 export async function listTransactions({ from, to, accountId } = {}) {
-  let query = requireClient().from('transactions')
-    .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at')
-    .order('occurred_at', { ascending: false }).limit(1000);
-  if (from) query = query.gte('occurred_at', from);
-  if (to) query = query.lt('occurred_at', to);
-  if (accountId) query = query.eq('account_id', accountId);
-  return unwrap(await query);
+  const client = requireClient();
+  const pageSize = 1000;
+  const rows = [];
+  let offset = 0;
+  while (true) {
+    let query = client.from('transactions')
+      .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at')
+      .order('occurred_at', { ascending: false }).order('id', { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (from) query = query.gte('occurred_at', from);
+    if (to) query = query.lt('occurred_at', to);
+    if (accountId) query = query.eq('account_id', accountId);
+    const page = unwrap(await query) || [];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+    offset += pageSize;
+  }
+  return rows;
 }
 export async function createTransaction(transaction, userId) {
   if (!userId) throw new Error('A signed-in user is required.');
@@ -72,10 +102,13 @@ export async function createTransaction(transaction, userId) {
   if (!transaction.account_id) throw new Error('Choose an account for this transaction.');
   if (type === 'transfer' && (!transaction.transfer_to_account_id || transaction.transfer_to_account_id === transaction.account_id)) throw new Error('Transfers need two different accounts.');
   if (type !== 'transfer' && transaction.transfer_to_account_id) throw new Error('Only transfers can have a destination account.');
-  const currency = /^[A-Z]{3}$/.test(transaction.currency || 'PHP') ? (transaction.currency || 'PHP') : 'PHP';
+  const currency = transaction.currency ?? 'PHP';
+  if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) throw new Error('Enter a valid three-letter currency code.');
   const occurredAt = transaction.occurred_at || new Date().toISOString();
   if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
-  return unwrap(await requireClient().from('transactions').insert({
+  const client = requireClient();
+  await validateTransactionAccounts(client, transaction, currency);
+  return unwrap(await client.from('transactions').insert({
     user_id: userId, account_id: transaction.account_id,
     transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
@@ -105,10 +138,13 @@ export async function updateTransaction(transactionId, transaction) {
   if (!transaction.account_id) throw new Error('Choose an account for this transaction.');
   if (type === 'transfer' && (!transaction.transfer_to_account_id || transaction.transfer_to_account_id === transaction.account_id)) throw new Error('Transfers need two different accounts.');
   if (type !== 'transfer' && transaction.transfer_to_account_id) throw new Error('Only transfers can have a destination account.');
-  const currency = /^[A-Z]{3}$/.test(transaction.currency || 'PHP') ? (transaction.currency || 'PHP') : 'PHP';
+  const currency = transaction.currency ?? 'PHP';
+  if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) throw new Error('Enter a valid three-letter currency code.');
   const occurredAt = transaction.occurred_at || new Date().toISOString();
   if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
-  return unwrap(await requireClient().from('transactions').update({
+  const client = requireClient();
+  await validateTransactionAccounts(client, transaction, currency);
+  return unwrap(await client.from('transactions').update({
     account_id: transaction.account_id,
     transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
@@ -139,7 +175,20 @@ export async function updateAccount(accountId, account) {
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) throw new Error('Enter a valid opening balance.');
     update.opening_balance = Math.round(openingBalance * 100) / 100;
   }
+  let client;
+  if (account?.currency !== undefined) {
+    const currency = account.currency || 'PHP';
+    if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) throw new Error('Enter a valid three-letter account currency.');
+    client = requireClient();
+    // Currency defines the unit of the opening balance and every ledger entry.
+    // Keep it immutable after creation; create a separate account for another currency.
+    const current = unwrap(await client.from('financial_accounts').select('id,currency').eq('id', accountId).single());
+    if ((current.currency || 'PHP') !== currency) {
+      throw new Error('Account currency is fixed when the account is created. Create a new account in the other currency instead.');
+    }
+  }
   if (typeof account?.is_archived === 'boolean') update.is_archived = account.is_archived;
   if (!Object.keys(update).length) throw new Error('Provide at least one account change.');
-  return unwrap(await requireClient().from('financial_accounts').update(update).eq('id', accountId).select().single());
+  if (!client) client = requireClient();
+  return unwrap(await client.from('financial_accounts').update(update).eq('id', accountId).select().single());
 }

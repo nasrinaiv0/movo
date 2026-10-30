@@ -290,3 +290,11 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - PR #56 exact-head CI #40990086352 passed (18 suites / 103 tests); authenticated context-scope/canary remains unverified. PR #60 exact-head CI #40989633601 passed (20 suites / 111 tests); manual accessibility checks remain open. PR #52's recorded exact-head run #40988481343 passed (18 suites / 101 tests); authorized financial-data chart verification remains open.
 - Full dependency tree remains 34 findings (16 low, 5 moderate, 13 high) while production-only audit reports zero; keep these scopes distinct.
 - No branch settings, code, database, secrets, or deployments were changed by monitoring.
+
+## Finance UI correction — profile summaries honor selected display currency (2026-10-30 11:14 Asia/Manila)
+
+- **Issue found:** `src/screens/Profile.js` formatted profile summary metrics with the default PHP currency and forced account-type subtotals to PHP, even when MOVO's `displayCurrency` preference selected another currency. The account list was already filtered to the selected currency, so the label could be wrong without any conversion having occurred. When balances were hidden, the mask also defaulted to the PHP marker.
+- **Fix:** The Profile screen now reads `displayCurrency` from the shared app context (PHP fallback only when the context does not supply it) and passes that currency to both `money()` and `shown()` for the three summary metrics and bank/card/e-wallet subtotals. No exchange rate or cross-currency aggregation is introduced.
+- **Regression test:** `src/App.test.js` seeds synthetic USD and PHP accounts plus USD income/expense and a PHP transaction, then verifies Profile shows USD-formatted balance/income/expense and the USD bank subtotal without PHP labels. It rerenders with balances hidden and verifies the mask says `USD ••••••`, not `₱ ••••••`.
+- **Security/data:** Local synthetic test fixtures only. No production financial records, schema, RLS, grants, authentication configuration, or secrets were changed.
+- **Validation boundary:** This change has been committed to the existing finance PR branch. Fresh exact-head CI and Vercel preview checks are required; previous passing runs do not validate these new commits. Authenticated cloud CRUD/CSV and owner-scoped currency-flow verification remain release gates.
