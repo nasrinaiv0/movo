@@ -395,3 +395,14 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - Coverage includes parser rejection of malformed explicit currency, preservation of PHP fallback only for blank/missing currency, and an App-level file-input/FileReader test that verifies the row-level error is exposed through `role="alert"` and the Import button remains disabled when there are no valid rows.
 - The first UI-test fixture attempt used a literal escaped sequence instead of a row break; the failed run was observed and the fixture corrected before this passing exact-head build. No dependency manifests changed; production-only npm audit and `audit:controls` were not independently rerun on this code head.
 - PR #43 remains draft until authenticated finance CRUD, CSV import/export, and owner-scoped currency isolation are verified against real signed-in records.
+
+
+## Strict CSV quote validation — 2026-10-30 11:58 Asia/Manila
+
+- Scope: `nasrinaiv0/movo`, existing branch `fix/finance-calculations-sync`, existing PR #43.
+- Finding: quote-state toggling accepted malformed CSV field boundaries. Corrected the parser to reject quotes embedded in unquoted fields and non-whitespace text following a closing quote.
+- Preserved valid escaped quotes, embedded newlines, CRLF/LF, UTF-8 BOM handling, and harmless post-quote separator whitespace. Added regression tests.
+- Commits: parser `b4cc1ced75c898917e24073ec3098cc3b61e1834`; tests `c123b25904cd84ed6d6359bce5427ebe6f7064cf`.
+- Detailed evidence: [strict CSV quote validation](updates/2026-10-30-1158-strict-csv-quoting.md).
+- Validation is pending for the final PR head at the time this note was written; exact-head checks must be re-read before reporting pass/fail.
+- No database, RLS, grants, Auth, production financial data, or secrets changed. Remaining live authenticated CSV and currency-isolation checks are not replaced by parser unit tests.
