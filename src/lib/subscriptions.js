@@ -1,0 +1,137 @@
+/*
+ * Subscription tracker: a catalog of common services, renewal-date maths and spending summaries.
+ * Dates are calendar days ('YYYY-MM-DD'). Monthly and yearly plans keep their original day of the month, so a plan
+ * that started on the 31st renews on the last day of shorter months and returns to the 31st afterwards.
+ */
+export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['yearly', 'Yearly']];
+export const SUB_CATEGORIES = ['Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Security & VPN', 'Gaming', 'Education', 'Health', 'Food & delivery', 'Shopping', 'Phone & internet', 'News', 'Other'];
+
+/*
+ * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH'),
+ * official website (source of the bundled logo, see scripts/fetch-brand-logos.js).
+ * Marks are trademarks of their owners, shown only to identify each service (see BRAND_NOTICE in the UI).
+ */
+export const CATALOG = [
+  // Video
+  ['Netflix', 'Entertainment', '#e50914', 'netflix', '', 'netflix.com'], ['YouTube Premium', 'Entertainment', '#ff0000', 'youtube', '', 'youtube.com'], ['Disney+', 'Entertainment', '#113ccf', '', '', 'disneyplus.com'],
+  ['Prime Video', 'Entertainment', '#1a98ff', '', '', 'primevideo.com'], ['HBO Max', 'Entertainment', '#002be7', 'hbomax', '', 'hbomax.com'], ['Apple TV+', 'Entertainment', '#111111', 'appletv', '', 'tv.apple.com'],
+  ['Crunchyroll', 'Entertainment', '#f47521', 'crunchyroll', '', 'crunchyroll.com'], ['Paramount+', 'Entertainment', '#0064ff', 'paramountplus', 'US', 'paramountplus.com'], ['Hulu', 'Entertainment', '#1ce783', '', 'US', 'hulu.com'],
+  ['Peacock', 'Entertainment', '#111111', '', 'US', 'peacocktv.com'], ['ESPN+', 'Entertainment', '#e2231a', '', 'US', 'plus.espn.com'], ['YouTube TV', 'Entertainment', '#ff0000', 'youtubetv', 'US', 'tv.youtube.com'],
+  ['Sling TV', 'Entertainment', '#1c75bc', '', 'US', 'sling.com'], ['Fubo', 'Entertainment', '#e4002b', 'fubo', 'US', 'fubo.tv'], ['Starz', 'Entertainment', '#111111', 'starz', 'US', 'starz.com'],
+  ['MUBI', 'Entertainment', '#001489', 'mubi', '', 'mubi.com'], ['DAZN', 'Entertainment', '#0c161c', 'dazn', '', 'dazn.com'], ['Plex Pass', 'Entertainment', '#ebaf00', 'plex', '', 'plex.tv'],
+  ['Viu', 'Entertainment', '#f5b400', '', 'PH', 'viu.com'], ['iWantTFC', 'Entertainment', '#0033a0', '', 'PH', 'iwanttfc.com'], ['Vivamax', 'Entertainment', '#c8102e', '', 'PH', 'vivamax.net'],
+  ['iQIYI', 'Entertainment', '#00be06', '', 'PH', 'iq.com'], ['WeTV', 'Entertainment', '#ff6a00', '', 'PH', 'wetv.vip'], ['Bilibili', 'Entertainment', '#00a1d6', 'bilibili', 'PH', 'bilibili.tv'],
+  ['Cignal Play', 'Entertainment', '#e30613', '', 'PH', 'cignalplay.com'], ['Twitch Turbo', 'Entertainment', '#9146ff', 'twitch', '', 'twitch.tv'],
+  // Music and audio
+  ['Spotify', 'Music', '#1db954', 'spotify', '', 'spotify.com'], ['Apple Music', 'Music', '#fa243c', 'applemusic', '', 'music.apple.com'], ['YouTube Music', 'Music', '#ff0000', 'youtubemusic', '', 'music.youtube.com'],
+  ['Tidal', 'Music', '#111111', 'tidal', '', 'tidal.com'], ['Pandora', 'Music', '#224099', 'pandora', 'US', 'pandora.com'], ['SiriusXM', 'Music', '#0000eb', '', 'US', 'siriusxm.com'], ['Audible', 'Music', '#f8991c', 'audible', '', 'audible.com'],
+  // AI
+  ['ChatGPT Plus', 'AI Tools', '#10a37f', '', '', 'chatgpt.com'], ['ChatGPT Go', 'AI Tools', '#10a37f', '', '', 'chatgpt.com'], ['Claude', 'AI Tools', '#d97757', 'claude', '', 'claude.ai'],
+  ['Gemini Pro', 'AI Tools', '#8e75b2', 'googlegemini', '', 'gemini.google.com'], ['Perplexity Pro', 'AI Tools', '#1fb8cd', 'perplexity', '', 'perplexity.ai'], ['Midjourney', 'AI Tools', '#222222', '', '', 'midjourney.com'],
+  ['Grammarly', 'AI Tools', '#027e6f', 'grammarly', '', 'grammarly.com'],
+  // Developer
+  ['GitHub Copilot', 'Developer', '#24292f', 'githubcopilot', '', 'github.com'], ['GitHub Pro', 'Developer', '#181717', 'github', '', 'github.com'], ['Cursor', 'Developer', '#111111', 'cursor', '', 'cursor.com'],
+  ['Vercel Pro', 'Developer', '#000000', 'vercel', '', 'vercel.com'], ['Netlify Pro', 'Developer', '#00ad9f', 'netlify', '', 'netlify.com'], ['JetBrains', 'Developer', '#000000', 'jetbrains', '', 'jetbrains.com'],
+  ['Docker Pro', 'Developer', '#2496ed', 'docker', '', 'docker.com'], ['Supabase Pro', 'Developer', '#3fcf8e', 'supabase', '', 'supabase.com'],
+  // Productivity, design, storage
+  ['Notion', 'Productivity', '#191919', 'notion', '', 'notion.so'], ['Microsoft 365', 'Productivity', '#d83b01', '', '', 'microsoft365.com'], ['Slack', 'Productivity', '#4a154b', '', '', 'slack.com'],
+  ['Zoom', 'Productivity', '#0b5cff', 'zoom', '', 'zoom.us'], ['Linear', 'Productivity', '#5e6ad2', 'linear', '', 'linear.app'], ['Evernote', 'Productivity', '#00a82d', 'evernote', '', 'evernote.com'],
+  ['Todoist', 'Productivity', '#e44332', 'todoist', '', 'todoist.com'], ['LinkedIn Premium', 'Productivity', '#0a66c2', '', '', 'linkedin.com'], ['QuickBooks', 'Productivity', '#2ca01c', 'quickbooks', 'US', 'quickbooks.intuit.com'],
+  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', '', 'mailchimp.com'], ['Telegram Premium', 'Productivity', '#26a5e4', 'telegram', '', 'telegram.org'], ['Discord Nitro', 'Productivity', '#5865f2', 'discord', '', 'discord.com'],
+  ['X Premium', 'Productivity', '#000000', 'x', '', 'x.com'],
+  ['Figma', 'Design', '#a259ff', 'figma', '', 'figma.com'], ['Canva Pro', 'Design', '#00c4cc', '', '', 'canva.com'], ['Adobe Creative Cloud', 'Design', '#da1f26', '', '', 'adobe.com'],
+  ['Google One', 'Cloud storage', '#4285f4', 'googledrive', '', 'one.google.com'], ['iCloud+', 'Cloud storage', '#3693f3', 'icloud', '', 'icloud.com'], ['Dropbox', 'Cloud storage', '#0061fe', 'dropbox', '', 'dropbox.com'],
+  ['Box', 'Cloud storage', '#0061d5', 'box', '', 'box.com'], ['Proton', 'Cloud storage', '#6d4aff', 'proton', '', 'proton.me'],
+  // Security
+  ['1Password', 'Security & VPN', '#3b66bc', '1password', '', '1password.com'], ['Bitwarden', 'Security & VPN', '#175ddc', 'bitwarden', '', 'bitwarden.com'], ['Dashlane', 'Security & VPN', '#0e353d', 'dashlane', '', 'dashlane.com'],
+  ['LastPass', 'Security & VPN', '#d32d27', 'lastpass', '', 'lastpass.com'], ['NordVPN', 'Security & VPN', '#4687ff', 'nordvpn', '', 'nordvpn.com'], ['ExpressVPN', 'Security & VPN', '#da3940', 'expressvpn', '', 'expressvpn.com'],
+  ['Surfshark', 'Security & VPN', '#178a9e', 'surfshark', '', 'surfshark.com'], ['Proton VPN', 'Security & VPN', '#66deb1', 'protonvpn', '', 'protonvpn.com'], ['Ring Protect', 'Security & VPN', '#1c9ad6', 'ring', 'US', 'ring.com'],
+  // Gaming
+  ['Xbox Game Pass', 'Gaming', '#107c10', '', '', 'xbox.com'], ['PlayStation Plus', 'Gaming', '#0070d1', 'playstation', '', 'playstation.com'], ['Nintendo Switch Online', 'Gaming', '#e60012', '', '', 'nintendo.com'],
+  ['Apple Arcade', 'Gaming', '#111111', 'applearcade', '', 'apple.com'], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', '', 'ubisoft.com'], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', '', 'play.google.com'],
+  // Learning
+  ['Duolingo Super', 'Education', '#58cc02', 'duolingo', '', 'duolingo.com'], ['Coursera Plus', 'Education', '#0056d2', 'coursera', '', 'coursera.org'], ['Udemy', 'Education', '#a435f0', 'udemy', '', 'udemy.com'],
+  ['Skillshare', 'Education', '#00ff84', 'skillshare', '', 'skillshare.com'], ['MasterClass', 'Education', '#111111', '', 'US', 'masterclass.com'], ['Medium', 'Education', '#000000', 'medium', '', 'medium.com'], ['Patreon', 'Education', '#000000', 'patreon', '', 'patreon.com'],
+  // Health
+  ['Peloton', 'Health', '#181a1d', 'peloton', 'US', 'onepeloton.com'], ['Strava', 'Health', '#fc4c02', 'strava', '', 'strava.com'], ['Headspace', 'Health', '#f47d31', 'headspace', '', 'headspace.com'], ['Calm', 'Health', '#4a90e2', '', '', 'calm.com'],
+  ['Planet Fitness', 'Health', '#5c2d91', '', 'US', 'planetfitness.com'], ['Anytime Fitness', 'Health', '#5e2d91', '', 'PH', 'anytimefitness.ph'], ['Gym membership', 'Health', '#ef6c00', '', '', ''],
+  // Food, delivery and shopping
+  ['DoorDash DashPass', 'Food & delivery', '#ff3008', 'doordash', 'US', 'doordash.com'], ['Uber One', 'Food & delivery', '#000000', 'uber', '', 'uber.com'], ['Instacart+', 'Food & delivery', '#43b02a', 'instacart', 'US', 'instacart.com'],
+  ['Grubhub+', 'Food & delivery', '#ff8000', '', 'US', 'grubhub.com'], ['HelloFresh', 'Food & delivery', '#99cc33', 'hellofresh', 'US', 'hellofresh.com'], ['GrabUnlimited', 'Food & delivery', '#00b14f', 'grab', 'PH', 'grab.com'],
+  ['foodpanda pandapro', 'Food & delivery', '#d70f64', 'foodpanda', 'PH', 'foodpanda.ph'],
+  ['Amazon Prime', 'Shopping', '#ff9900', '', 'US', 'amazon.com'], ['Walmart+', 'Shopping', '#0071ce', '', 'US', 'walmart.com'], ['Costco membership', 'Shopping', '#e31837', '', 'US', 'costco.com'],
+  ['Shopee VIP', 'Shopping', '#ee4d2d', 'shopee', 'PH', 'shopee.ph'], ['LazMall / LazPlus', 'Shopping', '#0f146d', '', 'PH', 'lazada.com.ph'],
+  // News
+  ['The New York Times', 'News', '#000000', 'newyorktimes', 'US', 'nytimes.com'], ['The Wall Street Journal', 'News', '#0274b6', '', 'US', 'wsj.com'], ['The Washington Post', 'News', '#111111', '', 'US', 'washingtonpost.com'],
+  ['Inquirer Plus', 'News', '#003b7b', '', 'PH', 'inquirer.net'], ['Philstar+', 'News', '#c8102e', '', 'PH', 'philstar.com'],
+  // Phone, internet and TV (US)
+  ['Verizon', 'Phone & internet', '#cd040b', 'verizon', 'US', 'verizon.com'], ['T-Mobile', 'Phone & internet', '#e20074', '', 'US', 't-mobile.com'], ['AT&T', 'Phone & internet', '#00a8e0', '', 'US', 'att.com'], ['Xfinity', 'Phone & internet', '#6138f5', '', 'US', 'xfinity.com'],
+  // Phone, internet and TV (Philippines)
+  ['Globe Postpaid', 'Phone & internet', '#0056b8', '', 'PH', 'globe.com.ph'], ['Globe At Home', 'Phone & internet', '#0056b8', '', 'PH', 'globe.com.ph'], ['Smart Postpaid', 'Phone & internet', '#00a651', '', 'PH', 'smart.com.ph'],
+  ['DITO', 'Phone & internet', '#e4002b', '', 'PH', 'dito.ph'], ['PLDT Home Fiber', 'Phone & internet', '#e4002b', '', 'PH', 'pldthome.com'], ['Converge FiberX', 'Phone & internet', '#5b2c86', '', 'PH', 'convergeict.com'],
+  ['Sky Fiber', 'Phone & internet', '#00a3e0', '', 'PH', 'mysky.com.ph'], ['Cignal TV', 'Phone & internet', '#e30613', '', 'PH', 'cignal.tv'],
+  ['Mobile plan', 'Phone & internet', '#6d4aff', '', '', ''], ['Home internet', 'Phone & internet', '#0b8fd8', '', '', ''],
+].map(([name, category, color, mark, region, site]) => ({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name, category, color, mark, region, site }));
+
+const pad = (n) => String(n).padStart(2, '0');
+const parse = (day) => { const [y, m, d] = String(day).split('-').map(Number); return { y, m, d }; };
+const fmt = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+const daysIn = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const valid = (day) => /^\d{4}-\d{2}-\d{2}$/.test(day || '') && !Number.isNaN(Date.parse(`${day}T00:00:00Z`));
+export const toDay = (date) => { const x = new Date(date); return fmt(x.getFullYear(), x.getMonth() + 1, x.getDate()); };
+export const dayDiff = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000);
+
+/** The n-th billing date after `start` (n = 0 is the start itself). */
+export function billingDate(start, cycle, n) {
+  const { y, m, d } = parse(start);
+  if (cycle === 'weekly') { const t = new Date(Date.UTC(y, m - 1, d + 7 * n)); return fmt(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()); }
+  const months = cycle === 'yearly' ? 12 : cycle === 'quarterly' ? 3 : 1;
+  const total = (m - 1) + months * n; const yy = y + Math.floor(total / 12); const mm = (total % 12) + 1;
+  return fmt(yy, mm, Math.min(d, daysIn(yy, mm)));
+}
+
+/** First billing date on or after `from`, or '' for an invalid or inactive subscription. */
+export function nextRenewal(sub, from) {
+  if (!sub || sub.status === 'cancelled' || sub.status === 'paused' || !valid(sub.start)) return '';
+  const fromDay = toDay(from);
+  if (sub.start >= fromDay) return sub.start;
+  const approxDays = { weekly: 7, monthly: 30.44, quarterly: 91.31, yearly: 365.25 }[sub.cycle] || 30.44;
+  let n = Math.max(0, Math.floor(dayDiff(sub.start, fromDay) / approxDays) - 1);
+  let day = billingDate(sub.start, sub.cycle, n);
+  while (day < fromDay) { n += 1; day = billingDate(sub.start, sub.cycle, n); }
+  return day;
+}
+
+/** Every billing date between two days, inclusive. */
+export function renewalsBetween(sub, fromDay, toDayStr) {
+  const out = []; let day = nextRenewal(sub, `${fromDay}T00:00:00`);
+  if (!day) return out;
+  let n = 0; const first = day;
+  while (day && day <= toDayStr && n < 400) { out.push(day); n += 1; day = billingDate(first, sub.cycle, n); }
+  return out;
+}
+
+/** Average monthly cost of a subscription in its own currency. */
+export function monthlyCost(sub) {
+  const amount = Number(sub.amount);
+  if (!Number.isFinite(amount) || amount <= 0 || sub.status === 'cancelled' || sub.status === 'paused') return 0;
+  return { weekly: amount * 52 / 12, monthly: amount, quarterly: amount / 3, yearly: amount / 12 }[sub.cycle] ?? amount;
+}
+
+/** Totals in the home currency (via `toBase`) plus what renews soon. */
+export function summarize(subs, ref, toBase = (v) => v) {
+  const today = toDay(ref);
+  const active = subs.filter(s => s.status !== 'cancelled' && s.status !== 'paused');
+  const monthly = active.reduce((s, x) => s + toBase(monthlyCost(x), x.currency), 0);
+  const upcoming = active.map(s => ({ ...s, next: nextRenewal(s, ref) })).filter(s => s.next).sort((a, b) => (a.next < b.next ? -1 : a.next > b.next ? 1 : 0));
+  const dueSoon = upcoming.filter(s => dayDiff(today, s.next) <= 7);
+  const byCategory = {};
+  active.forEach(s => { byCategory[s.category || 'Other'] = (byCategory[s.category || 'Other'] || 0) + toBase(monthlyCost(s), s.currency); });
+  return {
+    monthly, annual: monthly * 12, activeCount: active.length, upcoming, dueSoon,
+    dueSoonTotal: dueSoon.reduce((s, x) => s + toBase(Number(x.amount) || 0, x.currency), 0),
+    byCategory: Object.entries(byCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),
+  };
+}
+
+export const catalogFor = (name = '') => CATALOG.find(c => c.name.toLowerCase() === String(name).toLowerCase());

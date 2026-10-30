@@ -28,7 +28,9 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 ## Preferences and data
 - UI preferences live in `localStorage` key `movo.preferences.v3` (`DEFAULTS` in `App.js`; v2 is migrated). Add new keys to `DEFAULTS`.
 - Custom sticker uploads: `movo.customStickers.v1` (device only).
-- Sample records carry `source: 'Sample'` and must always be labelled as sample data.
+- MOVO ships no demo mode or sample data: a new person starts empty. Legacy `source: 'Sample'` rows are dropped on load. Tests seed `src/testFixtures.js` as the person's own records.
+- First-run tour (`components/Walkthrough.js`) shows once, only when no preferences are saved (`onboarded`); it is disabled in tests.
+- Chat logging (`lib/chatLog.js`) parses "Grab 250"-style lines on the device and saves them like any record; these messages are never sent to NasrinAI and need no AI consent.
 - Never imply mock settings deliver real push/email notifications or that balances are bank-verified.
 
 ## UI conventions (owner-approved)
@@ -37,6 +39,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Shape language: cards `--r-card` (22px), tiles/menu/stat icons `--r-tile` (30% squircle), chips and deltas pills, buttons ≥48px tall with 16px radius.
 - Borders are soft (`--line` is very light). Inputs/search/composer show **no border, outline or ring while focused**; a faint accent tint marks the active field.
 - Motion is calm: smooth ease-out only. **No** `navigator.vibrate`, no overshooting bounce springs, no breathing/pulsing orb. Respect `prefers-reduced-motion`; animations are skipped in tests via `canAnimate()`.
+- Subscription logos: official site icons fetched by `npm run brands` into `public/brands/` (never hot-linked at runtime), else Simple Icons marks via the generated `src/lib/brandMarks.js` (owner-approved for identification only) and must always appear with the trademark notice (`BrandNotice`). This does not extend to card stickers.
 - Card stickers are original, procedurally generated vector art (`stickers.js`). Do not add third-party characters, franchise art or logos; users may upload their own images.
 
 ## Security (non-negotiable)

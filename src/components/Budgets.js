@@ -43,8 +43,8 @@ export function BudgetsCard({ progress, plans, show, onOpen, size = 'M' }) {
   </section>;
 }
 
-export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, onDeleteBudget, onSavePlan, onDeletePlan, onClose }) {
-  const [tab, setTab] = useState('budgets');
+export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, onDeleteBudget, onSavePlan, onDeletePlan, onClose, initialTab = 'budgets' }) {
+  const [tab, setTab] = useState(initialTab === 'plans' ? 'plans' : 'budgets');
   const [draft, setDraft] = useState(null);
   const [err, setErr] = useState('');
   const used = new Set(progress.map(b => b.category));

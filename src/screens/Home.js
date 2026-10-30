@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
+import { UpcomingList } from './Subscriptions';
+import { toDay } from '../lib/subscriptions';
 import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
 import { dayKey, money, shown } from '../lib/format';
@@ -88,6 +90,11 @@ export default function Home({ c }) {
     </section> },
     { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={refDate} show={show} variant={style} /> },
     { id: 'budgets', label: tr('Budgets & plans'), node: ({ size }) => <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} size={size} /> },
+    { id: 'subscriptions', label: tr('Upcoming renewals'), node: ({ size }) => <section aria-label={tr('Upcoming renewals')}>
+      <SectionTitle action={c.subSummary?.activeCount ? tr('See All') : tr('Add')} onAction={() => go('Subscriptions')}>{tr('Upcoming Renewals')}</SectionTitle>
+      {c.subSummary?.activeCount ? <UpcomingList upcoming={c.subSummary.upcoming} show={show} today={toDay(new Date())} onOpen={() => go('Subscriptions')} limit={{ S: 1, M: 3, L: 6 }[size]} />
+        : <button type="button" className="budget-empty" onClick={() => go('Subscriptions')}><Icon name="refresh" size={20} /><span><strong>{tr('Track your subscriptions')}</strong><small>{tr('See every renewal before it charges.')}</small></span></button>}
+    </section> },
     { id: 'spending', label: tr('Spending this month'), styles: SPENDING_STYLES, node: ({ size, style }) => <section aria-label={tr('Spending overview')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending This Month')}</SectionTitle>
       <div className={`card spending-card is-${style}`}>

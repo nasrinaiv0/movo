@@ -1,6 +1,6 @@
 const TRANSACTIONS_KEY = 'movo.local.transactions.v1';
 const ACCOUNTS_KEY = 'movo.local.accounts.v1';
-const SAMPLES_KEY = 'movo.samples.enabled.v1';
+const SAMPLES_KEY = 'movo.samples.enabled.v1'; // legacy flag, removed on Clear All
 
 function storage() {
   try { return typeof window !== 'undefined' ? window.localStorage : null; } catch { return null; }
@@ -21,11 +21,9 @@ function writeJson(key, value) {
   } catch { return false; }
 }
 
-/** Sample rows are passed in from the demo fixture and are never persisted as user data. */
-export function loadLocalTransactions(sampleRows = [], samplesEnabled = areSamplesEnabled()) {
-  const stored = readArray(TRANSACTIONS_KEY).filter(row => row && row.source !== 'Sample');
-  const storedIds = new Set(stored.map(row => row.id));
-  return [...(samplesEnabled ? sampleRows.filter(row => !storedIds.has(row.id)) : []), ...stored];
+/** The person's own records; legacy sample rows from older versions are dropped. */
+export function loadLocalTransactions() {
+  return readArray(TRANSACTIONS_KEY).filter(row => row && row.source !== 'Sample' && row.source !== 'demo');
 }
 export function saveLocalTransactions(rows, cloudMode = false) {
   if (cloudMode || !Array.isArray(rows)) return false;
@@ -37,17 +35,6 @@ export function loadLocalAccounts() {
 export function saveLocalAccounts(accounts) {
   if (!Array.isArray(accounts)) return false;
   return writeJson(ACCOUNTS_KEY, accounts);
-}
-export function areSamplesEnabled() {
-  try { return storage()?.getItem(SAMPLES_KEY) !== 'false'; } catch { return true; }
-}
-export function setSamplesEnabled(enabled) {
-  try {
-    const store = storage();
-    if (!store) return false;
-    store.setItem(SAMPLES_KEY, enabled ? 'true' : 'false');
-    return true;
-  } catch { return false; }
 }
 export function clearLocalFinanceData() {
   const store = storage();
