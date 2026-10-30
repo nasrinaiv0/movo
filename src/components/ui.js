@@ -39,9 +39,9 @@ export function SubHeader({ title, onBack, right }) {
 }
 
 export function Tile({ name, size = 44, icon, tone, radius }) {
-  if (icon) return <span className={`tile tone-${tone || 'blue'}`} style={{ width: size, height: size, borderRadius: radius }}><Icon name={icon} size={Math.round(size * 0.5)} /></span>;
+  if (icon) return <span aria-hidden="true" className={`tile tone-${tone || 'blue'}`} style={{ width: size, height: size, borderRadius: radius }}><Icon name={icon} size={Math.round(size * 0.5)} /></span>;
   const { background, initials } = tileFor(name);
-  return <span className="tile mono" style={{ width: size, height: size, background, borderRadius: radius, fontSize: Math.round(size * 0.34) }}>{initials}</span>;
+  return <span aria-hidden="true" className="tile mono" style={{ width: size, height: size, background, borderRadius: radius, fontSize: Math.round(size * 0.34) }}>{initials}</span>;
 }
 
 export function Chips({ items, value, onChange, trailing, label }) {
@@ -156,7 +156,7 @@ export function Legend({ data }) {
 export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly }) {
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
-  return <button type="button" className="tx-row" aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
+  return <button type="button" className="tx-row" onClick={() => onOpen?.(t)}>
     <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} tone="blue" />
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
     <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em>}</span>
