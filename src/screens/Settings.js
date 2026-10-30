@@ -173,10 +173,10 @@ export function NotificationSettings({ c }) {
     <h2 className="group-title">Notification Categories</h2>
     <section className="card menu-card">
       {item('card', 'Transactions', 'Payments, transfers, receipts', 'catTransactions', 'blue')}
-      {item('chart', 'Account & Security', c.demoAlertsAvailable ? 'Sample account alerts in demo mode.' : 'Live account alerts are not connected.', 'catAccount', 'blue', !c.demoAlertsAvailable, 'Account and security alerts are only generated for sample/demo data; live event generation is not connected.')}
-      {item('spark', 'NasrinAI Updates', c.demoAlertsAvailable ? 'Sample AI notices in demo mode.' : 'Live NasrinAI notices are not connected.', 'catAi', 'violet', !c.demoAlertsAvailable, 'NasrinAI update alerts are only generated for sample/demo data; live event generation is not connected.')}
-      {item('tag', 'Promotions', c.demoAlertsAvailable ? 'Sample offers in demo mode.' : 'Live promotional alerts are not connected.', 'catPromo', 'gray', !c.demoAlertsAvailable, 'Promotional alerts are only sample/demo data; live promotional messaging is not connected.')}
-      {item('doc', 'Reports', c.demoAlertsAvailable ? 'Sample report notices in demo mode.' : 'Live report notifications are not connected.', 'catReports', 'teal', !c.demoAlertsAvailable, 'Report alerts are only generated for sample/demo data; live report-event generation is not connected.')}
+      {item('chart', 'Account & Security', c.demoAlertsAvailable ? 'Sample account alerts in demo mode.' : 'Live account alerts are not connected; sample/demo alerts only.', 'catAccount', 'blue', !c.demoAlertsAvailable, 'Account and security alerts are only generated for sample/demo data; live event generation is not connected.')}
+      {item('spark', 'NasrinAI Updates', c.demoAlertsAvailable ? 'Sample AI notices in demo mode.' : 'Live NasrinAI notices are not connected; sample/demo alerts only.', 'catAi', 'violet', !c.demoAlertsAvailable, 'NasrinAI update alerts are only generated for sample/demo data; live event generation is not connected.')}
+      {item('tag', 'Promotions', c.demoAlertsAvailable ? 'Sample offers in demo mode.' : 'Live promotional alerts are not connected; sample/demo alerts only.', 'catPromo', 'gray', !c.demoAlertsAvailable, 'Promotional alerts are only sample/demo data; live promotional messaging is not connected.')}
+      {item('doc', 'Reports', c.demoAlertsAvailable ? 'Sample report notices in demo mode.' : 'Live report notifications are not connected; sample/demo alerts only.', 'catReports', 'teal', !c.demoAlertsAvailable, 'Report alerts are only generated for sample/demo data; live report-event generation is not connected.')}
     </section>
     <section className="card menu-card gap"><Row icon="moon" title="Quiet Hours" sub="Scheduling is not available in this web build." right={<span className="muted-end">Unavailable</span>} chevron={false} /></section>
   </>;
