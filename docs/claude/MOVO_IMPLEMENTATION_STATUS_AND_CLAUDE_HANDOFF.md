@@ -1,5 +1,20 @@
 # MOVO Implementation Status and Claude Handoff
 
+## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
+
+**This section supersedes older status rows below wherever they disagree.**
+
+- **Current main:** `bb30c8e87722e51d0df07eef8031ebc5435b4093` (merged PR #57).
+- **Current production:** [Vercel deployment dpl_6tmjn2FNfCFEpwCessZcjE2ibBjq](https://vercel.com/nasrin-ai/movo/6tmjn2FNfCFEpwCessZcjE2ibBjq) is READY at the same SHA. This is deployment/build evidence, not proof that embedded NasrinAI chat is authenticated and functional.
+- **PR #57:** merged; exact-head CI #40982977495 passed install, production-only npm audit, tests, and production bundle. `react-scripts@5.0.1` moved to devDependencies; `npm audit --omit=dev` is now a CI gate. Full-tree audit still reports 34 development/build-tool findings (16 low, 5 moderate, 13 high).
+- **PR #56:** open/draft at `36c486424a2f37591edb13d5a43936140515e217`; current-head CI #40985264768 passed and Vercel preview is READY. Branch is 10 commits ahead / 2 behind current main; reconcile before merge. Previous preview at `d822aa0...` failed 2 tests; latest head mocks `AbortSignal.timeout` and now passes CI. Production scope-canary verification remains unverified.
+- **PR #55:** open/draft at `e191c8c421f5410d099da903c3ab3541ae03a65e`; exact-head CI #40984662087 passed and preview is READY. Branch is 26 ahead / 2 behind main. Manual keyboard, screen-reader, mobile, and finance-flow QA remain outstanding.
+- **Upstream chat authentication:** Vercel logs over the prior 24 hours still returned repeated `POST /api/nasrinai/chat` HTTP 401 events, latest observed at `2026-10-29T15:37:50.463Z`. No production error/warning logs matched the last-hour query, but no successful authenticated chat was established. Do not infer recovery.
+- **Release blockers:** reconcile PRs #56/#55 with current main; run exact-head CI after reconciliation; verify the server credential through authorized secret management without exposing it; run authenticated MOVO-only canary tests and prove unrelated content is absent from retrieval, provider requests, replies, transcripts, caches, and logs.
+- No production secret, financial data, database schema, application code, or deployment was changed by this audit. See [the 09:20 audit delta](engineering/updates/2026-10-30-0920-runtime-dependency-and-context-isolation.md).
+
+
+
 **Repository:** `nasrinaiv0/movo`  
 **Branch:** `main` is the target branch; this document was added on a documentation-only branch.  
 **Status snapshot:** 2026-10-30  
