@@ -123,6 +123,32 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - No database schema/RLS/grants, production financial records, Auth settings, or secrets changed.
 
 
+## Post-disclosure monitoring checkpoint — 2026-10-30 12:06 Asia/Manila
+
+- **Main / production:** current main `9438e7c01c916a6b27f62e026fe9b4a4f6952f94`; Vercel production deployment [dpl_3kHKpwFatSAawrVCtU19XNEECR3E](https://vercel.com/nasrin-ai/movo/3kHKpwFatSAawrVCtU19XNEECR3E) is READY at the same SHA.
+- **PR #63 merged:** [`1df043bcc54d59bee16fce806b601e09d647b06e`](https://github.com/nasrinaiv0/movo/pull/63). Removed unverified absolute isolation claim, disclosed that upstream boundary is not independently verified, advised against real/highly sensitive financial details, and corrected Terms/Privacy effective dates. Exact-head CI #40997576900 passed 17 suites / 95 tests, typecheck, production-only audit (0), build. Recorded production bundle smoke verified caveat/date and absence of old claim.
+- **PR #64 merged:** documentation-only audit reconciliation at `9438e7c...`; paths: progress register, Claude handoff, master ledger, and dated disclosure-hotfix evidence.
+- **Current application heads:** #43 `ad532e1df7ca14a0c0aebe0244d7b82d2bb0578e` — CI #41000693424, 20 suites / 125 tests, preview READY; #52 `78b776497c8125f1637b2fb601965c1cc94e9b03` — CI #40999382232, 18 / 101, preview READY; #56 `15e112149bf70b6ee1f141365a4b9ed9ffb9e6e5` — CI #40999433274, 18 / 103, preview READY; #60 `12ba5b3b45065949626e3ecf49a777b9de44387b` — CI #41000977707, 20 / 112, typecheck + `audit:controls`, preview READY. All four remain open/draft.
+- **Security:** each latest checked install log reports 34 full-tree dependency findings (16 low, 5 moderate, 13 high), while production-only audit reports 0. Fresh merged ledger evidence: 7/7 checked tables RLS enabled; 22/22 user-facing policies reference `auth.uid()`; no checked anon/PUBLIC grants; upstream mapping remains service-role-only. Leaked-password protection remains disabled; main branch protection/rulesets remain absent.
+- **Do not overclaim:** PR #63 is a disclosure correction, not a fix for issue #47. Authenticated scoped POST/canary, finance CRUD/CSV/currency isolation, chart provenance, manual accessibility, legal publication facts, leaked-password protection, branch governance and full-tree dependency remediation remain open.
+
+
+## 2026-10-30 12:52 Asia/Manila — latest implementation follow-up
+
+- [PR #56](https://github.com/nasrinaiv0/movo/pull/56): added missing/blank upstream-key fail-closed guard and regression test. Exact-head CI [41004999162](https://github.com/nasrinaiv0/movo/actions/runs/41004999162): 18 suites / 104 tests, typecheck, production-only audit (0), build passed; Vercel preview READY/root 200. Authenticated scope canary still unverified; historical upstream 401 requires authorized credential remediation.
+- [PR #60](https://github.com/nasrinaiv0/movo/pull/60): added tests for disabled/explained unsupported settings and functional In-App Alerts. Exact-head CI [41005003149](https://github.com/nasrinaiv0/movo/actions/runs/41005003149): 20 suites / 113 tests, typecheck, `audit:controls`, production-only audit (0), build passed; Vercel preview READY/root 200.
+- Full dependency tree still has 34 findings (16 low, 5 moderate, 13 high); leaked-password protection, branch governance, legal publication facts, authenticated finance/chart checks, and manual accessibility remain open.
+- Detailed trace: `docs/engineering/updates/2026-10-30-1252-frontend-hardening.md`.
+
+
+## Fresh Supabase read-only security recheck — 2026-10-30 12:54 Asia/Manila
+
+- Catalog query: RLS is enabled on **7/7 checked public tables**: profiles, financial_accounts, transactions, budgets, movo_ai_conversations, movo_ai_messages, and movo_ai_upstream_conversations.
+- The six user-facing tables have **22 policies**; each checked policy expression references `auth.uid()`. The upstream mapping has no client policy.
+- `information_schema.role_table_grants` returned **73 grants** for `authenticated` and `service_role` across the checked tables, with **no `anon` or `PUBLIC` grants** in the checked set. The upstream mapping grants are limited to `service_role`; do not add a client policy/grant.
+- Fresh Security Advisor findings: `auth_leaked_password_protection` remains WARN (disabled); `rls_enabled_no_policy` for the server-only upstream mapping remains INFO and intentional. Performance Advisor reports seven unused indexes; no index was dropped without query evidence.
+- This was a read-only metadata/advisor check. No schema, RLS policy, grant, Auth setting, financial row, or secret was changed.
+
 ## PR #60 — currency-settings copy reconciliation — 2026-10-30 12:04 Asia/Manila
 
 - Removed the stale Settings claim that PHP is the only available currency, because PR #43 implements multi-currency accounts and a Display Currency selector.
@@ -130,7 +156,6 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Traceable commits: `4baa597637f9888be4698ee055dc43da775028fa`, `df85cae40c666b19d162e0747898e3da98194e48`, `110c5d79d7b5623972d71ada13883161f1ec2576`.
 - Detailed note: [currency settings copy reconciliation](engineering/updates/2026-10-30-1204-currency-settings-copy.md).
 - Exact-head CI, control audit, production build, and preview validation are pending. Keep PR #60 draft.
-
 
 ## Exact-head validation result — 2026-10-30 12:05 Asia/Manila
 
@@ -141,3 +166,14 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - The full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high); the production-only audit does not clear those development/build-tool findings.
 - **Still outstanding:** interactive keyboard/focus and screen-reader checks, responsive interactions, authenticated finance/CSV/currency verification, upstream MOVO-scope canary, legal publication details, and Supabase leaked-password protection. PR #60 remains draft.
 - No finance data logic, database schema/RLS/grants, Auth settings, production records, or secrets changed in this increment.
+
+## PR #60 — notification settings disabled-state verification — 2026-10-30 12:58 Asia/Manila
+
+- Current code/test head before reconciliation: `9c38028cbf3a11675f16db09d0fb41190fd5f71d`.
+- Added regression coverage for unsupported notification channels and demo-only notification categories. Push Notifications, Email Notifications, Account & Security, NasrinAI Updates, Promotions, and Reports must be disabled and have their visible reason linked through `aria-describedby`. In-App Alerts and Transactions category toggles remain functional.
+- Improved visible copy for demo-only categories so disabled-state explanations explicitly say that live delivery is not connected and only sample/demo alerts are available.
+- The first test attempt at `776b9af8d955f220406f48dbc7f573950ae89380` failed: **1 test failed / 113 passed** because the test expected a sample/demo explanation that the rendered description did not contain. The next source-only commit `02155f4501f56d8b7fa2fb79143af33730dc28a1` also failed while the assertion still expected the old text. The assertion was corrected in `9c38028cbf3a11675f16db09d0fb41190fd5f71d`; latest Vercel build logs confirm **20 suites / 114 tests passed**, `tsc --noEmit` passed, `audit:controls` ran, and the production bundle compiled successfully.
+- Exact-head preview [dpl_HGwfQSwmFiJ5j17MzDmoLKB2he4X](https://vercel.com/nasrin-ai/movo/HGwfQSwmFiJ5j17MzDmoLKB2he4X) is READY. Preview root and JS bundle returned HTTP 200; the bundle contains all four explicit sample/demo-only descriptions.
+- No GitHub Actions run was available for the exact head `9c38028` during this checkpoint. The preceding exact-head Actions run [41005003149](https://github.com/nasrinaiv0/movo/actions/runs/41005003149) passed **20 suites / 113 tests**, typecheck, `audit:controls`, production-only audit (0 vulnerabilities), and build at `f063cd5a1f4be085aac34f947816bfdffe2c8a82`. The dependency manifest is unchanged since that run, but the production-only audit was not independently rerun on `9c38028`. Full dependency-tree audit still reports 34 findings (16 low, 5 moderate, 13 high).
+- **Keep draft:** interactive keyboard/focus, screen-reader, responsive behavior, and authenticated finance/CSV/currency flows remain unverified. This PR is also being reconciled with current main's documentation-only merge.
+- No database schema, RLS/grants, Auth setting, financial records, provider secrets, or other repository were changed.
