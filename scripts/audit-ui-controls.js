@@ -14,6 +14,11 @@ const INTERACTIVE_ROLES = new Set([
   'button', 'link', 'tab', 'menuitem', 'switch', 'checkbox', 'radio',
   'option', 'menuitemcheckbox', 'menuitemradio', 'treeitem'
 ]);
+const CONTROL_TAGS = new Set(['button', 'a', 'form', 'input', 'select', 'textarea', 'option', 'summary']);
+const EVENT_HANDLER_ATTRIBUTES = [
+  'onClick', 'onSubmit', 'onKeyDown', 'onKeyUp', 'onKeyPress',
+  'onChange', 'onMouseDown', 'onPointerDown'
+];
 const ROLES_WITH_CHECKED_STATE = new Set([
   'switch', 'checkbox', 'radio', 'menuitemcheckbox', 'menuitemradio'
 ]);
@@ -60,6 +65,19 @@ function literalAttr(map, name) {
     return attr.initializer.expression.text;
   }
   return '';
+}
+
+function isObviousNoopHandler(attr) {
+  if (!attr?.initializer || !ts.isJsxExpression(attr.initializer)) return false;
+  const expression = attr.initializer.expression;
+  if (!expression || (!ts.isArrowFunction(expression) && !ts.isFunctionExpression(expression))) return false;
+  const body = expression.body;
+  if (ts.isBlock(body)) return body.statements.length === 0;
+  if (body.kind === ts.SyntaxKind.NullKeyword) return true;
+  if (ts.isIdentifier(body) && body.text === 'undefined') return true;
+  return ts.isVoidExpression(body)
+    && ts.isNumericLiteral(body.expression)
+    && body.expression.text === '0';
 }
 
 function literalTrue(map, name) {
@@ -109,6 +127,16 @@ function auditSourceText(text, fileName = 'fixture.jsx', state = createAuditStat
       const tag = tagName(node);
       const a = attrs(node);
       const where = location(source, node);
+      const role = literalAttr(a, 'role');
+      const disabledControl = a.has('disabled') || literalTrue(a, 'aria-disabled');
+
+      if (!disabledControl && (CONTROL_TAGS.has(tag) || INTERACTIVE_ROLES.has(role))) {
+        for (const handlerName of EVENT_HANDLER_ATTRIBUTES) {
+          if (isObviousNoopHandler(a.get(handlerName))) {
+            state.errors.push(where + ' ' + handlerName + ' is an empty/no-op inline handler.');
+          }
+        }
+      }
 
       if (tag === 'button') {
         state.counts.buttons += 1;
@@ -143,7 +171,6 @@ function auditSourceText(text, fileName = 'fixture.jsx', state = createAuditStat
         }
       }
 
-      const role = literalAttr(a, 'role');
       if (INTERACTIVE_ROLES.has(role)) {
         state.counts.ariaWidgets += 1;
         const disabled = a.has('disabled') || literalTrue(a, 'aria-disabled');
