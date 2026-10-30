@@ -8,7 +8,7 @@ This change upgrades MOVO's NasrinAI chat voice mode to use the authenticated Na
 - Audio is posted to the authenticated MOVO API route as a bounded base64 payload. The route verifies the user's Supabase bearer token, applies the existing consent requirement, validates MIME type and size, and forwards transient audio to NasrinAI's /v1/transcriptions endpoint using the server-only NASRINAI_API_KEY.
 - The MOVO API requests NasrinAI's streamed chat mode with a fixed allowlisted voice (openai:cedar) while hands-free mode is enabled.
 - The API parses NDJSON, extracts the final reply and bounded model-generated audio parts, then returns the normal MOVO reply plus those audio parts.
-- The browser queues generated audio parts for automatic playback. Mic OFF stops recording and playback; text chat remains unchanged.
+- The browser queues generated audio parts for automatic playback. Mic OFF stops recording and playback; sustained louder speech can interrupt TTS playback (barge-in); text chat remains unchanged.
 - No audio payloads, transcripts, financial context, or secrets are written to logs by the new path.
 
 ## Security and isolation boundaries
@@ -21,6 +21,8 @@ This change upgrades MOVO's NasrinAI chat voice mode to use the authenticated Na
 
 ## Verification status
 - Code committed to branch feat/model-backed-continuous-voice.
-- Automated CI, browser permission behavior, mobile Safari/Chrome recording, provider availability, end-to-end STT/TTS, interruption quality, and production behavior are not yet verified at the time this document was written.
+- Confirmed against NasrinAI source contract: `/v1/transcriptions` accepts raw audio bytes with MIME in `Content-Type` and filename in `name`; streamed `/v1/chat` emits NDJSON `audio` events and a final `done` event. The configured voice catalog includes `openai:cedar` when the OpenAI speech engine is available.
+- A source-level syntax defect in the voice request construction was corrected. The upstream response now has content-length and post-read size guards; STT filenames follow the accepted audio MIME type.
+- Automated CI, browser permission behavior, mobile Safari/Chrome recording, live provider availability, end-to-end STT/TTS, interruption quality, and production behavior are still not verified.
 - Do not merge or deploy until CI passes and the voice path is smoke-tested with a non-sensitive test prompt.
-- Known area for QA: browser microphone echo cancellation and VAD thresholds vary by device. To avoid feeding the assistant's own audio back into STT, capture/transcription is suppressed while model TTS is playing; true barge-in/interrupt-during-playback is not implemented yet. Verify natural turn-taking on iOS Safari and Android Chrome.
+- Known area for QA: browser microphone echo cancellation and VAD thresholds vary by device. Barge-in uses a sustained louder-input threshold while TTS plays to reduce speaker-echo interruptions; tune it only from real-device evidence. Verify natural turn-taking on iOS Safari and Android Chrome.
