@@ -334,3 +334,12 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - #60 head `43087d907be095ef42d8fbcd7b8d9b2cc6723662`: 20 suites / 111 tests; typecheck, `audit:controls`, production-only audit (0), build; preview READY/root 200. Manual accessibility gate open.
 - Fresh catalog: 7/7 checked tables RLS enabled; 22/22 policies on six user-facing tables reference `auth.uid()`; no checked anon/public grants; upstream mapping has no policies or authenticated grants and remains service-role-only.
 - Rechecked governance: main branch API says protected=false, required checks enforcement off, and repository rulesets list empty. Full dependency tree 34 findings (16 low, 5 moderate, 13 high); production-only audit zero. Leaked-password protection remains disabled. Legal publication warning remains.
+
+
+## PR #60 currency settings copy reconciliation — 2026-10-30 12:04 Asia/Manila
+
+- Removed an obsolete Settings row claiming only PHP is available; it conflicts with PR #43's multi-currency/display-currency implementation.
+- Added a regression test; removed a temporary placeholder object before validation.
+- Commits: `4baa597637f9888be4698ee055dc43da775028fa`, `df85cae40c666b19d162e0747898e3da98194e48`, `110c5d79d7b5623972d71ada13883161f1ec2576`.
+- Evidence: [currency settings copy reconciliation](updates/2026-10-30-1204-currency-settings-copy.md).
+- Exact final-head checks pending. No finance logic, database, Auth settings, production data, or secrets changed.
