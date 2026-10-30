@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import Settings, { ThemePicker, ThemeSheet } from './Settings';
+import Settings, { NotificationSettings, ThemePicker, ThemeSheet } from './Settings';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -179,6 +179,68 @@ describe('Unavailable settings controls', () => {
     expect(inAppToggle.disabled).toBe(false);
     act(() => inAppToggle.click());
     expect(context.setPref).toHaveBeenCalledWith('inapp', false);
+  });
+});
+
+describe('Notification settings controls', () => {
+  let container;
+  let root;
+  let context;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    context = makeContext(false);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    if (root) act(() => root.unmount());
+    container.remove();
+    root = null;
+  });
+
+  test('unavailable channels and demo-only categories are disabled with explanations', () => {
+    act(() => root.render(<NotificationSettings c={context} />));
+
+    const unavailable = [
+      ['Push Notifications', 'Push delivery is not available in this web build'],
+      ['Email Notifications', 'Email delivery is not connected yet'],
+      ['Account & Security', 'only generated for sample/demo data'],
+      ['NasrinAI Updates', 'only generated for sample/demo data'],
+      ['Promotions', 'only sample/demo data'],
+      ['Reports', 'only generated for sample/demo data'],
+    ];
+
+    unavailable.forEach(([title, explanation]) => {
+      const row = Array.from(container.querySelectorAll('.menu-row'))
+        .find(item => item.querySelector('strong')?.textContent === title);
+      expect(row).toBeTruthy();
+      const toggle = row.querySelector('[role="switch"]');
+      expect(toggle).toBeTruthy();
+      expect(toggle.disabled).toBe(true);
+      expect(toggle.getAttribute('aria-disabled')).toBe('true');
+      const descriptionId = toggle.getAttribute('aria-describedby');
+      expect(descriptionId).toBeTruthy();
+      expect(document.getElementById(descriptionId)?.textContent).toContain(explanation);
+      act(() => toggle.click());
+    });
+
+    expect(context.setPref).not.toHaveBeenCalled();
+
+    const inAppRow = Array.from(container.querySelectorAll('.menu-row'))
+      .find(item => item.querySelector('strong')?.textContent === 'In-App Alerts');
+    const inAppToggle = inAppRow.querySelector('[role="switch"]');
+    expect(inAppToggle.disabled).toBe(false);
+    act(() => inAppToggle.click());
+    expect(context.setPref).toHaveBeenCalledWith('inapp', false);
+
+    const transactionsRow = Array.from(container.querySelectorAll('.menu-row'))
+      .find(item => item.querySelector('strong')?.textContent === 'Transactions');
+    const transactionsToggle = transactionsRow.querySelector('[role="switch"]');
+    expect(transactionsToggle.disabled).toBe(false);
+    act(() => transactionsToggle.click());
+    expect(context.setPref).toHaveBeenCalledWith('catTransactions', false);
   });
 });
 
