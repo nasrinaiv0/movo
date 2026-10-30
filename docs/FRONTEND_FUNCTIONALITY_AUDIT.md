@@ -193,3 +193,13 @@
 - This does not resolve the full dependency tree's 34 reported findings (16 low, 5 moderate, 13 high). Production-only audit success is not a full dependency-tree clearance.
 - Remaining gates: authenticated financial writes, CSV import/export, and real user-owned currency-isolation verification. No Supabase schema/RLS/grants, production data, auth configuration, or provider secrets changed.
 - This audit update is documentation-only; rerun exact-head CI and preview checks on the resulting branch head before merge.
+
+
+## Strict CSV quote validation — 2026-10-30 11:58 Asia/Manila
+
+- Found that the CSV parser accepted malformed quoting by toggling quote state without validating field boundaries. This could misinterpret a bank-export row during a financial import.
+- Updated `src/lib/csvImport.js` to track quoted and post-quote states. Quotes inside unquoted values and non-whitespace characters after closing quotes now fail with explicit errors. Escaped quotes, quoted line breaks, CRLF/LF, BOM removal, and harmless separator whitespace remain supported.
+- Added parser regression tests for malformed quote sequences and supported whitespace/newline behavior in `src/lib/csvImport.test.js`.
+- Traceable implementation/test commits: `b4cc1ced75c898917e24073ec3098cc3b61e1834`, `c123b25904cd84ed6d6359bce5427ebe6f7064cf`. Detailed note: [strict CSV quote validation](engineering/updates/2026-10-30-1158-strict-csv-quoting.md).
+- **Validation status at documentation time:** exact final-head typecheck, full test suite, production build, and preview are pending. No passing result is claimed until an exact-head result confirms it.
+- No database schema/RLS/grants, Auth settings, production financial records, or secrets changed. PR #43 remains draft pending automated validation and live authenticated finance/CSV/currency verification.
