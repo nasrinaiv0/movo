@@ -20,9 +20,10 @@ The CSV importer previously removed every comma, currency symbol, and whitespace
 - This change record and the master change ledger.
 
 ## Validation status
-- Source and regression tests have been committed to the PR branch.
-- **Fresh exact-head GitHub Actions, typecheck, full test suite, production build, production dependency audit, and Vercel preview results are pending at the time of this record.** Do not treat previous PR #43 results as validation of this change.
-- After CI completes, append the exact head SHA, run URL, test totals, audit result, and preview deployment status here. If a check fails, preserve the failure and correct it before claiming success.
+- Exact-head GitHub Actions run [41007544994](https://github.com/nasrinaiv0/movo/actions/runs/41007544994) passed on source/test head `fb7f018de8446d9a63a95bb70a5b61970a68e00f`.
+- Confirmed: **20 test suites / 127 tests passed**, TypeScript typecheck passed, `npm audit --omit=dev` reported **0 vulnerabilities**, and production compilation succeeded.
+- Exact-head Vercel deployment [2AMQcgkT9x89gd1C6HYa8NpoUykH](https://vercel.com/nasrin-ai/movo/2AMQcgkT9x89gd1C6HYa8NpoUykH) reached **READY**.
+- The source/test head above was fully validated. A subsequent documentation-only follow-up updates this evidence record and the handoff files; verify the final documentation head's CI before merge, and do not infer a pass for a new head from an older run.
 
 ## Security and limitations
 - No database schema, financial records, Supabase RLS/grants, authentication settings, deployment variables, or provider secrets were changed.
