@@ -10,7 +10,7 @@ The scanner checks for:
 - Native buttons without a click/keyboard action, an associated handled submit form, or an explicit disabled state.
 - Anchors without an `href` or click action, and literal placeholder links (`href="#"` or `javascript:`) without a click handler.
 - Forms without an `onSubmit` handler or native `action`.
-- Enabled controls with obviously empty inline event handlers (for example, `onClick={() => {}}`, `onClick={() => undefined`, or `onClick={() => null`); named or non-empty callbacks still require functional review.
+- Enabled controls with obviously empty inline event handlers (for example, `onClick={() => {}}`, `onClick={() => undefined}`, or `onClick={() => null}`); named or non-empty callbacks still require functional review.
 - Non-native interactive ARIA roles (button, link, tab, menuitem, switch, checkbox, radio, option, menuitemcheckbox, menuitemradio, and treeitem) without both click and keyboard handlers, unless disabled.
 - Tabs without explicit `aria-selected` state.
 - Switch/checkbox/radio roles without explicit checked state, and options without selected state.
@@ -55,3 +55,12 @@ The frontend is not declared complete by this static check. Legal publication st
 - GitHub Actions run [40972518116](https://github.com/nasrinaiv0/movo/actions/runs/40972518116) passed **18 suites / 102 tests**, TypeScript typecheck, the control audit, and production compilation. The audit output reported no obvious unhandled controls and no disabled-control explanation warnings.
 - Vercel status for that exact code/test head is success: [deployment details](https://vercel.com/nasrin-ai/movo/GAP7WjRzb2AbgYTXD2EKAa6tewXA).
 - This confirms static analysis and automated tests only. Manual browser, keyboard, screen-reader, mobile, and authenticated finance-flow verification remain required. The legal publication and production NasrinAI isolation gates remain separate.
+
+
+## No-op handler detection — 2026-10-30
+
+- Extended the TypeScript-AST scanner to flag obviously empty inline handlers on enabled native controls and interactive ARIA widgets: empty function bodies, and expression bodies that return `undefined`, `null`, or `void 0`.
+- This closes a gap in the previous check, which accepted a present `onClick` even if it did nothing. The scanner still cannot prove that a non-empty or named callback performs the correct business action; those controls require functional tests and human review.
+- Added a regression test for an empty enabled button handler and changed positive fixtures to use meaningful callback expressions.
+- Source commit: `d3aa9e67fcbce78b9241458c9643b993fa74cb17`; test commit: `1a5e5db14cccc14b22a339255bfd9f8cf937ce2c`.
+- The documentation correction is the current change in this section. Fresh CI, audit output, and preview validation for the resulting branch head are required before treating this enhancement as validated.
