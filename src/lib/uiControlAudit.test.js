@@ -24,6 +24,9 @@ describe('UI control audit', () => {
 
     const disabled = scan('<button type="button" disabled title="Unavailable" onClick={() => {}}>Save</button>');
     expect(disabled.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(false);
+
+    const ariaDisabled = scan('<button type="button" disabled={false} aria-disabled={true} title="Unavailable" onClick={() => {}}>Save</button>');
+    expect(ariaDisabled.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(false);
   });
 
   test('requires custom ARIA tabs to expose selection and keyboard behavior', () => {

@@ -71,10 +71,8 @@ function isStaticallyDisabled(map) {
   const disabled = map.get('disabled');
   if (disabled) {
     if (!disabled.initializer) return true;
-    if (ts.isJsxExpression(disabled.initializer) && disabled.initializer.expression) {
-      if (disabled.initializer.expression.kind === ts.SyntaxKind.TrueKeyword) return true;
-      if (disabled.initializer.expression.kind === ts.SyntaxKind.FalseKeyword) return false;
-    }
+    if (ts.isJsxExpression(disabled.initializer) && disabled.initializer.expression
+      && disabled.initializer.expression.kind === ts.SyntaxKind.TrueKeyword) return true;
   }
   const ariaDisabled = map.get('aria-disabled');
   if (ariaDisabled && !ariaDisabled.initializer) return true;

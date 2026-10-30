@@ -92,3 +92,6 @@ The frontend is not declared complete by this static check. Legal publication st
 - The no-op callback detector skips a control only when it is statically disabled (`disabled` shorthand/literal `true`, or `aria-disabled=true`).
 - `disabled={false}` and dynamic expressions such as `disabled={isSaving}` are still audited for empty callbacks because they may be interactive at runtime. Disabled-state explanation checks remain separate and continue to require a visible or accessible reason when the control declares a disabled state.
 - Regression coverage includes conditional, explicitly enabled, and statically disabled button cases. Fresh exact-head CI and preview checks are required for this scanner refinement.
+
+
+- Follow-up edge case: explicit `aria-disabled=true` is respected even when a separate `disabled={false}` prop is present. The regression fixture covers this combined state so the no-op scan does not misclassify it as enabled.
