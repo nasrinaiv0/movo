@@ -266,6 +266,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const sendRef = useRef(null);
   const audioQueueRef = useRef([]);
   const audioPlayingRef = useRef(false);
+  const currentAudioRef = useRef(null);
+  const loudFramesRef = useRef(0);
   const streamRef = useRef(null);
   const recorderRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -293,9 +295,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
         const url = URL.createObjectURL(new Blob([bytes], { type: part.mime || 'audio/mpeg' }));
         const audio = new Audio(url);
-        audio.onended = () => { URL.revokeObjectURL(url); playNext(); };
-        audio.onerror = () => { URL.revokeObjectURL(url); playNext(); };
-        audio.play().catch(() => { URL.revokeObjectURL(url); audioPlayingRef.current = false; });
+        currentAudioRef.current = audio;
+        audio.onended = () => { URL.revokeObjectURL(url); if (currentAudioRef.current === audio) currentAudioRef.current = null; playNext(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); if (currentAudioRef.current === audio) currentAudioRef.current = null; playNext(); };
+        audio.play().catch(() => { URL.revokeObjectURL(url); if (currentAudioRef.current === audio) currentAudioRef.current = null; audioPlayingRef.current = false; });
       } catch { audioPlayingRef.current = false; }
     };
     playNext();
@@ -327,6 +330,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     audioContextRef.current = null;
     audioQueueRef.current = [];
     pendingVoiceTextsRef.current = [];
+    try { currentAudioRef.current?.pause?.(); } catch { /* already stopped */ }
+    currentAudioRef.current = null;
     audioPlayingRef.current = false;
     window.speechSynthesis?.cancel();
     spokenRef.current = '';
@@ -415,7 +420,20 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         for (let i = 0; i < samples.length; i += 1) { const v = (samples[i] - 128) / 128; sum += v * v; }
         const rms = Math.sqrt(sum / samples.length);
         const now = Date.now();
-        if (rms > 0.045 && !audioPlayingRef.current) {
+        // A short burst during TTS may be speaker echo. Require sustained, louder
+        // input before treating it as barge-in; then stop playback immediately.
+        if (audioPlayingRef.current) {
+          loudFramesRef.current = rms > 0.095 ? loudFramesRef.current + 1 : 0;
+          if (loudFramesRef.current >= 5) {
+            audioQueueRef.current = [];
+            try { currentAudioRef.current?.pause?.(); } catch { /* already ended */ }
+            currentAudioRef.current = null;
+            audioPlayingRef.current = false;
+            loudFramesRef.current = 0;
+            heardSpeechRef.current = true;
+            lastVoiceAtRef.current = now;
+          }
+        } else if (rms > 0.045) {
           heardSpeechRef.current = true; lastVoiceAtRef.current = now;
           window.speechSynthesis?.cancel();
         }
