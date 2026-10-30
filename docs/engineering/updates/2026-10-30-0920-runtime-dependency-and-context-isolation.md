@@ -62,3 +62,8 @@
 - Production: https://vercel.com/nasrin-ai/movo/6tmjn2FNfCFEpwCessZcjE2ibBjq
 - PR #56 preview: https://vercel.com/nasrin-ai/movo/BFQWqa1kAJu8mCpqMs3btR9j9ydj
 - Earlier failed preview: https://vercel.com/nasrin-ai/movo/HWUUacvCA1uVFR3u6xJdWX75dRVT
+
+
+## Documentation PR and validation boundary
+
+This audit is proposed in [MOVO documentation PR #58](https://github.com/nasrinaiv0/movo/pull/58), based on current main. It remains open/draft; final-head CI and Documentation Gate are not claimed passed until observed on that exact head.
