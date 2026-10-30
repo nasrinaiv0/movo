@@ -196,7 +196,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const ask = () => fetch('/api/nasrinai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
-        body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code })
+        body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code, voiceMode: voiceRef.current })
       });
       let response = await ask();
       let result = await response.json().catch(() => ({}));
@@ -212,7 +212,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setNewConversationPending(false);
       try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
-      say(result.reply);
+      say(result.reply, result.audioParts);
     } catch (cause) {
       if (!isCurrentRequest()) return;
       setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
@@ -250,55 +250,190 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   const append = (text) => setDraft((cur) => `${cur ? `${cur.trimEnd()}\n` : ''}${text}`.slice(0, MAX));
 
-  /* Voice conversation: the mic keeps listening, each finished sentence is sent on its own, replies are read aloud,
-     and speaking over a reply interrupts it. Speech recognition and speech output are provided by the browser. */
+  /* Hands-free voice uses NasrinAI's model-backed STT and TTS through the
+     authenticated MOVO proxy. Audio stays transient; no provider key reaches the browser. */
   const voiceRef = useRef(false);
   const spokenRef = useRef('');
   const sendRef = useRef(null);
+  const audioQueueRef = useRef([]);
+  const audioPlayingRef = useRef(false);
+  const streamRef = useRef(null);
+  const recorderRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const frameRef = useRef(null);
+  const heardSpeechRef = useRef(false);
+  const lastVoiceAtRef = useRef(0);
+  const transcribingRef = useRef(false);
   sendRef.current = send;
   const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_#>`|]/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\s+/g, ' ').trim();
-  function say(text) {
+
+  const playVoiceParts = (parts) => {
+    if (!Array.isArray(parts) || !parts.length) return false;
+    audioQueueRef.current = parts.slice(0, 100);
+    audioPlayingRef.current = true;
+    const playNext = () => {
+      if (!voiceRef.current || !audioQueueRef.current.length) {
+        audioPlayingRef.current = false; spokenRef.current = '';
+        return;
+      }
+      const part = audioQueueRef.current.shift();
+      try {
+        const binary = atob(part.data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: part.mime || 'audio/mpeg' }));
+        const audio = new Audio(url);
+        audio.onended = () => { URL.revokeObjectURL(url); playNext(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); playNext(); };
+        audio.play().catch(() => { URL.revokeObjectURL(url); audioPlayingRef.current = false; });
+      } catch { audioPlayingRef.current = false; }
+    };
+    playNext();
+    return true;
+  };
+
+  function say(text, audioParts) {
+    if (!voiceRef.current) return;
+    spokenRef.current = plain(text).toLowerCase().slice(0, 1200);
+    if (audioParts?.length && playVoiceParts(audioParts)) return;
     const synth = window.speechSynthesis;
-    if (!voiceRef.current || !synth || typeof SpeechSynthesisUtterance === 'undefined') return;
+    if (!synth || typeof SpeechSynthesisUtterance === 'undefined') return;
     const words = plain(text).slice(0, 600); if (!words) return;
-    synth.cancel(); spokenRef.current = words.toLowerCase();
+    synth.cancel();
     const u = new SpeechSynthesisUtterance(words); u.lang = navigator.language || 'en-US';
     u.onend = () => { spokenRef.current = ''; }; u.onerror = () => { spokenRef.current = ''; };
     synth.speak(u);
   }
-  // The device may hear its own voice: a "sentence" that is mostly words of the reply being read is ignored.
-  const isEcho = (heard) => {
-    const spoken = spokenRef.current; if (!spoken) return false;
-    const w = heard.toLowerCase().split(/\s+/).filter(Boolean); if (!w.length) return true;
-    return w.filter(x => spoken.includes(x)).length / w.length >= 0.7;
-  };
+
   const stopVoice = () => {
     voiceRef.current = false; setListening(false);
-    try { recognition.current?.abort?.(); } catch { /* already stopped */ }
-    window.speechSynthesis?.cancel(); spokenRef.current = '';
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    try { recorderRef.current?.stop?.(); } catch { /* already stopped */ }
+    recorderRef.current = null;
+    streamRef.current?.getTracks?.().forEach((track) => track.stop());
+    streamRef.current = null;
+    audioContextRef.current?.close?.().catch(() => {});
+    audioContextRef.current = null;
+    audioQueueRef.current = [];
+    audioPlayingRef.current = false;
+    window.speechSynthesis?.cancel();
+    spokenRef.current = '';
   };
-  const startVoice = () => {
-    const rec = new SpeechRecognition(); recognition.current = rec;
-    rec.lang = navigator.language || 'en-US'; rec.interimResults = true; rec.continuous = true;
-    rec.onresult = (e) => {
-      let interim = ''; let final = '';
-      for (let i = e.resultIndex; i < e.results.length; i += 1) { const r = e.results[i]; if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript; }
-      const talking = !!window.speechSynthesis?.speaking;
-      if (talking && (final || interim) && !isEcho(final || interim)) { window.speechSynthesis.cancel(); spokenRef.current = ''; }
-      if (interim) setDraft(interim.slice(0, MAX));
-      if (final.trim() && !(talking && isEcho(final))) { setDraft(''); sendRef.current?.(null, final.trim()); }
-    };
-    rec.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { setError(tr('Allow microphone access to talk with NasrinAI.')); stopVoice(); } };
-    // Browsers end recognition after a pause; keep the conversation going until the person turns the mic off.
-    rec.onend = () => { if (voiceRef.current) setTimeout(() => { if (voiceRef.current) { try { rec.start(); } catch { /* restarting */ } } }, 250); else setListening(false); };
-    try { rec.start(); } catch { /* already listening */ }
+
+  const transcribeSegment = async (blob) => {
+    if (!blob || blob.size < 120 || blob.size > 2_400_000 || transcribingRef.current || !voiceRef.current) return;
+    transcribingRef.current = true;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token || session?.access_token;
+      if (!token || !voiceRef.current) return;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let binary = '';
+      for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+      const response = await fetch('/api/nasrinai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ action: 'transcribe', audioBase64: btoa(binary), mime: blob.type || 'audio/webm', consent: privacyAccepted })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'transcription_unavailable');
+      const text = String(result.text || '').trim();
+      if (text && voiceRef.current) {
+        const spoken = spokenRef.current;
+        const heard = text.toLowerCase().split(/\s+/).filter(Boolean);
+        const echo = spoken && heard.length && heard.filter(word => spoken.includes(word)).length / heard.length >= 0.7;
+        if (!echo) {
+          audioQueueRef.current = [];
+          window.speechSynthesis?.cancel();
+          sendRef.current?.(null, text);
+        }
+      }
+    } catch {
+      if (voiceRef.current) setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
+    } finally { transcribingRef.current = false; }
   };
+
+  const startVoice = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      if (!voiceRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
+      streamRef.current = stream;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass || typeof MediaRecorder === 'undefined') throw new Error('voice_not_supported');
+      const context = new AudioContextClass();
+      audioContextRef.current = context;
+      await context.resume();
+      const source = context.createMediaStreamSource(stream);
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 1024; source.connect(analyser);
+      const samples = new Uint8Array(analyser.fftSize);
+      let recorder = null;
+      let chunks = [];
+      let segmentStart = 0;
+      const beginSegment = () => {
+        if (!voiceRef.current || recorder?.state === 'recording') return;
+        const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+        try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+        catch { recorder = new MediaRecorder(stream); }
+        chunks = []; segmentStart = Date.now();
+        recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          if (heardSpeechRef.current) transcribeSegment(blob);
+          heardSpeechRef.current = false;
+        };
+        recorder.start();
+        recorderRef.current = recorder;
+      };
+      beginSegment();
+      const detect = () => {
+        if (!voiceRef.current) return;
+        analyser.getByteTimeDomainData(samples);
+        let sum = 0;
+        for (let i = 0; i < samples.length; i += 1) { const v = (samples[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / samples.length);
+        const now = Date.now();
+        if (rms > 0.035 && !audioPlayingRef.current) {
+          heardSpeechRef.current = true; lastVoiceAtRef.current = now;
+          audioQueueRef.current = [];
+          window.speechSynthesis?.cancel();
+        }
+        if (heardSpeechRef.current && (now - lastVoiceAtRef.current > 950 || now - segmentStart > 12000)) {
+          if (recorder?.state === 'recording') recorder.stop();
+          if (voiceRef.current) beginSegment();
+        }
+        frameRef.current = requestAnimationFrame(detect);
+      };
+      frameRef.current = requestAnimationFrame(detect);
+    } catch {
+      setError(tr('Allow microphone access and use a browser that supports audio recording to talk with NasrinAI.'));
+      stopVoice();
+    }
+  };
+
   const toggleMic = () => {
     if (voiceRef.current) { stopVoice(); return; }
-    if (!SpeechRecognition) { setError(tr('Voice input is not supported in this browser.')); return; }
-    setError(''); voiceRef.current = true; setListening(true); startVoice();
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      setError(tr('Model-backed voice input is not supported in this browser.'));
+      return;
+    }
+    if (!session?.user || !cloudMode || !privacyAccepted) {
+      if (!privacyAccepted) setConsentOpen(true);
+      else setError(tr('Sign in to MOVO to use voice chat.'));
+      return;
+    }
+    setError(''); voiceRef.current = true; setListening(true);
+    startVoice();
   };
-  useEffect(() => () => { voiceRef.current = false; recognition.current?.abort?.(); window.speechSynthesis?.cancel(); }, []);
+  useEffect(() => () => {
+    voiceRef.current = false;
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    try { recorderRef.current?.stop?.(); } catch { /* cleanup */ }
+    streamRef.current?.getTracks?.().forEach(track => track.stop());
+    audioContextRef.current?.close?.().catch(() => {});
+    window.speechSynthesis?.cancel();
+  }, []);
 
   const speak = (text, index) => {
     const synth = window.speechSynthesis; if (!synth) return;
