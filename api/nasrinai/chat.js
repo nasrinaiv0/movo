@@ -355,7 +355,8 @@ module.exports = async function handler(req, res) {
     // current question and bounded finance context through its enforced MOVO
     // scope, with no prior provider conversation history.
     const voiceMode = req.body?.voiceMode === true;
-    const upstreamBody = buildUpstreamBody(message, context);\n    if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
+    const upstreamBody = buildUpstreamBody(message, context);
+    if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
     const upstreamStartedAt = Date.now();
     let upstream;
     let responseText = '';
