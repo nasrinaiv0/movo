@@ -69,23 +69,11 @@ function Row({ icon, title, sub, right, onClick, chevron = true, danger, status 
 
 export default function Settings({ c }) {
   const { prefs, setPref, go, query, setQuery } = c;
-  const displayCurrency = /^[A-Z]{3}$/.test(c.displayCurrency || prefs.displayCurrency || '')
-    ? (c.displayCurrency || prefs.displayCurrency) : 'PHP';
-  const currencies = Array.from(new Set([
-    ...(Array.isArray(c.availableCurrencies) ? c.availableCurrencies : []),
-    displayCurrency,
-  ].filter(currency => typeof currency === 'string' && /^[A-Z]{3}$/.test(currency)))).sort();
-  const currencyDescription = currencies.length > 1
-    ? 'Choose which currency to summarize. MOVO keeps currencies separate and does not convert them automatically.'
-    : `Only ${displayCurrency} records are available. Add or import a record in another currency to add choices; no conversion is applied.`;
   const sections = [
     { title: 'Account', rows: [
       { icon: 'user', title: 'Profile', sub: 'Personal information', onClick: () => go('EditProfile') },
       { icon: 'database', title: 'Plan & Usage', sub: 'Billing and token usage are not connected in this build.', status: 'Unavailable' },
       { icon: 'layout', title: 'Connected Accounts', sub: 'Manually tracked accounts; no bank connection is active.', onClick: () => go('Wallet') },
-    ] },
-    { title: 'Preferences', rows: [
-      { icon: 'coin', title: 'Display Currency', sub: currencyDescription, currency: true },
     ] },
     { title: 'Appearance', rows: [
       { icon: 'palette', title: 'Theme', sub: 'Light, Dark or Custom', onClick: () => go('Appearance') },
@@ -123,21 +111,22 @@ export default function Settings({ c }) {
     <SubHeader title="Settings" onBack={() => go('Profile')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label="Search settings" placeholder="Search settings" value={query} onChange={e => setQuery(e.target.value)} /></label>
     {shown.map(s => <section key={s.title}><h2 className="group-title">{s.title}</h2>
-      <div className="card menu-card">{s.rows.map(r => r.currency ? (
-        <div key={r.title} className="menu-row">
-          <span className="menu-icon bare"><Icon name={r.icon} size={20} /></span>
-          <span className="menu-main"><strong>{r.title}</strong><small id={settingDescriptionId(r.title)}>{r.sub}</small></span>
-          <select className="setting-select" aria-label={r.title} aria-describedby={settingDescriptionId(r.title)} value={displayCurrency} disabled={currencies.length < 2} onChange={e => setPref('displayCurrency', e.target.value)}>
-            {currencies.map(currency => <option key={currency} value={currency}>{currency}</option>)}
-          </select>
-        </div>
-      ) : <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={!['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) && prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
+      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={!['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) && prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
     {!shown.length && <p className="empty">No settings match “{query}”.</p>}
   </>;
 }
 
 export function Appearance({ c }) {
   const { prefs, setPref, go } = c;
+  const displayCurrency = /^[A-Z]{3}$/.test(c.displayCurrency || prefs.displayCurrency || '')
+    ? (c.displayCurrency || prefs.displayCurrency) : 'PHP';
+  const currencies = Array.from(new Set([
+    ...(Array.isArray(c.availableCurrencies) ? c.availableCurrencies : []),
+    displayCurrency,
+  ].filter(currency => typeof currency === 'string' && /^[A-Z]{3}$/.test(currency)))).sort();
+  const currencyDescription = currencies.length > 1
+    ? 'Summary totals, Wallet accounts, and transaction lists show one currency at a time. MOVO does not convert currencies; other records remain stored.'
+    : `Only ${displayCurrency} records are available. Add or import a record in another currency to add choices; no conversion is applied.`;
   return <>
     <SubHeader title="Appearance" onBack={() => go('Settings')} />
     <h2 className="group-title">Theme</h2>
@@ -161,9 +150,9 @@ export function Appearance({ c }) {
       <Row icon="calendar" title="Date Format" sub="Oct 27, 2026 is the only available format." />
       <div className="menu-row currency-setting">
         <span className="menu-icon bare"><Icon name="coin" size={20} /></span>
-        <span className="menu-main"><strong>Display Currency</strong><small id="setting-display-currency-description">Summary totals, Wallet accounts, and transaction lists show one currency at a time. MOVO does not convert currencies; other records remain stored.</small></span>
-        <select className="setting-select" aria-label="Display currency" aria-describedby="setting-display-currency-description" value={prefs.displayCurrency || 'PHP'} onChange={event => setPref('displayCurrency', event.target.value)}>
-          {(c.availableCurrencies || ['PHP']).map(currency => <option key={currency} value={currency}>{currency}</option>)}
+        <span className="menu-main"><strong>Display Currency</strong><small id="setting-display-currency-description">{currencyDescription}</small></span>
+        <select className="setting-select" aria-label="Display Currency" aria-describedby="setting-display-currency-description" value={displayCurrency} disabled={currencies.length < 2} onChange={event => setPref('displayCurrency', event.target.value)}>
+          {currencies.map(currency => <option key={currency} value={currency}>{currency}</option>)}
         </select>
       </div>
     </section>

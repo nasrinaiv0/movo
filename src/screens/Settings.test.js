@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import Settings from './Settings';
+import Settings, { Appearance } from './Settings';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -97,7 +97,7 @@ describe('Display Currency setting semantics', () => {
   });
 
   test('selecting a currency updates the preference and explains that currencies are not converted', () => {
-    act(() => root.render(<Settings c={context} />));
+    act(() => root.render(<Appearance c={context} />));
     const select = container.querySelector('select[aria-label="Display Currency"]');
     expect(select).toBeTruthy();
     expect(select.value).toBe('PHP');
@@ -115,7 +115,7 @@ describe('Display Currency setting semantics', () => {
   test('currency selector is disabled with an explanation when only one currency is available', () => {
     context.availableCurrencies = ['PHP'];
     context.displayCurrency = 'PHP';
-    act(() => root.render(<Settings c={context} />));
+    act(() => root.render(<Appearance c={context} />));
     const select = container.querySelector('select[aria-label="Display Currency"]');
     expect(select).toBeTruthy();
     expect(select.disabled).toBe(true);
