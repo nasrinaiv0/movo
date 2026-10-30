@@ -1582,3 +1582,24 @@ button.account-tile:active { transform: scale(.98); }
 .sub-icon.has-mark svg { display: block; }
 .catalog-group { margin: 14px 4px 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .brand-notice { margin: 14px 4px 0; font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+/* ---------- Dark mode palette: neutral true-black greys (owner reference) ----------
+   page #0f0f0f · surfaces #1c1c1e · raised #2c2c2e · hairlines ≈ #353537 · secondary text #8e8e93. */
+.movo-app.theme-dark {
+  --bg: #0f0f0f; --bg-grad: none;
+  --card: #1c1c1e; --card-solid: #1c1c1e; --text: #ffffff; --muted: #8e8e93; --line: rgba(255,255,255,.1);
+  --shadow: none; --shadow-sm: none;
+  --green: #30d158; --green-bg: rgba(48,209,88,.14); --red: #ff453a; --red-bg: rgba(255,69,58,.14);
+  --nav-bg: rgba(28,28,30,.96); --nav-active: #fff; --nav-muted: #8e8e93; --chip-bg: #1c1c1e;
+  --sheet-bg: #1c1c1e; --overlay: rgba(0,0,0,.6); --field: #2c2c2e;
+  --glass-tint: 28,28,30; --glass-ink: 0,0,0;
+}
+.movo-app.theme-dark .nav-pill { background: #2c2c2e; box-shadow: none; }
+.movo-app.theme-dark .bottom-nav { box-shadow: 0 10px 30px rgba(0,0,0,.55), 0 0 0 1px var(--line); }
+/* With Liquid Glass on, dark surfaces stay close to #1c1c1e; the clarity slider still lets more of the page through. */
+.movo-app.theme-dark.glass-on :is(.card, .round-button, .chip-row button, .month-pill, .account-row, .sheet-card, .search-field, .theme-segments button, .quick-actions span, .nav-preview) {
+  background-color: rgba(28,28,30, min(1, calc(var(--glass-fill) + .6)));
+  border-color: rgba(255,255,255,.07);
+  box-shadow: none;
+}
+.movo-app.theme-dark.glass-on .bottom-nav { background-color: rgba(28,28,30, min(1, calc(var(--glass-fill) + .6))); border-color: rgba(255,255,255,.08); box-shadow: 0 10px 30px rgba(0,0,0,.55); }
