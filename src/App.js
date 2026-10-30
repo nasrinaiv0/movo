@@ -338,8 +338,9 @@ function App() {
   const markAllRead = () => setPref('readIds', Array.from(new Set([...prefs.readIds, ...allNotifications.map(n => n.id)])));
 
   const metaName = session?.user?.user_metadata?.full_name;
-  const email = session?.user?.email || (samplesOn ? 'nasrin@nasrinai.com' : 'Local-only session');
-  const name = prefs.profileName.trim() || metaName || (session?.user?.email ? session.user.email.split('@')[0] : 'Nasrin Abubakar');
+  const email = session?.user?.email || (samplesOn ? 'demo@example.com' : 'Local-only session');
+  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : samplesOn ? 'Demo User' : 'Local User';
+  const name = prefs.profileName.trim() || metaName || defaultName;
   const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
 
   /* ---------- actions ---------- */
@@ -652,6 +653,10 @@ function App() {
   return <div className={rootClass} style={rootStyle}>
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
+        {!cloudMode && samplesOn && !['Sign in', 'TermsOfService', 'PrivacyPolicy'].includes(view) && <aside className="sample-data-notice" role="note" aria-label="Sample data notice">
+          <div><strong>Demo mode — sample data only.</strong><span>These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.</span></div>
+          <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>Sign in</button>
+        </aside>}
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? 'Local-only records were not saved before cloud sign-in.' : 'Local changes may not be saved.'}</strong> {cloudMode && pendingLocalDataRef.current ? 'These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.' : 'Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.'}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>Retry save</button>

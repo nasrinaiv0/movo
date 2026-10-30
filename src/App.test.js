@@ -55,7 +55,7 @@ describe('MOVO finance frontend', () => {
   afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
 
   test('renders the home dashboard from the design: balance, summary, spending and recent activity', () => {
-    expect(container.querySelector('h1').textContent).toContain('Nasrin');
+    expect(container.querySelector('h1').textContent).toContain('Demo');
     expect(container.textContent).toContain('₱171,100.00');
     expect(container.querySelector('[aria-label="Financial summary"]')).not.toBeNull();
     expect(container.textContent).toContain('₱85,000');
@@ -70,6 +70,24 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Recent Transactions');
     ['Food', 'Shopping', 'Bills', 'Transportation', 'Others'].forEach(label => expect(container.textContent).toContain(label));
     expect(container.querySelectorAll('.bottom-nav .nav-item')).toHaveLength(5);
+  });
+
+  test('labels unauthenticated financial examples and uses a generic demo identity', () => {
+    const notice = container.querySelector('[aria-label="Sample data notice"]');
+    expect(notice).not.toBeNull();
+    expect(notice.textContent).toContain('fictional');
+    expect(notice.textContent).toContain('not linked to a bank');
+    expect(container.querySelector('h1').textContent).toContain('Demo');
+    expect(container.textContent).not.toContain('nasrin@nasrinai.com');
+    expect(container.textContent).not.toContain('Nasrin Abubakar');
+  });
+
+  test('sample-data notice sign-in action opens the consent-aware sign-in screen', () => {
+    clickButton(container, 'Sign in');
+    expect(container.querySelector('form')).not.toBeNull();
+    expect(container.textContent).toContain('Terms of Service');
+    expect(container.textContent).toContain('Privacy Policy');
+    expect(container.querySelector('[aria-label="Sample data notice"]')).toBeNull();
   });
 
   test('privacy toggle hides displayed balances', () => {

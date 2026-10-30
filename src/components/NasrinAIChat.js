@@ -1,4 +1,5 @@
 import Icon, { NasrinMark } from './Icon';
+import NasrinAIMessage from './NasrinAIMessage';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import './NasrinAIChat.css';
@@ -140,7 +141,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       </div>}
       {messages.map((message, index) => <article key={index} className={'movo-ai-message ' + message.role}>
         <span className="movo-ai-message-label">{message.role === 'user' ? 'You' : 'NasrinAI'}</span>
-        <p>{message.content}</p>
+        <NasrinAIMessage content={message.content} />
       </article>)}
       {busy && <div className="movo-ai-thinking" role="status"><span className="movo-ai-thinking-orb" aria-hidden="true"><NasrinMark size={22} state={phase} /></span><span key={phase} className="movo-ai-thinking-label">{PHASE_LABELS[phase]}</span></div>}
       <div ref={endRef} />
