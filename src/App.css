@@ -1464,3 +1464,16 @@ button.account-tile:active { transform: scale(.98); }
 .scenery-settings .link-button { margin: 0 0 8px; }
 .scenery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-bottom: 12px; }
 .scenery-grid .scenery-tile { width: auto; height: auto; aspect-ratio: 2 / 3; }
+
+/* ---------- True hairlines ----------
+   Chrome and Android draw any border or outline thinner than 1px at a full 1px, so 0.25px borders looked like 1px.
+   A fractional inset shadow is anti-aliased instead, giving a genuine 0.25px line on every screen. Box borders are
+   removed and the hairline is painted by ::after; `position: relative` sits in :where() so any existing
+   absolute, fixed or sticky positioning still wins. Doubled class beats the universal hairline rule above. */
+:where(.card, .account-row, .sheet-card, .round-button, .chip-row button, .month-pill, .theme-segments button, .movo-ai-welcome, .movo-ai-privacy, .movo-ai-message.assistant, .movo-ai-composer, .movo-ai-reset, .movo-ai-open-site, .movo-ai-signin, .movo-ai-thinking, .legal-intro, .legal-section, .legal-contact, .legal-nav, .wide-button, .sync-indicator, .app-alert, .auth-legal, .hello.bubble, .tool-pill, .tool-seg, .bottom-nav, .mini-card, .edit-tool, .scenery-tile, .edit-tray-list button, .search-bar) { position: relative; }
+.movo-app.movo-app :is(.card, .account-row, .sheet-card, .round-button, .chip-row button, .month-pill, .theme-segments button, .movo-ai-welcome, .movo-ai-privacy, .movo-ai-message.assistant, .movo-ai-composer, .movo-ai-reset, .movo-ai-open-site, .movo-ai-signin, .movo-ai-thinking, .legal-intro, .legal-section, .legal-contact, .legal-nav, .wide-button, .sync-indicator, .app-alert, .auth-legal, .hello.bubble, .tool-pill, .tool-seg, .bottom-nav, .mini-card, .edit-tool, .scenery-tile, .edit-tray-list button, .search-bar) { border-width: 0 !important; }
+.movo-app.movo-app :is(.card, .account-row, .sheet-card, .round-button, .chip-row button, .month-pill, .theme-segments button, .movo-ai-welcome, .movo-ai-privacy, .movo-ai-message.assistant, .movo-ai-composer, .movo-ai-reset, .movo-ai-open-site, .movo-ai-signin, .movo-ai-thinking, .legal-intro, .legal-section, .legal-contact, .legal-nav, .wide-button, .sync-indicator, .app-alert, .auth-legal, .hello.bubble, .tool-pill, .tool-seg, .bottom-nav, .mini-card, .edit-tool, .scenery-tile, .edit-tray-list button, .search-bar)::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 0 var(--hair) var(--hairline, var(--line)); pointer-events: none; border: 0 !important; }
+.movo-app.movo-app :is(.theme-segments button.selected, .scenery-tile.selected)::after { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.movo-app.movo-app :is(.budget-empty, .customize-button, .edit-tray) { border-color: color-mix(in srgb, var(--line) 60%, transparent); }
+.movo-app.movo-app :is(.tx-row, .menu-row, .note-row, .detail-row, .field-row, .detail-list div) { border-bottom-width: 0 !important; box-shadow: inset 0 calc(var(--hair) * -1) 0 var(--line); }
+.movo-app.movo-app :is(.tx-row, .menu-row, .note-row, .detail-row, .field-row, .detail-list div):last-child { box-shadow: none; }
