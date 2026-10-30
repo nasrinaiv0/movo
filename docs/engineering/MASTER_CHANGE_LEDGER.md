@@ -406,3 +406,12 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - Detailed evidence: [strict CSV quote validation](updates/2026-10-30-1158-strict-csv-quoting.md).
 - Validation is pending for the final PR head at the time this note was written; exact-head checks must be re-read before reporting pass/fail.
 - No database, RLS, grants, Auth, production financial data, or secrets changed. Remaining live authenticated CSV and currency-isolation checks are not replaced by parser unit tests.
+
+
+## Strict CSV parser regression and correction — 2026-10-30 12:00 Asia/Manila
+
+- Recorded failure: GitHub Actions run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655) failed the existing `transactionFingerprint` equivalence test (1 suite failed / 19 passed; 1 test failed / 124 passed).
+- Cause: regex escaping outside the new parser was altered during the first file rewrite, breaking whitespace normalization. No production records or database boundaries were affected.
+- Correction: restored the source from `15316f97bce721f815425b7fe867a549c712c89b` and reapplied only the strict parser function. Commit `7c41531c0a48a60433d2cca10262734c03ce4ed7`.
+- Follow-up record: [strict CSV quote validation](updates/2026-10-30-1158-strict-csv-quoting.md).
+- Exact-head validation is pending; earlier passing PR checks do not validate this corrected commit.
