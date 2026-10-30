@@ -10,6 +10,8 @@ import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets', 'Cash & Other'];
 const typeOf = { Cards: ['card'], 'Bank Accounts': ['bank'], 'E-Wallets': ['e_wallet'], 'Cash & Other': ['cash', 'investment', 'other'] };
+const ADD_TYPE = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_wallet', 'Cash & Other': 'cash' };
+const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash & other', 'Cash, investments and more']];
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Tiles'], ['grid', 'grid', 'Grid']];
 const FORMATS = [['card', 'Bank card'], ['tile', 'Account tile']];
@@ -32,6 +34,8 @@ export default function Wallet({ c }) {
   const { prefs, setPref, show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
   const scroller = useRef(null);
   const [editing, setEditing] = useState(false);
+  const [addAmount, setAddAmount] = useState(null);
+  const [addPick, setAddPick] = useState(false);
   const wv = { ...WALLET_VIEW, ...(prefs.walletView || {}) };
   const setWv = (patch) => setPref('walletView', { ...wv, ...patch });
   const live = accountsView.filter(a => !a.is_archived);
@@ -102,6 +106,7 @@ export default function Wallet({ c }) {
       <button type="button" className="tool-pill" onClick={() => setSheet({ name: 'walletView' })} aria-label={tr('Sort and view options')}><Icon name="sort" size={15} />{tr(SORTS.find(x => x[0] === wv.sort)?.[1] || '')}</button>
       <div className="tool-seg" role="group" aria-label={tr('Layout')}>{VIEWS.map(([key, icon, label]) => <button type="button" key={key} aria-pressed={wv.view === key} aria-label={tr('{name} view', { name: tr(label) })} onClick={() => setWv({ view: key })}><Icon name={icon} size={16} /></button>)}</div>
       {walletFilter === 'All' && <button type="button" className="tool-pill icon" onClick={() => setEditing(v => !v)} aria-pressed={editing} aria-label={tr('Customize wallet')}><Icon name="edit" size={15} /></button>}
+      <button type="button" className="tool-pill icon" onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))} aria-label={tr('New account')} title={tr('New account')}><Icon name="plus" size={16} /></button>
     </div>
 
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
@@ -113,12 +118,9 @@ export default function Wallet({ c }) {
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
       {wv.cardFormat === 'card' ? <button type="button" className="style-button" onClick={() => setSheet({ name: 'cardStyle' })}><Icon name="palette" size={18} /> {tr('Card style')}</button> : <button type="button" className="style-button" onClick={() => c.openEditAccount?.(selectedCard)}><Icon name="palette" size={18} /> {tr('Account style')}</button>}
       <section className="card action-strip">
-        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['lock', 'Block Card (Unavailable)', () => {}], ['sliders', 'Limits (Unavailable)', () => {}], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) => {
-          const unavailable = label.includes('(Unavailable)');
-          return <button type="button" key={label} onClick={fn} disabled={unavailable} aria-describedby={unavailable ? 'card-control-limitations' : undefined} title={unavailable ? tr('MOVO records card activity but cannot control your actual card or issuer limits.') : undefined}><Icon name={icon} size={20} />{label}</button>;
-        })}
+        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+          <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
       </section>
-      <p id="card-control-limitations" className="fineprint">{tr('MOVO cannot block an actual card or change issuer limits. Use your bank or card issuer\'s app for those actions.')}</p>
       <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
         <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>
@@ -149,6 +151,16 @@ export default function Wallet({ c }) {
         <Tile name={a.name} size={46} radius={13} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency))}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
       </button>)}</div>
       <button type="button" className="manage-button" onClick={() => setSheet({ name: 'account', type: 'card' })}><Icon name="card" size={18} /> {tr('Manage Cards')}</button>
+    </Sheet>}
+    {addAmount && <Sheet title={tr('Add amount')} subtitle={tr('Record money coming into {name}.', { name: addAmount.name })} onClose={() => setAddAmount(null)} label={tr('Add amount')}>
+      <div className="sheet-list">
+        <button type="button" className="sheet-card" onClick={() => { const id = addAmount.id; setAddAmount(null); c.openTransferTo(id); }}><Tile icon="transfer" tone="blue" size={42} radius={13} /><span className="account-main"><strong>{tr('Transfer')}</strong><small>{tr('Moved in from another of your accounts')}</small></span><Icon name="chevron" size={16} /></button>
+        <button type="button" className="sheet-card" onClick={() => { const id = addAmount.id; setAddAmount(null); openForm('income', id); }}><Tile icon="edit" tone="green" size={42} radius={13} /><span className="account-main"><strong>{tr('Manual')}</strong><small>{tr('Cash deposit, salary, refund or any top-up')}</small></span><Icon name="chevron" size={16} /></button>
+      </div>
+      <p className="fineprint">{tr('MOVO records the amount; it does not move real money.')}</p>
+    </Sheet>}
+    {addPick && <Sheet title={tr('New account')} onClose={() => setAddPick(false)} label={tr('New account')}>
+      <div className="sheet-list">{ADD_CHOICES.map(([type, icon, title, sub]) => <button type="button" key={type} className="sheet-card" onClick={() => { setAddPick(false); setSheet({ name: 'account', type }); }}><Tile icon={icon} tone="blue" size={42} radius={13} /><span className="account-main"><strong>{tr(title)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}</div>
     </Sheet>}
   </>;
 }

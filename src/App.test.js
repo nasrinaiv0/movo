@@ -106,18 +106,20 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]').textContent).toContain('Your Cards');
   });
 
-  test('card issuer actions are disabled with a visible, accessible explanation', () => {
+  test('Add amount on a card offers Transfer and Manual, and the plus button adds accounts by type', () => {
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    const blockCard = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Block Card'));
-    const limits = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Limits'));
-    expect(blockCard).toBeTruthy();
-    expect(limits).toBeTruthy();
-    expect(blockCard.disabled).toBe(true);
-    expect(limits.disabled).toBe(true);
-    expect(blockCard.getAttribute('aria-describedby')).toBe('card-control-limitations');
-    expect(limits.getAttribute('aria-describedby')).toBe('card-control-limitations');
-    expect(container.querySelector('#card-control-limitations').textContent).toContain('cannot block an actual card or change issuer limits');
+    expect(container.textContent).not.toContain('Block Card');
+    expect(container.querySelector('#card-control-limitations')).toBeNull();
+    clickButton(container, 'Add amount');
+    const sheet = container.querySelector('[role="dialog"][aria-label="Add amount"]');
+    expect(sheet.textContent).toContain('Transfer');
+    expect(sheet.textContent).toContain('Manual');
+    act(() => Array.from(sheet.querySelectorAll('.sheet-card')).find(b => b.textContent.includes('Transfer')).click());
+    expect(container.querySelector('[role="dialog"]').textContent).toMatch(/Transfer/);
+    clickButton(container, 'Close Add transfer'.replace('Add transfer', container.querySelector('[role="dialog"]').getAttribute('aria-label')));
+    clickButton(container, 'New account');
+    expect(container.querySelector('[role="dialog"]').getAttribute('aria-label')).toMatch(/account|card/i);
   });
 
   test('wallet transfer actions open a transfer form rather than an expense form', () => {
