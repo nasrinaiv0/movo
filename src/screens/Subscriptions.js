@@ -129,7 +129,7 @@ function CatalogSheet({ onPick, onClose, country }) {
   const local = country ? list.filter(c => c.region === country) : [];
   const rest = list.filter(c => !local.includes(c));
   const row = (c) => <button type="button" key={c.id} className="catalog-row" onClick={() => onPick({ name: c.name, category: c.category, color: c.color })}><SubIcon sub={c} /><span className="sub-main"><strong>{c.name}</strong><small>{tr(c.category)}</small></span><Icon name="chevron" size={16} /></button>;
-  return <Sheet title={tr('Apps & services')} onClose={onClose} label={tr('Apps & services')}>
+  return <Sheet title={tr('Apps & services')} onClose={onClose} label={tr('Apps & services')} className="sheet-search">
     <label className="search-field"><Icon name="search" size={17} /><input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={tr('Search for an app or service')} aria-label={tr('Search for an app or service')} /></label>
     <div className="sheet-list catalog-list">
       <button type="button" className="catalog-row" onClick={() => onPick({ name: q.trim(), category: 'Other' })}><span className="sub-icon custom"><Icon name="plus" size={18} /></span><span className="sub-main"><strong>{q.trim() ? tr('Add “{name}”', { name: q.trim() }) : tr('Custom subscription')}</strong><small>{tr('Anything not in the list')}</small></span><Icon name="chevron" size={16} /></button>

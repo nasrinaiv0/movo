@@ -30,4 +30,5 @@ export default [
   ["{n} of {total}", "{n} sa {total}", "{n} من {total}", "第 {n} 步，共 {total} 步", "{n} de {total}", "{n} di {total}", "{n} von {total}", "{n} sur {total}", "{n} de {total}", "{n} / {total}", "{n} / {total}", "{total} में से {n}"],
   ["{n} transactions added.", "{n} transaksyon ang naidagdag.", "تمت إضافة {n} معاملات.", "已添加 {n} 笔交易。", "Se añadieron {n} transacciones.", "{n} transazioni aggiunte.", "{n} Buchungen hinzugefügt.", "{n} transactions ajoutées.", "{n} transações adicionadas.", "{n} 件の取引を追加しました。", "거래 {n}건을 추가했습니다.", "{n} लेन-देन जोड़े गए।"],
   ["Friend", "Kaibigan", "صديقي", "朋友", "Amigo", "Amico", "Freund", "Ami", "Amigo", "フレンド", "친구", "दोस्त"],
+  ["No matches for “{q}”.", "Walang tugma para sa “{q}”.", "لا توجد نتائج لـ “{q}”.", "没有与 “{q}” 匹配的结果。", "No hay resultados para «{q}».", "Nessun risultato per «{q}».", "Keine Treffer für „{q}“.", "Aucun résultat pour « {q} ».", "Nenhum resultado para “{q}”.", "「{q}」に一致する項目はありません。", "“{q}”에 대한 결과가 없습니다.", "“{q}” के लिए कोई मिलान नहीं।"],
 ];

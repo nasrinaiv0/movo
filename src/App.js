@@ -100,8 +100,9 @@ function useSystemDark() {
 function CountrySheet({ value, locale, onPick, onClose }) {
   const [q, setQ] = useState('');
   const list = COUNTRIES.map(row => ({ row, name: countryName(row[0], locale) })).sort((a, b) => a.name.localeCompare(b.name, locale)).filter(c => !q || `${c.row[0]} ${c.name} ${countryName(c.row[0], 'en')}`.toLowerCase().includes(q.trim().toLowerCase()));
-  return <Sheet title={tr('Country or region')} subtitle={tr('Sets the language, home currency and local date and number style. You can still change each one separately.')} onClose={onClose} label={tr('Country or region')}>
+  return <Sheet title={tr('Country or region')} subtitle={tr('Sets the language, home currency and local date and number style. You can still change each one separately.')} onClose={onClose} label={tr('Country or region')} className="sheet-search">
     <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search countries')} placeholder={tr('Search countries')} value={q} onChange={e => setQ(e.target.value)} /></label>
+    {!list.length && <p className="empty sheet-empty">{tr('No matches for “{q}”.', { q: q.trim() })}</p>}
     <div className="sheet-list">{list.map(({ row, name }) => <button type="button" key={row[0]} className={`sheet-card${value === row[0] ? ' selected' : ''}`} aria-pressed={value === row[0]} onClick={() => onPick(row)}><span className="currency-code">{row[0]}</span><span className="account-main"><strong>{name}</strong><small>{LANGUAGES.find(l => l.code === row[1])?.name} · {row[2]}</small></span>{value === row[0] && <Icon name="check" size={18} />}</button>)}</div>
   </Sheet>;
 }
@@ -109,8 +110,9 @@ function CountrySheet({ value, locale, onPick, onClose }) {
 function CurrencySheet({ value, fx, locale, onPick, onClose }) {
   const [q, setQ] = useState('');
   const list = CURRENCIES.map(code => ({ code, name: currencyName(code, locale) })).filter(c => !q || `${c.code} ${c.name}`.toLowerCase().includes(q.trim().toLowerCase()));
-  return <Sheet title={tr('Home currency')} subtitle={tr('Totals, budgets and charts are shown in this currency. Each account keeps its own currency.')} onClose={onClose} label={tr('Home currency')}>
+  return <Sheet title={tr('Home currency')} subtitle={tr('Totals, budgets and charts are shown in this currency. Each account keeps its own currency.')} onClose={onClose} label={tr('Home currency')} className="sheet-search">
     <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search currencies')} placeholder={tr('Search currencies')} value={q} onChange={e => setQ(e.target.value)} /></label>
+    {!list.length && <p className="empty sheet-empty">{tr('No matches for “{q}”.', { q: q.trim() })}</p>}
     <div className="sheet-list">{list.map(c => <button type="button" key={c.code} className={`sheet-card${value === c.code ? ' selected' : ''}`} aria-pressed={value === c.code} onClick={() => onPick(c.code)}><span className="currency-code">{c.code}</span><span className="account-main"><strong>{c.name}</strong><small>{money(1234.5, c.code)}</small></span>{value === c.code && <Icon name="check" size={18} />}</button>)}</div>
     <p className="fineprint">{fx.live ? tr('Exchange rates updated {date}. Conversions are estimates for tracking only.', { date: formatDate(fx.at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }) : tr('Using approximate built-in exchange rates until live rates load. Conversions are estimates for tracking only.')}</p>
   </Sheet>;
