@@ -95,3 +95,12 @@ The frontend is not declared complete by this static check. Legal publication st
 
 
 - Follow-up edge case: explicit `aria-disabled=true` is respected even when a separate `disabled={false}` prop is present. The regression fixture covers this combined state so the no-op scan does not misclassify it as enabled.
+
+
+## Currency settings copy reconciliation — 2026-10-30 12:04 Asia/Manila
+
+- Removed the informational Settings row claiming PHP was the only available currency. That claim conflicts with the Display Currency/account-currency feature implemented separately in PR #43.
+- Added a regression test to prevent the stale claim returning. The actual currency selector remains in PR #43; this change does not invent a working selector on the accessibility branch.
+- Commits: row removal `4baa597637f9888be4698ee055dc43da775028fa`; regression test `df85cae40c666b19d162e0747898e3da98194e48`; placeholder cleanup `110c5d79d7b5623972d71ada13883161f1ec2576`.
+- Detailed note: [currency settings copy reconciliation](engineering/updates/2026-10-30-1204-currency-settings-copy.md).
+- Exact final-head checks are pending. Do not merge based on older control-audit results.
