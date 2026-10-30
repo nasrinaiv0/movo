@@ -520,3 +520,20 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - Legal pages and consent navigation are browser-verified, but the visible publication warning must remain until the operator/controller identity and address, actual retention/deletion schedule, provider/data-recipient details, and jurisdiction-specific review are verified.
 - Supabase RLS remains enabled on seven checked tables with 22 owner-scoped policies across six user-facing tables and no checked `anon`/`PUBLIC` grants. The upstream mapping remains service-role-only. Leaked-password protection is still disabled and requires an authorized Auth settings change.
 - Detailed evidence: `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md` and issue [#47](https://github.com/nasrinaiv0/movo/issues/47).
+
+
+## Current implementation and release status — 2026-10-30 10:10 Asia/Manila
+
+- **Production demo transparency:** PR #59 merged at `277051e4ec2216a6b598c784a50b32ba37b89dee`; production deployment READY. Unauthenticated demo uses `Demo User` / `demo@example.com` and an accessible responsive disclosure that sample financial figures are fictional, not bank-linked, and not saved/synced as personal records. Production browser evidence is in `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md`.
+- **Audit documentation:** PR #58 merged at `ca1a680c78baf7c87347c960d56c7bc207041bc3`. Any previous sentence calling #58 open is historical and superseded.
+- **PR #60 accessibility scanner:** head `d80077b05067282fa76de16e7947aa73557e7550`, 23 ahead / 0 behind main, exact-head run #40989633601 passed 20 suites / 111 tests, typecheck, static control audit, build, and production-only audit. Vercel preview check is successful. Still draft until manual keyboard/focus, screen-reader, responsive and authenticated finance-flow checks are recorded. Full dependency tree still has 34 findings (16 low, 5 moderate, 13 high).
+- **PR #56 context isolation:** head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c`, 19 ahead / 0 behind main. Latest run #40990086352 was in progress at this audit timestamp; Vercel status successful. Earlier 18-suite / 103-test run #40989833432 is for implementation head `1b3c939`, not the current docs-only head. Keep draft.
+- **Do not close issue #47:** authenticated MOVO scope confirmation and unrelated-project canary are still unverified. The production no-token 401 only verifies the auth gate. Do not expose or rotate provider secrets as part of monitoring.
+- **Security/legal:** leaked-password protection is still reported disabled; legal launch warning remains until operator/controller identity/address, retention/deletion schedule, provider/data-recipient details, and jurisdiction-specific review are confirmed.
+- Detailed evidence: `docs/engineering/updates/2026-10-30-1010-monitoring-delta.md`.
+
+
+
+### Exact-head follow-up — 2026-10-30 10:11 Asia/Manila
+
+PR #56 current head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c` is now validated by GitHub Actions [#40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352): 18 suites / 103 tests passed, typecheck passed, production-only dependency audit reported zero vulnerabilities, and production build compiled. Vercel preview check is successful. Full dependency install still reports 34 findings (16 low, 5 moderate, 13 high), with deprecated glob/eslint and Node 20 action-runtime warnings. This does not validate upstream scope enforcement: keep PR #56 draft and issue #47 open until an authenticated request and unrelated-project canary prove the boundary.
