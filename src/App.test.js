@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { relativeDay } from './lib/format';
+import { relativeDay, money } from './lib/format';
 
 // Keep UI tests deterministic even when deployment environments contain real
 // Supabase configuration. Authenticated flows are tested separately.
@@ -219,6 +219,48 @@ describe('MOVO finance frontend', () => {
     expect(prefs.profileName).toBe('Nasrin Test');
     expect(prefs.phone).toBe('+63 912 345 6789');
     expect(container.textContent).toContain('Nasrin Test');
+  });
+
+  test('profile summaries format visible and hidden balances in the selected display currency', () => {
+    window.localStorage.setItem('movo.samples.enabled.v1', 'false');
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ displayCurrency: 'USD', showBalance: true }));
+    window.localStorage.setItem('movo.local.accounts.v1', JSON.stringify([
+      { id: 'usd-bank', name: 'USD Checking', account_type: 'bank', currency: 'USD', opening_balance: 100, balance: 100, institution_name: 'Test Bank', mask: '1234', brand: 'blue' },
+      { id: 'php-bank', name: 'PHP Checking', account_type: 'bank', currency: 'PHP', opening_balance: 5000, balance: 5000, institution_name: 'Test Bank', mask: '5678', brand: 'blue' }
+    ]));
+    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([
+      { id: 'usd-income', merchant: 'USD income', amount: 25, currency: 'USD', transaction_type: 'income', account_id: 'usd-bank', occurred_at: '2026-10-15T12:00:00Z', category: 'Other', source: 'Manual' },
+      { id: 'usd-expense', merchant: 'USD expense', amount: 5, currency: 'USD', transaction_type: 'expense', account_id: 'usd-bank', occurred_at: '2026-10-16T12:00:00Z', category: 'Food', source: 'Manual' },
+      { id: 'php-expense', merchant: 'PHP expense', amount: 50, currency: 'PHP', transaction_type: 'expense', account_id: 'php-bank', occurred_at: '2026-10-17T12:00:00Z', category: 'Food', source: 'Manual' }
+    ]));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Profile');
+
+    const summary = container.querySelector('[aria-label="Profile summary"]');
+    expect(summary.textContent).toContain(money(120, 'USD'));
+    expect(summary.textContent).toContain(money(25, 'USD'));
+    expect(summary.textContent).toContain(money(5, 'USD'));
+    expect(summary.textContent).not.toContain('₱');
+
+    const bankRow = Array.from(container.querySelectorAll('button.menu-row')).find(row => row.textContent.includes('Bank Accounts'));
+    expect(bankRow).toBeTruthy();
+    expect(bankRow.textContent).toContain(money(120, 'USD'));
+    expect(bankRow.textContent).not.toContain('₱');
+
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ displayCurrency: 'USD', showBalance: false }));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Profile');
+
+    const hiddenSummary = container.querySelector('[aria-label="Profile summary"]');
+    expect(hiddenSummary.textContent).toContain('USD ••••••');
+    expect(hiddenSummary.textContent).not.toContain('₱ ••••••');
+    const hiddenBankRow = Array.from(container.querySelectorAll('button.menu-row')).find(row => row.textContent.includes('Bank Accounts'));
+    expect(hiddenBankRow.textContent).toContain('USD ••••••');
+    expect(hiddenBankRow.textContent).not.toContain('₱ ••••••');
   });
 
   test('profile editing prevents saving a blank name', () => {
