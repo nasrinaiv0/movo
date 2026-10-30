@@ -18,6 +18,29 @@ describe('CSV transaction import parser', () => {
   });
 
 
+  test('rejects malformed thousands grouping and ambiguous amount formats', () => {
+    const result = parseCsvTransactions(
+      'Date,Description,Type,Amount\\n' +
+      '2026-10-01,First,expense,"1,2,3"\\n' +
+      '2026-10-02,Second,expense,12.3.4\\n' +
+      '2026-10-03,Third,expense,1e3'
+    );
+    expect(result.transactions).toEqual([]);
+    expect(result.errors.map(error => error.line)).toEqual([2, 3, 4]);
+    expect(result.errors.every(error => error.message.includes('valid number format'))).toBe(true);
+  });
+
+  test('accepts plain and correctly grouped decimal amounts', () => {
+    const result = parseCsvTransactions(
+      'Date,Description,Type,Amount\\n' +
+      '2026-10-01,Plain,expense,1234.50\\n' +
+      '2026-10-02,Grouped,expense,"1,234.50"\\n' +
+      '2026-10-03,Symbol,expense,"₱ 1,234.50"'
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.transactions.map(transaction => transaction.amount)).toEqual([1234.5, 1234.5, 1234.5]);
+  });
+
   test('rejects malformed explicit currency instead of silently defaulting to PHP', () => {
     const result = parseCsvTransactions('Date,Description,Type,Amount,Currency\n2026-10-01,Coffee,expense,12.50,USDT');
     expect(result.transactions).toEqual([]);
