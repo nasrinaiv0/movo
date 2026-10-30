@@ -191,3 +191,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 
 - Added an App-level regression test that feeds a malformed currency through the file-input/FileReader path and asserts the row-level error appears in an accessible `role="alert"` block and the Import button remains disabled when no valid rows exist.
 - This supplements parser unit coverage and confirms the user-facing CSV workflow fails safely rather than silently importing the row as PHP. Exact-head typecheck, full test suite, and production build are pending for the new test commit.
+
+## CSV currency validation — final source/test result — 2026-10-30 11:56 Asia/Manila
+
+- Exact source/test head `569e5e3d98f0a4932012df0952614cc850dfb077` has Vercel deployment [dpl_BcZFDfGSvEUDXLeNoGh4v8q75VNk](https://vercel.com/nasrin-ai/movo/BcZFDfGSvEUDXLeNoGh4v8q75VNk) **READY**. Build log confirms TypeScript typecheck, **20 suites / 123 tests passed**, and production compilation succeeded.
+- Coverage includes parser rejection of malformed explicit currency, preservation of PHP fallback only for blank/missing currency, and an App-level file-input/FileReader test that verifies the row-level error is exposed through `role="alert"` and the Import button remains disabled when there are no valid rows.
+- The first UI-test fixture attempt used a literal escaped sequence instead of a row break; the failed run was observed and the fixture corrected before this passing exact-head build. No dependency manifests changed; production-only npm audit and `audit:controls` were not independently rerun on this code head.
+- PR #43 remains draft until authenticated finance CRUD, CSV import/export, and owner-scoped currency isolation are verified against real signed-in records.
