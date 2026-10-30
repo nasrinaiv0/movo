@@ -72,7 +72,7 @@ export default function Home({ c }) {
         ? <><span><i className="flow-dot-expense" aria-hidden="true" />Spent {flowBase ? Math.round(expenseShare) : 0}%</span><span><i className="flow-dot-savings" aria-hidden="true" />Retained {overspent ? '0' : (flowBase ? Math.round(savingsShare) : 0)}%</span></>
         : <span>Percentages unavailable until amounts are corrected.</span>}</div>
       <div className={`flow-net ${overspent ? 'flow-net-negative' : ''}`}>
-        <div><span>{overspent ? 'Amount over income' : 'Net savings'}</span><strong><Money value={Math.abs(stats.savings)} show={show} digits={0} currency={stats.currency} /></strong></div>
+        <div><span>{!flowValid ? 'Summary unavailable' : overspent ? 'Amount over income' : 'Net savings'}</span><strong><Money value={Math.abs(stats.savings)} show={show} digits={0} currency={stats.currency} /></strong></div>
         <button type="button" className="flow-link" onClick={() => go('Transactions')}>View transactions <Icon name="chevron" size={15} /></button>
       </div>
       {stats.transfers > 0 && <p className="flow-note"><Icon name="transfer" size={14} /> <Money value={stats.transfers} show={show} digits={0} currency={stats.currency} /> in internal transfers, excluded from income and expenses.</p>}
