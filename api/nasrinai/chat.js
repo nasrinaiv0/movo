@@ -354,7 +354,8 @@ module.exports = async function handler(req, res) {
     // Never attach an upstream conversation ID. The upstream receives the
     // current question and bounded finance context through its enforced MOVO
     // scope, with no prior provider conversation history.
-    const voiceMode = req.body?.voiceMode === true;\n    const upstreamBody = buildUpstreamBody(message, context);\n    if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
+    const voiceMode = req.body?.voiceMode === true;
+    const upstreamBody = buildUpstreamBody(message, context);\n    if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
     const upstreamStartedAt = Date.now();
     let upstream;
     let responseText = '';
