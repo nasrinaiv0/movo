@@ -84,6 +84,7 @@ describe('MOVO NasrinAI API handler context isolation', () => {
   const envNames = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'NASRINAI_API_KEY', 'NASRINAI_BASE_URL'];
   let originalEnv;
   let originalFetch;
+  let originalAbortSignal;
   let errorSpy;
   let infoSpy;
   let dbMock;
@@ -95,6 +96,8 @@ describe('MOVO NasrinAI API handler context isolation', () => {
     process.env.NASRINAI_API_KEY = 'test-server-only-key';
     process.env.NASRINAI_BASE_URL = 'https://nasrinai.example.test';
     originalFetch = global.fetch;
+    originalAbortSignal = global.AbortSignal;
+    global.AbortSignal = { timeout: jest.fn(() => ({ mockedTimeout: true })) };
     errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     infoSpy = jest.spyOn(console, 'info').mockImplementation(() => {});
     dbMock = createDatabaseMock();
@@ -104,6 +107,7 @@ describe('MOVO NasrinAI API handler context isolation', () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    global.AbortSignal = originalAbortSignal;
     errorSpy.mockRestore();
     infoSpy.mockRestore();
     envNames.forEach((key) => {
