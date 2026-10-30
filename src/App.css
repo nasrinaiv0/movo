@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --accent: #285fe8; --accent-rgb: 40,95,232; --accent-2: #6a5cff;
+  --accent: #2454d8; --accent-rgb: 36,84,216; --accent-2: #6a5cff;
   --bg: #f3f3f7; --bg-grad: none;
   --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #5c6473; --line: rgba(20,24,40,.045);
   --shadow: 0 8px 28px rgba(30,38,70,.06); --shadow-sm: 0 2px 10px rgba(30,38,70,.05);
