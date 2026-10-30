@@ -71,6 +71,8 @@ describe('NasrinAI consent and legal links', () => {
 
     expect(disclosure.textContent).toContain('your message');
     expect(disclosure.textContent).toContain('recent transactions');
+    expect(disclosure.textContent).toContain('A reply is accepted only when NasrinAI explicitly confirms the request stayed within the MOVO scope');
+    expect(disclosure.textContent).not.toContain('Your account stays isolated.');
     expect(disclosure.textContent).toContain('Each message is processed independently');
     expect(disclosure.textContent).toContain('start a clean MOVO chat');
     expect(disclosure.textContent).toContain('separate from accepting the Terms of Service');
