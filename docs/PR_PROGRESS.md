@@ -121,3 +121,12 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - **Fresh Supabase catalog check:** 7 checked tables have RLS enabled; all 22 policies on six user-facing tables reference `auth.uid()`; no checked `anon`/`PUBLIC` grants; upstream mapping has no policies or authenticated grants and remains service-role-only. Security Advisor still reports leaked-password protection disabled; no Auth write action was available.
 - **Governance/dependencies/legal:** main still reports unprotected with no repository rulesets (rechecked after PR #63); full dependency tree has 34 findings (16 low, 5 moderate, 13 high), distinct from zero production-only findings. Legal publication warning remains until operator/controller identity/address, retention/deletion schedule, provider/data-recipient disclosures, and jurisdiction review are confirmed.
 - No database schema/RLS/grants, production financial records, Auth settings, or secrets changed.
+
+
+## PR #60 — currency-settings copy reconciliation — 2026-10-30 12:04 Asia/Manila
+
+- Removed the stale Settings claim that PHP is the only available currency, because PR #43 implements multi-currency accounts and a Display Currency selector.
+- Added a regression test and removed the temporary placeholder row from the Settings data array.
+- Traceable commits: `4baa597637f9888be4698ee055dc43da775028fa`, `df85cae40c666b19d162e0747898e3da98194e48`, `110c5d79d7b5623972d71ada13883161f1ec2576`.
+- Detailed note: [currency settings copy reconciliation](engineering/updates/2026-10-30-1204-currency-settings-copy.md).
+- Exact-head CI, control audit, production build, and preview validation are pending. Keep PR #60 draft.
