@@ -12,6 +12,16 @@ import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
+import LockScreen from './components/LockScreen';
+import CardArt from './components/CardArt';
+import AccountTile, { styleFor } from './components/AccountTile';
+import LoggedBurst from './components/LoggedBurst';
+import { useLayout } from './lib/layout';
+import { MovoMark } from './components/MovoLogo';
+import { findDuplicate } from './lib/duplicates';
+import { mergePreferences, unionById } from './lib/prefsMerge';
+import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
+import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
 import { summarize as summarizeSubscriptions } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
@@ -28,7 +38,7 @@ import ScannerSheet from './components/ScannerSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
@@ -40,17 +50,19 @@ import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
-import { clearCustomStickers } from './lib/stickers';
+import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
+/** "Already logged: Saging · ₱20.00 on Oct 30." for a record that a new entry duplicates. */
+const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
-  notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
+  notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
@@ -189,6 +201,11 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
+  const layout = useLayout();
+  const [burst, setBurst] = useState(null);
+  const celebrate = useCallback((label) => setBurst({ id: Date.now(), label }), []);
+  const endBurst = useCallback(() => setBurst(null), []);
+  const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
   useEffect(() => {
     if (cloudMode) {
@@ -330,10 +347,13 @@ function App() {
   const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
-  const allNotifications = useMemo(() => buildNotifications(txs, []), [txs]);
+  const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
+  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, briefing.tips, prefs.devices, deviceId]);
+  const allNotifications = useMemo(() => buildNotifications(txs, systemNotices), [txs, systemNotices]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
     return allNotifications.filter(n => {
+      if (n.cat) return prefs[n.cat] !== false;
       if (n.kind === 'Transactions') return prefs.catTransactions;
       if (n.kind === 'Account') return prefs.catAccount;
       if (n.kind === 'System' && /nasrinai/i.test(n.title)) return prefs.catAi;
@@ -342,7 +362,14 @@ function App() {
       return true;
     });
   }, [allNotifications, prefs.notifications, prefs.inapp, prefs.catTransactions, prefs.catAccount, prefs.catAi, prefs.catPromo, prefs.catReports]);
-  const unread = notifications.some(n => !prefs.readIds.includes(n.id));
+  // The bell / Home dot means "something new since you last opened Notifications"; row dots clear when each is opened.
+  const seenAt = Date.parse(prefs.notifSeenAt || '') || 0;
+  const unread = notifications.some(n => !prefs.readIds.includes(n.id) && (Date.parse(n.at) || 0) > seenAt);
+  useEffect(() => { if (view === 'Notifications') setPref('notifSeenAt', new Date().toISOString()); }, [view, notifications.length, setPref]);
+  // The Subscriptions badge clears once the person has opened Subscriptions, until a different renewal comes due.
+  const dueKey = subSummary.dueSoon.map(s => `${s.id}:${s.next}`).join(',');
+  useEffect(() => { if (view === 'Subscriptions' && dueKey && prefs.subsSeen !== dueKey) setPref('subsSeen', dueKey); }, [view, dueKey, prefs.subsSeen, setPref]);
+  const subsBadge = dueKey && prefs.subsSeen !== dueKey ? subSummary.dueSoon.length : 0;
   const activeNotification = notifications.find(n => n.id === activeNotificationId);
   const markAllRead = () => setPref('readIds', Array.from(new Set([...prefs.readIds, ...allNotifications.map(n => n.id)])));
 
@@ -369,6 +396,8 @@ function App() {
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
   const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type }); };
+  /* "Add amount" on a card or account: a transfer into it from another account, or a manual top-up (income). */
+  const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type: 'transfer' }); };
   const openEditAccount = (account) => {
     setError('');
     setAccountForm({
@@ -402,18 +431,25 @@ function App() {
     if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return; }
     const occurred_at = stamp.toISOString();
     const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
-    setBusy(true);
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
+    // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
+    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id }, rawTxs);
+    const sig = `${type}|${amount}|${form.merchant.trim().toLowerCase()}|${form.occurred_at}|${form.account_id}`;
+    if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
+    dupAck.current = '';
+    setBusy(true);
     try {
       if (cloudMode) {
         const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
         const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
+        if (!editingId) celebrate();
       } else {
         const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
+        if (!editingId) celebrate();
       }
       setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today() }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
@@ -603,16 +639,19 @@ function App() {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
     if (cloudMode && !account) { setPendingLog(entry); return; }
     const payload = { merchant: entry.merchant, amount: entry.amount, transaction_type: 'expense', category: guessCategory(entry.merchant), account_id: account?.id || 'local', occurred_at: new Date().toISOString(), note: `${tr('Logged from {source}', { source: entry.source })}${entry.card ? ` · ${entry.card}` : ''}` };
+    const dup = findDuplicate(payload, rawTxs);
+    if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
     try {
       if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); setRawTxs(cur => [row, ...cur]); }
       else setRawTxs(cur => [{ ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }, ...cur]);
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
+      celebrate();
     } catch { setPendingLog(entry); }
-  }, [accountsView, cloudMode, session, notify]);
+  }, [accountsView, cloudMode, session, notify, rawTxs, celebrate]);
   /* ---------- logging from the NasrinAI chat (parsed on this device; see lib/chatLog.js) ---------- */
-  const logFromChat = useCallback(async (entries) => {
+  const logFromChat = useCallback(async (entries, force = false) => {
     const open = accountsView.filter(a => !a.is_archived);
-    const saved = [];
+    const saved = []; const skipped = [];
     for (const e of entries) {
       const account = open.length ? matchAccount(e.accountHint || '', open) : null;
       if (cloudMode && !account) throw new Error('account_required');
@@ -620,25 +659,135 @@ function App() {
       const stamp = new Date(e.date); const now = new Date();
       stamp.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
       const payload = { merchant: e.merchant, amount: e.amount, currency, transaction_type: e.type, category: e.category, account_id: account?.id || 'local', occurred_at: stamp.toISOString(), note: tr('Logged from NasrinAI chat') };
+      const dup = force ? null : findDuplicate(payload, [...saved, ...rawTxs]);
+      if (dup) { skipped.push({ ...payload, id: `dup-${skipped.length}-${dup.id}`, duplicateOf: dup, entry: e, accountName: account?.name || '' }); continue; }
       const row = cloudMode
         ? await createTransaction(payload, session.user.id)
         : { ...payload, id: window.crypto?.randomUUID?.() || `chat-${Date.now()}-${saved.length}`, source: 'Manual' };
       saved.push({ ...row, accountName: account?.name || '' });
     }
-    setRawTxs(cur => [...saved, ...cur]);
-    notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
-    return saved;
-  }, [accountsView, cloudMode, session, base, notify]);
+    if (saved.length) {
+      setRawTxs(cur => [...saved, ...cur]);
+      notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
+      celebrate();
+    } else if (skipped.length) notify(dupText(skipped[0].duplicateOf));
+    return [...saved, ...skipped];
+  }, [accountsView, cloudMode, session, base, notify, rawTxs, celebrate]);
+  /* Chat shortcuts: one tap to log, scan or read a MOVO section; summaries are worked out on this device. */
+  const chatSummary = (range) => {
+    const label = range === 'today' ? tr('Today') : tr('This month');
+    const list = txs.filter(t => (range === 'today' ? dayKey(t.date) === todayKey : monthKey(t.date) === monthKey(new Date())));
+    if (!list.length) return range === 'today' ? tr('No records yet today.') : tr('No records yet this month.');
+    const spent = list.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const earned = list.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const byCat = {}; list.filter(t => t.type === 'expense').forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+    const [top, topAmount] = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0] || [];
+    const lines = [tr('**{period}**: you spent {spent} and earned {earned} across {n} records.', { period: label, spent: shown(show, money(spent)), earned: shown(show, money(earned)), n: list.length })];
+    if (top) lines.push(tr('Most went to {category} ({amount}).', { category: tr(top), amount: shown(show, money(topAmount)) }));
+    return lines.join('\n\n');
+  };
+  const chatShortcuts = [
+    { id: 'expense', icon: 'minus', label: 'Expense', run: () => openForm('expense') },
+    { id: 'income', icon: 'plus', label: 'Income', run: () => openForm('income') },
+    { id: 'transfer', icon: 'transfer', label: 'Transfer', run: () => openForm('transfer') },
+    { id: 'scan', icon: 'scan', label: 'Scan receipt', run: () => setSheet({ name: 'scanner' }) },
+    { id: 'today', icon: 'calendar', label: 'Today', say: () => chatSummary('today') },
+    { id: 'month', icon: 'chart', label: 'This month', say: () => chatSummary('month') },
+    { id: 'budgets', icon: 'target', label: 'Budgets', run: () => setSheet({ name: 'budgets', tab: 'budgets' }) },
+    { id: 'renewals', icon: 'clock', label: 'Renewals', run: () => go('Subscriptions') },
+    { id: 'activity', icon: 'list', label: 'Transactions', run: () => go('Transactions') },
+    { id: 'accounts', icon: 'wallet', label: 'Accounts', run: () => go('Wallet') },
+  ];
   const undoChatLog = useCallback(async (id) => {
     if (cloudMode) await deleteTransaction(id);
     setRawTxs(cur => cur.filter(x => x.id !== id));
     notify(tr('Transaction removed.'));
   }, [cloudMode, notify]);
+  /* ---------- preferences follow the signed-in person across devices ----------
+     On sign-in the account's saved preferences (card styles, layouts, theme, subscriptions, plans…) and custom
+     sticker artwork are merged with what this device already has cached (nothing local is dropped), and the merged
+     result is saved back; after that every change is saved back, debounced. If the cloud table
+     is unavailable MOVO keeps working with this device's preferences only. */
+  const prefsSync = useRef({ user: '', ready: false, timer: 0 });
+  const [stickerTick, setStickerTick] = useState(0);
+  useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
+  const userId = cloudMode ? session?.user?.id || '' : '';
+  useEffect(() => {
+    const sync = prefsSync.current;
+    sync.user = userId; sync.ready = false;
+    if (!userId) return undefined;
+    let live = true;
+    loadPreferences(userId).then(row => {
+      if (!live) return;
+      if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
+        setPrefs(cur => mergePreferences(DEFAULTS, cur, row.prefs));
+        if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
+      }
+      sync.ready = true;
+      setStickerTick(t => t + 1); // upload the merged copy (or this device's on a first sign-in)
+    }).catch(() => { /* table unavailable: stay device-only */ });
+    return () => { live = false; };
+  }, [userId]);
+  useEffect(() => {
+    const sync = prefsSync.current;
+    if (!sync.ready || !sync.user) return undefined;
+    clearTimeout(sync.timer);
+    sync.timer = setTimeout(() => {
+      // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
+      let size = 0;
+      const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
+      const shared = { ...prefs };
+      if ((shared.mascot || '').length > 120_000) delete shared.mascot;
+      savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
+    }, 1500);
+    return () => clearTimeout(sync.timer);
+  }, [prefs, stickerTick]);
+
+  /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
+  useEffect(() => {
+    if (!prefs.push || !prefs.notifications || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (prefs.quietOn && isQuiet(new Date(), prefs.quietStart, prefs.quietEnd)) return;
+    const fresh = notifications.filter(n => n.kind !== 'Transactions' && !prefs.pushed.includes(n.id) && Date.now() - (Date.parse(n.at) || 0) < 2 * 86400000 && Date.parse(n.at) <= Date.now());
+    if (!fresh.length) return;
+    fresh.slice(0, 3).forEach(n => showSystemNotification(tr(n.title), tr(n.body, n.vars), n.id));
+    setPref('pushed', [...fresh.map(n => n.id), ...prefs.pushed].slice(0, 200));
+  }, [notifications, prefs.push, prefs.notifications, prefs.pushed, prefs.quietOn, prefs.quietStart, prefs.quietEnd, setPref]);
+
+  /* ---------- sign-ins: each device adds itself once; other devices see it through preference sync ---------- */
+  useEffect(() => {
+    if (!cloudMode || !session?.user || !prefsSync.current.ready) return;
+    if ((prefs.devices || []).some(d => d.id === deviceId)) return;
+    setPref('devices', [...(prefs.devices || []), { id: deviceId, label: deviceLabel(), at: new Date().toISOString() }].slice(-10));
+  }, [cloudMode, session, prefs.devices, deviceId, setPref, stickerTick]);
+
+  /* ---------- app lock: on open, and again after MOVO has been in the background for a minute ---------- */
+  const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.hidden) hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 60000 && lockState().enabled) setLocked(true);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+  const unlock = useCallback(() => setLocked(false), []);
+
+  /* Fade out the loading screen from index.html once the app is ready; keep it at least ~0.9s so it never flashes. */
+  useEffect(() => {
+    if (!authReady) return undefined;
+    const el = document.getElementById('movo-splash');
+    if (!el) return undefined;
+    const t = setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 400); }, Math.max(0, 900 - (window.performance?.now?.() || 0)));
+    return () => clearTimeout(t);
+  }, [authReady]);
   /* First-run tour: only for people with no saved preferences, on Home, and never in tests. */
   const showTour = authReady && !prefs.onboarded && view === 'Home' && !sheet && process.env.NODE_ENV !== 'test';
   // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.
   const finishTour = useCallback(() => setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey })), [todayKey]);
   const handledLink = useRef('');
+  const recordsRef = useRef(rawTxs);
+  recordsRef.current = rawTxs;
   useEffect(() => {
     if (!authReady || (session?.user && !cloudMode)) return undefined;
     const handle = () => {
@@ -649,6 +798,8 @@ function App() {
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       if (entry.invalid) { notify(tr('That payment link had no valid amount, so nothing was logged.')); return; }
       if (isRepeat(entry)) return;
+      const dup = findDuplicate({ merchant: entry.merchant, amount: entry.amount, type: 'expense', date: new Date().toISOString() }, recordsRef.current);
+      if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
       const trusted = sameKey(entry.key, prefs.autoLogKey);
       if (trusted && prefs.autoLog) autoLogFor(entry);
       else setPendingLog({ ...entry, trusted });
@@ -688,13 +839,13 @@ function App() {
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
-    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
+    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
     budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
-    subscriptions, subSummary, saveSubscription, deleteSubscription, logSubscription, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
+    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -707,7 +858,7 @@ function App() {
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
   const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
   const rootStyle = { ...glassVars, ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''}`;
+  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -734,7 +885,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -753,7 +904,7 @@ function App() {
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
-      <nav className="bottom-nav" aria-label={tr('Main navigation')}>
+      {layout.mode === 'phone' ? <nav className="bottom-nav" aria-label={tr('Main navigation')}>
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
@@ -762,10 +913,22 @@ function App() {
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
         })}
-      </nav>
+      </nav> : <nav className="side-nav" aria-label={tr('Main navigation')}>
+        <span className="side-brand"><MovoMark size={30} /><span>Movo</span></span>
+        {NAV.map(([label, icon, target]) => {
+          const active = activeTab === target; const center = target === 'NasrinAI';
+          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} title={tr(label)}>
+            <span className="side-icon">{center ? <NasrinMark size={20} /> : <Icon name={icon} size={22} strokeWidth={1.8} filled={active} />}{target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}</span>
+            <span className="side-label">{tr(label)}</span>
+          </button>;
+        })}
+        <span className="side-spacer" />
+        <button type="button" className="side-item side-add" onClick={() => openForm('expense')} title={tr('Add transaction')}><span className="side-icon"><Icon name="plus" size={22} strokeWidth={2} /></span><span className="side-label">{tr('Add transaction')}</span></button>
+        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
+      </nav>}
 
-      {sheet?.name === 'transaction' && <TransactionSheet currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
-      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { setError(''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
+      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', date: f.occurred_at ? `${f.occurred_at}T12:00:00` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
       {sheet?.name === 'account' && <AccountSheet base={base} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
@@ -786,7 +949,13 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {showTour && <Walkthrough onDone={finishTour} />}
+      {showTour && !locked && <Walkthrough onDone={finishTour} />}
+      {locked && <LockScreen onUnlock={unlock} onForgot={() => {
+        // Never unlock on "forgot": the only way past the lock is erasing this device's MOVO data (and the lock).
+        if (!window.confirm(tr('Reset Movo on this device? This removes the lock and all Movo data stored here. Data saved to your account returns after you sign in.'))) return;
+        const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+        wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
+      }} />}
       {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
       {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 
@@ -813,6 +982,7 @@ function App() {
       </Sheet>}
 
       {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label={tr('Account details')}>
+        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" />}</div>
         <dl className="detail-list"><div><dt>{tr('Institution')}</dt><dd>{accountChoice.institution_name || tr('Personal account')}</dd></div><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>{tr('Balance')}</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
         <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> {tr('Edit account')}</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> {tr('Archive account')}</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>{tr('Add transaction')}</button></div>
       </Sheet>}
@@ -839,7 +1009,8 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
       </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
-      {toast && <div className={`toast${busy ? ' raised' : ''}`} role="status" aria-live="polite">{toast}</div>}
+      <LoggedBurst id={burst?.id} label={burst?.label} onDone={endBurst} />
+      {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
   </div>;

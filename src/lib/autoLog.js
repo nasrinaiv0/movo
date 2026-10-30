@@ -50,8 +50,12 @@ export function isRepeat(entry) {
   return repeat;
 }
 
+const GENERIC = new Set(['account', 'card', 'wallet', 'bank', 'using', 'with', 'from', 'gamit']);
 export function matchAccount(card, accounts) {
   const c = card.toLowerCase();
+  const words = c.split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 4 && !GENERIC.has(w));
   return (c && accounts.find(a => c.includes(a.name.toLowerCase()) || (a.institution_name && c.includes(a.institution_name.toLowerCase())) || (a.mask && c.includes(a.mask))))
+    // "my savings" finds "BPI Savings": any distinctive word of the hint names the account.
+    || (words.length && accounts.find(a => `${a.name} ${a.institution_name || ''}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).some(w => words.includes(w))))
     || accounts.find(a => a.account_type === 'card') || accounts[0] || null;
 }

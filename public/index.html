@@ -3,13 +3,46 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f5f8" />
-    <meta name="description" content="MOVO — a calm, premium view of your money." />
+    <meta name="theme-color" content="#f5f5f8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f0f0f" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="Movo — Financial Tracker. A calm, private view of your money." />
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-    <title>MOVO — Financial clarity</title>
+    <link rel="icon" href="%PUBLIC_URL%/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="%PUBLIC_URL%/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <title>Movo — Financial Tracker</title>
+    <style>
+      /* Loading screen, shown before the app's JavaScript runs. The mark shifts slowly between its colourways. */
+      #movo-splash { position: fixed; inset: 0; z-index: 1000; display: grid; place-content: center; justify-items: center; gap: 6px; background: #f5f5f8; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; transition: opacity .35s ease-out; }
+      #movo-splash.leaving { opacity: 0; pointer-events: none; }
+      #movo-splash svg { width: 92px; height: 80px; margin-bottom: 12px; }
+      #movo-splash .w { font-size: 30px; font-weight: 700; letter-spacing: -.5px; color: #0d1b2a; }
+      #movo-splash .s { font-size: 13px; letter-spacing: .14em; color: #5b6472; }
+      #movo-splash .d { fill: #0b7a54; animation: mv-d 4.8s ease-in-out infinite; }
+      #movo-splash .l { fill: #3dba78; animation: mv-l 4.8s ease-in-out infinite; }
+      #movo-splash .m { fill: #10a866; animation: mv-m 4.8s ease-in-out infinite; }
+      @keyframes mv-d { 0%, 30%, 100% { fill: #0b7a54; } 50%, 80% { fill: #2b2b2e; } }
+      @keyframes mv-l { 0%, 30%, 100% { fill: #3dba78; } 50%, 80% { fill: #8a8a8a; } }
+      @keyframes mv-m { 0%, 30%, 100% { fill: #10a866; } 50%, 80% { fill: #555559; } }
+      @media (prefers-color-scheme: dark) {
+        #movo-splash { background: #0f0f0f; }
+        #movo-splash .w { color: #fff; }
+        #movo-splash .s { color: #8e8e93; }
+        @keyframes mv-d { 0%, 30%, 100% { fill: #0b7a54; } 50%, 80% { fill: #d4d4d8; } }
+        @keyframes mv-l { 0%, 30%, 100% { fill: #3dba78; } 50%, 80% { fill: #ffffff; } }
+        @keyframes mv-m { 0%, 30%, 100% { fill: #10a866; } 50%, 80% { fill: #e9e9ec; } }
+      }
+      @media (prefers-reduced-motion: reduce) { #movo-splash .d, #movo-splash .l, #movo-splash .m { animation: none; } #movo-splash { transition: none; } }
+    </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run MOVO.</noscript>
+    <noscript>You need to enable JavaScript to run Movo.</noscript>
+    <div id="movo-splash" role="status" aria-label="Loading Movo">
+      <svg viewBox="0 0 120 104" aria-hidden="true"><path class="d" d="M26 10H94Q116 10 116 32V78Q116 100 94 100H26Q4 100 4 78V32Q4 10 26 10Z"/><path class="l" d="M4 32Q4 10 26 10H34L60 46V56H10Q4 56 4 50Z"/><path class="m" d="M60 46L86 10H94Q116 10 116 32V50Q116 56 110 56H60Z"/><path class="m" d="M92 64H108Q120 64 120 76Q120 88 108 88H92Q80 88 80 76Q80 64 92 64Z"/><circle class="l" cx="94" cy="76" r="5"/></svg>
+      <span class="w">Movo</span>
+      <span class="s">FINANCIAL TRACKER</span>
+    </div>
     <div id="root"></div>
   </body>
 </html>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import Icon, { NasrinMark } from './Icon';
+import Icon from './Icon';
+import { MovoMark } from './MovoLogo';
 import { t as tr } from '../lib/i18n';
 
 /* First-run tour: a welcome card, then a few steps that each spotlight one part of the app. */
@@ -43,7 +44,7 @@ export default function Walkthrough({ steps = TOUR_STEPS, onDone }) {
   if (!step) {
     return <div className="tour-backdrop" role="presentation">
       <div className="tour-welcome" role="dialog" aria-modal="true" aria-labelledby="tour-title">
-        <span className="tour-orb" aria-hidden="true"><NasrinMark size={30} /></span>
+        <span className="tour-logo" aria-hidden="true"><MovoMark size={64} /></span>
         <h2 id="tour-title">{tr('Welcome to MOVO')}</h2>
         <p>{tr('A private place to track your money. Your records stay on this device unless you sign in.')}</p>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={onDone}>{tr('Skip')}</button><button type="button" className="primary-button" onClick={() => setStage(0)} autoFocus>{tr('Take a quick tour')}</button></div>

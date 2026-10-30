@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { guessCategory } from '../lib/ocr';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { evaluate, press, tokenize } from '../lib/calc';
@@ -16,7 +17,9 @@ const keyFor = (k) => ({ '*': '×', x: '×', '/': '÷', '-': '−', Enter: '=', 
 const pretty = (expr) => tokenize(expr).map(t => (/^\d/.test(t) || t.startsWith('.') ? Number(t).toLocaleString(getFormatLocale(), { maximumFractionDigits: 2 }) + (t.endsWith('.') ? '.' : '') : ` ${t} `)).join('');
 
 /** Calculator-first add/edit transaction sheet: type the amount on the keypad, pick a category, save. */
-export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan }) {
+export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan, autoCategory = false }) {
+  // Auto categorization: suggest a category from the description until the person picks one themselves.
+  const [catTouched, setCatTouched] = useState(!!editing);
   const [expr, setExpr] = useState(form.amount ? String(Number(form.amount)) : '');
   const [allCats, setAllCats] = useState(false);
   const [padOpen, setPadOpen] = useState(true);
@@ -63,11 +66,11 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
       </div>
     </div>
 
-    <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
+    <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => { const merchant = e.target.value; const guess = autoCategory && !catTouched && type === 'expense' ? guessCategory(merchant) : 'Other'; setForm({ ...form, merchant, ...(guess !== 'Other' ? { category: guess } : {}) }); }} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
 
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>
       <div className="tx-cats-head"><span>{tr('Category')}</span><button type="button" onClick={() => setAllCats(v => !v)}>{allCats ? tr('Less') : tr('View all')}<Icon name="down" size={14} className={allCats ? 'flip' : ''} /></button></div>
-      <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={form.category === value ? 'selected' : ''} aria-pressed={form.category === value} onClick={() => setForm({ ...form, category: value })}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{tr(name)}</button>)}</div>
+      <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={form.category === value ? 'selected' : ''} aria-pressed={form.category === value} onClick={() => { setCatTouched(true); setForm({ ...form, category: value }); }}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{tr(name)}</button>)}</div>
     </section>}
 
     <div className="tx-meta">

@@ -10,7 +10,7 @@ export default function Menu({ c }) {
   const over = budgetList.filter(b => b.level === 'over').length;
   const items = [
     { icon: 'user', tone: 'blue', title: 'Profile', sub: user.email || tr('Your details, accounts and settings'), onClick: () => go('Profile') },
-    { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: subSummary.dueSoon.length || null, onClick: () => go('Subscriptions') },
+    { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
     { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals with a target date'), onClick: () => c.openBudgets('plans') },
     { icon: 'sliders', tone: 'orange', title: 'Limits', sub: budgetList.length ? (over ? tr('{n} over the limit', { n: over }) : tr('{n} monthly limit(s), all on track', { n: budgetList.length })) : tr('Monthly spending limits per category'), onClick: () => c.openBudgets('budgets') },
   ];

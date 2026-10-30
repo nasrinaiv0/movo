@@ -7,6 +7,7 @@ import { t as tr, rich, getLanguage } from '../lib/i18n';
 import { parseLogMessage } from '../lib/chatLog';
 import { money, shown, formatDate } from '../lib/format';
 import { Tile } from './ui';
+import { MovoMark } from './MovoLogo';
 import { SubIcon } from '../screens/Subscriptions';
 import { catalogFor } from '../lib/subscriptions';
 
@@ -32,25 +33,27 @@ function friendlyError(code) {
 const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
 
 /** A record logged from chat: what was saved, where, and a one-tap undo. */
-function LogCard({ items, removed, show, onUndo }) {
+function LogCard({ items, removed, show, onUndo, onLogAnyway }) {
   return <div className="chat-log-card">
     {items.map(row => {
       const gone = removed.includes(row.id);
       const sign = row.transaction_type === 'income' ? '+' : '−';
-      return <div key={row.id} className={`chat-log-row${gone ? ' gone' : ''}`}>
+      return <div key={row.id} className={`chat-log-row${gone ? ' gone' : ''}${row.duplicateOf ? ' duplicate' : ' added'}`}>
         {catalogFor(row.merchant) ? <SubIcon sub={{ name: row.merchant }} size={40} /> : <Tile name={row.merchant} size={40} radius={12} />}
         <span className="chat-log-main"><strong>{row.merchant}</strong><small>{[tr(row.category), row.accountName, new Date(row.occurred_at).toDateString() === new Date().toDateString() ? tr('Today') : formatDate(row.occurred_at, { month: 'short', day: 'numeric' }, 'md')].filter(Boolean).join(' · ')}</small></span>
         <span className={`chat-log-amount ${row.transaction_type}`}>{sign}{shown(show, money(row.amount, row.currency))}</span>
-        <span className="chat-log-status">{gone
+        <span className="chat-log-status">{row.duplicateOf
+          ? <><span className="dup"><Icon name="info" size={13} strokeWidth={2.4} />{tr('Already logged on {date}. Not added twice.', { date: formatDate(row.duplicateOf.occurred_at, { month: 'short', day: 'numeric' }, 'md') })}</span><button type="button" className="link-button" onClick={() => onLogAnyway(row)}>{tr('Log anyway')}</button></>
+          : gone
           ? <span className="muted">{tr('Removed')}</span>
-          : <><span className="ok"><Icon name="check" size={13} strokeWidth={2.6} />{tr('Added to your transactions')}</span><button type="button" className="link-button" onClick={() => onUndo(row.id)}>{tr('Undo')}</button></>}
+          : <><span className="ok"><span className="chat-log-mark" aria-hidden="true"><MovoMark size={16} /></span>{tr('Added to your transactions')}</span><button type="button" className="link-button" onClick={() => onUndo(row.id)}>{tr('Undo')}</button></>}
         </span>
       </div>;
     })}
   </div>;
 }
 
-export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, show = true }) {
+export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, shortcuts = [], show = true }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -69,6 +72,19 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [phase, setPhase] = useState('reading');
   const endRef = useRef(null);
   const inputRef = useRef(null);
+  const composerRef = useRef(null);
+  const chatRef = useRef(null);
+  // The composer is pinned above the tab bar; the thread keeps room for its current height.
+  useEffect(() => {
+    const el = composerRef.current; const host = chatRef.current;
+    if (!el || !host || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => host.style.setProperty('--composer-h', `${Math.ceil(el.offsetHeight)}px`));
+    ro.observe(el); return () => ro.disconnect();
+  }, []);
+  useEffect(() => {
+    const el = inputRef.current; if (!el) return;
+    el.style.height = 'auto'; el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  }, [draft]);
 
   useEffect(() => {
     if (!busy) return undefined;
@@ -163,6 +179,13 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     }
   };
 
+  const logAnyway = async (index, row) => {
+    try {
+      const [added] = await onLog([row.entry], true);
+      setMessages((current) => current.map((m, i) => (i === index ? { ...m, items: m.items.map(x => (x.id === row.id ? added : x)) } : m)));
+    } catch { setError(tr('That could not be saved. Please try again.')); }
+  };
+
   const undo = async (index, id) => {
     try {
       await onUndoLog?.(id);
@@ -215,6 +238,12 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     finally { setAttaching(false); inputRef.current?.focus(); }
   };
 
+  // Shortcuts: log actions open MOVO's own forms; read actions answer here from this device's records (never sent to NasrinAI).
+  const runShortcut = (item) => {
+    if (item.say) { setMessages((current) => [...current, { role: 'user', content: tr(item.label), local: true }, { role: 'assistant', content: item.say(), local: true }]); return; }
+    item.run?.();
+  };
+
   const reset = () => {
     setMessages([]);
     setConversationId(null);
@@ -224,7 +253,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     try { if (session?.user?.id) window.sessionStorage.setItem('movo.ai.newConversation.' + session.user.id, 'true'); } catch { /* storage unavailable */ }
   };
 
-  return <section className="movo-ai-chat" aria-label={tr('NasrinAI financial copilot')}>
+  return <section className="movo-ai-chat" ref={chatRef} aria-label={tr('NasrinAI financial copilot')}>
     <header className="movo-ai-chat-header">
       <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={24} state={busy ? phase : undefined} /></div>
       <div className="movo-ai-heading"><h1>{tr('NasrinAI')}</h1><p>{tr('Private financial copilot · MOVO')}</p></div>
@@ -243,7 +272,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       </div>}
       {messages.map((message, index) => message.role === 'log' ? <article key={index} className="movo-ai-message log">
         <span className="movo-ai-message-label">{tr('NasrinAI')}</span>
-        <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} />
+        <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} onLogAnyway={(row) => logAnyway(index, row)} />
       </article> : <article key={index} className={'movo-ai-message ' + message.role}>
         <span className="movo-ai-message-label">{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
@@ -256,15 +285,21 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     {!session?.user || !cloudMode
       ? <div className="movo-ai-signin compact"><p>{tr('Logging works on this device. Sign in to ask NasrinAI about your money.')}</p><button type="button" className="link-button" onClick={onSignIn}>{tr('Sign in to MOVO')}</button></div>
       : !privacyAccepted && <button type="button" className="movo-ai-review" onClick={() => setConsentOpen(true)}><Icon name="lock" size={16} strokeWidth={2} />{tr('Review and accept to start chatting')}</button>}
-    <>
-      <form className="movo-ai-composer" onSubmit={send}>
+          <form className="movo-ai-composer" ref={composerRef} onSubmit={send}>
         <input ref={fileRef} type="file" accept="image/*,.txt,.csv,text/plain,text/csv" hidden onChange={attach} aria-label={tr('Attach a photo or file')} />
-        <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
+        {shortcuts.length > 0 && <div className="movo-ai-shortcuts" role="toolbar" aria-label={tr('Shortcuts')}>
+          {shortcuts.map((item) => <button key={item.id} type="button" onClick={() => runShortcut(item)} disabled={busy}><Icon name={item.icon} size={14} strokeWidth={2} />{tr(item.label)}</button>)}
+        </div>}
         <label className="sr-only" htmlFor="movo-ai-prompt">{tr('Message NasrinAI')}</label>
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="1" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr('Log “Grab 250” or ask NasrinAI…')} disabled={busy} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(e); } }} />
-        <button type="button" className={`movo-ai-circle${listening ? ' live' : ''}`} onClick={toggleMic} disabled={busy} aria-pressed={listening} aria-label={listening ? tr('Stop dictation') : tr('Dictate a message')} title={listening ? tr('Stop dictation') : tr('Dictate a message')}><Icon name={listening ? 'stop' : 'mic'} size={16} strokeWidth={2} /></button>
-        <button type="submit" className="movo-ai-circle movo-ai-send" disabled={busy || !draft.trim()} aria-label={tr('Send message')}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={16} strokeWidth={2.4} />}</button>
-      </form></>
+        {/* Enter starts a new line; only the send button sends. */}
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr('Log “Grab 250” or ask NasrinAI…')} disabled={busy} enterKeyHint="enter" />
+        <div className="movo-ai-composer-bar">
+          <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
+          <span className="movo-ai-composer-gap" />
+          <button type="button" className={`movo-ai-circle${listening ? ' live' : ''}`} onClick={toggleMic} disabled={busy} aria-pressed={listening} aria-label={listening ? tr('Stop dictation') : tr('Dictate a message')} title={listening ? tr('Stop dictation') : tr('Dictate a message')}><Icon name={listening ? 'stop' : 'mic'} size={16} strokeWidth={2} /></button>
+          <button type="submit" className="movo-ai-circle movo-ai-send" disabled={busy || !draft.trim()} aria-label={tr('Send message')}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={16} strokeWidth={2.4} />}</button>
+        </div>
+      </form>
     {consentOpen && <div className="movo-ai-consent-backdrop" role="presentation">
       <div className="movo-ai-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="movo-ai-consent-title" aria-describedby="movo-ai-context-disclosure">
         <span className="movo-ai-consent-mark" aria-hidden="true"><NasrinMark size={30} /></span>

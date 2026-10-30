@@ -9,6 +9,8 @@ test.each([
   ['Add 699 for gpt subs', { type: 'expense', amount: 699, merchant: 'ChatGPT Plus', category: 'Subscriptions' }],
   ['Salary 50k', { type: 'income', amount: 50000, category: 'Income' }],
   ['received 5000 from Juan', { type: 'income', amount: 5000, merchant: 'Juan', category: 'Income' }],
+  ['I just buy a bread amounting $30 I mean 30 pesos', { type: 'expense', amount: 30, currency: 'PHP', merchant: 'Bread' }],
+  ['I paid 1500 for groceries at Puregold', { amount: 1500, category: 'Groceries' }],
   ['Starbucks $6.75', { amount: 6.75, currency: 'USD', merchant: 'Starbucks', category: 'Food & drinks' }],
 ])('logs "%s"', (text, expected) => {
   expect(parseLogLine(text, now)).toMatchObject(expected);
@@ -33,4 +35,15 @@ test.each([
 test('logs several lines at once, but only when every line is a log', () => {
   expect(parseLogMessage('Grab 250\nNetflix 549\nsalary 50000', now).map(e => e.merchant)).toEqual(['Grab', 'Netflix', 'Salary']);
   expect(parseLogMessage('Grab 250\nwhat did I spend?', now)).toEqual([]);
+});
+
+test('reads Filipino logs and keeps the account out of the merchant', () => {
+  const [e] = parseLogMessage('Bumili ako ng saging kanina 20 pesos gamit ang savings account ko');
+  expect(e).toMatchObject({ type: 'expense', amount: 20, currency: 'PHP', merchant: 'Saging', category: 'Groceries', accountHint: 'savings account' });
+  const [y] = parseLogMessage('Nagbayad ng kuryente 1500 kahapon', new Date('2026-10-30T12:00:00'));
+  expect(y).toMatchObject({ type: 'expense', amount: 1500, merchant: 'Kuryente', category: 'Bills' });
+  expect(y.date.getDate()).toBe(29);
+  expect(parseLogMessage('Sahod 25000')[0].type).toBe('income');
+  expect(parseLogMessage('Magkano ang gastos ko?')).toEqual([]);
+  expect(parseLogMessage('I just bought bread $30 using my BDO card')[0]).toMatchObject({ merchant: 'Bread', accountHint: 'bdo card' });
 });
