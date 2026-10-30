@@ -345,3 +345,28 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - **Current code head:** `4472a470e1efb18b0cccedeb7d9d9cbd43babd09`; exact-head validation pending.
 - **Integration:** PR #60 has a static PHP-only currency statement that must be reconciled before that PR can merge.
 - No database, RLS/grants, financial records, Auth settings, or secrets changed.
+
+## PR #63 — production disclosure correction and post-merge verification (2026-10-30 11:30 Asia/Manila)
+
+- **PR:** [#63](https://github.com/nasrinaiv0/movo/pull/63); merged commit `1df043bcc54d59bee16fce806b601e09d647b06e`.
+- **Scope:** copy/legal metadata only. Replaced the absolute “Your account stays isolated” claim with an explicit limitation stating that the upstream context boundary has not yet been independently verified end to end; users should avoid real/highly sensitive financial details until verification is complete. Added the same caveat to Privacy Policy and split Terms/Privacy effective dates (October 29 / October 30, 2026).
+- **Exact-head CI:** [#40997576900](https://github.com/nasrinaiv0/movo/actions/runs/40997576900) passed 17 suites / 95 tests, TypeScript typecheck, production-only audit (0 vulnerabilities), and production build.
+- **Preview:** dpl_8g7qW9jw11r68N6ygt2MbqzeBxHb READY, root HTTP 200; served bundle contained the caveat and no longer contained the old absolute claim.
+- **Production:** deployment dpl_CoSq9dcgCG2qVbCkm1BBSeRU2r1U READY at merged commit; root HTTP 200. Served bundle verification confirmed the caveat, October 30 Privacy Policy date, and absence of the old claim.
+- **Limit:** this improves transparency only; it does not establish or implement the upstream isolation boundary. Issue #47 and PR #56 remain open/draft pending authenticated scoped POST and unrelated-project canary.
+- **Security:** no API behavior, data retrieval, auth, RLS, grants, database schema, financial records, or secrets changed.
+
+## Post-hotfix current release snapshot — 2026-10-30 11:30 Asia/Manila
+- #43 head `d6f2fcd40ad9c5438e031400dd5120d77272bec0`: 20 suites / 118 tests; typecheck; production-only audit (0); build; preview READY/root 200. Finance profile currency fix present; auth CRUD/CSV/currency-isolation gates open.
+- #52 head `4b645666108174f31d4875d0da063bd8fe1c0170`: 18 suites / 101 tests; typecheck; production-only audit (0); build; preview READY/root 200. Authenticated chart provenance gate open.
+- #56 head `06b5680b069ce17b75b9e2d63e3e0904bdda703e`: 18 suites / 103 tests; typecheck; production-only audit (0); build; preview READY/root 200. Upstream context canary gate open.
+- #60 head `43087d907be095ef42d8fbcd7b8d9b2cc6723662`: 20 suites / 111 tests; typecheck, `audit:controls`, production-only audit (0), build; preview READY/root 200. Manual accessibility gate open.
+- Fresh catalog: 7/7 checked tables RLS enabled; 22/22 policies on six user-facing tables reference `auth.uid()`; no checked anon/public grants; upstream mapping has no policies or authenticated grants and remains service-role-only.
+- Rechecked governance: main branch API says protected=false, required checks enforcement off, and repository rulesets list empty. Full dependency tree 34 findings (16 low, 5 moderate, 13 high); production-only audit zero. Leaked-password protection remains disabled. Legal publication warning remains.
+
+## Finance currency-test assertion correction — 2026-10-30 11:43 Asia/Manila
+
+- Reviewed exact-head GitHub Actions run [#40998551699](https://github.com/nasrinaiv0/movo/actions/runs/40998551699): **2 failed / 118 passed**. Both failures were stale assertions after the Appearance → Display Currency copy/label changed; the finance implementation tests passed. This failure was preserved and not described as green.
+- Corrected the accessible-label assertion in `src/App.test.js` to match `aria-label="Display Currency"`; updated `src/screens/Settings.test.js` to assert the actual multi-currency guidance; and fixed the remaining single-currency assertion to look for “no conversion is applied”. No product code, financial calculations, auth, database, RLS/grants, or secrets changed in these test-only corrections.
+- Exact code/test head `aec4d68ca86fc6a0b17ce3c12c7780e4551de861` has a Vercel READY deployment [dpl_7ty9PTCxqCSq7BgAD89N1mKmgzSS](https://vercel.com/nasrin-ai/movo/7ty9PTCxqCSq7BgAD89N1mKmgzSS). Its build log confirms TypeScript typecheck, **20 suites / 120 tests passed**, and “Compiled successfully.” The production-only audit and `audit:controls` were not independently rerun on this code head; the dependency manifest was unchanged.
+- PR #43 remains draft. Authenticated cloud finance CRUD, CSV import/export, and owner-scoped currency-isolation flows remain unverified. Do not merge based solely on tests and preview build.
