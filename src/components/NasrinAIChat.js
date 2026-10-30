@@ -62,6 +62,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const requestEpochRef = useRef(0);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const pendingVoiceTextsRef = useRef([]);
+  busyRef.current = busy;
   const [error, setError] = useState('');
   const [privacyAccepted, setPrivacyAccepted] = useState(() => readAck(session?.user?.id));
   const [consentOpen, setConsentOpen] = useState(false);
@@ -109,6 +112,12 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   }, [busy]);
 
   useEffect(() => { if (typeof endRef.current?.scrollIntoView === 'function') endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
+
+  useEffect(() => {
+    if (busy || !voiceRef.current || !pendingVoiceTextsRef.current.length) return;
+    const next = pendingVoiceTextsRef.current.shift();
+    if (next) sendRef.current?.(null, next);
+  }, [busy]);
 
   useEffect(() => {
     let active = true;
@@ -317,6 +326,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     audioContextRef.current?.close?.().catch(() => {});
     audioContextRef.current = null;
     audioQueueRef.current = [];
+    pendingVoiceTextsRef.current = [];
     audioPlayingRef.current = false;
     window.speechSynthesis?.cancel();
     spokenRef.current = '';
@@ -354,7 +364,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         if (!echo) {
           audioQueueRef.current = [];
           window.speechSynthesis?.cancel();
-          sendRef.current?.(null, text);
+          if (busyRef.current) pendingVoiceTextsRef.current.push(text);
+          else sendRef.current?.(null, text);
         }
       }
     } catch {
