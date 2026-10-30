@@ -20,10 +20,10 @@ The CSV importer previously removed every comma, currency symbol, and whitespace
 - This change record and the master change ledger.
 
 ## Validation status
-- Exact-head GitHub Actions run [41007544994](https://github.com/nasrinaiv0/movo/actions/runs/41007544994) passed on source/test head `fb7f018de8446d9a63a95bb70a5b61970a68e00f`.
-- Confirmed: **20 test suites / 127 tests passed**, TypeScript typecheck passed, `npm audit --omit=dev` reported **0 vulnerabilities**, and production compilation succeeded.
-- Exact-head Vercel deployment [2AMQcgkT9x89gd1C6HYa8NpoUykH](https://vercel.com/nasrin-ai/movo/2AMQcgkT9x89gd1C6HYa8NpoUykH) reached **READY**.
-- The source/test head above was fully validated. A subsequent documentation-only follow-up updates this evidence record and the handoff files; verify the final documentation head's CI before merge, and do not infer a pass for a new head from an older run.
+- Exact source/test head `fb7f018de8446d9a63a95bb70a5b61970a68e00f` passed GitHub Actions run [41007544994](https://github.com/nasrinaiv0/movo/actions/runs/41007544994): **20 test suites / 127 tests passed**, TypeScript typecheck passed, `npm audit --omit=dev` reported **0 vulnerabilities**, and production compilation succeeded.
+- Documentation-only follow-up head `d0aa73d7e99105546ca27e49b1cd510125d177e4` also passed GitHub Actions run [41007756323](https://github.com/nasrinaiv0/movo/actions/runs/41007756323) with the same **20 suites / 127 tests**, typecheck, production-only audit (**0 vulnerabilities**), and production build.
+- Exact-head Vercel preview [dpl_4zaKJ7CZfMBKfZpDmznoWzK5aeiL](https://vercel.com/nasrin-ai/movo/4zaKJ7CZfMBKfZpDmznoWzK5aeiL) reached **READY**. The preview root returned HTTP 200, and the deployed JavaScript bundle contained the new amount-format validation message. A static bundle check is not an interactive authenticated CSV-import test.
+- This evidence file is being refreshed as a documentation-only follow-up. Always verify live CI/deployment status for the final current SHA before merge; do not reuse a result for a later, untested SHA.
 
 ## Security and limitations
 - No database schema, financial records, Supabase RLS/grants, authentication settings, deployment variables, or provider secrets were changed.
