@@ -1,5 +1,25 @@
 # MOVO Pull Request Progress Register
 
+## Latest audit snapshot — 2026-10-30 15:08 Asia/Manila (07:08 UTC)
+
+- Current main: 86c28e90805869816c3a17dd40f6a2398d0b7291. Current production deployment dpl_BT3wbamTQw387JDRBnXqSkUECDrK is READY at the same SHA; movo.nasrinai.com returned HTTP 200. No application-code deployment newer than this main commit was identified.
+- PR #60 current head 76d8be917a27083b8c1bc557e9fc5e2de2f0fed1 is open/draft. Exact-head CI #41015057727 passed 20 suites / 116 tests, typecheck, audit:controls, production-only npm audit (0 vulnerabilities) and production build. Matching preview dpl_5cRdXx1g3fbtPf5YoEUENgm3vpM6 is READY.
+- New PR #60 behavior since the prior 13:51 checkpoint: the notification-detail More button now opens a dedicated Notification actions sheet, not the global Quick actions menu. Mark as unread updates read state and returns to the Unread feed; Notification settings opens Notification Channels. Two App-level regression tests cover both paths.
+- PR #43 current head 19a2641a3f987d129f172077dfa2d8d49c24c9c2 is open/draft; exact-head CI #41010265858 passed 20 suites / 127 tests, typecheck, production-only npm audit and production build. Preview dpl_DitmTVsr2Kk67RkJvZuPAUBAXyAj is READY. Strict CSV monetary amount validation rejects malformed grouping/scientific notation rather than silently normalizing it; this code remains preview-only.
+- PR #52 current head 6dab55aec6378283631761650a39c6cbf7272671 is open/draft; exact-head CI #41007086687 passed 18 suites / 101 tests; preview is READY. Authenticated chart provenance against the owner's finance records remains unverified.
+- PR #56 current head cbcb2d6db42ac0dee6c235e0df95f344fcebf86b is open/draft; exact-head CI #41006746648 passed 18 suites / 104 tests; preview is READY. Missing/blank NASRINAI_API_KEY now fails closed with HTTP 503 before provider calls or chat persistence, but the authenticated scope-isolation canary is still blocked/unverified; keep issue #47 open.
+- Full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high); the production-only audit reports zero. These are different scopes.
+- Prior read-only Supabase evidence (not rerun in this checkpoint): RLS enabled on 7/7 checked tables, 22 user-facing policies reference auth.uid(), no anon/PUBLIC grants in the checked set, and upstream mapping remains server-role-only. Leaked-password protection was previously reported disabled.
+- Carried forward, not freshly rechecked: main-branch protection, formal legal publication facts/retention/provider disclosures, authenticated finance CRUD/CSV/currency isolation, manual keyboard/focus/screen-reader/mobile QA, and the authenticated MOVO-only context boundary.
+
+### Current open implementation PRs
+- #43 Finance ledger/CSV/currency: exact-head CI #41010265858 passed 20 suites / 127 tests; preview READY; authenticated finance/CSV/ownership tests remain open.
+- #52 Chart integrity: CI #41007086687 passed 18 suites / 101 tests; preview READY; authenticated chart provenance remains open.
+- #56 NasrinAI context boundary: CI #41006746648 passed 18 suites / 104 tests; preview READY; authenticated canary remains blocked/unverified; issue #47 stays open.
+- #60 Accessibility/control audit and notification actions: CI #41015057727 passed 20 suites / 116 tests, typecheck, audit:controls, production-only npm audit and build; preview READY; manual QA remains open.
+
+--- Historical material retained below ---
+
 **Last reconciled:** 2026-10-29 13:02 UTC  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
