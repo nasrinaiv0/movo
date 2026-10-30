@@ -336,11 +336,12 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - The protected deployment fetch in this checkpoint failed at Vercel's share-link/authentication layer before reaching the app; it is not API evidence. No authenticated chat canary was completed.
 - No production data, database/RLS/grants, Auth settings, or secrets were changed.
 
-## Display Currency setting implementation — 2026-10-30 11:35 Asia/Manila
+## Display Currency selector hardening — 2026-10-30 11:35 Asia/Manila
 
-- **Finding:** The finance importer instructed users to change “Display Currency in Settings,” but the Settings UI had no such control. The app context already exposed `displayCurrency`, `availableCurrencies`, and a validated `setPref('displayCurrency', ...)` path, so the user-facing selector was missing.
-- **Implementation on PR #43 branch:** Added a native, labelled `Preferences → Display Currency` select wired to the existing preference setter. It lists only validated available three-letter currency codes and follows the selected currency after state updates. When only one currency is available, the select is disabled and its associated description explains how to add another currency. The description explicitly says currencies remain separate and are not automatically converted.
-- **Appearance copy:** PR #43 branch does not contain the static “PHP is the only available currency” row found in the separate open PR #60 branch. Before #60 can merge after this feature, that row must be reconciled so it does not contradict the new selector.
-- **Regression tests:** Settings tests verify the selector exposes an accessible name and description, changing PHP→USD calls `setPref('displayCurrency', 'USD')`, no-FX wording is visible, and the selector is disabled with a clear explanation when only one currency is available.
-- **Validation boundary:** New source/test commit `dac81e426038e0165f235bae882cffdf9ef6c4bf` has not yet been validated by a fresh exact-head run at the time of this entry. Earlier green runs for the previous PR #43 head do not validate this change. Run typecheck, full tests, production build, production-only audit, and preview smoke after this commit.
-- No database, RLS/grants, financial records, authentication settings, or secrets changed.
+- **PR:** #43 existing finance branch; no duplicate PR.
+- **Finding:** The CSV importer references a Display Currency setting. The finance branch already has a selector in Appearance wired to `setPref('displayCurrency', ...)`, but it remained enabled when only one currency option existed and did not explain the lack of alternatives.
+- **Change:** Hardened the existing Appearance selector; did not add a second selector in Settings main. Options are validated three-letter codes plus the current currency. The select is disabled when only one currency is available, with an associated explanation to add/import another currency. With multiple options, the description states that currencies remain separate and are not automatically converted.
+- **Regression:** Settings tests verify accessible name/description, PHP→USD calls `setPref('displayCurrency', 'USD')`, no-FX wording, and the disabled single-currency state.
+- **Current code head:** `4472a470e1efb18b0cccedeb7d9d9cbd43babd09`; exact-head validation pending.
+- **Integration:** PR #60 has a static PHP-only currency statement that must be reconciled before that PR can merge.
+- No database, RLS/grants, financial records, Auth settings, or secrets changed.
