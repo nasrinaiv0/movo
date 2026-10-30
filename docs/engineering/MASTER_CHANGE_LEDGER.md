@@ -415,3 +415,14 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - Correction: restored the source from `15316f97bce721f815425b7fe867a549c712c89b` and reapplied only the strict parser function. Commit `7c41531c0a48a60433d2cca10262734c03ce4ed7`.
 - Follow-up record: [strict CSV quote validation](updates/2026-10-30-1158-strict-csv-quoting.md).
 - Exact-head validation is pending; earlier passing PR checks do not validate this corrected commit.
+
+
+## Exact final-head validation — 2026-10-30 12:02 Asia/Manila
+
+- Final reconciled PR head: `a2d86b7b4a7a9bf7fa9796a31afe2483b9ea283f`.
+- GitHub Actions run [41000545238](https://github.com/nasrinaiv0/movo/actions/runs/41000545238) completed successfully. Its logs confirm **20/20 test suites and 125/125 tests passed**, TypeScript typecheck passed, production-only npm audit reported **0 vulnerabilities**, and the optimized production build compiled successfully.
+- Vercel deployment [dpl_2kpjd6GauvZuR93uieuoFoKTqV9C](https://vercel.com/nasrin-ai/movo/2kpjd6GauvZuR93uieuoFoKTqV9C) reached **READY** for the same final PR head. The preview root returned **HTTP 200**.
+- The earlier failing run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655) is preserved in the history: it caught a regex-normalization regression caused by the first API rewrite. The source was restored from the pre-change file and only the strict parser function reapplied. The corrected final head passed all 125 tests.
+- Production-only audit success does not clear the full dependency tree: installation still reports 34 findings (16 low, 5 moderate, 13 high). The dependency manifests were unchanged in this CSV parser increment.
+- **Still unverified:** authenticated cloud finance writes, CSV import/export against real signed-in user-owned accounts, owner-scoped currency isolation, interactive keyboard/screen-reader/mobile checks, and the upstream NasrinAI canary. Preview HTTP 200 and CI are not substitutes for those flows.
+- PR #43 remains draft. No database schema/RLS/grants, Auth settings, production financial records, or secrets changed.
