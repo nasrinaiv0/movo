@@ -8,11 +8,11 @@ import { CATALOG } from './subscriptions';
  * and nothing here is sent to NasrinAI.
  */
 const QUESTION = /\?|^(how|what|why|which|when|where|who|show|summari[sz]e|compare|list|tell|explain|can|could|should|is|are|do|does|did)\b/i;
-const EXPENSE_VERB = /^(spent|spend|paid|pay|bought|buy|purchased|log|add|record|expense|gastos|bayad)\b/i;
+const EXPENSE_VERB = /^(spent|spend|paid|pay|bought|buy|purchased|log|add|record|expense|gastos|bayad|got)\b/i;
 const INCOME_WORD = /\b(salary|sahod|income|earned|received|got paid|paid me|bonus|refund|cashback|commission|allowance|sold|freelance|dividend|interest)\b/i;
 const AMOUNT = /(?:(?:php|usd|eur|gbp|jpy|sgd|aud|cad)\s?|[₱$€£¥]\s?)?(\d{1,3}(?:[,\s]\d{3})+|\d+)(?:\.(\d{1,2}))?\s?(k\b)?(?:\s?(php|usd|eur|gbp|jpy|sgd|aud|cad|pesos?|dollars?)\b)?/i;
 const CODES = { '₱': 'PHP', $: 'USD', '€': 'EUR', '£': 'GBP', '¥': 'JPY', peso: 'PHP', pesos: 'PHP', dollar: 'USD', dollars: 'USD' };
-const FILLER = /\b(i|my|me|just|today|yesterday|last night|this morning|tonight|spent|spend|paid|pay|bought|buy|purchased|log|add|record|an?|the|expense|for|on|at|to|from|in|via|using|with|worth|of|sub|subs|subscription|bill|pesos?|dollars?|php|usd|eur|gbp|jpy|sgd|aud|cad|gastos|bayad|got|received|earned)\b/gi;
+const FILLER = /\b(i|my|me|just|amounting|amount|costing|cost|total|a lot of|some|today|yesterday|last night|this morning|tonight|spent|spend|paid|pay|bought|buy|purchased|log|add|record|an?|the|expense|for|on|at|to|from|in|via|using|with|worth|of|sub|subs|subscription|bill|pesos?|dollars?|php|usd|eur|gbp|jpy|sgd|aud|cad|gastos|bayad|got|received|earned)\b/gi;
 
 const currencyOf = (line, match) => {
   const sym = line.slice(Math.max(0, match.index - 1), match.index + 1).match(/[₱$€£¥]/)?.[0] || (match[0].match(/[₱$€£¥]/) || [])[0];
@@ -35,7 +35,10 @@ function knownService(words) {
 
 /** One line → a draft record, or null when the line is not a request to log something. */
 export function parseLogLine(raw, now = new Date()) {
-  const line = String(raw || '').trim();
+  // "I just bought…", "we paid…" read the same as "bought…"; "…$30 I mean 30 pesos" keeps the corrected amount.
+  let line = String(raw || '').trim().replace(/^(i|we|i've|i have|we've)\s+(just\s+|already\s+)?/i, '');
+  const fix = line.match(/^(.*?)(?:,?\s*\bi mean\b|,?\s*\bsorry\b|,?\s*\bactually\b)\s+(.*)$/i);
+  if (fix && AMOUNT.test(fix[2])) line = `${fix[1].replace(AMOUNT, '').trim()} ${fix[2]}`.trim();
   if (!line || line.length > 160 || QUESTION.test(line)) return null;
   const match = line.match(AMOUNT);
   if (!match) return null;
