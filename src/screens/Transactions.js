@@ -40,11 +40,14 @@ export default function Transactions({ c }) {
       <select aria-label={tr('Select month')} value={month} onChange={e => setMonth(e.target.value)}>{months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select>
     </label>
   );
-  const sliders = <button type="button" className="round-button flat" aria-label={tr('Quick actions')} title={tr('Quick actions')} onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>;
+  const sliders = <span className="chip-tools">
+    <button type="button" className="round-button flat" aria-label={tr('Quick actions')} title={tr('Quick actions')} onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>
+    <button type="button" className="round-button accent" aria-label={tr('Add transaction')} title={tr('Add transaction')} onClick={() => c.openForm('expense')}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
+  </span>;
 
   return <>
     <RootHeader title={tr('Transactions')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
-    <Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} trailing={sliders} />
+    <div className="chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{sliders}</div>
     {txFilter !== 'All' && dateRange}
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
 

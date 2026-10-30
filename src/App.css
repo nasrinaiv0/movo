@@ -1685,3 +1685,22 @@ button.account-tile:active { transform: scale(.98); }
 .scan-text-btn { justify-self: start; min-height: 44px; padding: 0 6px; border: 0; background: none; color: #fff; font-size: 15px; font-weight: 500; }
 .scan-controls .scan-text-btn:last-child { justify-self: end; }
 .scan-shutter { width: 64px; height: 64px; border: 4px solid #fff !important; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 3px #000; }
+
+/* ---------- Consistent round buttons and a calm, centred NasrinAI orb ----------
+   Every round icon button is a true 44px circle with its icon exactly centred (no inherited chip padding).
+   The orb no longer "breathes" or gets a hover filter: Safari mis-draws SVG children under an animated scale plus
+   filter (and hover sticks after a tap on iPhone), which left the mark grey and off-centre. */
+.movo-app .round-button, .movo-app .chip-row .round-button { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
+.movo-app .round-button > .movo-icon { display: block; }
+.chip-tools { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; flex: none; }
+.chip-tools .round-button { margin: 0; }
+.movo-app.movo-app.movo-app .round-button.accent { background: var(--accent); color: var(--on-accent); border-color: transparent; box-shadow: 0 4px 12px rgba(var(--accent-rgb), .25); }
+.movo-app .orb, .movo-app .ai-panel .orb.big { animation: none; scale: none; filter: none; }
+.movo-app .bottom-nav .nav-center:hover .orb { filter: none; scale: none; }
+.movo-app .bottom-nav .nav-center:active .orb { scale: .94; }
+.movo-app .orb { display: grid; place-items: center; }
+.movo-app .orb > .nasrin-mark { display: block; flex: none; margin: 0; }
+/* Chips scroll; the tool buttons beside them stay pinned and fully visible. */
+.chip-bar { display: flex; align-items: center; gap: 8px; margin: 0 -18px 14px 0; }
+.chip-bar > .chip-row { flex: 1; min-width: 0; margin: 0 0 0 -18px; padding-right: 12px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent); }
+.chip-bar > .chip-tools { margin: 0 18px 0 0; }
