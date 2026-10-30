@@ -1,9 +1,11 @@
 import { dayKey, monthKey } from './format';
 
-const toCents = (value) => {
-  const number = Number(value);
-  return Number.isFinite(number) ? Math.round(number * 100) : 0;
-};
+export const isValidMoneyValue = (value) => value !== null
+  && value !== undefined
+  && !(typeof value === 'string' && value.trim() === '')
+  && Number.isFinite(Number(value));
+
+const toCents = (value) => (isValidMoneyValue(value) ? Math.round(Number(value) * 100) : NaN);
 const fromCents = (value) => value / 100;
 const transactionType = (row) => row?.transaction_type || row?.type;
 const transactionDate = (row) => row?.occurred_at || row?.date;
@@ -16,13 +18,19 @@ const isPending = (row) => row?.is_pending === true || row?.is_pending === 'true
  */
 export function transactionAccountDeltaCents(transaction, accountId) {
   if (!transaction || !accountId || isPending(transaction)) return 0;
-  const amount = Math.abs(toCents(transaction.amount));
   const type = transactionType(transaction);
-  if (transaction.account_id === accountId) {
+  const isSource = transaction.account_id === accountId;
+  const isTarget = type === 'transfer' && transaction.transfer_to_account_id === accountId;
+  if (!isSource && !isTarget) return 0;
+  if (!['income', 'expense', 'transfer'].includes(type)) return 0;
+  const amountCents = toCents(transaction.amount);
+  if (!Number.isFinite(amountCents)) return NaN;
+  const amount = Math.abs(amountCents);
+  if (isSource) {
     if (type === 'income') return amount;
     if (type === 'expense' || type === 'transfer') return -amount;
   }
-  if (type === 'transfer' && transaction.transfer_to_account_id === accountId) return amount;
+  if (isTarget) return amount;
   return 0;
 }
 
@@ -44,7 +52,8 @@ export function calculateAccountBalances(accounts = [], transactions = []) {
       }
       return true;
     });
-    const balanceCents = toCents(opening) + relevantTransactions.reduce(
+    const openingCents = toCents(opening);
+    const balanceCents = openingCents + relevantTransactions.reduce(
       (total, transaction) => total + transactionAccountDeltaCents(transaction, account.id), 0,
     );
     return {
@@ -65,7 +74,12 @@ export function calculateLedgerNet(transactions = [], currency = 'PHP') {
   let cents = 0;
   transactions.forEach((transaction) => {
     if (isPending(transaction) || (transaction.currency || 'PHP') !== currency) return;
-    const amount = Math.abs(toCents(transaction.amount));
+    const amountCents = toCents(transaction.amount);
+    if (!Number.isFinite(amountCents)) {
+      cents = NaN;
+      return;
+    }
+    const amount = Math.abs(amountCents);
     const type = transactionType(transaction);
     if (type === 'income') cents += amount;
     else if (type === 'expense') cents -= amount;
@@ -81,19 +95,23 @@ export function calculateMonthlyStats(transactions = [], key, currency = 'PHP') 
       && monthKey(date) === key
       && (transaction.currency || 'PHP') === currency;
   });
-  const totalFor = (type) => fromCents(list
-    .filter((transaction) => transactionType(transaction) === type && !isPending(transaction))
+  const invalidAmountCount = list.filter((transaction) => !isPending(transaction) && !isValidMoneyValue(transaction.amount)).length;
+  const validList = list.filter((transaction) => !isPending(transaction) && isValidMoneyValue(transaction.amount));
+  const totalFor = (type) => fromCents(validList
+    .filter((transaction) => transactionType(transaction) === type)
     .reduce((total, transaction) => total + Math.abs(toCents(transaction.amount)), 0));
   const [year, month] = key.split('-').map(Number);
   const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const barsCents = Array(12).fill(0);
-  list.filter((transaction) => transactionType(transaction) === 'expense' && !isPending(transaction)).forEach((transaction) => {
-    const day = Number(dayKey(transactionDate(transaction)).slice(8, 10));
-    barsCents[Math.min(11, Math.floor(((day - 1) / days) * 12))] += Math.abs(toCents(transaction.amount));
-  });
-  const income = totalFor('income');
-  const expenses = totalFor('expense');
-  const transfers = totalFor('transfer');
+  if (!invalidAmountCount) {
+    validList.filter((transaction) => transactionType(transaction) === 'expense').forEach((transaction) => {
+      const day = Number(dayKey(transactionDate(transaction)).slice(8, 10));
+      barsCents[Math.min(11, Math.floor(((day - 1) / days) * 12))] += Math.abs(toCents(transaction.amount));
+    });
+  }
+  const income = invalidAmountCount ? NaN : totalFor('income');
+  const expenses = invalidAmountCount ? NaN : totalFor('expense');
+  const transfers = invalidAmountCount ? NaN : totalFor('transfer');
   return {
     currency,
     income,
@@ -103,7 +121,8 @@ export function calculateMonthlyStats(transactions = [], key, currency = 'PHP') 
     incomeCount: list.filter((transaction) => transactionType(transaction) === 'income').length,
     net: fromCents(toCents(income) - toCents(expenses)),
     days,
-    bars: barsCents.map(fromCents),
+    bars: invalidAmountCount ? [] : barsCents.map(fromCents),
+    invalidAmountCount,
     count: list.length,
     list,
   };
@@ -111,6 +130,7 @@ export function calculateMonthlyStats(transactions = [], key, currency = 'PHP') 
 
 /** Aggregate category expenses in cents so donut segments sum to the displayed total. */
 export function calculateExpenseCategoryTotals(transactions = [], bucketOf) {
+  if (transactions.some((transaction) => !isPending(transaction) && !isValidMoneyValue(transaction.amount))) return null;
   const centsByCategory = {};
   transactions.forEach((transaction) => {
     if (transactionType(transaction) !== 'expense' || isPending(transaction)) return;

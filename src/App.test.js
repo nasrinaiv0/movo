@@ -90,6 +90,26 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[aria-label="Sample data notice"]')).toBeNull();
   });
 
+  test('warns and shows an em dash instead of zero for malformed local amounts', () => {
+    window.localStorage.setItem('movo.samples.enabled.v1', 'false');
+    window.localStorage.setItem('movo.local.accounts.v1', JSON.stringify([{
+      id: 'corrupt-account', name: 'Corrupt Checking', account_type: 'bank', currency: 'PHP',
+      opening_balance: 100, balance: 100, institution_name: 'Test Bank', mask: '1234', brand: 'blue',
+    }]));
+    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{
+      id: 'corrupt-transaction', merchant: 'Corrupt entry', amount: 'not-a-number', currency: 'PHP',
+      transaction_type: 'expense', account_id: 'corrupt-account', occurred_at: '2026-10-10T12:00:00Z',
+      category: 'Food', source: 'Manual',
+    }]));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    expect(container.textContent).toContain('Some saved financial amounts are invalid.');
+    expect(container.querySelector('[role="alert"]').textContent).toContain('excluded from reliable totals');
+    expect(container.querySelector('.balance-amount').textContent).toContain('—');
+    expect(container.querySelector('.balance-amount').textContent).not.toContain('₱0.00');
+  });
+
   test('privacy toggle hides displayed balances', () => {
     expect(container.textContent).toContain('₱1,250.00');
     clickButton(container, 'Hide balances');

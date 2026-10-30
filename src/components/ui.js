@@ -5,8 +5,12 @@ import { canAnimate, useCountUp } from '../lib/motion';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency = 'PHP' }) {
-  const v = useCountUp(Number(value) || 0);
-  return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : (currency === 'PHP' ? HIDDEN : `${currency} ••••••`)}</span>;
+  const numericValue = Number(value);
+  const valid = value !== undefined
+    && !(typeof value === 'string' && value.trim() === '')
+    && Number.isFinite(numericValue);
+  const v = useCountUp(valid ? numericValue : 0);
+  return <span key={show ? 'on' : 'off'} className="money">{show ? (valid ? money(v, currency, digits) : '—') : (currency === 'PHP' ? HIDDEN : `${currency} ••••••`)}</span>;
 }
 
 export function Toggle({ checked, onChange, label, disabled = false, reason, describedBy }) {

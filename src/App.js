@@ -15,7 +15,7 @@ import { revealChange } from './lib/motion';
 import SearchOverlay from './components/SearchOverlay';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
 import { demoAccounts, demoTransactions, demoNotifications } from './lib/demoData';
-import { calculateAccountBalances, calculateExpenseCategoryTotals, calculateLedgerNet, calculateMonthlyStats, sumMoneyValues } from './lib/financeCalculations';
+import { calculateAccountBalances, calculateExpenseCategoryTotals, calculateLedgerNet, calculateMonthlyStats, isValidMoneyValue, sumMoneyValues } from './lib/financeCalculations';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
@@ -265,6 +265,10 @@ function App() {
   /* ---------- derived data ---------- */
   const baseAccounts = cloudMode ? cloudAccounts : [...(samplesOn ? demoAccounts : []), ...localAccounts];
   const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts]);
+  const invalidFinancialRecordCount = useMemo(() => (
+    baseAccounts.filter(account => !isValidMoneyValue(account.opening_balance ?? account.balance ?? 0)).length
+    + rawTxs.filter(transaction => !isValidMoneyValue(transaction.amount)).length
+  ), [baseAccounts, rawTxs]);
   const accountsView = useMemo(() => calculateAccountBalances(
     baseAccounts.map(a => ({ ...a, mask: a.mask || '', brand: a.brand || 'blue' })),
     txs,
@@ -291,9 +295,15 @@ function App() {
 
   const statsFor = useCallback((key) => calculateMonthlyStats(currencyTxs, key, displayCurrency), [currencyTxs, displayCurrency]);
   const breakdownFor = useCallback((key) => {
-    const totals = calculateExpenseCategoryTotals(statsFor(key).list, bucketOf);
-    const total = sumMoneyValues(Object.values(totals));
-    return { total, data: BUCKETS.filter(b => totals[b.key]).map(b => ({ ...b, amount: totals[b.key], percent: Math.round((totals[b.key] / total) * 100) })) };
+    const monthData = statsFor(key);
+    const totals = calculateExpenseCategoryTotals(monthData.list, bucketOf);
+    const invalid = monthData.invalidAmountCount > 0 || totals === null;
+    const safeTotals = totals || {};
+    const total = invalid ? NaN : sumMoneyValues(Object.values(safeTotals));
+    return {
+      total,
+      data: invalid ? [] : BUCKETS.filter(b => safeTotals[b.key]).map(b => ({ ...b, amount: safeTotals[b.key], percent: Math.round((safeTotals[b.key] / total) * 100) })),
+    };
   }, [statsFor]);
   const homeMonth = useMemo(() => statsFor(refMonth), [statsFor, refMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
@@ -301,15 +311,32 @@ function App() {
     const balance = currencyAccountsView.length
       ? sumMoneyValues(currencyAccountsView.map(a => a.balance))
       : calculateLedgerNet(currencyTxs, displayCurrency);
-    let running = balance - homeMonth.net; const daily = new Map();
-    homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
-    let points = [balance - homeMonth.net, ...daily.values()];
-    for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
-    return { currency: displayCurrency, balance, income: homeMonth.income, expenses: homeMonth.expenses, transfers: homeMonth.transfers, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
+    const canTrend = Number.isFinite(balance) && Number.isFinite(homeMonth.net) && homeMonth.invalidAmountCount === 0;
+    let points = [];
+    if (canTrend) {
+      let running = balance - homeMonth.net; const daily = new Map();
+      homeMonth.list.slice().reverse().forEach(t => {
+        if (t.type !== 'transfer' && isValidMoneyValue(t.amount)) {
+          running += t.type === 'income' ? t.amount : -t.amount;
+          daily.set(dayKey(t.date), running);
+        }
+      });
+      points = [balance - homeMonth.net, ...daily.values()];
+      for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
+    }
+    return { currency: displayCurrency, balance, income: homeMonth.income, expenses: homeMonth.expenses, transfers: homeMonth.transfers, savings: homeMonth.net, trend: points.length > 1 ? points : [] };
   }, [currencyAccountsView, currencyTxs, displayCurrency, homeMonth]);
   const deltas = useMemo(() => {
     const prev = statsFor(monthsBack(refMonth, 1));
-    return { balance: pctChange(stats.balance, stats.balance - homeMonth.net), income: pctChange(homeMonth.income, prev.income), expenses: pctChange(homeMonth.expenses, prev.expenses), savings: pctChange(homeMonth.net, prev.net), spent: pctChange(homeMonth.expenses, prev.expenses), transfers: pctChange(homeMonth.transfers, prev.transfers) };
+    const safePct = (current, previous) => Number.isFinite(current) && Number.isFinite(previous) ? pctChange(current, previous) : null;
+    return {
+      balance: safePct(stats.balance, stats.balance - homeMonth.net),
+      income: safePct(homeMonth.income, prev.income),
+      expenses: safePct(homeMonth.expenses, prev.expenses),
+      savings: safePct(homeMonth.net, prev.net),
+      spent: safePct(homeMonth.expenses, prev.expenses),
+      transfers: safePct(homeMonth.transfers, prev.transfers),
+    };
   }, [statsFor, refMonth, stats.balance, homeMonth]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
@@ -657,6 +684,9 @@ function App() {
           <div><strong>Demo mode — sample data only.</strong><span>These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.</span></div>
           <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>Sign in</button>
         </aside>}
+        {invalidFinancialRecordCount > 0 && <div className="app-alert storage-warning" role="alert">
+          <span><strong>Some saved financial amounts are invalid.</strong> {invalidFinancialRecordCount} {invalidFinancialRecordCount === 1 ? 'record has' : 'records have'} been excluded from reliable totals. Affected balances and summaries show an em dash (—). Edit or remove the affected record before relying on your totals.</span>
+        </div>}
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? 'Local-only records were not saved before cloud sign-in.' : 'Local changes may not be saved.'}</strong> {cloudMode && pendingLocalDataRef.current ? 'These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.' : 'Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.'}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>Retry save</button>

@@ -96,4 +96,16 @@ describe('shared finance calculations', () => {
   test('sum of decimal values is calculated in integer cents', () => {
     expect(sumMoneyValues([0.1, 0.2, 0.3])).toBe(0.6);
   });
+
+  test('invalid monetary values are surfaced instead of silently becoming zero', () => {
+    const invalid = tx('bad', 'expense', 'not-a-number', 'cash');
+    expect(Number.isNaN(transactionAccountDeltaCents(invalid, 'cash'))).toBe(true);
+    expect(Number.isNaN(calculateAccountBalances([account('cash', 100)], [invalid])[0].balance)).toBe(true);
+    const month = calculateMonthlyStats([invalid], '2026-10');
+    expect(month.invalidAmountCount).toBe(1);
+    expect(Number.isNaN(month.expenses)).toBe(true);
+    expect(month.bars).toEqual([]);
+    expect(calculateExpenseCategoryTotals([invalid], (category) => category)).toBeNull();
+    expect(Number.isNaN(sumMoneyValues([0.1, 'bad']))).toBe(true);
+  });
 });
