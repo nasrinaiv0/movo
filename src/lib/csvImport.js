@@ -12,7 +12,7 @@ const aliases = {
 const normalizeHeader = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
 export function parseCsvRows(input) {
-  const text = String(input || '').replace(/^\\uFEFF/, '');
+  const text = String(input || '').replace(/^\uFEFF/, '');
   const rows = [];
   let row = [];
   let field = '';
@@ -49,10 +49,10 @@ export function parseCsvRows(input) {
     if (afterQuote) {
       if (ch === ',') {
         pushField();
-      } else if (ch === '\\n' || ch === '\\r') {
-        if (ch === '\\r' && text[i + 1] === '\\n') i += 1;
+      } else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && text[i + 1] === '\n') i += 1;
         pushRow();
-      } else if (ch === ' ' || ch === '\\t') {
+      } else if (ch === ' ' || ch === '\t') {
         // Some bank exports add whitespace after a quoted cell. Ignore only
         // this separator whitespace; never append it to the quoted value.
       } else {
@@ -68,8 +68,8 @@ export function parseCsvRows(input) {
       quoted = true;
     } else if (ch === ',') {
       pushField();
-    } else if (ch === '\\n' || ch === '\\r') {
-      if (ch === '\\r' && text[i + 1] === '\\n') i += 1;
+    } else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i += 1;
       pushRow();
     } else {
       field += ch;
@@ -83,7 +83,6 @@ export function parseCsvRows(input) {
   }
   return rows;
 }
-
 function columnIndex(headers, keys) {
   return headers.findIndex(header => keys.includes(normalizeHeader(header)));
 }
