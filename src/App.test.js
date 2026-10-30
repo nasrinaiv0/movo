@@ -108,6 +108,10 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="alert"]').textContent).toContain('excluded from reliable totals');
     expect(container.querySelector('.balance-amount').textContent).toContain('—');
     expect(container.querySelector('.balance-amount').textContent).not.toContain('₱0.00');
+    expect(container.querySelector('.flow-status').textContent).toBe('Needs review');
+    expect(container.querySelector('.flow-track').getAttribute('aria-label')).toContain('summary unavailable');
+    expect(container.textContent).toContain('Percentages unavailable');
+    expect(container.textContent).not.toContain('NaN income');
   });
 
   test('privacy toggle hides displayed balances', () => {
