@@ -101,3 +101,14 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 - **Fresh validation is pending for the updated branch head.** The previous preview failure remains part of the audit history; it is not a passing result. The new preview was still initializing when this note was written.
 - No changes were made to the separate NasrinAI repository, Supabase schema/RLS/grants, production data, auth configuration, or provider secrets.
 - The live authenticated POST and unrelated-document canary test remain the release gate. A passing UI test or preview build does not prove that the upstream service enforces the MOVO scope.
+
+
+## Validation after disclosure correction — 2026-10-30
+
+- Validated implementation head: `e026c5e747f3b605f55b375541564d2d210fce3b`.
+- GitHub Actions run [40988571759](https://github.com/nasrinaiv0/movo/actions/runs/40988571759) passed **18 suites / 103 tests**, TypeScript typecheck, production-only dependency audit, and production build.
+- The production-only audit reported **0 vulnerabilities**; this does not clear the full development/build-tool dependency findings.
+- Vercel preview deployment [dpl_JD4cZZ6KHMvifDk5B1PiVqeJmkdb](https://vercel.com/nasrin-ai/movo/JD4cZZ6KHMvifDk5B1PiVqeJmkdb) reached **READY** for that head.
+- The previous preview failure at `1eef5cd` was caused by a stale App-level assertion expecting the removed absolute guarantee. That assertion was updated in `e7f51fc2c9cbd336510db7f6ddffd283065b421f`; the reconciled implementation subsequently passed.
+- This validates MOVO's unit/integration checks and deployment build only. Authenticated production POST and unrelated-document canary testing remain unverified and are required before merge.
+- This documentation-only follow-up changes the branch head; rerun exact-head CI and preview checks before merge.
