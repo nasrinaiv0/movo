@@ -3,9 +3,12 @@
 - **PR #43 / finance CSV:** added strict monetary CSV amount syntax validation. Malformed comma grouping (for example `1,2,3`), repeated decimals, scientific notation, and unsupported text are rejected with row-level errors instead of being normalized into a different ledger amount.
 - Added regression coverage for invalid and valid amount formats. Source/test changes are on the existing dedicated branch `fix/finance-calculations-sync`; no duplicate PR was created.
 - Evidence record: `docs/engineering/updates/2026-10-30-1315-csv-amount-validation.md`.
-- Exact code/test head `fb7f018de8446d9a63a95bb70a5b61970a68e00f` passed GitHub Actions run [41007544994](https://github.com/nasrinaiv0/movo/actions/runs/41007544994): **20 suites / 127 tests**, TypeScript typecheck, production-only dependency audit (**0 vulnerabilities**), and production build. Exact-head Vercel deployment [2AMQcgkT9x89gd1C6HYa8NpoUykH](https://vercel.com/nasrin-ai/movo/2AMQcgkT9x89gd1C6HYa8NpoUykH) reached READY.
-- The latest follow-up changes are documentation-only. Their new exact-head checks must be verified before any merge; source/test validation above must not be misrepresented as validation of a later SHA.
+- Source/test head `fb7f018de8446d9a63a95bb70a5b61970a68e00f` passed run [41007544994](https://github.com/nasrinaiv0/movo/actions/runs/41007544994): **20 suites / 127 tests**, TypeScript typecheck, production-only audit (**0 vulnerabilities**), and production build.
+- Follow-up head `d0aa73d7e99105546ca27e49b1cd510125d177e4` passed run [41007756323](https://github.com/nasrinaiv0/movo/actions/runs/41007756323) with the same results. Vercel preview [dpl_4zaKJ7CZfMBKfZpDmznoWzK5aeiL](https://vercel.com/nasrin-ai/movo/4zaKJ7CZfMBKfZpDmznoWzK5aeiL) is READY; its root returned HTTP 200 and its deployed JS bundle includes the validation message. Interactive authenticated import remains unverified.
+- This ledger update itself is documentation-only. Verify the live status for the final current SHA before merge.
 - No DB/RLS/grants, auth settings, production financial records, or secrets changed. Authenticated cloud CSV import and owner-isolation checks remain unverified.
+
+---
 
 ---
 
