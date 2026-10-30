@@ -153,7 +153,6 @@ export function Appearance({ c }) {
       <Row icon="palette" title="Show Category Colors" sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label="Show Category Colors" />} />
       <Row icon="card" title="Card View Style" sub="Rounded is the only available style." />
       <Row icon="calendar" title="Date Format" sub="Oct 27, 2026 is the only available format." />
-      {/* Display Currency is provided by the finance-settings implementation; avoid a stale PHP-only claim here. */}
     </section>
   </>;
 }
