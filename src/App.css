@@ -1632,3 +1632,17 @@ button.account-tile:active { transform: scale(.98); }
 @keyframes tour-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tour-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .tour-backdrop, .tour-welcome, .tour-card { animation: none; } .tour-spot { transition: none; } }
+
+/* ---------- List rows fill their card edge to edge, so hover/press highlights cover the whole item ----------
+   The card keeps no side padding; each row carries it instead, and the card clips the highlight to its corners.
+   Dividers stay inset to the content, iOS-style. */
+.movo-app.movo-app :is(.menu-card, .list-card) { --row-x: 16px; padding: 0; overflow: hidden; }
+.movo-app.movo-app .list-card { --row-x: 14px; }
+.movo-app.movo-app :is(.menu-card, .list-card) > * { padding-inline: var(--row-x); }
+.movo-app.movo-app :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row) { position: relative; box-shadow: none; border-radius: 0; }
+.movo-app.movo-app :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row):not(:last-child)::before { content: ''; position: absolute; left: var(--row-x); right: var(--row-x); bottom: 0; height: 1px; box-shadow: inset 0 calc(var(--hair, .5px) * -1) 0 var(--line); pointer-events: none; }
+.movo-app.movo-app :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row):focus-visible { outline-offset: -3px; }
+@media (hover: hover) { .movo-app.movo-app :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row):not(:disabled):hover { background-color: rgba(120,128,145,.09); } }
+.movo-app.movo-app :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row):not(:disabled):active { background-color: rgba(120,128,145,.14); }
+@media (hover: hover) { .movo-app.theme-dark :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row):not(:disabled):hover { background-color: rgba(255,255,255,.06); } }
+.movo-app.theme-dark :is(.menu-card, .list-card) > :is(.menu-row, .tx-row, .note-row, .sub-row):not(:disabled):active { background-color: rgba(255,255,255,.09); }
