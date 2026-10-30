@@ -170,6 +170,18 @@ export async function removeBudget(budgetId) {
   return unwrap(await requireClient().from('budgets').update({ is_active: false }).eq('id', budgetId).select().single());
 }
 
+/* ---------- preferences synced across the person's devices (RLS: owner only) ---------- */
+export async function loadPreferences(userId) {
+  if (!userId) throw new Error('A signed-in user is required.');
+  return unwrap(await requireClient().from('user_preferences').select('prefs,stickers,updated_at').eq('user_id', userId).maybeSingle());
+}
+export async function savePreferences(userId, prefs, stickers) {
+  if (!userId) throw new Error('A signed-in user is required.');
+  const row = { user_id: userId, prefs, updated_at: new Date().toISOString() };
+  if (Array.isArray(stickers)) row.stickers = stickers;
+  return unwrap(await requireClient().from('user_preferences').upsert(row, { onConflict: 'user_id' }).select('updated_at').single());
+}
+
 /**
  * Permanently deletes the signed-in user's own records. Row-level security limits every delete to auth.uid();
  * the explicit user filter is a second guard. Transactions go before accounts (accounts are referenced with
@@ -178,7 +190,7 @@ export async function removeBudget(budgetId) {
 export async function deleteAllCloudData(userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const client = requireClient();
-  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
+  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations', 'user_preferences']) {
     unwrap(await client.from(table).delete().eq('user_id', userId));
   }
 }

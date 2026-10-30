@@ -28,7 +28,7 @@ import ScannerSheet from './components/ScannerSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
@@ -40,7 +40,7 @@ import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
-import { clearCustomStickers } from './lib/stickers';
+import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -636,6 +636,45 @@ function App() {
     setRawTxs(cur => cur.filter(x => x.id !== id));
     notify(tr('Transaction removed.'));
   }, [cloudMode, notify]);
+  /* ---------- preferences follow the signed-in person across devices ----------
+     On sign-in the account's saved preferences (card styles, layouts, theme, subscriptions, plans…) and custom
+     sticker artwork replace this device's; after that every change is saved back, debounced. If the cloud table
+     is unavailable MOVO keeps working with this device's preferences only. */
+  const prefsSync = useRef({ user: '', ready: false, timer: 0 });
+  const [stickerTick, setStickerTick] = useState(0);
+  useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
+  const userId = cloudMode ? session?.user?.id || '' : '';
+  useEffect(() => {
+    const sync = prefsSync.current;
+    sync.user = userId; sync.ready = false;
+    if (!userId) return undefined;
+    let live = true;
+    loadPreferences(userId).then(row => {
+      if (!live) return;
+      if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
+        setPrefs(cur => ({ ...DEFAULTS, ...cur, ...row.prefs, onboarded: true }));
+        if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(row.stickers);
+      }
+      sync.ready = true;
+      if (!row) setStickerTick(t => t + 1); // first sign-in on any device: upload this device's preferences
+    }).catch(() => { /* table unavailable: stay device-only */ });
+    return () => { live = false; };
+  }, [userId]);
+  useEffect(() => {
+    const sync = prefsSync.current;
+    if (!sync.ready || !sync.user) return undefined;
+    clearTimeout(sync.timer);
+    sync.timer = setTimeout(() => {
+      // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
+      let size = 0;
+      const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
+      const shared = { ...prefs };
+      if ((shared.mascot || '').length > 120_000) delete shared.mascot;
+      savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
+    }, 1500);
+    return () => clearTimeout(sync.timer);
+  }, [prefs, stickerTick]);
+
   /* Fade out the loading screen from index.html once the app is ready; keep it at least ~0.9s so it never flashes. */
   useEffect(() => {
     if (!authReady) return undefined;

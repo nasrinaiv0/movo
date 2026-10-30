@@ -232,6 +232,17 @@ export const removeCustomSticker = (id) => {
   return true;
 };
 
+/* Cross-device sync: read the list, replace it with a validated copy from the cloud, and hear about changes. */
+export const getCustomStickers = () => customList;
+export const subscribeCustomStickers = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+export function replaceCustomStickers(list) {
+  const valid = (Array.isArray(list) ? list : []).filter(s => s && typeof s.id === 'string' && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s.src || '')).slice(0, 40);
+  const previous = customList;
+  customList = valid;
+  if (!saveCustom()) { customList = previous; return false; }
+  return true;
+}
+
 export const clearCustomStickers = () => {
   const previous = customList;
   try {
