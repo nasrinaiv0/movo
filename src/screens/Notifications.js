@@ -44,7 +44,7 @@ export function NotificationDetail({ c }) {
   const t = n.txId ? txs.find(x => x.id === n.txId) : null;
   const account = t ? accountsView.find(a => a.id === t.account_id) : null;
   return <>
-    <SubHeader title="" onBack={() => go('Notifications')} right={<button type="button" className="round-button flat" aria-label="More" onClick={() => c.setSheet({ name: 'actions' })}><Icon name="more" size={20} /></button>} />
+    <SubHeader title="" onBack={() => go('Notifications')} right={<button type="button" className="round-button flat" aria-label="Notification actions" onClick={() => c.setSheet({ name: 'notificationActions' })}><Icon name="more" size={20} /></button>} />
     <section className="card detail-hero"><span className={`hero-badge tone-${t ? 'green' : n.tone}`}><Icon name={t ? 'check' : n.icon} size={34} strokeWidth={2.6} /></span>
       <h2>{t ? (t.type === 'income' ? 'Income Recorded' : t.type === 'transfer' ? 'Transfer Recorded' : 'Expense Recorded') : n.title}</h2>
       <p>{t ? (show ? n.body : n.body.replace(/₱[\d,.]+/g, '₱ ••••••')) : n.body}</p><small>{longDate(n.at)} · {timeLabel(n.at)}</small></section>
