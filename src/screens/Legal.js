@@ -19,7 +19,7 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
     <SubHeader title={title} onBack={() => c.go(back)} />
     <article className="legal-page" aria-labelledby="legal-title">
       <header className="legal-intro">
-        <p className="legal-eyebrow">{tr('MOVO · IMPORTANT INFORMATION')}</p>
+        <p className="legal-eyebrow">{tr('MOVO — Money Organizer & Visual Outflow · IMPORTANT INFORMATION')}</p>
         <h2 id="legal-title">{title}</h2>
         <p>{tr('Effective date: {date}', { date: formatDate(effectiveDate, { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }, 'effective') })}</p>
       </header>
@@ -41,7 +41,7 @@ export function TermsOfService({ c }) {
   return <LegalPage c={c} title={tr('Terms of Service')} current="TermsOfService" effectiveDate={TERMS_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>{tr('1. What MOVO does')}</h2>
-      <p>{tr('MOVO is a personal finance tracking tool that lets you record, organize, review, and export financial information you choose to provide. Some screens may contain sample or demonstration records. Unless a screen explicitly confirms otherwise, displayed balances and totals are calculations from the records available in MOVO and are not verified bank balances.')}</p>
+      <p>{tr('MOVO (Money Organizer & Visual Outflow) is a personal finance tracking tool that lets you record, organize, review, and export financial information you choose to provide. Some screens may contain sample or demonstration records. Unless a screen explicitly confirms otherwise, displayed balances and totals are calculations from the records available in MOVO and are not verified bank balances.')}</p>
       <p>{tr('MOVO is not a bank, payment processor, credit provider, accounting firm, tax adviser, investment adviser, or emergency service. It does not automatically connect to your bank or read private Apple Pay history in this version.')}</p>
     </section>
     <section className="legal-section">
@@ -103,7 +103,7 @@ export function PrivacyPolicy({ c }) {
   return <LegalPage c={c} title={tr('Privacy Policy')} current="PrivacyPolicy" effectiveDate={PRIVACY_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>{tr('1. Who is responsible for your data')}</h2>
-      <p>{rich('MOVO\'s privacy contact is Nasrin Abubakar, Data Protection Officer / privacy contact. Contact: +63 947 387 5093; {link}; 142 Pag-asa Village, Matina Aplaya, Davao City, Philippines. The operator must verify whether a separate legal entity name or additional registration details are required and publish them if applicable. This policy describes MOVO\'s current documented practices; it is not a certification of legal compliance. Where applicable, processing must comply with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173), its implementing rules, and relevant National Privacy Commission issuances.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
+      <p>{rich('MOVO (Money Organizer & Visual Outflow)\'s privacy contact is Nasrin Abubakar, Data Protection Officer / privacy contact. Contact: +63 947 387 5093; {link}; 142 Pag-asa Village, Matina Aplaya, Davao City, Philippines. The operator must verify whether a separate legal entity name or additional registration details are required and publish them if applicable. This policy describes MOVO\'s current documented practices; it is not a certification of legal compliance. Where applicable, processing must comply with the Philippine Data Privacy Act of 2012 (Republic Act No. 10173), its implementing rules, and relevant National Privacy Commission issuances.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       <p><strong>{tr('Important:')}</strong> {tr('Before relying on the service for sensitive financial information, review the disclosures and remember that cloud security, deletion, retention, and provider controls must be verified against actual implementation.')}</p>
     </section>
     <section className="legal-section">
