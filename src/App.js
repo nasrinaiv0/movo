@@ -59,6 +59,15 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 /** "Already logged: Saging · ₱20.00 on Oct 30." for a record that a new entry duplicates. */
+/** Accent colour for text: on dark backgrounds a dark accent (e.g. slate) is lightened until it reads clearly. */
+export function readableAccent(hex, dark) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '')); if (!m) return undefined;
+  let [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+  const lum = () => [r, g, b].map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+  if (!dark) return `#${m[1]}`;
+  for (let i = 0; i < 12 && (lum() + 0.05) / (0.0116 + 0.05) < 6; i += 1) [r, g, b] = [r, g, b].map(v => Math.round(v + (255 - v) * 0.18));
+  return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
@@ -870,7 +879,8 @@ function App() {
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
   const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
-  const rootStyle = { ...glassVars, ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const accentHex = accentName === 'custom' ? prefs.customColor : (ACCENTS.find(([n]) => n === accentName)?.[1] || '#2f6bff');
+  const rootStyle = { ...glassVars, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);

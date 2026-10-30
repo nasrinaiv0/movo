@@ -614,3 +614,13 @@ describe('MOVO finance frontend', () => {
     expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
   });
 });
+
+test('accent text stays readable on dark backgrounds', () => {
+  const { readableAccent } = require('./App');
+  const lum = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+  const onDark = (hex) => (lum(hex) + 0.05) / (0.0116 + 0.05);
+  expect(onDark(readableAccent('#334155', true))).toBeGreaterThanOrEqual(6);
+  expect(onDark(readableAccent('#2f6bff', true))).toBeGreaterThanOrEqual(6);
+  expect(readableAccent('#334155', false)).toBe('#334155');
+  expect(readableAccent('#c7f0dc', true)).toBe('#c7f0dc');
+});
