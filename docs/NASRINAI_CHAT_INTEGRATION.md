@@ -132,3 +132,11 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 - The exact-head check validates the UI/legal copy and MOVO-side fail-closed behavior in the branch; it does not prove upstream enforcement. The authenticated live POST and unrelated-document canary remain required.
 - Legal publication remains blocked on formal operator/controller identity/address, a fixed retention/deletion schedule, complete provider/data-recipient disclosures, and jurisdiction-specific review.
 - This documentation-only follow-up must itself pass CI and preview checks before merge.
+
+
+## Missing upstream credential preflight — 2026-10-30 12:47 Asia/Manila
+
+- The server now trims `NASRINAI_API_KEY` and fails closed with a generic HTTP 503 configuration response when it is absent or blank. It no longer attempts an upstream request with an empty bearer credential.
+- Added a regression test asserting no upstream call or chat persistence occurs when the key is blank.
+- This guard does **not** resolve the previously observed upstream HTTP 401 when a non-empty credential is rejected. That requires an authorized owner to verify/reissue the MOVO service credential in the NasrinAI control plane; the credential value must not be read into logs or chat.
+- Exact-head typecheck, full tests, production build, preview, and authenticated canary checks are pending after this change. The context-isolation PR remains draft.
