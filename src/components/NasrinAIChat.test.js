@@ -139,7 +139,8 @@ describe('NasrinAI consent and legal links', () => {
       message: 'Summarize my spending',
       conversationId: null,
       consent: true,
-      language: 'en'
+      language: 'en',
+      voiceMode: false
     });
     expect(container.textContent).toContain('Here is your summary.');
   });
