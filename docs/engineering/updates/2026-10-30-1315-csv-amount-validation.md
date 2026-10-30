@@ -1,0 +1,30 @@
+# CSV amount-format validation — 2026-10-30 13:15 Asia/Manila
+
+## Scope
+Repository: `nasrinaiv0/movo` only. Existing dedicated branch / PR: `fix/finance-calculations-sync` / PR #43. This extends the existing CSV import hardening; no duplicate PR was created.
+
+## Finding
+The CSV importer previously removed every comma, currency symbol, and whitespace character before calling `Number()`. That could turn malformed or ambiguous monetary input such as `1,2,3` into `123` and scientific notation such as `1e3` into a valid-looking amount. This silently changes what a user imports into their financial ledger.
+
+## Change
+- Added a strict amount parser for plain digits and correctly grouped thousands (for example `1234.50` and `1,234.50`).
+- Supports the existing leading currency symbols `₱`, `$`, `€`, and `£`, including whitespace between the symbol and amount.
+- Preserves the existing sign normalization and cent rounding behavior.
+- Rejects malformed comma grouping, repeated decimal points, scientific notation, suffix text, and unsupported amount syntax with a row-level validation error.
+- Does not upload the CSV or change finance persistence behavior.
+- Added regression tests for malformed grouping, repeated decimals, scientific notation, and valid plain/grouped/symbol-prefixed amounts.
+
+## Files
+- `src/lib/csvImport.js`
+- `src/lib/csvImport.test.js`
+- This change record and the master change ledger.
+
+## Validation status
+- Source and regression tests have been committed to the PR branch.
+- **Fresh exact-head GitHub Actions, typecheck, full test suite, production build, production dependency audit, and Vercel preview results are pending at the time of this record.** Do not treat previous PR #43 results as validation of this change.
+- After CI completes, append the exact head SHA, run URL, test totals, audit result, and preview deployment status here. If a check fails, preserve the failure and correct it before claiming success.
+
+## Security and limitations
+- No database schema, financial records, Supabase RLS/grants, authentication settings, deployment variables, or provider secrets were changed.
+- This parser intentionally expects a dot decimal separator and standard three-digit comma grouping. Locale-specific formats such as `1.234,50` are rejected instead of guessed; supporting locale selection would require an explicit UX choice and dedicated tests.
+- Manual authenticated cloud import and owner-isolation verification remain separate release gates.
