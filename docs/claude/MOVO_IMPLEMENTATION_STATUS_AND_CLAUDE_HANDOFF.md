@@ -597,3 +597,8 @@ This is a disclosure-only correction, not proof of isolation. Keep issue #47 ope
 - Current code/test head `b5de9612499c29a22c2844718742d0c4e665be46` has Vercel deployment [dpl_BNQdu6c7ReQ23xfTfZ3Lrw5qPtNg](https://vercel.com/nasrin-ai/movo/BNQdu6c7ReQ23xfTfZ3Lrw5qPtNg) **READY**. Build log confirms TypeScript typecheck, **20 suites / 122 tests passed**, and production compilation succeeded.
 - The regression confirms malformed non-empty currency codes are rejected per row rather than silently relabeled as PHP; blank optional currency still defaults to PHP. Production-only npm audit and `audit:controls` were not independently rerun on this head; dependency manifests were unchanged.
 - PR #43 remains draft pending authenticated cloud finance CRUD, CSV import/export, and owner-scoped currency-isolation verification.
+
+## CSV validation UI regression — 2026-10-30 11:54 Asia/Manila
+
+- Added an App-level regression test that feeds a malformed currency through the file-input/FileReader path and asserts the row-level error appears in an accessible `role="alert"` block and the Import button remains disabled when no valid rows exist.
+- This supplements parser unit coverage and confirms the user-facing CSV workflow fails safely rather than silently importing the row as PHP. Exact-head typecheck, full test suite, and production build are pending for the new test commit.

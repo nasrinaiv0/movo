@@ -26,3 +26,7 @@ The CSV parser previously mapped any currency field that did not match three upp
 ## Remaining release gates
 
 Authenticated finance CRUD, CSV import/export against real user-owned records, and owner-scoped currency isolation remain unverified. Keep PR #43 draft until those live flows are verified.
+
+## User-facing regression coverage — 2026-10-30 11:54 Asia/Manila
+
+Added an App-level FileReader/file-input test asserting malformed explicit currency produces a visible row-level `role="alert"` and leaves Import disabled when no valid rows remain. Exact-head validation is pending for this additional test.

@@ -686,4 +686,33 @@ describe('MOVO finance frontend', () => {
     expect(importButton.getAttribute('aria-describedby')).toBe('csv-import-guidance');
     expect(container.querySelector('#csv-import-guidance').textContent).toContain('Review the preview before importing.');
   });
+
+  test('CSV import shows malformed currency as an accessible row-level error', () => {
+    const OriginalFileReader = window.FileReader;
+    window.FileReader = class MockFileReader {
+      readAsText() {
+        this.result = 'Date,Description,Type,Amount,Currency\\n2026-10-01,Coffee,expense,12.50,USDT';
+        if (this.onload) this.onload();
+      }
+    };
+    try {
+      nav(container, 'Wallet');
+      clickButton(container, 'More');
+      clickButton(container, 'Import CSV');
+      const input = container.querySelector('input[type="file"][accept=".csv,text/csv"]');
+      const file = { name: 'transactions.csv', size: 120, type: 'text/csv' };
+      act(() => {
+        Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      const alert = container.querySelector('[role="alert"]');
+      expect(alert).not.toBeNull();
+      expect(alert.textContent).toContain('Row 2');
+      expect(alert.textContent).toContain('Currency must be a three-letter code');
+      const importButton = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Import 0 transaction(s)'));
+      expect(importButton.disabled).toBe(true);
+    } finally {
+      window.FileReader = OriginalFileReader;
+    }
+  });
 });
