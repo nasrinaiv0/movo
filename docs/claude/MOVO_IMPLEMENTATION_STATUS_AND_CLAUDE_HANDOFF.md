@@ -624,3 +624,14 @@ Fresh merged catalog evidence: 7/7 checked tables RLS-enabled, 22 user-facing po
 - The code/test implementation remains the previously validated PR #60 content from `8005fbc695c5a8f30f2817e99b3fb8226ea1a429`; no application code was changed by this reconciliation.
 - Exact-head Actions run [41006039735](https://github.com/nasrinaiv0/movo/actions/runs/41006039735) passed 20 suites / 114 tests, typecheck, production-only audit (0 vulnerabilities), `audit:controls`, and production build. Vercel preview was READY and root/bundle HTTP 200.
 - Keep PR #60 draft until interactive keyboard/focus, screen-reader, responsive, and authenticated finance/CSV/currency checks are completed.
+
+
+## Notification detail actions — 2026-10-30 14:24 Asia/Manila
+
+- Finding: the notification-detail **More** control opened the global Quick actions sheet (Add transaction/account, CSV import/export, theme, and sample-data actions). That control technically responded but offered actions unrelated to the selected notification, violating the user-facing action audit.
+- Changed its accessible name to **Notification actions** and routed it to a dedicated sheet with two contextual actions: **Mark as unread** and **Notification settings**.
+- Mark as unread removes the current notification ID from the persisted read-ID preference, selects the Unread filter, and returns to the notification feed. Notification settings navigates to the existing notification settings screen.
+- Added App-level regression tests for both actions. The tests assert the contextual sheet is shown rather than Quick actions, the selected item is unread after the action, and settings navigation reaches Notification Channels.
+- Source/test commits: `050e53f0f712f34306b827d12b2acb51adb89bb7`, `bba4df97b452a9e2449d3813d71ac8f01b24996b`, `e25a3327cf7b96c0caceabe8064322315181f92f`. PR #60 remains the existing dedicated UI-control/accessibility branch; no duplicate PR was opened.
+- The updated PR head triggers the normal full CI gate (typecheck, Jest suite, control audit, production-only dependency audit, and production build). Do not reuse an earlier head's result; confirm the latest Actions run and Vercel preview before treating this increment as validated.
+- Manual keyboard/focus, screen-reader, responsive, and authenticated finance/chat verification remain separate release gates. No financial data, schema, RLS policy, grant, authentication setting, provider secret, or other repository was changed.
