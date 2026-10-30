@@ -45,3 +45,13 @@ The CSV row parser previously toggled quoted mode whenever it encountered a doub
 ## Rollback
 
 Revert the parser and parser-test commits. No migration or production data rollback is required.
+
+
+## Failed check and correction — 2026-10-30 12:00 Asia/Manila
+
+- GitHub Actions run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655) failed at the full Jest step: **1 suite failed / 19 passed; 1 test failed / 124 passed**. The failing test was the existing `transactionFingerprint` equivalence test.
+- Root cause: while replacing the parser, the first API update also double-escaped regular expressions outside the parser (including whitespace normalization). This unintentionally changed existing fingerprint behavior. The failure was not ignored.
+- Corrected the source by restoring the untouched pre-change file at `15316f97bce721f815425b7fe867a549c712c89b` and reapplying only the strict parser function. This preserves the original date/amount/whitespace normalization and the prior currency validation.
+- Correction commit: `7c41531c0a48a60433d2cca10262734c03ce4ed7`.
+- A read-back confirmed the date regex is `/^\\d{4}-\\d{2}-\\d{2}$/`, the amount parser still strips whitespace with `/\\s/`, and BOM handling is `/^\\uFEFF/` in source.
+- **Validation for the corrected head is pending**. The failed run's 124 passing tests are not a pass for the failed head; do not report this change as green until a fresh exact-head run completes.
