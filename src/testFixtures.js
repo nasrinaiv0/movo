@@ -1,7 +1,4 @@
-/**
- * Sample data shown until the user signs in. Every record is flagged `source: 'Sample'`
- * so it can be removed. Balances are plain numbers, not verified bank balances.
- */
+/** Test-only fixture: a realistic set of the person's own local records (MOVO ships no sample or demo data). */
 export const demoAccounts = [
   { id: 'demo-metrobank-card', name: 'Metrobank', account_type: 'card', institution_name: 'Visa', mask: '1234', balance: 27500, currency: 'PHP', brand: 'blue' },
   { id: 'demo-bpi-card', name: 'BPI', account_type: 'card', institution_name: 'Mastercard', mask: '5678', balance: 20750, currency: 'PHP', brand: 'red' },
@@ -13,7 +10,7 @@ export const demoAccounts = [
 ];
 
 const tx = (id, merchant, category, amount, type, account, iso, extra = {}) => ({
-  id: `demo-${id}`, merchant, category, amount, transaction_type: type, account_id: account, occurred_at: iso, source: 'Sample', ...extra,
+  id: `demo-${id}`, merchant, category, amount, transaction_type: type, account_id: account, occurred_at: iso, source: 'Manual', ...extra,
 });
 const MB = 'demo-metrobank-card'; const BPI = 'demo-bpi-card'; const GC = 'demo-gcash'; const SAV = 'demo-metrobank-savings'; const BPS = 'demo-bpi-savings'; const GT = 'demo-gotyme';
 
@@ -68,10 +65,8 @@ export const demoTransactions = [
   tx(116, 'Transfer to GoTyme', 'Transfer', 5000, 'transfer', SAV, '2026-09-20T09:00:00+08:00', { transfer_to_account_id: GT }),
 ];
 
-
-export const demoNotifications = [
-  { id: 'n-login', kind: 'Account', icon: 'bell', tone: 'orange', title: 'New Login', body: 'A new login from iPhone was detected', at: '2026-10-28T08:42:00+08:00' },
-  { id: 'n-ai', kind: 'System', icon: 'spark', tone: 'violet', title: 'NasrinAI Update', body: 'New feature available: Video Generation', at: '2026-10-28T07:30:00+08:00' },
-  { id: 'n-summary', kind: 'System', icon: 'chart', tone: 'teal', title: 'Monthly Summary Ready', body: 'Your October financial summary is ready', at: '2026-10-26T08:00:00+08:00' },
-  { id: 'n-offer', kind: 'System', icon: 'gift', tone: 'violet', title: 'Special Offer', body: 'Get 3 months of NasrinAI Max', at: '2026-10-26T07:00:00+08:00' },
-];
+/** Saves the fixture as the person's own local records before the app renders. */
+export function seedLocalRecords() {
+  window.localStorage.setItem('movo.local.accounts.v1', JSON.stringify(demoAccounts));
+  window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify(demoTransactions));
+}

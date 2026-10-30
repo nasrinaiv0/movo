@@ -29,10 +29,9 @@ import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
-import { demoAccounts, demoTransactions, demoNotifications } from './lib/demoData';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
-import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
+import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
@@ -131,8 +130,7 @@ function App() {
   const [cloudAccounts, setCloudAccounts] = useState([]);
   const [cloudBudgets, setCloudBudgets] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
-  const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
-  const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
+  const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions());
   const [sceneryPhoto, setSceneryPhotoState] = useState(loadSceneryPhoto);
   const setSceneryPhoto = useCallback((url) => { if (!saveSceneryPhoto(url)) return false; setSceneryPhotoState(url); return true; }, []);
   const [search, setSearch] = useState('');
@@ -190,18 +188,17 @@ function App() {
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
   useEffect(() => {
-    const samplesSaved = setSamplesEnabled(samplesOn);
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
       return;
     }
     const transactionsSaved = saveLocalTransactions(rawTxs, false);
     const accountsSaved = saveLocalAccounts(localAccounts);
-    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    const saved = transactionsSaved && accountsSaved;
     if (saved) pendingLocalDataRef.current = null;
-    else pendingLocalDataRef.current = { transactions: rawTxs, accounts: localAccounts, samplesOn };
+    else pendingLocalDataRef.current = { transactions: rawTxs, accounts: localAccounts };
     setLocalPersistenceWarning(!saved);
-  }, [rawTxs, localAccounts, samplesOn, cloudMode]);
+  }, [rawTxs, localAccounts, cloudMode]);
   const retryLocalPersistence = useCallback(() => {
     const pending = pendingLocalDataRef.current;
     if (cloudMode && !pending) {
@@ -210,14 +207,13 @@ function App() {
     }
     const transactionsSaved = saveLocalTransactions(pending?.transactions || rawTxs, false);
     const accountsSaved = saveLocalAccounts(pending?.accounts || localAccounts);
-    const samplesSaved = setSamplesEnabled(pending ? pending.samplesOn : samplesOn);
-    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    const saved = transactionsSaved && accountsSaved;
     if (saved) pendingLocalDataRef.current = null;
     setLocalPersistenceWarning(!saved);
     notify(saved
       ? (pending ? 'Your local-only records were saved on this device. They are not synced to your cloud account.' : 'Local records saved on this device.')
       : 'Browser storage is still unavailable or full.');
-  }, [rawTxs, localAccounts, samplesOn, cloudMode, notify]);
+  }, [rawTxs, localAccounts, cloudMode, notify]);
 
   const refreshCloud = useCallback(async (user) => {
     if (!user) return;
@@ -259,23 +255,21 @@ function App() {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
         setCloudAccounts([]);
-        setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions));
+        setRawTxs(pending?.transactions || loadLocalTransactions());
         setLocalAccounts(pending?.accounts || loadLocalAccounts());
-        setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
       }
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud]);
 
   /* ---------- derived data ---------- */
-  const baseAccounts = cloudMode ? cloudAccounts : [...(samplesOn ? demoAccounts : []), ...localAccounts];
+  const baseAccounts = cloudMode ? cloudAccounts : localAccounts;
   const base = /^[A-Z]{3}$/.test(prefs.currency || '') ? prefs.currency : 'PHP';
   const rates = fx.rates;
   const toBase = useCallback((value, from) => convert(value, from || 'PHP', base, rates), [base, rates]);
   const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts, base, rates)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts, base, rates]);
   const accountsView = useMemo(() => baseAccounts.map(a => {
     const delta = txs.reduce((s, t) => {
-      if (!cloudMode && t.source === 'Sample') return s;
       const own = convert(t.origAmount, t.origCurrency, a.currency || 'PHP', rates);
       if (t.account_id === a.id) return s + (t.type === 'income' ? own : -own);
       if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + own;
@@ -333,7 +327,7 @@ function App() {
   const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
-  const allNotifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
+  const allNotifications = useMemo(() => buildNotifications(txs, []), [txs]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
     return allNotifications.filter(n => {
@@ -350,8 +344,8 @@ function App() {
   const markAllRead = () => setPref('readIds', Array.from(new Set([...prefs.readIds, ...allNotifications.map(n => n.id)])));
 
   const metaName = session?.user?.user_metadata?.full_name;
-  const email = session?.user?.email || (samplesOn ? 'demo@example.com' : 'Local-only session');
-  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : samplesOn ? 'Demo User' : 'Local User';
+  const email = session?.user?.email || tr('Local-only session');
+  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : 'Local User';
   const name = prefs.profileName.trim() || metaName || defaultName;
   const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
 
@@ -449,7 +443,7 @@ function App() {
     if (!csvRows.length) return;
     setBusy(true); setCsvImportSummary('');
     const created = []; const errors = [...csvErrors];
-    const fingerprints = new Set(txs.filter(t => cloudMode || t.source !== 'Sample').map(t => transactionFingerprint(t)));
+    const fingerprints = new Set(txs.map(t => transactionFingerprint(t)));
     try {
       for (let i = 0; i < csvRows.length; i += 1) {
         const row = csvRows[i];
@@ -588,7 +582,6 @@ function App() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setSheet(null); notify(tr('CSV export prepared.'));
   };
-  const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify(tr('Sample records removed. Your manually entered records are kept.')); };
   const [clearText, setClearText] = useState('');
   const clearAll = async () => {
     if (clearText.trim().toUpperCase() !== 'DELETE') return;
@@ -597,7 +590,7 @@ function App() {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
-      setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setSamplesOn(false); setPendingLog(null); setSheet(null); setClearText('');
+      setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
       notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
     finally { setBusy(false); }
@@ -653,9 +646,8 @@ function App() {
       setSession(null);
       setCloudMode(false);
       setCloudAccounts([]);
-      setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions, samplesOn));
+      setRawTxs(pending?.transactions || loadLocalTransactions());
       setLocalAccounts(pending?.accounts || loadLocalAccounts());
-      setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
       go('Home');
       notify(tr('Signed out securely.'));
     } catch { notify(tr('Could not sign out. Please try again.')); }
@@ -663,7 +655,7 @@ function App() {
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
-    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
+    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
@@ -720,10 +712,6 @@ function App() {
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
-        {!cloudMode && samplesOn && !['Sign in', 'TermsOfService', 'PrivacyPolicy'].includes(view) && <aside className="sample-data-notice" role="note" aria-label={tr('Sample data notice')}>
-          <div><strong>{tr('Demo mode — sample data only.')}</strong><span>{tr('These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.')}</span></div>
-          <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>{tr('Sign in')}</button>
-        </aside>}
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
@@ -757,7 +745,6 @@ function App() {
           <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />{tr('Import CSV')}</button>
           <button type="button" onClick={exportCsv}><Icon name="download" size={20} />{tr('Export CSV')}</button>
           <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />{tr('Choose theme')}</button>
-          {!cloudMode && samplesOn && <button type="button" onClick={clearSamples}><Icon name="trash" size={20} />{tr('Remove sample data')}</button>}
         </div>
       </Sheet>}
 
@@ -798,7 +785,7 @@ function App() {
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>{tr('Source')}</dt><dd>{tr('Sample record')}</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}</dl>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>
       </Sheet>}
 
