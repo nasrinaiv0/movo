@@ -217,7 +217,8 @@ describe('MOVO finance frontend', () => {
   });
 
   test('notification detail actions can mark the current alert unread', () => {
-    nav(container, 'Notifications');
+    nav(container, 'Home');
+    clickButton(container, 'Notifications');
     const firstRow = container.querySelector('.note-row');
     expect(firstRow).not.toBeNull();
     const title = firstRow.querySelector('.note-main strong').textContent;
@@ -236,7 +237,8 @@ describe('MOVO finance frontend', () => {
   });
 
   test('notification detail actions navigate to notification settings', () => {
-    nav(container, 'Notifications');
+    nav(container, 'Home');
+    clickButton(container, 'Notifications');
     const firstRow = container.querySelector('.note-row');
     expect(firstRow).not.toBeNull();
     act(() => firstRow.dispatchEvent(new MouseEvent('click', { bubbles: true })));
