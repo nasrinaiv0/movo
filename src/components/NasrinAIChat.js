@@ -18,7 +18,7 @@ const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognit
 import './NasrinAIChat.css';
 
 function friendlyError(code) {
-  if (code === 'nasrinai_scope_unconfirmed') return tr('MOVO could not verify that NasrinAI kept this request isolated to MOVO. No answer was accepted. Please try again later.');
+  if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI could not answer right now. Please try again shortly.');
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
   if (code === 'nasrinai_not_configured') return tr('NasrinAI is not configured on the MOVO server yet.');
   if (code === 'conversation_not_found') return tr('This conversation is not available in your account.');
