@@ -2,7 +2,7 @@ import React from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 
-export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
+export const ACCENTS = [['blue', '#2454d8'], ['purple', '#6b3fd4'], ['orange', '#a94b00'], ['green', '#087548'], ['red', '#b4232a'], ['slate', '#334155']];
 export const THEMES = [
   ['system', 'System (Default)', 'Follows your device setting', 'contrast'],
   ['light', 'Light', 'Clean and minimal', 'sun'],
@@ -15,6 +15,20 @@ const SEGMENTS = [['light', 'Light', 'sun'], ['dark', 'Dark', 'moon'], ['system'
 const segmentOf = (theme) => (['blue', 'purple', 'orange'].includes(theme) ? 'custom' : theme);
 const settingDescriptionId = (title) => `setting-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-description`;
 
+const handleRadioGroupKeyDown = (event, options, selectedKey, onSelect) => {
+  const currentIndex = options.findIndex(([key]) => key === selectedKey);
+  let nextIndex = currentIndex;
+  if (event.key === 'Home') nextIndex = 0;
+  else if (event.key === 'End') nextIndex = options.length - 1;
+  else if (['ArrowRight', 'ArrowDown'].includes(event.key)) nextIndex = (Math.max(currentIndex, 0) + 1) % options.length;
+  else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) nextIndex = (Math.max(currentIndex, 0) - 1 + options.length) % options.length;
+  else return;
+  event.preventDefault();
+  const nextKey = options[nextIndex][0];
+  onSelect(nextKey);
+  event.currentTarget.parentElement?.querySelector(`[data-radio-key="${nextKey}"]`)?.focus();
+};
+
 export function applyTheme(c, theme) {
   c.setPref('theme', theme);
   if (['blue', 'purple', 'orange'].includes(theme)) c.setPref('accent', theme);
@@ -24,15 +38,15 @@ export function ThemePicker({ c, compact }) {
   const { prefs, setPref } = c;
   const current = segmentOf(prefs.theme);
   return <>
-    <section className="theme-segments" role="radiogroup" aria-label="App appearance">
-      {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} role="radio" aria-checked={current === key} className={current === key ? 'selected' : ''}
+    <section className="theme-segments" role="group" aria-label="App appearance">
+      {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} aria-pressed={current === key} aria-haspopup={key === 'custom' ? 'dialog' : undefined} className={current === key ? 'selected' : ''}
         onClick={() => (key === 'custom' ? c.setSheet({ name: 'themes' }) : applyTheme(c, key))}>
         <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} /></span>{label}{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}
       </button>)}
     </section>
     <h3 className="mini-title">{compact ? 'App Theme Color' : 'Accent Color'}</h3>
     <div className="accent-row" role="radiogroup" aria-label="Accent color">
-      {ACCENTS.map(([key, color]) => <button type="button" key={key} role="radio" aria-checked={prefs.accent === key} aria-label={`${key} accent`} className={prefs.accent === key ? 'selected' : ''} style={{ '--dot': color }} onClick={() => setPref('accent', key)}>{prefs.accent === key && <Icon name="check" size={16} strokeWidth={3} />}</button>)}
+      {ACCENTS.map(([key, color]) => <button type="button" key={key} role="radio" aria-checked={prefs.accent === key} aria-label={`${key} accent`} data-radio-key={key} tabIndex={prefs.accent === key ? 0 : -1} className={prefs.accent === key ? 'selected' : ''} style={{ '--dot': color }} onClick={() => setPref('accent', key)} onKeyDown={event => handleRadioGroupKeyDown(event, ACCENTS, prefs.accent, value => setPref('accent', value))}>{prefs.accent === key && <Icon name="check" size={16} strokeWidth={3} />}</button>)}
     </div>
   </>;
 }
@@ -40,8 +54,8 @@ export function ThemePicker({ c, compact }) {
 export function ThemeSheet({ c }) {
   const { prefs } = c;
   return <Sheet title="Choose Theme" subtitle="Personalize your app experience." onClose={() => c.setSheet(null)}>
-    <div className="theme-list">
-      {THEMES.map(([key, name, sub]) => <button type="button" key={key} className={`theme-option${prefs.theme === key ? ' selected' : ''}`} onClick={() => { applyTheme(c, key); c.setSheet(null); }} role="radio" aria-checked={prefs.theme === key}>
+    <div className="theme-list" role="radiogroup" aria-label="Theme options">
+      {THEMES.map(([key, name, sub]) => <button type="button" key={key} className={`theme-option${prefs.theme === key ? ' selected' : ''}`} onClick={() => { applyTheme(c, key); c.setSheet(null); }} role="radio" aria-checked={prefs.theme === key} data-radio-key={key} tabIndex={prefs.theme === key ? 0 : -1} onKeyDown={event => handleRadioGroupKeyDown(event, THEMES, prefs.theme, value => applyTheme(c, value))}>
         <span className={`theme-art art-${key}`} /><span className="account-main"><strong>{name}</strong><small>{sub}</small></span>
         <span className="radio">{prefs.theme === key && <Icon name="check" size={13} strokeWidth={3} />}</span>
       </button>)}
