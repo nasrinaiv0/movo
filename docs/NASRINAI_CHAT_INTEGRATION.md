@@ -140,3 +140,37 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 - Added a regression test asserting no upstream call or chat persistence occurs when the key is blank.
 - This guard does **not** resolve the previously observed upstream HTTP 401 when a non-empty credential is rejected. That requires an authorized owner to verify/reissue the MOVO service credential in the NasrinAI control plane; the credential value must not be read into logs or chat.
 - Exact-head typecheck, full tests, production build, preview, and authenticated canary checks are pending after this change. The context-isolation PR remains draft.
+
+## Release runbook: service credential, model pin, and live isolation proof
+
+Status: **BLOCKED pending owner credential rotation and authenticated production verification.** Do not mark this integration complete based on CI or a READY preview alone.
+
+### 1. Issue a least-privilege NasrinAI service key
+
+1. Sign in to the protected NasrinAI Owner Console and open **Settings → API Keys**.
+2. Create a key labelled `MOVO production server-to-server`. The key must be the secret `nss_…` API key with the `chat` scope; do not use a user session token, Connect site key, Supabase key, or Vercel token.
+3. Copy the full secret at creation time only. NasrinAI stores the SHA-256 hash and displays the full secret only once. Never put it in chat, GitHub, issue comments, source files, or logs.
+4. In Vercel → project **movo** → Settings → Environment Variables, replace Production `NASRINAI_API_KEY` with the new secret and redeploy Production. Do not add it to any `REACT_APP_*` or `NEXT_PUBLIC_*` variable.
+5. Confirm the deployment is using the updated Production environment, then revoke the rejected/old key in Owner Console after the replacement is verified.
+
+### 2. Verify the live request and model
+
+Using a synthetic signed-in MOVO test account only, send a request through MOVO's own `/api/nasrinai/chat` endpoint with consent enabled. Verify all of the following:
+
+- The upstream request is accepted; no HTTP 401/403 occurs.
+- The upstream response explicitly returns `context_scope: "movo"`; missing or different scope is rejected and neither chat turn is persisted.
+- NasrinAI usage telemetry records the actual provider/model as `openrouter` / `openai/gpt-6-luna` for the request. Do not infer the model from the response's public `model` field, which reports the tier.
+- Put a unique, harmless canary in an unrelated NasrinAI document/project and verify it never appears in the MOVO answer, provider input, saved transcript, cache, or logs. Inspect only sanitized metadata and do not export prompts or financial content.
+- Repeat with an invalid/revoked key, missing scope confirmation, upstream timeout, and account switch. All failure cases must fail closed without cross-account history restoration or partial chat persistence.
+
+### 3. Release decision
+
+Keep PR #56 draft until the above evidence is recorded with timestamps, deployment identifiers, request IDs, and sanitized status/model metadata. Never record the API key, full prompt, transaction rows, account identifiers, or canary's unrelated document content in the audit log. The privacy-policy launch warning remains until this verification and the outstanding legal disclosure review are complete.
+
+### Audit note — 2026-10-31
+
+- Reviewed the current MOVO integration branch and the NasrinAI server-side MOVO-scope contract.
+- The MOVO proxy already fails closed unless the upstream explicitly confirms the scope, and only persists a successful confirmed reply.
+- The Vercel Production environment contains a server-side `NASRINAI_API_KEY` variable, but the secret value was not read or printed during this review; its validity cannot be inferred from variable presence.
+- NasrinAI PR #718 proposes pinning MOVO-scoped requests to OpenRouter `openai/gpt-6-luna` and failing closed rather than silently switching models. It must pass CI and be deployed before the live model check can succeed.
+- **Not verified:** fresh owner key, successful authenticated production POST, unrelated-document canary, actual production model telemetry, and full legal launch readiness.
