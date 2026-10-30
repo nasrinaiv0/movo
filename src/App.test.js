@@ -26,6 +26,7 @@ function clickButton(container, name) {
   const button = Array.from(container.querySelectorAll('button')).find(item => (
     item.getAttribute('aria-label') === name
     || item.textContent.trim() === name
+    || (name === 'Edit profile' && item.classList.contains('profile-card') && item.getAttribute('aria-label')?.includes('Edit profile'))
     || (item.classList.contains('tx-row')
       && amount
       && item.textContent.includes(merchant)
