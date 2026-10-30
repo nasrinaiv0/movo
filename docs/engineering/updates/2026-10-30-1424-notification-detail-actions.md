@@ -31,6 +31,9 @@ In `src/screens/Notifications.js`, the accessible More button on a notification 
 - Keep PR #60 draft until its full accessibility and authenticated finance release gates are complete.
 
 
-## Test-entry correction
+## Test-entry correction and failed CI evidence
 
-The first version of the two new App-level tests attempted to open Notifications through the bottom navigation. Review of the actual navigation showed Notifications is opened through the Home header. Corrected both tests to navigate Home and click the existing Notifications control before opening a notification. This is a test-only correction, not a product-code change. The earlier pre-correction head is not treated as validated; check the latest PR-head workflow.
+- GitHub Actions run [41014137573](https://github.com/nasrinaiv0/movo/actions/runs/41014137573) on source/test head `e25a3327cf7b96c0caceabe8064322315181f92f` failed: **2 tests failed / 114 passed**. Both new tests threw `TypeError: Cannot read properties of undefined (reading 'dispatchEvent')` because they attempted to use the bottom-navigation helper for Notifications, which is opened from the Home header.
+- Run [41014193032](https://github.com/nasrinaiv0/movo/actions/runs/41014193032) on documentation-updated head `eb9ac5cd01989a1aa8eecec98ff84c5153f2a3ad` reproduced the same two failures; the documentation-only commits did not change the faulty test setup. These failures are explicitly preserved, not counted as passes.
+- Corrected both tests in commit `b1cbcf250b2c7ac744a73e9c3b79629f68f843cf` to navigate to Home and click the real Notifications header control before opening a notification. This is a test-only correction; product code is unchanged in that correction.
+- The latest full CI run must validate the corrected source/tests and final audit documentation. Do not reuse the failed or older green results; read the current PR #60 Checks tab for the final exact-head outcome.
