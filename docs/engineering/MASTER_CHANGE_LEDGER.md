@@ -281,3 +281,12 @@ This section supersedes any older snapshot text that still says PR #58 is awaiti
 ### Exact-head follow-up — 2026-10-30 10:11 Asia/Manila
 
 Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352) has now completed successfully on exact head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c). It passed 18 suites / 103 tests, TypeScript typecheck, production-only dependency audit (0 vulnerabilities), and production compilation. Vercel check [CaaFALv6sPd7vWa1xRFqUwDRiHh2](https://vercel.com/nasrin-ai/movo/CaaFALv6sPd7vWa1xRFqUwDRiHh2) remains successful. The full dependency install still reports 34 findings (16 low, 5 moderate, 13 high), plus deprecation warnings for `glob@7.2.3`, `eslint@8.57.1`, and the Node.js 20 GitHub Actions runtime transition. These are not resolved by the clean production-only audit. The authenticated context-scope/canary gate remains unverified.
+
+
+## Monitoring checkpoint — 2026-10-30 10:35 Asia/Manila
+- No new application-code merge or production application deployment was detected since the 10:12 checkpoint. Main is ca1a680c78baf7c87347c960d56c7bc207041bc3 (documentation-only follow-up); production remains READY at application commit 277051e4ec2216a6b598c784a50b32ba37b89dee.
+- Newly verified high-priority governance gap: main branch metadata reports protected=false and required checks enforcement off; repository rulesets endpoint returned an empty array. External organization/user-level rules were not separately verified. See [10:35 audit delta](updates/2026-10-30-1035-branch-protection-and-release-control.md).
+- PR #61 documentation CI #40990360004 passed on exact head 04dea558066d56be34f2babe844ed0f5bed8d4c2 and its preview dpl_DgProVYtiyPMD7ZQEndJt1b9Zhjh is READY. PR remains open/draft.
+- PR #56 exact-head CI #40990086352 passed (18 suites / 103 tests); authenticated context-scope/canary remains unverified. PR #60 exact-head CI #40989633601 passed (20 suites / 111 tests); manual accessibility checks remain open. PR #52's recorded exact-head run #40988481343 passed (18 suites / 101 tests); authorized financial-data chart verification remains open.
+- Full dependency tree remains 34 findings (16 low, 5 moderate, 13 high) while production-only audit reports zero; keep these scopes distinct.
+- No branch settings, code, database, secrets, or deployments were changed by monitoring.
