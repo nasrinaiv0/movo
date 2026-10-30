@@ -80,3 +80,14 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 3. Test with two MOVO users: each must see only their own conversations and finance context; using the other user's conversation UUID must return 404.
 4. Confirm an unauthenticated request returns 401, a foreign origin returns 403, and an unconfigured upstream returns 503.
 5. Verify the Vercel deployment's runtime route can reach `https://nasrinai.com/v1/chat`, that the chosen NasrinAI service credential has chat scope, and that the response includes `context_scope: "movo"`.
+
+
+## User-facing context-isolation disclosure — 2026-10-30
+
+- The chat disclosure no longer states the absolute guarantee “Your account stays isolated.” The prior wording exceeded what MOVO can independently prove before the upstream service's scope enforcement is verified in production.
+- The UI now says MOVO sends a bounded snapshot of the signed-in user's MOVO records and that a reply is accepted only when NasrinAI explicitly confirms `context_scope: "movo"`; a missing confirmation is rejected by the API.
+- Added a regression assertion requiring this qualified explanation and rejecting the old absolute claim.
+- Source commit: `c57df91d9695afd63c07725105d542a9196d47f4`. Test commit: `f0e350bd5d851bd9a32936caa0d1051bf4b5fe11`.
+- **Validation for these latest commits is pending** until CI completes on the resulting branch head. Earlier passing tests do not count as validation for this new change.
+- This is a MOVO-only UI/documentation change. It does not alter the upstream NasrinAI repository, production data, Supabase schema/RLS/grants, authentication configuration, or provider secrets.
+- The disclosure is not evidence that upstream enforcement is deployed. Keep the live authenticated request and unrelated-document canary release gate open until tested against the deployed service.
