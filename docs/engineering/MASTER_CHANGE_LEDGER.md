@@ -316,3 +316,21 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - Terms/Privacy revisions in PR #56 are not yet deployed. Keep the publication warning until operator/controller identity/address, actual retention/deletion schedule, provider/data-recipient disclosures, and jurisdiction-specific review are confirmed.
 - The protected deployment fetch in this checkpoint failed at Vercel's share-link/authentication layer before reaching the app; it is not API evidence. No authenticated chat canary was completed.
 - No production data, database/RLS/grants, Auth settings, or secrets were changed.
+
+## PR #63 — production disclosure correction and post-merge verification (2026-10-30 11:30 Asia/Manila)
+
+- **PR:** [#63](https://github.com/nasrinaiv0/movo/pull/63); merged commit `1df043bcc54d59bee16fce806b601e09d647b06e`.
+- **Scope:** copy/legal metadata only. Replaced the absolute “Your account stays isolated” claim with an explicit limitation stating that the upstream context boundary has not yet been independently verified end to end; users should avoid real/highly sensitive financial details until verification is complete. Added the same caveat to Privacy Policy and split Terms/Privacy effective dates (October 29 / October 30, 2026).
+- **Exact-head CI:** [#40997576900](https://github.com/nasrinaiv0/movo/actions/runs/40997576900) passed 17 suites / 95 tests, TypeScript typecheck, production-only audit (0 vulnerabilities), and production build.
+- **Preview:** dpl_8g7qW9jw11r68N6ygt2MbqzeBxHb READY, root HTTP 200; served bundle contained the caveat and no longer contained the old absolute claim.
+- **Production:** deployment dpl_CoSq9dcgCG2qVbCkm1BBSeRU2r1U READY at merged commit; root HTTP 200. Served bundle verification confirmed the caveat, October 30 Privacy Policy date, and absence of the old claim.
+- **Limit:** this improves transparency only; it does not establish or implement the upstream isolation boundary. Issue #47 and PR #56 remain open/draft pending authenticated scoped POST and unrelated-project canary.
+- **Security:** no API behavior, data retrieval, auth, RLS, grants, database schema, financial records, or secrets changed.
+
+## Post-hotfix current release snapshot — 2026-10-30 11:30 Asia/Manila
+- #43 head `d6f2fcd40ad9c5438e031400dd5120d77272bec0`: 20 suites / 118 tests; typecheck; production-only audit (0); build; preview READY/root 200. Finance profile currency fix present; auth CRUD/CSV/currency-isolation gates open.
+- #52 head `4b645666108174f31d4875d0da063bd8fe1c0170`: 18 suites / 101 tests; typecheck; production-only audit (0); build; preview READY/root 200. Authenticated chart provenance gate open.
+- #56 head `06b5680b069ce17b75b9e2d63e3e0904bdda703e`: 18 suites / 103 tests; typecheck; production-only audit (0); build; preview READY/root 200. Upstream context canary gate open.
+- #60 head `43087d907be095ef42d8fbcd7b8d9b2cc6723662`: 20 suites / 111 tests; typecheck, `audit:controls`, production-only audit (0), build; preview READY/root 200. Manual accessibility gate open.
+- Fresh catalog: 7/7 checked tables RLS enabled; 22/22 policies on six user-facing tables reference `auth.uid()`; no checked anon/public grants; upstream mapping has no policies or authenticated grants and remains service-role-only.
+- Rechecked governance: main branch API says protected=false, required checks enforcement off, and repository rulesets list empty. Full dependency tree 34 findings (16 low, 5 moderate, 13 high); production-only audit zero. Leaked-password protection remains disabled. Legal publication warning remains.
