@@ -380,8 +380,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
         recorder.onstop = () => {
           const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-          if (heardSpeechRef.current) transcribeSegment(blob);
+          const hasSpeech = heardSpeechRef.current;
           heardSpeechRef.current = false;
+          if (hasSpeech) transcribeSegment(blob);
+          if (voiceRef.current) setTimeout(beginSegment, 100);
         };
         recorder.start();
         recorderRef.current = recorder;
@@ -394,14 +396,16 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         for (let i = 0; i < samples.length; i += 1) { const v = (samples[i] - 128) / 128; sum += v * v; }
         const rms = Math.sqrt(sum / samples.length);
         const now = Date.now();
-        if (rms > 0.035 && !audioPlayingRef.current) {
+        if (rms > 0.045) {
+          if (audioPlayingRef.current) {
+            audioQueueRef.current = [];
+            audioPlayingRef.current = false;
+          }
           heardSpeechRef.current = true; lastVoiceAtRef.current = now;
-          audioQueueRef.current = [];
           window.speechSynthesis?.cancel();
         }
         if (heardSpeechRef.current && (now - lastVoiceAtRef.current > 950 || now - segmentStart > 12000)) {
           if (recorder?.state === 'recording') recorder.stop();
-          if (voiceRef.current) beginSegment();
         }
         frameRef.current = requestAnimationFrame(detect);
       };
