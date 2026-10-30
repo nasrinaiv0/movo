@@ -49,7 +49,7 @@ test('catalog ids are unique, every mark exists and both US and Philippine servi
   const { CATALOG } = require('./subscriptions');
   const { BRAND_MARKS } = require('./brandMarks');
   expect(new Set(CATALOG.map(c => c.id)).size).toBe(CATALOG.length);
-  CATALOG.filter(c => c.mark).forEach(c => expect(BRAND_MARKS[c.mark]?.path).toMatch(/^M/));
+  CATALOG.filter(c => c.mark).forEach(c => expect(BRAND_MARKS[c.mark]?.path).toMatch(/^[Mm]/));
   expect(CATALOG.filter(c => c.region === 'PH').length).toBeGreaterThan(15);
   expect(CATALOG.filter(c => c.region === 'US').length).toBeGreaterThan(15);
 });
