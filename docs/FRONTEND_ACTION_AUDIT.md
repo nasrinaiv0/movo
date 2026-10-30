@@ -125,3 +125,14 @@ This audit is a working register, not a claim that the entire frontend is comple
 - On the exact-head preview, exercised Home, Wallet, Transactions, NasrinAI, Profile, Settings, Notifications, Search dialog open/Escape close, and profile navigation. No console/page errors or failed requests were observed.
 - A synthetic no-token POST to the production NasrinAI route returned HTTP 401 `sign_in_required`; this confirms the unauthenticated guard, not authenticated context isolation.
 - This is a scoped smoke test, **not** a claim that every visible control or the complete frontend has been fully validated. Authenticated finance writes, CSV import/export, keyboard-only/focus and screen-reader checks, and authenticated NasrinAI scope/canary verification remain outstanding.
+
+
+## Notification detail actions — 2026-10-30 14:24 Asia/Manila
+
+- Finding: the notification-detail **More** control opened the global Quick actions sheet (Add transaction/account, CSV import/export, theme, and sample-data actions). That control technically responded but offered actions unrelated to the selected notification, violating the user-facing action audit.
+- Changed its accessible name to **Notification actions** and routed it to a dedicated sheet with two contextual actions: **Mark as unread** and **Notification settings**.
+- Mark as unread removes the current notification ID from the persisted read-ID preference, selects the Unread filter, and returns to the notification feed. Notification settings navigates to the existing notification settings screen.
+- Added App-level regression tests for both actions. The tests assert the contextual sheet is shown rather than Quick actions, the selected item is unread after the action, and settings navigation reaches Notification Channels.
+- Source/test commits: `050e53f0f712f34306b827d12b2acb51adb89bb7`, `bba4df97b452a9e2449d3813d71ac8f01b24996b`, `e25a3327cf7b96c0caceabe8064322315181f92f`. PR #60 remains the existing dedicated UI-control/accessibility branch; no duplicate PR was opened.
+- The updated PR head triggers the normal full CI gate (typecheck, Jest suite, control audit, production-only dependency audit, and production build). Do not reuse an earlier head's result; confirm the latest Actions run and Vercel preview before treating this increment as validated.
+- Manual keyboard/focus, screen-reader, responsive, and authenticated finance/chat verification remain separate release gates. No financial data, schema, RLS policy, grant, authentication setting, provider secret, or other repository was changed.
