@@ -1,4 +1,4 @@
-const { buildFinancialContext, buildUpstreamBody, buildContextPayload, hasConfirmedMovoScope, extractReply, allowedOrigin, selectRelevantTransactions } = require('../../api/nasrinai/chat');
+const { buildFinancialContext, buildUpstreamBody, buildContextPayload, hasConfirmedMovoScope, classifyUpstreamErrorCode, safeRetryAfterSeconds, extractReply, allowedOrigin, selectRelevantTransactions } = require('../../api/nasrinai/chat');
 
 describe('MOVO NasrinAI chat isolation helpers', () => {
   test('builds a bounded financial context from only the supplied user-scoped rows', () => {
@@ -126,5 +126,24 @@ describe('MOVO NasrinAI chat isolation helpers', () => {
     expect(allowedOrigin({ headers: { origin: 'https://evil.example' } })).toBe(false);
     expect(allowedOrigin({ headers: { origin: 'https://movo.nasrinai.com' } })).toBe(true);
     expect(allowedOrigin({ headers: { origin: 'https://movo-lime.vercel.app' } })).toBe(true);
+  });
+});
+
+
+describe('MOVO upstream error diagnostics', () => {
+  test('logs only allowlisted upstream application error codes', () => {
+    expect(classifyUpstreamErrorCode({ error: { code: 'budget_reached', message: 'private provider detail' } })).toBe('budget_reached');
+    expect(classifyUpstreamErrorCode({ error: { code: 'invalid_context_scope' } })).toBe('invalid_context_scope');
+    expect(classifyUpstreamErrorCode({ error: { code: 'openrouter-secret-provider-detail' } })).toBe('unclassified');
+    expect(classifyUpstreamErrorCode({ error: { message: 'private provider detail' } })).toBe('unclassified');
+    expect(classifyUpstreamErrorCode(null)).toBe('unclassified');
+  });
+
+  test('accepts only bounded numeric Retry-After metadata', () => {
+    expect(safeRetryAfterSeconds('30')).toBe(30);
+    expect(safeRetryAfterSeconds('900')).toBe(600);
+    expect(safeRetryAfterSeconds('0')).toBeNull();
+    expect(safeRetryAfterSeconds('not-a-number')).toBeNull();
+    expect(safeRetryAfterSeconds(null)).toBeNull();
   });
 });
