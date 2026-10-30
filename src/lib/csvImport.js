@@ -95,7 +95,7 @@ function normalizeType(raw) {
 }
 function normalizeDate(raw) {
   const value = String(raw || '').trim();
-  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const parsed = new Date(`${value}T12:00:00Z`);
     if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return null;
     return parsed.toISOString();
@@ -110,7 +110,7 @@ export function transactionFingerprint(transaction) {
     String(transaction?.account_id || transaction?.account_name || '').trim().toLowerCase(),
     String(transaction?.transaction_type || transaction?.type || '').trim().toLowerCase(),
     Number(transaction?.amount || 0).toFixed(2),
-    String(transaction?.merchant || '').trim().toLowerCase().replace(/\\s+/g, ' '),
+    String(transaction?.merchant || '').trim().toLowerCase().replace(/\s+/g, ' '),
     dateKey,
   ].join('|');
   // Compact stable fingerprint fits the database's 200-character external-reference limit.
@@ -136,7 +136,7 @@ export function parseCsvTransactions(input) {
     const line = offset + 2;
     const get = (key) => indexes[key] < 0 ? '' : String(cells[indexes[key]] || '').trim();
     const merchant = get('merchant').slice(0, 160);
-    const rawAmount = get('amount').replace(/[₱$€£,\\s]/g, '');
+    const rawAmount = get('amount').replace(/[₱$€£,\s]/g, '');
     const amount = Math.abs(Number(rawAmount));
     const type = normalizeType(get('type'));
     const occurred_at = normalizeDate(get('date'));
