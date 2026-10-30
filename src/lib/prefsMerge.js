@@ -4,6 +4,8 @@
  * maps are merged key by key; lists keep every item from both sides (the account's copy wins for the same id);
  * "seen" markers keep the newest value.
  */
+import { mergeStreak } from './streak';
+
 const MAPS = ['cardStyles', 'accountStyles', 'layouts'];
 const ID_LISTS = ['budgets', 'plans', 'subscriptions', 'devices'];
 const STRING_LISTS = { readIds: 500, pushed: 200 };
@@ -32,6 +34,7 @@ export function mergePreferences(defaults, local, cloud) {
     out[k] = [...new Set([...list(c[k]), ...list(l[k])].filter(x => typeof x === 'string'))].slice(0, max);
   });
   NEWEST.forEach(k => { const a = String(l[k] || ''); const b = String(c[k] || ''); out[k] = a > b ? a : b; });
+  out.streak = mergeStreak(l.streak, c.streak);
   if (!c.mascot && l.mascot) out.mascot = l.mascot; // large photos stay on their device
   out.onboarded = true;
   return out;

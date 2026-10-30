@@ -28,7 +28,7 @@ h2.movo-ai-rich-heading { font-size: 17.5px; } h3.movo-ai-rich-heading { font-si
 .movo-ai-rich-list { margin: 8px 0 14px; padding-left: 22px; line-height: 1.65; }
 .movo-ai-rich-list li { padding-left: 3px; margin: 4px 0; }
 .movo-ai-rich-content strong { font-weight: 750; color: var(--text); }
-.movo-ai-rich-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.movo-ai-rich-content a { color: var(--accent-ink, var(--accent)); text-decoration: underline; text-underline-offset: 3px; }
 .movo-ai-inline-code { border: 1px solid var(--line); background: var(--field); border-radius: 5px; padding: 2px 5px; font:  .9em ui-monospace, SFMono-Regular, Menlo, monospace; }
 .movo-ai-code { max-width: 100%; overflow: auto; border: 1px solid var(--line); background: var(--field); border-radius: 12px; padding: 14px; font-size: 11px; line-height: 1.6; white-space: pre; }
 .movo-ai-code code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

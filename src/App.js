@@ -17,6 +17,7 @@ import CardArt from './components/CardArt';
 import AccountTile, { styleFor } from './components/AccountTile';
 import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
+import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate } from './lib/duplicates';
 import { mergePreferences, unionById } from './lib/prefsMerge';
@@ -35,7 +36,7 @@ import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
 import ScannerSheet from './components/ScannerSheet';
-import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate } from './lib/autoLog';
+import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate, shortcutPrompt } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
@@ -58,11 +59,20 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 /** "Already logged: Saging · ₱20.00 on Oct 30." for a record that a new entry duplicates. */
+/** Accent colour for text: on dark backgrounds a dark accent (e.g. slate) is lightened until it reads clearly. */
+export function readableAccent(hex, dark) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '')); if (!m) return undefined;
+  let [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+  const lum = () => [r, g, b].map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
+  if (!dark) return `#${m[1]}`;
+  for (let i = 0; i < 12 && (lum() + 0.05) / (0.0116 + 0.05) < 6; i += 1) [r, g, b] = [r, g, b].map(v => Math.round(v + (255 - v) * 0.18));
+  return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], cardStyles: {},
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
@@ -203,7 +213,7 @@ function App() {
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
   const layout = useLayout();
   const [burst, setBurst] = useState(null);
-  const celebrate = useCallback((label) => setBurst({ id: Date.now(), label }), []);
+  const celebrate = useCallback((label, badge) => setBurst({ id: Date.now(), label, badge }), []);
   const endBurst = useCallback(() => setBurst(null), []);
   const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
@@ -785,6 +795,18 @@ function App() {
   const showTour = authReady && !prefs.onboarded && view === 'Home' && !sheet && process.env.NODE_ENV !== 'test';
   // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.
   const finishTour = useCallback(() => setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey })), [todayKey]);
+  /* Usage streak: today counts once Movo is open; a new badge gets its own moment. */
+  useEffect(() => {
+    if (!authReady) return;
+    let unlocked = null;
+    setPrefs(cur => {
+      const next = updateStreak(cur.streak, todayKey);
+      if (next === cur.streak) return cur;
+      unlocked = newlyEarned(cur.streak, next);
+      return { ...cur, streak: next };
+    });
+    if (unlocked) { const badge = unlocked; setTimeout(() => celebrate(tr('Badge unlocked: {name}', { name: tr(badge.name) }), badge), 900); }
+  }, [authReady, todayKey, celebrate]);
   const handledLink = useRef('');
   const recordsRef = useRef(rawTxs);
   recordsRef.current = rawTxs;
@@ -857,7 +879,8 @@ function App() {
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
   const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
-  const rootStyle = { ...glassVars, ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const accentHex = accentName === 'custom' ? prefs.customColor : (ACCENTS.find(([n]) => n === accentName)?.[1] || '#2f6bff');
+  const rootStyle = { ...glassVars, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
@@ -1000,16 +1023,29 @@ function App() {
       </div>}
       {sheet?.name === 'autolog' && <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay and Google Pay payments from your phone\'s automations.')} onClose={() => setSheet(null)} label={tr('Automatic logging')}>
         <div className="card menu-card"><div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Payments are added instantly.') : tr('MOVO asks you to confirm each payment.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div></div>
-        <ol className="setup-steps">
-          <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → New → {transaction}. Pick your cards, choose {run}, then add {open} with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, open: <em>Open URLs</em> })}</li>
-          <li><strong>{tr('Android (Google Pay / bank alerts):')}</strong> {rich('In an automation app such as MacroDroid or Tasker, trigger on a Google Wallet or bank notification and open the link below with {src}, filling in the amount and merchant from the notification.', { src: <em>src=googlepay</em> })}</li>
-          <li>{tr('Keep this link private. It contains a key unique to this device; links without it always ask first.')}</li>
-        </ol>
+        <section className="card shortcut-quick" aria-label={tr('Set up with one prompt')}>
+          <strong><Icon name="spark" size={16} strokeWidth={2.2} /> {tr('Set up with one prompt (iPhone)')}</strong>
+          <ol className="setup-steps">
+            <li>{rich('Open {shortcuts} → {automation} → {plus} → {transaction}. Pick your cards, choose {run}, then tap {create}.', { shortcuts: <em>Shortcuts</em>, automation: <em>Automation</em>, plus: <em>+</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, create: <em>Create New Shortcut</em> })}</li>
+            <li>{rich('Paste the prompt into {describe} and send it.', { describe: <em>Describe a shortcut</em> })}</li>
+            <li>{tr('Check that it opens your Movo link with Amount, Merchant and Card, then tap Done.')}</li>
+          </ol>
+          <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy. Select the link below instead.'))); }}><Icon name="doc" size={16} /> {tr('Copy prompt for Shortcuts')}</button>
+          <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
+        </section>
+        <details className="setup-manual">
+          <summary>{tr('Set it up manually instead')}</summary>
+          <ol className="setup-steps">
+            <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → New → {transaction}. Pick your cards, choose {run}, then add {open} with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, open: <em>Open URLs</em> })}</li>
+            <li><strong>{tr('Android (Google Pay / bank alerts):')}</strong> {rich('In an automation app such as MacroDroid or Tasker, trigger on a Google Wallet or bank notification and open the link below with {src}, filling in the amount and merchant from the notification.', { src: <em>src=googlepay</em> })}</li>
+            <li>{tr('Keep this link private. It contains a key unique to this device; links without it always ask first.')}</li>
+          </ol>
+        </details>
         <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
       </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
-      <LoggedBurst id={burst?.id} label={burst?.label} onDone={endBurst} />
+      <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
