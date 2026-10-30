@@ -263,7 +263,7 @@ module.exports = async function handler(req, res) {
       if (!audio.length || audio.length > 2_400_000) return json(res, 413, { error: 'audio_too_large' });
       let stt;
       try {
-        stt = await fetch(nasrinBase + '/v1/transcriptions?name=' + encodeURIComponent(mime.includes('webm') ? 'movo-voice.webm' : mime.includes('mp4') ? 'movo-voice.m4a' : 'movo-voice.wav'), {
+        stt = await fetch(nasrinBase + '/v1/transcriptions?name=' + encodeURIComponent(mime.includes('webm') ? 'movo-voice.webm' : mime.includes('mp4') ? 'movo-voice.m4a' : mime.includes('ogg') ? 'movo-voice.ogg' : mime.includes('mpeg') ? 'movo-voice.mp3' : 'movo-voice.wav'), {
           method: 'POST',
           headers: { Authorization: 'Bearer ' + nasrinKey, 'Content-Type': mime, Accept: 'application/json', 'X-Client-Info': 'movo-voice-stt' },
           body: audio,
@@ -373,7 +373,16 @@ module.exports = async function handler(req, res) {
         body: JSON.stringify(upstreamBody),
         signal: AbortSignal.timeout(25000)
       });
+      const upstreamLength = Number(upstream.headers?.get?.('content-length') || 0);
+      if (voiceMode && upstreamLength > 10_500_000) {
+        await cleanupNewConversation();
+        return json(res, 502, { error: 'voice_reply_too_large' });
+      }
       responseText = await upstream.text();
+      if (voiceMode && responseText.length > 10_500_000) {
+        await cleanupNewConversation();
+        return json(res, 502, { error: 'voice_reply_too_large' });
+      }
       if (voiceMode && upstream.ok) {
         const events = responseText.split(/\r?\n/).filter(Boolean).slice(0, 5000).map((line) => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
         const done = [...events].reverse().find((event) => event.type === 'done');
