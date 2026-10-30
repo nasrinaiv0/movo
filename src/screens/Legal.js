@@ -1,7 +1,8 @@
 import React from 'react';
 import { SubHeader } from '../components/ui';
 
-const EFFECTIVE_DATE = 'October 29, 2026';
+const TERMS_EFFECTIVE_DATE = 'October 29, 2026';
+const PRIVACY_EFFECTIVE_DATE = 'October 30, 2026';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label="Legal documents">
@@ -10,7 +11,7 @@ function LegalNavigation({ c, current }) {
   </nav>;
 }
 
-function LegalPage({ c, title, current, children }) {
+function LegalPage({ c, title, current, effectiveDate, children }) {
   const back = c.legalReturnView || 'Profile';
   return <>
     <SubHeader title={title} onBack={() => c.go(back)} />
@@ -18,7 +19,7 @@ function LegalPage({ c, title, current, children }) {
       <header className="legal-intro">
         <p className="legal-eyebrow">MOVO · IMPORTANT INFORMATION</p>
         <h2 id="legal-title">{title}</h2>
-        <p>Effective date: {EFFECTIVE_DATE}</p>
+        <p>Effective date: {effectiveDate}</p>
       </header>
       <LegalNavigation c={c} current={current} />
       <aside className="legal-readiness-notice" role="note" aria-label="Important publication notice">
@@ -35,7 +36,7 @@ function LegalPage({ c, title, current, children }) {
 }
 
 export function TermsOfService({ c }) {
-  return <LegalPage c={c} title="Terms of Service" current="TermsOfService">
+  return <LegalPage c={c} title="Terms of Service" current="TermsOfService" effectiveDate={TERMS_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>1. What MOVO does</h2>
       <p>MOVO is a personal finance tracking tool that lets you record, organize, review, and export financial information you choose to provide. Some screens may contain sample or demonstration records. Unless a screen explicitly confirms otherwise, displayed balances and totals are calculations from the records available in MOVO and are not verified bank balances.</p>
@@ -97,7 +98,7 @@ export function TermsOfService({ c }) {
 }
 
 export function PrivacyPolicy({ c }) {
-  return <LegalPage c={c} title="Privacy Policy" current="PrivacyPolicy">
+  return <LegalPage c={c} title="Privacy Policy" current="PrivacyPolicy" effectiveDate={PRIVACY_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>1. Who is responsible for your data</h2>
       <p>The legal name and registered address of the MOVO data controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the service operator must publish its formal identity and any required privacy contact details. For privacy questions or requests, contact <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>. This policy describes MOVO's current product behavior and should be read with applicable privacy laws, including the Philippines' Data Privacy Act of 2012 where it applies.</p>
@@ -134,7 +135,7 @@ export function PrivacyPolicy({ c }) {
     <section className="legal-section">
       <h2>5. When information is shared</h2>
       <p>MOVO uses service providers for hosting, authentication, and cloud storage, including Vercel and Supabase where configured. Those providers may process technical or account data to provide their services under their own terms and contractual arrangements.</p>
-      <p>When you affirm the NasrinAI consent and send a chat message, MOVO sends the message and a limited, account-scoped financial snapshot to NasrinAI. NasrinAI and any providers it uses may process that submitted content to produce the response under their applicable policies. Do not send information you are not comfortable sharing with the AI service. You can use MOVO without granting this chat-specific consent.</p>
+      <p>When you affirm the NasrinAI consent and send a chat message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI. The end-to-end upstream context boundary has not yet been independently verified in the deployed integration; avoid sending real or highly sensitive financial details until that verification and the remaining provider disclosures are complete. NasrinAI and any providers it uses may process submitted content under their applicable policies. You can use MOVO without granting this chat-specific consent.</p>
       <p>Information may also be disclosed where required by law, to address security incidents, or to protect rights and safety. Service providers may process data in locations outside your country; the exact location can depend on provider configuration.</p>
     </section>
     <section className="legal-section">
