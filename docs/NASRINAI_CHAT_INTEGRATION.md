@@ -112,3 +112,13 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 - The previous preview failure at `1eef5cd` was caused by a stale App-level assertion expecting the removed absolute guarantee. That assertion was updated in `e7f51fc2c9cbd336510db7f6ddffd283065b421f`; the reconciled implementation subsequently passed.
 - This validates MOVO's unit/integration checks and deployment build only. Authenticated production POST and unrelated-document canary testing remain unverified and are required before merge.
 - This documentation-only follow-up changes the branch head; rerun exact-head CI and preview checks before merge.
+
+
+## Privacy policy AI-scope disclosure alignment — 2026-10-30
+
+- Updated the Privacy Policy's AI data-processing paragraph to describe the bounded signed-in-account MOVO snapshot and the API's fail-closed requirement for explicit MOVO-scope confirmation.
+- The copy explicitly states that upstream enforcement has not yet been independently verified in the deployed integration and instructs users not to enter real/highly sensitive financial information until verification and remaining provider disclosures are complete. This avoids presenting the scope control as a proven deployment fact.
+- Terms of Service retains its October 29, 2026 effective date; the Privacy Policy's new disclosure is dated October 30, 2026.
+- Added App-level regression assertions for the new disclosure and separate effective dates.
+- **Legal publication is still blocked** on the operator/controller's formal identity and registered address, a fixed retention/deletion schedule, complete provider/data-recipient details, and jurisdiction-specific review. Do not remove the visible launch warning or invent these details.
+- Latest code/test validation from `e606e5649361c65a95791b59a4a9802827370a67` predates this change. Fresh exact-head CI and Vercel preview checks are required.

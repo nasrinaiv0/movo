@@ -223,6 +223,10 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(container.textContent).toContain('Effective date: October 30, 2026');
+    expect(container.textContent).toContain("bounded snapshot of the signed-in account's MOVO financial records");
+    expect(container.textContent).toContain('explicitly confirms that the request remained within the MOVO scope');
+    expect(container.textContent).toContain("upstream service's enforcement has not yet been independently verified");
     expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
     expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
