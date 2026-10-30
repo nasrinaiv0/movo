@@ -179,3 +179,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Found that a non-empty malformed CSV currency such as `USDT` was silently rewritten to `PHP`, potentially mislabeling a user's financial record. Blank or absent optional currency still defaults to PHP, but an explicitly malformed value now produces a row-level validation error and that row is excluded from import.
 - Added regression tests for malformed explicit currency and blank optional currency. This is a financial data-integrity fix; it does not change database schema, RLS/grants, authentication, provider behavior, or secrets.
 - Exact-head typecheck/full tests/production build are pending for this change. Keep PR #43 draft until those checks and authenticated finance CRUD/CSV/currency-isolation flows are verified.
+
+## CSV currency validation — exact-head result — 2026-10-30 11:52 Asia/Manila
+
+- The first test run for this parser change exposed a test-fixture escaping error (literal \\n instead of a CSV row break). The failing fixture was corrected; the product parser change remained the same.
+- Current code/test head `b5de9612499c29a22c2844718742d0c4e665be46` has Vercel deployment [dpl_BNQdu6c7ReQ23xfTfZ3Lrw5qPtNg](https://vercel.com/nasrin-ai/movo/BNQdu6c7ReQ23xfTfZ3Lrw5qPtNg) **READY**. Build log confirms TypeScript typecheck, **20 suites / 122 tests passed**, and production compilation succeeded.
+- The regression confirms malformed non-empty currency codes are rejected per row rather than silently relabeled as PHP; blank optional currency still defaults to PHP. Production-only npm audit and `audit:controls` were not independently rerun on this head; dependency manifests were unchanged.
+- PR #43 remains draft pending authenticated cloud finance CRUD, CSV import/export, and owner-scoped currency-isolation verification.
