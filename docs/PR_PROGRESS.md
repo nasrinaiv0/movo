@@ -198,3 +198,13 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Coverage includes parser rejection of malformed explicit currency, preservation of PHP fallback only for blank/missing currency, and an App-level file-input/FileReader test that verifies the row-level error is exposed through `role="alert"` and the Import button remains disabled when there are no valid rows.
 - The first UI-test fixture attempt used a literal escaped sequence instead of a row break; the failed run was observed and the fixture corrected before this passing exact-head build. No dependency manifests changed; production-only npm audit and `audit:controls` were not independently rerun on this code head.
 - PR #43 remains draft until authenticated finance CRUD, CSV import/export, and owner-scoped currency isolation are verified against real signed-in records.
+
+
+## Strict CSV quote validation — 2026-10-30 11:58 Asia/Manila
+
+- Updated the CSV parser in the existing finance PR #43 rather than creating a duplicate PR.
+- The old quote-toggle parser could silently accept a quote inside an unquoted cell or extra text after a closing quote. The new parser rejects both malformed forms; escaped quotes, quoted newlines, CRLF/LF, BOM removal, and separator whitespace remain covered.
+- Added regression tests in `src/lib/csvImport.test.js`. Parser commit: `b4cc1ced75c898917e24073ec3098cc3b61e1834`; test commit: `c123b25904cd84ed6d6359bce5427ebe6f7064cf`.
+- Detailed handoff: [strict CSV quote validation](engineering/updates/2026-10-30-1158-strict-csv-quoting.md).
+- **Exact final-head validation is pending** for this code/test change and the documentation follow-up. Do not treat earlier PR #43 green checks as validating these commits.
+- No schema/RLS/grant/Auth/production-record/secret changes. Keep PR #43 draft until exact-head checks and authenticated CSV/finance/currency flows are verified.
