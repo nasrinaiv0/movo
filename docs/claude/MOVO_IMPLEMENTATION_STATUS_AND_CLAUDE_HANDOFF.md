@@ -556,3 +556,22 @@ Legal publication remains blocked on operator/controller identity/address, actua
 PR #63 merged as `1df043bcc54d59bee16fce806b601e09d647b06e`. The production deployment dpl_CoSq9dcgCG2qVbCkm1BBSeRU2r1U is READY, root HTTP 200, and the served JS bundle now contains the explicit unverified-upstream-boundary caveat and October 30 Privacy Policy date while no longer containing the absolute “Your account stays isolated” claim. Exact-head Actions #40997576900 passed 17 suites / 95 tests, typecheck, production-only audit (0), and build.
 
 This is a disclosure-only correction, not proof of isolation. Keep issue #47 open until authenticated scope confirmation and unrelated-project canary testing verify retrieval, provider prompt, response, transcript, cache, and logs. Current release candidates #43/#52/#56/#60 have passing exact-head CI and READY previews, but authenticated finance/CSV/chart flows and manual accessibility checks remain open. Fresh MOVO RLS catalog check remains 7/7 tables enabled, 22/22 user-facing policies referencing `auth.uid()`, zero checked anon/public grants, and service-role-only upstream mapping. Leaked-password protection remains disabled; no Auth-setting write action was available. Full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high). Main branch protection is still absent by repository-level API checks. Legal publication warning remains until the required operator, retention, provider, and jurisdiction details are confirmed.
+
+
+## Current release snapshot — 2026-10-30 12:06 Asia/Manila
+
+Production main is `9438e7c01c916a6b27f62e026fe9b4a4f6952f94`; Vercel deployment [dpl_3kHKpwFatSAawrVCtU19XNEECR3E](https://vercel.com/nasrin-ai/movo/3kHKpwFatSAawrVCtU19XNEECR3E) is READY at that commit.
+
+**Merged disclosure fix:** PR #63 (`1df043bcc54d59bee16fce806b601e09d647b06e`) replaced the absolute “Your account stays isolated” wording with an explicit warning that upstream context isolation has not yet been independently verified, and separated Terms/Privacy effective dates. Exact-head CI #40997576900 passed 17 suites / 95 tests, typecheck, production-only audit (0), and build. Recorded production smoke verified the caveat/date in the served bundle and absence of the old claim. This does not fix or prove the boundary.
+
+**Current open release candidates:**
+- #43 head `ad532e1df7ca14a0c0aebe0244d7b82d2bb0578e`: CI #41000693424, 20 suites / 125 tests, production-only audit 0, build pass; preview READY. Still require authenticated finance CRUD/CSV and currency isolation.
+- #52 head `78b776497c8125f1637b2fb601965c1cc94e9b03`: CI #40999382232, 18 suites / 101 tests, production-only audit 0, build pass; preview READY. Still require chart provenance validation against authorized records.
+- #56 head `15e112149bf70b6ee1f141365a4b9ed9ffb9e6e5`: CI #40999433274, 18 suites / 103 tests, production-only audit 0, build pass; preview READY. **Highest priority:** authenticated scope confirmation and unrelated-project canary across retrieval, prompt/request, response, transcript, cache and logs; include missing confirmation, retries, account switching and sign-out/sign-in. Keep issue #47 open and PR draft until verified.
+- #60 head `12ba5b3b45065949626e3ecf49a777b9de44387b`: CI #41000977707, 20 suites / 112 tests, typecheck, `audit:controls`, production-only audit 0, and build pass; preview READY. Still require manual keyboard/focus, screen-reader, responsive and authenticated finance-flow checks.
+
+All four CI install logs still report 34 full dependency-tree findings (16 low, 5 moderate, 13 high); production-only audit reports 0. Treat these as different scopes.
+
+Fresh merged catalog evidence: 7/7 checked tables RLS-enabled, 22 user-facing policies reference `auth.uid()`, no checked anon/PUBLIC grants, and upstream conversation mapping remains service-role-only. Supabase leaked-password protection is still disabled. Repository-level checks report main unprotected, required checks off, and no repository rulesets. Legal publication remains blocked on verified operator/controller identity/address, actual retention/deletion schedule, complete provider/data-recipient disclosures and jurisdiction review.
+
+**Do not merge based only on green CI or READY preview.** Complete the authenticated context canary, finance/chart verification, manual accessibility, governance and legal/security gates. No database/Auth/production data/secrets changed in this checkpoint.
