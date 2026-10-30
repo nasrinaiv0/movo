@@ -1,10 +1,13 @@
 ## Latest implementation delta — 2026-10-30 13:15 Asia/Manila
 
-- **PR #43 / finance CSV:** added strict monetary amount syntax validation. Malformed comma grouping (for example `1,2,3`), repeated decimals, scientific notation, and unsupported text are rejected with row-level errors instead of being normalized into a different ledger amount.
+- **PR #43 / finance CSV:** added strict monetary CSV amount syntax validation. Malformed comma grouping (for example `1,2,3`), repeated decimals, scientific notation, and unsupported text are rejected with row-level errors instead of being normalized into a different ledger amount.
 - Added regression coverage for invalid and valid amount formats. Source/test changes are on the existing dedicated branch `fix/finance-calculations-sync`; no duplicate PR was created.
 - Evidence record: `docs/engineering/updates/2026-10-30-1315-csv-amount-validation.md`.
-- **Exact-head validation pending** at the time of this note. Earlier PR #43 test counts do not validate this new code. Update this snapshot only after checking the latest commit's CI, typecheck, full suite, production build, production-only audit, and Vercel preview.
+- Exact code/test head `fb7f018de8446d9a63a95bb70a5b61970a68e00f) passed GitHub Actions run [41007544994](https://github.com/nasrinaiv0/movo/actions/runs/41007544994): **20 suites / 127 tests**, TypeScript typecheck, production-only dependency audit (**0 vulnerabilities**), and production build. Exact-head Vercel deployment [2AMQcgkT9x89gd1C6HYa8NpoUykH](https://vercel.com/nasrin-ai/movo/2AMQcgkT9x89gd1C6HYa8NpoUykH) reached READY.
+- The latest follow-up changes are documentation-only. Their new exact-head checks must be verified before any merge; source/test validation above must not be misrepresented as validation of a later SHA.
 - No DB/RLS/grants, auth settings, production financial records, or secrets changed. Authenticated cloud CSV import and owner-isolation checks remain unverified.
+
+---
 
 ---
 
