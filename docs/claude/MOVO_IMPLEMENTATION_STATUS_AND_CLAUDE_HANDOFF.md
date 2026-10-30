@@ -585,3 +585,12 @@ Fresh merged catalog evidence: 7/7 checked tables RLS-enabled, 22 user-facing po
 - Keep #43/#52/#56/#60 as separate implementation scopes; do not duplicate their work or merge a branch merely because it builds.
 - Still release-blocked: authenticated finance/CSV/chart verification; authenticated upstream scope confirmation and unrelated-project canary; manual keyboard/screen-reader/responsive QA; missing legal publication facts; Supabase leaked-password protection; branch protection/required checks; 34 full-tree dependency findings.
 - No secrets or credential values belong in the handoff. Do not attempt to “fix” the upstream 401 by logging or retrieving a secret; obtain/reissue the credential through an authorized owner workflow.
+
+
+## Fresh Supabase read-only security recheck — 2026-10-30 12:54 Asia/Manila
+
+- Catalog query: RLS is enabled on **7/7 checked public tables**: profiles, financial_accounts, transactions, budgets, movo_ai_conversations, movo_ai_messages, and movo_ai_upstream_conversations.
+- The six user-facing tables have **22 policies**; each checked policy expression references `auth.uid()`. The upstream mapping has no client policy.
+- `information_schema.role_table_grants` returned **73 grants** for `authenticated` and `service_role` across the checked tables, with **no `anon` or `PUBLIC` grants** in the checked set. The upstream mapping grants are limited to `service_role`; do not add a client policy/grant.
+- Fresh Security Advisor findings: `auth_leaked_password_protection` remains WARN (disabled); `rls_enabled_no_policy` for the server-only upstream mapping remains INFO and intentional. Performance Advisor reports seven unused indexes; no index was dropped without query evidence.
+- This was a read-only metadata/advisor check. No schema, RLS policy, grant, Auth setting, financial row, or secret was changed.

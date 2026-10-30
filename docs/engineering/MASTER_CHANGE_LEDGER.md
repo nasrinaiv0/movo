@@ -411,7 +411,7 @@ For all four runs, the job logs show the full dependency install still reports *
 
 ### Security and release boundary
 - The full dependency-tree audit still reports **34 findings (16 low, 5 moderate, 13 high)**. The zero-vulnerability result is limited to the production dependency tree; no broad forced upgrade was applied.
-- Previously recorded read-only Supabase catalog evidence remains the latest available snapshot: RLS enabled on the seven checked public tables, 22 policies across six user-facing tables referencing `auth.uid()`, no checked `anon`/`PUBLIC` table grants, and the upstream mapping restricted to server-side service-role access. This run did not change or re-query the database.
+- Previously recorded read-only Supabase catalog evidence remains the latest available snapshot: RLS enabled on the seven checked public tables, 22 policies across six user-facing tables referencing `auth.uid()`, no checked `anon`/`PUBLIC` table grants, and the upstream mapping restricted to server-side service-role access. No database schema, RLS policy, grant, Auth setting, financial record, or secret was changed in this run.
 - Supabase leaked-password protection remains an owner-authorized configuration blocker. Repository branch protection was previously found disabled with no required status checks; no branch-governance write action is available through the connected GitHub tools.
 - Terms and Privacy Policy remain linked and explicitly warn that formal controller/operator identity and address, a fixed retention/deletion schedule, complete provider/data-recipient details, and jurisdiction-specific review are outstanding. Do not invent those legal facts.
 - Authenticated cloud finance/CSV/currency-isolation verification, chart provenance against authorized records, the upstream MOVO-scope canary, and interactive accessibility QA remain unverified.
@@ -423,3 +423,12 @@ For all four runs, the job logs show the full dependency install still reports *
 3. Verify signed-in financial CRUD, CSV import/export, currency isolation, and chart provenance with synthetic user-owned records.
 4. Complete interactive keyboard/focus, screen-reader, and responsive checks for all visible controls.
 5. Have the owner/legal reviewer supply missing publication facts; enable leaked-password protection and required branch checks through authorized project settings.
+
+
+## Fresh Supabase read-only security recheck — 2026-10-30 12:54 Asia/Manila
+
+- Catalog query: RLS is enabled on **7/7 checked public tables**: profiles, financial_accounts, transactions, budgets, movo_ai_conversations, movo_ai_messages, and movo_ai_upstream_conversations.
+- The six user-facing tables have **22 policies**; each checked policy expression references `auth.uid()`. The upstream mapping has no client policy.
+- `information_schema.role_table_grants` returned **73 grants** for `authenticated` and `service_role` across the checked tables, with **no `anon` or `PUBLIC` grants** in the checked set. The upstream mapping grants are limited to `service_role`; do not add a client policy/grant.
+- Fresh Security Advisor findings: `auth_leaked_password_protection` remains WARN (disabled); `rls_enabled_no_policy` for the server-only upstream mapping remains INFO and intentional. Performance Advisor reports seven unused indexes; no index was dropped without query evidence.
+- This was a read-only metadata/advisor check. No schema, RLS policy, grant, Auth setting, financial row, or secret was changed.
