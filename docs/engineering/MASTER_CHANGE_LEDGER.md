@@ -10,8 +10,6 @@
 
 ---
 
----
-
 # MOVO Master Change Ledger
 
 ## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
