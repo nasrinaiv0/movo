@@ -691,7 +691,7 @@ describe('MOVO finance frontend', () => {
     const OriginalFileReader = window.FileReader;
     window.FileReader = class MockFileReader {
       readAsText() {
-        this.result = 'Date,Description,Type,Amount,Currency\\n2026-10-01,Coffee,expense,12.50,USDT';
+        this.result = 'Date,Description,Type,Amount,Currency\n2026-10-01,Coffee,expense,12.50,USDT';
         if (this.onload) this.onload();
       }
     };
