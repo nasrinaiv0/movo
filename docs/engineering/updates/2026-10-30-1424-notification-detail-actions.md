@@ -16,7 +16,7 @@ In `src/screens/Notifications.js`, the accessible More button on a notification 
 
 - Existing PR reused: [#60 — UI control and accessibility audit](https://github.com/nasrinaiv0/movo/pull/60).
 - Branch: `chore/ui-control-audit-reconciled-main`.
-- Source/test commits: `050e53f0f712f34306b827d12b2acb51adb89bb7`, `bba4df97b452a9e2449d3813d71ac8f01b24996b`, `e25a3327cf7b96c0caceabe8064322315181f92f`.
+- Source/test commits: `050e53f0f712f34306b827d12b2acb51adb89bb7`, `bba4df97b452a9e2449d3813d71ac8f01b24996b`, `e25a3327cf7b96c0caceabe8064322315181f92f`, with test-entry correction `b1cbcf250b2c7ac744a73e9c3b79629f68f843cf`.
 - Exact-head CI and preview results must be checked on the latest PR head. The earlier green PR #60 run does not validate this change.
 
 ## Security and scope
@@ -29,3 +29,8 @@ In `src/screens/Notifications.js`, the accessible More button on a notification 
 - Confirm latest-head full tests, typecheck, static control audit, production-only dependency audit, and production build.
 - Verify the exact-head preview and interactively test the notification action sheet at desktop and mobile widths, keyboard focus/escape behavior, and screen-reader announcements.
 - Keep PR #60 draft until its full accessibility and authenticated finance release gates are complete.
+
+
+## Test-entry correction
+
+The first version of the two new App-level tests attempted to open Notifications through the bottom navigation. Review of the actual navigation showed Notifications is opened through the Home header. Corrected both tests to navigate Home and click the existing Notifications control before opening a notification. This is a test-only correction, not a product-code change. The earlier pre-correction head is not treated as validated; check the latest PR-head workflow.
