@@ -216,6 +216,35 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Expense Recorded');
   });
 
+  test('notification detail actions can mark the current alert unread', () => {
+    nav(container, 'Notifications');
+    const firstRow = container.querySelector('.note-row');
+    expect(firstRow).not.toBeNull();
+    const title = firstRow.querySelector('.note-main strong').textContent;
+    act(() => firstRow.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.querySelector('.detail-hero')).not.toBeNull();
+
+    clickButton(container, 'Notification actions');
+    expect(container.textContent).toContain('Notification actions');
+    expect(container.textContent).not.toContain('Quick actions');
+    clickButton(container, 'Mark as unread');
+
+    expect(container.querySelector('h1').textContent).toBe('Notifications');
+    const unreadRow = Array.from(container.querySelectorAll('.note-row')).find(row => row.querySelector('.note-main strong')?.textContent === title);
+    expect(unreadRow).toBeTruthy();
+    expect(unreadRow.querySelector('[aria-label="Unread"]')).toBeTruthy();
+  });
+
+  test('notification detail actions navigate to notification settings', () => {
+    nav(container, 'Notifications');
+    const firstRow = container.querySelector('.note-row');
+    expect(firstRow).not.toBeNull();
+    act(() => firstRow.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'Notification actions');
+    clickButton(container, 'Notification settings');
+    expect(container.textContent).toContain('Notification Channels');
+  });
+
   test('notification preferences keep the Home destination selected in primary navigation', () => {
     nav(container, 'Home');
     clickButton(container, 'Notifications');
