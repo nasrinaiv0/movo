@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
-import { BriefingCard } from '../components/Briefing';
 import { UpcomingList } from './Subscriptions';
 import { toDay } from '../lib/subscriptions';
 import MoneyFlow from '../components/MoneyFlow';
@@ -82,7 +81,6 @@ export default function Home({ c }) {
       {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={260} height={110} /> : <Sparkline values={stats.trend} width={260} height={110} />}</div>}
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
     </section> },
-    { id: 'insights', label: tr('NasrinAI insights'), sizes: ['M'], node: c.briefing && <BriefingCard briefing={c.briefing} show={show} onOpen={c.openBriefing} onAsk={() => go('NasrinAI')} /> },
     { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
       {tiles.map(t => <article className={`card stat-card tint-${t.tone}`} key={t.label}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>

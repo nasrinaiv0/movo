@@ -1543,20 +1543,16 @@ button.account-tile:active { transform: scale(.98); }
 .sub-form-head label { flex: 1; }
 
 /* ---------- NasrinAI briefing ---------- */
-.brief-card { padding: 14px 16px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
-.brief-head { display: flex; align-items: center; gap: 10px; }
-.brief-head > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.brief-head strong { font-size: 14px; font-weight: 600; }
-.brief-head small { color: var(--muted); font-size: 11px; }
+.brief-note { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 14px; padding: 12px 14px; border: 0; color: var(--text); text-align: start; cursor: pointer; }
+.brief-note .brief-mark { width: 40px; height: 40px; border-radius: var(--r-tile, 30%); }
+.brief-note .note-main { flex: 1; min-width: 0; }
+.brief-note .note-main > small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.brief-note > .movo-icon { color: var(--muted); flex: none; }
 .brief-mark, .brief-orb { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff; flex: none; }
 .brief-orb { width: 52px; height: 52px; margin: 0 auto 6px; box-shadow: 0 8px 24px rgba(var(--accent-rgb), .35); }
 .brief-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
 .brief-lines li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.4; animation: item-in .35s var(--spring) both; animation-delay: calc(var(--i, 0) * 50ms); }
 .brief-icon { display: grid; place-items: center; width: 24px; height: 24px; flex: none; border-radius: 8px; }
-.brief-tip { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 10px 12px; border: 0; border-radius: 14px; background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text); font-size: 12.5px; line-height: 1.4; text-align: start; cursor: pointer; }
-.brief-tip svg { color: var(--accent); flex: none; margin-top: 1px; }
-.brief-tip b { font-weight: 600; color: var(--accent); }
-.brief-ask { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 0; border: 0; background: none; color: var(--accent); font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .brief-sheet { display: flex; flex-direction: column; gap: 12px; }
 .brief-sheet h3 { margin: 4px 0 0; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .brief-tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -1572,8 +1568,8 @@ button.account-tile:active { transform: scale(.98); }
 .menu-tile small { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
 .menu-tile-icon { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; }
 .menu-tile-icon i { position: absolute; top: -5px; right: -7px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: #ff3b30; color: #fff; font-size: 10px; font-style: normal; font-weight: 600; line-height: 17px; text-align: center; }
-.movo-app.movo-app :is(.menu-hero, .menu-tile, .brief-card, .sub-hero, .sub-calendar)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 var(--hair) var(--line); pointer-events: none; }
-:where(.menu-hero, .menu-tile, .brief-card, .sub-hero, .sub-calendar) { position: relative; }
+.movo-app.movo-app :is(.menu-hero, .menu-tile, .brief-note, .sub-hero, .sub-calendar)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 var(--hair) var(--line); pointer-events: none; }
+:where(.menu-hero, .menu-tile, .brief-note, .sub-hero, .sub-calendar) { position: relative; }
 
 /* ---------- RTL: sheet close sits on the leading edge; calendar arrows point the reading way ---------- */
 [dir="rtl"] .sheet .sheet-close, [dir="rtl"] .sheet.sheet-center .sheet-close { right: auto; left: 16px; }

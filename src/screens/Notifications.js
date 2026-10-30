@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { RootHeader, SubHeader, Chips, Tile } from '../components/ui';
 import { money, shown, timeLabel, longDate, chipLabel, chipTone, dayKey, relativeDay } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { BriefingNote } from '../components/Briefing';
 
 const FILTERS = [{ key: 'All', label: 'All' }, { key: 'Unread', label: 'Unread', dot: true }, { key: 'Transactions', label: 'Transactions' }, { key: 'Account', label: 'Account' }, { key: 'System', label: 'System' }];
 
@@ -30,6 +31,7 @@ export default function Notifications({ c }) {
   return <>
     <RootHeader title={tr('Notifications')} onSearch={c.openSearch} onSettings={() => go('NotificationSettings')} unread={false} hideBell />
     <Chips label={tr('Filter notifications')} items={FILTERS.map(f => ({ ...f, label: tr(f.label) }))} value={nFilter} onChange={setNFilter} />
+    {c.briefing && (nFilter === 'All' || nFilter === 'System') && <BriefingNote briefing={c.briefing} show={show} onOpen={c.openBriefing} />}
     {groups.map((g, i) => <section key={g.label}>
       <div className="section-title"><h2>{g.label}</h2>{i === 0 && <button type="button" className="link-button" onClick={markAllRead}>{tr('Mark all as read')}</button>}</div>
       <div className="card list-card">{g.items.map(n => <button type="button" key={n.id} className="note-row" onClick={() => openNotification(n)}>

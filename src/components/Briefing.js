@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Icon, { NasrinMark } from './Icon';
 import { Sheet } from './ui';
 import { money, shown } from '../lib/format';
@@ -16,19 +16,14 @@ const Lines = ({ items, show }) => <ul className="brief-lines">{items.map((l, i)
   <span className={`brief-icon tone-${l.tone}`}><Icon name={l.icon} size={14} strokeWidth={2.2} /></span><span>{lineText(l, show)}</span>
 </li>)}</ul>;
 
-/** Home box: today's headline numbers and one tip at a time. */
-export function BriefingCard({ briefing, show, onOpen, onAsk }) {
-  const [tip, setTip] = useState(0);
-  const t = briefing.tips[tip % Math.max(1, briefing.tips.length)];
-  return <section className="card brief-card" aria-label={tr('NasrinAI insights')}>
-    <div className="brief-head"><span className="brief-mark"><NasrinMark size={16} /></span><span><strong>{tr('NasrinAI insights')}</strong><small>{tr('Prepared on this device from your records')}</small></span>
-      <button type="button" className="link-button" onClick={onOpen}>{tr('Briefing')} <Icon name="chevron" size={13} /></button></div>
-    {briefing.hasData ? <Lines items={briefing.items.slice(0, 3)} show={show} /> : <p className="empty">{tr('Add a few transactions and NasrinAI will summarise your month here.')}</p>}
-    {t && <button type="button" className="brief-tip" onClick={() => setTip(tip + 1)} aria-label={tr('Next tip')}>
-      <Icon name="spark" size={15} /><span><b>{tr('Tip')}</b> {lineText(t, show)}</span>
-    </button>}
-    {onAsk && <button type="button" className="brief-ask" onClick={onAsk}><Icon name="message" size={15} /> {tr('Ask NasrinAI about your money')}</button>}
-  </section>;
+/** Pinned at the top of Notifications: the latest briefing, opened with a tap. */
+export function BriefingNote({ briefing, show, onOpen }) {
+  const first = briefing.items[0] || briefing.tips[0];
+  return <button type="button" className="card brief-note" onClick={onOpen} aria-label={tr('Your daily briefing')}>
+    <span className="brief-mark"><NasrinMark size={18} /></span>
+    <span className="note-main"><span className="note-top"><strong>{tr('Your daily briefing')}</strong><small>{tr('Today')}</small></span><small>{first ? lineText(first, show) : tr('Add a few transactions and NasrinAI will summarise your month here.')}</small></span>
+    <Icon name="chevron" size={16} />
+  </button>;
 }
 
 /** Shown once a day when the app opens. */

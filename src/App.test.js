@@ -557,4 +557,14 @@ describe('MOVO finance frontend', () => {
     act(() => container.querySelectorAll('.menu-tile')[3].click());
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   });
+
+  test('NasrinAI briefing lives in Notifications, not Home, and opens on tap', () => {
+    expect(container.querySelector('.brief-note')).toBeNull();
+    clickButton(container, 'Notifications');
+    const note = container.querySelector('.brief-note');
+    expect(note).not.toBeNull();
+    act(() => note.click());
+    expect(container.querySelector('[role="dialog"][aria-label="Your daily briefing"]')).not.toBeNull();
+    expect(container.textContent).toContain('Tips for you');
+  });
 });
