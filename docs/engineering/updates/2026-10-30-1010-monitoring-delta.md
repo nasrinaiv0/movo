@@ -86,3 +86,19 @@
 6. Keep the production-only dependency audit and separately triage the 34 full-tree findings.
 7. Enable Supabase leaked-password protection through an authorized configuration change and recheck the Security Advisor.
 8. Keep legal publication warning until required legal facts and provider disclosures are confirmed.
+
+
+## Post-check update — 2026-10-30 10:11 Asia/Manila
+
+The exact-head checks for MOVO PR #56 completed after the initial 10:10 snapshot.
+
+- Current head remains `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c`.
+- GitHub Actions run [#40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352) completed successfully. Job steps confirmed production dependency audit, tests, and production build all succeeded.
+- Test result: **18 suites passed / 103 tests passed** (reported in both test invocations during prebuild/build).
+- TypeScript `tsc --noEmit` passed.
+- Production dependency audit `npm audit --omit=dev` reported **0 vulnerabilities**.
+- Production bundle compiled successfully.
+- Vercel status remains success for [preview CaaFALv6sPd7vWa1xRFqUwDRiHh2](https://vercel.com/nasrin-ai/movo/CaaFALv6sPd7vWa1xRFqUwDRiHh2).
+- Full dependency install still reports **34 vulnerabilities: 16 low, 5 moderate, 13 high**. Logs also show deprecated `glob@7.2.3`, deprecated `eslint@8.57.1`, and a GitHub Actions warning that Node.js 20 is deprecated for the listed actions and they are being forced to Node.js 24. Track these separately from the clean production-only audit.
+- This exact-head CI validates the current branch including the documentation-only `30aaaf0` follow-up. It still does **not** prove authenticated upstream MOVO-scope enforcement.
+- PR #56 remains open/draft. The authenticated scoped POST and unrelated-project canary remain the merge gate; issue #47 remains open.
