@@ -215,3 +215,14 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - The first parser update failed the existing `transactionFingerprint` equivalence test because regexes outside the parser were inadvertently double-escaped. Run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655): 1 failed suite / 19 passed; 1 failed test / 124 passed.
 - Corrected by restoring the prior source at `15316f97bce721f815425b7fe867a549c712c89b` and applying only the strict parser function. Fix commit: `7c41531c0a48a60433d2cca10262734c03ce4ed7`.
 - The corrected head needs a fresh exact-head test/build/preview run. No green result is claimed from the failed run. Keep PR #43 draft.
+
+
+## Exact final-head validation — 2026-10-30 12:02 Asia/Manila
+
+- Final reconciled PR head: `a2d86b7b4a7a9bf7fa9796a31afe2483b9ea283f`.
+- GitHub Actions run [41000545238](https://github.com/nasrinaiv0/movo/actions/runs/41000545238) completed successfully. Its logs confirm **20/20 test suites and 125/125 tests passed**, TypeScript typecheck passed, production-only npm audit reported **0 vulnerabilities**, and the optimized production build compiled successfully.
+- Vercel deployment [dpl_2kpjd6GauvZuR93uieuoFoKTqV9C](https://vercel.com/nasrin-ai/movo/2kpjd6GauvZuR93uieuoFoKTqV9C) reached **READY** for the same final PR head. The preview root returned **HTTP 200**.
+- The earlier failing run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655) is preserved in the history: it caught a regex-normalization regression caused by the first API rewrite. The source was restored from the pre-change file and only the strict parser function reapplied. The corrected final head passed all 125 tests.
+- Production-only audit success does not clear the full dependency tree: installation still reports 34 findings (16 low, 5 moderate, 13 high). The dependency manifests were unchanged in this CSV parser increment.
+- **Still unverified:** authenticated cloud finance writes, CSV import/export against real signed-in user-owned accounts, owner-scoped currency isolation, interactive keyboard/screen-reader/mobile checks, and the upstream NasrinAI canary. Preview HTTP 200 and CI are not substitutes for those flows.
+- PR #43 remains draft. No database schema/RLS/grants, Auth settings, production financial records, or secrets changed.
