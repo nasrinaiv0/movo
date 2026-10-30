@@ -208,3 +208,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Detailed handoff: [strict CSV quote validation](engineering/updates/2026-10-30-1158-strict-csv-quoting.md).
 - **Exact final-head validation is pending** for this code/test change and the documentation follow-up. Do not treat earlier PR #43 green checks as validating these commits.
 - No schema/RLS/grant/Auth/production-record/secret changes. Keep PR #43 draft until exact-head checks and authenticated CSV/finance/currency flows are verified.
+
+
+## Strict CSV parser — failed check and corrective patch — 2026-10-30 12:00 Asia/Manila
+
+- The first parser update failed the existing `transactionFingerprint` equivalence test because regexes outside the parser were inadvertently double-escaped. Run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655): 1 failed suite / 19 passed; 1 failed test / 124 passed.
+- Corrected by restoring the prior source at `15316f97bce721f815425b7fe867a549c712c89b` and applying only the strict parser function. Fix commit: `7c41531c0a48a60433d2cca10262734c03ce4ed7`.
+- The corrected head needs a fresh exact-head test/build/preview run. No green result is claimed from the failed run. Keep PR #43 draft.
