@@ -241,6 +241,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('A country or region appearing in the app settings is a localization preference only');
     expect(container.textContent).toContain('For countries or regions not listed in the settings');
     expect(container.textContent).toContain('An incoming link or notification is not proof that a payment occurred');
+    expect(container.textContent).toContain('third-party names, logos, product names, trademarks, and service marks remain the property of their respective owners');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(container.textContent).toContain('Effective date: October 31, 2026');
@@ -252,7 +253,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('+63 947 387 5093');
     expect(container.textContent).toContain('142 Pag-asa Village, Matina Aplaya, Davao City, Philippines');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
-    expect(container.textContent).toContain('third-party names, logos, product names, trademarks, and service marks remain the property of their respective owners');
+
     expect(container.textContent).toContain('not affiliated with, sponsored by, partnered with, endorsed by, or advertising on behalf of');
     expect(container.textContent).toContain('request review or removal of a name or logo at any time');
     expect(container.textContent).toContain('MOVO does not sell personal information or financial records');
