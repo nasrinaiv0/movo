@@ -30,7 +30,7 @@ export default function Notifications({ c }) {
   list.forEach(n => { const label = relativeDay(n.at, refDate); let g = groups.find(x => x.label === label); if (!g) { g = { label, items: [] }; groups.push(g); } g.items.push(n); });
   return <>
     <RootHeader title={tr('Notifications')} onSearch={c.openSearch} onSettings={() => go('NotificationSettings')} unread={false} hideBell />
-    <Chips label={tr('Filter notifications')} items={FILTERS.map(f => ({ ...f, label: tr(f.label) }))} value={nFilter} onChange={setNFilter} />
+    <Chips label={tr('Filter notifications')} items={FILTERS.map(f => ({ ...f, label: tr(f.label), dot: f.dot && notifications.some(n => !readIds.includes(n.id)) }))} value={nFilter} onChange={setNFilter} />
     {c.briefing && (nFilter === 'All' || nFilter === 'System') && <BriefingNote briefing={c.briefing} show={show} onOpen={c.openBriefing} />}
     {groups.map((g, i) => <section key={g.label}>
       <div className="section-title"><h2>{g.label}</h2>{i === 0 && <button type="button" className="link-button" onClick={markAllRead}>{tr('Mark all as read')}</button>}</div>

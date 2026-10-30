@@ -27,6 +27,10 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Import CSV statements through a local parsing and review step; export available records to CSV.
 - Email/password and Google authentication paths, subject to deployment configuration and provider availability.
 - Optional cloud account/transaction storage through the authenticated repository with Supabase Row Level Security (RLS); local-only mode remains browser-specific.
+- Preferences follow the signed-in person: card styles, layouts, theme, accent, subscriptions, plans and custom sticker artwork are saved to `public.user_preferences` (owner-only RLS, migration `20261030160000_user_preferences.sql`, test `supabase/tests/user_preferences_isolation.test.sql`) and load on any device after sign-in. Local-only mode keeps them in this browser.
+- NasrinAI chat answers from MOVO data only: the proxy never continues NasrinAI-side conversations (whose documents or memory could leak in), sends `context_scope: "movo"`, and passes recent turns from MOVO's own chat history.
+- Wallet card actions: View Details, Add amount (Transfer into this account, or Manual top-up), Limits, More. A plus button beside the view toggle adds a card, bank, e-wallet or cash account.
+- Movo brand mark (`components/MovoLogo.js`), app icons and a loading screen in `public/index.html` whose mark eases between the green and graphite colourways.
 - No demo mode or sample data: MOVO starts empty, with a one-time walkthrough (welcome, then Home balance, Wallet, NasrinAI and Menu) for first-time users; Skip or Escape ends it.
 - Log transactions by chatting: type "Spent 250 on Grab", "Grab 250", "Salary 50000" or several lines in NasrinAI. Lines are parsed on the device (amount, currency, merchant, category, yesterday/today, account mentioned), saved like any record, and shown as a card with Undo. Works without signing in; questions still go to NasrinAI only after sign-in and consent.
 - Menu tab (replaces Profile in the bottom nav) with Profile, Subscriptions, Plans and Limits.

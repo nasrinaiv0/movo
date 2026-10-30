@@ -603,4 +603,21 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"][aria-label="Your daily briefing"]')).not.toBeNull();
     expect(container.textContent).toContain('Tips for you');
   });
+
+  test('red dots clear once notifications have been seen, and row dots clear when each is opened', () => {
+    expect(container.querySelector('.bottom-nav .nav-badge')).not.toBeNull();
+    clickButton(container, 'Notifications');
+    const rowDots = container.querySelectorAll('.note-row .red-dot').length;
+    expect(rowDots).toBeGreaterThan(0);
+    nav(container, 'Home');
+    expect(container.querySelector('.bottom-nav .nav-badge')).toBeNull();
+    expect(container.querySelector('.round-button .red-dot')).toBeNull();
+    clickButton(container, 'Notifications');
+    act(() => container.querySelector('.note-row').click());
+    clickButton(container, 'Back');
+    expect(container.querySelectorAll('.note-row .red-dot').length).toBe(rowDots - 1);
+    clickButton(container, 'Mark all as read');
+    expect(container.querySelectorAll('.note-row .red-dot').length).toBe(0);
+    expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
+  });
 });
