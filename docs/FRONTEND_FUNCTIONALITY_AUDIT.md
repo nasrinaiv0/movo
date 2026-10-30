@@ -181,3 +181,15 @@
 - **Data-integrity follow-up found during review:** `toCents` currently maps non-finite values to zero. That can mask malformed local data rather than surfacing it. Resolve this or prove invalid values are rejected before every calculation path before merging; do not treat this branch as finance-complete until this is addressed.
 - **Validation boundary:** CI and Vercel checks on the pre-reconciliation head do not validate `95ac0d1` or later documentation commits. Wait for exact-head typecheck, full tests, production build, and production-only dependency audit. Authenticated account/transaction writes, CSV import/export, and currency isolation against real user-owned records remain unverified.
 - No Supabase schema, RLS policy, grant, production financial record, authentication setting, or provider secret was changed.
+
+
+## Invalid monetary value handling — validated follow-up, 2026-10-30
+
+- The prior note that `toCents` converted non-finite values to zero is superseded by code commit `05d3b2007656c467b82b95dc9574a55ffe0aeca9` and Home/accessibility follow-ups `40979b1e196051d5be8acbccbfcc05d9e6622c2c` and `ba5753cd40fca83f445cf22ef9fc2f8602c9b003`.
+- Invalid amounts now propagate as invalid instead of zero. Currency formatting and animated amounts display an em dash; account/month totals are unavailable rather than fabricated; chart/trend series are suppressed; the user sees an accessible warning. Home Money Flow changes to “Needs review” / “Summary unavailable” and does not announce NaN or misleading percentages.
+- Added regression coverage for invalid arithmetic, invalid formatting, corrupted local transaction data, and accessible Money Flow state.
+- Exact-head GitHub Actions run [40989263312](https://github.com/nasrinaiv0/movo/actions/runs/40989263312) passed **20 suites / 117 tests**, typecheck, production-only dependency audit, and production build. The production-only audit reported 0 vulnerabilities.
+- Vercel preview [dpl_3pP8bQjDFHJWQek6cmm8f5mYr35T](https://vercel.com/nasrin-ai/movo/3pP8bQjDFHJWQek6cmm8f5mYr35T) reached **READY** for `ba5753cd40fca83f445cf22ef9fc2f8602c9b003`.
+- This does not resolve the full dependency tree's 34 reported findings (16 low, 5 moderate, 13 high). Production-only audit success is not a full dependency-tree clearance.
+- Remaining gates: authenticated financial writes, CSV import/export, and real user-owned currency-isolation verification. No Supabase schema/RLS/grants, production data, auth configuration, or provider secrets changed.
+- This audit update is documentation-only; rerun exact-head CI and preview checks on the resulting branch head before merge.
