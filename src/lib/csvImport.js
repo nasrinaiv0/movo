@@ -96,10 +96,16 @@ export function parseCsvTransactions(input) {
     if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { errors.push({ line, message: 'Amount must be a positive number.' }); return; }
     if (!type) { errors.push({ line, message: 'Type must be income, expense, or transfer.' }); return; }
     if (!occurred_at) { errors.push({ line, message: 'Date is invalid.' }); return; }
+    const rawCurrency = get('currency').toUpperCase();
+    if (rawCurrency && !/^[A-Z]{3}$/.test(rawCurrency)) {
+      errors.push({ line, message: 'Currency must be a three-letter code, for example PHP or USD.' });
+      return;
+    }
+    const currency = rawCurrency || 'PHP';
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : (get('category').slice(0, 60) || 'Other');
     transactions.push({
       merchant, amount: Math.round(amount * 100) / 100, transaction_type: type, type, category,
-      occurred_at, date: occurred_at, currency: /^[A-Z]{3}$/.test(get('currency').toUpperCase()) ? get('currency').toUpperCase() : 'PHP',
+      occurred_at, date: occurred_at, currency,
       account_name: get('account').slice(0, 100), to_account_name: get('destination').slice(0, 100),
       note: get('note').slice(0, 1000), source: 'csv_import',
     });

@@ -173,3 +173,9 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Corrected the accessible-label assertion in `src/App.test.js` to match `aria-label="Display Currency"`; updated `src/screens/Settings.test.js` to assert the actual multi-currency guidance; and fixed the remaining single-currency assertion to look for “no conversion is applied”. No product code, financial calculations, auth, database, RLS/grants, or secrets changed in these test-only corrections.
 - Exact code/test head `aec4d68ca86fc6a0b17ce3c12c7780e4551de861` has a Vercel READY deployment [dpl_7ty9PTCxqCSq7BgAD89N1mKmgzSS](https://vercel.com/nasrin-ai/movo/7ty9PTCxqCSq7BgAD89N1mKmgzSS). Its build log confirms TypeScript typecheck, **20 suites / 120 tests passed**, and “Compiled successfully.” The production-only audit and `audit:controls` were not independently rerun on this code head; the dependency manifest was unchanged.
 - PR #43 remains draft. Authenticated cloud finance CRUD, CSV import/export, and owner-scoped currency-isolation flows remain unverified. Do not merge based solely on tests and preview build.
+
+## CSV currency parsing integrity — 2026-10-30 11:46 Asia/Manila
+
+- Found that a non-empty malformed CSV currency such as `USDT` was silently rewritten to `PHP`, potentially mislabeling a user's financial record. Blank or absent optional currency still defaults to PHP, but an explicitly malformed value now produces a row-level validation error and that row is excluded from import.
+- Added regression tests for malformed explicit currency and blank optional currency. This is a financial data-integrity fix; it does not change database schema, RLS/grants, authentication, provider behavior, or secrets.
+- Exact-head typecheck/full tests/production build are pending for this change. Keep PR #43 draft until those checks and authenticated finance CRUD/CSV/currency-isolation flows are verified.
