@@ -13,7 +13,7 @@ export default function Profile({ c }) {
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
     <RootHeader title="Profile" onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
-    <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label="Edit profile">
+    <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label={`${user.initial}, ${user.name}, ${user.email || 'No email address'}, Plan details unavailable, Edit profile`}>
       <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
       <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="info" size={13} /> Plan details unavailable</em></span>
       <Icon name="chevron" size={18} />
