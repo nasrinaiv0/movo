@@ -13,6 +13,7 @@ import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import LockScreen from './components/LockScreen';
+import { mergePreferences, unionById } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
@@ -651,7 +652,8 @@ function App() {
   }, [cloudMode, notify]);
   /* ---------- preferences follow the signed-in person across devices ----------
      On sign-in the account's saved preferences (card styles, layouts, theme, subscriptions, plans…) and custom
-     sticker artwork replace this device's; after that every change is saved back, debounced. If the cloud table
+     sticker artwork are merged with what this device already has cached (nothing local is dropped), and the merged
+     result is saved back; after that every change is saved back, debounced. If the cloud table
      is unavailable MOVO keeps working with this device's preferences only. */
   const prefsSync = useRef({ user: '', ready: false, timer: 0 });
   const [stickerTick, setStickerTick] = useState(0);
@@ -665,11 +667,11 @@ function App() {
     loadPreferences(userId).then(row => {
       if (!live) return;
       if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
-        setPrefs(cur => ({ ...DEFAULTS, ...cur, ...row.prefs, onboarded: true }));
-        if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(row.stickers);
+        setPrefs(cur => mergePreferences(DEFAULTS, cur, row.prefs));
+        if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
       }
       sync.ready = true;
-      if (!row) setStickerTick(t => t + 1); // first sign-in on any device: upload this device's preferences
+      setStickerTick(t => t + 1); // upload the merged copy (or this device's on a first sign-in)
     }).catch(() => { /* table unavailable: stay device-only */ });
     return () => { live = false; };
   }, [userId]);

@@ -31,7 +31,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - MOVO ships no demo mode or sample data: a new person starts empty. Legacy `source: 'Sample'` rows are dropped on load. Tests seed `src/testFixtures.js` as the person's own records.
 - First-run tour (`components/Walkthrough.js`) shows once, only when no preferences are saved (`onboarded`); it is disabled in tests.
 - Chat logging (`lib/chatLog.js`) parses "Grab 250"-style lines on the device and saves them like any record; these messages are never sent to NasrinAI and need no AI consent.
-- Signed-in preferences sync through `public.user_preferences` (debounced upsert; device-only fallback). Add new preference keys to `DEFAULTS`; they sync automatically. The scenery photo stays on its device.
+- Signed-in preferences sync through `public.user_preferences` (debounced upsert; device-only fallback). Add new preference keys to `DEFAULTS`; they sync automatically. On sign-in the account copy is merged with this device's cache (`lib/prefsMerge.js`), never replacing it; add new map/list keys there. The scenery photo stays on its device.
 - Indicators: the bell/Home dot means new since Notifications was last opened (`notifSeenAt`); row dots clear per item (`readIds`); the Subscriptions badge clears once Subscriptions is opened (`subsSeen`).
 - Never imply mock settings deliver real push/email notifications or that balances are bank-verified.
 
