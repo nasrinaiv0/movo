@@ -1925,3 +1925,9 @@ button.account-tile:active { transform: scale(.98); }
 .shortcut-quick small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
 .setup-manual { margin: 4px 0 12px; }
 .setup-manual summary { cursor: pointer; padding: 10px 2px; color: var(--accent-ink, var(--accent)); font-size: 13.5px; font-weight: 600; list-style-position: inside; }
+
+/* No auto-zoom while typing: iOS Safari zooms into any focused field under 16px. On touch screens every text
+   field is at least 16px (pinch-to-zoom stays available; the viewport is not locked). */
+@media (pointer: coarse) {
+  :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]), textarea, select) { font-size: 16px !important; }
+}
