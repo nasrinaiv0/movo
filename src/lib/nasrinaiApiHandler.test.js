@@ -125,6 +125,18 @@ describe('MOVO NasrinAI API handler context isolation', () => {
     };
   }
 
+  test('fails closed with a safe configuration error when the upstream key is missing or blank', async () => {
+    process.env.NASRINAI_API_KEY = '   ';
+    const res = makeResponse();
+
+    await handler(request({}), res);
+
+    expect(res.statusCode).toBe(503);
+    expect(JSON.parse(res.body).error).toBe('nasrinai_not_configured');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(dbMock.state.inserts).toEqual([]);
+  });
+
   test('rejects an unconfirmed scope and persists neither user nor assistant message', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
