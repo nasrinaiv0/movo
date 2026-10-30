@@ -1578,3 +1578,6 @@ button.account-tile:active { transform: scale(.98); }
 /* ---------- RTL: sheet close sits on the leading edge; calendar arrows point the reading way ---------- */
 [dir="rtl"] .sheet .sheet-close, [dir="rtl"] .sheet.sheet-center .sheet-close { right: auto; left: 16px; }
 [dir="rtl"] .sub-calendar .plain-icon .movo-icon, [dir="rtl"] .menu-hero > .movo-icon:last-child, [dir="rtl"] .catalog-row > .movo-icon:last-child { transform: scaleX(-1); }
+
+/* ---------- Accent swatches: always true circles (the global 44px min-height stretched them into ovals) ---------- */
+.movo-app .accent-row button { flex: none; width: 44px; height: 44px; min-width: 44px; min-height: 44px; aspect-ratio: 1; padding: 0; border-radius: 50%; }
