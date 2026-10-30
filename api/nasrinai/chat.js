@@ -153,6 +153,39 @@ function hasConfirmedMovoScope(payload) {
   return payload?.context_scope === 'movo' || payload?.data?.context_scope === 'movo';
 }
 
+// Upstream error bodies may contain provider details, so expose only known,
+// stable application error codes. Never persist/log the upstream message/body.
+const SAFE_UPSTREAM_ERROR_CODES = new Set([
+  'ai_unavailable',
+  'budget_reached',
+  'budget_reconciliation_unavailable',
+  'budget_reconciliation_conflict',
+  'invalid_context',
+  'invalid_context_scope',
+  'invalid_request',
+  'forbidden',
+  'unauthenticated',
+  'not_found',
+  'model_unavailable',
+  'attachment_unsupported',
+  'service_unavailable',
+  'internal'
+]);
+
+function classifyUpstreamErrorCode(payload) {
+  const candidate = payload?.error?.code;
+  if (typeof candidate !== 'string') return 'unclassified';
+  const normalized = candidate.toLowerCase();
+  return SAFE_UPSTREAM_ERROR_CODES.has(normalized) ? normalized : 'unclassified';
+}
+
+function safeRetryAfterSeconds(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return null;
+  return Math.min(600, Math.ceil(parsed));
+}
+
 function extractReply(data) {
   const candidates = [
     data?.reply, data?.text, data?.response, data?.message,
@@ -327,8 +360,19 @@ module.exports = async function handler(req, res) {
     const elapsedMs = Date.now() - upstreamStartedAt;
     if (!upstream.ok) {
       await cleanupNewConversation();
-      // Log only status/latency: never log prompts, financial context, keys, or upstream body.
-      console.error('[movo-nasrinai-upstream]', 'http_' + upstream.status, 'key_format_' + classifyNasrinAIKeyFormat(nasrinKey), 'latency_ms_' + elapsedMs);
+      // Log only status, a strict allowlisted application error code, retry
+      // metadata and latency. Never log prompts, financial context, keys,
+      // provider messages, response bodies, or arbitrary upstream error fields.
+      const upstreamErrorCode = classifyUpstreamErrorCode(payload);
+      const retryAfterSeconds = safeRetryAfterSeconds(upstream.headers?.get?.('retry-after'));
+      console.error(
+        '[movo-nasrinai-upstream]',
+        'http_' + upstream.status,
+        'error_code_' + upstreamErrorCode,
+        'key_format_' + classifyNasrinAIKeyFormat(nasrinKey),
+        ...(retryAfterSeconds ? ['retry_after_seconds_' + retryAfterSeconds] : []),
+        'latency_ms_' + elapsedMs
+      );
       if (upstream.status === 401 || upstream.status === 403) {
         return json(res, 502, {
           error: 'nasrinai_auth_rejected',
@@ -336,6 +380,7 @@ module.exports = async function handler(req, res) {
         });
       }
       if (upstream.status === 429) {
+        if (retryAfterSeconds) res.setHeader('Retry-After', String(retryAfterSeconds));
         return json(res, 429, {
           error: 'nasrinai_rate_limited',
           message: 'NasrinAI is temporarily busy. Please try again shortly.'
@@ -408,5 +453,7 @@ module.exports.selectRelevantTransactions = selectRelevantTransactions;
 module.exports.buildUpstreamBody = buildUpstreamBody;
 module.exports.buildContextPayload = buildContextPayload;
 module.exports.hasConfirmedMovoScope = hasConfirmedMovoScope;
+module.exports.classifyUpstreamErrorCode = classifyUpstreamErrorCode;
+module.exports.safeRetryAfterSeconds = safeRetryAfterSeconds;
 module.exports.extractReply = extractReply;
 module.exports.allowedOrigin = allowedOrigin;
