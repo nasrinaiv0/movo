@@ -122,3 +122,13 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 - Added App-level regression assertions for the new disclosure and separate effective dates.
 - **Legal publication is still blocked** on the operator/controller's formal identity and registered address, a fixed retention/deletion schedule, complete provider/data-recipient details, and jurisdiction-specific review. Do not remove the visible launch warning or invent these details.
 - Latest code/test validation from `e606e5649361c65a95791b59a4a9802827370a67` predates this change. Fresh exact-head CI and Vercel preview checks are required.
+
+
+## Exact-head validation after Privacy Policy alignment — 2026-10-30
+
+- The statement above that fresh validation was pending describes the state before this run. The privacy-copy change was subsequently validated at head `1b3c93916d7d65ac6ba8fc4607ba726a7cd06d23`.
+- GitHub Actions run [40989833432](https://github.com/nasrinaiv0/movo/actions/runs/40989833432) passed **18 suites / 103 tests**, TypeScript typecheck, production-only dependency audit, and production build.
+- Production-only audit reported 0 vulnerabilities. Vercel preview [dpl_5kQQJRy2Qpgodxo2CQpgBQeah5tm](https://vercel.com/nasrin-ai/movo/5kQQJRy2Qpgodxo2CQpgBQeah5tm) reached READY for the same head.
+- The exact-head check validates the UI/legal copy and MOVO-side fail-closed behavior in the branch; it does not prove upstream enforcement. The authenticated live POST and unrelated-document canary remain required.
+- Legal publication remains blocked on formal operator/controller identity/address, a fixed retention/deletion schedule, complete provider/data-recipient disclosures, and jurisdiction-specific review.
+- This documentation-only follow-up must itself pass CI and preview checks before merge.
