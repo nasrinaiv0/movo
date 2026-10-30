@@ -1721,3 +1721,46 @@ button.account-tile:active { transform: scale(.98); }
 .quiet-times label { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
 .quiet-times input { min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: var(--field); color: var(--text); font: inherit; }
 .danger-text strong { color: var(--red); }
+
+/* =====================================================================
+   NasrinAI composer v3: pinned just above the tab bar, a taller rounded
+   rectangle (text on top, tools below). Enter adds a new line; the send
+   button sends. Full-bleed background on every phone width.
+   ===================================================================== */
+.movo-app .movo-ai-chat { min-height: 0; padding-bottom: calc(var(--composer-h, 108px) + 10px); }
+/* Opacity-only entrance: a transform here would stop the composer from pinning to the screen. */
+.movo-app .screen > .movo-ai-chat { animation-name: fade; }
+.movo-app .movo-ai-chat .movo-ai-composer { position: fixed; z-index: 36; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(402px, calc(100vw - 28px)); display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 2px; min-height: 104px; padding: 10px 10px 8px; border-radius: 24px; }
+.movo-app .movo-ai-chat .movo-ai-composer textarea { flex: none; min-height: 44px; max-height: 140px; padding: 4px 6px; font-size: 14px; line-height: 20px; resize: none; overflow-y: auto; }
+.movo-ai-composer-bar { display: flex; align-items: center; gap: 6px; }
+.movo-ai-composer-gap { flex: 1; }
+.movo-app .movo-ai-chat .movo-ai-composer .movo-ai-circle { display: inline-grid; place-items: center; width: 34px; height: 34px; min-width: 34px; padding: 0; border-radius: 50%; }
+.movo-app .movo-ai-chat :is(.movo-ai-review, .movo-ai-signin, .movo-ai-error) { margin-bottom: 0; }
+.bottom-fade.chat { display: none; }
+.has-scenery .bottom-fade { display: none; }
+.movo-app .scenery { top: 0; bottom: auto; height: 100lvh; min-height: 100%; }
+.has-scenery .screen-header.is-scrolled, .has-scenery .is-scrolled .screen-header { background: color-mix(in srgb, var(--bg) 35%, transparent); }
+@media (max-width: 480px) {
+  .movo-app .scenery, .app-shell, .sheet, .search-panel { max-width: none; }
+  .bottom-fade { width: 100%; }
+  .app-shell { box-shadow: none; }
+}
+.movo-ai-shortcuts { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: -2px -10px 4px; padding: 0 10px 2px; mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 14px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 14px), transparent); }
+.movo-ai-shortcuts::-webkit-scrollbar { display: none; }
+.movo-app .movo-ai-shortcuts button { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color .2s ease-out, transform .2s ease-out; }
+.movo-app .movo-ai-shortcuts button svg { color: var(--accent); }
+.movo-app .movo-ai-shortcuts button:active { transform: scale(.96); }
+
+/* =====================================================================
+   Card motion: a new or restyled card eases in; opening details lifts the
+   card into view. Smooth ease-out only, no overshoot.
+   ===================================================================== */
+@keyframes card-in { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+@keyframes card-view { from { opacity: 0; transform: translateY(12px) scale(.92); } }
+.card-slide > :is(.credit-card, .account-tile), .style-preview > .credit-card, .account-tiles > .account-tile, .account-list > * { animation: card-in .42s cubic-bezier(.22,.61,.36,1) both; }
+.detail-card-view { display: grid; place-items: center; margin: 2px 0 16px; }
+.detail-card-view > * { width: 100%; max-width: 340px; animation: card-view .5s cubic-bezier(.22,.61,.36,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .card-slide > :is(.credit-card, .account-tile), .style-preview > .credit-card, .account-tiles > .account-tile, .account-list > *, .detail-card-view > * { animation: none; }
+}
+.movo-app .toast.over-composer { bottom: calc(var(--toast-lift, 224px) + env(safe-area-inset-bottom)); }

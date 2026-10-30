@@ -56,7 +56,8 @@ export default function Wallet({ c }) {
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
   const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
   const openAccount = (a) => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); };
-  const cardVisual = (a) => (wv.cardFormat === 'tile' ? <AccountTile a={a} show={show} style={styleFor(a, prefs.accountStyles)} size="preview" /> : <CardArt a={a} show={show} styleId={styleOf(a)} holder={holder} />);
+  // Keyed by style so a new look eases in when the card is edited.
+  const cardVisual = (a) => (wv.cardFormat === 'tile' ? <AccountTile key={`${a.id}:${styleFor(a, prefs.accountStyles).color}:${styleFor(a, prefs.accountStyles).icon}`} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size="preview" /> : <CardArt key={`${a.id}:${styleOf(a)}`} a={a} show={show} styleId={styleOf(a)} holder={holder} />);
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
     : <section className={`account-tiles at-${wv.view}`}>{items.map(a => <AccountTile key={a.id} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size={wv.view === 'grid' ? 'grid' : 'tile'} onClick={() => openAccount(a)} />)}</section>);

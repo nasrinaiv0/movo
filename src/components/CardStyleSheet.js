@@ -31,7 +31,7 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
   };
   const mine = (t) => t.custom;
   return <Sheet title={tr('Card Style')} subtitle={tr('Pick a sticker. Your bank name, chip and number always stay clear.')} onClose={onClose} label={tr('Card style')}>
-    <div className="style-preview"><CardArt a={account} show={show} holder={holder} styleId={current} /></div>
+    <div className="style-preview"><CardArt key={current || 'classic'} a={account} show={show} holder={holder} styleId={current} /></div>
     <label className="style-search"><Icon name="search" size={18} /><input type="search" placeholder={tr('Search {n}+ stickers', { n: ALL.length })} aria-label={tr('Search card stickers')} value={query} onChange={e => { setQuery(e.target.value); setLimit(PAGE); }} /></label>
     <Chips label={tr('Sticker collections')} items={genres.map(g => ({ key: g, label: tr(g) }))} value={genre} onChange={g => { setGenre(g); setLimit(PAGE); }} />
     <div className="style-grid" role="list">

@@ -87,6 +87,18 @@ describe('NasrinAI consent and legal links', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  test('Enter adds a new line instead of sending; only the send button sends', async () => {
+    act(() => button('I understand').click());
+    const box = container.querySelector('#movo-ai-prompt');
+    setTextareaValue(box, 'Summarize my spending');
+    await act(async () => {
+      box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(global.fetch.mock.calls.some(([, options]) => options?.method === 'POST')).toBe(false);
+    expect(box.value).toBe('Summarize my spending');
+  });
+
   test('keeps Send disabled when consent is accepted but the draft is empty', () => {
     act(() => button('I understand').click());
     expect(container.querySelector('[role="dialog"]')).toBeNull();

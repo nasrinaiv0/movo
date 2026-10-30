@@ -13,6 +13,8 @@ import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import LockScreen from './components/LockScreen';
+import CardArt from './components/CardArt';
+import AccountTile, { styleFor } from './components/AccountTile';
 import { mergePreferences, unionById } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
 import { lockState } from './lib/appLock';
@@ -645,6 +647,31 @@ function App() {
     notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
     return saved;
   }, [accountsView, cloudMode, session, base, notify]);
+  /* Chat shortcuts: one tap to log, scan or read a MOVO section; summaries are worked out on this device. */
+  const chatSummary = (range) => {
+    const label = range === 'today' ? tr('Today') : tr('This month');
+    const list = txs.filter(t => (range === 'today' ? dayKey(t.date) === todayKey : monthKey(t.date) === monthKey(new Date())));
+    if (!list.length) return range === 'today' ? tr('No records yet today.') : tr('No records yet this month.');
+    const spent = list.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const earned = list.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const byCat = {}; list.filter(t => t.type === 'expense').forEach(t => { byCat[t.category] = (byCat[t.category] || 0) + t.amount; });
+    const [top, topAmount] = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0] || [];
+    const lines = [tr('**{period}**: you spent {spent} and earned {earned} across {n} records.', { period: label, spent: shown(show, money(spent)), earned: shown(show, money(earned)), n: list.length })];
+    if (top) lines.push(tr('Most went to {category} ({amount}).', { category: tr(top), amount: shown(show, money(topAmount)) }));
+    return lines.join('\n\n');
+  };
+  const chatShortcuts = [
+    { id: 'expense', icon: 'minus', label: 'Expense', run: () => openForm('expense') },
+    { id: 'income', icon: 'plus', label: 'Income', run: () => openForm('income') },
+    { id: 'transfer', icon: 'transfer', label: 'Transfer', run: () => openForm('transfer') },
+    { id: 'scan', icon: 'scan', label: 'Scan receipt', run: () => setSheet({ name: 'scanner' }) },
+    { id: 'today', icon: 'calendar', label: 'Today', say: () => chatSummary('today') },
+    { id: 'month', icon: 'chart', label: 'This month', say: () => chatSummary('month') },
+    { id: 'budgets', icon: 'target', label: 'Budgets', run: () => setSheet({ name: 'budgets', tab: 'budgets' }) },
+    { id: 'renewals', icon: 'clock', label: 'Renewals', run: () => go('Subscriptions') },
+    { id: 'activity', icon: 'list', label: 'Transactions', run: () => go('Transactions') },
+    { id: 'accounts', icon: 'wallet', label: 'Accounts', run: () => go('Wallet') },
+  ];
   const undoChatLog = useCallback(async (id) => {
     if (cloudMode) await deleteTransaction(id);
     setRawTxs(cur => cur.filter(x => x.id !== id));
@@ -828,7 +855,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -913,6 +940,7 @@ function App() {
       </Sheet>}
 
       {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label={tr('Account details')}>
+        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" />}</div>
         <dl className="detail-list"><div><dt>{tr('Institution')}</dt><dd>{accountChoice.institution_name || tr('Personal account')}</dd></div><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>{tr('Balance')}</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
         <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> {tr('Edit account')}</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> {tr('Archive account')}</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>{tr('Add transaction')}</button></div>
       </Sheet>}
@@ -939,7 +967,7 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
       </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
-      {toast && <div className={`toast${busy ? ' raised' : ''}`} role="status" aria-live="polite">{toast}</div>}
+      {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
   </div>;

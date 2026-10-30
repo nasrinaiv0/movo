@@ -117,10 +117,10 @@ export function parseReceipt(text = '') {
 }
 
 const GUESS = [
-  ['Food & drinks', /jollibee|mcdo|mcdonald|kfc|chowking|starbucks|coffee|cafe|restaurant|grill|pizza|burger|inasal|greenwich|bakery|milk ?tea/i],
-  ['Groceries', /supermarket|grocery|puregold|savemore|robinsons|landmark|7-?eleven|alfamart|ministop|market/i],
-  ['Transport', /grab|angkas|joyride|shell|petron|caltex|seaoil|toll|easytrip|autosweep|lrt|mrt|parking|fuel|gas/i],
-  ['Bills', /meralco|maynilad|manila water|pldt|globe|smart|converge|sky|electric|water|internet|bill/i],
+  ['Food & drinks', /jollibee|mcdo|mcdonald|kfc|chowking|starbucks|coffee|cafe|restaurant|grill|pizza|burger|inasal|greenwich|bakery|milk ?tea|bread|lunch|dinner|breakfast|snack|meal|food|kain|pagkain|ulam|merienda|tinapay|pandesal|kape/i],
+  ['Groceries', /supermarket|grocery|puregold|savemore|robinsons|landmark|7-?eleven|alfamart|ministop|market|saging|bigas|gulay|prutas|itlog|manok|baboy|isda|palengke|sari-?sari/i],
+  ['Transport', /grab|angkas|joyride|shell|petron|caltex|seaoil|toll|easytrip|autosweep|lrt|mrt|parking|fuel|gas|pamasahe|jeep|tricycle|taxi|bus|gasolina/i],
+  ['Bills', /meralco|maynilad|manila water|pldt|globe|smart|converge|sky|electric|water|internet|bill|kuryente|tubig|load/i],
   ['Subscriptions', /netflix|spotify|youtube|disney|apple\.com|icloud|google|prime/i],
   ['Health', /mercury|watsons|southstar|pharma|drug|clinic|hospital|dental|medical/i],
   ['Shopping', /lazada|shopee|uniqlo|h&m|zara|miniso|mall|department|store/i],

@@ -22,4 +22,5 @@ test('matches the paying card to an account', () => {
   expect(matchAccount('Metrobank Visa', accounts).id).toBe('2');
   expect(matchAccount('Card ••1234', accounts).id).toBe('2');
   expect(matchAccount('', accounts).id).toBe('2');
+  expect(matchAccount('savings account', [...accounts, { id: '3', name: 'BPI Savings', account_type: 'bank' }]).id).toBe('3');
 });
