@@ -232,11 +232,16 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: October 29, 2026');
+    expect(container.textContent).toContain('Effective date: October 31, 2026');
+    expect(container.textContent).toContain('Republic Act No. 7394');
+    expect(container.textContent).toContain('cannot lawfully be excluded, limited, or waived');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: October 30, 2026');
+    expect(container.textContent).toContain('Effective date: October 31, 2026');
+    expect(container.textContent).toContain('National Privacy Commission (NPC)');
+    expect(container.textContent).toContain('fixed automatic deletion schedule is not currently published');
+    expect(container.textContent).toContain('record-category retention schedule');
     expect(container.textContent).toContain('end-to-end upstream context boundary has not yet been independently verified in the deployed integration');
     expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
