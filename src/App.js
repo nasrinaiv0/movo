@@ -8,6 +8,11 @@ import Home from './screens/Home';
 import Wallet from './screens/Wallet';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
+import Menu from './screens/Menu';
+import Subscriptions from './screens/Subscriptions';
+import { BriefingSheet } from './components/Briefing';
+import { buildBriefing } from './lib/insights';
+import { summarize as summarizeSubscriptions } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
@@ -46,12 +51,12 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
-const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile', HelpCenter: 'Profile', TermsOfService: 'Profile', PrivacyPolicy: 'Profile' };
-const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
-const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Profile: 4 };
-const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
+const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
+const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit' };
 const today = () => new Date().toLocaleDateString('en-CA');
 
@@ -320,7 +325,12 @@ function App() {
   const recent = useMemo(() => txs.filter(t => t.type !== 'transfer').slice(0, 4), [txs]);
   const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeMonth.list), [budgets, homeMonth]);
+  /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
+  const subscriptions = useMemo(() => (Array.isArray(prefs.subscriptions) ? prefs.subscriptions.filter(s => s && typeof s === 'object' && typeof s.name === 'string' && s.id) : []), [prefs.subscriptions]);
+  const todayKey = dayKey(new Date());
+  const subSummary = useMemo(() => summarizeSubscriptions(subscriptions, new Date(`${todayKey}T12:00:00`), toBase), [subscriptions, toBase, todayKey]);
   const plans = useMemo(() => (prefs.plans || []).map(p => ({ ...p, target: toBase(p.target, p.currency || 'PHP'), saved: toBase(p.saved, p.currency || 'PHP'), currency: base })), [prefs.plans, toBase, base]);
+  const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const allNotifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
@@ -557,6 +567,19 @@ function App() {
   };
   const savePlan = (plan) => { const row = { ...plan, currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
   const deletePlan = (id) => { setPref('plans', plans.filter(p => p.id !== id)); notify(tr('Plan removed.')); };
+  const saveSubscription = (sub) => {
+    const row = { ...sub, id: sub.id || window.crypto?.randomUUID?.() || `sub-${Date.now()}` };
+    setPref('subscriptions', [...subscriptions.filter(x => x.id !== row.id), row]);
+    notify(sub.id ? tr('Subscription updated.') : tr('{name} added to your subscriptions.', { name: row.name }));
+  };
+  const deleteSubscription = (id) => { setPref('subscriptions', subscriptions.filter(x => x.id !== id)); notify(tr('Subscription removed.')); };
+  /* Opens the add-transaction sheet pre-filled with this renewal, converted to the home currency. */
+  const logSubscription = (sub) => {
+    const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
+    setError('');
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), category: 'Subscriptions', occurred_at: today(), time: '', note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setSheet({ name: 'transaction', type: 'expense' });
+  };
   const exportCsv = () => {
     const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, t.category, t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName])];
     const csv = buildCsv(rows);
@@ -609,6 +632,14 @@ function App() {
     window.addEventListener('hashchange', handle);
     return () => window.removeEventListener('hashchange', handle);
   }, [authReady, session, cloudMode, prefs.autoLog, prefs.autoLogKey, autoLogFor, notify]);
+  /* NasrinAI's briefing opens once a day when the app starts (never over another sheet, and not in unit tests). */
+  const briefingShown = useRef(false);
+  useEffect(() => {
+    if (!authReady || briefingShown.current || prefs.briefing === false || prefs.briefingDay === todayKey || process.env.NODE_ENV === 'test') return undefined;
+    briefingShown.current = true;
+    const timer = setTimeout(() => setSheet(cur => cur || { name: 'briefing' }), 700);
+    return () => clearTimeout(timer);
+  }, [authReady, prefs.briefing, prefs.briefingDay, todayKey]);
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
     setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: today(), time: '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
@@ -638,7 +669,8 @@ function App() {
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
-    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
+    budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
+    subscriptions, subSummary, saveSubscription, deleteSubscription, logSubscription, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -667,6 +699,8 @@ function App() {
       case 'Wallet': return <Wallet c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
+      case 'Menu': return <Menu c={c} />;
+      case 'Subscriptions': return <Subscriptions c={c} />;
       case 'EditProfile': return <EditProfile c={c} />;
       case 'Settings': return <Settings c={c} />;
       case 'Appearance': return <Appearance c={c} />;
@@ -733,7 +767,8 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {sheet?.name === 'budgets' && <BudgetsSheet progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
+      {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 
 
       {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is parsed in this browser. Nothing is uploaded until you confirm the import.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>

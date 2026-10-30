@@ -91,6 +91,7 @@ export default function Settings({ c }) {
       { icon: 'bell', title: tr('Push Notifications'), sub: tr('Not available in this web build; no push delivery service is connected.'), toggle: 'push' },
       { icon: 'mail', title: tr('Email Notifications'), sub: tr('Not available yet; MOVO does not send email alerts.'), toggle: 'email' },
       { icon: 'message', title: tr('In-App Alerts'), sub: tr('Show or hide the in-app notification feed.'), toggle: 'inapp' },
+      { icon: 'spark', title: tr('Daily NasrinAI briefing'), sub: tr('A summary and money tips once a day when you open MOVO.'), toggle: 'briefing' },
     ] },
     { title: tr('Security & Privacy'), rows: [
       { icon: 'face', title: tr('Face ID / Touch ID'), sub: tr('Unavailable in a browser; native biometric unlock is not connected.'), toggle: 'biometrics' },
@@ -119,7 +120,7 @@ export default function Settings({ c }) {
   const q = query.trim().toLowerCase();
   const shown = sections.map(s => ({ ...s, rows: s.rows.filter(r => !q || `${r.title} ${r.sub}`.toLowerCase().includes(q)) })).filter(s => s.rows.length);
   return <>
-    <SubHeader title={tr('Settings')} onBack={() => go('Profile')} />
+    <SubHeader title={tr('Settings')} onBack={() => go('Menu')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search settings')} placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} /></label>
     {shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
       <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={!['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) && prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}

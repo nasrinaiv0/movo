@@ -2,6 +2,9 @@ import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
+import { BriefingCard } from '../components/Briefing';
+import { UpcomingList } from './Subscriptions';
+import { toDay } from '../lib/subscriptions';
 import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
 import { dayKey, money, shown } from '../lib/format';
@@ -79,6 +82,7 @@ export default function Home({ c }) {
       {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={260} height={110} /> : <Sparkline values={stats.trend} width={260} height={110} />}</div>}
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
     </section> },
+    { id: 'insights', label: tr('NasrinAI insights'), sizes: ['M'], node: c.briefing && <BriefingCard briefing={c.briefing} show={show} onOpen={c.openBriefing} onAsk={() => go('NasrinAI')} /> },
     { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
       {tiles.map(t => <article className={`card stat-card tint-${t.tone}`} key={t.label}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
@@ -88,6 +92,11 @@ export default function Home({ c }) {
     </section> },
     { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={refDate} show={show} variant={style} /> },
     { id: 'budgets', label: tr('Budgets & plans'), node: ({ size }) => <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} size={size} /> },
+    { id: 'subscriptions', label: tr('Upcoming renewals'), node: ({ size }) => <section aria-label={tr('Upcoming renewals')}>
+      <SectionTitle action={c.subSummary?.activeCount ? tr('See All') : tr('Add')} onAction={() => go('Subscriptions')}>{tr('Upcoming Renewals')}</SectionTitle>
+      {c.subSummary?.activeCount ? <UpcomingList upcoming={c.subSummary.upcoming} show={show} today={toDay(new Date())} onOpen={() => go('Subscriptions')} limit={{ S: 1, M: 3, L: 6 }[size]} />
+        : <button type="button" className="budget-empty" onClick={() => go('Subscriptions')}><Icon name="refresh" size={20} /><span><strong>{tr('Track your subscriptions')}</strong><small>{tr('See every renewal before it charges.')}</small></span></button>}
+    </section> },
     { id: 'spending', label: tr('Spending this month'), styles: SPENDING_STYLES, node: ({ size, style }) => <section aria-label={tr('Spending overview')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending This Month')}</SectionTitle>
       <div className={`card spending-card is-${style}`}>

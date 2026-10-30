@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
-import { RootHeader, SubHeader, SectionTitle, Trend } from '../components/ui';
+import { SubHeader, SectionTitle, Trend } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
@@ -12,7 +12,7 @@ export default function Profile({ c }) {
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
-    <RootHeader title={tr('Profile')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <SubHeader title={tr('Profile')} onBack={() => go('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gear" size={19} /></button>} />
     <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
       <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
       <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="info" size={13} /> {tr('Plan details unavailable')}</em></span>

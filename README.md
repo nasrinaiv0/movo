@@ -27,6 +27,9 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Import CSV statements through a local parsing and review step; export available records to CSV.
 - Email/password and Google authentication paths, subject to deployment configuration and provider availability.
 - Optional cloud account/transaction storage through the authenticated repository with Supabase Row Level Security (RLS); local-only mode remains browser-specific.
+- Menu tab (replaces Profile in the bottom nav) with Profile, Subscriptions, Plans and Limits.
+- Subscription tracker: catalog of common apps and services (brand-colour initials, no third-party logos) or custom entries, weekly/monthly/quarterly/yearly cycles, upcoming list, renewal calendar and insights. Stored on this device only (`subscriptions` in preferences); MOVO reminds, it never charges or cancels anything. A renewal can be logged as an expense.
+- NasrinAI daily briefing and money tips: rule-based summary (spending vs last month, top category, largest purchase, savings rate, renewals this week, budgets) and tips, computed on the device from the user's own records. Shown once a day on open (Settings toggle) and as a Home box; nothing is sent to the AI unless the user opens the chat.
 - Separate, explicit consent for sharing a limited user-scoped financial snapshot with NasrinAI. Production chat authentication still requires verification.
 - Terms of Service, Privacy Policy, Help Center, onboarding acknowledgement, and privacy-request contact links.
 - Light/dark/system appearance, accent colors, balance visibility, and browser preferences.

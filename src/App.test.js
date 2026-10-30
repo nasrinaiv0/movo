@@ -39,6 +39,11 @@ const nav = (container, name) => {
   const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.getAttribute('aria-label') === name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
 };
+// Profile now lives under the Menu tab.
+const openProfile = (container) => {
+  nav(container, 'Menu');
+  act(() => container.querySelector('.menu-hero').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+};
 
 describe('MOVO finance frontend', () => {
   let container; let root;
@@ -164,7 +169,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('profile editing saves validated fields only when the real form is submitted', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Edit profile');
     const name = container.querySelector('input[aria-label="Full Name"]');
     const phone = container.querySelector('input[aria-label="Phone Number"]');
@@ -182,7 +187,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('profile editing prevents saving a blank name', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Edit profile');
     setInputValue(container.querySelector('input[aria-label="Full Name"]'), '   ');
     clickButton(container, 'Save');
@@ -192,7 +197,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('profile, settings, appearance and notification screens are reachable', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     expect(container.querySelector('h1').textContent).toBe('Profile');
     expect(container.textContent).toContain('Data & Sync');
     expect(container.textContent).toContain('Manually entered records persist across reloads in this browser');
@@ -216,7 +221,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('Terms of Service and Privacy Policy are reachable and cross-linked', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
     expect(container.textContent).toContain('Effective date: October 29, 2026');
@@ -234,7 +239,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('Settings Privacy & Data opens the privacy policy instead of changing balance visibility', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Settings');
     const privacyRow = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Privacy & Data');
     expect(privacyRow).toBeTruthy();
@@ -245,7 +250,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('theme choices update the app theme and persist preferences', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Dark');
     expect(container.querySelector('.movo-app, .theme-dark')).not.toBeNull();
     expect(container.firstChild.className).toContain('theme-dark');
@@ -269,7 +274,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('unsupported notification and device-security settings are disabled', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Settings');
     ['Push Notifications', 'Email Notifications', 'Face ID / Touch ID', 'Local Storage', 'Auto Categorization'].forEach(label => {
       const toggle = container.querySelector('button[aria-label="' + label + '"]');
@@ -285,7 +290,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('unavailable notification delivery controls display off and disabled', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
     expect(notificationSettings).toBeTruthy();
     act(() => notificationSettings.click());
@@ -304,14 +309,14 @@ describe('MOVO finance frontend', () => {
   });
 
   test('unavailable notification categories explain that only demo events exist', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Settings');
     const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'DELETE');
     clickButton(container, 'Clear all data');
-    nav(container, 'Profile');
+    openProfile(container);
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
     expect(notificationSettings).toBeTruthy();
     act(() => notificationSettings.click());
@@ -328,7 +333,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('Clear All Data requires typing DELETE, then resets preferences and removes local records', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Settings');
     const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
     expect(clearRow).toBeTruthy();
@@ -346,7 +351,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('turning off in-app alerts hides the notification feed', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Notifications');
     act(() => notificationSettings.click());
     const inAppToggle = container.querySelector('button[aria-label="In-App Alerts"]');
@@ -373,7 +378,7 @@ describe('MOVO finance frontend', () => {
 
   test('liquid glass can be switched off and its clarity adjusted', () => {
     expect(container.firstChild.className).toContain('glass-on');
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Settings');
     const row = Array.from(container.querySelectorAll('button.menu-row')).find(b => b.textContent.startsWith('Liquid Glass'));
     act(() => row.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -397,7 +402,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('unsupported Plan & Usage is clearly unavailable while Help Center opens useful guidance', () => {
-    nav(container, 'Profile');
+    openProfile(container);
     clickButton(container, 'Settings');
     const rows = Array.from(container.querySelectorAll('.menu-row'));
     const plan = rows.find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
@@ -525,5 +530,31 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"][aria-label="Import transactions"]')).not.toBeNull();
     expect(container.querySelector('input[type="file"][accept=".csv,text/csv"]')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Import 0 transaction(s)') && button.disabled)).toBe(true);
+  });
+
+  test('Menu opens Profile, Subscriptions, Plans and Limits, and a subscription can be added', () => {
+    nav(container, 'Menu');
+    expect(container.querySelector('h1').textContent).toBe('Menu');
+    const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
+    expect(tiles).toEqual(['Profile', 'Subscriptions', 'Plans', 'Limits']);
+    act(() => container.querySelectorAll('.menu-tile')[1].click());
+    expect(container.querySelector('h1').textContent).toBe('Subscriptions');
+    clickButton(container, 'Add subscription');
+    const search = container.querySelector('input[aria-label="Search for an app or service"]');
+    setInputValue(search, 'netfl');
+    const row = Array.from(container.querySelectorAll('.catalog-row')).find(b => b.textContent.includes('Netflix'));
+    act(() => row.click());
+    const form = container.querySelector('form.sheet-form');
+    clickButton(container, 'Save');
+    expect(form.querySelector('[role="alert"]').textContent).toContain('amount greater than zero');
+    setInputValue(form.querySelector('input[inputmode="decimal"]'), '549');
+    clickButton(container, 'Save');
+    const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3')).subscriptions;
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatchObject({ name: 'Netflix', amount: 549, cycle: 'monthly', status: 'active' });
+    expect(container.querySelector('[aria-label="Subscription summary"]').textContent).toContain('549');
+    clickButton(container, 'Back');
+    act(() => container.querySelectorAll('.menu-tile')[3].click());
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   });
 });
