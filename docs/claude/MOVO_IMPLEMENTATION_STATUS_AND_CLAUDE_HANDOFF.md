@@ -575,3 +575,13 @@ All four CI install logs still report 34 full dependency-tree findings (16 low, 
 Fresh merged catalog evidence: 7/7 checked tables RLS-enabled, 22 user-facing policies reference `auth.uid()`, no checked anon/PUBLIC grants, and upstream conversation mapping remains service-role-only. Supabase leaked-password protection is still disabled. Repository-level checks report main unprotected, required checks off, and no repository rulesets. Legal publication remains blocked on verified operator/controller identity/address, actual retention/deletion schedule, complete provider/data-recipient disclosures and jurisdiction review.
 
 **Do not merge based only on green CI or READY preview.** Complete the authenticated context canary, finance/chart verification, manual accessibility, governance and legal/security gates. No database/Auth/production data/secrets changed in this checkpoint.
+
+
+## Current implementation handoff — 2026-10-30 12:52 Asia/Manila
+
+- Latest detailed evidence: `docs/engineering/updates/2026-10-30-1252-frontend-hardening.md`.
+- **PR #56** current validated head `ebb9156c9ee53507f577c468aea3c47d70e98501`: CI [41004999162](https://github.com/nasrinaiv0/movo/actions/runs/41004999162) passed 18 suites / 104 tests, typecheck, production-only audit (0 vulnerabilities), and build. Vercel preview is READY and root HTTP 200. Missing/blank `NASRINAI_API_KEY` now returns safe 503 before database/upstream access. This does not resolve upstream 401 for a non-empty rejected key; authenticated live POST and scope canary remain blocked/unverified.
+- **PR #60** current validated head `f063cd5a1f4be085aac34f947816bfdffe2c8a82`: CI [41005003149](https://github.com/nasrinaiv0/movo/actions/runs/41005003149) passed 20 suites / 113 tests, typecheck, control audit, production-only audit (0 vulnerabilities), and build. Preview READY/root HTTP 200. Added regression coverage for disabled/explained unsupported switches and working In-App Alerts.
+- Keep #43/#52/#56/#60 as separate implementation scopes; do not duplicate their work or merge a branch merely because it builds.
+- Still release-blocked: authenticated finance/CSV/chart verification; authenticated upstream scope confirmation and unrelated-project canary; manual keyboard/screen-reader/responsive QA; missing legal publication facts; Supabase leaked-password protection; branch protection/required checks; 34 full-tree dependency findings.
+- No secrets or credential values belong in the handoff. Do not attempt to “fix” the upstream 401 by logging or retrieving a secret; obtain/reissue the credential through an authorized owner workflow.
