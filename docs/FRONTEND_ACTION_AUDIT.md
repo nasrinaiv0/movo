@@ -116,3 +116,12 @@ This audit is a working register, not a claim that the entire frontend is comple
 - The Vercel team deployment listing was denied for missing team authorization during this run, so a preview deployment for this PR is **not verified here**. Do not infer deployment success from GitHub CI alone.
 - Release blockers remain: publish verified operator/controller identity and complete retention/provider/legal disclosures; enable Supabase leaked-password protection; review and remediate dependency audit findings; resolve the NasrinAI upstream HTTP 401 and verify an authenticated request; complete interactive browser testing of the deployed app.
 
+
+
+## Production browser smoke after demo-disclosure merge — 2026-10-30 09:35 Asia/Manila
+
+- Production SHA: `277051e4ec2216a6b598c784a50b32ba37b89dee`; deployment [dpl_FRVNFKYmKHcrhnfvF8uhi7fwELVh](https://vercel.com/nasrin-ai/movo/FRVNFKYmKHcrhnfvF8uhi7fwELVh) is READY.
+- Playwright Chromium on `https://movo.nasrinai.com` returned HTTP 200 and verified the sample-data disclosure, generic demo identity, absence of `Nasrin Abubakar` / `nasrin@nasrinai.com` in the unauthenticated demo, no horizontal overflow at 390px, working Sign in navigation, and Terms/Privacy navigation and cross-links.
+- On the exact-head preview, exercised Home, Wallet, Transactions, NasrinAI, Profile, Settings, Notifications, Search dialog open/Escape close, and profile navigation. No console/page errors or failed requests were observed.
+- A synthetic no-token POST to the production NasrinAI route returned HTTP 401 `sign_in_required`; this confirms the unauthenticated guard, not authenticated context isolation.
+- This is a scoped smoke test, **not** a claim that every visible control or the complete frontend has been fully validated. Authenticated finance writes, CSV import/export, keyboard-only/focus and screen-reader checks, and authenticated NasrinAI scope/canary verification remain outstanding.

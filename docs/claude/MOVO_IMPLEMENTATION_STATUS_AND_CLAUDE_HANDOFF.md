@@ -1,5 +1,20 @@
 # MOVO Implementation Status and Claude Handoff
 
+## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
+
+**This section supersedes older status rows below wherever they disagree.**
+
+- **Current main:** `bb30c8e87722e51d0df07eef8031ebc5435b4093` (merged PR #57).
+- **Current production:** [Vercel deployment dpl_6tmjn2FNfCFEpwCessZcjE2ibBjq](https://vercel.com/nasrin-ai/movo/6tmjn2FNfCFEpwCessZcjE2ibBjq) is READY at the same SHA. This is deployment/build evidence, not proof that embedded NasrinAI chat is authenticated and functional.
+- **PR #57:** merged; exact-head CI #40982977495 passed install, production-only npm audit, tests, and production bundle. `react-scripts@5.0.1` moved to devDependencies; `npm audit --omit=dev` is now a CI gate. Full-tree audit still reports 34 development/build-tool findings (16 low, 5 moderate, 13 high).
+- **PR #56:** open/draft at `36c486424a2f37591edb13d5a43936140515e217`; current-head CI #40985264768 passed and Vercel preview is READY. Branch is 10 commits ahead / 2 behind current main; reconcile before merge. Previous preview at `d822aa0...` failed 2 tests; latest head mocks `AbortSignal.timeout` and now passes CI. Production scope-canary verification remains unverified.
+- **PR #55:** open/draft at `e191c8c421f5410d099da903c3ab3541ae03a65e`; exact-head CI #40984662087 passed and preview is READY. Branch is 26 ahead / 2 behind main. Manual keyboard, screen-reader, mobile, and finance-flow QA remain outstanding.
+- **Upstream chat authentication:** Vercel logs over the prior 24 hours still returned repeated `POST /api/nasrinai/chat` HTTP 401 events, latest observed at `2026-10-29T15:37:50.463Z`. No production error/warning logs matched the last-hour query, but no successful authenticated chat was established. Do not infer recovery.
+- **Release blockers:** reconcile PRs #56/#55 with current main; run exact-head CI after reconciliation; verify the server credential through authorized secret management without exposing it; run authenticated MOVO-only canary tests and prove unrelated content is absent from retrieval, provider requests, replies, transcripts, caches, and logs.
+- No production secret, financial data, database schema, application code, or deployment was changed by this audit. See [the 09:20 audit delta](engineering/updates/2026-10-30-0920-runtime-dependency-and-context-isolation.md).
+
+
+
 **Repository:** `nasrinaiv0/movo`  
 **Branch:** `main` is the target branch; this document was added on a documentation-only branch.  
 **Status snapshot:** 2026-10-30  
@@ -492,3 +507,16 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - NasrinAI upstream main is now `52392234ce7583303d4d25880296c06d7ad529b1` after PR #707. This does not change MOVO's client integration status. Issue #47 remains open.
 - Detailed checkpoint: `docs/engineering/updates/2026-10-30-0711-cross-project-monitoring.md` (commit 1f9f2c0f992fe4e595718404fc25750fdddd9dd1); master ledger update commit c0ab1fcbd3d002a30a4a038b3f01634a5774a2a9.
 - This is documentation-only; no MOVO runtime, database, finance data, production settings, or PR state was changed.
+
+
+## Current state snapshot — 2026-10-30 09:35 Asia/Manila (supersedes older deployment snapshots)
+
+- MOVO main/production is now at `277051e4ec2216a6b598c784a50b32ba37b89dee`; Vercel production deployment [dpl_FRVNFKYmKHcrhnfvF8uhi7fwELVh](https://vercel.com/nasrin-ai/movo/FRVNFKYmKHcrhnfvF8uhi7fwELVh) is READY.
+- PR #57's production dependency audit gate is merged. Current production dependency audit is clean (0 vulnerabilities); the full CRA/build-tool tree still reports 34 findings (16 low, 5 moderate, 13 high) and needs targeted review.
+- PR #59 is merged. The unauthenticated local demo now uses a generic Demo identity and visible fictional-sample-data disclosure. Production Playwright smoke verified 200, 390px responsive layout, Sign in, legal cross-links, and no browser errors; the main nav and Search/Escape were also exercised on the preview.
+- PR #56 remains draft at `36c486424a2f37591edb13d5a43936140515e217`; exact-head Actions [40985264768](https://github.com/nasrinaiv0/movo/actions/runs/40985264768) passed 18 suites / 101 tests, typecheck, production audit and build. New API-handler tests cover fail-closed scope, persistence only after scope confirmation, and foreign conversation IDs.
+- NasrinAI upstream PR #699 is merged and the current production deployment source SHA `b39f4dcd62641d5f601e4e707cb46155ca8e135e` contains the server-enforced MOVO scope contract. No authenticated MOVO request or unrelated-document canary has yet proven the deployed integration. A no-token production POST returns 401; the PR #56 preview API is intercepted by Vercel SSO.
+- PR #43 and #52 remain draft pending authenticated finance/chart validation. PR #55 remains draft and currently conflicts with newer main; reconcile it rather than duplicating its accessibility work.
+- Legal pages and consent navigation are browser-verified, but the visible publication warning must remain until the operator/controller identity and address, actual retention/deletion schedule, provider/data-recipient details, and jurisdiction-specific review are verified.
+- Supabase RLS remains enabled on seven checked tables with 22 owner-scoped policies across six user-facing tables and no checked `anon`/`PUBLIC` grants. The upstream mapping remains service-role-only. Leaked-password protection is still disabled and requires an authorized Auth settings change.
+- Detailed evidence: `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md` and issue [#47](https://github.com/nasrinaiv0/movo/issues/47).
