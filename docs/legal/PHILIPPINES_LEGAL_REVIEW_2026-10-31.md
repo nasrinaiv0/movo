@@ -53,3 +53,55 @@ These are not safe to invent in policy copy. Obtain owner confirmation and/or qu
 - Passing tests/build would validate the assertions and build mechanics only; it would not prove actual data flows or legal compliance.
 - The existing warning must remain until the missing operator details and retention/provider facts are verified.
 - Do not merge to production or describe MOVO as legally compliant solely because this PR is merged. Have qualified Philippine counsel review the final version.
+
+
+## International terms and privacy-policy strengthening — 2026-10-31
+
+The legal UI was expanded with jurisdiction-neutral language intended to reduce ambiguity across listed and unlisted markets. These are disclosure improvements, not a legal opinion or proof that MOVO is approved in every country.
+
+### New Terms of Service disclosures
+
+- Clarifies that the country/region picker is for localization and does not represent completion of legal, regulatory, tax, registration, or licensing reviews.
+- States that countries/regions not listed in Settings may be served only after the operator assesses applicable local law and distribution-platform requirements, including Apple App Store and Google Play policies.
+- Explains that if the service or a feature cannot reasonably be shown to meet legal/platform requirements, availability may be restricted until review.
+- Clarifies that store approval or country listing is not a legal-compliance certification.
+- Adds user-facing limitations for shortcuts, links, imports, and automatic transaction logging: source data may be inaccurate; an incoming link is not proof of an actual, authorized, cleared, or institution-verified payment; users must review records and can disable automation.
+
+### New Privacy Policy disclosures
+
+- Adds international-use and regional requirements, emphasizing that country/language/currency settings do not determine legal residence or prove compliance.
+- Describes privacy rights as jurisdiction-dependent and non-exhaustive, subject to applicable statutory conditions and exceptions.
+- Adds international processor/transfer disclosures and explicitly flags that provider names, processing locations, retention terms, contractual safeguards, and transfer mechanisms must be checked against production configuration.
+- Adds disclosures about OCR, categorization, reminders, shortcuts, and AI outputs, including that these do not verify financial transactions.
+- States that MOVO does not intend to make legally or similarly significant decisions solely through automated processing; any change requires a legal and safeguards assessment.
+- Explains the need for an in-app deletion flow and, where required by app-store policy, a direct, public external account-deletion page. This is a requirement to verify/implement, not a claim that an external page already exists.
+- Clarifies that account deletion does not necessarily cancel subscriptions billed through Apple, Google, or another billing provider.
+
+### Regression coverage added
+
+The legal UI test now checks the new country/region limitation language, unlisted-country gate, automation caveat, international transfer disclosure, and external account-deletion requirement.
+
+### Remaining blockers before describing the policies as final
+
+1. Verify the actual live provider inventory, provider terms, data locations, international transfer mechanisms, and subprocessors.
+2. Implement and test account deletion end-to-end, including the external deletion-request page required for applicable store submissions.
+3. Confirm current store declarations and native app permissions, and confirm Apple’s classification of the exact finance-tracking functionality.
+4. Build a market-by-market legal review record. Do not claim that all laws of every country are satisfied based on generic policy wording.
+5. Confirm operator legal identity, contact details, and DPO/privacy-contact designation.
+6. Obtain qualified counsel review for material target markets.
+
+### Official policy references checked for this expansion
+
+- Apple App Review Guidelines: https://developer.apple.com/app-store/review/guidelines/
+- Apple account deletion guidance: https://developer.apple.com/help/app-review/guideline-reference/5-1-1-account-deletion/
+- Google Play developer policy / financial features / account deletion: https://support.google.com/googleplay/android-developer/answer/18258653
+- Google Play User Data policy: https://support.google.com/googleplay/android-developer/answer/10144311
+- Philippine Data Privacy Act: https://privacy.gov.ph/data-privacy-act/
+- Philippine Data Privacy Act IRR: https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/
+- European Commission GDPR principles: https://commission.europa.eu/law/law-topic/data-protection/information-business-and-organisations/principles-gdpr_en
+
+### Validation status
+
+- Source changes and regression assertions committed to the existing draft PR branch.
+- Tests have not been run in this action; no claim that the current branch passes CI.
+- This is a legal-copy and test update only. It does not implement or verify an external deletion page, production data flows, retention schedules, consent enforcement, platform declarations, market gating, or regulatory registrations.
