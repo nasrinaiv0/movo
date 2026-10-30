@@ -12,6 +12,9 @@ import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
+import LockScreen from './components/LockScreen';
+import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
+import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
 import { summarize as summarizeSubscriptions } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
@@ -49,8 +52,8 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
-  notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', cardStyles: {},
+  notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
@@ -330,10 +333,13 @@ function App() {
   const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
-  const allNotifications = useMemo(() => buildNotifications(txs, []), [txs]);
+  const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
+  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, briefing.tips, prefs.devices, deviceId]);
+  const allNotifications = useMemo(() => buildNotifications(txs, systemNotices), [txs, systemNotices]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
     return allNotifications.filter(n => {
+      if (n.cat) return prefs[n.cat] !== false;
       if (n.kind === 'Transactions') return prefs.catTransactions;
       if (n.kind === 'Account') return prefs.catAccount;
       if (n.kind === 'System' && /nasrinai/i.test(n.title)) return prefs.catAi;
@@ -682,6 +688,36 @@ function App() {
     return () => clearTimeout(sync.timer);
   }, [prefs, stickerTick]);
 
+  /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
+  useEffect(() => {
+    if (!prefs.push || !prefs.notifications || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (prefs.quietOn && isQuiet(new Date(), prefs.quietStart, prefs.quietEnd)) return;
+    const fresh = notifications.filter(n => n.kind !== 'Transactions' && !prefs.pushed.includes(n.id) && Date.now() - (Date.parse(n.at) || 0) < 2 * 86400000 && Date.parse(n.at) <= Date.now());
+    if (!fresh.length) return;
+    fresh.slice(0, 3).forEach(n => showSystemNotification(tr(n.title), tr(n.body, n.vars), n.id));
+    setPref('pushed', [...fresh.map(n => n.id), ...prefs.pushed].slice(0, 200));
+  }, [notifications, prefs.push, prefs.notifications, prefs.pushed, prefs.quietOn, prefs.quietStart, prefs.quietEnd, setPref]);
+
+  /* ---------- sign-ins: each device adds itself once; other devices see it through preference sync ---------- */
+  useEffect(() => {
+    if (!cloudMode || !session?.user || !prefsSync.current.ready) return;
+    if ((prefs.devices || []).some(d => d.id === deviceId)) return;
+    setPref('devices', [...(prefs.devices || []), { id: deviceId, label: deviceLabel(), at: new Date().toISOString() }].slice(-10));
+  }, [cloudMode, session, prefs.devices, deviceId, setPref, stickerTick]);
+
+  /* ---------- app lock: on open, and again after MOVO has been in the background for a minute ---------- */
+  const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVis = () => {
+      if (document.hidden) hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 60000 && lockState().enabled) setLocked(true);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+  const unlock = useCallback(() => setLocked(false), []);
+
   /* Fade out the loading screen from index.html once the app is ready; keep it at least ~0.9s so it never flashes. */
   useEffect(() => {
     if (!authReady) return undefined;
@@ -820,7 +856,7 @@ function App() {
         })}
       </nav>
 
-      {sheet?.name === 'transaction' && <TransactionSheet currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
+      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { setError(''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
       {sheet?.name === 'account' && <AccountSheet base={base} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
@@ -842,7 +878,13 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {showTour && <Walkthrough onDone={finishTour} />}
+      {showTour && !locked && <Walkthrough onDone={finishTour} />}
+      {locked && <LockScreen onUnlock={unlock} onForgot={() => {
+        // Never unlock on "forgot": the only way past the lock is erasing this device's MOVO data (and the lock).
+        if (!window.confirm(tr('Reset Movo on this device? This removes the lock and all Movo data stored here. Data saved to your account returns after you sign in.'))) return;
+        const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+        wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
+      }} />}
       {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
       {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 

@@ -1,10 +1,12 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 import { t as tr } from '../lib/i18n';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
+import { enablePush, pushSupported } from '../lib/alerts';
+import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
 
 export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
 export const THEMES = [
@@ -71,12 +73,90 @@ function Row({ icon, title, sub, right, onClick, chevron = true, danger, status 
   </Tag>;
 }
 
+
+/** Approximate space MOVO uses in this browser's storage. */
+export function storageUsed() {
+  try { return Object.keys(localStorage).filter(k => k.startsWith('movo.')).reduce((n, k) => n + k.length + (localStorage.getItem(k) || '').length, 0) * 2; } catch { return 0; }
+}
+const fmtBytes = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
+
+/** Turns browser alerts on (asking permission) or off; explains when the browser says no. */
+export async function togglePush(c, on) {
+  if (!on) { c.setPref('push', false); return; }
+  const result = await enablePush();
+  if (result === 'granted') { c.setPref('push', true); c.notify(tr('Alerts are on for this device.')); }
+  else if (result === 'unsupported') c.notify(tr('This browser cannot show alerts. On iPhone, add Movo to your Home Screen first.'));
+  else c.notify(tr('Alerts are blocked in your browser settings for this site.'));
+}
+
+/** Set, change or remove the app-lock passcode. */
+function LockSheet({ c, onClose }) {
+  const state = lockState();
+  const [step, setStep] = useState(state.enabled ? 'current' : 'new');
+  const [pin, setPin] = useState('');
+  const [first, setFirst] = useState('');
+  const [error, setError] = useState('');
+  const next = async (e) => {
+    e.preventDefault(); setError('');
+    if (step === 'current') { if (await verifyPasscode(pin)) { setStep('manage'); setPin(''); } else setError(tr('Wrong passcode. Try again.')); return; }
+    if (!validPasscode(pin)) { setError(tr('Use 4 to 6 digits.')); return; }
+    if (step === 'new') { setFirst(pin); setPin(''); setStep('confirm'); return; }
+    if (pin !== first) { setError(tr('The passcodes do not match.')); setPin(''); setStep('new'); return; }
+    await setPasscode(pin); c.notify(tr('App lock is on.')); onClose();
+  };
+  if (step === 'manage') return <Sheet title={tr('App Lock')} onClose={onClose} label={tr('App Lock')}>
+    <div className="sheet-list">
+      <button type="button" className="sheet-card" onClick={() => setStep('new')}><span className="account-main"><strong>{tr('Change passcode')}</strong></span></button>
+      <button type="button" className="sheet-card danger-text" onClick={() => { removeLock(); c.notify(tr('App lock is off.')); onClose(); }}><span className="account-main"><strong>{tr('Turn off app lock')}</strong></span></button>
+    </div>
+  </Sheet>;
+  const title = step === 'current' ? tr('Enter current passcode') : step === 'confirm' ? tr('Confirm passcode') : tr('Choose a passcode');
+  return <Sheet title={tr('App Lock')} subtitle={tr('Locks Movo on this device when you open it or come back after a minute. It does not encrypt your records.')} onClose={onClose} label={tr('App Lock')}>
+    <form className="sheet-form" onSubmit={next}>
+      <label>{title}<input type="password" inputMode="numeric" autoComplete="off" pattern="[0-9]*" maxLength={6} value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus aria-label={title} /></label>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <div className="sheet-actions"><button type="button" className="secondary-button" onClick={onClose}>{tr('Cancel')}</button><button type="submit" className="primary-button">{step === 'confirm' ? tr('Turn on') : tr('Continue')}</button></div>
+    </form>
+  </Sheet>;
+}
+
+/** Plan & Usage: what this account uses in Movo. No paid plan is sold in this build. */
+function UsageSheet({ c, onClose }) {
+  const rows = [
+    [tr('Plan'), c.cloudMode ? tr('Free · cloud sync') : tr('Free · this device only')],
+    [tr('Transactions'), String(c.txs?.length || 0)],
+    [tr('Accounts'), String(c.accountsView?.length || 0)],
+    [tr('Subscriptions tracked'), String(c.subscriptions?.length || 0)],
+    [tr('Storage on this device'), fmtBytes(storageUsed())],
+  ];
+  return <Sheet title={tr('Plan & Usage')} subtitle={tr('Movo is free. There is no paid plan or billing in this version.')} onClose={onClose} label={tr('Plan & Usage')}>
+    <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+  </Sheet>;
+}
+
 export default function Settings({ c }) {
   const { prefs, setPref, go, query, setQuery } = c;
+  const [panel, setPanel] = useState('');
+  const [bio, setBio] = useState(false);
+  const [, rerender] = useState(0);
+  useEffect(() => { biometricAvailable().then(setBio); }, []);
+  const lock = lockState();
+  const pushOn = !!prefs.push && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const toggleValue = (key) => (key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? c.cloudMode : prefs[key] !== false && !!prefs[key]);
+  const toggleDisabled = (key) => (key === 'email' || (key === 'push' && !pushSupported()) || (key === 'biometrics' && (!bio || !lock.enabled)) || (key === 'cloudSync' && c.cloudMode));
+  const toggleChange = async (key, v) => {
+    if (key === 'push') return togglePush(c, v);
+    if (key === 'biometrics') {
+      try { if (v) { await enableBiometric(); c.notify(tr('Face ID / Touch ID can now unlock Movo.')); } else disableBiometric(); } catch { c.notify(tr('Face ID / Touch ID was not set up.')); }
+      return rerender(n => n + 1);
+    }
+    if (key === 'cloudSync' && !c.cloudMode) return go('Sign in');
+    return setPref(key, v);
+  };
   const sections = [
     { title: tr('Account'), rows: [
       { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('EditProfile') },
-      { icon: 'database', title: tr('Plan & Usage'), sub: tr('Billing and token usage are not connected in this build.'), status: tr('Unavailable') },
+      { icon: 'database', title: tr('Plan & Usage'), sub: tr('Free plan · see what you use'), onClick: () => setPanel('usage') },
       { icon: 'layout', title: tr('Connected Accounts'), sub: tr('Manually tracked accounts; no bank connection is active.'), onClick: () => go('Wallet') },
     ] },
     { title: tr('Appearance'), rows: [
@@ -88,21 +168,21 @@ export default function Settings({ c }) {
       { icon: 'layout', title: tr('Display & Layout'), sub: tr('Customize your experience'), onClick: () => go('Appearance') },
     ] },
     { title: tr('Notifications'), rows: [
-      { icon: 'bell', title: tr('Push Notifications'), sub: tr('Not available in this web build; no push delivery service is connected.'), toggle: 'push' },
+      { icon: 'bell', title: tr('Push Notifications'), sub: pushSupported() ? tr('Alerts on this device for renewals, limits and monthly reports.') : tr('This browser cannot show alerts. On iPhone, add Movo to your Home Screen first.'), toggle: 'push' },
       { icon: 'mail', title: tr('Email Notifications'), sub: tr('Not available yet; MOVO does not send email alerts.'), toggle: 'email' },
       { icon: 'message', title: tr('In-App Alerts'), sub: tr('Show or hide the in-app notification feed.'), toggle: 'inapp' },
       { icon: 'spark', title: tr('Daily NasrinAI briefing'), sub: tr('A summary and money tips once a day when you open MOVO.'), toggle: 'briefing' },
     ] },
     { title: tr('Security & Privacy'), rows: [
-      { icon: 'face', title: tr('Face ID / Touch ID'), sub: tr('Unavailable in a browser; native biometric unlock is not connected.'), toggle: 'biometrics' },
-      { icon: 'lock', title: tr('App Lock'), sub: tr('Unavailable in this browser build; no separate app-lock feature is connected.'), status: tr('Unavailable') },
+      { icon: 'lock', title: tr('App Lock'), sub: lock.enabled ? tr('On · passcode required to open Movo') : tr('Off · require a passcode to open Movo'), onClick: () => setPanel('lock') },
+      { icon: 'face', title: tr('Face ID / Touch ID'), sub: !bio ? tr('This device or browser does not offer Face ID / Touch ID.') : lock.enabled ? tr('Unlock Movo with your face or fingerprint.') : tr('Turn on App Lock first.'), toggle: 'biometrics' },
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
     ] },
     { title: tr('Data & Sync'), rows: [
       { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : tr('Sign in to enable secure cloud sync.'), onClick: c.cloudMode ? undefined : () => go('Sign in'), status: c.cloudMode ? undefined : tr('Sign in required') },
-      { icon: 'database', title: tr('Local Storage'), sub: tr('Browser storage is managed automatically; this switch is not available.'), toggle: 'localStorage' },
-      { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Automatic categorization is not implemented yet.'), toggle: 'autocat' },
+      { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
+      { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },
     ] },
     { title: tr('Automatic Logging'), rows: [
       { icon: 'refresh', title: tr('Auto-log Apple Pay & Google Pay'), sub: tr('When on, payments from your phone automation are logged instantly; when off, MOVO asks you to confirm each one.'), toggle: 'autoLog' },
@@ -123,8 +203,10 @@ export default function Settings({ c }) {
     <SubHeader title={tr('Settings')} onBack={() => go('Menu')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search settings')} placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} /></label>
     {shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
-      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={!['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) && prefs[r.toggle] && (r.toggle !== 'cloudSync' || c.cloudMode)} onChange={v => (r.toggle === 'cloudSync' && !c.cloudMode ? go('Sign in') : setPref(r.toggle, v))} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={['push', 'email', 'biometrics', 'localStorage', 'autocat'].includes(r.toggle) || (r.toggle === 'cloudSync' && c.cloudMode)} reason={r.toggle === 'cloudSync' ? 'Cloud sync follows your signed-in account; sign out to use local-only mode.' : 'This feature is not connected in the current web build.'} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
+      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'cloudSync' ? tr('Cloud sync follows your signed-in account; sign out to use local-only mode.') : r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
     {!shown.length && <p className="empty">{tr('No settings match “{query}”.', { query })}</p>}
+    {panel === 'lock' && <LockSheet c={c} onClose={() => { setPanel(''); rerender(n => n + 1); }} />}
+    {panel === 'usage' && <UsageSheet c={c} onClose={() => setPanel('')} />}
   </>;
 }
 
@@ -207,25 +289,32 @@ export function Appearance({ c }) {
 
 export function NotificationSettings({ c }) {
   const { prefs, setPref, go } = c;
-  const T = (key, label, disabled = false, reason = 'This delivery method is not connected in the current web build.') => <Toggle checked={!disabled && prefs[key]} onChange={v => setPref(key, v)} label={tr(label)} describedBy={`notification-setting-${key}-description`} disabled={disabled} reason={tr(reason)} />;
-  const item = (icon, title, sub, key, tone, disabled = false, reason) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong><small id={`notification-setting-${key}-description`}>{tr(sub)}</small></span>{T(key, title, disabled, reason)}</div>;
+  const pushOn = !!prefs.push && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const T = (key, label, { checked = prefs[key] !== false && !!prefs[key], onChange = v => setPref(key, v), disabled = false, reason } = {}) => <Toggle checked={!disabled && checked} onChange={onChange} label={tr(label)} describedBy={`notification-setting-${key}-description`} disabled={disabled} reason={reason ? tr(reason) : undefined} />;
+  const item = (icon, title, sub, key, tone, opts) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong><small id={`notification-setting-${key}-description`}>{tr(sub)}</small></span>{T(key, title, opts)}</div>;
   return <>
     <SubHeader title={tr('Notifications')} onBack={() => go('Notifications')} />
     <section className="card menu-card">{item('bell', 'Notifications', 'Manage how you receive notifications', 'notifications')}</section>
     <h2 className="group-title">{tr('Notification Channels')}</h2>
     <section className="card menu-card">
-      {item('phone', 'Push Notifications', 'Push delivery is not available in this web build.', 'push', undefined, true)}
-      {item('mail', 'Email Notifications', 'Email delivery is not connected yet.', 'email', undefined, true)}
+      {item('phone', 'Push Notifications', pushSupported() ? 'Alerts on this device for renewals, limits and monthly reports.' : 'This browser cannot show alerts. On iPhone, add Movo to your Home Screen first.', 'push', undefined, { checked: pushOn, onChange: v => togglePush(c, v), disabled: !pushSupported(), reason: 'This browser cannot show alerts.' })}
+      {item('mail', 'Email Notifications', 'Movo does not send email yet.', 'email', undefined, { disabled: true, reason: 'Movo does not send email yet.' })}
       {item('message', 'In-App Alerts', 'Show alerts inside the app', 'inapp')}
     </section>
     <h2 className="group-title">{tr('Notification Categories')}</h2>
     <section className="card menu-card">
-      {item('card', 'Transactions', 'Payments, transfers, receipts', 'catTransactions', 'blue')}
-      {item('chart', 'Account & Security', c.demoAlertsAvailable ? tr('Sample account alerts in demo mode.') : tr('Live account alerts are not connected.'), 'catAccount', 'blue', !c.demoAlertsAvailable, 'Account and security alerts are only generated for sample/demo data; live event generation is not connected.')}
-      {item('spark', 'NasrinAI Updates', c.demoAlertsAvailable ? tr('Sample AI notices in demo mode.') : tr('Live NasrinAI notices are not connected.'), 'catAi', 'violet', !c.demoAlertsAvailable, 'NasrinAI update alerts are only generated for sample/demo data; live event generation is not connected.')}
-      {item('tag', 'Promotions', c.demoAlertsAvailable ? tr('Sample offers in demo mode.') : tr('Live promotional alerts are not connected.'), 'catPromo', 'gray', !c.demoAlertsAvailable, 'Promotional alerts are only sample/demo data; live promotional messaging is not connected.')}
-      {item('doc', 'Reports', c.demoAlertsAvailable ? tr('Sample report notices in demo mode.') : tr('Live report notifications are not connected.'), 'catReports', 'teal', !c.demoAlertsAvailable, 'Report alerts are only generated for sample/demo data; live report-event generation is not connected.')}
+      {item('card', 'Transactions', 'Payments, transfers, renewals and limits', 'catTransactions', 'blue')}
+      {item('shield', 'Account & Security', 'Sign-ins to your account on a new device', 'catAccount', 'orange')}
+      {item('spark', 'NasrinAI Updates', 'New features in Movo and NasrinAI', 'catAi', 'violet')}
+      {item('tag', 'Money tips', 'One tip a week from your own numbers', 'catPromo', 'green')}
+      {item('doc', 'Reports', 'Your monthly summary on the 1st', 'catReports', 'teal')}
     </section>
-    <section className="card menu-card gap"><Row icon="moon" title={tr('Quiet Hours')} sub="Scheduling is not available in this web build." right={<span className="muted-end">{tr('Unavailable')}</span>} chevron={false} /></section>
+    <section className="card menu-card gap">
+      {item('moon', 'Quiet Hours', prefs.quietOn ? tr('Alerts wait until {end}', { end: prefs.quietEnd }) : 'Hold device alerts overnight', 'quietOn')}
+      {prefs.quietOn && <div className="menu-row quiet-times">
+        <label>{tr('From')}<input type="time" value={prefs.quietStart} onChange={e => setPref('quietStart', e.target.value || '22:00')} /></label>
+        <label>{tr('To')}<input type="time" value={prefs.quietEnd} onChange={e => setPref('quietEnd', e.target.value || '07:00')} /></label>
+      </div>}
+    </section>
   </>;
 }

@@ -1704,3 +1704,20 @@ button.account-tile:active { transform: scale(.98); }
 .chip-bar { display: flex; align-items: center; gap: 8px; margin: 0 -18px 14px 0; }
 .chip-bar > .chip-row { flex: 1; min-width: 0; margin: 0 0 0 -18px; padding-right: 12px; -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 18px), transparent); }
 .chip-bar > .chip-tools { margin: 0 18px 0 0; }
+
+/* ---------- App lock and quiet hours ---------- */
+.lock-screen { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; background: var(--bg); color: var(--text); }
+.lock-screen h2 { font-size: 18px; font-weight: 600; }
+.lock-dots { display: flex; gap: 14px; }
+.lock-dots i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--text); }
+.lock-dots i.on { background: var(--text); }
+.lock-error { min-height: 18px; color: var(--red); font-size: 13px; }
+.lock-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 16px 22px; margin: 6px 0 10px; }
+.lock-pad button, .lock-pad span { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; border: 0; background: var(--field); color: var(--text); font-size: 26px; font-weight: 500; }
+.lock-pad span { background: none; }
+.lock-pad .lock-alt { background: none; }
+.lock-pad button:active { background: rgba(120,128,145,.25); }
+.quiet-times { gap: 12px; }
+.quiet-times label { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.quiet-times input { min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: var(--field); color: var(--text); font: inherit; }
+.danger-text strong { color: var(--red); }

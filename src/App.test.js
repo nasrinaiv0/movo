@@ -281,63 +281,58 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('Show results');
   });
 
-  test('unsupported notification and device-security settings are disabled', () => {
+  test('settings work where the browser allows, and explain clearly where it does not', () => {
     openProfile(container);
     clickButton(container, 'Settings');
-    ['Push Notifications', 'Email Notifications', 'Face ID / Touch ID', 'Local Storage', 'Auto Categorization'].forEach(label => {
+    // jsdom has no Notification API or platform authenticator: those switches are off and explain why.
+    ['Push Notifications', 'Email Notifications', 'Face ID / Touch ID'].forEach(label => {
       const toggle = container.querySelector('button[aria-label="' + label + '"]');
-      expect(toggle).toBeTruthy();
       expect(toggle.disabled).toBe(true);
       expect(toggle.getAttribute('aria-checked')).toBe('false');
-      const descriptionId = toggle.getAttribute('aria-describedby');
-      expect(descriptionId).toBeTruthy();
-      expect(container.querySelector('#' + descriptionId)?.textContent.trim()).not.toBe('');
+      expect(container.querySelector('#' + toggle.getAttribute('aria-describedby'))?.textContent.trim()).not.toBe('');
     });
-    expect(container.textContent).toContain('no push delivery service is connected');
-    expect(container.textContent).toContain('native biometric unlock is not connected');
+    expect(container.textContent).toContain('This browser cannot show alerts');
+    expect(container.textContent).toContain('used on this device');
+    expect(container.querySelector('button[aria-label="Local Storage"]')).toBeNull();
+    const autocat = container.querySelector('button[aria-label="Auto Categorization"]');
+    expect(autocat.disabled).toBe(false);
+    expect(autocat.getAttribute('aria-checked')).toBe('true');
+    act(() => autocat.click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).autocat).toBe(false);
   });
 
-  test('unavailable notification delivery controls display off and disabled', () => {
+  test('notification channels and quiet hours', () => {
     openProfile(container);
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
-    expect(notificationSettings).toBeTruthy();
     act(() => notificationSettings.click());
     expect(container.textContent).toContain('Notification Channels');
-    ['Push Notifications', 'Email Notifications'].forEach(label => {
-      const toggle = container.querySelector('button[aria-label="' + label + '"]');
-      expect(toggle).toBeTruthy();
-      expect(toggle.disabled).toBe(true);
-      expect(toggle.getAttribute('aria-checked')).toBe('false');
-      const descriptionId = toggle.getAttribute('aria-describedby');
-      expect(descriptionId).toBeTruthy();
-      expect(container.querySelector('#' + descriptionId)?.textContent.trim()).not.toBe('');
-    });
-    expect(container.textContent).toContain('Push delivery is not available in this web build.');
-    expect(container.textContent).toContain('Email delivery is not connected yet.');
+    expect(container.querySelector('button[aria-label="Email Notifications"]').disabled).toBe(true);
+    expect(container.textContent).toContain('Movo does not send email yet.');
+    const quiet = container.querySelector('button[aria-label="Quiet Hours"]');
+    expect(quiet.disabled).toBe(false);
+    act(() => quiet.click());
+    const [from, to] = container.querySelectorAll('.quiet-times input[type="time"]');
+    expect(from.value).toBe('22:00');
+    expect(to.value).toBe('07:00');
+    setInputValue(from, '23:30');
+    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    expect(prefs.quietOn).toBe(true);
+    expect(prefs.quietStart).toBe('23:30');
   });
 
-  test('unavailable notification categories explain that only demo events exist', () => {
-    openProfile(container);
-    clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
-    expect(clearRow).toBeTruthy();
-    act(() => clearRow.click());
-    setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'DELETE');
-    clickButton(container, 'Clear all data');
+  test('every notification category can be switched and hides its notices', () => {
     openProfile(container);
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
-    expect(notificationSettings).toBeTruthy();
     act(() => notificationSettings.click());
-    ['Account & Security', 'NasrinAI Updates', 'Promotions', 'Reports'].forEach(label => {
+    ['Transactions', 'Account & Security', 'NasrinAI Updates', 'Money tips', 'Reports'].forEach(label => {
       const toggle = container.querySelector('button[aria-label="' + label + '"]');
-      expect(toggle).toBeTruthy();
-      expect(toggle.disabled).toBe(true);
-      const descriptionId = toggle.getAttribute('aria-describedby');
-      expect(descriptionId).toBeTruthy();
-      expect(container.querySelector('#' + descriptionId)?.textContent.trim()).toMatch(/not connected|sample|demo/i);
-      expect(toggle.title).toMatch(/sample\/demo/i);
-      expect(toggle.title).not.toContain('delivery method');
+      expect(toggle.disabled).toBe(false);
+      expect(toggle.getAttribute('aria-checked')).toBe('true');
     });
+    act(() => container.querySelector('button[aria-label="NasrinAI Updates"]').click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).catAi).toBe(false);
+    clickButton(container, 'Back');
+    expect(container.textContent).not.toContain('NasrinAI Update');
   });
 
   test('Clear All Data requires typing DELETE, then resets preferences and removes local records', () => {
@@ -437,23 +432,21 @@ describe('MOVO finance frontend', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  test('unsupported Plan & Usage is clearly unavailable while Help Center opens useful guidance', () => {
+  test('Plan & Usage shows real usage, and Help Center opens useful guidance', () => {
     openProfile(container);
     clickButton(container, 'Settings');
-    const rows = Array.from(container.querySelectorAll('.menu-row'));
-    const plan = rows.find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
-    expect(plan).toBeTruthy();
-    expect(plan.tagName).toBe('DIV');
-    expect(plan.getAttribute('aria-disabled')).toBe('true');
-    expect(plan.textContent).toContain('Unavailable');
-    expect(plan.textContent).toContain('Billing and token usage are not connected');
+    const plan = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
+    expect(plan.tagName).toBe('BUTTON');
+    act(() => plan.click());
+    const sheet = container.querySelector('[role="dialog"][aria-label="Plan & Usage"]');
+    expect(sheet.textContent).toContain('Free · this device only');
+    expect(sheet.textContent).toMatch(/Transactions\d+/);
+    expect(sheet.textContent).toContain('no paid plan or billing');
+    clickButton(container, 'Close Plan & Usage');
     const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
-    expect(helpRow).toBeTruthy();
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('does not move money between banks');
-    expect(container.textContent).toContain('persist across reloads in the same browser profile');
-    expect(container.textContent).toContain('NasrinAI');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });
