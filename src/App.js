@@ -15,6 +15,8 @@ import Walkthrough from './components/Walkthrough';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
 import AccountTile, { styleFor } from './components/AccountTile';
+import LoggedBurst from './components/LoggedBurst';
+import { findDuplicate } from './lib/duplicates';
 import { mergePreferences, unionById } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
 import { lockState } from './lib/appLock';
@@ -53,6 +55,8 @@ const OLD_PREF = 'movo.preferences.v2';
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
+/** "Already logged: Saging · ₱20.00 on Oct 30." for a record that a new entry duplicates. */
+const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
@@ -195,6 +199,10 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
+  const [burst, setBurst] = useState(null);
+  const celebrate = useCallback((label) => setBurst({ id: Date.now(), label }), []);
+  const endBurst = useCallback(() => setBurst(null), []);
+  const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
   useEffect(() => {
     if (cloudMode) {
@@ -420,18 +428,25 @@ function App() {
     if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return; }
     const occurred_at = stamp.toISOString();
     const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
-    setBusy(true);
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
+    // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
+    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id }, rawTxs);
+    const sig = `${type}|${amount}|${form.merchant.trim().toLowerCase()}|${form.occurred_at}|${form.account_id}`;
+    if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
+    dupAck.current = '';
+    setBusy(true);
     try {
       if (cloudMode) {
         const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
         const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
+        if (!editingId) celebrate();
       } else {
         const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
+        if (!editingId) celebrate();
       }
       setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today() }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
@@ -621,16 +636,19 @@ function App() {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
     if (cloudMode && !account) { setPendingLog(entry); return; }
     const payload = { merchant: entry.merchant, amount: entry.amount, transaction_type: 'expense', category: guessCategory(entry.merchant), account_id: account?.id || 'local', occurred_at: new Date().toISOString(), note: `${tr('Logged from {source}', { source: entry.source })}${entry.card ? ` · ${entry.card}` : ''}` };
+    const dup = findDuplicate(payload, rawTxs);
+    if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
     try {
       if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); setRawTxs(cur => [row, ...cur]); }
       else setRawTxs(cur => [{ ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }, ...cur]);
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
+      celebrate();
     } catch { setPendingLog(entry); }
-  }, [accountsView, cloudMode, session, notify]);
+  }, [accountsView, cloudMode, session, notify, rawTxs, celebrate]);
   /* ---------- logging from the NasrinAI chat (parsed on this device; see lib/chatLog.js) ---------- */
-  const logFromChat = useCallback(async (entries) => {
+  const logFromChat = useCallback(async (entries, force = false) => {
     const open = accountsView.filter(a => !a.is_archived);
-    const saved = [];
+    const saved = []; const skipped = [];
     for (const e of entries) {
       const account = open.length ? matchAccount(e.accountHint || '', open) : null;
       if (cloudMode && !account) throw new Error('account_required');
@@ -638,15 +656,20 @@ function App() {
       const stamp = new Date(e.date); const now = new Date();
       stamp.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
       const payload = { merchant: e.merchant, amount: e.amount, currency, transaction_type: e.type, category: e.category, account_id: account?.id || 'local', occurred_at: stamp.toISOString(), note: tr('Logged from NasrinAI chat') };
+      const dup = force ? null : findDuplicate(payload, [...saved, ...rawTxs]);
+      if (dup) { skipped.push({ ...payload, id: `dup-${skipped.length}-${dup.id}`, duplicateOf: dup, entry: e, accountName: account?.name || '' }); continue; }
       const row = cloudMode
         ? await createTransaction(payload, session.user.id)
         : { ...payload, id: window.crypto?.randomUUID?.() || `chat-${Date.now()}-${saved.length}`, source: 'Manual' };
       saved.push({ ...row, accountName: account?.name || '' });
     }
-    setRawTxs(cur => [...saved, ...cur]);
-    notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
-    return saved;
-  }, [accountsView, cloudMode, session, base, notify]);
+    if (saved.length) {
+      setRawTxs(cur => [...saved, ...cur]);
+      notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
+      celebrate();
+    } else if (skipped.length) notify(dupText(skipped[0].duplicateOf));
+    return [...saved, ...skipped];
+  }, [accountsView, cloudMode, session, base, notify, rawTxs, celebrate]);
   /* Chat shortcuts: one tap to log, scan or read a MOVO section; summaries are worked out on this device. */
   const chatSummary = (range) => {
     const label = range === 'today' ? tr('Today') : tr('This month');
@@ -760,6 +783,8 @@ function App() {
   // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.
   const finishTour = useCallback(() => setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey })), [todayKey]);
   const handledLink = useRef('');
+  const recordsRef = useRef(rawTxs);
+  recordsRef.current = rawTxs;
   useEffect(() => {
     if (!authReady || (session?.user && !cloudMode)) return undefined;
     const handle = () => {
@@ -770,6 +795,8 @@ function App() {
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       if (entry.invalid) { notify(tr('That payment link had no valid amount, so nothing was logged.')); return; }
       if (isRepeat(entry)) return;
+      const dup = findDuplicate({ merchant: entry.merchant, amount: entry.amount, type: 'expense', date: new Date().toISOString() }, recordsRef.current);
+      if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
       const trusted = sameKey(entry.key, prefs.autoLogKey);
       if (trusted && prefs.autoLog) autoLogFor(entry);
       else setPendingLog({ ...entry, trusted });
@@ -886,7 +913,7 @@ function App() {
       </nav>
 
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
-      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { setError(''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', date: f.occurred_at ? `${f.occurred_at}T12:00:00` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
       {sheet?.name === 'account' && <AccountSheet base={base} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
@@ -967,6 +994,7 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
       </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
+      <LoggedBurst id={burst?.id} label={burst?.label} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>

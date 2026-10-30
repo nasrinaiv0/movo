@@ -7,6 +7,7 @@ import { t as tr, rich, getLanguage } from '../lib/i18n';
 import { parseLogMessage } from '../lib/chatLog';
 import { money, shown, formatDate } from '../lib/format';
 import { Tile } from './ui';
+import { MovoMark } from './MovoLogo';
 import { SubIcon } from '../screens/Subscriptions';
 import { catalogFor } from '../lib/subscriptions';
 
@@ -32,18 +33,20 @@ function friendlyError(code) {
 const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
 
 /** A record logged from chat: what was saved, where, and a one-tap undo. */
-function LogCard({ items, removed, show, onUndo }) {
+function LogCard({ items, removed, show, onUndo, onLogAnyway }) {
   return <div className="chat-log-card">
     {items.map(row => {
       const gone = removed.includes(row.id);
       const sign = row.transaction_type === 'income' ? '+' : '−';
-      return <div key={row.id} className={`chat-log-row${gone ? ' gone' : ''}`}>
+      return <div key={row.id} className={`chat-log-row${gone ? ' gone' : ''}${row.duplicateOf ? ' duplicate' : ' added'}`}>
         {catalogFor(row.merchant) ? <SubIcon sub={{ name: row.merchant }} size={40} /> : <Tile name={row.merchant} size={40} radius={12} />}
         <span className="chat-log-main"><strong>{row.merchant}</strong><small>{[tr(row.category), row.accountName, new Date(row.occurred_at).toDateString() === new Date().toDateString() ? tr('Today') : formatDate(row.occurred_at, { month: 'short', day: 'numeric' }, 'md')].filter(Boolean).join(' · ')}</small></span>
         <span className={`chat-log-amount ${row.transaction_type}`}>{sign}{shown(show, money(row.amount, row.currency))}</span>
-        <span className="chat-log-status">{gone
+        <span className="chat-log-status">{row.duplicateOf
+          ? <><span className="dup"><Icon name="info" size={13} strokeWidth={2.4} />{tr('Already logged on {date}. Not added twice.', { date: formatDate(row.duplicateOf.occurred_at, { month: 'short', day: 'numeric' }, 'md') })}</span><button type="button" className="link-button" onClick={() => onLogAnyway(row)}>{tr('Log anyway')}</button></>
+          : gone
           ? <span className="muted">{tr('Removed')}</span>
-          : <><span className="ok"><Icon name="check" size={13} strokeWidth={2.6} />{tr('Added to your transactions')}</span><button type="button" className="link-button" onClick={() => onUndo(row.id)}>{tr('Undo')}</button></>}
+          : <><span className="ok"><span className="chat-log-mark" aria-hidden="true"><MovoMark size={16} /></span>{tr('Added to your transactions')}</span><button type="button" className="link-button" onClick={() => onUndo(row.id)}>{tr('Undo')}</button></>}
         </span>
       </div>;
     })}
@@ -176,6 +179,13 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     }
   };
 
+  const logAnyway = async (index, row) => {
+    try {
+      const [added] = await onLog([row.entry], true);
+      setMessages((current) => current.map((m, i) => (i === index ? { ...m, items: m.items.map(x => (x.id === row.id ? added : x)) } : m)));
+    } catch { setError(tr('That could not be saved. Please try again.')); }
+  };
+
   const undo = async (index, id) => {
     try {
       await onUndoLog?.(id);
@@ -262,7 +272,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       </div>}
       {messages.map((message, index) => message.role === 'log' ? <article key={index} className="movo-ai-message log">
         <span className="movo-ai-message-label">{tr('NasrinAI')}</span>
-        <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} />
+        <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} onLogAnyway={(row) => logAnyway(index, row)} />
       </article> : <article key={index} className={'movo-ai-message ' + message.role}>
         <span className="movo-ai-message-label">{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
