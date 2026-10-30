@@ -128,6 +128,29 @@ describe('Cloud Sync setting semantics', () => {
 });
 
 
+describe('Currency settings copy', () => {
+  let container;
+  let root;
+  const context = makeContext(false);
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root.render(<Settings c={context} />));
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  test('does not claim PHP is the only available currency', () => {
+    expect(container.textContent).not.toContain('Philippine peso is the only available currency.');
+  });
+});
+
+
 describe('Legal navigation from Settings', () => {
   let container;
   let root;
