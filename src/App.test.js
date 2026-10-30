@@ -20,7 +20,17 @@ import App from './App';
 global.IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = jest.fn();
 function clickButton(container, name) {
-  const button = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === name || item.textContent.trim() === name);
+  const parts = name.split(', ');
+  const merchant = parts[0];
+  const amount = parts.length > 1 ? parts.slice(1).join(', ') : '';
+  const button = Array.from(container.querySelectorAll('button')).find(item => (
+    item.getAttribute('aria-label') === name
+    || item.textContent.trim() === name
+    || (item.classList.contains('tx-row')
+      && amount
+      && item.textContent.includes(merchant)
+      && item.textContent.includes(amount))
+  ));
   if (!button) throw new Error('Button not found: ' + name);
   act(() => button.dispatchEvent(new MouseEvent('click', { bubbles: true })));
   return button;
