@@ -32,7 +32,7 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2454d8', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
 };
@@ -50,7 +50,33 @@ function readPrefs() {
     return { ...DEFAULTS, theme: old.dark ? 'dark' : DEFAULTS.theme, accent: old.accent === 'mono' ? 'slate' : (old.accent || DEFAULTS.accent), showBalance: old.showBalance !== false };
   } catch { return { ...DEFAULTS }; }
 }
-const hexToRgb = (hex) => { const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || ''); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '47,107,255'; };
+const hexToChannels = (hex) => {
+  const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || '');
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : [36, 84, 216];
+};
+const hexToRgb = (hex) => hexToChannels(hex).join(',');
+const normalizeHex = (hex) => `#${hexToChannels(hex).map(value => value.toString(16).padStart(2, '0')).join('')}`;
+const relativeLuminance = (hex) => hexToChannels(hex).map(value => {
+  const channel = value / 255;
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+}).reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+const contrastRatio = (foreground, background) => {
+  const values = [relativeLuminance(foreground), relativeLuminance(background)].sort((left, right) => right - left);
+  return (values[0] + 0.05) / (values[1] + 0.05);
+};
+const mixHex = (hex, target, amount) => {
+  const from = hexToChannels(hex); const to = hexToChannels(target);
+  return `#${from.map((value, index) => Math.round(value + (to[index] - value) * amount).toString(16).padStart(2, '0')).join('')}`;
+};
+const accessibleAccentText = (hex, dark) => {
+  const background = dark ? '#1b1e29' : '#ffffff';
+  let color = normalizeHex(hex);
+  for (let step = 0; step < 32 && contrastRatio(color, background) < 6; step += 1) {
+    color = mixHex(color, dark ? '#ffffff' : '#000000', 0.06);
+  }
+  return color;
+};
+const accessibleOnAccent = (hex) => contrastRatio('#ffffff', normalizeHex(hex)) >= 4.5 ? '#ffffff' : '#14161f';
 const monthsBack = (key, n) => { const [y, m] = key.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 - n, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
 const pctChange = (now, before) => (before > 0 ? Math.round(((now - before) / before) * 100) : null);
 const normalize = (t, accounts) => {
@@ -529,7 +555,8 @@ function App() {
   const accentName = prefs.accent === 'custom' ? 'custom' : prefs.accent;
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
-  const rootStyle = { ...glassVars, ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const customAccent = normalizeHex(prefs.customColor);
+  const rootStyle = { ...glassVars, ...(accentName === 'custom' ? { '--accent': customAccent, '--accent-rgb': hexToRgb(customAccent), '--accent-text': accessibleAccentText(customAccent, dark), '--on-accent': accessibleOnAccent(customAccent) } : {}) };
   const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
