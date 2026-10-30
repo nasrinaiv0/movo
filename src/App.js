@@ -26,6 +26,7 @@ import { getCurrentSession, listAccounts, listTransactions, createAccount, updat
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { demoAccounts, demoTransactions, demoNotifications } from './lib/demoData';
 import { monthOverMonth } from './lib/trend';
+import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
@@ -41,7 +42,7 @@ const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card',
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
@@ -126,6 +127,8 @@ function App() {
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
   const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
+  const [sceneryPhoto, setSceneryPhotoState] = useState(loadSceneryPhoto);
+  const setSceneryPhoto = useCallback((url) => { if (!saveSceneryPhoto(url)) return false; setSceneryPhotoState(url); return true; }, []);
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -533,7 +536,7 @@ function App() {
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData();
+      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); setSceneryPhotoState('');
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setSamplesOn(false); setPendingLog(null); setSheet(null); setClearText('');
       notify(cloudMode ? 'All MOVO data was deleted from this device and your account.' : 'All MOVO data on this device was deleted.');
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
@@ -583,6 +586,7 @@ function App() {
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
+    sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
     budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
@@ -595,8 +599,9 @@ function App() {
   const accentName = prefs.accent === 'custom' ? 'custom' : prefs.accent;
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
-  const rootStyle = { ...glassVars, ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}`;
+  const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
+  const rootStyle = { ...glassVars, ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -628,6 +633,7 @@ function App() {
   })();
 
   return <div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+    {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}

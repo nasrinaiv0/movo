@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 import { t as tr } from '../lib/i18n';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
+import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
 
 export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
 export const THEMES = [
@@ -126,6 +127,51 @@ export default function Settings({ c }) {
   </>;
 }
 
+const PICKS = 11;
+
+/** Background scenery: plain, one of the Scenery wallpapers, or your own photo, with a visibility slider. */
+function SceneryPicker({ c }) {
+  const { prefs, setPref, sceneryPhoto, setSceneryPhoto } = c;
+  const [all, setAll] = useState(false);
+  const [error, setError] = useState('');
+  const file = useRef(null);
+  const current = prefs.scenery || '';
+  const pick = (id) => { setError(''); setPref('scenery', id); };
+  const upload = async (e) => {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+    setError('');
+    try {
+      const url = await toSceneryPhoto(f, { type: tr('Choose a photo or image file.'), size: tr('That image is larger than 15 MB.'), read: tr('Could not read that photo.') });
+      if (!setSceneryPhoto(url)) throw new Error(tr('This browser could not save the photo. Free up space or try a smaller image.'));
+      setPref('scenery', PHOTO); setAll(false);
+    } catch (err) { setError(err.message); }
+  };
+  /* Keep the chosen scenery visible in the short list even when it comes from further down the full set. */
+  const shortList = SCENERIES.slice(0, PICKS);
+  if (current && current !== PHOTO && !shortList.some(s => s.id === current)) { const chosen = SCENERIES.find(s => s.id === current); if (chosen) shortList.unshift(chosen); }
+  const tile = (s) => <button type="button" key={s.id} className={`scenery-tile${current === s.id ? ' selected' : ''}`} aria-pressed={current === s.id} aria-label={tr('{name} background', { name: s.name })} onClick={() => pick(s.id)}><img src={s.thumb} alt="" loading="lazy" decoding="async" /></button>;
+  return <section className="card pad scenery-settings">
+    <div className="scenery-row" role="group" aria-label={tr('Background scenery')}>
+      <button type="button" className={`scenery-tile plain${current ? '' : ' selected'}`} aria-pressed={!current} aria-label={tr('Plain background')} onClick={() => pick('')}><span>{tr('None')}</span></button>
+      <button type="button" className={`scenery-tile photo${current === PHOTO ? ' selected' : ''}`} aria-pressed={current === PHOTO} aria-label={sceneryPhoto ? tr('Your photo') : tr('Upload your own background')} onClick={() => (sceneryPhoto ? pick(PHOTO) : file.current?.click())}>
+        {sceneryPhoto ? <img src={sceneryPhoto} alt="" /> : <span><Icon name="upload" size={18} />{tr('Your photo')}</span>}
+      </button>
+      {shortList.map(tile)}
+      <button type="button" className="scenery-tile more" onClick={() => setAll(true)}><span>{tr('All')}<small>{SCENERIES.length}</small></span></button>
+    </div>
+    <input ref={file} type="file" accept="image/*" hidden onChange={upload} aria-label={tr('Choose a background photo')} />
+    {sceneryPhoto && <button type="button" className="link-button" onClick={() => file.current?.click()}>{tr('Change photo')}</button>}
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <label className="clarity"><span className="clarity-top"><b>{tr('Scenery visibility')}</b><em>{prefs.sceneryVisibility <= 33 ? tr('Subtle') : prefs.sceneryVisibility >= 67 ? tr('Vivid') : tr('Balanced')} · {prefs.sceneryVisibility}%</em></span>
+      <input type="range" min="0" max="100" step="1" value={prefs.sceneryVisibility} disabled={!current} aria-label={tr('Scenery visibility')} onChange={e => setPref('sceneryVisibility', Number(e.target.value))} style={{ '--fill': `${prefs.sceneryVisibility}%` }} />
+      <span className="clarity-ends"><small>{tr('Subtle')}</small><small>{tr('Vivid')}</small></span></label>
+    <p className="form-note">{tr('A soft veil in your theme colour keeps text readable. Your own photo stays on this device.')}</p>
+    {all && <Sheet title={tr('Background scenery')} subtitle={tr('{n} sceneries', { n: SCENERIES.length })} onClose={() => setAll(false)} label={tr('Background scenery')}>
+      <div className="scenery-grid">{SCENERIES.map(tile)}</div>
+    </Sheet>}
+  </section>;
+}
+
 export function Appearance({ c }) {
   const { prefs, setPref, go } = c;
   return <>
@@ -141,6 +187,8 @@ export function Appearance({ c }) {
         <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
         <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
     </section>
+    <h2 className="group-title">{tr('Background')}</h2>
+    <SceneryPicker c={c} />
     <h2 className="group-title">{tr('Preview')}</h2>
     <div className="card pad"><NavPreview accentName={prefs.accent} /></div>
     <h2 className="group-title">{tr('Display & Layout')}</h2>
