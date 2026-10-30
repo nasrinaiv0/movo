@@ -56,3 +56,13 @@ User messages are capped at 1,600 characters and the full upstream prompt is tri
 3. Test with two MOVO users: each must see only their own conversations and finance context; using the other user's conversation UUID must return 404.
 4. Confirm an unauthenticated request returns 401, a foreign origin returns 403, and an unconfigured upstream returns 503.
 5. Verify the Vercel deployment's runtime route can reach `https://nasrinai.com/v1/chat` and that the chosen NasrinAI credential has chat scope.
+
+
+## Context-isolation release gate — 2026-10-31
+
+- The API handler sends the user question separately from a bounded, sanitized MOVO financial-context payload and explicitly sets `context_scope: "movo"`.
+- Financial values are validated before serialization. Invalid amounts/limits are rejected or represented as unknown; currencies are not silently relabeled as PHP. Notes and unexpected columns are excluded.
+- Upstream replies are accepted only when the response explicitly confirms `context_scope: "movo"`; absent confirmation fails closed and must not be saved or displayed as an accepted answer.
+- Requests remain stateless at the upstream boundary; no upstream conversation ID is sent.
+- Regression tests cover malformed context, context-payload shape, scope confirmation, and relevant-transaction selection.
+- This branch was rebuilt from current `main` to avoid overwriting unrelated newer MOVO features. Keep the release blocked until exact-head CI and authenticated end-to-end synthetic-canary verification pass. A successful unit/build suite does not prove production isolation.
