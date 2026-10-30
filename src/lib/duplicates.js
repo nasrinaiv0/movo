@@ -16,15 +16,22 @@ export function sameMerchant(a, b) {
   return tokens(a).some(w => tb.has(w));
 }
 
-/** entry: { amount, type, merchant, date, account_id? }; records: raw stored transactions. */
+/** Reference ID saved in a record's note ("… · Ref ABC123"). */
+export const refOf = (record) => (String(record?.ref || record?.note || '').match(/\bRef[:\s]+([A-Z0-9-]{4,40})/i)?.[1] || '').toUpperCase();
+
+/** entry: { amount, type, merchant, date, account_id?, ref? }; records: raw stored transactions. */
 export function findDuplicate(entry, records = []) {
   const amount = Math.round(Number(entry?.amount) * 100);
   const when = new Date(entry?.date || entry?.occurred_at || Date.now()).getTime();
   if (!(amount > 0) || !Number.isFinite(when)) return null;
   const type = entry.type || entry.transaction_type || 'expense';
   const acct = entry.account_id && entry.account_id !== 'local' ? entry.account_id : '';
+  const ref = String(entry?.ref || '').toUpperCase();
+  // The same reference ID is the same payment, whatever the date or wording.
+  if (ref) { const byRef = records.find(r => r && r.id !== entry.id && refOf(r) === ref); if (byRef) return byRef; }
   return records.find(r => {
     if (!r || r.id === entry.id) return false;
+    if (ref && refOf(r) && refOf(r) !== ref) return false; // two different reference IDs are two payments
     if ((r.transaction_type || r.type) !== type) return false;
     if (Math.round(Number(r.amount) * 100) !== amount) return false;
     const t = new Date(r.occurred_at || r.date).getTime();

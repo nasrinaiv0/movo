@@ -106,6 +106,21 @@ function findDate(text) {
 }
 
 /** Best-effort fields from receipt or payment-confirmation text; people always review before saving. */
+/** Reference / transaction / invoice / OR number printed on a receipt or payment confirmation. */
+export function findReference(text = '') {
+  const m = String(text).match(/\b(?:ref(?:erence)?\.?\s*(?:no\.?|number|num|#|id|code)?|transaction\s*(?:id|no\.?|number|#)|txn\s*(?:id|no\.?|#)?|trace\s*(?:no\.?|#)|invoice\s*(?:no\.?|number|#)|o\.?\s?r\.?\s*(?:no\.?|number|#)|receipt\s*(?:no\.?|number|#)|approval\s*code)\s*[:#.\-]?\s*([A-Z0-9][A-Z0-9-]{3,40})/i);
+  return m && /\d/.test(m[1]) ? m[1].toUpperCase() : '';
+}
+
+/** Time of day on a receipt, as HH:MM:SS (24h), or '' when none is printed. */
+export function findTime(text = '') {
+  const m = String(text).match(/\b([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?\s*([AaPp]\.?\s?[Mm]\.?)?(?![\d:])/);
+  if (!m) return '';
+  let h = Number(m[1]); const pm = m[4] && /p/i.test(m[4]); const am = m[4] && /a/i.test(m[4]);
+  if (pm && h < 12) h += 12; if (am && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${m[2]}:${m[3] || '00'}`;
+}
+
 export function parseReceipt(text = '') {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   let amount = 0;
@@ -113,7 +128,7 @@ export function parseReceipt(text = '') {
   if (totalLine) { const hits = [...totalLine.matchAll(AMOUNT)]; if (hits.length) amount = num(hits[hits.length - 1][1]); }
   if (!amount) { const all = [...text.matchAll(AMOUNT)].map(h => num(h[1])).filter(n => n > 0 && n < 1e9); if (all.length) amount = Math.max(...all); }
   const merchant = (lines.find(l => /[a-z]{3}/i.test(l) && !/\d{4,}|receipt|invoice|official|tin\b|vat|date|time|cashier/i.test(l)) || '').replace(/[^\w&'.\- ]/g, '').trim().slice(0, 60);
-  return { amount: Math.round(amount * 100) / 100, merchant, date: findDate(text) };
+  return { amount: Math.round(amount * 100) / 100, merchant, date: findDate(text), time: findTime(text), ref: findReference(text) };
 }
 
 const GUESS = [

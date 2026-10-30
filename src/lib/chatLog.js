@@ -12,11 +12,11 @@ const QUESTION = /\?|^(how|what|why|which|when|where|who|show|summari[sz]e|compa
 const EXPENSE_VERB = /^(spent|spend|paid|pay|bought|buy|purchased|log|add|record|expense|gastos|bayad|got|bumili|binili|nagbayad|binayaran|gumastos|nagastos|ginastos|pinambili|nagload|nag-load)\b/i;
 const INCOME_WORD = /\b(salary|sahod|sweldo|suweldo|income|earned|received|got paid|paid me|bonus|refund|cashback|commission|allowance|sold|freelance|dividend|interest|kinita|natanggap|nakatanggap|binenta|naibenta)\b/i;
 // "…using my savings account", "…gamit ang savings account ko" names the account and is not part of the merchant.
-const ACCOUNT_PHRASE = /[,\s]+(?:using|via|with|charged to|paid with|on my|gamit(?:\s+ang)?)\s+(?:my\s+|the\s+|ang\s+|aking\s+)?([\p{L}\p{N}'& -]{2,40}?)(?:\s+ko)?\s*$/iu;
+const ACCOUNT_PHRASE = /[,\s]+(?:using|via|with|charged to|paid with|on my|(?:gamit|ganit|gamet)(?:\s+ang)?)\s+(?:my\s+|the\s+|ang\s+|aking\s+)?([\p{L}\p{N}'& -]{2,40}?)(?:\s+ko)?\s*$/iu;
 const SPENT_VERB = /\b(paid|pay|spent|bought|bumili|binili|nagbayad|gumastos|nagastos)\b/i;
 const AMOUNT = /(?:(?:php|usd|eur|gbp|jpy|sgd|aud|cad)\s?|[₱$€£¥]\s?)?(\d{1,3}(?:[,\s]\d{3})+|\d+)(?:\.(\d{1,2}))?\s?(k\b)?(?:\s?(php|usd|eur|gbp|jpy|sgd|aud|cad|pesos?|piso|dollars?)\b)?/i;
 const CODES = { '₱': 'PHP', $: 'USD', '€': 'EUR', '£': 'GBP', '¥': 'JPY', peso: 'PHP', pesos: 'PHP', piso: 'PHP', dollar: 'USD', dollars: 'USD' };
-const FILLER = /\b(i|my|me|just|amounting|amount|costing|cost|total|a lot of|some|today|yesterday|last night|this morning|tonight|spent|spend|paid|pay|bought|buy|purchased|log|add|record|an?|the|expense|for|on|at|to|from|in|via|using|with|worth|of|sub|subs|subscription|bill|pesos?|piso|dollars?|php|usd|eur|gbp|jpy|sgd|aud|cad|gastos|bayad|got|received|earned|ako|ng|nang|ang|ko|sa|kanina|kahapon|kagabi|ngayon|para|mga|si|na|lang|po|isang|bumili|binili|nagbayad|binayaran|gumastos|nagastos|ginastos|pinambili)\b/gi;
+const FILLER = /\b(i|my|me|just|amounting|amount|costing|cost|total|a lot of|some|today|yesterday|last night|this morning|tonight|spent|spend|paid|pay|bought|buy|purchased|log|add|record|an?|the|expense|for|on|at|to|from|in|via|using|with|worth|of|sub|subs|subscription|bill|pesos?|piso|dollars?|php|usd|eur|gbp|jpy|sgd|aud|cad|gastos|bayad|got|received|earned|ako|ng|nang|ang|ko|sa|kanina|kahapon|kagabi|ngayon|para|mga|si|na|lang|po|isang|bumili|binili|nagbayad|binayaran|gumastos|nagastos|ginastos|pinambili|gamit|ganit)\b/gi;
 
 const currencyOf = (line, match) => {
   const sym = line.slice(Math.max(0, match.index - 1), match.index + 1).match(/[₱$€£¥]/)?.[0] || (match[0].match(/[₱$€£¥]/) || [])[0];

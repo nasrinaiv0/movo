@@ -17,9 +17,11 @@ import CardArt from './components/CardArt';
 import AccountTile, { styleFor } from './components/AccountTile';
 import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
+import { markFresh } from './lib/freshRecords';
+import { answerLocally } from './lib/localAnswer';
 import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
-import { findDuplicate } from './lib/duplicates';
+import { findDuplicate, refOf } from './lib/duplicates';
 import { mergePreferences, unionById } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
 import { lockState } from './lib/appLock';
@@ -432,7 +434,9 @@ function App() {
     e.preventDefault(); setError('');
     const amount = Number(form.amount); const type = form.transaction_type;
     if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return; }
-    if ((cloudMode || formAccounts.length > 0) && !form.account_id) { setError(tr('Choose an account before saving this transaction.')); return; }
+    // Every record belongs to an account: nothing is logged until an account or card exists.
+    if (!formAccounts.length) { setError(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
+    if (!form.account_id) { setError(tr('Choose an account before saving this transaction.')); return; }
     if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return; }
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
     // Time is recorded automatically (hour, minute, second) at the moment of saving unless one was set.
@@ -452,11 +456,13 @@ function App() {
       if (cloudMode) {
         const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
         const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
+        if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
         if (!editingId) celebrate();
       } else {
         const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
+        if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
         if (!editingId) celebrate();
@@ -647,13 +653,13 @@ function App() {
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
-    if (cloudMode && !account) { setPendingLog(entry); return; }
-    const payload = { merchant: entry.merchant, amount: entry.amount, transaction_type: 'expense', category: guessCategory(entry.merchant), account_id: account?.id || 'local', occurred_at: new Date().toISOString(), note: `${tr('Logged from {source}', { source: entry.source })}${entry.card ? ` · ${entry.card}` : ''}` };
-    const dup = findDuplicate(payload, rawTxs);
+    if (!account) { notify(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
+    const payload = { merchant: entry.merchant, amount: entry.amount, transaction_type: 'expense', category: guessCategory(entry.merchant), account_id: account.id, occurred_at: entry.at || new Date().toISOString(), note: `${tr('Logged from {source}', { source: entry.source })}${entry.card ? ` · ${entry.card}` : ''}${entry.ref ? ` · Ref ${entry.ref}` : ''}` };
+    const dup = findDuplicate({ ...payload, ref: entry.ref }, rawTxs);
     if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
     try {
-      if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); setRawTxs(cur => [row, ...cur]); }
-      else setRawTxs(cur => [{ ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }, ...cur]);
+      if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
+      else { const row = { ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }; markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
       celebrate();
     } catch { setPendingLog(entry); }
@@ -661,10 +667,11 @@ function App() {
   /* ---------- logging from the NasrinAI chat (parsed on this device; see lib/chatLog.js) ---------- */
   const logFromChat = useCallback(async (entries, force = false) => {
     const open = accountsView.filter(a => !a.is_archived);
+    if (!open.length) throw new Error('account_required');
     const saved = []; const skipped = [];
     for (const e of entries) {
-      const account = open.length ? matchAccount(e.accountHint || '', open) : null;
-      if (cloudMode && !account) throw new Error('account_required');
+      const account = matchAccount(e.accountHint || '', open);
+      if (!account) throw new Error('account_required');
       const currency = account?.currency || e.currency || base;
       const stamp = new Date(e.date); const now = new Date();
       stamp.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
@@ -677,6 +684,7 @@ function App() {
       saved.push({ ...row, accountName: account?.name || '' });
     }
     if (saved.length) {
+      saved.forEach(r => markFresh(r.id));
       setRawTxs(cur => [...saved, ...cur]);
       notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
       celebrate();
@@ -696,6 +704,7 @@ function App() {
     if (top) lines.push(tr('Most went to {category} ({amount}).', { category: tr(top), amount: shown(show, money(topAmount)) }));
     return lines.join('\n\n');
   };
+  const localAnswer = (q) => answerLocally(q, { txs, accounts: accountsView.map(a => ({ ...a, baseBalance: toBase ? toBase(a.balance, a.currency) : a.balance })), budgets: budgetList, upcoming: subSummary.upcoming || [], fmt: (v) => shown(show, money(v)) });
   const chatShortcuts = [
     { id: 'expense', icon: 'minus', label: 'Expense', run: () => openForm('expense') },
     { id: 'income', icon: 'plus', label: 'Income', run: () => openForm('income') },
@@ -820,7 +829,7 @@ function App() {
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
       if (entry.invalid) { notify(tr('That payment link had no valid amount, so nothing was logged.')); return; }
       if (isRepeat(entry)) return;
-      const dup = findDuplicate({ merchant: entry.merchant, amount: entry.amount, type: 'expense', date: new Date().toISOString() }, recordsRef.current);
+      const dup = findDuplicate({ merchant: entry.merchant, amount: entry.amount, type: 'expense', ref: entry.ref, date: entry.at || new Date().toISOString() }, recordsRef.current);
       if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
       const trusted = sameKey(entry.key, prefs.autoLogKey);
       if (trusted && prefs.autoLog) autoLogFor(entry);
@@ -840,7 +849,7 @@ function App() {
   }, [authReady, prefs.onboarded, prefs.briefing, prefs.briefingDay, todayKey]);
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
-    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: today(), time: '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
+    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
 
@@ -908,7 +917,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} shortcuts={chatShortcuts} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -951,7 +960,7 @@ function App() {
       </nav>}
 
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
-      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', date: f.occurred_at ? `${f.occurred_at}T12:00:00` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
       {sheet?.name === 'account' && <AccountSheet base={base} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
@@ -1011,7 +1020,7 @@ function App() {
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}</dl>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>
       </Sheet>}
 
@@ -1038,7 +1047,8 @@ function App() {
           <ol className="setup-steps">
             <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → New → {transaction}. Pick your cards, choose {run}, then add {open} with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, open: <em>Open URLs</em> })}</li>
             <li><strong>{tr('Android (Google Pay / bank alerts):')}</strong> {rich('In an automation app such as MacroDroid or Tasker, trigger on a Google Wallet or bank notification and open the link below with {src}, filling in the amount and merchant from the notification.', { src: <em>src=googlepay</em> })}</li>
-            <li>{tr('Keep this link private. It contains a key unique to this device; links without it always ask first.')}</li>
+            <li>{rich('To record the bank reference number and time, add {ref} or {text} with the full notification text, and {date} if the payment happened earlier.', { ref: <em>&amp;ref=REF</em>, text: <em>&amp;text=</em>, date: <em>&amp;date=</em> })}</li>
+          <li>{tr('Keep this link private. It contains a key unique to this device; links without it always ask first.')}</li>
           </ol>
         </details>
         <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
