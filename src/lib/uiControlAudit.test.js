@@ -10,6 +10,11 @@ describe('UI control audit', () => {
     expect(result.errors.some((error) => error.includes('placeholder href'))).toBe(true);
   });
 
+  test('flags enabled controls with obviously empty inline handlers', () => {
+    const result = scan('<button type="button" onClick={() => {}}>Do nothing</button>');
+    expect(result.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(true);
+  });
+
   test('requires custom ARIA tabs to expose selection and keyboard behavior', () => {
     const result = scan('<div role="tab" onClick={() => {}}>Overview</div>');
     expect(result.errors.some((error) => error.includes('click and keyboard handlers'))).toBe(true);
@@ -17,7 +22,7 @@ describe('UI control audit', () => {
   });
 
   test('accepts a custom ARIA tab with state and keyboard handling', () => {
-    const result = scan('<div role="tab" aria-selected={true} onClick={() => {}} onKeyDown={() => {}}>Overview</div>');
+    const result = scan('<div role="tab" aria-selected={true} onClick={() => selectTab("overview")} onKeyDown={(event) => handleTabKey(event)}>Overview</div>');
     expect(result.errors).toEqual([]);
   });
 
@@ -38,7 +43,7 @@ describe('UI control audit', () => {
   });
 
   test('accepts named modal dialogs and named native radio controls', () => {
-    const result = scan('<><div role="dialog" aria-modal="true" aria-label="Preferences" /><button type="button" role="radio" aria-checked={true} onClick={() => {}}>Dark</button></>');
+    const result = scan('<><div role="dialog" aria-modal="true" aria-label="Preferences" /><button type="button" role="radio" aria-checked={true} onClick={() => setTheme("dark")}>Dark</button></>');
     expect(result.errors).toEqual([]);
   });
 });
