@@ -335,3 +335,12 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - Terms/Privacy revisions in PR #56 are not yet deployed. Keep the publication warning until operator/controller identity/address, actual retention/deletion schedule, provider/data-recipient disclosures, and jurisdiction-specific review are confirmed.
 - The protected deployment fetch in this checkpoint failed at Vercel's share-link/authentication layer before reaching the app; it is not API evidence. No authenticated chat canary was completed.
 - No production data, database/RLS/grants, Auth settings, or secrets were changed.
+
+## Display Currency setting implementation — 2026-10-30 11:35 Asia/Manila
+
+- **Finding:** The finance importer instructed users to change “Display Currency in Settings,” but the Settings UI had no such control. The app context already exposed `displayCurrency`, `availableCurrencies`, and a validated `setPref('displayCurrency', ...)` path, so the user-facing selector was missing.
+- **Implementation on PR #43 branch:** Added a native, labelled `Preferences → Display Currency` select wired to the existing preference setter. It lists only validated available three-letter currency codes and follows the selected currency after state updates. When only one currency is available, the select is disabled and its associated description explains how to add another currency. The description explicitly says currencies remain separate and are not automatically converted.
+- **Appearance copy:** PR #43 branch does not contain the static “PHP is the only available currency” row found in the separate open PR #60 branch. Before #60 can merge after this feature, that row must be reconciled so it does not contradict the new selector.
+- **Regression tests:** Settings tests verify the selector exposes an accessible name and description, changing PHP→USD calls `setPref('displayCurrency', 'USD')`, no-FX wording is visible, and the selector is disabled with a clear explanation when only one currency is available.
+- **Validation boundary:** New source/test commit `dac81e426038e0165f235bae882cffdf9ef6c4bf` has not yet been validated by a fresh exact-head run at the time of this entry. Earlier green runs for the previous PR #43 head do not validate this change. Run typecheck, full tests, production build, production-only audit, and preview smoke after this commit.
+- No database, RLS/grants, financial records, authentication settings, or secrets changed.
