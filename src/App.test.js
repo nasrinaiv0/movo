@@ -337,7 +337,7 @@ describe('MOVO finance frontend', () => {
     expect(currencySelect).toBeTruthy();
     expect(currencySelect.value).toBe('PHP');
     expect(currencySelect.getAttribute('aria-describedby')).toBe('setting-display-currency-description');
-    expect(container.querySelector('#setting-display-currency-description').textContent).toContain('MOVO does not convert currencies');
+    expect(container.querySelector('#setting-display-currency-description').textContent).toContain('no conversion is applied');
   });
 
   test('theme choices update the app theme and persist preferences', () => {
