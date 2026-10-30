@@ -84,7 +84,7 @@ export const chipTone = (t) => {
 export const chipLabel = (t) => (t.type === 'transfer' ? 'Transfer' : t.category === 'Transport' ? 'Transportation' : t.category || 'Other');
 
 /** Neutral monogram tile colours (no third-party logos are reproduced). */
-const TILES = ['#1f6fff', '#12a66a', '#111827', '#e5484d', '#f08a24', '#7c5cf0', '#0e9aa7', '#c2410c'];
+const TILES = ['#1756c8', '#0b7a4c', '#111827', '#b4232a', '#a94b00', '#6040c8', '#0b6972', '#c2410c'];
 export function tileFor(name = '?') {
   let hash = 0; for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) % 997;
   const words = name.replace(/[^A-Za-z0-9 ]/g, '').split(' ').filter(Boolean);
