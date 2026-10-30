@@ -507,3 +507,16 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - NasrinAI upstream main is now `52392234ce7583303d4d25880296c06d7ad529b1` after PR #707. This does not change MOVO's client integration status. Issue #47 remains open.
 - Detailed checkpoint: `docs/engineering/updates/2026-10-30-0711-cross-project-monitoring.md` (commit 1f9f2c0f992fe4e595718404fc25750fdddd9dd1); master ledger update commit c0ab1fcbd3d002a30a4a038b3f01634a5774a2a9.
 - This is documentation-only; no MOVO runtime, database, finance data, production settings, or PR state was changed.
+
+
+## Current state snapshot — 2026-10-30 09:35 Asia/Manila (supersedes older deployment snapshots)
+
+- MOVO main/production is now at `277051e4ec2216a6b598c784a50b32ba37b89dee`; Vercel production deployment [dpl_FRVNFKYmKHcrhnfvF8uhi7fwELVh](https://vercel.com/nasrin-ai/movo/FRVNFKYmKHcrhnfvF8uhi7fwELVh) is READY.
+- PR #57's production dependency audit gate is merged. Current production dependency audit is clean (0 vulnerabilities); the full CRA/build-tool tree still reports 34 findings (16 low, 5 moderate, 13 high) and needs targeted review.
+- PR #59 is merged. The unauthenticated local demo now uses a generic Demo identity and visible fictional-sample-data disclosure. Production Playwright smoke verified 200, 390px responsive layout, Sign in, legal cross-links, and no browser errors; the main nav and Search/Escape were also exercised on the preview.
+- PR #56 remains draft at `36c486424a2f37591edb13d5a43936140515e217`; exact-head Actions [40985264768](https://github.com/nasrinaiv0/movo/actions/runs/40985264768) passed 18 suites / 101 tests, typecheck, production audit and build. New API-handler tests cover fail-closed scope, persistence only after scope confirmation, and foreign conversation IDs.
+- NasrinAI upstream PR #699 is merged and the current production deployment source SHA `b39f4dcd62641d5f601e4e707cb46155ca8e135e` contains the server-enforced MOVO scope contract. No authenticated MOVO request or unrelated-document canary has yet proven the deployed integration. A no-token production POST returns 401; the PR #56 preview API is intercepted by Vercel SSO.
+- PR #43 and #52 remain draft pending authenticated finance/chart validation. PR #55 remains draft and currently conflicts with newer main; reconcile it rather than duplicating its accessibility work.
+- Legal pages and consent navigation are browser-verified, but the visible publication warning must remain until the operator/controller identity and address, actual retention/deletion schedule, provider/data-recipient details, and jurisdiction-specific review are verified.
+- Supabase RLS remains enabled on seven checked tables with 22 owner-scoped policies across six user-facing tables and no checked `anon`/`PUBLIC` grants. The upstream mapping remains service-role-only. Leaked-password protection is still disabled and requires an authorized Auth settings change.
+- Detailed evidence: `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md` and issue [#47](https://github.com/nasrinaiv0/movo/issues/47).
