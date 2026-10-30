@@ -8,7 +8,7 @@ function makeContext(cloudMode = false) {
   return {
     prefs: {
       theme: 'system', accent: 'blue', customColor: '#2f6bff', glass: true, clarity: 55,
-      compact: false, categoryColors: true, notifications: true, push: true, email: true,
+      compact: false, categoryColors: true, displayCurrency: 'PHP', notifications: true, push: true, email: true,
       inapp: true, biometrics: true, localStorage: false, autocat: true, cloudSync: true,
       catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
     },
@@ -17,6 +17,8 @@ function makeContext(cloudMode = false) {
     query: '',
     setQuery: jest.fn(),
     cloudMode,
+    displayCurrency: 'PHP',
+    availableCurrencies: ['PHP', 'USD'],
     openLegal: jest.fn(),
     setSheet: jest.fn(),
   };
@@ -73,5 +75,51 @@ describe('Cloud Sync setting semantics', () => {
     expect(row.getAttribute('aria-disabled')).toBeNull();
     expect(context.go).not.toHaveBeenCalled();
     expect(context.setPref).not.toHaveBeenCalledWith('cloudSync', expect.anything());
+  });
+});
+
+describe('Display Currency setting semantics', () => {
+  let container;
+  let root;
+  let context;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    context = makeContext(false);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    if (root) act(() => root.unmount());
+    container.remove();
+    root = null;
+  });
+
+  test('selecting a currency updates the preference and explains that currencies are not converted', () => {
+    act(() => root.render(<Settings c={context} />));
+    const select = container.querySelector('select[aria-label="Display Currency"]');
+    expect(select).toBeTruthy();
+    expect(select.value).toBe('PHP');
+    expect(select.disabled).toBe(false);
+    expect(select.getAttribute('aria-describedby')).toBe('setting-display-currency-description');
+    expect(container.textContent).toContain('MOVO keeps currencies separate and does not convert them automatically.');
+
+    act(() => {
+      select.value = 'USD';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(context.setPref).toHaveBeenCalledWith('displayCurrency', 'USD');
+  });
+
+  test('currency selector is disabled with an explanation when only one currency is available', () => {
+    context.availableCurrencies = ['PHP'];
+    context.displayCurrency = 'PHP';
+    act(() => root.render(<Settings c={context} />));
+    const select = container.querySelector('select[aria-label="Display Currency"]');
+    expect(select).toBeTruthy();
+    expect(select.disabled).toBe(true);
+    expect(select.getAttribute('aria-describedby')).toBe('setting-display-currency-description');
+    expect(container.textContent).toContain('Add or import a record in another currency to add choices');
   });
 });
