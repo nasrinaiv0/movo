@@ -196,3 +196,9 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - The code/test implementation remains the previously validated PR #60 content from `8005fbc695c5a8f30f2817e99b3fb8226ea1a429`; no application code was changed by this reconciliation.
 - Exact-head Actions run [41006039735](https://github.com/nasrinaiv0/movo/actions/runs/41006039735) passed 20 suites / 114 tests, typecheck, production-only audit (0 vulnerabilities), `audit:controls`, and production build. Vercel preview was READY and root/bundle HTTP 200.
 - Keep PR #60 draft until interactive keyboard/focus, screen-reader, responsive, and authenticated finance/CSV/currency checks are completed.
+## Notification detail action routing — 2026-10-30 14:24 Asia/Manila
+
+- Found and corrected a contextual-action bug in the notification detail screen: **More** opened the global Quick actions menu instead of notification actions.
+- PR #60 now adds a dedicated action sheet with **Mark as unread** and **Notification settings**, plus App-level regression tests for both paths.
+- Source/test commits: `050e53f0f712f34306b827d12b2acb51adb89bb7`, `bba4df97b452a9e2449d3813d71ac8f01b24996b`, `e25a3327cf7b96c0caceabe8064322315181f92f`.
+- Latest-head CI and preview are pending verification. Do not reuse earlier PR #60 results; retain draft status until the exact-head checks and manual accessibility review are complete.
