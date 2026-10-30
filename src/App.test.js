@@ -238,6 +238,9 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Republic Act No. 7394');
     expect(container.textContent).toContain('cannot lawfully be excluded, limited, or waived');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
+    expect(container.textContent).toContain('A country or region appearing in the app settings is a localization preference only');
+    expect(container.textContent).toContain('For countries or regions not listed in the settings');
+    expect(container.textContent).toContain('An incoming link or notification is not proof that a payment occurred');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(container.textContent).toContain('Effective date: October 31, 2026');
@@ -255,6 +258,10 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('MOVO does not sell personal information or financial records');
     expect(container.textContent).toContain('Settings controls actually delete all relevant cloud records');
     expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
+    expect(container.textContent).toContain('Selecting a country, language, or currency in Settings changes localization preferences');
+    expect(container.textContent).toContain('Apple App Store and Google Play policies');
+    expect(container.textContent).toContain('the actual provider inventory and transfer arrangements must be maintained and disclosed accurately');
+    expect(container.textContent).toContain('provide and maintain a direct, publicly accessible deletion-request page');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
