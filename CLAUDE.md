@@ -28,7 +28,9 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 ## Preferences and data
 - UI preferences live in `localStorage` key `movo.preferences.v3` (`DEFAULTS` in `App.js`; v2 is migrated). Add new keys to `DEFAULTS`.
 - Custom sticker uploads: `movo.customStickers.v1` (device only).
-- Sample records carry `source: 'Sample'` and must always be labelled as sample data.
+- MOVO ships no demo mode or sample data: a new person starts empty. Legacy `source: 'Sample'` rows are dropped on load. Tests seed `src/testFixtures.js` as the person's own records.
+- First-run tour (`components/Walkthrough.js`) shows once, only when no preferences are saved (`onboarded`); it is disabled in tests.
+- Chat logging (`lib/chatLog.js`) parses "Grab 250"-style lines on the device and saves them like any record; these messages are never sent to NasrinAI and need no AI consent.
 - Never imply mock settings deliver real push/email notifications or that balances are bank-verified.
 
 ## UI conventions (owner-approved)

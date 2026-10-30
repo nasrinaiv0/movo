@@ -11,6 +11,7 @@ import Profile, { EditProfile } from './screens/Profile';
 import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
+import Walkthrough from './components/Walkthrough';
 import { buildBriefing } from './lib/insights';
 import { summarize as summarizeSubscriptions } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
@@ -50,7 +51,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -62,7 +63,7 @@ const today = () => new Date().toLocaleDateString('en-CA');
 function readPrefs() {
   try {
     const stored = JSON.parse(localStorage.getItem(PREF));
-    if (stored) return { ...DEFAULTS, ...stored };
+    if (stored) return { ...DEFAULTS, onboarded: true, ...stored }; // people who already used MOVO skip the first-run tour
     const old = JSON.parse(localStorage.getItem(OLD_PREF)) || {};
     return { ...DEFAULTS, theme: old.dark ? 'dark' : DEFAULTS.theme, accent: old.accent === 'mono' ? 'slate' : (old.accent || DEFAULTS.accent), showBalance: old.showBalance !== false };
   } catch { return { ...DEFAULTS }; }
@@ -345,7 +346,7 @@ function App() {
 
   const metaName = session?.user?.user_metadata?.full_name;
   const email = session?.user?.email || tr('Local-only session');
-  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : 'Local User';
+  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : tr('Friend');
   const name = prefs.profileName.trim() || metaName || defaultName;
   const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
 
@@ -606,6 +607,35 @@ function App() {
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
     } catch { setPendingLog(entry); }
   }, [accountsView, cloudMode, session, notify]);
+  /* ---------- logging from the NasrinAI chat (parsed on this device; see lib/chatLog.js) ---------- */
+  const logFromChat = useCallback(async (entries) => {
+    const open = accountsView.filter(a => !a.is_archived);
+    const saved = [];
+    for (const e of entries) {
+      const account = open.length ? matchAccount(e.accountHint || '', open) : null;
+      if (cloudMode && !account) throw new Error('account_required');
+      const currency = account?.currency || e.currency || base;
+      const stamp = new Date(e.date); const now = new Date();
+      stamp.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+      const payload = { merchant: e.merchant, amount: e.amount, currency, transaction_type: e.type, category: e.category, account_id: account?.id || 'local', occurred_at: stamp.toISOString(), note: tr('Logged from NasrinAI chat') };
+      const row = cloudMode
+        ? await createTransaction(payload, session.user.id)
+        : { ...payload, id: window.crypto?.randomUUID?.() || `chat-${Date.now()}-${saved.length}`, source: 'Manual' };
+      saved.push({ ...row, accountName: account?.name || '' });
+    }
+    setRawTxs(cur => [...saved, ...cur]);
+    notify(saved.length === 1 ? tr('{name} added to your transactions.', { name: saved[0].merchant }) : tr('{n} transactions added.', { n: saved.length }));
+    return saved;
+  }, [accountsView, cloudMode, session, base, notify]);
+  const undoChatLog = useCallback(async (id) => {
+    if (cloudMode) await deleteTransaction(id);
+    setRawTxs(cur => cur.filter(x => x.id !== id));
+    notify(tr('Transaction removed.'));
+  }, [cloudMode, notify]);
+  /* First-run tour: only for people with no saved preferences, on Home, and never in tests. */
+  const showTour = authReady && !prefs.onboarded && view === 'Home' && !sheet && process.env.NODE_ENV !== 'test';
+  // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.
+  const finishTour = useCallback(() => setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey })), [todayKey]);
   const handledLink = useRef('');
   useEffect(() => {
     if (!authReady || (session?.user && !cloudMode)) return undefined;
@@ -628,11 +658,11 @@ function App() {
   /* NasrinAI's briefing opens once a day when the app starts (never over another sheet, and not in unit tests). */
   const briefingShown = useRef(false);
   useEffect(() => {
-    if (!authReady || briefingShown.current || prefs.briefing === false || prefs.briefingDay === todayKey || process.env.NODE_ENV === 'test') return undefined;
+    if (!authReady || briefingShown.current || !prefs.onboarded || prefs.briefing === false || prefs.briefingDay === todayKey || process.env.NODE_ENV === 'test') return undefined;
     briefingShown.current = true;
     const timer = setTimeout(() => setSheet(cur => cur || { name: 'briefing' }), 700);
     return () => clearTimeout(timer);
-  }, [authReady, prefs.briefing, prefs.briefingDay, todayKey]);
+  }, [authReady, prefs.onboarded, prefs.briefing, prefs.briefingDay, todayKey]);
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
     setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: today(), time: '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
@@ -702,7 +732,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} show={show} />;
       case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -754,6 +784,7 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
+      {showTour && <Walkthrough onDone={finishTour} />}
       {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
       {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 

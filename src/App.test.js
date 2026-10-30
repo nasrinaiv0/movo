@@ -52,7 +52,7 @@ describe('MOVO finance frontend', () => {
   afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
 
   test('renders the home dashboard from the design: balance, summary, spending and recent activity', () => {
-    expect(container.querySelector('h1').textContent).toContain('Local');
+    expect(container.querySelector('h1').textContent).toContain('Friend');
     expect(container.textContent).toContain('₱203,062.00');
     expect(container.querySelector('[aria-label="Financial summary"]')).not.toBeNull();
     expect(container.textContent).toContain('₱85,000');
@@ -395,14 +395,42 @@ describe('MOVO finance frontend', () => {
     expect(container.firstChild.className).not.toContain('glass-on');
   });
 
-  test('NasrinAI opens the private chat and provides a sign-in action in local/demo mode', () => {
+  test('NasrinAI chat works locally for logging and offers sign-in for questions', () => {
     nav(container, 'NasrinAI');
     expect(container.querySelector('h1').textContent).toBe('NasrinAI');
     expect(container.textContent).toContain('user-scoped snapshot');
-    expect(container.textContent).toContain('Sign in to securely connect your MOVO finances.');
-    expect(container.querySelector('textarea#' + 'movo-ai-prompt')).toBeNull();
+    expect(container.textContent).toContain('Logging works on this device. Sign in to ask NasrinAI about your money.');
+    expect(container.querySelector('textarea#movo-ai-prompt')).not.toBeNull();
     clickButton(container, 'Sign in to MOVO');
     expect(container.querySelector('h2').textContent).toBe('Welcome back');
+  });
+
+  test('logs transactions typed in the chat, renders a card, and can undo without contacting NasrinAI', async () => {
+    const fetchSpy = jest.fn(); global.fetch = fetchSpy;
+    nav(container, 'NasrinAI');
+    const box = container.querySelector('textarea#movo-ai-prompt');
+    const type = (text) => act(() => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(box, text);
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    type('Spent 250 on Grab\nAdd 699 for gpt subs');
+    await act(async () => { container.querySelector('form.movo-ai-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    const rows = container.querySelectorAll('.chat-log-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('Grab');
+    expect(rows[0].textContent).toContain('−₱250.00');
+    expect(rows[1].textContent).toContain('ChatGPT Plus');
+    expect(container.textContent).toContain('Added to your transactions');
+    let saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => [t.merchant, t.amount, t.category])).toEqual([['Grab', 250, 'Transport'], ['ChatGPT Plus', 699, 'Subscriptions']]);
+    await act(async () => { rows[0].querySelector('.link-button').click(); });
+    expect(rows[0].textContent).toContain('Removed');
+    saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => t.merchant)).toEqual(['ChatGPT Plus']);
+    type('How much did I spend on Grab?');
+    await act(async () => { container.querySelector('form.movo-ai-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(container.textContent).toContain('Sign in to ask me questions about your money.');
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   test('unsupported Plan & Usage is clearly unavailable while Help Center opens useful guidance', () => {
