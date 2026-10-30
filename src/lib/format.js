@@ -62,9 +62,9 @@ export const signed = (type, amount, currency = BASE) =>
   (type === 'income' ? '+' : type === 'transfer' ? '' : '−') + money(amount, currency);
 
 /** Smooth SVG path through points, scaled to a w×h box with separate horizontal and vertical insets. */
-export function smoothPath(values, w, h, padX = 6, padY = padX) {
+export function smoothPath(values, w, h, padX = 6, padY = padX, range) {
   if (!values.length) return '';
-  const max = Math.max(...values); const min = Math.min(...values); const span = max - min || 1;
+  const [min, max] = range || [Math.min(...values), Math.max(...values)]; const span = max - min || 1;
   const pts = values.map((v, i) => [padX + (i / Math.max(values.length - 1, 1)) * (w - padX * 2), h - padY - ((v - min) / span) * (h - padY * 2)]);
   if (pts.length === 1) return `M${pts[0][0]} ${pts[0][1]}L${w - padX} ${pts[0][1]}`;
   let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;

@@ -1,11 +1,24 @@
 import React, { useRef, useState } from 'react';
 import Icon from '../components/Icon';
-import { IconButton, SectionTitle, Sparkline, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
+import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
 import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
 import { dayKey, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+
+const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
+const FLOW_STYLES = [['bars', 'Bars'], ['lines', 'Lines'], ['net', 'Net']];
+const SPENDING_STYLES = [['ring', 'Ring'], ['bars', 'Bars']];
+
+/** Spending per category as horizontal bars, longest first, scaled to the biggest category. */
+function CategoryBars({ data, show }) {
+  const top = Math.max(1, ...data.map(d => d.amount));
+  return <ul className="cat-bars">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}>
+    <span className="cat-bars-head"><span><i style={{ background: d.color }} />{tr(d.key)}</span><b><Money value={d.amount} show={show} digits={0} /> · {d.percent}%</b></span>
+    <span className="cat-bars-track"><i style={{ width: `${(d.amount / top) * 100}%`, background: d.color }} /></span>
+  </li>)}</ul>;
+}
 
 export function timeGreeting(date = new Date()) {
   const h = date.getHours();
@@ -34,6 +47,7 @@ function toMascot(file) {
 export default function Home({ c }) {
   const { show, setShow, stats, deltas, breakdown, recent, refDate, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
   const [editing, setEditing] = useState(false);
+  const startEditing = () => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } };
   const [mascotSheet, setMascotSheet] = useState(false);
   const [mascotError, setMascotError] = useState('');
   const file = useRef(null);
@@ -53,41 +67,45 @@ export default function Home({ c }) {
     try { setPref('mascot', await toMascot(f)); setMascotSheet(false); } catch (err) { setMascotError(err.message); }
   };
 
+  const byAmount = [...breakdown.data].sort((a, b) => b.amount - a.amount);
+  const recentFor = (size) => (size === 'M' ? recent : txs.filter(t => t.type !== 'transfer').slice(0, size === 'S' ? 2 : 8));
   const boxes = [
-    { id: 'balance', label: tr('Total balance'), node: <section className="card balance-card" aria-label={tr('Total balance')}>
+    { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <section className={`card balance-card size-${size}`} aria-label={tr('Total balance')}>
       <div className="balance-label">{tr('Total Balance')}
         <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={18} /></button>
       </div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
       <Trend value={deltas.balance} chip size={13} />
-      <div className="balance-art"><Sparkline values={stats.trend} width={260} height={110} /></div>
+      {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={260} height={110} /> : <Sparkline values={stats.trend} width={260} height={110} />}</div>}
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
     </section> },
-    { id: 'summary', label: tr('Income, expenses & savings'), node: <section className="stat-grid" aria-label={tr('Financial summary')}>
+    { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
       {tiles.map(t => <article className={`card stat-card tint-${t.tone}`} key={t.label}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
         <strong><Money value={t.value} show={show} digits={0} /></strong>
-        <Trend value={t.delta} />
+        {size !== 'S' && <Trend value={t.delta} />}
       </article>)}
     </section> },
-    { id: 'flow', label: tr('Money flow'), node: <MoneyFlow txs={txs} refDate={refDate} show={show} /> },
-    { id: 'budgets', label: tr('Budgets & plans'), node: <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} /> },
-    { id: 'spending', label: tr('Spending this month'), node: <section aria-label={tr('Spending overview')}>
+    { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={refDate} show={show} variant={style} /> },
+    { id: 'budgets', label: tr('Budgets & plans'), node: ({ size }) => <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} size={size} /> },
+    { id: 'spending', label: tr('Spending this month'), styles: SPENDING_STYLES, node: ({ size, style }) => <section aria-label={tr('Spending overview')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending This Month')}</SectionTitle>
-      <div className="card spending-card">
-        {breakdown.data.length ? <>
-          <Donut data={breakdown.data} total={breakdown.total} caption={tr('Spent')} show={show} />
-          <Legend data={breakdown.data} />
-        </> : <p className="empty">{tr('Add expenses to see your category breakdown.')}</p>}
+      <div className={`card spending-card is-${style}`}>
+        {!breakdown.data.length ? <p className="empty">{tr('Add expenses to see your category breakdown.')}</p>
+          : style === 'bars' ? <CategoryBars data={size === 'S' ? byAmount.slice(0, 3) : byAmount} show={show} />
+            : <>
+              <Donut data={breakdown.data} total={breakdown.total} caption={tr('Spent')} show={show} size={{ S: 104, M: 132, L: 168 }[size]} />
+              <Legend data={size === 'S' ? byAmount.slice(0, 3) : breakdown.data} />
+            </>}
       </div>
     </section> },
-    { id: 'recent', label: tr('Recent transactions'), node: <section aria-label={tr('Recent transactions')}>
+    { id: 'recent', label: tr('Recent transactions'), node: ({ size }) => { const list = recentFor(size); return <section aria-label={tr('Recent transactions')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <div className="card list-card">
-        {recent.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}
-        {!recent.length && <p className="empty">{tr('No transactions yet. Add your first record from the Transactions tab.')}</p>}
+        {list.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}
+        {!list.length && <p className="empty">{tr('No transactions yet. Add your first record from the Transactions tab.')}</p>}
       </div>
-    </section> },
+    </section>; } },
   ];
 
   return <>
@@ -103,8 +121,8 @@ export default function Home({ c }) {
       </div>
     </header>
 
-    <EditableBoxes title={tr('Home')} boxes={boxes} layout={prefs.layouts?.home} editing={editing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), home: l })} />
-    {!editing && <button type="button" className="customize-button" onClick={() => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } }}><Icon name="edit" size={16} /> {tr('Customize Home')}</button>}
+    <EditableBoxes title={tr('Home')} boxes={boxes} layout={prefs.layouts?.home} editing={editing} onEdit={startEditing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), home: l })} />
+    {!editing && <button type="button" className="customize-button" onClick={startEditing}><Icon name="edit" size={16} /> {tr('Customize Home')}</button>}
 
     {mascotSheet && <Sheet title={tr('Your mascot')} subtitle={tr('Use your own photo as the Home mascot. It greets you and stays on this device.')} onClose={() => setMascotSheet(false)} label={tr('Mascot photo')}>
       <div className="mascot-preview"><span className="mascot big">{prefs.mascot ? <img src={prefs.mascot} alt={tr('Current mascot')} /> : <span>{user.initial}</span>}</span><div className="hello bubble"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1></div></div>

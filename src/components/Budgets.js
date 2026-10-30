@@ -20,8 +20,13 @@ export function budgetProgress(budgets, monthList) {
   });
 }
 
-export function BudgetsCard({ progress, plans, show, onOpen }) {
-  const watch = [...progress].sort((a, b) => b.percent - a.percent).slice(0, 3);
+const ROWS = { S: [1, 1], M: [3, 2], L: [8, 5] };
+
+/** Size S shows the single most urgent row, M the top three budgets and two plans, L nearly everything. */
+export function BudgetsCard({ progress, plans, show, onOpen, size = 'M' }) {
+  const [budgetRows, planRows] = ROWS[size] || ROWS.M;
+  const watch = [...progress].sort((a, b) => b.percent - a.percent).slice(0, budgetRows);
+  const planList = plans.slice(0, size === 'S' && watch.length ? 0 : planRows);
   return <section className="card budget-card" aria-label={tr('Budgets and plans')}>
     <div className="budget-head"><h2>{tr('Budgets & Plans')}</h2><button type="button" className="link-button" onClick={onOpen}>{tr('Manage')} <Icon name="chevron" size={14} /></button></div>
     {!progress.length && !plans.length && <button type="button" className="budget-empty" onClick={onOpen}><Icon name="target" size={20} /><span><strong>{tr('Set a monthly limit')}</strong><small>{tr('Get a heads-up before a category runs over, and plan savings goals.')}</small></span></button>}
@@ -30,7 +35,7 @@ export function BudgetsCard({ progress, plans, show, onOpen }) {
       <span className="budget-main"><span><strong>{tr(name)}</strong><small>{b.level === 'over' ? `${tr('Over by')} ` : ''}<Money value={Math.abs(b.left)} show={show} digits={0} />{b.level === 'over' ? '' : ` ${tr('left')}`}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
       <b>{b.percent}%</b>
     </div>; })}
-    {plans.slice(0, 2).map(p => <div className="budget-row plan" key={p.id}>
+    {planList.map(p => <div className="budget-row plan" key={p.id}>
       <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
       <span className="budget-main"><span><strong>{p.name}</strong><small><Money value={p.saved} show={show} digits={0} /> {tr('of')} <Money value={p.target} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
       <b>{pct(p.saved, p.target)}%</b>

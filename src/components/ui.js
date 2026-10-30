@@ -146,6 +146,19 @@ export function Trend({ value, chip = false, size = 12 }) {
   </span>;
 }
 
+/** Balance history as slim bars, edge to edge like the sparkline; long histories are averaged down to 24 bars. */
+export function MiniBars({ values, width = 170, height = 70 }) {
+  const n = Math.min(24, values.length);
+  if (!n) return null;
+  const per = values.length / n;
+  const pts = Array.from({ length: n }, (_, i) => { const part = values.slice(Math.floor(i * per), Math.max(Math.floor(i * per) + 1, Math.floor((i + 1) * per))); return part.reduce((a, v) => a + v, 0) / part.length; });
+  const min = Math.min(...pts); const span = Math.max(...pts) - min || 1;
+  const slot = width / n; const bar = Math.max(2, slot * 0.58);
+  return <svg className="sparkline mini-bars" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+    {pts.map((v, i) => { const h = height * (0.14 + 0.78 * ((v - min) / span)); return <rect key={i} x={i * slot + (slot - bar) / 2} y={height - h} width={bar} height={h} rx={Math.min(3, bar / 2)} style={{ '--i': i }} />; })}
+  </svg>;
+}
+
 export function Bars({ values, startLabel, endLabel }) {
   const max = Math.max(...values, 1); const last = values.map((v, i) => (v > 0 ? i : -1)).reduce((a, b) => Math.max(a, b), -1);
   return <div className="bars" aria-hidden="true">

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Money } from './ui';
-import { dayKey, getFormatLocale } from '../lib/format';
+import { dayKey, getFormatLocale, smoothPath } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 const RANGES = [['day', 'Days'], ['week', 'Weeks'], ['month', 'Months'], ['year', 'Years'], ['custom', 'Custom']];
@@ -41,12 +41,16 @@ export function buildFlow(txs, range, ref = new Date(), custom = {}) {
   return buckets;
 }
 
-export default function MoneyFlow({ txs, refDate, show }) {
+/** Money in and out over time, drawn as paired bars, two lines, or one net bar per period (`variant`). */
+export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
   const [range, setRange] = useState('day');
   const [custom, setCustom] = useState({ from: '', to: '' });
   const [pick, setPick] = useState(-1);
   const data = useMemo(() => buildFlow(txs, range, refDate, custom), [txs, range, refDate, custom]);
   const max = Math.max(1, ...data.map(b => Math.max(b.income, b.expense)));
+  const netMax = Math.max(1, ...data.map(b => Math.abs(b.income - b.expense)));
+  /* Both lines share one scale (0..max) so their heights can be compared directly. */
+  const line = (key) => smoothPath(data.map(b => b[key]), 100, 100, 100 / (data.length * 2), 4, [0, max]);
   const sel = pick >= 0 && data[pick] ? data[pick] : null;
   const totals = sel || data.reduce((s, b) => ({ income: s.income + b.income, expense: s.expense + b.expense }), { income: 0, expense: 0 });
   const net = totals.income - totals.expense;
@@ -58,9 +62,12 @@ export default function MoneyFlow({ txs, refDate, show }) {
     <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); }}>{tr(l)}</button>)}</div>
     {range === 'custom' && <div className="flow-custom"><label>{tr('From')}<input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label>{tr('To')}<input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
     <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
-    <div className="flow-plot" role="list">
+    <div className={`flow-plot is-${variant}`} role="list">
+      {variant === 'lines' && data.length > 1 && <svg className="flow-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={line('income')} className="in-line" /><path d={line('expense')} className="out-line" /></svg>}
       {data.map((b, i) => <button type="button" role="listitem" key={b.key} className={`flow-col${pick === i ? ' on' : ''}`} style={{ '--i': i }} onClick={() => setPick(pick === i ? -1 : i)} aria-label={tr('{period}: in {income}, out {expense}', { period: b.title, income: Math.round(b.income), expense: Math.round(b.expense) })}>
-        <span className="flow-bars"><i className="in" style={{ height: `${(b.income / max) * 100}%` }} /><i className="out" style={{ height: `${(b.expense / max) * 100}%` }} /></span>
+        {variant === 'bars' && <span className="flow-bars"><i className="in" style={{ height: `${(b.income / max) * 100}%` }} /><i className="out" style={{ height: `${(b.expense / max) * 100}%` }} /></span>}
+        {variant === 'lines' && <span className="flow-bars" />}
+        {variant === 'net' && <span className="flow-net-col"><i className={b.income - b.expense >= 0 ? 'in up' : 'out down'} style={{ height: `${(Math.abs(b.income - b.expense) / netMax) * 50}%` }} /></span>}
         {(data.length <= 14 || i % Math.ceil(data.length / 12) === 0) && <small>{b.label}</small>}
       </button>)}
     </div>

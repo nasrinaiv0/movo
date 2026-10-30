@@ -1372,7 +1372,7 @@ button.account-tile:active { transform: scale(.98); }
 /* Customize mode: controls live in a slim bar above each box, never on top of it */
 .edit-box { margin-bottom: 18px; }
 .edit-tools { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; padding: 0 2px; }
-.edit-tools .edit-remove { position: static; width: 26px; height: 26px; min-height: 26px; background: var(--red); border: 0 !important; backdrop-filter: none; box-shadow: none; }
+.edit-tools .edit-remove { position: relative; width: 26px; height: 26px; min-height: 26px; background: var(--red); border: 0 !important; backdrop-filter: none; box-shadow: none; }
 .edit-tools .edit-remove::after { inset: -9px; }
 .edit-name { flex: 1; min-width: 0; color: var(--muted); font-size: 12.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .edit-tool, .edit-tools .edit-grip { position: static; transform: none; display: grid; place-items: center; width: 32px; height: 32px; min-height: 32px; padding: 0; border: var(--hair) solid var(--line); border-radius: 10px; background: var(--card-solid); color: var(--text); box-shadow: none; }
@@ -1385,3 +1385,64 @@ button.account-tile:active { transform: scale(.98); }
 .stat-head { gap: 6px; font-size: 12px; }
 .stat-head .stat-icon { width: 22px; height: 22px; }
 .stat-head .stat-icon .movo-icon { width: 13px; height: 13px; }
+
+/* ---------- Customize: hold to edit, resize, swipe chart styles ---------- */
+.box-slot { -webkit-touch-callout: none; transition: transform .45s var(--spring); }
+.box-slot.pressing { transform: scale(.975); transition-duration: .48s; }
+.edit-frame { position: relative; }
+.edit-content { transition: transform .28s var(--spring), opacity .28s; }
+.edit-swipe { position: absolute; inset: 0; z-index: 2; touch-action: pan-y; cursor: grab; }
+.edit-resize { position: absolute; z-index: 4; right: -6px; bottom: -6px; display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--text); touch-action: none; cursor: nwse-resize; }
+.edit-resize svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
+.edit-size { position: absolute; right: 40px; bottom: 12px; padding: 3px 8px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 11px; font-weight: 700; white-space: nowrap; opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s; pointer-events: none; }
+.edit-resize:active .edit-size, .edit-resize:focus-visible .edit-size { opacity: 1; transform: none; }
+[dir="rtl"] .edit-resize { right: auto; left: -6px; transform: scaleX(-1); cursor: nesw-resize; }
+[dir="rtl"] .edit-resize .edit-size { transform: scaleX(-1); }
+.edit-styles { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
+.edit-dots { display: inline-flex; align-items: center; gap: 5px; min-width: 96px; justify-content: center; color: var(--muted); font-size: 12px; }
+.edit-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); transition: background .2s, width .25s var(--spring); }
+.edit-dots i.on { width: 16px; border-radius: 3px; background: var(--accent); }
+.edit-dots b { margin-left: 4px; font-weight: 600; }
+[dir="rtl"] .edit-styles .edit-tool svg { transform: scaleX(-1); }
+
+/* Sizes: S is a compact glance, L gives charts and lists more room */
+.size-S .balance-card { padding: 14px 16px; }
+.size-S .balance-card .balance-amount, .balance-card.size-S .balance-amount { font-size: 28px; }
+.balance-card.size-S .balance-art { height: 46%; }
+.balance-card.size-L { min-height: 214px; }
+.balance-card.size-L .balance-art { height: 66%; width: 56%; }
+.stat-grid.size-S .stat-card { padding-block: 10px; }
+.stat-grid.size-S .stat-card strong { font-size: 15px; }
+.size-S .flow-plot { height: 76px; }
+.size-L .flow-plot { height: 188px; }
+.size-S .spending-card { gap: 14px; padding: 12px 14px; }
+
+/* Money flow styles */
+.flow-plot { position: relative; }
+.flow-lines { position: absolute; left: 0; right: 0; top: 4px; bottom: 14px; width: 100%; height: calc(100% - 18px); overflow: visible; pointer-events: none; }
+.flow-lines path { fill: none; stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.flow-lines .in-line { stroke: var(--green); }
+.flow-lines .out-line { stroke: var(--red); }
+.flow-net-col { position: relative; flex: 1; width: 100%; }
+.flow-net-col::before { content: ''; position: absolute; left: 10%; right: 10%; top: 50%; border-top: var(--hair) solid var(--line); }
+.flow-net-col i { position: absolute; left: 50%; width: min(10px, 46%); min-height: 2px; border-radius: 3px; transform: translateX(-50%); }
+.flow-net-col i.up { bottom: 50%; }
+.flow-net-col i.down { top: 50%; }
+
+/* Balance as bars */
+.mini-bars rect { fill: var(--accent); fill-opacity: .55; transform-box: fill-box; transform-origin: bottom; animation: grow .6s var(--spring) both; animation-delay: calc(var(--i, 0) * 18ms); }
+.mini-bars rect:last-child { fill-opacity: 1; }
+
+/* Spending as category bars */
+.spending-card.is-bars { display: block; }
+.cat-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.cat-bars li { display: grid; gap: 6px; animation: item-in .4s var(--spring) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.cat-bars-head { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.cat-bars-head > span { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.cat-bars-head i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.cat-bars-head b { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.cat-bars-track { display: block; height: 8px; border-radius: 999px; background: var(--field); overflow: hidden; }
+.cat-bars-track i { display: block; height: 100%; border-radius: inherit; transform-origin: left; animation: grow-x .7s var(--spring) both; }
+[dir="rtl"] .cat-bars-track i { transform-origin: right; }
+@keyframes grow-x { from { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .box-slot, .box-slot.pressing { transform: none; transition: none; } .mini-bars rect, .cat-bars li, .cat-bars-track i { animation: none; } }
