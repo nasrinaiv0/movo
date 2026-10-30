@@ -553,3 +553,15 @@ PR #56 current head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c` is now validated 
 - Profile summary metrics and account-type subtotals now format with the selected display currency; hidden balances use a matching currency mask. Synthetic USD/PHP regression coverage passed as part of the 118-test suite.
 - The full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high), despite 0 findings in the production-only audit.
 - Keep PR #43 draft until authenticated financial writes, CSV import/export, and owner-scoped currency-isolation flows are verified.
+## Latest MOVO implementation checkpoint — 2026-10-30 11:14 Asia/Manila
+
+Current main is `815ab66919894b271b90a5b1570b2fae949406c9`; PR #61 is merged as a documentation-only change. The four application PRs are reconciled with current main (zero commits behind) and all have exact-head CI success plus READY Vercel previews, but remain drafts because the required authenticated/manual release gates are incomplete.
+
+- **#43** head `600c49ab9f1b5cb0e0034afe59d00fdbd4a0d6dc`: 20 suites / 118 tests, typecheck, production-only audit (0), production build; preview READY. New fix: Profile summary values and hidden-balance masks use the selected display currency. Authenticated cloud CRUD/CSV/currency-isolation checks remain unverified.
+- **#52** head `64cfa5b9e746b249a07735ae934badcb7d842610`: 18 suites / 101 tests, typecheck, production-only audit (0), build; preview READY. Authenticated chart-data provenance remains unverified.
+- **#56** head `337332bea5cabd533447e0913503b188794bca8e`: 18 suites / 103 tests, typecheck, production-only audit (0), build; preview READY. Keep issue #47 open until authenticated scoped POST and unrelated-project canary prove upstream enforcement; preview HTTP 200 is not proof of isolation. Its legal copy is not in production until merge.
+- **#60** head `015c35d041972080249e0bc71a6114bbbc4e6e19`: 20 suites / 111 tests, typecheck, `audit:controls`, production-only audit (0), build; preview READY. Manual keyboard/focus, screen-reader, responsive, and finance-flow checks remain open.
+
+Fresh read-only MOVO Supabase catalog check: 7 checked tables have RLS enabled; all 22 user-facing policies reference `auth.uid()`; no checked `anon`/`PUBLIC` grants; upstream mapping has no browser policy or authenticated grant and remains service-role-only. Security Advisor still reports leaked-password protection disabled; no Auth settings write action was available. Full dependency tree remains 34 findings (16 low, 5 moderate, 13 high), while the production-only audit is clean—do not conflate them.
+
+Legal publication remains blocked on operator/controller identity/address, actual retention/deletion schedule, provider/data-recipient details, and jurisdiction-specific review. No database, Auth setting, production record, or secret changed in this checkpoint.
