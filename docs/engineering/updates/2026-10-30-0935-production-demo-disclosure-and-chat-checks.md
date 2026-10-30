@@ -43,3 +43,27 @@ This is a MOVO-only audit update. It records observed evidence and unresolved ga
 - No cross-user/project canary was run against live retrieval, provider prompt, transcript, cache and logs.
 - No real user financial data was read or written during browser smoke.
 - No legal facts were inferred or invented; the Terms/Privacy publication warning remains.
+
+
+## Fresh read-only Supabase RLS and advisor check — 2026-10-30 09:36 Asia/Manila
+
+Project: MOVO Supabase project `cjsjmorqvuvvwbfyztiz`. Read-only catalog queries returned:
+
+| Public table | RLS enabled | Policy count |
+|---|---:|---:|
+| `profiles` | yes | 3 |
+| `financial_accounts` | yes | 4 |
+| `transactions` | yes | 4 |
+| `budgets` | yes | 4 |
+| `movo_ai_conversations` | yes | 4 |
+| `movo_ai_messages` | yes | 3 |
+| `movo_ai_upstream_conversations` | yes | 0 |
+
+The six user-facing tables have 22 policies in total. No `anon` or `PUBLIC` table grants were returned for the checked set. The upstream mapping has grants only to `service_role` and intentionally has no browser policy/grants; do not add a permissive client policy.
+
+The current Security Advisor reports:
+- `auth_leaked_password_protection`: **WARN — disabled**. This remains an owner-authorized Auth configuration change.
+- `rls_enabled_no_policy`: **INFO** for the server-only upstream mapping; this is intentional.
+- Performance Advisor: seven unused indexes. Do not remove them without query-plan evidence and a reviewed migration.
+
+No RLS, grants, schema, auth settings, financial data, or secrets were modified by these checks.
