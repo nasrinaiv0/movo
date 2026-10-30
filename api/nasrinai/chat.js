@@ -221,11 +221,11 @@ module.exports = async function handler(req, res) {
     return json(res, 400, { error: 'financial_context_consent_required' });
   }
   const rawMessage = req.body?.message;
-  if (req.method === 'POST' && typeof rawMessage === 'string' && rawMessage.trim().length > MAX_MESSAGE_CHARS) {
+  if (req.method === 'POST' && req.body?.action !== 'transcribe' && typeof rawMessage === 'string' && rawMessage.trim().length > MAX_MESSAGE_CHARS) {
     return json(res, 400, { error: 'message_too_long' });
   }
   const message = safeText(rawMessage, MAX_MESSAGE_CHARS);
-  if (req.method === 'POST' && !message) return json(res, 400, { error: 'message_required' });
+  if (req.method === 'POST' && req.body?.action !== 'transcribe' && !message) return json(res, 400, { error: 'message_required' });
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -250,6 +250,33 @@ module.exports = async function handler(req, res) {
     const { data: authData, error: authError } = await db.auth.getUser(token);
     if (authError || !authData?.user?.id) return json(res, 401, { error: 'invalid_session' });
     const userId = authData.user.id;
+
+    // Model-backed STT for MOVO hands-free chat. Audio is transient and is
+    // forwarded only to the configured NasrinAI service; never persisted/logged.
+    if (req.method === 'POST' && req.body?.action === 'transcribe') {
+      const encoded = typeof req.body?.audioBase64 === 'string' ? req.body.audioBase64 : '';
+      const mime = typeof req.body?.mime === 'string' && /^audio\/(webm|mp4|ogg|wav|mpeg)(;|$)/i.test(req.body.mime) ? req.body.mime.split(';')[0] : '';
+      if (!mime || !encoded || encoded.length > 3_200_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
+        return json(res, 400, { error: 'invalid_audio' });
+      }
+      const audio = Buffer.from(encoded, 'base64');
+      if (!audio.length || audio.length > 2_400_000) return json(res, 413, { error: 'audio_too_large' });
+      let stt;
+      try {
+        stt = await fetch(nasrinBase + '/v1/transcriptions?name=' + encodeURIComponent(mime.includes('webm') ? 'movo-voice.webm' : mime.includes('mp4') ? 'movo-voice.m4a' : 'movo-voice.wav'), {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + nasrinKey, 'Content-Type': mime, Accept: 'application/json', 'X-Client-Info': 'movo-voice-stt' },
+          body: audio,
+          signal: AbortSignal.timeout(20000)
+        });
+      } catch (err) {
+        return json(res, 502, { error: err?.name === 'TimeoutError' ? 'transcription_timeout' : 'transcription_unavailable' });
+      }
+      if (!stt.ok) return json(res, stt.status === 429 ? 429 : 502, { error: stt.status === 429 ? 'transcription_busy' : 'transcription_unavailable' });
+      const result = await stt.json().catch(() => null);
+      const text = safeText(result?.text, MAX_MESSAGE_CHARS);
+      return text ? json(res, 200, { text }) : json(res, 200, { text: '' });
+    }
 
     if (req.method === 'GET') {
       const requested = safeText(req.query?.conversationId, 64);
@@ -327,7 +354,7 @@ module.exports = async function handler(req, res) {
     // Never attach an upstream conversation ID. The upstream receives the
     // current question and bounded finance context through its enforced MOVO
     // scope, with no prior provider conversation history.
-    const upstreamBody = buildUpstreamBody(message, context);
+    const voiceMode = req.body?.voiceMode === true;\n    const upstreamBody = buildUpstreamBody(message, context);\n    if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
     const upstreamStartedAt = Date.now();
     let upstream;
     let responseText = '';
@@ -338,14 +365,21 @@ module.exports = async function handler(req, res) {
         headers: {
           Authorization: 'Bearer ' + nasrinKey,
           'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'X-Client-Info': 'movo-financial-copilot'
+          Accept: voiceMode ? 'application/x-ndjson' : 'application/json',
+          'X-Client-Info': voiceMode ? 'movo-financial-voice' : 'movo-financial-copilot'
         },
         body: JSON.stringify(upstreamBody),
         signal: AbortSignal.timeout(25000)
       });
       responseText = await upstream.text();
-      try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
+      if (voiceMode && upstream.ok) {
+        const events = responseText.split(/\r?\n/).filter(Boolean).slice(0, 5000).map((line) => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
+        const done = [...events].reverse().find((event) => event.type === 'done');
+        if (events.some((event) => event.type === 'error')) payload = { error: { code: 'voice_reply_failed' } };
+        else if (done) payload = { ...done, reply: extractReply(done), audioParts: events.filter((event) => event.type === 'audio' && typeof event.data === 'string' && event.data.length <= 2_000_000).sort((a,b) => a.seq-b.seq).map(({ mime, data }) => ({ mime, data })) };
+      } else {
+        try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
+      }
     } catch (error) {
       await cleanupNewConversation();
       const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
@@ -438,6 +472,7 @@ module.exports = async function handler(req, res) {
       conversationId: conversation.id,
       title: conversation.title,
       reply,
+      ...(voiceMode && Array.isArray(payload.audioParts) ? { audioParts: payload.audioParts } : {}),
       privacy: { scope: 'current_user_only', dataShared: 'minimum_financial_context' }
     });
   } catch (error) {
