@@ -1,10 +1,16 @@
 export const TZ = 'Asia/Manila';
 
-export const money = (value, currency = 'PHP', digits = 2) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number(value) || 0);
+export const money = (value, currency = 'PHP', digits = 2) => {
+  const number = Number(value);
+  if (value === undefined || (typeof value === 'string' && value.trim() === '') || !Number.isFinite(number)) return '—';
+  return new Intl.NumberFormat('en-PH', { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(number);
+};
 
 export const HIDDEN = '₱ ••••••';
-export const shown = (show, text) => (show ? text : HIDDEN);
+export const shown = (show, text, currency = 'PHP') => {
+  if (show) return text;
+  return currency === 'PHP' ? HIDDEN : `${currency} ••••••`;
+};
 
 const fmt = (options) => new Intl.DateTimeFormat('en-US', { timeZone: TZ, ...options });
 const dayFmt = fmt({ year: 'numeric', month: '2-digit', day: '2-digit' });

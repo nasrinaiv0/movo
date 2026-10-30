@@ -1,6 +1,7 @@
 /**
  * Sample data shown until the user signs in. Every record is flagged `source: 'Sample'`
- * so it can be removed. Balances are plain numbers, not verified bank balances.
+ * so it can be removed. Account balance values are illustrative opening balances;
+ * the same sample ledger is applied to them so every displayed total is derived.
  */
 export const demoAccounts = [
   { id: 'demo-metrobank-card', name: 'Metrobank', account_type: 'card', institution_name: 'Visa', mask: '1234', balance: 27500, currency: 'PHP', brand: 'blue' },

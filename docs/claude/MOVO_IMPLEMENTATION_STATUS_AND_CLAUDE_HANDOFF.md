@@ -538,6 +538,21 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 
 PR #56 current head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c` is now validated by GitHub Actions [#40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352): 18 suites / 103 tests passed, typecheck passed, production-only dependency audit reported zero vulnerabilities, and production build compiled. Vercel preview check is successful. Full dependency install still reports 34 findings (16 low, 5 moderate, 13 high), with deprecated glob/eslint and Node 20 action-runtime warnings. This does not validate upstream scope enforcement: keep PR #56 draft and issue #47 open until an authenticated request and unrelated-project canary prove the boundary.
 
+## Finance UI correction — profile summaries honor selected display currency (2026-10-30 11:14 Asia/Manila)
+
+- **Issue found:** `src/screens/Profile.js` formatted profile summary metrics with the default PHP currency and forced account-type subtotals to PHP, even when MOVO's `displayCurrency` preference selected another currency. The account list was already filtered to the selected currency, so the label could be wrong without any conversion having occurred. When balances were hidden, the mask also defaulted to the PHP marker.
+- **Fix:** The Profile screen now reads `displayCurrency` from the shared app context (PHP fallback only when the context does not supply it) and passes that currency to both `money()` and `shown()` for the three summary metrics and bank/card/e-wallet subtotals. No exchange rate or cross-currency aggregation is introduced.
+- **Regression test:** `src/App.test.js` seeds synthetic USD and PHP accounts plus USD income/expense and a PHP transaction, then verifies Profile shows USD-formatted balance/income/expense and the USD bank subtotal without PHP labels. It rerenders with balances hidden and verifies the mask says `USD ••••••`, not `₱ ••••••`.
+- **Security/data:** Local synthetic test fixtures only. No production financial records, schema, RLS, grants, authentication configuration, or secrets were changed.
+- **Validation boundary:** This change has been committed to the existing finance PR branch. Fresh exact-head CI and Vercel preview checks are required; previous passing runs do not validate these new commits. Authenticated cloud CRUD/CSV and owner-scoped currency-flow verification remain release gates.
+
+## Finance profile currency correction — exact-head evidence (2026-10-30 11:14 Asia/Manila)
+
+- PR #43 head `5308948502127be913921522b598693feb21e533` passed exact-head Actions [#40996734432](https://github.com/nasrinaiv0/movo/actions/runs/40996734432): 20 suites / 118 tests, TypeScript typecheck, production-only dependency audit (0 vulnerabilities), and production build.
+- Vercel preview [dpl_DQTyWYggxd56XezRUErxs1Je3sa6](https://vercel.com/nasrin-ai/movo/DQTyWYggxd56XezRUErxs1Je3sa6) is READY; preview root HTTP 200. This does not prove authenticated cloud financial behavior.
+- Profile summary metrics and account-type subtotals now format with the selected display currency; hidden balances use a matching currency mask. Synthetic USD/PHP regression coverage passed as part of the 118-test suite.
+- The full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high), despite 0 findings in the production-only audit.
+- Keep PR #43 draft until authenticated financial writes, CSV import/export, and owner-scoped currency-isolation flows are verified.
 ## Latest MOVO implementation checkpoint — 2026-10-30 11:14 Asia/Manila
 
 Current main is `815ab66919894b271b90a5b1570b2fae949406c9`; PR #61 is merged as a documentation-only change. The four application PRs are reconciled with current main (zero commits behind) and all have exact-head CI success plus READY Vercel previews, but remain drafts because the required authenticated/manual release gates are incomplete.

@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { relativeDay, money } from './lib/format';
 
 // Keep UI tests deterministic even when deployment environments contain real
 // Supabase configuration. Authenticated flows are tested separately.
@@ -34,6 +35,14 @@ function setInputValue(input, value) {
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
+function setSelectValue(select, value) {
+  act(() => {
+    const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(select), 'value')?.set
+      || Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+    setter.call(select, value);
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
 
 const nav = (container, name) => {
   const button = Array.from(container.querySelectorAll('.bottom-nav .nav-item')).find(item => item.getAttribute('aria-label') === name);
@@ -47,10 +56,16 @@ describe('MOVO finance frontend', () => {
 
   test('renders the home dashboard from the design: balance, summary, spending and recent activity', () => {
     expect(container.querySelector('h1').textContent).toContain('Demo');
-    expect(container.textContent).toContain('₱128,450.00');
+    expect(container.textContent).toContain('₱171,100.00');
     expect(container.querySelector('[aria-label="Financial summary"]')).not.toBeNull();
     expect(container.textContent).toContain('₱85,000');
     expect(container.textContent).toContain('₱42,350');
+    expect(container.textContent).toContain('Money Flow');
+    expect(container.textContent).toContain('Where your money goes');
+    expect(container.querySelector('[aria-label="Money flow for the current month"]')).not.toBeNull();
+    expect(container.textContent).toContain('₱85,000');
+    expect(container.textContent).toContain('₱42,350');
+    expect(container.textContent).toContain('Net savings');
     expect(container.textContent).toContain('Spending This Month');
     expect(container.textContent).toContain('Recent Transactions');
     ['Food', 'Shopping', 'Bills', 'Transportation', 'Others'].forEach(label => expect(container.textContent).toContain(label));
@@ -73,6 +88,31 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Terms of Service');
     expect(container.textContent).toContain('Privacy Policy');
     expect(container.querySelector('[aria-label="Sample data notice"]')).toBeNull();
+  });
+
+  test('warns and shows an em dash instead of zero for malformed local amounts', () => {
+    window.localStorage.setItem('movo.samples.enabled.v1', 'false');
+    window.localStorage.setItem('movo.local.accounts.v1', JSON.stringify([{
+      id: 'corrupt-account', name: 'Corrupt Checking', account_type: 'bank', currency: 'PHP',
+      opening_balance: 100, balance: 100, institution_name: 'Test Bank', mask: '1234', brand: 'blue',
+    }]));
+    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{
+      id: 'corrupt-transaction', merchant: 'Corrupt entry', amount: 'not-a-number', currency: 'PHP',
+      transaction_type: 'expense', account_id: 'corrupt-account', occurred_at: '2026-10-10T12:00:00Z',
+      category: 'Food', source: 'Manual',
+    }]));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    expect(container.textContent).toContain('Some saved financial amounts are invalid.');
+    expect(container.querySelector('[role="alert"]').textContent).toContain('excluded from reliable totals');
+    expect(container.querySelector('.balance-amount').textContent).toContain('—');
+    expect(container.querySelector('.balance-amount').textContent).not.toContain('₱0.00');
+    expect(container.querySelector('.flow-status').textContent).toBe('Needs review');
+    expect(container.querySelector('.flow-net span').textContent).toBe('Summary unavailable');
+    expect(container.querySelector('.flow-track').getAttribute('aria-label')).toContain('summary unavailable');
+    expect(container.textContent).toContain('Percentages unavailable');
+    expect(container.textContent).not.toContain('NaN income');
   });
 
   test('privacy toggle hides displayed balances', () => {
@@ -137,7 +177,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Total Spent');
     clickButton(container, 'Expenses');
     expect(container.textContent).toContain('Expenses Breakdown');
-    expect(container.textContent).toContain('Today');
+    expect(container.textContent).toContain(relativeDay('2026-10-28T10:24:00+08:00', new Date()));
     clickButton(container, 'Transfers');
     expect(container.textContent).toContain('Total Transfers');
     clickButton(container, 'Transfer to BPI, ₱2,000.00');
@@ -179,6 +219,48 @@ describe('MOVO finance frontend', () => {
     expect(prefs.profileName).toBe('Nasrin Test');
     expect(prefs.phone).toBe('+63 912 345 6789');
     expect(container.textContent).toContain('Nasrin Test');
+  });
+
+  test('profile summaries format visible and hidden balances in the selected display currency', () => {
+    window.localStorage.setItem('movo.samples.enabled.v1', 'false');
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ displayCurrency: 'USD', showBalance: true }));
+    window.localStorage.setItem('movo.local.accounts.v1', JSON.stringify([
+      { id: 'usd-bank', name: 'USD Checking', account_type: 'bank', currency: 'USD', opening_balance: 100, balance: 100, institution_name: 'Test Bank', mask: '1234', brand: 'blue' },
+      { id: 'php-bank', name: 'PHP Checking', account_type: 'bank', currency: 'PHP', opening_balance: 5000, balance: 5000, institution_name: 'Test Bank', mask: '5678', brand: 'blue' }
+    ]));
+    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([
+      { id: 'usd-income', merchant: 'USD income', amount: 25, currency: 'USD', transaction_type: 'income', account_id: 'usd-bank', occurred_at: '2026-10-15T12:00:00Z', category: 'Other', source: 'Manual' },
+      { id: 'usd-expense', merchant: 'USD expense', amount: 5, currency: 'USD', transaction_type: 'expense', account_id: 'usd-bank', occurred_at: '2026-10-16T12:00:00Z', category: 'Food', source: 'Manual' },
+      { id: 'php-expense', merchant: 'PHP expense', amount: 50, currency: 'PHP', transaction_type: 'expense', account_id: 'php-bank', occurred_at: '2026-10-17T12:00:00Z', category: 'Food', source: 'Manual' }
+    ]));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Profile');
+
+    const summary = container.querySelector('[aria-label="Profile summary"]');
+    expect(summary.textContent).toContain(money(120, 'USD'));
+    expect(summary.textContent).toContain(money(25, 'USD'));
+    expect(summary.textContent).toContain(money(5, 'USD'));
+    expect(summary.textContent).not.toContain('₱');
+
+    const bankRow = Array.from(container.querySelectorAll('button.menu-row')).find(row => row.textContent.includes('Bank Accounts'));
+    expect(bankRow).toBeTruthy();
+    expect(bankRow.textContent).toContain(money(120, 'USD'));
+    expect(bankRow.textContent).not.toContain('₱');
+
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ displayCurrency: 'USD', showBalance: false }));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Profile');
+
+    const hiddenSummary = container.querySelector('[aria-label="Profile summary"]');
+    expect(hiddenSummary.textContent).toContain('USD ••••••');
+    expect(hiddenSummary.textContent).not.toContain('₱ ••••••');
+    const hiddenBankRow = Array.from(container.querySelectorAll('button.menu-row')).find(row => row.textContent.includes('Bank Accounts'));
+    expect(hiddenBankRow.textContent).toContain('USD ••••••');
+    expect(hiddenBankRow.textContent).not.toContain('₱ ••••••');
   });
 
   test('profile editing prevents saving a blank name', () => {
@@ -242,6 +324,20 @@ describe('MOVO finance frontend', () => {
     act(() => privacyRow.click());
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance).toBe(before);
+  });
+
+  test('display currency setting is accessible and explains that no FX conversion occurs', () => {
+    nav(container, 'Profile');
+    clickButton(container, 'Settings');
+    const themeRow = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Theme');
+    expect(themeRow).toBeTruthy();
+    act(() => themeRow.click());
+    expect(container.querySelector('h1').textContent).toBe('Appearance');
+    const currencySelect = container.querySelector('select[aria-label="Display currency"]');
+    expect(currencySelect).toBeTruthy();
+    expect(currencySelect.value).toBe('PHP');
+    expect(currencySelect.getAttribute('aria-describedby')).toBe('setting-display-currency-description');
+    expect(container.querySelector('#setting-display-currency-description').textContent).toContain('MOVO does not convert currencies');
   });
 
   test('theme choices update the app theme and persist preferences', () => {
@@ -440,6 +536,50 @@ describe('MOVO finance frontend', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  test('prevents changing account currency after a transaction is recorded', () => {
+    window.localStorage.setItem('movo.samples.enabled.v1', 'false');
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ displayCurrency: 'USD' }));
+    window.localStorage.setItem('movo.local.accounts.v1', JSON.stringify([{
+      id: 'local-usd-account', name: 'USD Checking', account_type: 'card', currency: 'USD',
+      opening_balance: 100, balance: 100, institution_name: 'Test Bank', mask: '1234', brand: 'blue',
+    }]));
+    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{
+      id: 'local-usd-transaction', merchant: 'Coffee', amount: 5, currency: 'USD',
+      transaction_type: 'expense', account_id: 'local-usd-account', occurred_at: '2026-10-10T12:00:00Z',
+      category: 'Food', source: 'Manual',
+    }]));
+    act(() => root.unmount());
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Wallet');
+    clickButton(container, 'Cards');
+    clickButton(container, 'Switch card');
+    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('USD Checking'));
+    expect(targetCard).toBeTruthy();
+    act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    clickButton(container, 'View Details');
+    clickButton(container, 'Edit account');
+    const currencySelect = container.querySelector('select[aria-label="Account currency"]');
+    expect(currencySelect.disabled).toBe(true);
+    expect(container.querySelector('#account-currency-lock-note').textContent).toContain('Create a new account in the other currency');
+  });
+
+  test('creates an account in a selected currency and switches the wallet scope to it', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'Add Card');
+    const currencySelect = container.querySelector('select[aria-label="Account currency"]');
+    expect(currencySelect).toBeTruthy();
+    expect(Array.from(currencySelect.options).some(option => option.value === 'USD')).toBe(true);
+    setSelectValue(currencySelect, 'USD');
+    expect(Array.from(container.querySelectorAll('label')).some(label => label.textContent.includes('Opening balance (USD)'))).toBe(true);
+    setInputValue(container.querySelector('input[placeholder="e.g. Everyday account"]'), 'USD Test Card');
+    clickButton(container, 'Add account');
+    const saved = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'USD Test Card');
+    expect(saved.currency).toBe('USD');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).displayCurrency).toBe('USD');
+    expect(container.querySelector('button[aria-label="Open USD Test Card card"]')).toBeTruthy();
+  });
+
   test('creates, edits and archives a local-only account across reloads', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
@@ -490,6 +630,21 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Edited supermarket');
   });
 
+  test('editing an expense recalculates total balance, monthly expenses and savings together', () => {
+    expect(container.textContent).toContain('₱171,100.00');
+    nav(container, 'Transactions');
+    clickButton(container, 'See All');
+    clickButton(container, 'SM Supermarket, −₱1,250.00');
+    clickButton(container, 'Edit');
+    setInputValue(container.querySelector('input[placeholder="0.00"]'), '1000');
+    clickButton(container, 'Save changes');
+    nav(container, 'Home');
+    expect(container.textContent).toContain('₱171,350.00');
+    expect(container.textContent).toContain('₱42,100');
+    expect(container.textContent).toContain('₱42,900');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('"amount":1000');
+  });
+
   test('warns when local financial records cannot be saved and retries after storage recovers', () => {
     const originalSetItem = Storage.prototype.setItem;
     const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
@@ -526,6 +681,9 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Import CSV');
     expect(container.querySelector('[role="dialog"][aria-label="Import transactions"]')).not.toBeNull();
     expect(container.querySelector('input[type="file"][accept=".csv,text/csv"]')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Import 0 transaction(s)') && button.disabled)).toBe(true);
+    const importButton = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Import 0 transaction(s)'));
+    expect(importButton.disabled).toBe(true);
+    expect(importButton.getAttribute('aria-describedby')).toBe('csv-import-guidance');
+    expect(container.querySelector('#csv-import-guidance').textContent).toContain('Review the preview before importing.');
   });
 });
