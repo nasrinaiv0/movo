@@ -28,8 +28,9 @@ Added an App-level test with synthetic USD and PHP accounts and transactions. It
 ## Validation status
 
 - Source and regression test commits are on the finance PR branch.
-- Fresh exact-head GitHub Actions CI and Vercel preview checks are **pending** at the time this record is written.
-- Prior finance PR CI results do not validate the new head.
+- Implementation/test head `5308948502127be913921522b598693feb21e533` was validated by GitHub Actions [run #40996734432](https://github.com/nasrinaiv0/movo/actions/runs/40996734432): 20 suites / 118 tests passed, TypeScript typecheck passed, production-only dependency audit reported 0 vulnerabilities, and production build compiled successfully.
+- Exact-head Vercel preview [dpl_DQTyWYggxd56XezRUErxs1Je3sa6](https://vercel.com/nasrin-ai/movo/DQTyWYggxd56XezRUErxs1Je3sa6) reached READY; root request returned HTTP 200.
+- The documentation-only follow-up commit created by this record requires its own exact-head CI/preview check; do not reuse the implementation-head result for a later head.
 - Authenticated cloud financial CRUD, CSV import/export, and real owner-scoped currency isolation remain unverified and are still release gates.
 
 ## Security boundary

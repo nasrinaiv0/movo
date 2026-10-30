@@ -125,3 +125,11 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - **Regression test:** `src/App.test.js` seeds synthetic USD and PHP accounts plus USD income/expense and a PHP transaction, then verifies Profile shows USD-formatted balance/income/expense and the USD bank subtotal without PHP labels. It rerenders with balances hidden and verifies the mask says `USD ••••••`, not `₱ ••••••`.
 - **Security/data:** Local synthetic test fixtures only. No production financial records, schema, RLS, grants, authentication configuration, or secrets were changed.
 - **Validation boundary:** This change has been committed to the existing finance PR branch. Fresh exact-head CI and Vercel preview checks are required; previous passing runs do not validate these new commits. Authenticated cloud CRUD/CSV and owner-scoped currency-flow verification remain release gates.
+
+## Exact-head validation — Profile currency correction — 2026-10-30 11:14 Asia/Manila
+
+- Finance PR #43 implementation/test head `5308948502127be913921522b598693feb21e533` passed GitHub Actions [#40996734432](https://github.com/nasrinaiv0/movo/actions/runs/40996734432): **20 suites / 118 tests passed**, TypeScript typecheck passed, production-only dependency audit reported **0 vulnerabilities**, and production build compiled successfully.
+- Exact-head Vercel preview [dpl_DQTyWYggxd56XezRUErxs1Je3sa6](https://vercel.com/nasrin-ai/movo/DQTyWYggxd56XezRUErxs1Je3sa6) reached READY. The preview root returned HTTP 200. This is a smoke check, not authenticated finance-flow verification.
+- The new regression covers profile balance/income/expense and bank subtotals in selected USD, excludes PHP from the USD summary, and verifies currency-aware masking when balances are hidden.
+- Full dependency tree still reports **34 findings (16 low, 5 moderate, 13 high)**; production-only audit is a separate, narrower check.
+- Authenticated cloud finance writes, CSV import/export, and real user-owned currency isolation remain unverified; PR #43 stays draft pending those release gates.

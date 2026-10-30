@@ -298,3 +298,15 @@ Correction to the initial 10:10 snapshot: PR #56 run [#40990086352](https://gith
 - **Regression test:** `src/App.test.js` seeds synthetic USD and PHP accounts plus USD income/expense and a PHP transaction, then verifies Profile shows USD-formatted balance/income/expense and the USD bank subtotal without PHP labels. It rerenders with balances hidden and verifies the mask says `USD ••••••`, not `₱ ••••••`.
 - **Security/data:** Local synthetic test fixtures only. No production financial records, schema, RLS, grants, authentication configuration, or secrets were changed.
 - **Validation boundary:** This change has been committed to the existing finance PR branch. Fresh exact-head CI and Vercel preview checks are required; previous passing runs do not validate these new commits. Authenticated cloud CRUD/CSV and owner-scoped currency-flow verification remain release gates.
+
+## Finance UI correction — profile display currency (2026-10-30 11:14 Asia/Manila)
+
+- **PR:** [#43](https://github.com/nasrinaiv0/movo/pull/43), existing finance-integrity branch; no duplicate PR created.
+- **Implementation/test head validated:** `5308948502127be913921522b598693feb21e533`.
+- **CI:** [run #40996734432](https://github.com/nasrinaiv0/movo/actions/runs/40996734432) completed successfully: 20 test suites / 118 tests passed; `tsc --noEmit` passed; production-only dependency audit reported 0 vulnerabilities; production build compiled successfully.
+- **Preview:** [Vercel deployment](https://vercel.com/nasrin-ai/movo/DQTyWYggxd56XezRUErxs1Je3sa6), deployment ID `dpl_DQTyWYggxd56XezRUErxs1Je3sa6`, reached READY; root request returned HTTP 200.
+- **Finding:** Profile used the default PHP formatter for overall metrics and forced PHP for account-type subtotals even when the selected display currency was USD. Hidden balances also used the default PHP mask.
+- **Fix:** Profile now passes `displayCurrency` into `money()` and `shown()` for the summary metrics and account-type subtotals. The app's existing currency-filtered account list remains the source; no cross-currency sum or FX conversion was introduced.
+- **Regression:** Synthetic USD and PHP accounts/transactions verify USD balance/income/expense, USD bank subtotal, no PHP contamination in the USD view, and `USD ••••••` masking when balances are hidden.
+- **Scope/security:** App source, test, and audit docs only. No database, RLS/grants, auth config, production financial records, or secrets changed.
+- **Outstanding:** Authenticated cloud CRUD, CSV import/export, and real owner-scoped currency isolation are still unverified. Keep draft pending those gates. Full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high); production-only audit is not a full-tree clearance.
