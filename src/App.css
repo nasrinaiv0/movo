@@ -1789,3 +1789,9 @@ button.account-tile:active { transform: scale(.98); }
   .logged-check path { animation: none; stroke-dashoffset: 0; }
   .chat-log-row.added, .chat-log-mark { animation: none; }
 }
+
+/* Menu tiles: two equal columns and equal heights, whatever the subtitle length (a long email no longer widens a column). */
+.movo-app .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+.movo-app .menu-tile { min-width: 0; height: 100%; }
+.movo-app .menu-tile :is(strong, small) { max-width: 100%; }
+.movo-app .menu-tile small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
