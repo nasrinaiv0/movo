@@ -35,6 +35,7 @@ import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
+import { clearCustomStickers } from './lib/stickers';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -143,6 +144,8 @@ function App() {
   const [sheet, setSheet] = useState(null);
   const [pendingLog, setPendingLog] = useState(null);
   const [toast, setToast] = useState('');
+  const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
+  const pendingLocalDataRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
@@ -180,10 +183,36 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
-  useEffect(() => { saveLocalTransactions(rawTxs, cloudMode); }, [rawTxs, cloudMode]);
-  useEffect(() => { saveLocalAccounts(localAccounts); }, [localAccounts]);
-  useEffect(() => { setSamplesEnabled(samplesOn); }, [samplesOn]);
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
+  useEffect(() => {
+    const samplesSaved = setSamplesEnabled(samplesOn);
+    if (cloudMode) {
+      if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
+      return;
+    }
+    const transactionsSaved = saveLocalTransactions(rawTxs, false);
+    const accountsSaved = saveLocalAccounts(localAccounts);
+    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    if (saved) pendingLocalDataRef.current = null;
+    else pendingLocalDataRef.current = { transactions: rawTxs, accounts: localAccounts, samplesOn };
+    setLocalPersistenceWarning(!saved);
+  }, [rawTxs, localAccounts, samplesOn, cloudMode]);
+  const retryLocalPersistence = useCallback(() => {
+    const pending = pendingLocalDataRef.current;
+    if (cloudMode && !pending) {
+      setLocalPersistenceWarning(false);
+      return;
+    }
+    const transactionsSaved = saveLocalTransactions(pending?.transactions || rawTxs, false);
+    const accountsSaved = saveLocalAccounts(pending?.accounts || localAccounts);
+    const samplesSaved = setSamplesEnabled(pending ? pending.samplesOn : samplesOn);
+    const saved = transactionsSaved && accountsSaved && samplesSaved;
+    if (saved) pendingLocalDataRef.current = null;
+    setLocalPersistenceWarning(!saved);
+    notify(saved
+      ? (pending ? 'Your local-only records were saved on this device. They are not synced to your cloud account.' : 'Local records saved on this device.')
+      : 'Browser storage is still unavailable or full.');
+  }, [rawTxs, localAccounts, samplesOn, cloudMode, notify]);
 
   const refreshCloud = useCallback(async (user) => {
     if (!user) return;
@@ -221,7 +250,14 @@ function App() {
     getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user) refreshCloud(s.user); }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!mounted) return; setSession(s);
-      if (s?.user) refreshCloud(s.user); else { setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); }
+      if (s?.user) refreshCloud(s.user); else {
+        const pending = pendingLocalDataRef.current;
+        setCloudMode(false);
+        setCloudAccounts([]);
+        setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions));
+        setLocalAccounts(pending?.accounts || loadLocalAccounts());
+        setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
+      }
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud]);
@@ -304,8 +340,9 @@ function App() {
   const markAllRead = () => setPref('readIds', Array.from(new Set([...prefs.readIds, ...allNotifications.map(n => n.id)])));
 
   const metaName = session?.user?.user_metadata?.full_name;
-  const email = session?.user?.email || (samplesOn ? 'nasrin@nasrinai.com' : 'Local-only session');
-  const name = prefs.profileName.trim() || metaName || (session?.user?.email ? session.user.email.split('@')[0] : 'Nasrin Abubakar');
+  const email = session?.user?.email || (samplesOn ? 'demo@example.com' : 'Local-only session');
+  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : samplesOn ? 'Demo User' : 'Local User';
+  const name = prefs.profileName.trim() || metaName || defaultName;
   const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
 
   /* ---------- actions ---------- */
@@ -536,9 +573,9 @@ function App() {
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); setSceneryPhotoState('');
+      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setSamplesOn(false); setPendingLog(null); setSheet(null); setClearText('');
-      notify(cloudMode ? 'All MOVO data was deleted from this device and your account.' : 'All MOVO data on this device was deleted.');
+      notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
     finally { setBusy(false); }
   };
@@ -578,7 +615,20 @@ function App() {
     setSheet({ name: 'transaction', type: 'expense' });
   };
 
-  const signOutNow = async () => { try { await signOut(); setSession(null); setCloudMode(false); setCloudAccounts([]); setRawTxs(loadLocalTransactions(demoTransactions, samplesOn)); go('Home'); notify(tr('Signed out securely.')); } catch { notify(tr('Could not sign out. Please try again.')); } };
+  const signOutNow = async () => {
+    try {
+      await signOut();
+      const pending = pendingLocalDataRef.current;
+      setSession(null);
+      setCloudMode(false);
+      setCloudAccounts([]);
+      setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions, samplesOn));
+      setLocalAccounts(pending?.accounts || loadLocalAccounts());
+      setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
+      go('Home');
+      notify(tr('Signed out securely.'));
+    } catch { notify(tr('Could not sign out. Please try again.')); }
+  };
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
@@ -636,6 +686,14 @@ function App() {
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
+        {!cloudMode && samplesOn && !['Sign in', 'TermsOfService', 'PrivacyPolicy'].includes(view) && <aside className="sample-data-notice" role="note" aria-label={tr('Sample data notice')}>
+          <div><strong>{tr('Demo mode — sample data only.')}</strong><span>{tr('These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.')}</span></div>
+          <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>{tr('Sign in')}</button>
+        </aside>}
+        {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
+          <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
+          <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
+        </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
       </main>
@@ -705,7 +763,7 @@ function App() {
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>{tr('Source')}</dt><dd>{tr('Sample record')}</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>{tr('Source')}</dt><dd>{tr('Sample record')}</dd></div>}</dl>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>
       </Sheet>}
 

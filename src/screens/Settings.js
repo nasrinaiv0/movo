@@ -99,7 +99,7 @@ export default function Settings({ c }) {
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
     ] },
     { title: tr('Data & Sync'), rows: [
-      { icon: 'cloud', title: tr('Cloud Sync'), sub: tr('Active while signed in; sign out to use local-only mode.'), toggle: 'cloudSync' },
+      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : tr('Sign in to enable secure cloud sync.'), onClick: c.cloudMode ? undefined : () => go('Sign in'), status: c.cloudMode ? undefined : tr('Sign in required') },
       { icon: 'database', title: tr('Local Storage'), sub: tr('Browser storage is managed automatically; this switch is not available.'), toggle: 'localStorage' },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Automatic categorization is not implemented yet.'), toggle: 'autocat' },
     ] },

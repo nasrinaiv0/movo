@@ -46,7 +46,7 @@ describe('MOVO finance frontend', () => {
   afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
 
   test('renders the home dashboard from the design: balance, summary, spending and recent activity', () => {
-    expect(container.querySelector('h1').textContent).toContain('Nasrin');
+    expect(container.querySelector('h1').textContent).toContain('Demo');
     expect(container.textContent).toContain('₱128,450.00');
     expect(container.querySelector('[aria-label="Financial summary"]')).not.toBeNull();
     expect(container.textContent).toContain('₱85,000');
@@ -55,6 +55,24 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Recent Transactions');
     ['Food', 'Shopping', 'Bills', 'Transportation', 'Others'].forEach(label => expect(container.textContent).toContain(label));
     expect(container.querySelectorAll('.bottom-nav .nav-item')).toHaveLength(5);
+  });
+
+  test('labels unauthenticated financial examples and uses a generic demo identity', () => {
+    const notice = container.querySelector('[aria-label="Sample data notice"]');
+    expect(notice).not.toBeNull();
+    expect(notice.textContent).toContain('fictional');
+    expect(notice.textContent).toContain('not linked to a bank');
+    expect(container.querySelector('h1').textContent).toContain('Demo');
+    expect(container.textContent).not.toContain('nasrin@nasrinai.com');
+    expect(container.textContent).not.toContain('Nasrin Abubakar');
+  });
+
+  test('sample-data notice sign-in action opens the consent-aware sign-in screen', () => {
+    clickButton(container, 'Sign in');
+    expect(container.querySelector('form')).not.toBeNull();
+    expect(container.textContent).toContain('Terms of Service');
+    expect(container.textContent).toContain('Privacy Policy');
+    expect(container.querySelector('[aria-label="Sample data notice"]')).toBeNull();
   });
 
   test('privacy toggle hides displayed balances', () => {
@@ -202,11 +220,15 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
     expect(container.textContent).toContain('Effective date: October 29, 2026');
+    expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
+    expect(container.textContent).toContain('Effective date: October 30, 2026');
+    expect(container.textContent).toContain('end-to-end upstream context boundary has not yet been independently verified in the deployed integration');
     expect(container.textContent).toContain('formal legal identity and registered address have not yet been published');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
     expect(container.textContent).toContain('legal name and registered address of the MOVO data controller are not yet displayed');
+    expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
@@ -318,6 +340,7 @@ describe('MOVO finance frontend', () => {
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
     clickButton(container, 'Clear all data');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
+    expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');
     expect(container.textContent).not.toContain('SM Supermarket');
   });
@@ -463,6 +486,36 @@ describe('MOVO finance frontend', () => {
     root = createRoot(container);
     act(() => root.render(<App />));
     expect(container.textContent).toContain('Edited supermarket');
+  });
+
+  test('warns when local financial records cannot be saved and retries after storage recovers', () => {
+    const originalSetItem = Storage.prototype.setItem;
+    const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (['movo.local.transactions.v1', 'movo.local.accounts.v1', 'movo.samples.enabled.v1'].includes(String(key))) {
+        throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+      }
+      return originalSetItem.call(this, key, value);
+    });
+
+    try {
+      nav(container, 'Transactions');
+      clickButton(container, 'See All');
+      clickButton(container, 'SM Supermarket, −₱1,250.00');
+      clickButton(container, 'Edit');
+      setInputValue(container.querySelector('input[aria-label="Description"]'), 'Storage warning regression');
+      clickButton(container, 'Save changes');
+
+      expect(container.textContent).toContain('Local changes may not be saved.');
+      expect(container.textContent).toContain('Important records may not survive a reload.');
+      clickButton(container, 'Retry save');
+      expect(container.textContent).toContain('Browser storage is still unavailable or full.');
+    } finally {
+      spy.mockRestore();
+    }
+
+    clickButton(container, 'Retry save');
+    expect(container.textContent).not.toContain('Local changes may not be saved.');
+    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Storage warning regression');
   });
 
   test('CSV import action opens a review-first import sheet', () => {

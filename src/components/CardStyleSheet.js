@@ -45,13 +45,17 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
         <button type="button" className={`style-tile${current === t.id ? ' selected' : ''}`} onClick={() => onPick(t.id)} aria-label={tr('{name} sticker', { name: nameOf(t) })} aria-pressed={current === t.id}>
           <CardArt a={account} show={show} styleId={t.id} compact /><span>{nameOf(t)}</span>{current === t.id && <i className="style-check"><Icon name="check" size={14} strokeWidth={2.6} /></i>}
         </button>
-        {mine(t) && <button type="button" className="style-remove" aria-label={tr('Remove {name}', { name: t.name })} onClick={() => { removeCustomSticker(t.id); if (current === t.id) onPick(''); }}><Icon name="close" size={14} strokeWidth={2.4} /></button>}
+        {mine(t) && <button type="button" className="style-remove" aria-label={tr('Remove {name}', { name: t.name })} onClick={() => {
+          const removed = removeCustomSticker(t.id);
+          if (!removed) { setError(tr('Could not remove this sticker because browser storage is unavailable or full. Free storage and try again.')); return; }
+          if (current === t.id) onPick('');
+        }}><Icon name="close" size={14} strokeWidth={2.4} /></button>}
       </div>)}
     </div>
     {!list.length && <p className="empty">{tr('No stickers match “{query}”.', { query })}</p>}
     {list.length > limit && <button type="button" className="manage-button" onClick={() => setLimit(limit + PAGE)}><Icon name="down" size={18} /> {tr('Show more ({n} left)', { n: list.length - limit })}</button>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <input ref={file} type="file" accept="image/*" hidden onChange={upload} aria-label={tr('Choose a sticker image')} />
-    <p className="style-note">{tr('Tip: upload your own artwork (a 1712 × 1080 px image fills the card at full sharpness). Stickers stay on this device.')}</p>
+    <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden onChange={upload} aria-label={tr('Choose a sticker image')} />
+    <p className="style-note">{tr('Upload PNG, JPEG, WebP, GIF or AVIF up to 10 MB. Images are cropped to the card ratio and saved on this device only; they are not synced to your cloud account.')}</p>
   </Sheet>;
 }

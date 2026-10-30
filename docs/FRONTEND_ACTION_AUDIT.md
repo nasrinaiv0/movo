@@ -81,6 +81,9 @@ This audit is a working register, not a claim that the entire frontend is comple
 - [x] Run a source-level control scan across 14 primary screen/component files: no literal `<button>` lacked a local click/submit handler or explicit disabled state, no `<a>` lacked an href/click handler, and no `<form>` lacked an onSubmit handler. This is a static scan, not proof of runtime behavior; the interaction tests and preview checks remain required.
 
 - [x] Clarify Clear Local Data behavior: it resets preferences to defaults, removes local/demo records in the current session, and does not affect cloud records; add a regression test for the confirmation copy, preference reset, and sample removal.
+- [x] Detect localStorage quota/security failures instead of reporting local persistence or data clearing as successful; show an accessible warning with a retry action and test both failure and recovery paths.
+- [x] Validate custom card-sticker uploads by raster MIME type, 10 MB file size, and 24 MP decoded-pixel limit; surface local save/removal errors and include uploaded artwork in Clear Local Data and the Privacy Policy.
+- [x] Validate custom card-sticker uploads by raster MIME type, 10 MB file limit, and 24 MP decoded-pixel limit; report local-storage save/removal failures and keep sticker changes rolled back when they cannot be persisted.
 
 ## Additional increment — local finance persistence and CSV import (2026-10-29)
 
@@ -113,3 +116,12 @@ This audit is a working register, not a claim that the entire frontend is comple
 - The Vercel team deployment listing was denied for missing team authorization during this run, so a preview deployment for this PR is **not verified here**. Do not infer deployment success from GitHub CI alone.
 - Release blockers remain: publish verified operator/controller identity and complete retention/provider/legal disclosures; enable Supabase leaked-password protection; review and remediate dependency audit findings; resolve the NasrinAI upstream HTTP 401 and verify an authenticated request; complete interactive browser testing of the deployed app.
 
+
+
+## Production browser smoke after demo-disclosure merge — 2026-10-30 09:35 Asia/Manila
+
+- Production SHA: `277051e4ec2216a6b598c784a50b32ba37b89dee`; deployment [dpl_FRVNFKYmKHcrhnfvF8uhi7fwELVh](https://vercel.com/nasrin-ai/movo/FRVNFKYmKHcrhnfvF8uhi7fwELVh) is READY.
+- Playwright Chromium on `https://movo.nasrinai.com` returned HTTP 200 and verified the sample-data disclosure, generic demo identity, absence of `Nasrin Abubakar` / `nasrin@nasrinai.com` in the unauthenticated demo, no horizontal overflow at 390px, working Sign in navigation, and Terms/Privacy navigation and cross-links.
+- On the exact-head preview, exercised Home, Wallet, Transactions, NasrinAI, Profile, Settings, Notifications, Search dialog open/Escape close, and profile navigation. No console/page errors or failed requests were observed.
+- A synthetic no-token POST to the production NasrinAI route returned HTTP 401 `sign_in_required`; this confirms the unauthenticated guard, not authenticated context isolation.
+- This is a scoped smoke test, **not** a claim that every visible control or the complete frontend has been fully validated. Authenticated finance writes, CSV import/export, keyboard-only/focus and screen-reader checks, and authenticated NasrinAI scope/canary verification remain outstanding.

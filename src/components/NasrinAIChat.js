@@ -1,4 +1,5 @@
 import Icon, { NasrinMark } from './Icon';
+import NasrinAIMessage from './NasrinAIMessage';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { readImageText } from '../lib/ocr';
@@ -8,6 +9,7 @@ const ackKey = (id) => `movo.ai.ack.v1.${id}`;
 const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) === '1'; } catch { return false; } };
 const MAX = 1600;
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+import './NasrinAIChat.css';
 
 function friendlyError(code) {
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
@@ -195,7 +197,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       </div>}
       {messages.map((message, index) => <article key={index} className={'movo-ai-message ' + message.role}>
         <span className="movo-ai-message-label">{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
-        <p>{message.content}</p>
+        <NasrinAIMessage content={message.content} />
         {message.role === 'assistant' && typeof window !== 'undefined' && window.speechSynthesis && <button type="button" className="movo-ai-listen" onClick={() => speak(message.content, index)} aria-label={speaking === index ? tr('Stop reading aloud') : tr('Read aloud')}><Icon name={speaking === index ? 'stop' : 'speaker'} size={14} strokeWidth={2} />{speaking === index ? tr('Stop') : tr('Listen')}</button>}
       </article>)}
       {busy && <div className="movo-ai-thinking" role="status"><span className="movo-ai-thinking-orb" aria-hidden="true"><NasrinMark size={22} state={phase} /></span><span key={phase} className="movo-ai-thinking-label">{tr(PHASE_LABELS[phase])}</span></div>}
@@ -213,11 +215,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <button type="submit" className="movo-ai-circle movo-ai-send" disabled={busy || !draft.trim()} aria-label={tr('Send message')}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={16} strokeWidth={2.4} />}</button>
       </form></>}
     {consentOpen && <div className="movo-ai-consent-backdrop" role="presentation">
-      <div className="movo-ai-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="movo-ai-consent-title">
+      <div className="movo-ai-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="movo-ai-consent-title" aria-describedby="movo-ai-context-disclosure">
         <span className="movo-ai-consent-mark" aria-hidden="true"><NasrinMark size={30} /></span>
         <h2 id="movo-ai-consent-title">{tr('Before you start')}</h2>
         <ul>
-          <li><Icon name="lock" size={16} strokeWidth={2} /><span>{tr('MOVO shares a limited selection of your own records with NasrinAI for each reply. Other users can never access your data or chats.')}</span></li>
+          <li id="movo-ai-context-disclosure"><Icon name="lock" size={16} strokeWidth={2} /><span>{tr('When you send a message, MOVO sends it with a limited, account-scoped snapshot of relevant account labels, recent transactions and budgets to NasrinAI. This consent is separate from accepting the Terms of Service.')}</span></li>
           <li><Icon name="info" size={16} strokeWidth={2} /><span>{tr('AI can make mistakes. Verify important calculations.')}</span></li>
           <li><Icon name="shield" size={16} strokeWidth={2} /><span>{tr('Financial actions are not performed from chat.')}</span></li>
         </ul>
