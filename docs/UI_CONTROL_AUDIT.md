@@ -64,3 +64,14 @@ The frontend is not declared complete by this static check. Legal publication st
 - Added a regression test for an empty enabled button handler and changed positive fixtures to use meaningful callback expressions.
 - Source commit: `d3aa9e67fcbce78b9241458c9643b993fa74cb17`; test commit: `1a5e5db14cccc14b22a339255bfd9f8cf937ce2c`.
 - The documentation correction is the current change in this section. Fresh CI, audit output, and preview validation for the resulting branch head are required before treating this enhancement as validated.
+
+
+## Exact-head validation after no-op detection — 2026-10-30
+
+- Validated code/documentation head: `ba980cd71e155593b3dce74fe43dab62b218d493`.
+- GitHub Actions run [40988344475](https://github.com/nasrinaiv0/movo/actions/runs/40988344475) passed **20 suites / 110 tests**, TypeScript typecheck, `npm run audit:controls`, the production-only dependency audit, and the production build.
+- `npm audit --omit=dev` reported **0 production dependency vulnerabilities**. The full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high); these are not resolved by the production-only audit.
+- Vercel deployment [dpl_CUfiimh4pXnJaywYxUR19hXVN4RV](https://vercel.com/nasrin-ai/movo/CUfiimh4pXnJaywYxUR19hXVN4RV) reached **READY** for the same head.
+- Audit output: 31 source files, 94 buttons (9 disabled), 9 links, 5 forms, 3 interactive ARIA widgets, and 2 dialogs. The scanner reported “No obvious unhandled controls found” and emitted no disabled-control/dialog review warnings.
+- The scanner now catches obviously empty inline callbacks but cannot prove that named/non-empty callbacks perform the correct business action. Interactive keyboard/focus, screen-reader, responsive, and authenticated financial-flow checks remain open.
+- This entry is documentation-only; rerun CI and verify the preview for the resulting branch head before merge.
