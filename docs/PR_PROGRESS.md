@@ -80,3 +80,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - **Security/legal:** full dependency tree still has 34 findings (16 low, 5 moderate, 13 high); production-only audit reports zero. Supabase leaked-password protection remains reported disabled. Legal publication warning remains.
 - Detailed update: `docs/engineering/updates/2026-10-30-1010-monitoring-delta.md`.
 
+
+
+### Exact-head follow-up — 2026-10-30 10:11 Asia/Manila
+
+- PR #56 head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c`: run [40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352) completed successfully; 18 suites / 103 tests, typecheck, production-only audit (0 vulnerabilities), and production build passed. Vercel check [CaaFALv6sPd7vWa1xRFqUwDRiHh2](https://vercel.com/nasrin-ai/movo/CaaFALv6sPd7vWa1xRFqUwDRiHh2) is successful.
+- Full install still reports 34 findings (16 low, 5 moderate, 13 high), plus glob/eslint and Node.js 20 action deprecation warnings.
+- Context-isolation release gate remains open: no authenticated scoped POST and unrelated-project canary evidence yet.
