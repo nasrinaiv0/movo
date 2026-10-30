@@ -18,6 +18,7 @@ const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognit
 import './NasrinAIChat.css';
 
 function friendlyError(code) {
+  if (code === 'nasrinai_scope_unconfirmed') return tr('MOVO could not verify that NasrinAI kept this request isolated to MOVO. No answer was accepted. Please try again later.');
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
   if (code === 'nasrinai_not_configured') return tr('NasrinAI is not configured on the MOVO server yet.');
   if (code === 'conversation_not_found') return tr('This conversation is not available in your account.');
@@ -56,6 +57,7 @@ function LogCard({ items, removed, show, onUndo, onLogAnyway }) {
 export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, shortcuts = [], show = true }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
+  const requestEpochRef = useRef(0);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -70,6 +72,16 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     try { return !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { return false; }
   });
   const [phase, setPhase] = useState('reading');
+  // Invalidate in-flight UI work whenever the signed-in identity or cloud mode changes.
+  useEffect(() => {
+    requestEpochRef.current += 1;
+    setMessages([]);
+    setConversationId(null);
+    setDraft('');
+    setError('');
+    setBusy(false);
+    setPrivacyAccepted(readAck(session?.user?.id));
+  }, [session?.user?.id, cloudMode]);
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const composerRef = useRef(null);
@@ -150,12 +162,16 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setConsentOpen(true);
       return;
     }
+    const requestEpoch = requestEpochRef.current;
+    const requestUserId = session?.user?.id || null;
+    const isCurrentRequest = () => requestEpochRef.current === requestEpoch && (session?.user?.id || null) === requestUserId;
     setError('');
     setDraft('');
     setMessages((current) => [...current, { role: 'user', content: message }]);
     setBusy(true);
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (!isCurrentRequest()) return;
       const accessToken = sessionData?.session?.access_token || session?.access_token;
       if (sessionError || !accessToken) throw new Error('invalid_session');
       const response = await fetch('/api/nasrinai/chat', {
@@ -164,18 +180,22 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code })
       });
       const result = await response.json().catch(() => ({}));
+      if (!isCurrentRequest()) return;
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
       if (result.conversationId) setConversationId(result.conversationId);
       setNewConversationPending(false);
       try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
     } catch (cause) {
+      if (!isCurrentRequest()) return;
       setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
       setDraft(message);
       setError(friendlyError(cause.message));
     } finally {
-      setBusy(false);
-      inputRef.current?.focus();
+      if (isCurrentRequest()) {
+        setBusy(false);
+        inputRef.current?.focus();
+      }
     }
   };
 
