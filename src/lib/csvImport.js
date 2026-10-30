@@ -98,8 +98,8 @@ function parseAmount(raw) {
   // optional supported leading currency symbol and sign. Do not strip commas
   // blindly: malformed input such as 1,2,3 must not become 123.
   let value = String(raw || '').trim();
-  value = value.replace(/^[₱$€£]\\s*/, '');
-  if (!/^[+-]?(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d+)?$/.test(value)) return null;
+  value = value.replace(/^[₱$€£]\s*/, '');
+  if (!/^[+-]?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(value)) return null;
   const amount = Math.abs(Number(value.replace(/,/g, '')));
   if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) return null;
   return amount;
