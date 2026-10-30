@@ -6,6 +6,10 @@ Repository: `nasrinaiv0/movo`
 Branch: `legal/philippines-privacy-consumer-review-2026-10-31`  
 Status: **Draft legal-content changes; not legal sign-off or production clearance.**
 
+## Brand identity
+
+- Official product name: **MOVO — Money Organizer & Visual Outflow**. MOVO is a personal financial tracking tool, not a bank or money-transfer service. Use the expanded name consistently in product-facing legal copy and documentation; this does not change the operator's legal identity.
+
 ## Changes made in this branch
 
 - Added the user-provided privacy contact details: Nasrin Abubakar, designated as DPO/privacy contact; +63 947 387 5093; support@nasrinai.com; 142 Pag-asa Village, Matina Aplaya, Davao City, Philippines. Confirm that the designation and contact details are accurate and suitable for publication.
