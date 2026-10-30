@@ -333,7 +333,7 @@ describe('MOVO finance frontend', () => {
     expect(themeRow).toBeTruthy();
     act(() => themeRow.click());
     expect(container.querySelector('h1').textContent).toBe('Appearance');
-    const currencySelect = container.querySelector('select[aria-label="Display currency"]');
+    const currencySelect = container.querySelector('select[aria-label="Display Currency"]');
     expect(currencySelect).toBeTruthy();
     expect(currencySelect.value).toBe('PHP');
     expect(currencySelect.getAttribute('aria-describedby')).toBe('setting-display-currency-description');
