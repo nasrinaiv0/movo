@@ -91,3 +91,13 @@ User messages are capped at 1,600 characters and the separate JSON finance conte
 - **Validation for these latest commits is pending** until CI completes on the resulting branch head. Earlier passing tests do not count as validation for this new change.
 - This is a MOVO-only UI/documentation change. It does not alter the upstream NasrinAI repository, production data, Supabase schema/RLS/grants, authentication configuration, or provider secrets.
 - The disclosure is not evidence that upstream enforcement is deployed. Keep the live authenticated request and unrelated-document canary release gate open until tested against the deployed service.
+
+
+## Current-main reconciliation and disclosure regression — 2026-10-30
+
+- Merged current `main` commit `ca1a680c78baf7c87347c960d56c7bc207041bc3` into the existing context-isolation branch without force-pushing. The branch now has zero commits behind current main; the merge commit is `1eef5cded5ca6dfa2548e5d4ed3d010253837cff`.
+- The first preview build after this reconciliation failed because `src/App.test.js` still asserted the removed “Your account stays isolated” wording. The build log reported 1 failed test and 102 passed; this failure was not ignored or recorded as success.
+- Updated the App-level regression assertion to require the qualified scope-confirmation wording and reject the old guarantee. Change commit: `e7f51fc2c9cbd336510db7f6ddffd283065b421f`.
+- **Fresh validation is pending for the updated branch head.** The previous preview failure remains part of the audit history; it is not a passing result. The new preview was still initializing when this note was written.
+- No changes were made to the separate NasrinAI repository, Supabase schema/RLS/grants, production data, auth configuration, or provider secrets.
+- The live authenticated POST and unrelated-document canary test remain the release gate. A passing UI test or preview build does not prove that the upstream service enforces the MOVO scope.
