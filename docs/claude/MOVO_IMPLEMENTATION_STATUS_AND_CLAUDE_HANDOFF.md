@@ -8,7 +8,19 @@
 
 > **Scope boundary:** This document is for the MOVO repository only. Do not mix MOVO implementation notes, financial records, app state, deployment settings, or product requirements with the separate NasrinAI repository. NasrinAI is relevant only where MOVO intentionally calls its API. Cross-repository changes must be explicitly identified and tracked as dependencies.
 
-## 1. Executive status
+## Latest audit addendum — 2026-10-30 06:14 Asia/Manila
+
+- **Current main:** 82172294f80e360af9e7043de425a454c211078c (documentation-only PR #51 merge).
+- **Production deployment:** dpl_7XobXwSNWuLa5a9HChdafyGoECeR is READY at current main SHA. The #51 diff only adds this handoff document; the effective application-code baseline remains PR #50 merge 94d089d35483558b320f751cf122aa68755ef0eb.
+- **Critical issue #47 remains open.** The production MOVO client does not yet include PR #48's scoped request/fail-closed implementation. The server-side contract in NasrinAI PR #699 is now merged and deployed, but the complete request/response flow is not live end-to-end.
+- **PR #48 preview:** dpl_Ei7vXK2BVanYgcZWBhiuY6j9LZrH is READY for SHA 6b4f0bb809151ffe7e3aa78494e7b651cdcbcba5. GitHub Actions run 40957870245 was fetched for this SHA; its verify job and Install dependencies, Run tests, and Build production bundle steps all completed successfully. The PR body reports 17 suites / 96 tests passed; the exact test total was not extracted from Actions logs. Combined status for that SHA reports a successful Vercel check.
+- **PR #48 branch drift:** comparing current main to fix/movo-nasrinai-context-isolation reports 36 commits ahead and 11 behind, with merge base 94d089d35483558b320f751cf122aa68755ef0eb. This contradicts older wording that the branch is fully current. Reconcile to current main and rerun all gates on the resulting exact SHA before considering merge.
+- **No authenticated production smoke test was run.** A READY preview and passing tests do not establish that a portfolio canary is excluded from retrieval, prompt, transcript, cache, response, and logs.
+- **PR #52** chart/currency correctness, **PR #53** known-disclaimer filtering, and **PR #46** static UI control audit remain open. The disclaimer filter is presentation-only, not a security boundary.
+- **Security carry-forward:** earlier PR docs report leaked-password protection disabled and 34 npm audit findings (16 low, 5 moderate, 13 high). These were not freshly re-queried at 06:14. Earlier read-only catalog checks reported owner-scoped RLS and no anon grants in the checked set; re-query before release.
+- **Audit docs:** [Master Change Ledger](engineering/MASTER_CHANGE_LEDGER.md) and [06:14 Audit Delta](engineering/updates/2026-10-30-0614-audit-delta.md), both on branch docs/change-ledger-refresh-2026-10-30-0614 and not merged.
+
+## 1. Executive status — original handoff baseline (superseded by latest audit addendum)
 
 MOVO is **not yet verified as fully functional or production-ready**. The current critical path is to secure the MOVO-specific NasrinAI context boundary, verify correct rendering of AI responses, finish the frontend control audit, and clear security/legal/release gates.
 
@@ -398,3 +410,85 @@ This handoff began as a snapshot based on repository/PR descriptions available o
 - GitHub Actions run [40958277651](https://github.com/nasrinaiv0/movo/actions/runs/40958277651) remains in progress at dependency installation. Do not report that workflow as passed; the exact-head Vercel prebuild is the completed validation evidence.
 - The static audit is not an interactive browser test. Keyboard/focus, screen-reader, mobile, modal, settings, and real finance-flow verification remain required.
 
+
+
+## Scheduled implementation pass — 2026-10-30 06:29 Asia/Manila — Expanded UI audit
+
+- Created [PR #55](https://github.com/nasrinaiv0/movo/pull/55) on `chore/aria-control-audit-current-main`, based on main `82172294f80e360af9e7043de425a454c211078c`.
+- The audit script now detects placeholder anchors, non-native interactive ARIA roles without keyboard/click handling, missing tab selection state, missing checked/selected state, unnamed dialogs, disabled-control explanation gaps, and dialogs needing manual modality/focus review.
+- Added `src/lib/uiControlAudit.test.js` covering placeholder anchors, custom tab behavior, checked state, accessible dialog names, and valid controls.
+- Added `npm run audit:controls` to the production prebuild gate and expanded `docs/UI_CONTROL_AUDIT.md`.
+- Closed stale/conflicted PR #46 as superseded by #55 (not merged).
+- Exact head `76851d33b07126a63c34922adedc04464995e157`; Actions run [40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) was still installing dependencies at the last check. No exact-head test/typecheck/audit/build success is claimed yet. Preview was queued/building, not READY.
+- No financial data, application API logic, auth, RLS, database schema/grants, secrets, or production settings changed.
+- Broader completion still blocked by interactive browser/accessibility verification, legal controller/provider/retention disclosures, leaked-password protection, dependency remediation, and authenticated production NasrinAI context-isolation verification. The static audit is a guardrail only.
+
+
+### Validation update — expanded UI control audit — 2026-10-30 06:30 Asia/Manila
+
+- PR #55 exact head: `76851d33b07126a63c34922adedc04464995e157`.
+- GitHub Actions [run 40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) completed successfully.
+- Exact confirmed results: `tsc --noEmit` passed; **18 test suites / 99 tests passed**; `npm run audit:controls` passed; optimized production bundle compiled.
+- Exact-head Vercel preview [dpl_9WXj8JdbfmMDb14TT4gr2d44A2PH](https://vercel.com/nasrin-ai/movo/9WXj8JdbfmMDb14TT4gr2d44A2PH) is READY.
+- Audit snapshot: 31 source files; 93 buttons (9 disabled); 9 links; 5 forms; 4 interactive ARIA widgets; 2 dialogs. Three disabled-control warnings remain in `src/App.js` at lines 596, 608 and 635. The static scanner cannot verify callback semantics, visual truthfulness, modal focus behavior, or actual screen-reader output.
+- PR #55 remains draft. PR #46 was closed as superseded, not merged, to avoid duplicate open work.
+- This PR changes only the audit script, tests, build script and documentation. It does not resolve issue #47 or replace PR #48's server-side context-isolation requirement.
+
+
+## Read-only Supabase security recheck — 2026-10-30 06:30 Asia/Manila
+
+- Queried production catalog metadata and grants for `profiles`, `financial_accounts`, `transactions`, `budgets`, `movo_ai_conversations`, `movo_ai_messages`, and `movo_ai_upstream_conversations`; no database writes were run.
+- RLS is enabled on all seven tables. The six user-facing tables have 22 policies; the policy expressions are owner-scoped to `auth.uid()` in `USING` and/or `WITH CHECK`.
+- No `anon` table grants were returned for the checked set. `authenticated` retains SELECT/INSERT/UPDATE/DELETE on the user-facing tables. The upstream conversation mapping has no client policies and its table grants are limited to `service_role`.
+- Supabase Security Advisor still reports `auth_leaked_password_protection` as WARN (disabled) and `rls_enabled_no_policy` on the upstream mapping as INFO (consistent with intended server-only isolation). Do not add a permissive browser policy to the mapping. Leaked-password protection remains an authorized configuration release blocker.
+- No RLS policies, grants, schema, financial data, or secrets were changed.
+
+
+## Finance PR validation correction — 2026-10-30 06:31 Asia/Manila
+
+- Rechecked PR #43 current code/test head `7f073831833a4078ef428632cafa69bfdb1f63eb`.
+- GitHub Actions [run 40930065725](https://github.com/nasrinaiv0/movo/actions/runs/40930065725) completed successfully: typecheck passed, **19 test suites / 111 tests passed**, production build compiled.
+- Vercel deployment [dpl_3Aey3AMPgXCrdSdjk6QkNAdSvyiB](https://vercel.com/nasrin-ai/movo/3Aey3AMPgXCrdSdjk6QkNAdSvyiB) is READY for that exact SHA.
+- Updated PR #43's body to replace the stale statement that CI was still running.
+- PR #43 remains a draft pending manual authenticated finance-flow, currency presentation, keyboard/screen-reader and mobile verification. No production merge occurred.
+
+
+## Status correction — 2026-10-30 06:35 Asia/Manila
+
+- **PR #55 — UI audit expansion:** exact head `76851d33b07126a63c34922adedc04464995e157`; Actions [40966145454](https://github.com/nasrinaiv0/movo/actions/runs/40966145454) passed **18 suites / 99 tests**, typecheck, `audit:controls`, and production build. Exact-head Vercel preview [dpl_9WXj8JdbfmMDb14TT4gr2d44A2PH](https://vercel.com/nasrin-ai/movo/9WXj8JdbfmMDb14TT4gr2d44A2PH) is READY. Three human-review warnings remain for disabled finance controls. PR #55 remains draft.
+- **PR #56 — context-isolation current-main reconciliation:** exact head `c93b2393133f6b200f5ace83a8d5f78d1441e626`; Actions [40966718902](https://github.com/nasrinaiv0/movo/actions/runs/40966718902) passed **17 suites / 96 tests**, typecheck, and production build. Exact-head Vercel preview [dpl_9u9GwG5BRYPn3eqGci5uZGR3kVbk](https://vercel.com/nasrin-ai/movo/9u9GwG5BRYPn3eqGci5uZGR3kVbk) is READY. PR #56 remains draft pending authenticated end-to-end context-canary verification.
+- **PR #43 — finance calculations/currency:** exact head `7f073831833a4078ef428632cafa69bfdb1f63eb`; Actions [40930065725](https://github.com/nasrinaiv0/movo/actions/runs/40930065725) passed **19 suites / 111 tests**, typecheck, and production build. Vercel preview [dpl_3Aey3AMPgXCrdSdjk6QkNAdSvyiB](https://vercel.com/nasrin-ai/movo/3Aey3AMPgXCrdSdjk6QkNAdSvyiB) is READY. PR #43 remains draft pending manual finance/accessibility verification.
+- **Superseded branches:** PR #46 and PR #48 are closed as superseded, not merged; their current-main replacements are #55 and #56.
+- **Production boundary:** all three implementation PRs remain preview-only. Issue #47 remains open until authenticated deployed context-isolation testing proves the MOVO scope is enforced end-to-end.
+
+
+## Change-ledger documentation validation — 2026-10-30 06:37 Asia/Manila
+
+- Current PR #54 documentation head: `45f0460fbcc0d20b05458f7900072fb6f3b55c36`.
+- GitHub Actions [run 40967009818](https://github.com/nasrinaiv0/movo/actions/runs/40967009818) passed: **17 suites / 93 tests**, typecheck, and production compilation.
+- Vercel exact-head deployment [dpl_2sJv43aawa41dx5U8k9HBMnMuSRB](https://vercel.com/nasrin-ai/movo/2sJv43aawa41dx5U8k9HBMnMuSRB) is READY.
+- PR #54 remains draft and documentation-only. Its preview does not include the application changes in PRs #43, #55 or #56.
+
+
+## Context-isolation PR consolidation — 2026-10-30 06:38 Asia/Manila
+
+- PR #56 is the current-main context-isolation candidate, exact head `c93b2393133f6b200f5ace83a8d5f78d1441e626`, with Actions [40966718902](https://github.com/nasrinaiv0/movo/actions/runs/40966718902) passing 17 suites / 96 tests, typecheck and production build; exact-head Vercel preview [dpl_9u9GwG5BRYPn3eqGci5uZGR3kVbk](https://vercel.com/nasrin-ai/movo/9u9GwG5BRYPn3eqGci5uZGR3kVbk) is READY.
+- Closed old PR #48 as superseded (not merged) by #56 because its branch was stale relative to current main.
+- Closed PR #53 as a presentation-only workaround (not merged). Hiding the known unrelated paragraph could mask evidence of contamination and does not prevent it from entering model context, transcript, cache or logs.
+- Issue #47 remains open. The fix is not considered complete until authenticated deployed tests with synthetic data and an unrelated-project canary prove the context boundary end-to-end.
+
+
+## Chart PR validation correction — 2026-10-30 06:40 Asia/Manila
+
+- Rechecked [PR #52](https://github.com/nasrinaiv0/movo/pull/52) current head `58b7a9e32dac650d517aa99bf7bfb94c4b39ac01`.
+- GitHub Actions [run 40939100412](https://github.com/nasrinaiv0/movo/actions/runs/40939100412) completed successfully: **18 suites / 99 tests passed**, typecheck passed, production compilation succeeded.
+- Vercel exact-head preview [dpl_9RQfwVQ6QChw2DrAoZw9ts6NW6ii](https://vercel.com/nasrin-ai/movo/9RQfwVQ6QChw2DrAoZw9ts6NW6ii) is READY.
+- This corrects the earlier snapshot note that PR #52's current checks had not been revalidated. Real authenticated financial-data chart smoke testing, responsive rendering, and chart-data provenance remain unverified; PR #52 stays draft.
+
+
+## Cross-project monitoring update — 2026-10-30 07:11 Asia/Manila
+
+- MOVO main/production remain at `82172294f80e360af9e7043de425a454c211078c` / `dpl_7XobXwSNWuLa5a9HChdafyGoECeR` READY. PR #56 remains draft at `c93b2393133f6b200f5ace83a8d5f78d1441e626`; existing exact-head CI [40966718902](https://github.com/nasrinaiv0/movo/actions/runs/40966718902) passed, but no authenticated production isolation canary test has been performed.
+- NasrinAI upstream main is now `52392234ce7583303d4d25880296c06d7ad529b1` after PR #707. This does not change MOVO's client integration status. Issue #47 remains open.
+- Detailed checkpoint: `docs/engineering/updates/2026-10-30-0711-cross-project-monitoring.md` (commit 1f9f2c0f992fe4e595718404fc25750fdddd9dd1); master ledger update commit c0ab1fcbd3d002a30a4a038b3f01634a5774a2a9.
+- This is documentation-only; no MOVO runtime, database, finance data, production settings, or PR state was changed.
