@@ -1916,3 +1916,12 @@ button.account-tile:active { transform: scale(.98); }
 /* Room for the card shadow inside the horizontal scroller, so it fades out instead of being cut off. */
 .movo-app .card-scroller { padding-top: 6px; padding-bottom: 26px; margin-top: 6px; margin-bottom: -16px; }
 .movo-app.theme-dark .dots i.on { background: var(--accent-ink, var(--accent)); }
+
+/* Automatic logging: one-prompt setup for iPhone Shortcuts, manual steps folded below. */
+.shortcut-quick { display: grid; gap: 10px; margin: 12px 0; padding: 16px; }
+.shortcut-quick > strong { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text); }
+.shortcut-quick > strong svg { color: var(--accent-ink, var(--accent)); }
+.shortcut-quick .setup-steps { margin: 0; }
+.shortcut-quick small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.setup-manual { margin: 4px 0 12px; }
+.setup-manual summary { cursor: pointer; padding: 10px 2px; color: var(--accent-ink, var(--accent)); font-size: 13.5px; font-weight: 600; list-style-position: inside; }

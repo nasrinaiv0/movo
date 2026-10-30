@@ -24,3 +24,11 @@ test('matches the paying card to an account', () => {
   expect(matchAccount('', accounts).id).toBe('2');
   expect(matchAccount('savings account', [...accounts, { id: '3', name: 'BPI Savings', account_type: 'bank' }]).id).toBe('3');
 });
+
+test('the Shortcuts prompt carries the private link and names the fields to fill', () => {
+  const { shortcutPrompt } = require('./autoLog');
+  const text = shortcutPrompt('https://movo.nasrinai.com', 'abc123');
+  expect(text).toContain('https://movo.nasrinai.com/#log?src=applepay&k=abc123&amount=AMOUNT&merchant=MERCHANT&card=CARD');
+  expect(text).toMatch(/Amount.*Merchant.*Card/);
+  expect(text).toMatch(/URL-encoding/);
+});
