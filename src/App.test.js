@@ -232,6 +232,8 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
+    expect(container.textContent).toContain('MOVO — Money Organizer & Visual Outflow');
+    expect(container.textContent).toContain('MOVO (Money Organizer & Visual Outflow) is a personal finance tracking tool');
     expect(container.textContent).toContain('Effective date: October 31, 2026');
     expect(container.textContent).toContain('Republic Act No. 7394');
     expect(container.textContent).toContain('cannot lawfully be excluded, limited, or waived');
