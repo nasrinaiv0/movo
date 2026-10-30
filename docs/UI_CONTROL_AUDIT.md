@@ -10,6 +10,7 @@ The scanner checks for:
 - Native buttons without a click/keyboard action, an associated handled submit form, or an explicit disabled state.
 - Anchors without an `href` or click action, and literal placeholder links (`href="#"` or `javascript:`) without a click handler.
 - Forms without an `onSubmit` handler or native `action`.
+- Enabled controls with obviously empty inline event handlers (for example, `onClick={() => {}}`, `onClick={() => undefined`, or `onClick={() => null`); named or non-empty callbacks still require functional review.
 - Non-native interactive ARIA roles (button, link, tab, menuitem, switch, checkbox, radio, option, menuitemcheckbox, menuitemradio, and treeitem) without both click and keyboard handlers, unless disabled.
 - Tabs without explicit `aria-selected` state.
 - Switch/checkbox/radio roles without explicit checked state, and options without selected state.
