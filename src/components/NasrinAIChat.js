@@ -53,6 +53,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const visibleUserIdRef = useRef(session?.user?.id || null);
+  // Invalidates pending responses when the active identity or storage mode changes.
+  const requestEpochRef = useRef(0);
 
   // Clear the previous account's visible chat before paint when identity or
   // storage mode changes. Never leave one user's messages on screen while the
@@ -62,11 +64,15 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const identityChanged = visibleUserIdRef.current !== userId;
     visibleUserIdRef.current = userId;
     if (identityChanged || !cloudMode) {
+      // A late response from the previous identity must never be appended to
+      // the next user's visible chat or restore that user's draft/error.
+      requestEpochRef.current += 1;
       setMessages([]);
       setConversationId(null);
       setDraft('');
       setError('');
       setPrivacyAccepted(false);
+      setBusy(false);
     }
     newConversationPendingRef.current = readNewConversationPending(userId, cloudMode);
   }, [session?.user?.id, cloudMode]);
@@ -120,12 +126,17 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError('Please confirm that you want to share limited financial context with NasrinAI for this chat.');
       return;
     }
+    const requestUserId = session?.user?.id || null;
+    const requestEpoch = requestEpochRef.current;
+    const isCurrentRequest = () => requestEpoch === requestEpochRef.current
+      && visibleUserIdRef.current === requestUserId;
     setError('');
     setDraft('');
     setMessages((current) => [...current, { role: 'user', content: message }]);
     setBusy(true);
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (!isCurrentRequest()) return;
       const accessToken = sessionData?.session?.access_token || session?.access_token;
       if (sessionError || !accessToken) throw new Error('invalid_session');
       const response = await fetch('/api/nasrinai/chat', {
@@ -134,18 +145,22 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         body: JSON.stringify({ message, conversationId, consent: privacyAccepted })
       });
       const result = await response.json().catch(() => ({}));
+      if (!isCurrentRequest()) return;
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
       if (result.conversationId) setConversationId(result.conversationId);
       newConversationPendingRef.current = false;
       try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
       setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
     } catch (cause) {
+      if (!isCurrentRequest()) return;
       setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
       setDraft(message);
       setError(friendlyError(cause.message));
     } finally {
-      setBusy(false);
-      inputRef.current?.focus();
+      if (isCurrentRequest()) {
+        setBusy(false);
+        inputRef.current?.focus();
+      }
     }
   };
 
