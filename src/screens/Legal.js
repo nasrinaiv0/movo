@@ -3,8 +3,8 @@ import { SubHeader } from '../components/ui';
 import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
 
-const TERMS_EFFECTIVE_DATE = '2026-10-29T12:00:00Z';
-const PRIVACY_EFFECTIVE_DATE = '2026-10-30T12:00:00Z';
+const TERMS_EFFECTIVE_DATE = '2026-10-31T12:00:00Z';
+const PRIVACY_EFFECTIVE_DATE = '2026-10-31T12:00:00Z';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label={tr('Legal documents')}>
@@ -89,7 +89,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('10. Applicable law and resolving disputes')}</h2>
-      <p>{tr('These terms are subject to the laws and mandatory consumer protections that apply to the service and your use of it. If a concern arises, please contact the service team first so we can try to resolve it. Nothing in these terms removes rights that cannot be waived under applicable law.')}</p>
+      <p>{tr('These terms are subject to applicable law, including the laws of the Philippines where applicable. Where relevant, this includes the Data Privacy Act of 2012 (Republic Act No. 10173) and its implementing rules, the Consumer Act of the Philippines (Republic Act No. 7394), and the Electronic Commerce Act of 2000 (Republic Act No. 8792), as amended and interpreted by competent authorities. This reference is not a representation that every legal obligation has already been satisfied. If a concern arises, please contact the service team first so we can try to resolve it. Nothing in these terms excludes, limits, or waives a consumer or other statutory right or remedy that cannot lawfully be excluded, limited, or waived.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('11. Contact')}</h2>
@@ -103,7 +103,7 @@ export function PrivacyPolicy({ c }) {
   return <LegalPage c={c} title={tr('Privacy Policy')} current="PrivacyPolicy" effectiveDate={PRIVACY_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>{tr('1. Who is responsible for your data')}</h2>
-      <p>{rich('The legal name and registered address of the MOVO data controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the service operator must publish its formal identity and any required privacy contact details. For privacy questions or requests, contact {link}. This policy describes MOVO\'s current product behavior and should be read with applicable privacy laws, including the Philippines\' Data Privacy Act of 2012 where it applies.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
+      <p>{rich('The legal name and service address of the MOVO personal information controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the operator must publish its legal identity, service address, designated privacy contact or Data Protection Officer where required, and other disclosures required by applicable law. For privacy questions or requests, contact {link}. This policy describes MOVO\'s current product behavior and should be read with applicable privacy laws, including the Philippines\' Data Privacy Act of 2012 where it applies. This policy is not a certification of legal compliance; applicable processing must also follow relevant National Privacy Commission issuances.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       <p><strong>{tr('Important:')}</strong> {tr('Until the controller identity and required disclosures are published and reviewed, avoid entering real or highly sensitive financial information.')}</p>
     </section>
     <section className="legal-section">
@@ -132,7 +132,7 @@ export function PrivacyPolicy({ c }) {
         <li>{tr('Generate a NasrinAI response when you actively send a message and affirm the financial-context consent.')}</li>
         <li>{tr('Respond to valid legal requests and exercise or defend legal claims where permitted by law.')}</li>
       </ul>
-      <p>{tr('MOVO does not sell your personal financial records. We do not use your records for unrelated marketing purposes in the current product behavior described here.')}</p>
+      <p>{tr('MOVO does not sell your personal financial records. We do not use your records for unrelated marketing purposes in the current product behavior described here. Processing must have an applicable lawful basis and follow transparency, legitimate purpose, proportionality, data quality, and retention principles. Depending on the activity, the lawful basis may be consent, steps necessary to provide a service you request, compliance with a legal obligation, or another basis permitted by law. Consent for optional NasrinAI financial-context sharing is separate and specific to that feature; it should remain off unless you affirmatively opt in. This does not replace the operator's required activity-by-activity lawful-basis assessment.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('5. When information is shared')}</h2>
@@ -142,7 +142,7 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('6. Retention and deletion')}</h2>
-      <p>{tr('Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear All Data removes preferences, local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Local records are not included in cloud-account deletion requests. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.')}</p>
+      <p>{tr('Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear All Data removes preferences, local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Local records are not included in cloud-account deletion requests. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published. Because actual retention periods and deletion behavior have not yet been verified, the operator must establish and publish a record-category retention schedule, including deletion timelines or criteria, before this policy can be treated as final.')}</p>
       <p>{rich('To request access, correction, export, blocking, or deletion of cloud data, email {link} from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
     </section>
     <section className="legal-section">
@@ -151,8 +151,8 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('8. Your privacy rights')}</h2>
-      <p>{rich('Depending on applicable law, you may have rights to be informed, access or correct personal information, object to certain processing, request erasure or blocking, receive a portable copy, or lodge a complaint with the relevant privacy regulator. Requests can be sent to {link}. We will assess each request under the law that applies.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
-      <p>{rich('For background, read the official {link} information published by the National Privacy Commission.', { link: <a href="https://privacy.gov.ph/data-privacy-act-/" target="_blank" rel="noreferrer">{tr('Philippines Data Privacy Act of 2012')}</a> })}</p>
+      <p>{rich('Under the Philippine Data Privacy Act of 2012, where applicable, you may exercise rights recognized by law, which can include being informed, access, correction, objecting to or blocking certain processing, erasure or destruction where legally available, data portability where applicable, and lodging a complaint with the National Privacy Commission (NPC). These rights are subject to statutory conditions and exceptions and are not absolute in every circumstance. Requests can be sent to {link}. We will assess each request under the law that applies and explain any lawful limitation where appropriate.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
+      <p>{rich('For background, read the official {link} information published by the National Privacy Commission. You may also contact the NPC through its official website if you believe your statutory privacy rights have been infringed. This policy does not prevent you from contacting a regulator or exercising any right provided by law.', { link: <a href="https://privacy.gov.ph/data-privacy-act-/" target="_blank" rel="noreferrer">{tr('Philippines Data Privacy Act of 2012')}</a> })}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('9. Children and policy updates')}</h2>
