@@ -18,7 +18,7 @@ const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognit
 import './NasrinAIChat.css';
 
 function friendlyError(code) {
-  if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI could not answer right now. Please try again shortly.');
+  if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI did not confirm it used only your Movo data, so its reply was not shown.');
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
   if (code === 'nasrinai_not_configured') return tr('NasrinAI is not configured on the MOVO server yet.');
   if (code === 'conversation_not_found') return tr('This conversation is not available in your account.');
@@ -30,6 +30,8 @@ function friendlyError(code) {
   if (code === 'nasrinai_request_rejected' || code === 'invalid_nasrinai_response' || code === 'nasrinai_conversation_missing') return tr('NasrinAI could not process this request format. Please try a shorter question or contact support if it continues.');
   return tr('NasrinAI could not answer right now. Please try again shortly.');
 }
+
+const TRANSIENT = new Set(['nasrinai_request_failed', 'nasrinai_timeout', 'nasrinai_unreachable', 'chat_request_failed', 'invalid_nasrinai_response']);
 
 const PHASE_LABELS = { reading: 'Reading your records…', thinking: 'Thinking…', almost: 'Almost there…' };
 
@@ -191,12 +193,19 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       if (!isCurrentRequest()) return;
       const accessToken = sessionData?.session?.access_token || session?.access_token;
       if (sessionError || !accessToken) throw new Error('invalid_session');
-      const response = await fetch('/api/nasrinai/chat', {
+      const ask = () => fetch('/api/nasrinai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
         body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code })
       });
-      const result = await response.json().catch(() => ({}));
+      let response = await ask();
+      let result = await response.json().catch(() => ({}));
+      // A momentary NasrinAI failure is retried once before telling the person.
+      if (!response.ok && TRANSIENT.has(result.error || 'chat_request_failed') && isCurrentRequest()) {
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        if (!isCurrentRequest()) return;
+        response = await ask(); result = await response.json().catch(() => ({}));
+      }
       if (!isCurrentRequest()) return;
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
       if (result.conversationId) setConversationId(result.conversationId);
@@ -208,7 +217,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       if (!isCurrentRequest()) return;
       setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
       setDraft(message);
-      setError(friendlyError(cause.message));
+      // The short code lets support find the exact cause in the server log; it carries no personal data.
+      const code = /^[a-z_]{3,60}$/.test(cause.message || '') ? cause.message : 'chat_request_failed';
+      setError(`${friendlyError(code)} ${tr('Error code: {code}', { code })}`);
     } finally {
       if (isCurrentRequest()) {
         setBusy(false);

@@ -99,6 +99,20 @@ describe('NasrinAI consent and legal links', () => {
     expect(box.value).toBe('Summarize my spending');
   });
 
+  test('retries a momentary NasrinAI failure once, then shows the reply', async () => {
+    global.fetch
+      .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'nasrinai_request_failed' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ conversationId: 'c1', reply: 'Recovered answer.' }) });
+    act(() => button('I understand').click());
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Should I invest my savings?');
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    });
+    expect(container.textContent).toContain('Recovered answer.');
+    expect(global.fetch.mock.calls.filter(([, o]) => o?.method === 'POST')).toHaveLength(2);
+  });
+
   test('keeps Send disabled when consent is accepted but the draft is empty', () => {
     act(() => button('I understand').click());
     expect(container.querySelector('[role="dialog"]')).toBeNull();

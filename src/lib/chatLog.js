@@ -1,4 +1,5 @@
 import { guessCategory } from './ocr';
+import { wordsToNumbers } from './numberWords';
 import { CATALOG } from './subscriptions';
 
 /*
@@ -9,7 +10,7 @@ import { CATALOG } from './subscriptions';
  */
 const QUESTION = /\?|^(how|what|why|which|when|where|who|show|summari[sz]e|compare|list|tell|explain|can|could|should|is|are|do|does|did|magkano|ano|bakit|ilan|saan|paano|kailan|sino)\b/i;
 // English and Filipino ("Bumili ako ng saging 20 pesos", "Nagbayad ng kuryente 1500").
-const EXPENSE_VERB = /^(spent|spend|paid|pay|bought|buy|purchased|log|add|record|expense|gastos|bayad|got|bumili|binili|nagbayad|binayaran|gumastos|nagastos|ginastos|pinambili|nagload|nag-load)\b/i;
+const EXPENSE_VERB = /^(spent|spend|paid|pay|bought|buy|buys|purchase|purchased|log|add|record|expense|gastos|bayad|got|bumili|binili|nagbayad|binayaran|gumastos|nagastos|ginastos|pinambili|nagload|nag-load)\b/i;
 const INCOME_WORD = /\b(salary|sahod|sweldo|suweldo|income|earned|received|got paid|paid me|bonus|refund|cashback|commission|allowance|sold|freelance|dividend|interest|kinita|natanggap|nakatanggap|binenta|naibenta)\b/i;
 // "…using my savings account", "…gamit ang savings account ko" names the account and is not part of the merchant.
 const ACCOUNT_PHRASE = /[,\s]+(?:using|via|with|charged to|paid with|on my|(?:gamit|ganit|gamet)(?:\s+ang)?)\s+(?:my\s+|the\s+|ang\s+|aking\s+)?([\p{L}\p{N}'& -]{2,40}?)(?:\s+ko)?\s*$/iu;
@@ -40,7 +41,7 @@ function knownService(words) {
 /** One line → a draft record, or null when the line is not a request to log something. */
 export function parseLogLine(raw, now = new Date()) {
   // "I just bought…", "we paid…" read the same as "bought…"; "…$30 I mean 30 pesos" keeps the corrected amount.
-  let line = String(raw || '').trim().replace(/^(i|we|i've|i have|we've)\s+(just\s+|already\s+)?/i, '');
+  let line = wordsToNumbers(String(raw || '').trim()).replace(/^(i|we|i've|i have|we've)\s+(just\s+|already\s+)?/i, '');
   const fix = line.match(/^(.*?)(?:,?\s*\bi mean\b|,?\s*\bsorry\b|,?\s*\bactually\b)\s+(.*)$/i);
   if (fix && AMOUNT.test(fix[2])) line = `${fix[1].replace(AMOUNT, '').trim()} ${fix[2]}`.trim();
   if (!line || line.length > 160 || QUESTION.test(line)) return null;
