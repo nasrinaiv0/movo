@@ -203,3 +203,12 @@
 - Traceable implementation/test commits: `b4cc1ced75c898917e24073ec3098cc3b61e1834`, `c123b25904cd84ed6d6359bce5427ebe6f7064cf`. Detailed note: [strict CSV quote validation](engineering/updates/2026-10-30-1158-strict-csv-quoting.md).
 - **Validation status at documentation time:** exact final-head typecheck, full test suite, production build, and preview are pending. No passing result is claimed until an exact-head result confirms it.
 - No database schema/RLS/grants, Auth settings, production financial records, or secrets changed. PR #43 remains draft pending automated validation and live authenticated finance/CSV/currency verification.
+
+
+## Strict CSV parser regression and correction — 2026-10-30 12:00 Asia/Manila
+
+- The first strict-parser change caused an existing fingerprint normalization regression because regular expressions outside the parser were inadvertently double-escaped during an API rewrite.
+- GitHub Actions run [41000381655](https://github.com/nasrinaiv0/movo/actions/runs/41000381655) failed: **1 suite failed / 19 passed; 1 test failed / 124 passed**. The failed test was `transactionFingerprint` equivalence; this is recorded as a failure, not hidden.
+- Restored the known prior source at `15316f97bce721f815425b7fe867a549c712c89b` and reapplied only the parser function. Correction commit: `7c41531c0a48a60433d2cca10262734c03ce4ed7`.
+- Detailed failure analysis and regression plan: [strict CSV quote validation](engineering/updates/2026-10-30-1158-strict-csv-quoting.md).
+- Fresh exact-head CI and preview validation are pending. PR #43 remains draft.
