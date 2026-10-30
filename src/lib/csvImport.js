@@ -12,26 +12,75 @@ const aliases = {
 const normalizeHeader = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
 export function parseCsvRows(input) {
-  const text = String(input || '').replace(/^\uFEFF/, '');
+  const text = String(input || '').replace(/^\\uFEFF/, '');
   const rows = [];
-  let row = []; let field = ''; let quoted = false;
+  let row = [];
+  let field = '';
+  let quoted = false;
+  let afterQuote = false;
+
+  const pushField = () => {
+    row.push(field);
+    field = '';
+    afterQuote = false;
+  };
+  const pushRow = () => {
+    pushField();
+    if (row.some(value => value.trim() !== '')) rows.push(row);
+    row = [];
+  };
+
   for (let i = 0; i < text.length; i += 1) {
     const ch = text[i];
-    if (ch === '"' && quoted && text[i + 1] === '"') { field += '"'; i += 1; }
-    else if (ch === '"') quoted = !quoted;
-    else if (ch === ',' && !quoted) { row.push(field); field = ''; }
-    else if ((ch === '\n' || ch === '\r') && !quoted) {
-      if (ch === '\r' && text[i + 1] === '\n') i += 1;
-      row.push(field); field = '';
-      if (row.some(value => value.trim() !== '')) rows.push(row);
-      row = [];
-    } else field += ch;
+
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') {
+        field += '"';
+        i += 1;
+      } else if (ch === '"') {
+        quoted = false;
+        afterQuote = true;
+      } else {
+        field += ch;
+      }
+      continue;
+    }
+
+    if (afterQuote) {
+      if (ch === ',') {
+        pushField();
+      } else if (ch === '\\n' || ch === '\\r') {
+        if (ch === '\\r' && text[i + 1] === '\\n') i += 1;
+        pushRow();
+      } else if (ch === ' ' || ch === '\\t') {
+        // Some bank exports add whitespace after a quoted cell. Ignore only
+        // this separator whitespace; never append it to the quoted value.
+      } else {
+        throw new Error('CSV contains unexpected characters after a closing quote.');
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      if (field.length > 0) {
+        throw new Error('CSV contains a quote inside an unquoted field.');
+      }
+      quoted = true;
+    } else if (ch === ',') {
+      pushField();
+    } else if (ch === '\\n' || ch === '\\r') {
+      if (ch === '\\r' && text[i + 1] === '\\n') i += 1;
+      pushRow();
+    } else {
+      field += ch;
+    }
   }
-  if (field.length || row.length) {
-    row.push(field);
+
+  if (quoted) throw new Error('CSV contains an unclosed quoted field.');
+  if (afterQuote || field.length || row.length) {
+    pushField();
     if (row.some(value => value.trim() !== '')) rows.push(row);
   }
-  if (quoted) throw new Error('CSV contains an unclosed quoted field.');
   return rows;
 }
 
@@ -47,7 +96,7 @@ function normalizeType(raw) {
 }
 function normalizeDate(raw) {
   const value = String(raw || '').trim();
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
     const parsed = new Date(`${value}T12:00:00Z`);
     if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return null;
     return parsed.toISOString();
@@ -62,7 +111,7 @@ export function transactionFingerprint(transaction) {
     String(transaction?.account_id || transaction?.account_name || '').trim().toLowerCase(),
     String(transaction?.transaction_type || transaction?.type || '').trim().toLowerCase(),
     Number(transaction?.amount || 0).toFixed(2),
-    String(transaction?.merchant || '').trim().toLowerCase().replace(/\s+/g, ' '),
+    String(transaction?.merchant || '').trim().toLowerCase().replace(/\\s+/g, ' '),
     dateKey,
   ].join('|');
   // Compact stable fingerprint fits the database's 200-character external-reference limit.
@@ -88,7 +137,7 @@ export function parseCsvTransactions(input) {
     const line = offset + 2;
     const get = (key) => indexes[key] < 0 ? '' : String(cells[indexes[key]] || '').trim();
     const merchant = get('merchant').slice(0, 160);
-    const rawAmount = get('amount').replace(/[₱$€£,\s]/g, '');
+    const rawAmount = get('amount').replace(/[₱$€£,\\s]/g, '');
     const amount = Math.abs(Number(rawAmount));
     const type = normalizeType(get('type'));
     const occurred_at = normalizeDate(get('date'));
