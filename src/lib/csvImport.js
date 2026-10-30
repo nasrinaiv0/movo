@@ -93,6 +93,17 @@ function normalizeType(raw) {
   if (['transfer', 'internal transfer'].includes(value)) return 'transfer';
   return null;
 }
+function parseAmount(raw) {
+  // Accept plain digits or correctly grouped thousands (1,234.56), with an
+  // optional supported leading currency symbol and sign. Do not strip commas
+  // blindly: malformed input such as 1,2,3 must not become 123.
+  let value = String(raw || '').trim();
+  value = value.replace(/^[₱$€£]\\s*/, '');
+  if (!/^[+-]?(?:\\d+|\\d{1,3}(?:,\\d{3})+)(?:\\.\\d+)?$/.test(value)) return null;
+  const amount = Math.abs(Number(value.replace(/,/g, '')));
+  if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) return null;
+  return amount;
+}
 function normalizeDate(raw) {
   const value = String(raw || '').trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -136,12 +147,11 @@ export function parseCsvTransactions(input) {
     const line = offset + 2;
     const get = (key) => indexes[key] < 0 ? '' : String(cells[indexes[key]] || '').trim();
     const merchant = get('merchant').slice(0, 160);
-    const rawAmount = get('amount').replace(/[₱$€£,\s]/g, '');
-    const amount = Math.abs(Number(rawAmount));
+    const amount = parseAmount(get('amount'));
     const type = normalizeType(get('type'));
     const occurred_at = normalizeDate(get('date'));
     if (!merchant) { errors.push({ line, message: 'Description is required.' }); return; }
-    if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { errors.push({ line, message: 'Amount must be a positive number.' }); return; }
+    if (amount === null) { errors.push({ line, message: 'Amount must use a valid number format, such as 1234.50 or 1,234.50.' }); return; }
     if (!type) { errors.push({ line, message: 'Type must be income, expense, or transfer.' }); return; }
     if (!occurred_at) { errors.push({ line, message: 'Date is invalid.' }); return; }
     const rawCurrency = get('currency').toUpperCase();
