@@ -1,3 +1,13 @@
+## Latest implementation delta — 2026-10-30 13:15 Asia/Manila
+
+- **PR #43 / finance CSV:** added strict monetary amount syntax validation. Malformed comma grouping (for example `1,2,3`), repeated decimals, scientific notation, and unsupported text are rejected with row-level errors instead of being normalized into a different ledger amount.
+- Added regression coverage for invalid and valid amount formats. Source/test changes are on the existing dedicated branch `fix/finance-calculations-sync`; no duplicate PR was created.
+- Evidence record: `docs/engineering/updates/2026-10-30-1315-csv-amount-validation.md`.
+- **Exact-head validation pending** at the time of this note. Earlier PR #43 test counts do not validate this new code. Update this snapshot only after checking the latest commit's CI, typecheck, full suite, production build, production-only audit, and Vercel preview.
+- No DB/RLS/grants, auth settings, production financial records, or secrets changed. Authenticated cloud CSV import and owner-isolation checks remain unverified.
+
+---
+
 # MOVO Pull Request Progress Register
 
 **Last reconciled:** 2026-10-29 13:02 UTC  
