@@ -62,7 +62,7 @@ export default function Wallet({ c }) {
       {cards.length > 0 && <>
         <SectionTitle action="See All" onAction={() => setWalletFilter('Cards')}>My Cards</SectionTitle>
         <div className="card-scroller mini" aria-label="Your cards">
-          {cards.map(a => <button type="button" className="card-slide" key={a.id} aria-label={`Open ${a.name} card`} onClick={() => { setSelectedCardId(a.id); setWalletFilter('Cards'); }}><CardArt a={a} show={show} styleId={styleOf(a)} holder={holder} /></button>)}
+          {cards.map(a => <button type="button" className="card-slide" key={a.id} onClick={() => { setSelectedCardId(a.id); setWalletFilter('Cards'); }}><CardArt a={a} show={show} styleId={styleOf(a)} holder={holder} /><span className="sr-only">Open {a.name} card details</span></button>)}
         </div>
       </>}
       <SectionTitle>Quick Actions</SectionTitle>
