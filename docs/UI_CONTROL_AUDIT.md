@@ -85,3 +85,10 @@ The frontend is not declared complete by this static check. Legal publication st
 - Vercel deployment [7Q5r4LiArsJ2scn5AWUjjdx62EdX](https://vercel.com/nasrin-ai/movo/7Q5r4LiArsJ2scn5AWUjjdx62EdX) reached **READY** for the same head.
 - Audit output: 31 source files, 94 buttons (9 disabled), 9 links, 5 forms, 3 interactive ARIA widgets, and 2 dialogs. No obvious unhandled controls were found, and no disabled-control/dialog review warnings were emitted.
 - This does not replace manual keyboard-only/focus, screen-reader, responsive, or authenticated financial-flow testing. The documentation-only commit containing this entry must be revalidated before merge.
+
+
+## Conditional disabled-state audit — 2026-10-30
+
+- The no-op callback detector skips a control only when it is statically disabled (`disabled` shorthand/literal `true`, or `aria-disabled=true`).
+- `disabled={false}` and dynamic expressions such as `disabled={isSaving}` are still audited for empty callbacks because they may be interactive at runtime. Disabled-state explanation checks remain separate and continue to require a visible or accessible reason when the control declares a disabled state.
+- Regression coverage includes conditional, explicitly enabled, and statically disabled button cases. Fresh exact-head CI and preview checks are required for this scanner refinement.

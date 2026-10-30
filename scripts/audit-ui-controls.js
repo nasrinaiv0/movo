@@ -67,6 +67,20 @@ function literalAttr(map, name) {
   return '';
 }
 
+function isStaticallyDisabled(map) {
+  const disabled = map.get('disabled');
+  if (disabled) {
+    if (!disabled.initializer) return true;
+    if (ts.isJsxExpression(disabled.initializer) && disabled.initializer.expression) {
+      if (disabled.initializer.expression.kind === ts.SyntaxKind.TrueKeyword) return true;
+      if (disabled.initializer.expression.kind === ts.SyntaxKind.FalseKeyword) return false;
+    }
+  }
+  const ariaDisabled = map.get('aria-disabled');
+  if (ariaDisabled && !ariaDisabled.initializer) return true;
+  return literalTrue(map, 'aria-disabled');
+}
+
 function isObviousNoopHandler(attr) {
   if (!attr?.initializer || !ts.isJsxExpression(attr.initializer)) return false;
   const expression = attr.initializer.expression;
@@ -128,7 +142,7 @@ function auditSourceText(text, fileName = 'fixture.jsx', state = createAuditStat
       const a = attrs(node);
       const where = location(source, node);
       const role = literalAttr(a, 'role');
-      const disabledControl = a.has('disabled') || literalTrue(a, 'aria-disabled');
+      const disabledControl = isStaticallyDisabled(a);
 
       if (!disabledControl && (CONTROL_TAGS.has(tag) || INTERACTIVE_ROLES.has(role))) {
         for (const handlerName of EVENT_HANDLER_ATTRIBUTES) {

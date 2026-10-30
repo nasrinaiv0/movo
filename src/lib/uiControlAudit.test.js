@@ -15,6 +15,17 @@ describe('UI control audit', () => {
     expect(result.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(true);
   });
 
+  test('checks conditional controls for empty handlers but skips statically disabled controls', () => {
+    const conditional = scan('<button type="button" disabled={isSaving} onClick={() => {}}>Save</button>');
+    expect(conditional.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(true);
+
+    const explicitlyEnabled = scan('<button type="button" disabled={false} onClick={() => undefined}>Save</button>');
+    expect(explicitlyEnabled.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(true);
+
+    const disabled = scan('<button type="button" disabled title="Unavailable" onClick={() => {}}>Save</button>');
+    expect(disabled.errors.some((error) => error.includes('onClick is an empty/no-op inline handler'))).toBe(false);
+  });
+
   test('requires custom ARIA tabs to expose selection and keyboard behavior', () => {
     const result = scan('<div role="tab" onClick={() => {}}>Overview</div>');
     expect(result.errors.some((error) => error.includes('click and keyboard handlers'))).toBe(true);
