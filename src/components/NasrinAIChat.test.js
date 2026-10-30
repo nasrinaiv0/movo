@@ -145,6 +145,86 @@ describe('NasrinAI consent and legal links', () => {
     });
   });
 
+  test('ignores a late success from the previous account after switching accounts', async () => {
+    let resolvePost;
+    global.fetch.mockImplementationOnce((_url, options) => {
+      if (options?.method === 'POST') return new Promise(resolve => { resolvePost = resolve; });
+      return Promise.resolve({ ok: true, json: async () => ({ conversationId: null, messages: [] }) });
+    });
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Summarize account one spending');
+    act(() => container.querySelector('#movo-ai-consent').click());
+
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(resolvePost).toBeDefined();
+
+    window.localStorage.setItem('movo.ai.contextIsolation.v1.user-2', 'true');
+    window.sessionStorage.removeItem('movo.ai.newConversation.user-2');
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: { session: { access_token: 'user-2-access-token' } },
+      error: null
+    });
+    act(() => {
+      root.render(<NasrinAIChat
+        session={{ user: { id: 'user-2' }, access_token: 'user-2-access-token' }}
+        cloudMode
+        onOpenLegal={onOpenLegal}
+      />);
+    });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+
+    await act(async () => {
+      resolvePost({ ok: true, json: async () => ({ conversationId: 'conversation-user-1', reply: 'Private reply from account one.' }) });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(container.textContent).not.toContain('Private reply from account one.');
+    expect(container.textContent).not.toContain('Summarize account one spending');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
+  test('does not restore the previous account draft or error after a late failed response', async () => {
+    let resolvePost;
+    global.fetch.mockImplementationOnce((_url, options) => {
+      if (options?.method === 'POST') return new Promise(resolve => { resolvePost = resolve; });
+      return Promise.resolve({ ok: true, json: async () => ({ conversationId: null, messages: [] }) });
+    });
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Private draft from account one');
+    act(() => container.querySelector('#movo-ai-consent').click());
+
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(resolvePost).toBeDefined();
+
+    window.localStorage.setItem('movo.ai.contextIsolation.v1.user-2', 'true');
+    window.sessionStorage.removeItem('movo.ai.newConversation.user-2');
+    supabase.auth.getSession.mockResolvedValueOnce({
+      data: { session: { access_token: 'user-2-access-token' } },
+      error: null
+    });
+    act(() => {
+      root.render(<NasrinAIChat
+        session={{ user: { id: 'user-2' }, access_token: 'user-2-access-token' }}
+        cloudMode
+        onOpenLegal={onOpenLegal}
+      />);
+    });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+
+    await act(async () => {
+      resolvePost({ ok: false, json: async () => ({ error: 'nasrinai_auth_rejected' }) });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+    expect(container.textContent).not.toContain('Private draft from account one');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+  });
+
   test('fails closed when the upstream cannot confirm MOVO context isolation', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: false,
