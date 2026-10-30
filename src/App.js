@@ -17,6 +17,7 @@ import CardArt from './components/CardArt';
 import AccountTile, { styleFor } from './components/AccountTile';
 import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
+import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate } from './lib/duplicates';
 import { mergePreferences, unionById } from './lib/prefsMerge';
@@ -62,7 +63,7 @@ const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', {
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], cardStyles: {},
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
@@ -203,7 +204,7 @@ function App() {
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
   const layout = useLayout();
   const [burst, setBurst] = useState(null);
-  const celebrate = useCallback((label) => setBurst({ id: Date.now(), label }), []);
+  const celebrate = useCallback((label, badge) => setBurst({ id: Date.now(), label, badge }), []);
   const endBurst = useCallback(() => setBurst(null), []);
   const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
@@ -785,6 +786,18 @@ function App() {
   const showTour = authReady && !prefs.onboarded && view === 'Home' && !sheet && process.env.NODE_ENV !== 'test';
   // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.
   const finishTour = useCallback(() => setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey })), [todayKey]);
+  /* Usage streak: today counts once Movo is open; a new badge gets its own moment. */
+  useEffect(() => {
+    if (!authReady) return;
+    let unlocked = null;
+    setPrefs(cur => {
+      const next = updateStreak(cur.streak, todayKey);
+      if (next === cur.streak) return cur;
+      unlocked = newlyEarned(cur.streak, next);
+      return { ...cur, streak: next };
+    });
+    if (unlocked) { const badge = unlocked; setTimeout(() => celebrate(tr('Badge unlocked: {name}', { name: tr(badge.name) }), badge), 900); }
+  }, [authReady, todayKey, celebrate]);
   const handledLink = useRef('');
   const recordsRef = useRef(rawTxs);
   recordsRef.current = rawTxs;
@@ -1009,7 +1022,7 @@ function App() {
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
       </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
-      <LoggedBurst id={burst?.id} label={burst?.label} onDone={endBurst} />
+      <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>

@@ -1858,3 +1858,60 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app.layout-dual .screen > * { grid-column: 1 / -1; min-width: 0; }
   .movo-app.layout-dual .screen > .box-slot:not(.size-L) { grid-column: auto; }
 }
+
+/* =====================================================================
+   Elevation v2: soft, neutral, tight shadows (no tinted halos). Three
+   levels: resting surfaces, raised cards, floating chrome.
+   ===================================================================== */
+.movo-app {
+  --elev-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.05);
+  --elev-2: 0 1px 2px rgba(16,24,40,.04), 0 6px 16px -6px rgba(16,24,40,.10);
+  --elev-3: 0 2px 6px -1px rgba(16,24,40,.06), 0 14px 32px -10px rgba(16,24,40,.16);
+  --elev-card: 0 1px 2px rgba(0,0,0,.10), 0 10px 22px -10px rgba(0,0,0,.35);
+  --shadow: var(--elev-1); --shadow-sm: var(--elev-1);
+}
+.movo-app.theme-dark {
+  --elev-1: none; --elev-2: 0 6px 16px -8px rgba(0,0,0,.5);
+  --elev-3: 0 14px 34px -12px rgba(0,0,0,.65), 0 0 0 .5px rgba(255,255,255,.06);
+  --elev-card: 0 1px 2px rgba(0,0,0,.35), 0 12px 24px -12px rgba(0,0,0,.7);
+  --shadow: none; --shadow-sm: none;
+}
+.movo-app.movo-app :is(.credit-card, .credit-card.has-sticker, .acct-preview .credit-card) { box-shadow: var(--elev-card); }
+.movo-app.glass-on .credit-card { box-shadow: inset 0 .5px 0 rgba(255,255,255,.14), var(--elev-card); }
+.movo-app .style-tile > .credit-card { box-shadow: var(--elev-1); }
+.movo-app .style-tile.selected > .credit-card { box-shadow: 0 0 0 1.5px var(--accent); }
+.movo-app.glass-on :is(.card, .account-row, .sheet-card, .movo-ai-welcome, .movo-ai-message.assistant) { box-shadow: inset 0 .5px 0 rgba(255,255,255,.12), var(--elev-1); }
+.movo-app.theme-dark.glass-on :is(.card, .account-row, .sheet-card, .movo-ai-welcome, .movo-ai-message.assistant) { box-shadow: inset 0 .5px 0 rgba(255,255,255,.05); }
+.movo-app.movo-app :is(.bottom-nav, .movo-ai-chat .movo-ai-composer, .logged-burst) { box-shadow: var(--elev-3); }
+.movo-app.glass-on .bottom-nav { box-shadow: inset 0 .5px 0 rgba(255,255,255,.2), var(--elev-3); }
+.movo-app .sheet { box-shadow: 0 -1px 2px rgba(16,24,40,.04), 0 -16px 40px -16px rgba(16,24,40,.22); }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet { box-shadow: var(--elev-3); }
+.movo-app .toast { box-shadow: var(--elev-2); }
+.movo-app :is(.round-button, .chip-row button, .month-pill) { box-shadow: var(--elev-1); }
+
+/* =====================================================================
+   Streak badges: earned badges glow in their tier colour; a newly
+   unlocked badge gets one ring and one light glint (no looping pulse).
+   ===================================================================== */
+.streak-chip { display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 9px; margin-inline-start: auto; margin-inline-end: 6px; border-radius: 999px; background: rgba(255,149,0,.14); color: #ff9500; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; box-shadow: 0 0 12px -2px rgba(255,149,0,.45); }
+.streak-card { display: grid; gap: 14px; margin-top: 12px; padding: 16px; }
+.streak-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.streak-head > span { display: grid; gap: 2px; }
+.streak-head strong { font-size: 15px; font-weight: 700; }
+.streak-head small, .streak-note { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.streak-best { flex: none; padding: 3px 9px; border-radius: 999px; background: var(--field); font-weight: 600; }
+.streak-note { margin: 0; }
+.streak-badges { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.streak-badges li { display: grid; justify-items: center; gap: 6px; }
+.streak-badges small { color: var(--muted); font-size: 10.5px; font-weight: 600; }
+.streak-badge { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--field); color: var(--muted); opacity: .55; overflow: hidden; transition: transform .25s ease-out; }
+.streak-badge.earned { opacity: 1; background: var(--badge); color: #fff; box-shadow: 0 0 0 3px color-mix(in srgb, var(--badge) 18%, transparent), 0 4px 16px -2px color-mix(in srgb, var(--badge) 60%, transparent); }
+.streak-badge.earned::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 34%; background: rgba(255,255,255,.35); transform: skewX(-20deg); animation: badge-glint 1.1s ease-out .4s both; pointer-events: none; }
+.streak-badges li:hover .streak-badge.earned { transform: translateY(-2px); }
+.badge-burst .streak-badge { width: 64px; height: 64px; }
+.streak-badge.unlocking { animation: badge-ring 1.2s ease-out .15s both; }
+@keyframes badge-glint { from { left: -60%; } to { left: 130%; } }
+@keyframes badge-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--badge) 50%, transparent), 0 4px 16px -2px color-mix(in srgb, var(--badge) 60%, transparent); } 100% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--badge) 0%, transparent), 0 4px 16px -2px color-mix(in srgb, var(--badge) 60%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .streak-badge.earned::after { display: none; } .streak-badge.unlocking { animation: none; } }
+/* Room for the card shadow inside the horizontal scroller, so it fades out instead of being cut off. */
+.movo-app .card-scroller { padding-top: 6px; padding-bottom: 26px; margin-top: 6px; margin-bottom: -16px; }
