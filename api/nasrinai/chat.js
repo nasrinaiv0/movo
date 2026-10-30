@@ -196,10 +196,16 @@ module.exports = async function handler(req, res) {
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
   const anonKey = process.env.SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
-  const nasrinKey = process.env.NASRINAI_API_KEY;
+  const nasrinKey = String(process.env.NASRINAI_API_KEY || '').trim();
   const nasrinBase = String(process.env.NASRINAI_BASE_URL || DEFAULT_NASRINAI_URL).replace(/\/+$/, '');
   if (!supabaseUrl || !anonKey) {
     return json(res, 503, { error: 'movo_auth_not_configured', message: 'MOVO sign-in is not configured on the server.' });
+  }
+  if (!nasrinKey) {
+    return json(res, 503, {
+      error: 'nasrinai_not_configured',
+      message: 'NasrinAI is temporarily unavailable. Please contact support.'
+    });
   }
   if (req.method === 'POST' && !nasrinKey) {
     return json(res, 503, { error: 'nasrinai_not_configured', message: 'NasrinAI chat is not configured on the MOVO server yet.' });
