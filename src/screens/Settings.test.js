@@ -206,10 +206,10 @@ describe('Notification settings controls', () => {
     const unavailable = [
       ['Push Notifications', 'Push delivery is not available in this web build'],
       ['Email Notifications', 'Email delivery is not connected yet'],
-      ['Account & Security', 'only generated for sample/demo data'],
-      ['NasrinAI Updates', 'only generated for sample/demo data'],
-      ['Promotions', 'only sample/demo data'],
-      ['Reports', 'only generated for sample/demo data'],
+      ['Account & Security', 'sample/demo alerts only'],
+      ['NasrinAI Updates', 'sample/demo alerts only'],
+      ['Promotions', 'sample/demo alerts only'],
+      ['Reports', 'sample/demo alerts only'],
     ];
 
     unavailable.forEach(([title, explanation]) => {
