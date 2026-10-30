@@ -262,3 +262,17 @@ The SHA references in the earlier follow-up paragraphs are **intermediate commit
 - Terms of Service and Privacy Policy navigation is now browser-verified in production, but publication warnings must remain until the operator/data-controller identity and address, actual retention/deletion schedule, provider/data-recipient disclosures, and jurisdiction-specific wording are verified. Do not invent legal facts.
 - Full-tree dependency findings, authenticated finance/chat flows, CSV import/export, complete keyboard/focus and screen-reader behavior remain release gates.
 - No database schema, RLS/grants, production financial data, or secrets were changed by the demo-disclosure implementation or this audit update.
+
+
+## Current-state correction — 2026-10-30 10:10 Asia/Manila
+
+This section supersedes any older snapshot text that still says PR #58 is awaiting merge.
+
+- **Current main:** `ca1a680c78baf7c87347c960d56c7bc207041bc3`. PR #58 (audit-ledger reconciliation) merged at this commit; it is no longer an open PR.
+- **New production app change:** PR #59 merged at `277051e4ec2216a6b598c784a50b32ba37b89dee`. It replaces owner-like identity in the unauthenticated sample demo with a generic Demo identity and adds an accessible disclosure that sample balances/transactions are fictional, not bank-linked, and not saved/synced as personal records. The READY production deployment is [dpl_FRVNFKYmKHcrhnfvF8uhi7fwELVh](https://vercel.com/nasrin-ai/movo/FRVNFKYmKHcrhnfvF8uhi7fwELVh). The production Playwright evidence is recorded in `docs/engineering/updates/2026-10-30-0935-production-demo-disclosure-and-chat-checks.md`; it was not re-run during the 10:10 monitoring pass.
+- **PR #60 accessibility scanner:** current head `d80077b05067282fa76de16e7947aa73557e7550`, 23 commits ahead / 0 behind main, open/draft/mergeable. Exact-head Actions [#40989633601](https://github.com/nasrinaiv0/movo/actions/runs/40989633601) passed 20 suites / 111 tests, typecheck, `audit:controls`, production build, and production-only dependency audit (0 production findings). Preview [GYUYgJVSG3H3aHbeRvpH1b246vr7](https://vercel.com/nasrin-ai/movo/GYUYgJVSG3H3aHbeRvpH1b246vr7) reports success. Manual keyboard/focus, screen-reader, responsive and authenticated finance-flow verification remain open. Full dependency tree still reports 34 findings (16 low, 5 moderate, 13 high).
+- **PR #56 context isolation:** current head `30aaaf0fedb50e7b73bb36f285c5b744247a2c0c`, 19 commits ahead / 0 behind main, open/draft/mergeable. Current Actions run [#40990086352](https://github.com/nasrinaiv0/movo/actions/runs/40990086352) was in progress at the time of this update; Vercel preview check [CaaFALv6sPd7vWa1xRFqUwDRiHh2](https://vercel.com/nasrin-ai/movo/CaaFALv6sPd7vWa1xRFqUwDRiHh2) reports success. Earlier passing run #40989833432 validates implementation head `1b3c939`, not the current documentation head `30aaaf0`.
+- **Critical unresolved gate:** issue #47 remains open. No authenticated live scoped POST and unrelated-project canary has proven the full deployed context boundary. A no-token 401 is only auth-gate evidence.
+- **Security/legal carry-forward:** Supabase leaked-password protection remains reported disabled; full-tree dependency findings and legal disclosure gaps remain open. No database/Auth/secrets changes were made in this review.
+- Full details: [10:10 monitoring delta](updates/2026-10-30-1010-monitoring-delta.md).
+
