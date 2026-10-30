@@ -128,6 +128,60 @@ describe('Cloud Sync setting semantics', () => {
 });
 
 
+describe('Unavailable settings controls', () => {
+  let container;
+  let root;
+  let context;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    context = makeContext(false);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    if (root) act(() => root.unmount());
+    container.remove();
+    root = null;
+  });
+
+  test('unsupported settings are disabled with an associated explanation while In-App Alerts remains functional', () => {
+    act(() => root.render(<Settings c={context} />));
+
+    const unavailable = [
+      ['Push Notifications', 'Not available in this web build'],
+      ['Email Notifications', 'Not available yet'],
+      ['Face ID / Touch ID', 'Unavailable in a browser'],
+      ['Local Storage', 'this switch is not available'],
+      ['Auto Categorization', 'not implemented yet'],
+    ];
+
+    unavailable.forEach(([title, explanation]) => {
+      const row = Array.from(container.querySelectorAll('.menu-row'))
+        .find(item => item.querySelector('strong')?.textContent === title);
+      expect(row).toBeTruthy();
+      const toggle = row.querySelector('[role="switch"]');
+      expect(toggle).toBeTruthy();
+      expect(toggle.disabled).toBe(true);
+      expect(toggle.getAttribute('aria-disabled')).toBe('true');
+      const descriptionId = toggle.getAttribute('aria-describedby');
+      expect(descriptionId).toBeTruthy();
+      expect(document.getElementById(descriptionId)?.textContent).toContain(explanation);
+      act(() => toggle.click());
+    });
+
+    expect(context.setPref).not.toHaveBeenCalled();
+
+    const inAppRow = Array.from(container.querySelectorAll('.menu-row'))
+      .find(item => item.querySelector('strong')?.textContent === 'In-App Alerts');
+    const inAppToggle = inAppRow.querySelector('[role="switch"]');
+    expect(inAppToggle.disabled).toBe(false);
+    act(() => inAppToggle.click());
+    expect(context.setPref).toHaveBeenCalledWith('inapp', false);
+  });
+});
+
 describe('Currency settings copy', () => {
   let container;
   let root;
