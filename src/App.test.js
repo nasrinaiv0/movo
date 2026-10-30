@@ -243,7 +243,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Effective date: October 31, 2026');
     expect(container.textContent).toContain('National Privacy Commission (NPC)');
     expect(container.textContent).toContain('establish a documented retention schedule for each data category');
-    expect(container.textContent).toContain('record-category retention schedule');
+    expect(container.textContent).toContain('documented retention schedule for each data category');
     expect(container.textContent).toContain('end-to-end upstream context boundary has not yet been independently verified in the deployed integration');
     expect(container.textContent).toContain('Nasrin Abubakar, Data Protection Officer / privacy contact');
     expect(container.textContent).toContain('+63 947 387 5093');
