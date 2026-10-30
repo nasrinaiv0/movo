@@ -136,3 +136,10 @@ This audit is a working register, not a claim that the entire frontend is comple
 - Source/test commits: `050e53f0f712f34306b827d12b2acb51adb89bb7`, `bba4df97b452a9e2449d3813d71ac8f01b24996b`, `e25a3327cf7b96c0caceabe8064322315181f92f`. PR #60 remains the existing dedicated UI-control/accessibility branch; no duplicate PR was opened.
 - The updated PR head triggers the normal full CI gate (typecheck, Jest suite, control audit, production-only dependency audit, and production build). Do not reuse an earlier head's result; confirm the latest Actions run and Vercel preview before treating this increment as validated.
 - Manual keyboard/focus, screen-reader, responsive, and authenticated finance/chat verification remain separate release gates. No financial data, schema, RLS policy, grant, authentication setting, provider secret, or other repository was changed.
+
+
+## Notification action test-entry correction — 2026-10-30 14:27 Asia/Manila
+
+- During final review, caught a test-harness mistake before treating the change as validated: Notifications is opened from the Home header, not from the five-item bottom navigation. The two new App-level tests now enter Home and click the existing Notifications control before exercising the detail action sheet.
+- Correction commit: `b1cbcf250b2c7ac744a73e9c3b79629f68f843cf`. This changes test navigation only; no product code or data behavior changed in this correction.
+- Exact-head full CI for the final PR head remains the source of truth. Earlier run results on the pre-correction test head do not validate this correction.
