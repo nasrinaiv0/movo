@@ -129,4 +129,39 @@ describe('NasrinAI consent and legal links', () => {
     });
     expect(container.textContent).toContain('Here is your summary.');
   });
+
+  test('does not append an old account response after switching users', async () => {
+    let resolvePost;
+    global.fetch.mockImplementation((url, options) => {
+      if (options?.method === 'POST') {
+        return new Promise(resolve => { resolvePost = resolve; });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ conversationId: null, messages: [] }) });
+    });
+
+    act(() => button('I understand').click());
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Summarize my spending');
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(resolvePost).toBeTruthy();
+
+    await act(async () => {
+      root.render(<NasrinAIChat
+        session={{ user: { id: 'user-2' }, access_token: 'user-2-token' }}
+        cloudMode
+        onOpenLegal={onOpenLegal}
+      />);
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    await act(async () => {
+      resolvePost({ ok: true, json: async () => ({ conversationId: 'old-user-conversation', reply: 'STALE USER-1 FINANCIAL REPLY' }) });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(container.textContent).not.toContain('STALE USER-1 FINANCIAL REPLY');
+  });
+
 });
