@@ -103,7 +103,7 @@ describe('Display Currency setting semantics', () => {
     expect(select.value).toBe('PHP');
     expect(select.disabled).toBe(false);
     expect(select.getAttribute('aria-describedby')).toBe('setting-display-currency-description');
-    expect(container.textContent).toContain('MOVO keeps currencies separate and does not convert them automatically.');
+    expect(container.textContent).toContain('Summary totals, Wallet accounts, and transaction lists show one currency at a time. MOVO does not convert currencies; other records remain stored.');
 
     act(() => {
       select.value = 'USD';
