@@ -231,3 +231,5 @@ The documentation update advanced PR #54 to head `7a0c9f4bcd032cef3268c06ee48465
 ## Final documentation-head correction — 2026-10-30 08:19 Asia/Manila
 
 The SHA references in the earlier follow-up paragraphs are **intermediate commits**, not the final branch head: the master-ledger and detailed-delta updates were committed sequentially. After the last update in this checkpoint, the exact current head is the latest commit shown on [PR #54](https://github.com/nasrinaiv0/movo/pull/54). The previous workflow run was still in progress for an intermediate head, and the latest preview had been queued. Validation for the final documentation head is pending; use PR metadata and exact-head CI/Vercel status as the source of truth.
+
+- **Current audit-document PR:** [#58](https://github.com/nasrinaiv0/movo/pull/58), open/draft, based on current main `bb30c8e...`; final-head CI and Documentation Gate must pass before merge.
