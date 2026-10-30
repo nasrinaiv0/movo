@@ -1,4 +1,5 @@
 import React from 'react';
+import { t as tr } from '../lib/i18n';
 
 function InlineText({ text }) {
   const parts = String(text || '').split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\[[^\]]+\]\([^)]+\))/g);
@@ -32,7 +33,7 @@ function formatChartValue(value, series = {}) {
 function MiniChart({ spec }) {
   if (!spec || !Array.isArray(spec.data) || !spec.data.length) return null;
   if (spec.data.some(row => !row || typeof row !== 'object' || Array.isArray(row))) {
-    return <p className="movo-ai-chart-note">Chart data is invalid. Use a table instead.</p>;
+    return <p className="movo-ai-chart-note">{tr('Chart data is invalid. Use a table instead.')}</p>;
   }
   const type = ['bar', 'line', 'pie'].includes(spec.chartType) ? spec.chartType : 'bar';
   const xKey = typeof spec.xKey === 'string' ? spec.xKey : Object.keys(spec.data[0])[0];
@@ -42,14 +43,14 @@ function MiniChart({ spec }) {
     const valueKey = spec.valueKey || series[0]?.dataKey;
     const valueSeries = series.find(s => s.dataKey === valueKey) || series[0] || {};
     if (!valueKey || !spec.data.every(row => isFiniteChartNumber(row[valueKey]) && Number(row[valueKey]) >= 0)) {
-      return <p className="movo-ai-chart-note">Chart data is incomplete or invalid. Use a table instead.</p>;
+      return <p className="movo-ai-chart-note">{tr('Chart data is incomplete or invalid. Use a table instead.')}</p>;
     }
     const sourceRows = spec.data;
     const shownRows = sourceRows.length > 8
       ? [...sourceRows.slice(0, 7), { [nameKey]: 'Other', [valueKey]: sourceRows.slice(7).reduce((sum, row) => sum + Number(row[valueKey]), 0) }]
       : sourceRows;
     const total = shownRows.reduce((sum, row) => sum + Number(row[valueKey]), 0);
-    if (!total) return <p className="movo-ai-chart-note">Chart data has no positive values to display.</p>;
+    if (!total) return <p className="movo-ai-chart-note">{tr('Chart data has no positive values to display.')}</p>;
     let offset = 0;
     const colors = ['#5b8def', '#25b99a', '#f5a742', '#b38cf5', '#ef7185', '#65b6ce'];
     const slices = shownRows.map((row, i) => {
@@ -68,22 +69,22 @@ function MiniChart({ spec }) {
       angle = next;
       return <path key={i} d={path} fill={slice.color} stroke="var(--surface, #fff)" strokeWidth="2"><title>{`${slice.label}: ${formatChartValue(slice.value, valueSeries)}`}</title></path>;
     });
-    return <section className="movo-ai-chart-card" aria-label={spec.meta?.title || 'Financial chart'}>
-      <div className="movo-ai-chart-heading"><h3>{spec.meta?.title || 'Financial breakdown'}</h3>{spec.meta?.description && <p>{spec.meta.description}</p>}</div>
-      <div className="movo-ai-pie-layout"><svg viewBox="0 0 200 200" role="img" aria-label={spec.meta?.title || 'Pie chart'}>{paths}</svg><ul className="movo-ai-chart-legend">{slices.map(s => <li key={s.label}><span style={{ background: s.color }} /> <span>{s.label}</span><strong>{formatChartValue(s.value, valueSeries)} · {Math.round(s.fraction * 100)}%</strong></li>)}</ul></div>
+    return <section className="movo-ai-chart-card" aria-label={spec.meta?.title || tr('Financial chart')}>
+      <div className="movo-ai-chart-heading"><h3>{spec.meta?.title || tr('Financial breakdown')}</h3>{spec.meta?.description && <p>{spec.meta.description}</p>}</div>
+      <div className="movo-ai-pie-layout"><svg viewBox="0 0 200 200" role="img" aria-label={spec.meta?.title || tr('Pie chart')}>{paths}</svg><ul className="movo-ai-chart-legend">{slices.map(s => <li key={s.label}><span style={{ background: s.color }} /> <span>{s.label}</span><strong>{formatChartValue(s.value, valueSeries)} · {Math.round(s.fraction * 100)}%</strong></li>)}</ul></div>
       {spec.meta?.footer && <p className="movo-ai-chart-footer">{spec.meta.footer}</p>}
     </section>;
   }
   const numericSeries = series.length ? series : Object.keys(spec.data[0]).filter(k => k !== xKey && isFiniteChartNumber(spec.data[0][k])).slice(0, 1).map(k => ({ dataKey: k, label: k }));
-  if (!numericSeries.length) return <p className="movo-ai-chart-note">This chart needs numeric series data.</p>;
+  if (!numericSeries.length) return <p className="movo-ai-chart-note">{tr('This chart needs numeric series data.')}</p>;
   const rows = spec.data.slice(0, 12);
   if (rows.some(row => numericSeries.some(s => !isFiniteChartNumber(row[s.dataKey])))) {
-    return <p className="movo-ai-chart-note">Chart data is incomplete or invalid. Use a table instead.</p>;
+    return <p className="movo-ai-chart-note">{tr('Chart data is incomplete or invalid. Use a table instead.')}</p>;
   }
   const prefixes = new Set(numericSeries.map(s => typeof s.valuePrefix === 'string' ? s.valuePrefix : ''));
   const formats = new Set(numericSeries.map(s => s.valueFormat === 'compact' ? 'compact' : 'standard'));
   if (prefixes.size > 1 || formats.size > 1) {
-    return <p className="movo-ai-chart-note">Chart series use inconsistent units or value formats. Use separate charts instead.</p>;
+    return <p className="movo-ai-chart-note">{tr('Chart series use inconsistent units or value formats. Use separate charts instead.')}</p>;
   }
   const axisFormat = numericSeries[0];
   const values = rows.flatMap(row => numericSeries.map(s => Number(row[s.dataKey])));
@@ -94,9 +95,9 @@ function MiniChart({ spec }) {
   const plotW = chartW - left - right, plotH = chartH - top - bottom;
   const y = value => top + plotH - ((Number(value) - min) / span) * plotH;
   const colors = ['#5b8def', '#25b99a', '#f5a742'];
-  return <section className="movo-ai-chart-card" aria-label={spec.meta?.title || 'Financial chart'}>
-    <div className="movo-ai-chart-heading"><h3>{spec.meta?.title || 'Financial overview'}</h3>{spec.meta?.description && <p>{spec.meta.description}</p>}</div>
-    <div className="movo-ai-chart-scroll"><svg className="movo-ai-chart-svg" viewBox={`0 0 ${chartW} ${chartH}`} role="img" aria-label={spec.meta?.title || 'Data chart'}>
+  return <section className="movo-ai-chart-card" aria-label={spec.meta?.title || tr('Financial chart')}>
+    <div className="movo-ai-chart-heading"><h3>{spec.meta?.title || tr('Financial overview')}</h3>{spec.meta?.description && <p>{spec.meta.description}</p>}</div>
+    <div className="movo-ai-chart-scroll"><svg className="movo-ai-chart-svg" viewBox={`0 0 ${chartW} ${chartH}`} role="img" aria-label={spec.meta?.title || tr('Data chart')}>
       {[0, .25, .5, .75, 1].map((f, i) => <g key={i}><line x1={left} x2={chartW-right} y1={top+plotH*f} y2={top+plotH*f} stroke="currentColor" opacity=".12" /><text x={left-8} y={top+plotH*f+4} textAnchor="end" fontSize="10" fill="currentColor" opacity=".65">{formatChartValue(max-(max-min)*f, axisFormat)}</text></g>)}
       {type === 'bar' ? rows.map((row, i) => {
         const groupW = plotW / rows.length, barW = Math.min(28, groupW * .72 / numericSeries.length);

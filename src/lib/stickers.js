@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WALLPAPERS } from './wallpapers';
+import { t as tr } from './i18n';
 
 /*
  * Card sticker library.
@@ -248,23 +249,23 @@ export const clearCustomStickers = () => {
 /* Crop to the card ratio at 2x (1712x1080), while bounding input size and decoded pixels. */
 export function addCustomSticker(file) {
   return new Promise((resolve, reject) => {
-    if (!file) { reject(new Error('Choose an image file.')); return; }
+    if (!file) { reject(new Error(tr('Choose an image file.'))); return; }
     if (!ALLOWED_CUSTOM_STICKER_TYPES.has(String(file.type || '').toLowerCase())) {
-      reject(new Error('Choose a PNG, JPEG, WebP, GIF, or AVIF image. SVG and other formats are not supported.'));
+      reject(new Error(tr('Choose a PNG, JPEG, WebP, GIF, or AVIF image. SVG and other formats are not supported.')));
       return;
     }
     if (!Number.isFinite(file.size) || file.size <= 0) {
-      reject(new Error('The selected image is empty or unreadable.'));
+      reject(new Error(tr('The selected image is empty or unreadable.')));
       return;
     }
     if (file.size > MAX_CUSTOM_STICKER_BYTES) {
-      reject(new Error('Images must be 10 MB or smaller.'));
+      reject(new Error(tr('Images must be 10 MB or smaller.')));
       return;
     }
 
     let url;
     try { url = URL.createObjectURL(file); } catch {
-      reject(new Error('This browser could not open the selected image.'));
+      reject(new Error(tr('This browser could not open the selected image.')));
       return;
     }
     const img = new Image();
@@ -273,12 +274,12 @@ export function addCustomSticker(file) {
         const width = img.naturalWidth || img.width;
         const height = img.naturalHeight || img.height;
         if (!width || !height || width * height > MAX_CUSTOM_STICKER_PIXELS) {
-          throw new Error('Image dimensions are too large. Choose an image under 24 megapixels.');
+          throw new Error(tr('Image dimensions are too large. Choose an image under 24 megapixels.'));
         }
         const cw = W * 2; const ch = H * 2;
         const canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
         const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('This browser could not process the image. Try a different image format.');
+        if (!ctx) throw new Error(tr('This browser could not process the image. Try a different image format.'));
         const scale = Math.max(cw / width, ch / height);
         const dw = width * scale; const dh = height * scale;
         ctx.imageSmoothingQuality = 'high';
@@ -292,19 +293,19 @@ export function addCustomSticker(file) {
         customList = [sticker, ...previous].slice(0, 8);
         if (!saveCustom()) {
           customList = previous;
-          throw new Error('The sticker could not be saved on this device. Browser storage may be full or unavailable; remove a large sticker or free storage, then try again.');
+          throw new Error(tr('The sticker could not be saved on this device. Browser storage may be full or unavailable; remove a large sticker or free storage, then try again.'));
         }
         resolve(sticker);
       } catch (err) {
-        reject(err instanceof Error ? err : new Error('Could not process that image. Try another file.'));
+        reject(err instanceof Error ? err : new Error(tr('Could not process that image. Try another file.')));
       } finally {
         URL.revokeObjectURL(url);
       }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read that image. Choose a supported PNG, JPEG, WebP, GIF, or AVIF file.')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(tr('Could not read that image. Choose a supported PNG, JPEG, WebP, GIF, or AVIF file.'))); };
     try { img.src = url; } catch {
       URL.revokeObjectURL(url);
-      reject(new Error('This browser could not open the selected image.'));
+      reject(new Error(tr('This browser could not open the selected image.')));
     }
   });
 }

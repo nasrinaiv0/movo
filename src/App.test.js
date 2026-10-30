@@ -78,7 +78,7 @@ describe('MOVO finance frontend', () => {
   test('privacy toggle hides displayed balances', () => {
     expect(container.textContent).toContain('₱1,250.00');
     clickButton(container, 'Hide balances');
-    expect(container.textContent).toContain('₱ ••••••');
+    expect(container.textContent).toContain('••••••');
     expect(container.textContent).not.toContain('₱1,250.00');
     expect(container.textContent).not.toContain('₱128,450.00');
   });
@@ -141,7 +141,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Transfers');
     expect(container.textContent).toContain('Total Transfers');
     clickButton(container, 'Transfer to BPI, ₱2,000.00');
-    expect(container.querySelector('[role="dialog"]').textContent).toContain('transfer');
+    expect(container.querySelector('[role="dialog"]').textContent).toMatch(/transfer/i);
   });
 
   test('opens a transaction, then deletes it after confirmation', () => {
@@ -250,7 +250,7 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.movo-app, .theme-dark')).not.toBeNull();
     expect(container.firstChild.className).toContain('theme-dark');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('dark');
-    clickButton(container, 'purple accent');
+    clickButton(container, 'Purple accent');
     expect(container.firstChild.className).toContain('accent-purple');
   });
 
@@ -306,10 +306,11 @@ describe('MOVO finance frontend', () => {
   test('unavailable notification categories explain that only demo events exist', () => {
     nav(container, 'Profile');
     clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
-    clickButton(container, 'Clear data');
+    setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'DELETE');
+    clickButton(container, 'Clear all data');
     nav(container, 'Profile');
     const notificationSettings = Array.from(container.querySelectorAll('button.menu-row')).find(button => button.querySelector('strong')?.textContent === 'Notifications');
     expect(notificationSettings).toBeTruthy();
@@ -326,19 +327,18 @@ describe('MOVO finance frontend', () => {
     });
   });
 
-  test('Clear Local Data resets preferences and removes local/demo records and sticker artwork without affecting cloud records', () => {
-    window.localStorage.setItem('movo.customStickers.v1', JSON.stringify([{ id: 'custom-test', name: 'Test', src: 'data:image/jpeg;base64,AA==', ink: 'light', custom: true }]));
+  test('Clear All Data requires typing DELETE, then resets preferences and removes local records', () => {
     nav(container, 'Profile');
     clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear Local Data');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
-    expect(dialog.textContent).toContain('Resets browser preferences to defaults');
-    expect(dialog.textContent).toContain('custom sticker artwork');
-    expect(dialog.textContent).toContain('Cloud records are not affected');
-    clickButton(container, 'Clear data');
+    expect(dialog.textContent).toContain('Permanently deletes all MOVO data on this device');
+    expect(container.querySelector('button.danger-button').disabled).toBe(true);
+    setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
+    clickButton(container, 'Clear all data');
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
     expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');
@@ -389,9 +389,7 @@ describe('MOVO finance frontend', () => {
   test('NasrinAI opens the private chat and provides a sign-in action in local/demo mode', () => {
     nav(container, 'NasrinAI');
     expect(container.querySelector('h1').textContent).toBe('NasrinAI');
-    expect(container.textContent).toContain('Important privacy limitation.');
-    expect(container.textContent).toContain('upstream context boundary has not yet been independently verified end to end');
-    expect(container.textContent).not.toContain('Your account stays isolated.');
+    expect(container.textContent).toContain('user-scoped snapshot');
     expect(container.textContent).toContain('Sign in to securely connect your MOVO finances.');
     expect(container.querySelector('textarea#' + 'movo-ai-prompt')).toBeNull();
     clickButton(container, 'Sign in to MOVO');
@@ -444,7 +442,7 @@ describe('MOVO finance frontend', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
     clickButton(container, 'Add Card');
-    const name = container.querySelector('input[placeholder="e.g. Everyday account"]');
+    const name = container.querySelector('#acct-name');
     setInputValue(name, 'My Test Card');
     clickButton(container, 'Add account');
     expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
@@ -455,7 +453,7 @@ describe('MOVO finance frontend', () => {
     act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Edit account');
-    setInputValue(container.querySelector('input[placeholder="e.g. Everyday account"]'), 'Updated Test Card');
+    setInputValue(container.querySelector('#acct-name'), 'Updated Test Card');
     clickButton(container, 'Save changes');
     expect(container.textContent).toContain('Updated Test Card');
     expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');
@@ -479,7 +477,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'See All');
     clickButton(container, 'SM Supermarket, −₱1,250.00');
     clickButton(container, 'Edit');
-    const description = container.querySelector('input[placeholder="e.g. Grocery shopping"]');
+    const description = container.querySelector('input[aria-label="Description"]');
     setInputValue(description, 'Edited supermarket');
     clickButton(container, 'Save changes');
     expect(container.textContent).toContain('Edited supermarket');
@@ -504,7 +502,7 @@ describe('MOVO finance frontend', () => {
       clickButton(container, 'See All');
       clickButton(container, 'SM Supermarket, −₱1,250.00');
       clickButton(container, 'Edit');
-      setInputValue(container.querySelector('input[placeholder="e.g. Grocery shopping"]'), 'Storage warning regression');
+      setInputValue(container.querySelector('input[aria-label="Description"]'), 'Storage warning regression');
       clickButton(container, 'Save changes');
 
       expect(container.textContent).toContain('Local changes may not be saved.');

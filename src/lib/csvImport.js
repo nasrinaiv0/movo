@@ -82,7 +82,7 @@ export function parseCsvTransactions(input) {
   const indexes = Object.fromEntries(Object.entries(aliases).map(([key, keys]) => [key, columnIndex(headers, keys)]));
   const required = ['date', 'merchant', 'amount', 'type'];
   const missing = required.filter(key => indexes[key] < 0);
-  if (missing.length) return { transactions: [], errors: [{ line: 1, message: `Missing required columns: ${missing.join(', ')}.` }] };
+  if (missing.length) return { transactions: [], errors: [{ line: 1, message: 'Missing required columns: {columns}.', vars: { columns: missing.join(', ') } }] };
   const transactions = []; const errors = [];
   rawRows.slice(1).forEach((cells, offset) => {
     const line = offset + 2;

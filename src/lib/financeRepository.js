@@ -143,3 +143,42 @@ export async function updateAccount(accountId, account) {
   if (!Object.keys(update).length) throw new Error('Provide at least one account change.');
   return unwrap(await requireClient().from('financial_accounts').update(update).eq('id', accountId).select().single());
 }
+
+const validBudget = (category, limit) => {
+  const name = typeof category === 'string' ? category.trim() : '';
+  const amount = Number(limit);
+  if (!name || name.length > 60) throw new Error('Choose a budget category.');
+  if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Budget limit must be greater than zero.');
+  return { category: name, monthly_limit: Math.round(amount * 100) / 100 };
+};
+export async function listBudgets() {
+  return unwrap(await requireClient().from('budgets')
+    .select('id,category,monthly_limit,currency,starts_on,is_active').eq('is_active', true).order('category', { ascending: true }));
+}
+export async function createBudget(budget, userId) {
+  if (!userId) throw new Error('A signed-in user is required.');
+  const now = new Date(); const startsOn = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  // Re-adding a category removed earlier this month reactivates that row instead of hitting the unique constraint.
+  return unwrap(await requireClient().from('budgets').upsert({ user_id: userId, ...validBudget(budget?.category, budget?.monthly_limit), currency: /^[A-Z]{3}$/.test(budget?.currency || '') ? budget.currency : 'PHP', starts_on: startsOn, is_active: true }, { onConflict: 'user_id,category,starts_on' }).select().single());
+}
+export async function updateBudget(budgetId, budget) {
+  if (typeof budgetId !== 'string' || !budgetId) throw new Error('A budget ID is required.');
+  return unwrap(await requireClient().from('budgets').update({ ...validBudget(budget?.category, budget?.monthly_limit), ...(/^[A-Z]{3}$/.test(budget?.currency || '') ? { currency: budget.currency } : {}) }).eq('id', budgetId).select().single());
+}
+export async function removeBudget(budgetId) {
+  if (typeof budgetId !== 'string' || !budgetId) throw new Error('A budget ID is required.');
+  return unwrap(await requireClient().from('budgets').update({ is_active: false }).eq('id', budgetId).select().single());
+}
+
+/**
+ * Permanently deletes the signed-in user's own records. Row-level security limits every delete to auth.uid();
+ * the explicit user filter is a second guard. Transactions go before accounts (accounts are referenced with
+ * ON DELETE RESTRICT); deleting conversations cascades to their messages and server-side mappings.
+ */
+export async function deleteAllCloudData(userId) {
+  if (!userId) throw new Error('A signed-in user is required.');
+  const client = requireClient();
+  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
+    unwrap(await client.from(table).delete().eq('user_id', userId));
+  }
+}

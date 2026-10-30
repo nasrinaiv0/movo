@@ -1,0 +1,6 @@
+/* Columns: English, Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi. */
+export default [
+  ["Up {n} vs last month", "Tumaas ng {n} kumpara noong nakaraang buwan", "ارتفاع {n} مقارنة بالشهر الماضي", "较上月上升 {n}", "Sube {n} frente al mes pasado", "In aumento del {n} rispetto al mese scorso", "{n} mehr als im Vormonat", "En hausse de {n} par rapport au mois dernier", "Alta de {n} em relação ao mês passado", "先月比 {n} 増加", "지난달 대비 {n} 증가", "पिछले महीने से {n} ज़्यादा"],
+  ["Down {n} vs last month", "Bumaba ng {n} kumpara noong nakaraang buwan", "انخفاض {n} مقارنة بالشهر الماضي", "较上月下降 {n}", "Baja {n} frente al mes pasado", "In calo del {n} rispetto al mese scorso", "{n} weniger als im Vormonat", "En baisse de {n} par rapport au mois dernier", "Queda de {n} em relação ao mês passado", "先月比 {n} 減少", "지난달 대비 {n} 감소", "पिछले महीने से {n} कम"],
+  ["No change vs last month", "Walang pagbabago kumpara noong nakaraang buwan", "لا تغيير مقارنة بالشهر الماضي", "与上月持平", "Sin cambios frente al mes pasado", "Nessuna variazione rispetto al mese scorso", "Unverändert zum Vormonat", "Stable par rapport au mois dernier", "Sem alteração em relação ao mês passado", "先月から変化なし", "지난달과 변동 없음", "पिछले महीने से कोई बदलाव नहीं"],
+];

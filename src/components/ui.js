@@ -2,9 +2,11 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed, HIDDEN } from '../lib/format';
 import { canAnimate, useCountUp } from '../lib/motion';
+import { t as tr } from '../lib/i18n';
+import { percentLabel } from '../lib/trend';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
-export function Money({ value, show, digits = 2, currency = 'PHP' }) {
+export function Money({ value, show, digits = 2, currency }) {
   const v = useCountUp(Number(value) || 0);
   return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : HIDDEN}</span>;
 }
@@ -22,9 +24,9 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
   return <header className="screen-header root">
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
-      {!hideSearch && <IconButton icon="search" label="Search" onClick={onSearch} />}
-      {!hideBell && onBell && <IconButton icon="bell" label="Notifications" onClick={onBell} dot={unread} />}
-      {onSettings && <IconButton icon="gear" label="Settings" onClick={onSettings} />}
+      {!hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
+      {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
+      {onSettings && <IconButton icon="gear" label={tr('Settings')} onClick={onSettings} />}
     </div>
   </header>;
 }
@@ -32,7 +34,7 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
 /** Back-arrow header used by sub-screens. */
 export function SubHeader({ title, onBack, right }) {
   return <header className="screen-header sub">
-    <button type="button" className="back-button" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
+    <button type="button" className="back-button" aria-label={tr('Back')} onClick={onBack}><Icon name="back" size={22} /></button>
     <h1>{title}</h1>
     <div className="header-actions">{right}</div>
   </header>;
@@ -67,7 +69,7 @@ export function SectionTitle({ children, action, onAction }) {
   return <div className="section-title"><h2>{children}</h2>{action && <button type="button" className="link-button" onClick={onAction}>{action}{' '}<Icon name="chevron" size={14} /></button>}</div>;
 }
 
-export function Sheet({ title, subtitle, onClose, children, label }) {
+export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false, center = false }) {
   const [closing, setClosing] = useState(false);
   const [dy, setDy] = useState(0);
   const drag = useRef(null);
@@ -114,21 +116,46 @@ export function Sheet({ title, subtitle, onClose, children, label }) {
   const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
   const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
   const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };
-  return <div className={`sheet-backdrop${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-    <section ref={dialogRef} className={`sheet${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
-      <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>
-      <button type="button" className="sheet-close" aria-label={`Close ${label || title}`} onClick={close}><Icon name="close" size={18} /></button>
+  return <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
+      {!center && <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>}
+      {!hideClose && <button type="button" className="sheet-close" aria-label={tr('Close {name}', { name: label || title })} onClick={close}><Icon name="close" size={18} /></button>}
       {title && <h2 className="sheet-title">{title}</h2>}
       {subtitle && <p className="sheet-sub">{subtitle}</p>}
-      {children}
+      {typeof children === 'function' ? children(close) : children}
     </section>
   </div>;
 }
 
 export function Sparkline({ values, width = 170, height = 70 }) {
-  const d = smoothPath(values, width, height);
+  // Edge to edge: the line and its fill run to the card's right and bottom edges, leaving no gap.
+  const d = smoothPath(values, width, height, 0, 10);
   return <svg className="sparkline" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
-    {d && <><path d={`${d}L${width - 6} ${height}L6 ${height}Z`} fill="var(--accent)" fillOpacity=".08" stroke="none" /><path d={d} className="spark-line" /></>}
+    {d && <><path d={`${d}L${width} ${height}L0 ${height}Z`} fill="var(--accent)" fillOpacity=".08" stroke="none" /><path d={d} className="spark-line" /></>}
+  </svg>;
+}
+
+/** Month-over-month indicator: arrow shows the direction, colour shows whether that is good (see lib/trend). */
+export function Trend({ value, chip = false, size = 12 }) {
+  if (!value) return null;
+  const pct = percentLabel(value.percent);
+  const spoken = value.direction === 'flat' ? tr('No change vs last month') : tr(value.direction === 'up' ? 'Up {n} vs last month' : 'Down {n} vs last month', { n: pct });
+  return <span className={chip ? `chip-${value.tone}` : `delta ${value.tone}`}>
+    <span aria-hidden="true" className="trend-vis"><Icon name={value.direction === 'up' ? 'arrowUp' : value.direction === 'down' ? 'arrowDown' : 'minus'} size={size} strokeWidth={2.4} />{pct}{chip ? ` ${tr('vs last month')}` : ''}</span>
+    <span className="sr-only">{spoken}</span>
+  </span>;
+}
+
+/** Balance history as slim bars, edge to edge like the sparkline; long histories are averaged down to 24 bars. */
+export function MiniBars({ values, width = 170, height = 70 }) {
+  const n = Math.min(24, values.length);
+  if (!n) return null;
+  const per = values.length / n;
+  const pts = Array.from({ length: n }, (_, i) => { const part = values.slice(Math.floor(i * per), Math.max(Math.floor(i * per) + 1, Math.floor((i + 1) * per))); return part.reduce((a, v) => a + v, 0) / part.length; });
+  const min = Math.min(...pts); const span = Math.max(...pts) - min || 1;
+  const slot = width / n; const bar = Math.max(2, slot * 0.58);
+  return <svg className="sparkline mini-bars" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+    {pts.map((v, i) => { const h = height * (0.14 + 0.78 * ((v - min) / span)); return <rect key={i} x={i * slot + (slot - bar) / 2} y={height - h} width={bar} height={h} rx={Math.min(3, bar / 2)} style={{ '--i': i }} />; })}
   </svg>;
 }
 
@@ -150,7 +177,7 @@ export function Donut({ data, total, caption, show, size = 132 }) {
 }
 
 export function Legend({ data }) {
-  return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{d.key}</span><b>{d.percent}%</b></li>)}</ul>;
+  return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{tr(d.key)}</span><b>{d.percent}%</b></li>)}</ul>;
 }
 
 export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly }) {
@@ -159,7 +186,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   return <button type="button" className="tx-row" aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
     <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} tone="blue" />
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
-    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{chipLabel(t)}</em>}</span>
+    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
   </button>;
 }
 

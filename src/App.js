@@ -12,12 +12,24 @@ import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screen
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
+import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
+import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr, rich } from './lib/i18n';
+import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut } from './lib/financeRepository';
-import { demoAccounts, demoTransactions, demoDeltas, demoNotifications } from './lib/demoData';
+import TransactionSheet from './components/TransactionSheet';
+import AccountSheet from './components/AccountSheet';
+import ScannerSheet from './components/ScannerSheet';
+import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate } from './lib/autoLog';
+import { guessCategory } from './lib/ocr';
+import { evaluate } from './lib/calc';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData } from './lib/financeRepository';
+import { BudgetsSheet, budgetProgress } from './components/Budgets';
+import { demoAccounts, demoTransactions, demoNotifications } from './lib/demoData';
+import { monthOverMonth } from './lib/trend';
+import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, areSamplesEnabled, setSamplesEnabled, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
-import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabel, BUCKETS, bucketOf } from './lib/format';
+import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import NasrinAIChat from './components/NasrinAIChat';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
@@ -27,19 +39,20 @@ import { clearCustomStickers } from './lib/stickers';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
-const categories = ['Groceries', 'Food & drinks', 'Transport', 'Shopping', 'Bills', 'Subscriptions', 'Health', 'Education', 'Entertainment', 'Other'];
 const accountTypes = [{ value: 'bank', label: 'Bank account' }, { value: 'card', label: 'Credit / debit card' }, { value: 'e_wallet', label: 'E-wallet' }, { value: 'cash', label: 'Cash' }, { value: 'investment', label: 'Investment' }, { value: 'other', label: 'Other' }];
 /* Changing these fills the new look in from the tap point. */
 const APPEARANCE_KEYS = new Set(['theme', 'accent', 'glass']);
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'blue', customColor: '#2f6bff', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: true, email: true, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: false, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], cardStyles: {},
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Profile: 'Profile', Settings: 'Profile', Appearance: 'Profile', EditProfile: 'Profile', HelpCenter: 'Profile', TermsOfService: 'Profile', PrivacyPolicy: 'Profile' };
 const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Profile: 0, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Profile: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Profile', 'user', 'Profile']];
+const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit' };
 const today = () => new Date().toLocaleDateString('en-CA');
 
 function readPrefs() {
@@ -52,15 +65,18 @@ function readPrefs() {
 }
 const hexToRgb = (hex) => { const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || ''); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '47,107,255'; };
 const monthsBack = (key, n) => { const [y, m] = key.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 - n, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
-const pctChange = (now, before) => (before > 0 ? Math.round(((now - before) / before) * 100) : null);
-const normalize = (t, accounts) => {
+/* Each record keeps its original amount and currency; `amount` is converted to the home currency for totals. */
+const normalize = (t, accounts, base, rates) => {
   const account = accounts.find(a => a.id === t.account_id);
   const transferTarget = accounts.find(a => a.id === t.transfer_to_account_id);
+  const origCurrency = t.origCurrency || t.currency || account?.currency || 'PHP';
+  const origAmount = Number(t.origAmount ?? t.amount);
   return {
     ...t,
     type: t.transaction_type || t.type,
     date: t.occurred_at || t.date,
-    amount: Number(t.amount),
+    origAmount, origCurrency, currency: base,
+    amount: convert(origAmount, origCurrency, base, rates),
     accountName: account?.name || t.account || 'Manual entry',
     transferToAccountName: transferTarget?.name || (t.transfer_to_account_id ? 'Unknown account' : ''),
   };
@@ -76,6 +92,25 @@ function useSystemDark() {
   return dark;
 }
 
+function CountrySheet({ value, locale, onPick, onClose }) {
+  const [q, setQ] = useState('');
+  const list = COUNTRIES.map(row => ({ row, name: countryName(row[0], locale) })).sort((a, b) => a.name.localeCompare(b.name, locale)).filter(c => !q || `${c.row[0]} ${c.name} ${countryName(c.row[0], 'en')}`.toLowerCase().includes(q.trim().toLowerCase()));
+  return <Sheet title={tr('Country or region')} subtitle={tr('Sets the language, home currency and local date and number style. You can still change each one separately.')} onClose={onClose} label={tr('Country or region')}>
+    <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search countries')} placeholder={tr('Search countries')} value={q} onChange={e => setQ(e.target.value)} /></label>
+    <div className="sheet-list">{list.map(({ row, name }) => <button type="button" key={row[0]} className={`sheet-card${value === row[0] ? ' selected' : ''}`} aria-pressed={value === row[0]} onClick={() => onPick(row)}><span className="currency-code">{row[0]}</span><span className="account-main"><strong>{name}</strong><small>{LANGUAGES.find(l => l.code === row[1])?.name} · {row[2]}</small></span>{value === row[0] && <Icon name="check" size={18} />}</button>)}</div>
+  </Sheet>;
+}
+
+function CurrencySheet({ value, fx, locale, onPick, onClose }) {
+  const [q, setQ] = useState('');
+  const list = CURRENCIES.map(code => ({ code, name: currencyName(code, locale) })).filter(c => !q || `${c.code} ${c.name}`.toLowerCase().includes(q.trim().toLowerCase()));
+  return <Sheet title={tr('Home currency')} subtitle={tr('Totals, budgets and charts are shown in this currency. Each account keeps its own currency.')} onClose={onClose} label={tr('Home currency')}>
+    <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search currencies')} placeholder={tr('Search currencies')} value={q} onChange={e => setQ(e.target.value)} /></label>
+    <div className="sheet-list">{list.map(c => <button type="button" key={c.code} className={`sheet-card${value === c.code ? ' selected' : ''}`} aria-pressed={value === c.code} onClick={() => onPick(c.code)}><span className="currency-code">{c.code}</span><span className="account-main"><strong>{c.name}</strong><small>{money(1234.5, c.code)}</small></span>{value === c.code && <Icon name="check" size={18} />}</button>)}</div>
+    <p className="fineprint">{fx.live ? tr('Exchange rates updated {date}. Conversions are estimates for tracking only.', { date: formatDate(fx.at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }) : tr('Using approximate built-in exchange rates until live rates load. Conversions are estimates for tracking only.')}</p>
+  </Sheet>;
+}
+
 function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
@@ -87,10 +122,14 @@ function App() {
   const lastTab = useRef(0);
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [prefs, setPrefs] = useState(readPrefs);
+  const [fx, setFx] = useState(loadRates);
   const [cloudAccounts, setCloudAccounts] = useState([]);
+  const [cloudBudgets, setCloudBudgets] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions(demoTransactions));
   const [samplesOn, setSamplesOn] = useState(areSamplesEnabled);
+  const [sceneryPhoto, setSceneryPhotoState] = useState(loadSceneryPhoto);
+  const setSceneryPhoto = useCallback((url) => { if (!saveSceneryPhoto(url)) return false; setSceneryPhotoState(url); return true; }, []);
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -103,13 +142,14 @@ function App() {
   const [nFilter, setNFilter] = useState('All');
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
+  const [pendingLog, setPendingLog] = useState(null);
   const [toast, setToast] = useState('');
   const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
   const pendingLocalDataRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [accountForm, setAccountForm] = useState({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
-  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'Groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), note: '' });
+  const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
+  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'Groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '' });
   const [csvRows, setCsvRows] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [csvFileName, setCsvFileName] = useState('');
@@ -124,6 +164,21 @@ function App() {
   const setPref = useCallback((key, value) => {
     const apply = () => setPrefs(cur => ({ ...cur, [key]: value }));
     if (APPEARANCE_KEYS.has(key)) revealChange(apply, flushSync); else apply();
+  }, []);
+  const lang = setLanguage(prefs.language || detectLanguage());
+  const [, setI18nTick] = useState(0);
+  useEffect(() => {
+    let live = true;
+    loadLanguage(lang.code).then(changed => { if (live && changed) setI18nTick(n => n + 1); }).catch(() => { /* offline: keep cached or English text */ });
+    return () => { live = false; };
+  }, [lang.code]);
+  setFormatLocale(regionalLocale(lang, prefs.country));
+  setBaseCurrency(/^[A-Z]{3}$/.test(prefs.currency || '') ? prefs.currency : 'PHP');
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test') return undefined;
+    let live = true;
+    refreshRates(fx).then(next => { if (live && next) setFx(next); }).catch(() => { /* offline: keep cached or built-in rates */ });
+    return () => { live = false; };
   }, []);
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
@@ -165,7 +220,8 @@ function App() {
     try {
       const [a, t] = await Promise.all([listAccounts(), listTransactions()]);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudMode(true);
-    } catch { setError('Could not load cloud records. Check your connection and try again.'); setCloudMode(false); }
+      listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
+    } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
   }, []);
   useEffect(() => {
@@ -181,7 +237,7 @@ function App() {
       || searchParams.get('error') || searchParams.get('error_code');
     if (!oauthError) return;
     setView('Sign in');
-    setError('Google sign-in could not be completed. Check the Google provider and redirect URL settings, then try again.');
+    setError(tr('Google sign-in could not be completed. Check the Google provider and redirect URL settings, then try again.'));
     const url = new URL(window.location.href);
     ['error', 'error_code', 'error_description'].forEach((key) => url.searchParams.delete(key));
     url.hash = '';
@@ -208,16 +264,21 @@ function App() {
 
   /* ---------- derived data ---------- */
   const baseAccounts = cloudMode ? cloudAccounts : [...(samplesOn ? demoAccounts : []), ...localAccounts];
-  const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts]);
+  const base = /^[A-Z]{3}$/.test(prefs.currency || '') ? prefs.currency : 'PHP';
+  const rates = fx.rates;
+  const toBase = useCallback((value, from) => convert(value, from || 'PHP', base, rates), [base, rates]);
+  const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts, base, rates)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts, base, rates]);
   const accountsView = useMemo(() => baseAccounts.map(a => {
     const delta = txs.reduce((s, t) => {
       if (!cloudMode && t.source === 'Sample') return s;
-      if (t.account_id === a.id) return s + (t.type === 'income' ? t.amount : -t.amount);
-      if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + t.amount;
+      const own = convert(t.origAmount, t.origCurrency, a.currency || 'PHP', rates);
+      if (t.account_id === a.id) return s + (t.type === 'income' ? own : -own);
+      if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + own;
       return s;
     }, 0);
-    return { ...a, mask: a.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
-  }), [baseAccounts, txs, cloudMode]);
+    const st = prefs.accountStyles?.[a.id] || {};
+    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
+  }), [baseAccounts, txs, cloudMode, prefs.accountStyles, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -241,18 +302,14 @@ function App() {
   const homeMonth = useMemo(() => statsFor(refMonth), [statsFor, refMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
   const stats = useMemo(() => {
-    const balance = accountsView.length ? accountsView.reduce((s, a) => s + a.balance, 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+    const balance = accountsView.length ? accountsView.reduce((s, a) => s + toBase(a.balance, a.currency), 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
     let running = balance - homeMonth.net; const daily = new Map();
     homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
     let points = [balance - homeMonth.net, ...daily.values()];
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
     return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeMonth]);
-  const deltas = useMemo(() => {
-    if (!cloudMode) return demoDeltas;
-    const prev = statsFor(monthsBack(refMonth, 1));
-    return { balance: pctChange(stats.balance, stats.balance - homeMonth.net), income: pctChange(homeMonth.income, prev.income), expenses: pctChange(homeMonth.expenses, prev.expenses), savings: pctChange(homeMonth.net, prev.net), spent: pctChange(homeMonth.expenses, prev.expenses), transfers: pctChange(homeMonth.transfers, prev.transfers) };
-  }, [cloudMode, statsFor, refMonth, stats.balance, homeMonth]);
+  }, [accountsView, txs, homeMonth, toBase]);
+  const deltas = useMemo(() => monthOverMonth(txs, refDate, stats.balance), [txs, refDate, stats.balance]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
@@ -261,6 +318,9 @@ function App() {
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => txs.filter(t => t.type !== 'transfer').slice(0, 4), [txs]);
+  const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
+  const budgetList = useMemo(() => budgetProgress(budgets, homeMonth.list), [budgets, homeMonth]);
+  const plans = useMemo(() => (prefs.plans || []).map(p => ({ ...p, target: toBase(p.target, p.currency || 'PHP'), saved: toBase(p.saved, p.currency || 'PHP'), currency: base })), [prefs.plans, toBase, base]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const allNotifications = useMemo(() => buildNotifications(txs, cloudMode || !samplesOn ? [] : demoNotifications), [txs, cloudMode, samplesOn]);
@@ -301,21 +361,23 @@ function App() {
   }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
-  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id })); setSheet({ name: 'transaction', type }); };
+  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type }); };
   const openEditAccount = (account) => {
     setError('');
     setAccountForm({
       name: account.name || '', account_type: account.account_type || 'other',
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
+      currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
+      chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit',
     });
     setSheet({ name: 'account', type: account.account_type, id: account.id });
   };
   const openEditTransaction = (t) => {
     setError('');
     setForm({
-      merchant: t.merchant || '', amount: String(t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
+      merchant: t.merchant || '', amount: String(t.origAmount ?? t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
       category: t.category || 'Other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
-      occurred_at: dayKey(t.date || t.occurred_at), note: t.note || '',
+      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '',
     });
     setSheet({ name: 'transaction', id: t.id });
   };
@@ -323,25 +385,30 @@ function App() {
   const saveTransaction = async (e) => {
     e.preventDefault(); setError('');
     const amount = Number(form.amount); const type = form.transaction_type;
-    if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError('Enter a description and a valid positive amount.'); return; }
-    if ((cloudMode || formAccounts.length > 0) && !form.account_id) { setError('Choose an account before saving this transaction.'); return; }
-    if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError('Choose two different accounts for a transfer.'); return; }
+    if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return; }
+    if ((cloudMode || formAccounts.length > 0) && !form.account_id) { setError(tr('Choose an account before saving this transaction.')); return; }
+    if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return; }
     const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
-    const occurred_at = new Date(`${form.occurred_at}T12:00:00`).toISOString();
+    // Time is recorded automatically (hour, minute, second) at the moment of saving unless one was set.
+    const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(form.time || '') ? (form.time.length === 5 ? `${form.time}:00` : form.time) : new Date().toTimeString().slice(0, 8);
+    const stamp = new Date(`${form.occurred_at}T${clock}`);
+    if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return; }
+    const occurred_at = stamp.toISOString();
+    const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
     setBusy(true);
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     try {
       if (cloudMode) {
-        const payload = { merchant: form.merchant.trim(), amount, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
+        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
         const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
       }
-      setForm({ ...form, merchant: '', amount: '', note: '' }); setSheet(null);
+      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today() }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
   };
@@ -349,8 +416,8 @@ function App() {
     if (!file) return;
     setCsvFileName(file.name || 'transactions.csv');
     setCsvRows([]); setCsvErrors([]); setCsvImportSummary('');
-    if (file.size > 5 * 1024 * 1024) { setCsvErrors([{ line: 1, message: 'CSV file must be 5 MB or smaller.' }]); return; }
-    if (!/\.csv$/i.test(file.name || '') && !['text/csv', 'application/vnd.ms-excel'].includes(file.type)) { setCsvErrors([{ line: 1, message: 'Choose a CSV file.' }]); return; }
+    if (file.size > 5 * 1024 * 1024) { setCsvErrors([{ line: 1, message: tr('CSV file must be 5 MB or smaller.') }]); return; }
+    if (!/\.csv$/i.test(file.name || '') && !['text/csv', 'application/vnd.ms-excel'].includes(file.type)) { setCsvErrors([{ line: 1, message: tr('Choose a CSV file.') }]); return; }
     setCsvRows([]); setCsvErrors([]); setCsvImportSummary('');
     const reader = new FileReader();
     reader.onload = () => {
@@ -358,13 +425,13 @@ function App() {
         const result = parseCsvTransactions(String(reader.result || ''));
         setCsvRows(result.transactions);
         setCsvErrors(result.errors);
-        if (!result.transactions.length && !result.errors.length) setCsvErrors([{ line: 1, message: 'No transactions were found in this file.' }]);
+        if (!result.transactions.length && !result.errors.length) setCsvErrors([{ line: 1, message: tr('No transactions were found in this file.') }]);
       } catch (err) {
         setCsvRows([]);
         setCsvErrors([{ line: 1, message: err?.message || 'Could not read this CSV file.' }]);
       }
     };
-    reader.onerror = () => setCsvErrors([{ line: 1, message: 'Could not read this file. Please try another CSV.' }]);
+    reader.onerror = () => setCsvErrors([{ line: 1, message: tr('Could not read this file. Please try another CSV.') }]);
     reader.readAsText(file);
   };
 
@@ -378,14 +445,14 @@ function App() {
         const row = csvRows[i];
         const matchingAccount = formAccounts.find(a => row.account_name && a.name.trim().toLowerCase() === row.account_name.trim().toLowerCase());
         const accountId = matchingAccount?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
-        if (!accountId) { errors.push({ line: i + 2, message: `Choose a default account or match the account name for “${row.merchant}”.` }); continue; }
+        if (!accountId) { errors.push({ line: i + 2, message: tr('Choose a default account or match the account name for “{merchant}”.', { merchant: row.merchant }) }); continue; }
         const matchingDestination = formAccounts.find(a => row.to_account_name && a.name.trim().toLowerCase() === row.to_account_name.trim().toLowerCase());
         const destinationId = row.transaction_type === 'transfer' ? (matchingDestination?.id || '') : undefined;
         if (row.transaction_type === 'transfer' && (!destinationId || destinationId === accountId)) {
-          errors.push({ line: i + 2, message: `Transfer “${row.merchant}” needs a different destination account that matches the CSV.` }); continue;
+          errors.push({ line: i + 2, message: tr('Transfer “{merchant}” needs a different destination account that matches the CSV.', { merchant: row.merchant }) }); continue;
         }
         const fingerprint = transactionFingerprint({ ...row, account_id: accountId });
-        if (fingerprints.has(fingerprint)) { errors.push({ line: i + 2, message: `Possible duplicate skipped: “${row.merchant}”.` }); continue; }
+        if (fingerprints.has(fingerprint)) { errors.push({ line: i + 2, message: tr('Possible duplicate skipped: “{merchant}”.', { merchant: row.merchant }) }); continue; }
         try {
           if (cloudMode) {
             const saved = await createTransaction({
@@ -404,7 +471,7 @@ function App() {
           }
           fingerprints.add(fingerprint);
         } catch {
-          errors.push({ line: i + 2, message: `Could not save “${row.merchant}”. It was not added.` });
+          errors.push({ line: i + 2, message: tr('Could not save “{merchant}”. It was not added.', { merchant: row.merchant }) });
         }
       }
       if (created.length) setRawTxs(cur => [...created, ...cur]);
@@ -419,22 +486,25 @@ function App() {
   const saveAccount = async (e) => {
     e.preventDefault(); setError('');
     const name = accountForm.name.trim();
-    const openingBalance = Number(accountForm.opening_balance || 0);
-    if (!name) { setError('Enter an account name.'); return; }
-    if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError('Enter a valid opening balance.'); return; }
-    if (!accountTypes.some(type => type.value === accountForm.account_type)) { setError('Choose a valid account type.'); return; }
+    const openingBalance = evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
+    const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : base;
+    const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind } : {}) } }); };
+    if (!name) { setError(tr('Enter an account name.')); return; }
+    if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError(tr('Enter exactly 4 digits for the last 4 numbers, or leave it empty.')); return; }
+    if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError(tr('Enter a valid opening balance.')); return; }
+    if (!accountTypes.some(type => type.value === accountForm.account_type)) { setError(tr('Choose a valid account type.')); return; }
     const editingId = sheet?.name === 'account' ? sheet.id : null;
     setBusy(true);
     try {
       if (cloudMode && session?.user) {
         if (editingId) {
-          const a = await updateAccount(editingId, { ...accountForm, opening_balance: openingBalance });
-          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item));
-          notify('Account updated in your MOVO account.');
+          const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId);
+          notify(tr('Account updated in your MOVO account.'));
         } else {
-          const a = await createAccount({ ...accountForm, opening_balance: openingBalance }, session.user.id);
-          setCloudAccounts(cur => [...cur, a]);
-          notify('Account added to your signed-in MOVO account.');
+          const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
+          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id);
+          notify(tr('Account added to your signed-in MOVO account.'));
         }
       } else {
         const existing = localAccounts.find(a => a.id === editingId);
@@ -444,61 +514,107 @@ function App() {
           name: name.slice(0, 100),
           account_type: accountForm.account_type || sheet?.type || 'other',
           institution_name: accountForm.institution_name.trim().slice(0, 100),
-          currency: existing?.currency || 'PHP', opening_balance: Math.round(openingBalance * 100) / 100,
-          balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
+          currency, opening_balance: Math.round(openingBalance * 100) / 100,
+          balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
+        saveStyle(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
       }
-      setAccountForm({ name: '', account_type: 'bank', institution_name: '', opening_balance: '0' });
+      setAccountForm(BLANK_ACCOUNT);
       setSheet(null);
     } catch { setError(editingId ? 'Could not update account. Please review the details and try again.' : 'Could not add account. Please review the details and try again.'); }
     finally { setBusy(false); }
   };
   const archiveAccount = async (account) => {
-    if (!window.confirm(`Archive “${account.name}”? Its transaction history will remain available.`)) return;
+    if (!window.confirm(tr('Archive “{name}”? Its transaction history will remain available.', { name: account.name }))) return;
     try {
       if (cloudMode) {
         await updateAccount(account.id, { is_archived: true });
         setCloudAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
       } else setLocalAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
-      setSheet(null); notify('Account archived. Its transaction history was kept.');
-    } catch { notify('Could not archive this account. Please try again.'); }
+      setSheet(null); notify(tr('Account archived. Its transaction history was kept.'));
+    } catch { notify(tr('Could not archive this account. Please try again.')); }
   };
   const removeTransaction = async (t) => {
     if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
-    try { if (cloudMode) await deleteTransaction(t.id); setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null); notify('Transaction deleted.'); }
-    catch { notify('Could not delete this transaction.'); }
+    try { if (cloudMode) await deleteTransaction(t.id); setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null); notify(tr('Transaction deleted.')); }
+    catch { notify(tr('Could not delete this transaction.')); }
   };
+  const saveBudget = async ({ id, category, monthly_limit }) => {
+    if (cloudMode && session?.user) {
+      const row = id ? await updateBudget(id, { category, monthly_limit, currency: base }) : await createBudget({ category, monthly_limit, currency: base }, session.user.id);
+      setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
+    } else {
+      const row = { id: id || window.crypto?.randomUUID?.() || `budget-${Date.now()}`, category, monthly_limit, currency: base };
+      setPref('budgets', [...(prefs.budgets || []).filter(b => b.id !== row.id), row]);
+    }
+    notify(tr('Budget saved.'));
+  };
+  const deleteBudget = async (id) => {
+    if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); } else setPref('budgets', (prefs.budgets || []).filter(b => b.id !== id));
+    notify(tr('Budget removed.'));
+  };
+  const savePlan = (plan) => { const row = { ...plan, currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
+  const deletePlan = (id) => { setPref('plans', plans.filter(p => p.id !== id)); notify(tr('Plan removed.')); };
   const exportCsv = () => {
-    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, t.category, t.type, t.amount, t.currency || 'PHP', t.accountName])];
+    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, t.category, t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName])];
     const csv = buildCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setSheet(null); notify('CSV export prepared.');
+    setSheet(null); notify(tr('CSV export prepared.'));
   };
-  const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify('Sample records removed. Your manually entered records are kept.'); };
-  const clearLocal = () => {
-    pendingLocalDataRef.current = null;
-    let preferencesCleared = true;
-    try { localStorage.removeItem(PREF); localStorage.removeItem(OLD_PREF); } catch { preferencesCleared = false; }
-    const recordsCleared = clearLocalFinanceData();
-    const stickersCleared = clearCustomStickers();
-    const allLocalDataCleared = preferencesCleared && recordsCleared && stickersCleared;
-    setPrefs({ ...DEFAULTS });
-    setRawTxs(cloudMode ? rawTxs : []);
-    setLocalAccounts([]);
-    setSamplesOn(false);
-    setLocalPersistenceWarning(!preferencesCleared || !recordsCleared);
-    setSheet(null);
-    if (allLocalDataCleared) {
-      setError('');
-      notify('Local transactions, accounts, custom stickers and preferences cleared. Cloud records are unchanged.');
-    } else {
-      setError('MOVO could not confirm that all local data was cleared. Custom sticker images or local records may remain. Check browser storage and clear this site’s data manually if needed.');
-    }
+  const clearSamples = () => { setRawTxs(cur => cur.filter(t => t.source !== 'Sample')); setSamplesOn(false); setSheet(null); notify(tr('Sample records removed. Your manually entered records are kept.')); };
+  const [clearText, setClearText] = useState('');
+  const clearAll = async () => {
+    if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    setBusy(true); setError('');
+    try {
+      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
+      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
+      setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setSamplesOn(false); setPendingLog(null); setSheet(null); setClearText('');
+      notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
+    } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
+    finally { setBusy(false); }
   };
+  /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
+  const autoLogFor = useCallback(async (entry) => {
+    const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
+    if (cloudMode && !account) { setPendingLog(entry); return; }
+    const payload = { merchant: entry.merchant, amount: entry.amount, transaction_type: 'expense', category: guessCategory(entry.merchant), account_id: account?.id || 'local', occurred_at: new Date().toISOString(), note: `${tr('Logged from {source}', { source: entry.source })}${entry.card ? ` · ${entry.card}` : ''}` };
+    try {
+      if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); setRawTxs(cur => [row, ...cur]); }
+      else setRawTxs(cur => [{ ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }, ...cur]);
+      notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
+    } catch { setPendingLog(entry); }
+  }, [accountsView, cloudMode, session, notify]);
+  const handledLink = useRef('');
+  useEffect(() => {
+    if (!authReady || (session?.user && !cloudMode)) return undefined;
+    const handle = () => {
+      const hash = window.location.hash;
+      const entry = readLogLink(hash);
+      if (!entry || handledLink.current === hash) return;
+      handledLink.current = hash;
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      if (entry.invalid) { notify(tr('That payment link had no valid amount, so nothing was logged.')); return; }
+      if (isRepeat(entry)) return;
+      const trusted = sameKey(entry.key, prefs.autoLogKey);
+      if (trusted && prefs.autoLog) autoLogFor(entry);
+      else setPendingLog({ ...entry, trusted });
+    };
+    handle();
+    window.addEventListener('hashchange', handle);
+    return () => window.removeEventListener('hashchange', handle);
+  }, [authReady, session, cloudMode, prefs.autoLog, prefs.autoLogKey, autoLogFor, notify]);
+  const reviewPending = () => {
+    const e = pendingLog; setPendingLog(null); setError('');
+    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: today(), time: '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
+    setSheet({ name: 'transaction', type: 'expense' });
+  };
+
   const signOutNow = async () => {
     try {
       await signOut();
@@ -506,20 +622,23 @@ function App() {
       setSession(null);
       setCloudMode(false);
       setCloudAccounts([]);
-      setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions));
+      setRawTxs(pending?.transactions || loadLocalTransactions(demoTransactions, samplesOn));
       setLocalAccounts(pending?.accounts || loadLocalAccounts());
       setSamplesOn(pending ? pending.samplesOn : areSamplesEnabled());
       go('Home');
-      notify('Signed out securely.');
-    } catch { notify('Could not sign out. Please try again.'); }
+      notify(tr('Signed out securely.'));
+    } catch { notify(tr('Could not sign out. Please try again.')); }
   };
 
   const c = {
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: !cloudMode && samplesOn,
-    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm,
+    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
+    sceneryPhoto, setSceneryPhoto,
+    toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
+    budgetList, plans, openBudgets: () => setSheet({ name: 'budgets' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -530,14 +649,15 @@ function App() {
   const accentName = prefs.accent === 'custom' ? 'custom' : prefs.accent;
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
-  const rootStyle = { ...glassVars, ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}`;
+  const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
+  const rootStyle = { ...glassVars, ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
   const pillIdx = lastTab.current;
 
-  if (!authReady) return <div className={rootClass} style={rootStyle}><div className="loading-screen"><span className="brand-mark">m</span><p>Preparing your secure MOVO space…</p></div></div>;
+  if (!authReady) return <div className={rootClass} style={rootStyle}><div className="loading-screen"><span className="brand-mark">m</span><p>{tr('Preparing your secure MOVO space…')}</p></div></div>;
   const detailTx = sheet?.name === 'tx' ? txs.find(t => t.id === sheet.id) : null;
   const formAccounts = accountsView.filter(a => !a.is_archived);
   const accountChoice = sheet?.name === 'cardDetails' ? accountsView.find(a => a.id === sheet.id) || selectedCard : null;
@@ -557,106 +677,115 @@ function App() {
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
       case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} />;
-      case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify('Continuing in local-only mode.'); }} />;
+      case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
   })();
 
-  return <div className={rootClass} style={rootStyle}>
+  return <div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+    {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
-        {!cloudMode && samplesOn && !['Sign in', 'TermsOfService', 'PrivacyPolicy'].includes(view) && <aside className="sample-data-notice" role="note" aria-label="Sample data notice">
-          <div><strong>Demo mode — sample data only.</strong><span>These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.</span></div>
-          <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>Sign in</button>
+        {!cloudMode && samplesOn && !['Sign in', 'TermsOfService', 'PrivacyPolicy'].includes(view) && <aside className="sample-data-notice" role="note" aria-label={tr('Sample data notice')}>
+          <div><strong>{tr('Demo mode — sample data only.')}</strong><span>{tr('These example balances and transactions are fictional, not linked to a bank, and are not saved or synced as your financial records.')}</span></div>
+          <button type="button" className="sample-data-signin" onClick={() => go('Sign in')}>{tr('Sign in')}</button>
         </aside>}
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
-          <span><strong>{cloudMode && pendingLocalDataRef.current ? 'Local-only records were not saved before cloud sign-in.' : 'Local changes may not be saved.'}</strong> {cloudMode && pendingLocalDataRef.current ? 'These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.' : 'Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.'}</span>
-          <button type="button" className="retry-save" onClick={retryLocalPersistence}>Retry save</button>
+          <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
+          <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
         </div>}
-        {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label="Dismiss error" onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
+        {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
       </main>
 
-      <nav className="bottom-nav" aria-label="Main navigation">
+      <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
+      <nav className="bottom-nav" aria-label={tr('Main navigation')}>
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={label}>
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={24} /></span> : <Icon name={icon} size={24} strokeWidth={1.8} filled={active} />}</span>
+            {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
         })}
       </nav>
 
-      {sheet?.name === 'transaction' && <Sheet title={sheet.id ? 'Edit transaction' : 'Add transaction'} subtitle={sheet.id ? 'Changes update this record.' : cloudMode ? 'Saved to your signed-in MOVO account.' : 'Saved on this device only; sign in to use cloud storage.'} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? 'Edit transaction' : 'Add transaction'}>
-        <form className="sheet-form" onSubmit={saveTransaction}>
-          <div className="seg-control" role="group" aria-label="Transaction type">{['expense', 'income', 'transfer'].map(t => <button type="button" key={t} className={form.transaction_type === t ? 'selected' : ''} aria-pressed={form.transaction_type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
-          <label>Description<input autoFocus required maxLength={160} value={form.merchant} onChange={e => setForm({ ...form, merchant: e.target.value })} placeholder="e.g. Grocery shopping" /></label>
-          <div className="form-grid"><label>Amount (PHP)<input required type="number" min="0.01" max="999999999999" step="0.01" inputMode="decimal" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" /></label>
-            <label>Date<input required type="date" value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label></div>
-          {form.transaction_type === 'expense' && <label>Category<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{categories.map(x => <option key={x}>{x}</option>)}</select></label>}
-          {(cloudMode || formAccounts.length > 0) && <label>{form.transaction_type === 'transfer' ? 'From account' : 'Account'}<select required={cloudMode} value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
-          {form.transaction_type === 'transfer' && formAccounts.length > 0 && <label>To account<select value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">Choose account</option>{formAccounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
-          <label>Note (optional)<textarea rows="2" maxLength="1000" value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Add a note" /></label>
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button type="submit" className="primary-button" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Save transaction'}</button></div>
-        </form>
-      </Sheet>}
+      {sheet?.name === 'transaction' && <TransactionSheet currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { setError(''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
-      {sheet?.name === 'account' && <Sheet title={sheet.id ? 'Edit account' : 'Add account'} subtitle={sheet.id ? 'Update the name, type, institution or opening balance.' : 'Track a card, bank account or e-wallet.'} onClose={() => { setSheet(null); setError(''); }} label={sheet.id ? 'Edit account' : 'Add account'}>
-        <form className="sheet-form" onSubmit={saveAccount}>
-          <label>Account name<input required maxLength="100" value={accountForm.name} onChange={e => setAccountForm({ ...accountForm, name: e.target.value })} placeholder="e.g. Everyday account" /></label>
-          <label>Account type<select value={accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-          <label>Bank / institution (optional)<input maxLength="100" value={accountForm.institution_name} onChange={e => setAccountForm({ ...accountForm, institution_name: e.target.value })} placeholder="Institution name" /></label>
-          <label>Opening balance (PHP)<input type="number" step="0.01" max="999999999999" value={accountForm.opening_balance} onChange={e => setAccountForm({ ...accountForm, opening_balance: e.target.value })} /></label>
-          {!cloudMode && <p className="form-note">This account will be stored only on this device. Sign in to enable cloud sync.</p>}
-          {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setError(''); }}>Cancel</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Saving…' : sheet.id ? 'Save changes' : 'Add account'}</button></div>
-        </form>
-      </Sheet>}
+      {sheet?.name === 'account' && <AccountSheet base={base} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
-      {sheet?.name === 'actions' && <Sheet title="Quick actions" onClose={() => setSheet(null)}>
+      {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">
-          <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />Add transaction</button>
-          <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />Add account</button>
-          <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />Import CSV</button>
-          <button type="button" onClick={exportCsv}><Icon name="download" size={20} />Export CSV</button>
-          <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />Choose theme</button>
-          {!cloudMode && samplesOn && <button type="button" onClick={clearSamples}><Icon name="trash" size={20} />Remove sample data</button>}
+          <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />{tr('Add transaction')}</button>
+          <button type="button" onClick={() => setSheet({ name: 'scanner' })}><Icon name="scan" size={20} />{tr('Scan receipt')}</button>
+          <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />{tr('Add account')}</button>
+          <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />{tr('Import CSV')}</button>
+          <button type="button" onClick={exportCsv}><Icon name="download" size={20} />{tr('Export CSV')}</button>
+          <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />{tr('Choose theme')}</button>
+          {!cloudMode && samplesOn && <button type="button" onClick={clearSamples}><Icon name="trash" size={20} />{tr('Remove sample data')}</button>}
         </div>
       </Sheet>}
 
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
+      {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>
+        <div className="sheet-list">{[{ code: '', name: tr('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>
+      </Sheet>}
+      {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'budgets' && <BudgetsSheet progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 
 
-      {sheet?.name === 'importCsv' && <Sheet title="Import transactions" subtitle="CSV is parsed in this browser. Nothing is uploaded until you confirm the import." onClose={() => setSheet(null)} label="Import transactions">
+      {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is parsed in this browser. Nothing is uploaded until you confirm the import.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>
         <div className="sheet-form">
-          <label>Choose CSV file<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
-          <p className="form-note">Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.</p>
-          {csvFileName && <p className="form-note">File: {csvFileName}</p>}
-          {formAccounts.length > 0 && <label>Default account (used when the CSV account name does not match)<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">Choose account</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
-          {csvRows.length > 0 && <section className="card pad" aria-label="CSV import preview"><strong>Preview · {csvRows.length} valid row(s)</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{row.transaction_type} · {row.category} · {row.account_name || 'default account'}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">Showing the first 5 rows. All valid rows will be processed.</p>}</section>}
+          <label>{tr('Choose CSV file')}<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
+          <p className="form-note">{tr('Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.')}</p>
+          {csvFileName && <p className="form-note">{tr('File: {name}', { name: csvFileName })}</p>}
+          {formAccounts.length > 0 && <label>{tr('Default account (used when the CSV account name does not match)')}<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">{tr('Choose account')}</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+          {csvRows.length > 0 && <section className="card pad" aria-label={tr('CSV import preview')}><strong>{tr('Preview · {n} valid row(s)', { n: csvRows.length })}</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{tr(row.transaction_type[0].toUpperCase() + row.transaction_type.slice(1))} · {tr(row.category)} · {row.account_name || tr('default account')}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">{tr('Showing the first 5 rows. All valid rows will be processed.')}</p>}</section>}
           {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
-          {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>Rows needing attention</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>Row {item.line}: {item.message}</li>)}</ul>{csvErrors.length > 8 && <p>And {csvErrors.length - 8} more row(s).</p>}</div>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Close</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? 'Importing…' : `Import ${csvRows.length} transaction(s)`}</button></div>
+          {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>{tr('Rows needing attention')}</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>{tr('Row {line}: {message}', { line: item.line, message: tr(item.message, item.vars) })}</li>)}</ul>{csvErrors.length > 8 && <p>{tr('And {n} more row(s).', { n: csvErrors.length - 8 })}</p>}</div>}
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Close')}</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? tr('Importing…') : tr('Import {n} transaction(s)', { n: csvRows.length })}</button></div>
         </div>
       </Sheet>}
-      {sheet?.name === 'clear' && <Sheet title="Clear local data?" subtitle="Resets browser preferences to defaults and removes local financial records, accounts, and custom sticker artwork. Cloud records are not affected." onClose={() => setSheet(null)}>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>Cancel</button><button type="button" className="danger-button" onClick={clearLocal}>Clear data</button></div>
+      {sheet?.name === 'clear' && <Sheet title={tr('Clear all data?')} subtitle={cloudMode ? tr('Permanently deletes everything in your MOVO account (transactions, accounts, budgets and NasrinAI chats) and all MOVO data on this device. Your sign-in stays.') : tr('Permanently deletes all MOVO data on this device: transactions, accounts, budgets, plans, scans, mascot, card styles and preferences.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear all data')}>
+        <form className="sheet-form" onSubmit={e => { e.preventDefault(); clearAll(); }}>
+          <p className="form-note">{tr('Export a CSV first if you want a copy. This cannot be undone.')}</p>
+          <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Clear all data')}</button></div>
+        </form>
       </Sheet>}
 
-      {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label="Account details">
-        <dl className="detail-list"><div><dt>Institution</dt><dd>{accountChoice.institution_name || 'Personal account'}</dd></div><div><dt>Number</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>Balance</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
-        <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> Edit account</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> Archive account</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>Add transaction</button></div>
+      {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label={tr('Account details')}>
+        <dl className="detail-list"><div><dt>{tr('Institution')}</dt><dd>{accountChoice.institution_name || tr('Personal account')}</dd></div><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div><div><dt>{tr('Balance')}</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div></dl>
+        <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> {tr('Edit account')}</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> {tr('Archive account')}</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>{tr('Add transaction')}</button></div>
       </Sheet>}
 
-      {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabel(detailTx.date)}`} onClose={() => setSheet(null)} label="Transaction details">
-        <dl className="detail-list"><div><dt>Amount</dt><dd>{shown(show, money(detailTx.amount, detailTx.currency))}</dd></div><div><dt>Type</dt><dd>{detailTx.type}</dd></div><div><dt>Category</dt><dd>{detailTx.category || 'Other'}</dd></div><div><dt>Account</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>Note</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>Source</dt><dd>Sample record</dd></div>}</dl>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> Edit</button><button type="button" className="danger-button" aria-label={`Delete ${detailTx.merchant}`} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> Delete</button></div>
+      {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}{detailTx.source === 'Sample' && <div><dt>{tr('Source')}</dt><dd>{tr('Sample record')}</dd></div>}</dl>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>
       </Sheet>}
 
+      {pendingLog && <div className="log-prompt" role="alertdialog" aria-label={tr('Log this payment?')}>
+        <span className="log-prompt-icon"><Icon name="card" size={18} /></span>
+        <span className="menu-main"><strong>{tr(pendingLog.source)}: {shown(show, money(pendingLog.amount))}</strong><small>{pendingLog.merchant}{pendingLog.trusted ? '' : ` · ${tr('from a link, please confirm')}`}</small></span>
+        <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
+        <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
+      </div>}
+      {sheet?.name === 'autolog' && <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay and Google Pay payments from your phone\'s automations.')} onClose={() => setSheet(null)} label={tr('Automatic logging')}>
+        <div className="card menu-card"><div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Payments are added instantly.') : tr('MOVO asks you to confirm each payment.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div></div>
+        <ol className="setup-steps">
+          <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → New → {transaction}. Pick your cards, choose {run}, then add {open} with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, open: <em>Open URLs</em> })}</li>
+          <li><strong>{tr('Android (Google Pay / bank alerts):')}</strong> {rich('In an automation app such as MacroDroid or Tasker, trigger on a Google Wallet or bank notification and open the link below with {src}, filling in the amount and merchant from the notification.', { src: <em>src=googlepay</em> })}</li>
+          <li>{tr('Keep this link private. It contains a key unique to this device; links without it always ask first.')}</li>
+        </ol>
+        <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
+      </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
-      {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
-      {busy && <div className="sync-indicator" role="status"><span className="spinner" /> Syncing securely…</div>}
+      {toast && <div className={`toast${busy ? ' raised' : ''}`} role="status" aria-live="polite">{toast}</div>}
+      {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
   </div>;
 }

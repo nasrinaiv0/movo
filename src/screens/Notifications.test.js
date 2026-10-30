@@ -1,4 +1,5 @@
 import { buildNotifications } from './Notifications';
+import { t } from '../lib/i18n';
 
 describe('buildNotifications', () => {
   test('includes transfers and labels them as transfer records', () => {
@@ -12,8 +13,9 @@ describe('buildNotifications', () => {
     }], []);
     expect(result).toHaveLength(1);
     expect(result[0].title).toBe('Transfer Recorded');
-    expect(result[0].body).toContain('Transfer to BPI');
-    expect(result[0].body).toContain('transfer recorded');
+    const body = t(result[0].body, result[0].vars);
+    expect(body).toContain('Transfer to BPI');
+    expect(body).toContain('transfer recorded');
   });
 
   test('describes income and expense as recorded entries rather than verified payments', () => {
