@@ -90,3 +90,8 @@ No MOVO application code, financial records, database schema/policies/grants, pr
 ## Follow-up status after documentation commit — 2026-10-30 08:18 Asia/Manila
 
 Writing the audit update advanced PR #54 to current head `7a0c9f4bcd032cef3268c06ee48465ccb3547feb`. Exact-head workflow [#40979002452](https://github.com/nasrinaiv0/movo/actions/runs/40979002452) remains in progress; its `verify` job has not completed. Exact-head Vercel deployment `dpl_HUmTRKLDHWy4qH9rhZjUDZN1RwYc` is queued. The prior successful run #40973302563 and READY preview `dpl_DpYqv38sEHF5eLtydgzd37z6aF5m` apply to the earlier SHA `283a740...` only. Current-head validation is pending.
+
+
+## Final documentation-head correction — 2026-10-30 08:19 Asia/Manila
+
+The SHA references in the earlier follow-up paragraphs are **intermediate commits**, not the final branch head: the master-ledger and detailed-delta updates were committed sequentially. After the last update in this checkpoint, the exact current head is the latest commit shown on [PR #54](https://github.com/nasrinaiv0/movo/pull/54). The previous workflow run was still in progress for an intermediate head, and the latest preview had been queued. Validation for the final documentation head is pending; use PR metadata and exact-head CI/Vercel status as the source of truth.
