@@ -7,7 +7,16 @@ create table if not exists public.accounting_postings (
   user_id uuid not null references auth.users(id) on delete cascade,
   account_id uuid not null references public.financial_accounts(id) on delete cascade,
   signed_amount numeric(18,2) not null check (signed_amount <> 0),
-  currency text not null default 'PHP' check (currency ~ '^[A-Z]{3}
+  currency text not null default 'PHP' check (currency ~ '^[A-Z]{3}$'),
+  source_type text not null check (source_type in ('loan_event','receivable_event')),
+  source_id uuid not null,
+  occurred_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (source_type, source_id, account_id)
+);
+create index if not exists accounting_postings_user_account_date_idx on public.accounting_postings(user_id, account_id, occurred_at desc);
+
+create table if not exists public.financial_loans (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null check (char_length(trim(name)) between 1 and 120),
@@ -23,7 +32,7 @@ create table if not exists public.accounting_postings (
   status text not null default 'active' check (status in ('active','paid_off','archived')),
   notes text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 create index if not exists financial_loans_user_status_idx on public.financial_loans(user_id, status);
 
