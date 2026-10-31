@@ -14,6 +14,13 @@ const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay'];
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const list = (v) => (Array.isArray(v) ? v : []);
 
+/** Removes secrets that belong to one browser/device and must never sync to account preferences. */
+export function cloudSafePreferences(prefs) {
+  const safe = isObj(prefs) ? { ...prefs } : {};
+  delete safe.autoLogKey;
+  return safe;
+}
+
 export function unionById(cloud, local, limit = Infinity) {
   const seen = new Set();
   const out = [];
