@@ -42,7 +42,7 @@ export default function FinancialPlanning({ c }) {
   const spendableAccounts = accounts.filter(a => ['bank','e_wallet','cash'].includes(a.account_type));
 
   const position = useMemo(() => financialPosition({
-    accounts: accounts.map(a => ({ ...a, balance: c.toBase ? c.toBase(a.balance, a.currency) : a.balance, card_kind: a.cardKind === 'credit' ? 'credit' : 'debit' })),
+    accounts: accounts.map(a => ({ ...a, balance: c.toBase ? c.toBase(a.balance, a.currency) : a.balance, card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
     loans: loans.map(l => ({ ...l, outstanding_balance: c.toBase ? c.toBase(l.outstanding_principal, l.currency) : l.outstanding_principal })),
     receivables: receivables.map(r => ({ ...r, outstanding_balance: c.toBase ? c.toBase(r.outstanding_amount, r.currency) : r.outstanding_amount })),
     goalAllocations: allocations.filter(a => a.status === 'allocated').map(a => ({ ...a, amount: c.toBase ? c.toBase(a.amount, a.currency) : a.amount })),
@@ -86,7 +86,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Loans & debts' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan({ ...loanForm, currency: loanForm.currency || c.base }, c.session?.user?.id), 'Loan or debt added.').then(ok => { if (ok) setLoanForm(blankLoan); }); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan({ ...loanForm, currency: loanForm.currency || c.base }, c.session?.user?.id), 'Loan or debt added.').then(ok => { if (ok) setLoanForm({ ...blankLoan, currency: c.base || 'PHP' }); }); }}>
         <h2>{tr('Add a loan or debt')}</h2>
         <label>{tr('Record type')}<select value={loanForm.obligation_type} onChange={e => setLoanForm({ ...loanForm, obligation_type: e.target.value })}><option value="loan">{tr('Loan')}</option><option value="debt">{tr('Other debt')}</option></select></label>
         <label>{tr('Name')}<input required maxLength="120" value={loanForm.name} onChange={e => setLoanForm({ ...loanForm, name: e.target.value })} /></label>
@@ -102,7 +102,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Owed to you' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createReceivable({ ...receivableForm, currency: receivableForm.currency || c.base }, c.session?.user?.id), 'Receivable added.').then(ok => { if (ok) setReceivableForm(blankReceivable); }); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createReceivable({ ...receivableForm, currency: receivableForm.currency || c.base }, c.session?.user?.id), 'Receivable added.').then(ok => { if (ok) setReceivableForm({ ...blankReceivable, currency: c.base || 'PHP' }); }); }}>
         <h2>{tr('Record money owed to you')}</h2>
         <label>{tr('Description')}<input required maxLength="120" value={receivableForm.name} onChange={e => setReceivableForm({ ...receivableForm, name: e.target.value })} /></label>
         <label>{tr('Person / organization')}<input maxLength="120" value={receivableForm.counterparty} onChange={e => setReceivableForm({ ...receivableForm, counterparty: e.target.value })} /></label>
@@ -117,7 +117,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Goals' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createGoal({ ...goalForm, currency: goalForm.currency || c.base }, c.session?.user?.id), 'Savings goal created.').then(ok => { if (ok) setGoalForm(blankGoal); }); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createGoal({ ...goalForm, currency: goalForm.currency || c.base }, c.session?.user?.id), 'Savings goal created.').then(ok => { if (ok) setGoalForm({ ...blankGoal, currency: c.base || 'PHP' }); }); }}>
         <h2>{tr('Create a savings goal')}</h2>
         <label>{tr('Goal name')}<input required maxLength="120" value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} /></label>
         <label>{tr('Target amount')}<input required type="number" min="0.01" step="0.01" value={goalForm.target_amount} onChange={e => setGoalForm({ ...goalForm, target_amount: e.target.value })} /></label>
@@ -127,7 +127,7 @@ export default function FinancialPlanning({ c }) {
       <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => allocateToGoal(allocationForm), 'Funds allocated to goal.').then(ok => { if (ok) setAllocationForm({ ...allocationForm, amount: '' }); }); }}>
         <h2>{tr('Allocate existing funds')}</h2>
         <label>{tr('Goal')}<select required value={allocationForm.goal_id} onChange={e => { const goal = goals.find(g => g.id === e.target.value); setAllocationForm({ ...allocationForm, goal_id: e.target.value, currency: goal?.currency || 'PHP' }); }}><option value="">{tr('Choose goal')}</option>{goals.filter(g => g.status === 'active').map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
-        <label>{tr('Account to reserve from')}<select required value={allocationForm.account_id} onChange={e => { const account = accounts.find(a => a.id === e.target.value); setAllocationForm({ ...allocationForm, account_id: e.target.value, currency: account?.currency || 'PHP' }); }}><option value="">{tr('Choose account')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
+        <label>{tr('Account to reserve from')}<select required value={allocationForm.account_id} onChange={e => { const account = accounts.find(a => a.id === e.target.value); setAllocationForm({ ...allocationForm, account_id: e.target.value, currency: account?.currency || 'PHP' }); }}><option value="">{tr('Choose account')}</option>{spendableAccounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
         <label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={allocationForm.amount} onChange={e => setAllocationForm({ ...allocationForm, amount: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Allocate funds')}</button>
       </form>
