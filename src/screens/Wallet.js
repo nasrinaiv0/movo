@@ -13,7 +13,7 @@ const typeOf = { Cards: ['card'], 'Bank Accounts': ['bank'], 'E-Wallets': ['e_wa
 const ADD_TYPE = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_wallet', 'Cash & Other': 'cash' };
 const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash & other', 'Cash, investments and more']];
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
-const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Tiles'], ['grid', 'grid', 'Grid']];
+const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
 const FORMATS = [['card', 'Bank card'], ['tile', 'Account tile']];
 export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'card' };
 const sorters = { 'balance-desc': (a, b) => b.balance - a.balance, 'balance-asc': (a, b) => a.balance - b.balance, name: (a, b) => a.name.localeCompare(b.name), type: (a, b) => a.account_type.localeCompare(b.account_type) || a.name.localeCompare(b.name) };
@@ -108,6 +108,7 @@ export default function Wallet({ c }) {
     <RootHeader title={tr('Wallet')} subtitle={tr('Your accounts, cards and balances.')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <div className="chip-bar wallet-chip-bar">
       <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(key) }))} value={walletFilter} onChange={setWalletFilter} />
+      <button type="button" className="round-button flat wallet-menu-button" aria-label={tr('Sort and view options')} title={tr('Sort and view options')} onClick={() => setSheet({ name: 'walletView' })}><Icon name="sliders" size={20} /></button>
       <button type="button" className="round-button accent" aria-label={tr('New account')} title={tr('New account')} onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
     </div>
 
@@ -144,6 +145,7 @@ export default function Wallet({ c }) {
       <p className="mini-title">{tr('Card format')}</p>
       <div className="format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
         {key === 'card' ? <CardArt a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 12500, currency: 'PHP' }} show={show} styleId="" /> : <AccountTile a={{ name: 'Your Bank', account_type: 'card', balance: 12500, currency: 'PHP' }} show={show} size="preview" />}<span>{label}</span></button>)}</div>
+      <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
     </Sheet>}
 
     {sheet?.name === 'cardStyle' && selectedCard && <CardStyleSheet account={selectedCard} show={show} holder={holder} current={styleOf(selectedCard)} onPick={pickStyle} onClose={() => setSheet(null)} />}

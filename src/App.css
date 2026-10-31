@@ -2531,7 +2531,17 @@ button.account-tile:active { transform: scale(.98); }
 }
 .movo-app .wallet-chip-bar > .round-button {
   flex: 0 0 44px;
-  margin-left: auto;
+  margin-left: 0;
+}
+.movo-app .wallet-chip-bar > .wallet-menu-button {
+  background: var(--card-solid);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.movo-app .wallet-edit-layout {
+  width: 100%;
+  justify-content: center;
+  margin-top: 12px;
 }
 .movo-app :is(.balance-card, .total-card, .stat-card, .mini-card) {
   box-shadow: 0 1px 4px rgba(20, 24, 40, .035);
