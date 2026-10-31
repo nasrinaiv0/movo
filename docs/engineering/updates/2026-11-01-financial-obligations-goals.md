@@ -26,6 +26,10 @@ Date: 2026-11-01. Scope: MOVO only.
 - src/App.js and src/lib/financeCalculations.js: cloud accounting postings are loaded into the account balance projection without being counted as ordinary income/expense transactions.
 - Existing PR #100 includes transaction routing, transfer activity net, account balance and savings corrections plus regression tests.
 
+## Localization note
+
+- All newly introduced Financial Planning strings are registered in the translation catalogue so extraction and placeholder validation stay green. They currently use English fallback text for all locales; proper human-reviewed translations remain a localization follow-up.
+
 ## Remaining limitations / verification gates
 
 - The migration has not been applied to the user's Supabase project by this change; no live database mutation was performed. Cloud UI will need that migration applied before those screens can load/save.
