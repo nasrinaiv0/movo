@@ -7,7 +7,7 @@ const active = row => row && row.is_archived !== true && row.status !== 'archive
 
 export function loanOutstanding(loan, events = []) {
   if (!loan) return 0;
-  const opening = amountOf(loan.principal_amount ?? loan.amount);
+  const opening = amountOf(loan.opening_principal ?? loan.principal_amount ?? loan.amount);
   const delta = (Array.isArray(events) ? events : []).filter(e => e.loan_id === loan.id).reduce((sum, e) => {
     const amount = amountOf(e.amount);
     if (e.event_type === 'borrowed' || e.event_type === 'principal_increase') return sum + amount;
