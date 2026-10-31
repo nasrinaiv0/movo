@@ -2672,3 +2672,36 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .wallet-card-item > .credit-card { transition: none; }
 }
+
+/* PR #115 refinement: real portrait card proportions and balanced all-side elevation. */
+.movo-app .wallet-card-item {
+  max-width: 224px;
+  overflow: visible;
+  isolation: isolate;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 54 / 85.6;
+  overflow: hidden;
+  border: 0;
+  box-shadow:
+    0 0 10px rgba(16, 24, 40, .09),
+    0 0 24px rgba(16, 24, 40, .08),
+    0 8px 16px rgba(16, 24, 40, .12),
+    0 18px 28px rgba(16, 24, 40, .09);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.movo-app .wallet-card-item:hover > .credit-card.orientation-portrait {
+  box-shadow:
+    0 0 12px rgba(16, 24, 40, .10),
+    0 0 28px rgba(16, 24, 40, .09),
+    0 12px 22px rgba(16, 24, 40, .15),
+    0 22px 34px rgba(16, 24, 40, .11);
+}
+@media (max-width: 760px) {
+  .movo-app .wallet-card-item { max-width: 216px; }
+}
+@media (max-width: 390px) {
+  .movo-app .wallet-card-item { max-width: none; }
+}
