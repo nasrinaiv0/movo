@@ -1986,3 +1986,9 @@ button.account-tile:active { transform: scale(.98); }
 .legal-disclosure-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 .legal-disclosure-actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:480px){.legal-disclosure-card{padding:20px 17px;border-radius:22px}.legal-disclosure-actions{display:grid;grid-template-columns:1fr}.legal-disclosure-actions button{width:100%;justify-content:center}}
+
+
+/* Keep the disclaimer wording numbered and in the user's exact requested order. */
+.legal-disclosure-numbered{list-style:decimal;padding-left:24px;margin:0;display:grid;gap:12px}
+.legal-disclosure-numbered li{padding:12px 14px 12px 8px;border:1px solid var(--line);border-radius:15px;background:var(--field);font-size:13px;line-height:1.55;color:var(--text)}
+.legal-disclosure-numbered li::marker{font-weight:800;color:var(--accent)}
