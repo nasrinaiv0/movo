@@ -22,7 +22,7 @@ import { answerLocally } from './lib/localAnswer';
 import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate, refOf } from './lib/duplicates';
-import { mergePreferences, unionById } from './lib/prefsMerge';
+import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
@@ -760,7 +760,7 @@ function App() {
     loadPreferences(userId).then(row => {
       if (!live) return;
       if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
-        setPrefs(cur => mergePreferences(DEFAULTS, cur, row.prefs));
+        setPrefs(cur => mergePreferences(DEFAULTS, cur, cloudSafePreferences(row.prefs)));
         if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
       }
       sync.ready = true;
@@ -776,7 +776,7 @@ function App() {
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
       let size = 0;
       const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
-      const shared = { ...prefs };
+      const shared = cloudSafePreferences(prefs);
       if ((shared.mascot || '').length > 120_000) delete shared.mascot;
       savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
