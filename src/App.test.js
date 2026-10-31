@@ -627,8 +627,9 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     clickButton(container, 'Log');
     const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
     expect(dialog).not.toBeNull();
-    expect(dialog.textContent).toContain('Gadc');
-    expect(dialog.querySelector('input[placeholder="0.00"]')?.value || dialog.textContent).toContain('109');
+    const inputValues = Array.from(dialog.querySelectorAll('input')).map(input => input.value);
+    expect(inputValues).toContain('Gadc');
+    expect(inputValues).toContain('109');
   });
 
   test('Apple Pay payment prompt Skip button dismisses the payment without opening a transaction form', async () => {
