@@ -1,4 +1,4 @@
-import { INSTITUTIONS, searchInstitutions } from './institutions';
+import { INSTITUTIONS, searchInstitutions, institutionLogoUrl } from './institutions';
 
 describe('country-aware institution catalog', () => {
   test('returns Philippine banks for the Philippines and matches aliases', () => {
@@ -20,6 +20,10 @@ describe('country-aware institution catalog', () => {
   test('supports case-insensitive search and does not require a catalog match for manual entry', () => {
     expect(searchInstitutions('PH', 'metroBANK', 'bank').map(item => item.name)).toContain('Metrobank');
     expect(searchInstitutions('PH', 'My local cooperative', 'bank')).toHaveLength(0);
+  });
+
+  test('does not request remote institution logos until the domain has a legal review status', () => {
+    expect(institutionLogoUrl('BDO Unibank')).toBe('');
   });
 
   test('catalog entries have stable ids and country metadata', () => {
