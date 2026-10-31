@@ -2615,7 +2615,7 @@ button.account-tile:active { transform: scale(.98); }
 }
 .movo-app .wallet-card-item > .credit-card {
   width: 100%;
-  aspect-ratio: 54 / 85.6;
+  aspect-ratio: 856 / 540;
   min-height: 0;
   border-radius: clamp(15px, 1.6vw, 22px);
   box-shadow:
