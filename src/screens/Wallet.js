@@ -122,18 +122,6 @@ export default function Wallet({ c }) {
       </div>
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
       <button type="button" className="style-button" onClick={() => { if (wv.cardFormat !== 'card') setWv({ cardFormat: 'card' }); setSheet({ name: 'cardStyle' }); }}><Icon name="palette" size={18} /> {tr('Card style')}</button>
-      <section className="card card-display-settings" aria-label={tr("Card display options")}>
-        <p className="card-display-title">{tr("Card display")}</p>
-        <div className="card-display-modes" role="group" aria-label={tr("Choose card display")}>
-          <button type="button" className={displayModeOf(selectedCard) === "details" ? "selected" : ""} aria-pressed={displayModeOf(selectedCard) === "details"} onClick={() => updateCardPreference("cardDisplayModes", "details")}><Icon name="card" size={17} /><span><strong>{tr("Card details")}</strong><small>{tr("Show card information")}</small></span></button>
-          <button type="button" className={displayModeOf(selectedCard) === "amount" ? "selected" : ""} aria-pressed={displayModeOf(selectedCard) === "amount"} onClick={() => updateCardPreference("cardDisplayModes", "amount")}><Icon name="wallet" size={17} /><span><strong>{tr("Amount focused")}</strong><small>{tr("Prioritize the balance")}</small></span></button>
-        </div>
-        <p className="card-display-title">{tr("Show on card")}</p>
-        <div className="card-display-fields">
-          {["accountName", "cardNumber", "holderName", "balance"].map((field) => { const labels = { accountName: "Account name", cardNumber: "Card number", holderName: "Cardholder name", balance: "Balance" }; const disabled = displayModeOf(selectedCard) === "amount" && field !== "accountName" && field !== "balance"; return <label key={field} className={disabled ? "is-disabled" : ""}><input type="checkbox" checked={fieldsOf(selectedCard)[field] !== false} disabled={disabled} onChange={e => updateCardPreference("cardDisplayFields", { ...fieldsOf(selectedCard), [field]: e.target.checked })} /><span>{tr(labels[field])}</span></label>; })}
-        </div>
-        <label className="card-network-field"><span>{tr("Card network")}</span><select aria-label={tr("Card network")} value={String(prefs.cardNetworks?.[selectedCard?.id] || selectedCard?.cardNetwork || "")} onChange={e => updateCardPreference("cardNetworks", e.target.value)}><option value="">{tr("Not specified")}</option><option value="visa">Visa</option><option value="mastercard">Mastercard</option><option value="american express">American Express</option><option value="discover">Discover</option><option value="jcb">JCB</option><option value="unionpay">UnionPay</option></select></label>
-      </section>
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
