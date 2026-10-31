@@ -127,21 +127,19 @@ export default function Home({ c }) {
       </button>
       <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{subline}</p></div>
       <div className="header-actions">
-        <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} />
-        <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} />
-        <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} />
+        <div className="header-action-buttons">
+          <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} />
+          <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} />
+          <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} />
+        </div>
+        <div className="home-period-filter" role="group" aria-label={tr('Filter Home by month and year')}>
+          <span className="home-period-icon"><Icon name="calendar" size={13} /></span>
+          <label className="home-period-select month-select"><select aria-label={tr('Select Home month')} value={selectedMonth} onChange={e => chooseMonth(e.target.value)}>{Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{new Intl.DateTimeFormat(undefined, { month: 'short' }).format(new Date(2024, m - 1, 1))}</option>)}</select></label>
+          <span className="home-period-divider" aria-hidden="true" />
+          <label className="home-period-select year-select"><select aria-label={tr('Select Home year')} value={selectedYear} onChange={e => setHomeMonthKey(`${e.target.value}-${String(selectedMonth).padStart(2, '0')}`)}>{Array.from(new Set([...homeYears, selectedYear])).sort((a, b) => b - a).map(y => <option key={y} value={y}>{y}</option>)}</select></label>
+        </div>
       </div>
     </header>
-
-    <div className="home-period-wrap">
-      <div className="home-period-filter" role="group" aria-label={tr('Filter Home by month and year')}>
-        <span className="home-period-icon"><Icon name="calendar" size={18} /></span>
-        <label className="home-period-select month-select"><span>{tr('Month')}</span><select aria-label={tr('Select Home month')} value={selectedMonth} onChange={e => chooseMonth(e.target.value)}>{Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{new Intl.DateTimeFormat(undefined, { month: 'long' }).format(new Date(2024, m - 1, 1))}</option>)}</select></label>
-        <span className="home-period-divider" aria-hidden="true" />
-        <label className="home-period-select year-select"><span>{tr('Year')}</span><select aria-label={tr('Select Home year')} value={selectedYear} onChange={e => setHomeMonthKey(`${e.target.value}-${String(selectedMonth).padStart(2, '0')}`)}>{Array.from(new Set([...homeYears, selectedYear])).sort((a, b) => b - a).map(y => <option key={y} value={y}>{y}</option>)}</select></label>
-        <span className="home-period-current" aria-live="polite">{monthName(homeMonthKey)}</span>
-      </div>
-    </div>
 
     <EditableBoxes title={tr('Home')} boxes={boxes} layout={prefs.layouts?.home} editing={editing} onEdit={startEditing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), home: l })} />
     {!editing && <button type="button" className="customize-button" onClick={startEditing}><Icon name="edit" size={16} /> {tr('Customize Home')}</button>}
