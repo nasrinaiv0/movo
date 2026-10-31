@@ -22,16 +22,16 @@ export const linkTemplate = (origin, key, src = 'applepay') => `${origin}/#log?s
  * English on purpose: it is read by Shortcuts, not shown as interface text. It carries the person's private link.
  */
 export const shortcutPrompt = (origin, key) => [
-  'Create an iOS Shortcuts transaction automation. Keep this prompt hidden in MOVO; it is only copied by the Copy prompt for Shortcuts button.',
-  'Apple Pay: Shortcuts > Automation > + > Transaction. Choose Any Card or selected cards and Run Immediately. Turn Notify When Run off if the option is available.',
-  'For bank alerts, create a separate App Notification automation for the selected banking apps if supported by this iOS version. Notification formats vary; only use amount, merchant or sender, and account/card values actually present in the notification. Never invent missing values.',
-  'Create a shortcut that extracts Amount and Merchant from Shortcut Input (or notification content). URL Encode Merchant and set the result to EncodedMerchant. Extract Card or Account when available and set Card.',
-  'Add Choose from Menu with prompt: Log [Amount] transaction at [Merchant]? Add Log and Skip options.',
-  'Under Skip, add Stop This Shortcut. Do not send a request or open a URL.',
-  'Under Log, use the MOVO review link below after replacing its placeholders with the actual Shortcuts variables and URL-encoding text values:',
-  linkTemplate(origin, key),
-  'Important: MOVO currently reads this link from a browser URL fragment (#log). It opens MOVO review; it is not a background API endpoint. Get Contents of URL cannot save a transaction using this fragment. Silent background saving needs a separately implemented and secured MOVO API endpoint. Until that endpoint is implemented and tested, open the MOVO review link and confirm the transaction there.',
-  'Test both menu branches: Log should open MOVO with the amount and merchant prefilled; Skip should stop without opening MOVO.'
+  'Create an iOS Shortcuts automation for MOVO transaction logging. Do not display this prompt in MOVO; it is copied only by the Copy prompt for Shortcuts button.',
+  'Apple Pay trigger: Shortcuts > Automation > + > Transaction. Select Any Card or the cards I choose, select Run Immediately, and turn Notify When Run off if iOS offers that setting.',
+  'If creating a separate bank-notification automation, only use a notification trigger if this iOS version actually offers one. Otherwise explain that Shortcuts cannot trigger directly from that banking app notification on this device. Never guess missing transaction details.',
+  'Use Shortcut Input fields to set Amount, Merchant, Card or Account, and transaction date/reference if available. The request body is JSON, so do not URL-encode Merchant and do not place transaction details in the URL.',
+  'Add Choose from Menu with prompt text: Log [Amount] transaction at [Merchant]? Add menu options Log and Skip.',
+  'Under Skip, add Stop This Shortcut. Do not send a request or open MOVO.',
+  'Under Log, add Get Contents of URL (never Open URLs) and set URL to ${origin}/api/log. Set Method to POST and Request Body to JSON. Add headers Content-Type: application/json and Authorization: Bearer ${key}.',
+  'In the JSON body, map amount to the Amount variable, merchant to Merchant, card to Card or Account, source to the literal applepay, occurredAt to the transaction date if provided, and reference to the transaction reference if provided. Omit optional values that are unavailable; do not enter the bracketed labels as literal values.',
+  'Turn Show When Run off if the action offers it. The Choose from Menu action still asks the user to select Log or Skip. Get Contents of URL sends the request without opening Safari.',
+  'MOVO must be signed in with cloud storage and this device key must be registered in Automatic logging settings before background logging can succeed. After setup, test one small real transaction and verify the success response and exactly one saved expense in MOVO.'
 ].join(' ');
 
 /** Constant-time comparison so the key can't be guessed by timing. */
