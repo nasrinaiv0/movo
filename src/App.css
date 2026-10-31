@@ -2213,3 +2213,31 @@ button.account-tile:active { transform: scale(.98); }
   .home-period-select.month-select { width: 35px; }
   .home-period-select.year-select { width: 32px; }
 }
+
+
+/* MOVO consistency fixes — deliberately additive; preserve main's existing layout and styling. */
+/* Keep long labels and financial rows from forcing cards wider than their container. */
+.movo-app :where(.tx-row, .account-row, .setting-row, .menu-row, .notification-row, .subscription-row) {
+  min-width: 0;
+}
+.movo-app :where(.tx-row, .account-row, .setting-row, .menu-row, .notification-row, .subscription-row) > :where(*:not(svg):not(img)) {
+  min-width: 0;
+}
+.movo-app :where(.tx-amount, .balance, .amount, .money, .currency, .stat-value, .money-value) {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.movo-app :where(img, svg, canvas, video) {
+  max-width: 100%;
+}
+.movo-app :where(button, a, input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app *, .movo-app *::before, .movo-app *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
