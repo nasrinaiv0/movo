@@ -7,6 +7,7 @@ export function transactionEffect(transaction, accountId) {
   const type = transaction.transaction_type || transaction.type;
   const amount = Number(transaction.origAmount ?? transaction.amount);
   if (!Number.isFinite(amount) || amount < 0) return 0;
+  if (type === 'accounting_posting') return transaction.account_id === accountId ? Number(transaction.signed_amount) || 0 : 0;
   if (type === 'income') return transaction.account_id === accountId ? amount : 0;
   if (type === 'expense') return transaction.account_id === accountId ? -amount : 0;
   if (type === 'transfer') {
