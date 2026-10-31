@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import Icon from './Icon';
 import CardArt from './CardArt';
-import AccountTile, { ACCOUNT_TYPES, ACCOUNT_COLORS, ACCOUNT_ICONS, typeMeta } from './AccountTile';
+import AccountTile, { ACCOUNT_TYPES, typeMeta } from './AccountTile';
 import { evaluate, press } from '../lib/calc';
 import { CURRENCIES, currencyName } from '../lib/fx';
 import { currencySymbol, getFormatLocale } from '../lib/format';
@@ -14,7 +14,6 @@ const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.'
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
 export default function AccountSheet({ base = 'PHP', country = 'PH', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose }) {
-  const [openStyle, setOpenStyle] = useState(false);
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
   const [institutionCountry, setInstitutionCountry] = useState(INSTITUTION_COUNTRIES.includes(country) ? country : 'PH');
@@ -54,7 +53,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         </select>
         {!manualInstitution && <div className="acct-institution-options" role="listbox" aria-label={tr('Matching institutions')}>
           {institutionOptions.map(item => <button type="button" role="option" aria-selected={form.institution_name === item.name} key={item.id} className={form.institution_name === item.name ? 'selected' : ''} onClick={() => { set({ institution_name: item.name }); setInstitutionQuery(item.name); setManualInstitution(false); }}>
-            <span className="acct-institution-option-logo">{institutionLogoUrl(item.name) ? <img src={institutionLogoUrl(item.name)} alt="" width="32" height="32" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <Icon name={item.kind === 'ewallet' ? 'phone' : 'bank'} size={20} />} </span><span><strong>{item.name}</strong><small>{item.kind === 'ewallet' ? tr('E-wallet') : tr('Bank')}</small></span>{form.institution_name === item.name && <Icon name="check" size={16} />}
+            <span className="acct-institution-option-copy"><strong>{item.name}</strong><small>{item.kind === 'ewallet' ? tr('E-wallet') : tr('Bank')}</small></span><span className="acct-institution-option-trailing">{form.institution_name === item.name && <Icon name="check" size={16} />}<span className="acct-institution-option-logo">{institutionLogoUrl(item.name) ? <img src={institutionLogoUrl(item.name)} alt="" width="28" height="28" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <Icon name={item.kind === 'ewallet' ? 'phone' : 'bank'} size={20} />}</span></span>
           </button>)}
           {!institutionOptions.length && <p className="acct-hint">{tr('No matching institutions. Enter the name manually.')}</p>}
         </div>}
@@ -74,14 +73,21 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
           </select> : <p className="acct-hint" role="status">{tr('Add a bank account before creating a debit card. Credit cards can be added separately.')}</p>}
           <p className="acct-hint" id="acct-linked-bank-hint">{tr('The debit card shares this bank account’s balance. Card transactions update the linked account and are never counted twice.')}</p>
         </div>}
-        <label className="acct-label" htmlFor="acct-card-network">{tr('Card network')}</label>
-        <select id="acct-card-network" className="acct-input" value={form.cardNetwork || ''} onChange={e => set({ cardNetwork: e.target.value })}>
-          <option value="">{tr('Choose card network')}</option><option value="visa">Visa</option><option value="mastercard">Mastercard</option><option value="amex">American Express</option><option value="other">{tr('Other')}</option>
-        </select>
-        <span className="acct-label">{tr('Chip')}</span>
-        <div className="chip-picks" role="radiogroup" aria-label={tr('Chip color')}>{CHIPS.map(([id, name]) => <button type="button" key={id} role="radio" aria-checked={form.chip === id} aria-label={`${name} chip`} className={form.chip === id ? 'on' : ''} onClick={() => set({ chip: id })}><EmvChip finish={id} /><span>{name}</span></button>)}</div>
-        <div className="acct-field acct-toggle"><span className="acct-field-icon"><Contactless /></span><span><strong>{tr('Contactless symbol')}</strong><small>{tr('Show the tap-to-pay (RFID) mark on the card')}</small></span><Toggle checked={!!form.contactless} onChange={v => set({ contactless: v })} label={tr('Contactless symbol')} /></div>
-      </>}
+        <span className="acct-label">{tr('Card network')}</span>
+        <div className="acct-network-grid" role="group" aria-label={tr('Card network')}>
+          {[
+            { value: 'visa', label: 'Visa', domain: 'visa.com' },
+            { value: 'mastercard', label: 'Mastercard', domain: 'mastercard.com' },
+            { value: 'amex', label: 'American Express', domain: 'americanexpress.com' },
+            { value: 'discover', label: 'Discover', domain: 'discover.com' },
+            { value: 'other', label: tr('Other'), domain: '' }
+          ].map(network => <button type="button" key={network.value} className={`acct-network-option${(form.cardNetwork || '') === network.value ? ' selected' : ''}`} aria-pressed={(form.cardNetwork || '') === network.value} onClick={() => set({ cardNetwork: network.value })}>
+            <span className="acct-network-name">{network.label}</span>
+            <span className="acct-network-preview" aria-label={network.domain ? `${network.label} logo preview` : tr('No logo preview')}>
+              {network.domain ? <img src={`https://www.google.com/s2/favicons?domain=${network.domain}&sz=64`} alt="" width="28" height="28" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.visibility = 'hidden'; }} /> : <span className="acct-network-other">—</span>}
+            </span>
+          </button>)}
+        </div>
       {hasNumber && <>
         <label className="acct-label" htmlFor="acct-mask">{form.account_type === 'card' ? tr('Card number · last 4 digits') : tr('Account number · last 4 digits')}</label>
         <div className="acct-input acct-mask"><span aria-hidden="true">•••• •••• ••••</span><input id="acct-mask" inputMode="numeric" autoComplete="off" pattern="\d{4}" title={tr('Exactly 4 digits')} value={form.mask || ''} onChange={e => set({ mask: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="1234" aria-describedby="acct-mask-hint" /></div>
@@ -92,17 +98,6 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       <div className="acct-field select"><span><strong>{currency[0]}</strong><small>{currency[1]}</small></span><span className="acct-field-icon" style={{ color }}>{currency[2]}</span><Icon name="chevron" size={16} />
         <select id="acct-currency" aria-label={tr('Account currency')} value={currency[0]} onChange={e => set({ currency: e.target.value })} disabled={editing && cloudMode}>{CURRENCIES.map(c => <option key={c} value={c}>{c} · {currencyName(c, getFormatLocale())}</option>)}</select></div>
       <p className="acct-hint">{tr('New accounts start in your home currency ({code}); change it here before saving.', { code: base })}</p>
-
-      <div className={`acct-field acct-style${openStyle ? ' open' : ''}`}>
-        <button type="button" className="acct-style-head" onClick={() => setOpenStyle(v => !v)} aria-expanded={openStyle}>
-          <span className="acct-style-swatch" style={{ background: color }}><Icon name={icon} size={18} strokeWidth={2} /></span>
-          <span><strong>{tr('Account style')}</strong><small>{tr('Custom icon and color')}</small></span><em>{tr('Edit')}</em><Icon name="down" size={16} />
-        </button>
-        {openStyle && <div className="acct-style-body">
-          <div className="acct-swatches" role="radiogroup" aria-label={tr('Account color')}>{ACCOUNT_COLORS.map(c => <button type="button" key={c} role="radio" aria-checked={color === c} aria-label={tr('Color {value}', { value: c })} style={{ background: c }} onClick={() => set({ color: c })}>{color === c && <Icon name="check" size={14} strokeWidth={3} />}</button>)}</div>
-          <div className="acct-icons" role="radiogroup" aria-label={tr('Account icon')}>{ACCOUNT_ICONS.map(i => <button type="button" key={i} role="radio" aria-checked={icon === i} aria-label={tr('Icon {value}', { value: i })} className={icon === i ? 'on' : ''} onClick={() => set({ icon: i })}><Icon name={i} size={18} /></button>)}</div>
-        </div>}
-      </div>
 
       {debitCard ? <div className="acct-linked-balance"><span className="acct-label">{tr('Card balance')}</span><strong>{linkedBank ? linkedBank.name + ' · ' + (linkedBank.currency || base) : tr('Shared with linked bank account')}</strong><p className="acct-hint">{tr('This card has no separate balance. Its balance always matches the linked bank account.')}</p></div> : <>
       <label className="acct-label" htmlFor="acct-balance">{editing ? tr('Opening balance') : tr('Starting balance')}</label>
@@ -115,6 +110,10 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       </>}
 
 
+        <span className="acct-label">{tr('Chip')}</span>
+        <div className="chip-picks" role="radiogroup" aria-label={tr('Chip color')}>{CHIPS.map(([id, name]) => <button type="button" key={id} role="radio" aria-checked={form.chip === id} aria-label={`${name} chip`} className={form.chip === id ? 'on' : ''} onClick={() => set({ chip: id })}><EmvChip finish={id} /><span>{name}</span></button>)}</div>
+        <div className="acct-field acct-toggle"><span className="acct-field-icon"><Contactless /></span><span><strong>{tr('Contactless symbol')}</strong><small>{tr('Show the tap-to-pay (RFID) mark on the card')}</small></span><Toggle checked={!!form.contactless} onChange={v => set({ contactless: v })} label={tr('Contactless symbol')} /></div>
+      </>}
       {!cloudMode && <p className="acct-hint">{tr('Stored on this device only. Sign in to sync it to your MOVO account.')}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>

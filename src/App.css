@@ -1102,23 +1102,23 @@ button.account-tile:active { transform: scale(.98); }
 
 /* ===== Add / edit account ===== */
 .acct-sheet { max-height: 96vh; max-height: 96dvh; padding-top: 10px; background: var(--bg); }
-.acct-form { display: flex; flex-direction: column; gap: 16px; }
+.acct-form { display: flex; flex-direction: column; gap: 10px; }
 .acct-head { display: flex; align-items: center; justify-content: space-between; }
 .acct-head h2 { font-size: 16.5px; font-weight: 700; }
 .acct-preview { padding: 0 4px; }
-.acct-panel { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 24px; background: var(--card-solid); border: var(--hair) solid var(--line); }
-.acct-label { margin-top: 8px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-.acct-field { position: relative; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; border: var(--hair) solid var(--line); border-radius: 18px; background: var(--field); color: var(--muted); }
+.acct-panel { display: flex; flex-direction: column; gap: 5px; padding: 12px; border-radius: 20px; background: var(--card-solid); border: var(--hair) solid var(--line); }
+.acct-label { margin-top: 4px; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; }
+.acct-field { position: relative; display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 8px 12px; border: var(--hair) solid var(--line); border-radius: 14px; background: var(--field); color: var(--muted); }
 .acct-field > span:first-child { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.acct-field strong { color: var(--text); font-size: 14.5px; }
-.acct-field small { font-size: 12.5px; }
+.acct-field strong { color: var(--text); font-size: 13px; }
+.acct-field small { font-size: 11px; }
 .acct-field-icon { font-size: 16.5px; font-weight: 700; display: grid; place-items: center; }
 .acct-field select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
-.acct-input { width: 100%; min-height: 54px; padding: 0 16px; border: 0; border-radius: 16px; background: var(--field); color: var(--text); font-size: 14.5px; }
+.acct-input { width: 100%; min-height: 44px; padding: 0 12px; border: 0; border-radius: 13px; background: var(--field); color: var(--text); font-size: 13px; }
 .acct-input.with-action { display: flex; align-items: center; padding: 0 6px 0 16px; }
-.acct-input.with-action input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 14.5px; outline: none; height: 54px; }
+.acct-input.with-action input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font-size: 13px; outline: none; height: 44px; }
 .acct-input.with-action button { display: grid; place-items: center; width: 42px; height: 42px; min-height: 42px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--accent-ink, var(--accent)); }
-.acct-hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.acct-hint { color: var(--muted); font-size: 11px; line-height: 1.4; }
 .acct-style, .acct-more { flex-direction: column; align-items: stretch; padding: 0; min-height: 0; }
 .acct-style-head { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 70px; padding: 10px 14px; border: 0; background: transparent; color: var(--muted); text-align: left; }
 .acct-style-head > span:not(.acct-style-swatch) { flex: 1; display: flex; flex-direction: column; gap: 2px; }
@@ -1236,7 +1236,7 @@ button.account-tile:active { transform: scale(.98); }
 .setup-link code { font-size: 11px; white-space: nowrap; }
 .acct-mask { display: flex; align-items: center; gap: 8px; padding: 0 16px; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
 .acct-mask span { color: var(--muted); white-space: nowrap; }
-.acct-mask input { flex: 1; min-width: 0; height: 54px; border: 0; background: transparent; color: var(--text); font-size: 14.5px; font-weight: 600; letter-spacing: .12em; outline: none; }
+.acct-mask input { flex: 1; min-width: 0; height: 44px; border: 0; background: transparent; color: var(--text); font-size: 13px; font-weight: 600; letter-spacing: .12em; outline: none; }
 .at-mask { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 600; letter-spacing: .1em; opacity: .85; }
 
 /* ===== EMV chip, contactless mark, card kind ===== */
@@ -2049,14 +2049,18 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion: reduce) { .movo-ai-rich-content > * { animation: none; } }
 
 /* Country-aware institution picker: contained scrolling keeps options inside the mobile sheet. */
-.acct-institution { display: grid; gap: 8px; min-width: 0; margin: 10px 0 16px; }
+.acct-institution { display: grid; gap: 6px; min-width: 0; margin: 6px 0 8px; }
 .acct-institution-search { margin: 0; }
 .acct-institution-search input { min-width: 0; width: 100%; }
 .acct-institution-options { display: grid; gap: 5px; max-height: min(30vh, 240px); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 14px; padding: 5px; background: var(--surface, rgba(20,24,34,.98)); }
-.acct-institution-options button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 46px; padding: 9px 11px; border: 0; border-radius: 10px; text-align: left; color: inherit; background: transparent; cursor: pointer; }
+.acct-institution-options button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 46px; padding: 8px 10px; border: 0; border-radius: 10px; text-align: left; color: inherit; background: transparent; cursor: pointer; }
 .acct-institution-options button.selected, .acct-institution-options button:hover { background: var(--surface-raised, rgba(127,145,180,.14)); }
-.acct-institution-options button span { display: grid; gap: 2px; }
-.acct-institution-options button small { opacity: .65; font-size: 12px; }
+.acct-institution-options .acct-institution-option-copy { display: grid; gap: 2px; flex: 1; min-width: 0; text-align: left; overflow-wrap: anywhere; }
+.acct-institution-option-copy strong { font-size: 13px; font-weight: 600; }
+.acct-institution-option-trailing { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex: none; }
+.acct-institution-option-logo { display: grid; place-items: center; width: 30px; height: 30px; flex: none; color: var(--muted); }
+.acct-institution-option-logo img { display: block; width: 28px; height: 28px; object-fit: contain; border-radius: 5px; }
+.acct-institution-options button small { opacity: .65; font-size: 11px; }
 .acct-manual-toggle { justify-self: start; padding: 5px 0; border: 0; color: var(--accent, #7aa7ff); background: transparent; text-align: left; cursor: pointer; }
 .acct-institution .acct-input { width: 100%; }
 @media (max-width: 600px) {
@@ -2377,3 +2381,14 @@ button.account-tile:active { transform: scale(.98); }
     font-size: 16px;
   }
 }
+
+/* Compact card network picker: network name on the left, favicon preview on the right. */
+.acct-network-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.acct-network-option { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; min-height: 44px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); color: var(--text); text-align: left; }
+.acct-network-option.selected { border-color: rgba(var(--accent-rgb), .55); background: rgba(var(--accent-rgb), .09); }
+.acct-network-option:focus-visible { outline: 3px solid rgba(var(--accent-rgb), .4); outline-offset: 2px; }
+.acct-network-name { min-width: 0; font-size: 12px; font-weight: 600; line-height: 1.25; }
+.acct-network-preview { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--card-solid); }
+.acct-network-preview img { display: block; width: 24px; height: 24px; object-fit: contain; }
+.acct-network-other { color: var(--muted); font-size: 15px; }
+@media (max-width: 360px) { .acct-network-grid { grid-template-columns: 1fr; } }
