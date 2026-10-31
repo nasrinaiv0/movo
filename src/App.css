@@ -1918,11 +1918,19 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.theme-dark .dots i.on { background: var(--accent-ink, var(--accent)); }
 
 /* Automatic logging: one-prompt setup for iPhone Shortcuts, manual steps folded below. */
-.shortcut-quick { display: grid; gap: 10px; margin: 12px 0; padding: 16px; }
-.shortcut-quick > strong { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--text); }
-.shortcut-quick > strong svg { color: var(--accent-ink, var(--accent)); }
-.shortcut-quick .setup-steps { margin: 0; }
-.shortcut-quick small { color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+.shortcut-quick { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 12px; margin: 12px 0; padding: clamp(14px, 3.5vw, 20px); }
+.shortcut-quick > strong { display: flex; align-items: center; gap: 9px; min-width: 0; font-size: 15px; line-height: 1.35; color: var(--text); }
+.shortcut-quick > strong svg { flex: 0 0 auto; color: var(--accent-ink, var(--accent)); }
+.shortcut-quick .setup-steps { margin: 0; padding-left: 1.45rem; display: grid; gap: 8px; }
+.shortcut-quick .setup-steps li { padding-left: 2px; line-height: 1.55; overflow-wrap: anywhere; }
+.shortcut-prompt-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; gap: 10px; width: 100%; min-width: 0; }
+.shortcut-prompt-actions > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-width: 0; min-height: 48px; margin: 0; padding: 10px 12px; border-radius: 14px; font-size: 14px; line-height: 1.25; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.shortcut-prompt-actions > button svg { flex: 0 0 auto; }
+.shortcut-quick small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+@media (max-width: 380px) {
+  .shortcut-prompt-actions { gap: 8px; }
+  .shortcut-prompt-actions > button { gap: 6px; padding: 10px 8px; font-size: 12px; }
+}
 .setup-manual { margin: 4px 0 12px; }
 .setup-manual summary { cursor: pointer; padding: 10px 2px; color: var(--accent-ink, var(--accent)); font-size: 13.5px; font-weight: 600; list-style-position: inside; }
 
