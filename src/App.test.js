@@ -640,6 +640,48 @@ describe('MOVO finance frontend', () => {
   });
 });
 
+  test('red dots clear once notifications have been seen, and row dots clear when each is opened', () => {
+    expect(container.querySelector('.bottom-nav .nav-badge')).not.toBeNull();
+    clickButton(container, 'Notifications');
+    const rowDots = container.querySelectorAll('.note-row .red-dot').length;
+    expect(rowDots).toBeGreaterThan(0);
+    nav(container, 'Home');
+    expect(container.querySelector('.bottom-nav .nav-badge')).toBeNull();
+    expect(container.querySelector('.round-button .red-dot')).toBeNull();
+    clickButton(container, 'Notifications');
+    act(() => container.querySelector('.note-row').click());
+    clickButton(container, 'Back');
+    expect(container.querySelectorAll('.note-row .red-dot').length).toBe(rowDots - 1);
+    clickButton(container, 'Mark all as read');
+    expect(container.querySelectorAll('.note-row .red-dot').length).toBe(0);
+    expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
+  });
+
+test('Apple Pay payment prompt Log button opens a prefilled expense form', async () => {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).not.toBeNull();
+    expect(container.textContent).toContain('Apple Pay: ₱109.00');
+    clickButton(container, 'Log');
+    const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
+    expect(dialog).not.toBeNull();
+    const inputValues = Array.from(dialog.querySelectorAll('input')).map(input => input.value);
+    expect(inputValues).toContain('Gadc');
+    expect(dialog.querySelector('[aria-label="Amount"]')?.textContent).toContain('109');
+  });
+
+  test('Apple Pay payment prompt Skip button dismisses the payment without opening a transaction form', async () => {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).not.toBeNull();
+    clickButton(container, 'Skip');
+    expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).toBeNull();
+    expect(container.querySelector('[role="dialog"][aria-label="Add transaction"]')).toBeNull();
+    expect(window.localStorage.getItem('movo.local.transactions.v1') || '').not.toContain('Gadc');
+  });
+});
 test('accent text stays readable on dark backgrounds', () => {
   const { readableAccent } = require('./App');
   const lum = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
