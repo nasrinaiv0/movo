@@ -66,15 +66,20 @@ export function goalProgress(goal, allocations = []) {
 }
 
 export function financialPosition({ accounts = [], loans = [], receivables = [], goalAllocations = [], otherAssets = 0, otherLiabilities = 0 } = {}) {
-  const liquidAccounts = accounts.filter(active).reduce((sum, a) => sum + Number(a.balance || 0), 0);
-  const cardLiabilities = accounts.filter(active).filter(a => a.account_type === 'card' && a.card_kind === 'credit')
+  const activeAccounts = accounts.filter(active);
+  const assetAccounts = activeAccounts.filter(a => a.account_type !== 'card' || a.card_kind === 'debit');
+  const liquidAccounts = assetAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const spendableAccounts = activeAccounts.filter(a => ['bank','e_wallet','cash'].includes(a.account_type) || (a.account_type === 'card' && a.card_kind === 'debit'));
+  const cardLiabilities = activeAccounts.filter(a => a.account_type === 'card' && a.card_kind === 'credit')
     .reduce((sum, a) => sum + Math.max(0, Number(a.liability_balance ?? -Number(a.balance || 0))), 0);
   const loanLiabilities = loans.filter(active).reduce((sum, l) => sum + amountOf(l.outstanding_balance ?? l.outstanding_principal ?? l.amount), 0);
   const receivableAssets = receivables.filter(active).reduce((sum, r) => sum + amountOf(r.outstanding_balance ?? r.opening_amount ?? r.amount), 0);
   const assets = liquidAccounts + amountOf(otherAssets) + receivableAssets;
   const liabilities = cardLiabilities + loanLiabilities + amountOf(otherLiabilities);
   const reserved = goalAllocations.filter(a => a.status !== 'released').reduce((sum, a) => sum + amountOf(a.amount), 0);
-  return { liquidAccounts, receivableAssets, assets, liabilities, netWorth: assets - liabilities, reservedForGoals: reserved, availableMoney: liquidAccounts - reserved };
+  const spendable = spendableAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const unclassifiedCardAccounts = activeAccounts.filter(a => a.account_type === 'card' && !['credit','debit'].includes(a.card_kind)).length;
+  return { liquidAccounts, receivableAssets, assets, liabilities, netWorth: assets - liabilities, reservedForGoals: reserved, availableMoney: spendable - reserved, unclassifiedCardAccounts };
 }
 
 export function validateGoalAllocation({ amount, currentAllocated = 0, eligibleFunds = 0 }) {
