@@ -19,12 +19,12 @@ export default function FinancialPlanning({ c }) {
   const [receivables, setReceivables] = useState([]);
   const [goals, setGoals] = useState([]);
   const [allocations, setAllocations] = useState([]);
-  const [loanForm, setLoanForm] = useState(blankLoan);
-  const [receivableForm, setReceivableForm] = useState(blankReceivable);
-  const [goalForm, setGoalForm] = useState(blankGoal);
+  const [loanForm, setLoanForm] = useState({ ...blankLoan, currency: c.base || 'PHP' });
+  const [receivableForm, setReceivableForm] = useState({ ...blankReceivable, currency: c.base || 'PHP' });
+  const [goalForm, setGoalForm] = useState({ ...blankGoal, currency: c.base || 'PHP' });
   const [eventForm, setEventForm] = useState(blankEvent);
   const [selected, setSelected] = useState(null);
-  const [allocationForm, setAllocationForm] = useState({ goal_id: '', account_id: '', amount: '', currency: 'PHP', note: '' });
+  const [allocationForm, setAllocationForm] = useState({ goal_id: '', account_id: '', amount: '', currency: c.base || 'PHP', note: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -38,6 +38,8 @@ export default function FinancialPlanning({ c }) {
   }, [c.cloudMode]);
 
   useEffect(() => { let live = true; reload().catch(e => { if (live) setError(e.message || 'Could not load financial records.'); }); return () => { live = false; }; }, [reload]);
+
+  const spendableAccounts = accounts.filter(a => ['bank','e_wallet','cash'].includes(a.account_type));
 
   const position = useMemo(() => financialPosition({
     accounts: accounts.map(a => ({ ...a, balance: c.toBase ? c.toBase(a.balance, a.currency) : a.balance, card_kind: a.cardKind === 'credit' ? 'credit' : 'debit' })),
@@ -84,14 +86,14 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Loans & debts' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan(loanForm, c.session?.user?.id), 'Loan or debt added.').then(ok => { if (ok) setLoanForm(blankLoan); }); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan({ ...loanForm, currency: loanForm.currency || c.base }, c.session?.user?.id), 'Loan or debt added.').then(ok => { if (ok) setLoanForm(blankLoan); }); }}>
         <h2>{tr('Add a loan or debt')}</h2>
         <label>{tr('Record type')}<select value={loanForm.obligation_type} onChange={e => setLoanForm({ ...loanForm, obligation_type: e.target.value })}><option value="loan">{tr('Loan')}</option><option value="debt">{tr('Other debt')}</option></select></label>
         <label>{tr('Name')}<input required maxLength="120" value={loanForm.name} onChange={e => setLoanForm({ ...loanForm, name: e.target.value })} /></label>
         <label>{tr('Lender / creditor')}<input maxLength="120" value={loanForm.lender} onChange={e => setLoanForm({ ...loanForm, lender: e.target.value })} /></label>
         <label>{tr('Original principal')}<input required type="number" min="0.01" step="0.01" value={loanForm.principal_amount} onChange={e => setLoanForm({ ...loanForm, principal_amount: e.target.value })} /></label>
         <label>{tr('Interest rate (% per year)')}<input type="number" min="0" step="0.001" value={loanForm.interest_rate} onChange={e => setLoanForm({ ...loanForm, interest_rate: e.target.value })} /></label>
-        <label>{tr('Payment account')}<select value={loanForm.account_id} onChange={e => setLoanForm({ ...loanForm, account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
+        <label>{tr('Payment account')}<select value={loanForm.account_id} onChange={e => setLoanForm({ ...loanForm, account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option>{spendableAccounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
         <label>{tr('Due date')}<input type="date" value={loanForm.due_date} onChange={e => setLoanForm({ ...loanForm, due_date: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Save loan / debt')}</button>
       </form>
@@ -100,7 +102,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Owed to you' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createReceivable(receivableForm, c.session?.user?.id), 'Receivable added.').then(ok => { if (ok) setReceivableForm(blankReceivable); }); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createReceivable({ ...receivableForm, currency: receivableForm.currency || c.base }, c.session?.user?.id), 'Receivable added.').then(ok => { if (ok) setReceivableForm(blankReceivable); }); }}>
         <h2>{tr('Record money owed to you')}</h2>
         <label>{tr('Description')}<input required maxLength="120" value={receivableForm.name} onChange={e => setReceivableForm({ ...receivableForm, name: e.target.value })} /></label>
         <label>{tr('Person / organization')}<input maxLength="120" value={receivableForm.counterparty} onChange={e => setReceivableForm({ ...receivableForm, counterparty: e.target.value })} /></label>
@@ -115,7 +117,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Goals' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createGoal(goalForm, c.session?.user?.id), 'Savings goal created.').then(ok => { if (ok) setGoalForm(blankGoal); }); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createGoal({ ...goalForm, currency: goalForm.currency || c.base }, c.session?.user?.id), 'Savings goal created.').then(ok => { if (ok) setGoalForm(blankGoal); }); }}>
         <h2>{tr('Create a savings goal')}</h2>
         <label>{tr('Goal name')}<input required maxLength="120" value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} /></label>
         <label>{tr('Target amount')}<input required type="number" min="0.01" step="0.01" value={goalForm.target_amount} onChange={e => setGoalForm({ ...goalForm, target_amount: e.target.value })} /></label>
@@ -134,6 +136,6 @@ export default function FinancialPlanning({ c }) {
       {!goals.length && <p className="empty">{tr('Create a goal, then allocate money already in an account. This does not add to your balance.')}</p>}
     </>}
 
-    {selected && <section className="card pad"><form className="sheet-form" onSubmit={saveEvent}><h2>{tr(selected.kind === 'loan' ? 'Record loan event' : 'Record collection')}</h2><p>{selected.item.name}</p><label>{tr('Event type')}<select value={eventForm.event_type} onChange={e => setEventForm({ ...eventForm, event_type: e.target.value })}>{(selected.kind === 'loan' ? [['principal_payment','Principal repayment'],['interest_payment','Interest payment'],['fee','Fee'],['principal_increase','Increase principal']] : [['collected','Collection'],['amount_increased','Increase amount owed'],['written_off','Write off']]).map(([v,l]) => <option value={v} key={v}>{tr(l)}</option>)}</select></label><label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={eventForm.amount} onChange={e => setEventForm({ ...eventForm, amount: e.target.value })} /></label><label>{tr('Account')}<select value={eventForm.account_id} onChange={e => setEventForm({ ...eventForm, account_id: e.target.value })}><option value="">{tr('No cash account')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label><label>{tr('Note')}<input maxLength="1000" value={eventForm.note} onChange={e => setEventForm({ ...eventForm, note: e.target.value })} /></label><div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSelected(null)}>{tr('Cancel')}</button><button className="primary-button" disabled={busy}>{tr('Save event')}</button></div></form></section>}
+    {selected && <section className="card pad"><form className="sheet-form" onSubmit={saveEvent}><h2>{tr(selected.kind === 'loan' ? 'Record loan event' : 'Record collection')}</h2><p>{selected.item.name}</p><label>{tr('Event type')}<select value={eventForm.event_type} onChange={e => setEventForm({ ...eventForm, event_type: e.target.value })}>{(selected.kind === 'loan' ? [['principal_payment','Principal repayment'],['interest_payment','Interest payment'],['fee','Fee'],['principal_increase','Increase principal']] : [['collected','Collection'],['amount_increased','Increase amount owed'],['written_off','Write off']]).map(([v,l]) => <option value={v} key={v}>{tr(l)}</option>)}</select></label><label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={eventForm.amount} onChange={e => setEventForm({ ...eventForm, amount: e.target.value })} /></label><label>{tr('Account')}<select required={!(selected.kind === 'receivable' && eventForm.event_type === 'written_off')} value={eventForm.account_id} onChange={e => setEventForm({ ...eventForm, account_id: e.target.value })}><option value="">{tr('No cash account')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label><label>{tr('Note')}<input maxLength="1000" value={eventForm.note} onChange={e => setEventForm({ ...eventForm, note: e.target.value })} /></label><div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSelected(null)}>{tr('Cancel')}</button><button className="primary-button" disabled={busy}>{tr('Save event')}</button></div></form></section>}
   </>;
 }
