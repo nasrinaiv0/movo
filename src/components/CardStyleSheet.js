@@ -1,9 +1,10 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
 import CardArt from './CardArt';
 import { Sheet, Chips } from './ui';
 import { THEMES, GENRES, WALLPAPER_THEMES, WALLPAPER_GENRES, useCustomStickers, addCustomSticker, removeCustomSticker } from '../lib/stickers';
 import { t as tr } from '../lib/i18n';
+import { listPremiumStickers } from '../lib/premiumStickers';
 
 const ALL = [...WALLPAPER_THEMES, ...THEMES];
 
@@ -13,17 +14,21 @@ const nameOf = (t) => (t.custom || t.video ? t.name : t.wallpaper ? `${tr(t.genr
 
 export default function CardStyleSheet({ account, show, holder, current, onPick, onClose }) {
   const custom = useCustomStickers();
+  const [remote, setRemote] = useState([]);
+  const [remoteError, setRemoteError] = useState('');
+  useEffect(() => { let active = true; listPremiumStickers().then(items => { if (active) { setRemote(items); setRemoteError(''); } }).catch(() => { if (active) setRemoteError(tr('Premium stickers could not be loaded. Check Storage access and try again.')); }); return () => { active = false; }; }, []);
   const [genre, setGenre] = useState('All');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);
   const [error, setError] = useState('');
   const file = useRef(null);
-  const genres = ['All', ...(custom.length ? ['Mine'] : []), ...WALLPAPER_GENRES, ...GENRES];
+  const remoteGenres = [...new Set(remote.map(item => item.genre))];
+  const genres = ['All', ...(custom.length ? ['Mine'] : []), ...remoteGenres, ...WALLPAPER_GENRES, ...GENRES];
   const list = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = genre === 'Mine' ? custom : genre === 'All' ? [...custom, ...ALL] : ALL.filter(t => t.genre === genre);
+    const base = genre === 'Mine' ? custom : genre === 'All' ? [...custom, ...remote, ...ALL] : [...remote, ...ALL].filter(t => t.genre === genre);
     return q ? base.filter(t => `${t.name} ${nameOf(t)} ${t.genre || ''} ${tr(t.genre || '')}`.toLowerCase().includes(q)) : base;
-  }, [genre, query, custom]);
+  }, [genre, query, custom, remote]);
   const upload = async (e) => {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     setError('');
@@ -54,8 +59,8 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
     </div>
     {!list.length && <p className="empty">{tr('No stickers match “{query}”.', { query })}</p>}
     {list.length > limit && <button type="button" className="manage-button" onClick={() => setLimit(limit + PAGE)}><Icon name="down" size={18} /> {tr('Show more ({n} left)', { n: list.length - limit })}</button>}
-    {error && <p className="form-error" role="alert">{error}</p>}
+    {(error || remoteError) && <p className="form-error" role="alert">{error || remoteError}</p>}
     <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden onChange={upload} aria-label={tr('Choose a sticker image')} />
-    <p className="style-note">{tr('Upload PNG, JPEG, WebP, GIF or AVIF up to 10 MB. Images are cropped to the card ratio and saved on this device only; they are not synced to your cloud account.')}</p>
+    <p className="style-note">{tr('Premium WebP stickers load from your premium-stickers Storage bucket. Your selection is saved with your account preferences. Uploading your own sticker remains local to this device.')}</p>
   </Sheet>;
 }
