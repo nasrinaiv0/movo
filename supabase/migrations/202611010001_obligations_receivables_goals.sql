@@ -50,6 +50,7 @@ create table if not exists public.financial_receivables (
   reason text,
   currency text not null default 'PHP' check (currency ~ '^[A-Z]{3}$'),
   opening_amount numeric(18,2) not null check (opening_amount > 0),
+  opening_outstanding_amount numeric(18,2) not null default 0 check (opening_outstanding_amount >= 0),
   outstanding_amount numeric(18,2) not null check (outstanding_amount >= 0),
   due_date date,
   account_id uuid references public.financial_accounts(id) on delete set null,
