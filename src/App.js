@@ -147,16 +147,15 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
   return <div className="legal-disclosure-backdrop" role="presentation">
     <section className="legal-disclosure-card" role="dialog" aria-modal="true" aria-labelledby="movo-disclosure-title" aria-describedby="movo-disclosure-description">
       <span className="legal-disclosure-mark" aria-hidden="true"><MovoMark size={42} /></span>
-      <p className="legal-disclosure-eyebrow">{tr('Before you continue')}</p>
-      <h2 id="movo-disclosure-title">{tr('A few important things about MOVO')}</h2>
-      <p id="movo-disclosure-description">{tr('Please review these points before opening the Terms of Service and Privacy Policy.')}</p>
-      <div className="legal-disclosure-points">
-        <article><strong>{tr('Third-party logos are for identification')}</strong><p>{tr('Bank, card, e-wallet and subscription logos or favicons help you recognize and organize your records. They do not mean MOVO represents, is affiliated with, or is endorsed by those institutions. Displayed logos do not authorize payments or access institution systems.')}</p></article>
-        <article><strong>{tr('MOVO does not move your money')}</strong><p>{tr('MOVO is a tracking tool. It does not connect to your bank, verify balances, charge subscriptions, or initiate payments through a displayed logo. PayMongo is the designated gateway for MOVO payment functionality; this does not mean a displayed institution logo processes a MOVO payment.')}</p></article>
-        <article><strong>{tr('Your information and privacy')}</strong><p>{tr('Records you enter are separate from decorative logo retrieval. Remote favicon requests may share technical request information with the provider. Never send banking passwords or credentials to MOVO. Review the Privacy Policy for how data is handled.')}</p></article>
-        <article><strong>{tr('Third-party rights and accuracy')}</strong><p>{tr('A publicly available logo is not automatically licensed for every use. Logos may be missing or inaccurate; MOVO may use a generic icon instead. Listings do not imply partnership, endorsement, or an official integration.')}</p></article>
-      </div>
-      <label className="legal-disclosure-check"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} /><span>{tr('I have read this notice and understand that I should review the Terms of Service and Privacy Policy before proceeding.')}</span></label>
+      <p className="legal-disclosure-eyebrow">{tr('Important notice')}</p>
+      <h2 id="movo-disclosure-title">{tr('Third-party logo disclaimer')}</h2>
+      <p id="movo-disclosure-description">{tr('Please read and acknowledge the following before reviewing MOVO’s Terms of Service and Privacy Policy.')}</p>
+      <ol className="legal-disclosure-points legal-disclosure-numbered">
+        <li>{tr('Logos are for identification only. They help users recognize their cards, bank accounts, e-wallets, subscriptions, and track their financial activity.')}</li>
+        <li>{tr('Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
+        <li>{tr('PayMongo is MOVO’s designated payment gateway. Third-party logos are not payment gateways and must not imply that a bank or other institution has partnered with MOVO.')}</li>
+      </ol>
+      <label className="legal-disclosure-check"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} /><span>{tr('I have read and acknowledge this disclaimer.')}</span></label>
       <div className="legal-disclosure-actions"><button type="button" className="secondary-button" onClick={onDismiss}>{tr('Review later')}</button><button type="button" className="primary-button" disabled={!acknowledged} onClick={onReview}>{tr('Review Terms & Privacy')} <Icon name="arrow-right" size={16} /></button></div>
     </section>
   </div>;
