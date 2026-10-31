@@ -84,7 +84,7 @@ const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home
 const DEPTH = { FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
-const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit' };
+const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
 const today = () => new Date().toLocaleDateString('en-CA');
 
 function readPrefs() {
@@ -336,13 +336,34 @@ function App() {
     }));
     return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [rawTxs, cloudActivities, baseAccounts, base, rates]);
-  const accountsView = useMemo(() => baseAccounts.map(a => {
-    const st = prefs.accountStyles?.[a.id] || {};
-    const currency = a.currency || 'PHP';
-    const opening = cloudMode ? Number(a.opening_balance || 0) : Number(a.opening_balance ?? a.balance ?? 0);
-    const balance = accountBalance(a, cloudMode ? [...txs, ...cloudPostings] : txs, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
-    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency };
-  }), [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, rates]);
+  const accountsView = useMemo(() => {
+    const ledger = cloudMode ? [...txs, ...cloudPostings] : txs;
+    const links = prefs.cardBankLinks || {};
+    const cardKindOf = (account) => prefs.accountStyles?.[account.id]?.cardKind || account.cardKind || 'debit';
+    const linkedDebitCardIds = (bankId) => baseAccounts.filter(item => item.account_type === 'card' && links[item.id] === bankId && cardKindOf(item) === 'debit').map(item => item.id);
+    const balanceFor = (account) => {
+      const currency = account.currency || 'PHP';
+      let relevantLedger = ledger;
+      if (account.account_type === 'bank') {
+        const ids = new Set(linkedDebitCardIds(account.id));
+        if (ids.size) relevantLedger = ledger.map(t => {
+          const accountId = ids.has(t.account_id) ? account.id : t.account_id;
+          const transferTo = ids.has(t.transfer_to_account_id) ? account.id : t.transfer_to_account_id;
+          return accountId === t.account_id && transferTo === t.transfer_to_account_id ? t : { ...t, account_id: accountId, transfer_to_account_id: transferTo };
+        });
+      }
+      const opening = cloudMode ? Number(account.opening_balance || 0) : Number(account.opening_balance ?? account.balance ?? 0);
+      return accountBalance(account, relevantLedger, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
+    };
+    return baseAccounts.map(a => {
+      const st = prefs.accountStyles?.[a.id] || {};
+      const currency = a.currency || 'PHP';
+      const linkedBankId = a.account_type === 'card' && cardKindOf(a) === 'debit' ? links[a.id] || '' : '';
+      const linkedBank = linkedBankId ? baseAccounts.find(item => item.id === linkedBankId && item.account_type === 'bank') : null;
+      const balance = linkedBank ? balanceFor(linkedBank) : balanceFor(a);
+      return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
+    });
+  }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -369,7 +390,7 @@ function App() {
   const homeStats = useMemo(() => statsFor(activeHomeMonth), [statsFor, activeHomeMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
   const stats = useMemo(() => {
-    const balance = accountsView.length ? accountsView.reduce((s, a) => s + toBase(a.balance, a.currency), 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+    const balance = accountsView.length ? accountsView.filter(a => !a.linkedAccountId).reduce((s, a) => s + toBase(a.balance, a.currency), 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
     let running = balance - homeStats.net; const daily = new Map();
     homeStats.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
     let points = [balance - homeStats.net, ...daily.values()];
@@ -455,7 +476,7 @@ function App() {
       name: account.name || '', account_type: account.account_type || 'other',
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
       currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
-      chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit',
+      chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit', linkedBankId: prefs.cardBankLinks?.[account.id] || '',
     });
     setSheet({ name: 'account', type: account.account_type, id: account.id });
   };
@@ -584,7 +605,7 @@ function App() {
   const saveAccount = async (e) => {
     e.preventDefault(); setError('');
     const name = accountForm.name.trim();
-    const openingBalance = evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
+    const openingBalance = accountForm.account_type === 'card' && accountForm.cardKind !== 'credit' ? 0 : evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : base;
     const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind } : {}) } }); };
     if (!name) { setError(tr('Enter an account name.')); return; }
@@ -592,16 +613,21 @@ function App() {
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError(tr('Enter a valid opening balance.')); return; }
     if (!accountTypes.some(type => type.value === accountForm.account_type)) { setError(tr('Choose a valid account type.')); return; }
     const editingId = sheet?.name === 'account' ? sheet.id : null;
+    const activeBankAccounts = baseAccounts.filter(a => a.account_type === 'bank' && !a.is_archived && a.id !== editingId);
+    const linkedBankId = accountForm.account_type === 'card' && accountForm.cardKind !== 'credit' ? accountForm.linkedBankId : '';
+    if (accountForm.account_type === 'card' && accountForm.cardKind !== 'credit' && (!linkedBankId || !activeBankAccounts.some(a => a.id === linkedBankId))) { setError(tr('A debit card must be linked to an existing bank account. Add a bank account first, then select it here.')); return; }
     setBusy(true);
     try {
       if (cloudMode && session?.user) {
         if (editingId) {
           const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
           setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId);
+          const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[editingId] = linkedBankId; else delete nextLinks[editingId]; setPref('cardBankLinks', nextLinks);
           notify(tr('Account updated in your MOVO account.'));
         } else {
           const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
           setCloudAccounts(cur => [...cur, a]); saveStyle(a.id);
+          if (linkedBankId) setPref('cardBankLinks', { ...(prefs.cardBankLinks || {}), [a.id]: linkedBankId });
           notify(tr('Account added to your signed-in MOVO account.'));
         }
       } else {
@@ -617,6 +643,7 @@ function App() {
         };
         saveStyle(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
+        const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[a.id] = linkedBankId; else delete nextLinks[a.id]; setPref('cardBankLinks', nextLinks);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
       }
       setAccountForm(BLANK_ACCOUNT);
@@ -1031,7 +1058,7 @@ function App() {
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
 
-      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
+      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">

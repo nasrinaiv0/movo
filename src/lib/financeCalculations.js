@@ -47,7 +47,7 @@ export function accountBalance(account, transactions, convertAmount = (amount) =
 export function savingsBalance(accounts, convertToHome = (amount) => amount, accountStyles = {}) {
   if (!Array.isArray(accounts)) return 0;
   return accounts.reduce((sum, account) => {
-    if (!account || account.is_archived || account.account_type === 'cash') return sum;
+    if (!account || account.is_archived || account.account_type === 'cash' || account.linkedAccountId) return sum;
     if (account.account_type === 'card' && (accountStyles[account.id]?.cardKind || account.cardKind) !== 'debit') return sum;
     const balance = Number(account.balance);
     if (!Number.isFinite(balance)) return sum;
