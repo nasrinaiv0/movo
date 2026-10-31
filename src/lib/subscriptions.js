@@ -4,7 +4,7 @@
  * that started on the 31st renews on the last day of shorter months and returns to the 31st afterwards.
  */
 export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['yearly', 'Yearly']];
-export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Restaurants & cafés', 'Shopping', 'Phone & internet', 'News', 'Other'];
+export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Restaurants & cafés', 'Laundry & cleaning', 'Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel', 'Shopping', 'Phone & internet', 'News', 'Other'];
 
 /*
  * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH'),
@@ -52,6 +52,14 @@ export const CATALOG = [
   ['1Password', 'Security & VPN', '#3b66bc', '1password', '', '1password.com'], ['Bitwarden', 'Security & VPN', '#175ddc', 'bitwarden', '', 'bitwarden.com'], ['Dashlane', 'Security & VPN', '#0e353d', 'dashlane', '', 'dashlane.com'],
   ['LastPass', 'Security & VPN', '#d32d27', 'lastpass', '', 'lastpass.com'], ['NordVPN', 'Security & VPN', '#4687ff', 'nordvpn', '', 'nordvpn.com'], ['ExpressVPN', 'Security & VPN', '#da3940', 'expressvpn', '', 'expressvpn.com'],
   ['Surfshark', 'Security & VPN', '#178a9e', 'surfshark', '', 'surfshark.com'], ['Proton VPN', 'Security & VPN', '#66deb1', 'protonvpn', '', 'protonvpn.com'], ['Ring Protect', 'Security & VPN', '#1c9ad6', 'ring', 'US', 'ring.com'],
+  // Health, laundry, transport, household bills, insurance, pets and travel
+  ['Apple Fitness+', 'Health', '#fa243c', '', '', 'apple.com'], ['Fitbit Premium', 'Health', '#00b0b9', '', '', 'fitbit.com'], ['MyFitnessPal Premium', 'Health', '#0066ee', '', '', 'myfitnesspal.com'],
+  ['Laundry service', 'Laundry & cleaning', '#4f83cc', '', 'PH', ''], ['Laundryheap', 'Laundry & cleaning', '#00a3e0', '', '', 'laundryheap.com'], ['Rinse', 'Laundry & cleaning', '#2355d6', '', 'US', 'rinse.com'], ['CleanCloud', 'Laundry & cleaning', '#26a69a', '', '', 'cleancloudapp.com'],
+  ['Grab', 'Transport & mobility', '#00b14f', '', 'PH', 'grab.com'], ['Angkas', 'Transport & mobility', '#f9c80e', '', 'PH', 'angkas.com'], ['JoyRide', 'Transport & mobility', '#ed1c24', '', 'PH', 'joyride.com.ph'], ['Move It', 'Transport & mobility', '#f15a24', '', 'PH', 'moveit.com.ph'], ['Lyft Pink', 'Transport & mobility', '#ff00bf', '', 'US', 'lyft.com'],
+  ['Meralco', 'Utilities & bills', '#f58220', '', 'PH', 'meralco.com.ph'], ['PLDT Home', 'Utilities & bills', '#e31837', '', 'PH', 'pldthome.com'], ['Globe One', 'Utilities & bills', '#0070c0', '', 'PH', 'globe.com.ph'], ['Converge ICT', 'Utilities & bills', '#f58220', '', 'PH', 'convergeict.com'], ['Manila Water', 'Utilities & bills', '#0086c9', '', 'PH', 'manilawater.com'], ['Davao Light', 'Utilities & bills', '#f58220', '', 'PH', 'davaolight.com'],
+  ['Lemonade', 'Insurance', '#ff0083', '', 'US', 'lemonade.com'], ['GEICO', 'Insurance', '#00529b', '', 'US', 'geico.com'],
+  ['Chewy Autoship', 'Pets', '#1c49c2', '', 'US', 'chewy.com'], ['Petco Vital Care', 'Pets', '#001952', '', 'US', 'petco.com'],
+  ['AirAsia MOVE', 'Travel', '#ff0000', '', 'PH', 'airasia.com'], ['Trip.com', 'Travel', '#287dfa', '', '', 'trip.com'], ['Booking.com', 'Travel', '#003580', '', '', 'booking.com'], ['Airbnb', 'Travel', '#ff5a5f', '', '', 'airbnb.com'], ['Agoda', 'Travel', '#5142ab', '', '', 'agoda.com'],
   // Gaming
   ['Xbox Game Pass', 'Gaming', '#107c10', '', '', 'xbox.com'], ['PlayStation Plus', 'Gaming', '#0070d1', 'playstation', '', 'playstation.com'], ['Nintendo Switch Online', 'Gaming', '#e60012', '', '', 'nintendo.com'],
   ['Apple Arcade', 'Gaming', '#111111', 'applearcade', '', 'apple.com'], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', '', 'ubisoft.com'], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', '', 'play.google.com'], ['EA Play', 'Gaming', '#ff4747', '', '', 'ea.com'], ['Minecraft Realms', 'Gaming', '#62a44a', '', '', 'minecraft.net'], ['Roblox Premium', 'Gaming', '#111111', '', '', 'roblox.com'], ['GeForce NOW', 'Gaming', '#76b900', '', '', 'nvidia.com'],
