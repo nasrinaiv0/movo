@@ -1968,3 +1968,21 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .card-scroller > .card-slide > *, .movo-app .tx-row.tx-fresh, .movo-app .bottom-nav .nav-item.nav-active .nav-icon, .movo-app .side-item.active .side-icon { animation: none; }
 }
 .ref-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; }
+
+
+/* Post-tour legal and brand disclosure: shown before the first policy review. */
+.legal-disclosure-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(9,12,22,.68);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.legal-disclosure-card{width:min(100%,560px);max-height:min(88dvh,820px);overflow:auto;padding:26px;border:1px solid var(--line);border-radius:26px;background:var(--sheet-bg,var(--card-solid));color:var(--text);box-shadow:0 24px 80px rgba(0,0,0,.28)}
+.legal-disclosure-mark{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:18px;background:var(--field);margin-bottom:12px}
+.legal-disclosure-eyebrow{margin:0 0 6px;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.legal-disclosure-card h2{margin:0 0 8px;font-size:clamp(22px,5vw,29px);line-height:1.15;letter-spacing:-.035em}
+.legal-disclosure-card>p:not(.legal-disclosure-eyebrow){margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.55}
+.legal-disclosure-points{display:grid;gap:10px}
+.legal-disclosure-points article{padding:13px 14px;border:1px solid var(--line);border-radius:15px;background:var(--field)}
+.legal-disclosure-points strong{display:block;font-size:13px;margin-bottom:4px}
+.legal-disclosure-points p{margin:0;color:var(--muted);font-size:12px;line-height:1.5}
+.legal-disclosure-check{display:flex;align-items:flex-start;gap:10px;margin:17px 0 18px;font-size:12px;line-height:1.5;color:var(--text)}
+.legal-disclosure-check input{margin-top:3px;flex:0 0 auto;accent-color:var(--accent);width:17px;height:17px}
+.legal-disclosure-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.legal-disclosure-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:480px){.legal-disclosure-card{padding:20px 17px;border-radius:22px}.legal-disclosure-actions{display:grid;grid-template-columns:1fr}.legal-disclosure-actions button{width:100%;justify-content:center}}
