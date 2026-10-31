@@ -119,7 +119,7 @@ begin
     execute format('create policy %I on public.%I for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())', t || '_update_own', t);
     execute format('drop policy if exists %I on public.%I', t || '_delete_own', t);
     execute format('create policy %I on public.%I for delete to authenticated using (user_id = auth.uid())', t || '_delete_own', t);
-    if t = 'accounting_postings' then
+    if t in ('accounting_postings','loan_events','receivable_events','goal_allocations') then
       execute format('drop policy if exists %I on public.%I', t || '_select_own', t);
       execute format('create policy %I on public.%I for select to authenticated using (user_id = auth.uid())', t || '_select_own', t);
       execute format('grant select on public.%I to authenticated', t);
