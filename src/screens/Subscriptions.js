@@ -41,14 +41,14 @@ export function SubIcon({ sub, size = 40 }) {
       <img src={`${process.env.PUBLIC_URL || ''}/brands/${logo}`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
     </span>;
   }
+  if (known?.site && !faviconBroken) {
+    return <span className="sub-icon has-logo favicon-logo" style={{ width: size, height: size, padding: Math.round(size * 0.18) }} aria-hidden="true">
+      <img src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(known.site)}&sz=128`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFaviconBroken(true)} />
+    </span>;
+  }
   if (mark && !broken) {
     return <span className="sub-icon has-mark" style={{ width: size, height: size, background: color }} aria-hidden="true">
       <svg viewBox="0 0 24 24" width={Math.round(size * 0.54)} height={Math.round(size * 0.54)}><path d={mark.path} fill={isLight(color) ? '#111' : '#fff'} /></svg>
-    </span>;
-  }
-  if (known?.site && !faviconBroken) {
-    return <span className="sub-icon has-logo favicon-logo" style={{ width: size, height: size, padding: Math.round(size * 0.18) }} aria-hidden="true">
-      <img src={`https://${known.site}/favicon.ico`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFaviconBroken(true)} />
     </span>;
   }
   const initials = String(sub.name || '?').replace(/[^A-Za-z0-9+ ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
@@ -131,6 +131,7 @@ const catalogSection = (category) => {
   if (category === 'Social media & messaging') return 'Social media & messaging';
   if (['Entertainment', 'Music'].includes(category)) return 'Streaming & entertainment';
   if (['AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage'].includes(category)) return 'AI, productivity & cloud storage';
+  if (category === 'Food & delivery' || category === 'Restaurants & cafés') return 'Food delivery, restaurants & cafés';
   return 'Gaming & other memberships';
 };
 
@@ -143,7 +144,7 @@ function CatalogSheet({ onPick, onClose, country }) {
   const rest = list.filter(c => !local.includes(c));
   const row = (c) => <button type="button" key={c.id} className="catalog-row" onClick={() => onPick({ name: c.name, category: c.category, color: c.color })}><SubIcon sub={c} /><span className="sub-main"><strong>{c.name}</strong><small>{tr(c.category)}</small></span><Icon name="chevron" size={16} /></button>;
   const renderGrouped = (items) => {
-    const order = ['Social media & messaging', 'Streaming & entertainment', 'AI, productivity & cloud storage', 'Gaming & other memberships'];
+    const order = ['Social media & messaging', 'Streaming & entertainment', 'AI, productivity & cloud storage', 'Food delivery, restaurants & cafés', 'Gaming & other memberships'];
     return order.map(title => {
       const group = items.filter(c => catalogSection(c.category) === title);
       if (!group.length) return null;
