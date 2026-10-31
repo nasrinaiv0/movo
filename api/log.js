@@ -7,7 +7,7 @@ const SOURCES = new Set(['applepay', 'googlepay', 'bank', 'notification']);
 function json(res, status, body) { res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff'); return res.status(status).json(body); }
 function sha256(value) { return crypto.createHash('sha256').update(String(value)).digest('hex'); }
 function cleanText(value, max) { return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max) : ''; }
-function amountValue(value) { const amount = typeof value === 'number' ? value : Number(String(value ?? '').replace(/[^\d.]/g, '')); return Number.isFinite(amount) && amount > 0 && amount < 1e9 ? Math.round(amount * 100) / 100 : 0; }
+function amountValue(value) { if (typeof value === 'number') return Number.isFinite(value) && value > 0 && value < 1e9 ? Math.round(value * 100) / 100 : 0; let raw = String(value ?? '').trim().replace(/[^\d.,-]/g, ''); if (!raw || raw.startsWith('-')) return 0; if (/,\d{2}$/.test(raw) && !/\.\d{2}$/.test(raw)) raw = raw.replace(/\./g, '').replace(',', '.'); const amount = Number(raw.replace(/,/g, '')); return Number.isFinite(amount) && amount > 0 && amount < 1e9 ? Math.round(amount * 100) / 100 : 0; }
 function clients() {
   const url = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
   const anon = process.env.SUPABASE_ANON_KEY || process.env.REACT_APP_SUPABASE_ANON_KEY;
