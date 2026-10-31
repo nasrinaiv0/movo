@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import Icon from '../components/Icon';
 import { RootHeader } from '../components/ui';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
