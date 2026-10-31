@@ -22,15 +22,18 @@ for (const f of files) {
   const isDemo = /lib\/demoData\.js$/.test(f.replace(/\\/g, '/'));
   const code = fs.readFileSync(f, 'utf8');
   const ast = parser.parse(code, { sourceType: 'module', plugins: ['jsx'] });
-  const isData = DATA_FILES.test(f.replace(/\\/g, '/'));
+  const normalizedPath = f.replace(/\\/g, '/');
+  const isLegal = /screens\/Legal\.js$/.test(normalizedPath);
+  const isData = DATA_FILES.test(normalizedPath);
   const visit = (node, stack) => {
     if (!node || typeof node.type !== 'string') return;
     const parent = stack[stack.length - 1];
     if (node.type === 'CallExpression' && ['tr', 't', 'rich'].includes(node.callee.name) && node.arguments[0]?.type === 'StringLiteral' && /lib\/i18n|tr\b/.test(code)) {
-      if (node.callee.name !== 't' || /lib\/(format|i18n)\.js$/.test(f) || /import \{ t \}/.test(code)) keys.add(node.arguments[0].value);
+      // Legal prose remains in its reviewed source language until reviewed translations exist.
+      if ((!isLegal || node.arguments[0].value.length <= 100) && (node.callee.name !== 't' || /lib\/(format|i18n)\.js$/.test(f) || /import \{ t \}/.test(code))) keys.add(node.arguments[0].value);
     }
     if (isDemo && node.type === 'StringLiteral' && parent?.type === 'ObjectProperty' && parent.value === node && ['title', 'body'].includes(parent.key.name)) keys.add(node.value);
-    if (isData && !isDemo && node.type === 'StringLiteral' && human(node.value)) {
+    if (isData && !isDemo && node.type === 'StringLiteral' && (!isLegal || node.value.length <= 100) && human(node.value)) {
       const inImport = stack.some(n => n.type === 'ImportDeclaration' || n.type === 'ExportAllDeclaration');
       const isKey = parent && parent.type === 'ObjectProperty' && parent.key === node;
       const attr = [...stack].reverse().find(n => n.type === 'JSXAttribute');
