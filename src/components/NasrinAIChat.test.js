@@ -145,6 +145,11 @@ describe('NasrinAI consent and legal links', () => {
     expect(container.textContent).toContain('Here is your summary.');
   });
 
+  test('composer placeholder starts with a helpful NasrinAI example', () => {
+    const prompt = container.querySelector('#movo-ai-prompt');
+    expect(prompt.getAttribute('placeholder')).toContain('Ask NasrinAI');
+  });
+
   test('clicking Briefing automatically sends a useful prompt to chat', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -177,7 +182,7 @@ describe('NasrinAI consent and legal links', () => {
 
     const post = global.fetch.mock.calls.find(([, options]) => options?.method === 'POST');
     expect(post).toBeTruthy();
-    expect(JSON.parse(post[1].body).message).toBe('Compare my income and spending trends daily, weekly, and monthly using my MOVO records.');
+    expect(JSON.parse(post[1].body).message).toBe('Analyze my actual MOVO transaction history and compare income, expenses, and net cash flow by day, week, and month. Use only available records, state the date ranges and totals clearly, and explain when there is insufficient historical data to identify a reliable trend. Do not estimate or invent transactions or figures.');
     expect(container.textContent).toContain('Your trends.');
   });
 
