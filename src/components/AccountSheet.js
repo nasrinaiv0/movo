@@ -63,6 +63,10 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       {form.account_type === 'card' && <>
         <span className="acct-label">{tr('Card kind')}</span>
         <div className="seg-control two" role="group" aria-label={tr('Card kind')}>{[['debit', 'Debit'], ['credit', 'Credit']].map(([k, l]) => <button type="button" key={k} className={form.cardKind === k ? 'selected' : ''} aria-pressed={form.cardKind === k} onClick={() => set({ cardKind: k })}>{l}</button>)}</div>
+        <label className="acct-label" htmlFor="acct-card-network">{tr('Card network')}</label>
+        <select id="acct-card-network" className="acct-input" value={form.cardNetwork || ''} onChange={e => set({ cardNetwork: e.target.value })}>
+          <option value="">{tr('Choose card network')}</option><option value="visa">Visa</option><option value="mastercard">Mastercard</option><option value="amex">American Express</option><option value="other">{tr('Other')}</option>
+        </select>
         <span className="acct-label">{tr('Chip')}</span>
         <div className="chip-picks" role="radiogroup" aria-label={tr('Chip color')}>{CHIPS.map(([id, name]) => <button type="button" key={id} role="radio" aria-checked={form.chip === id} aria-label={`${name} chip`} className={form.chip === id ? 'on' : ''} onClick={() => set({ chip: id })}><EmvChip finish={id} /><span>{name}</span></button>)}</div>
         <div className="acct-field acct-toggle"><span className="acct-field-icon"><Contactless /></span><span><strong>{tr('Contactless symbol')}</strong><small>{tr('Show the tap-to-pay (RFID) mark on the card')}</small></span><Toggle checked={!!form.contactless} onChange={v => set({ contactless: v })} label={tr('Contactless symbol')} /></div>
