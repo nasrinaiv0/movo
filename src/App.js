@@ -41,6 +41,7 @@ import ScannerSheet from './components/ScannerSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate, shortcutPrompt } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
+import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
@@ -322,14 +323,11 @@ function App() {
   const toBase = useCallback((value, from) => convert(value, from || 'PHP', base, rates), [base, rates]);
   const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts, base, rates)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts, base, rates]);
   const accountsView = useMemo(() => baseAccounts.map(a => {
-    const delta = txs.reduce((s, t) => {
-      const own = convert(t.origAmount, t.origCurrency, a.currency || 'PHP', rates);
-      if (t.account_id === a.id) return s + (t.type === 'income' ? own : -own);
-      if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + own;
-      return s;
-    }, 0);
     const st = prefs.accountStyles?.[a.id] || {};
-    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
+    const currency = a.currency || 'PHP';
+    const opening = cloudMode ? Number(a.opening_balance || 0) : Number(a.opening_balance ?? a.balance ?? 0);
+    const balance = accountBalance(a, txs, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
+    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency };
   }), [baseAccounts, txs, cloudMode, prefs.accountStyles, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
@@ -359,8 +357,9 @@ function App() {
     homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
     let points = [balance - homeMonth.net, ...daily.values()];
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
-    return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeMonth, toBase]);
+    const savings = savingsBalance(accountsView, toBase, prefs.accountStyles);
+    return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings, netCashFlow: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
+  }, [accountsView, txs, homeMonth, toBase, prefs.accountStyles]);
   const deltas = useMemo(() => monthOverMonth(txs, refDate, stats.balance), [txs, refDate, stats.balance]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
