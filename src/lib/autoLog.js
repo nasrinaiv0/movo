@@ -21,7 +21,14 @@ export const linkTemplate = (origin, key, src = 'applepay') => `${origin}/#log?s
  * A plain-language prompt for the iPhone Shortcuts "Describe a shortcut" box (Apple Intelligence). It is kept in
  * English on purpose: it is read by Shortcuts, not shown as interface text. It carries the person's private link.
  */
-export const shortcutPrompt = (origin, key) => `Open this URL: ${linkTemplate(origin, key)} — before opening it, replace AMOUNT with the Amount, MERCHANT with the Merchant and CARD with the Card from the Shortcut Input (the Apple Pay transaction), URL-encoding each value. Run it without asking and without showing a notification.`;
+export const shortcutPrompt = (origin, key) => [
+  'Create an iPhone Shortcuts automation for Apple Pay transactions. Use the Transaction automation trigger, select Any Card (or my selected cards) and Any Category, set Run Immediately, and turn Notify When Run off if iOS offers that option.',
+  'Create a new blank shortcut. From Shortcut Input, get Amount and set a variable named Amount. Get Merchant from Shortcut Input, URL Encode it, and set the output to EncodedMerchant. Get Card from Shortcut Input and set a variable named Card.',
+  'Add Get Contents of URL (never Open URLs). Use GET and this MOVO endpoint URL:',
+  `${origin}/api/log?src=applepay&k=${encodeURIComponent(key)}&amount=[Amount]&merchant=[EncodedMerchant]&card=[Card]`,
+  'Replace each bracketed value with its corresponding Shortcuts variable, not literal text. In the action options, turn Show When Run off if available. Do not display the URL or prompt text in the user interface; this prompt is only copied by the Copy prompt for Shortcuts button.',
+  'Before finishing, verify that the endpoint returns a success response and that the transaction appears in MOVO without opening Safari.'
+].join(' ');
 
 /** Constant-time comparison so the key can't be guessed by timing. */
 export function sameKey(a = '', b = '') {
