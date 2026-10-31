@@ -20,7 +20,7 @@ Date: 2026-11-01. Scope: MOVO only.
 
 - src/lib/accounting.js: pure projections for loans, receivables, card events, goals, net worth and available money.
 - src/lib/accounting.test.js: regression tests for these rules.
-- supabase/migrations/202611010001_obligations_receivables_goals.sql: user-scoped tables for loans/debts and events, receivables and events, goal allocations, and an account-posting ledger; RLS, owner-reference guards, atomic event RPCs, and concurrency-safe same-currency goal allocation.
+- supabase/migrations/20261101000100_obligations_receivables_goals.sql: user-scoped tables for loans/debts and events, receivables and events, goal allocations, and an account-posting ledger; RLS, owner-reference guards, atomic event RPCs, and concurrency-safe same-currency goal allocation.
 - src/lib/obligationsRepository.js: validated cloud read/write methods for loans, debts, receivables, goals and allocations.
 - src/screens/FinancialPlanning.js and src/screens/Menu.js: a Financial Planning screen with overview metrics, loan/debt tracking, receivables, goal creation, allocation and release flows.
 - src/App.js and src/lib/financeCalculations.js: cloud accounting postings are loaded into the account balance projection without being counted as ordinary income/expense transactions.
