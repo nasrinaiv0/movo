@@ -1066,7 +1066,7 @@ function App() {
           <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy. Select the link below instead.'))); }}><Icon name="doc" size={16} /> {tr('Copy prompt for Shortcuts')}</button>
           <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
         </section>
-        <details className="setup-manual">
+        <details className="setup-manual" open>
           <summary>{tr('Set it up manually instead')}</summary>
           <ol className="setup-steps">
             <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → New → {transaction}. Pick your cards, choose {run}, then add {open} with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, open: <em>Open URLs</em> })}</li>
