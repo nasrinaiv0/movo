@@ -2127,5 +2127,33 @@ export default [
     "MOVO にサインイン",
     "MOVO 로그인",
     "MOVO में साइन इन करें"
+  ],
+  [
+    "Health & fitness",
+    "Kalusugan at fitness",
+    "الصحة واللياقة",
+    "健康与健身",
+    "Salud y bienestar físico",
+    "Salute e fitness",
+    "Gesundheit & Fitness",
+    "Santé et fitness",
+    "Saúde e fitness",
+    "健康とフィットネス",
+    "건강 및 피트니스",
+    "स्वास्थ्य और फ़िटनेस"
+  ],
+  [
+    "American Express",
+    "American Express",
+    "أمريكان إكسبريس",
+    "美国运通",
+    "American Express",
+    "American Express",
+    "American Express",
+    "American Express",
+    "American Express",
+    "アメリカン・エキスプレス",
+    "아메리칸 익스프레스",
+    "अमेरिकन एक्सप्रेस"
   ]
 ];
