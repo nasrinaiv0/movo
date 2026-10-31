@@ -87,7 +87,7 @@ export const SUBSCRIPTION_APP_FAVICONS = {
   'PlayStation Plus': { domain: 'playstation.com', category: 'gaming' },
   'Xbox Game Pass': { domain: 'xbox.com', category: 'gaming' },
   'Nintendo Switch Online': { domain: 'nintendo.com', category: 'gaming' },
-  Roblox Premium: { domain: 'roblox.com', category: 'gaming' },
+  'Roblox Premium': { domain: 'roblox.com', category: 'gaming' },
   'EA Play': { domain: 'ea.com', category: 'gaming' },
   'Ubisoft+': { domain: 'ubisoft.com', category: 'gaming' },
   'Apple Arcade': { domain: 'apple.com', category: 'gaming' },
