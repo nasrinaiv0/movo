@@ -34,7 +34,7 @@ export async function createLoan(input, userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const principal = validAmount(input?.principal_amount, 'Principal');
   return unwrap(await requireClient().from('financial_loans').insert({
-    user_id: userId, name: validName(input?.name), lender: typeof input?.lender === 'string' ? input.lender.trim().slice(0, 120) || null : null,
+    user_id: userId, name: validName(input?.name), obligation_type: input?.obligation_type === 'debt' ? 'debt' : 'loan', opening_principal: principal, lender: typeof input?.lender === 'string' ? input.lender.trim().slice(0, 120) || null : null,
     currency: validCurrency(input?.currency), principal_amount: principal, outstanding_principal: principal,
     interest_rate: Math.max(0, Number(input?.interest_rate) || 0), due_date: validDate(input?.due_date),
     account_id: input?.account_id || null, notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
