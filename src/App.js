@@ -1145,8 +1145,8 @@ function App() {
             <li>{tr('Keep this screen open until the device shows as registered, then test both menu options before relying on it.')}</li>
           </ol>
           <div className="shortcut-prompt-actions" role="group" aria-label={tr('Choose automation style')}>
-            <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'automatic')).then(() => notify(tr('Fully automatic prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="refresh" size={16} /> {tr('Option 1: Fully automatic (No Clicking)')}</button>
-            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'interactive')).then(() => notify(tr('Interactive prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="doc" size={16} /> {tr('Option 2: Interactive (Log / Skip)')}</button>
+            <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'automatic')).then(() => notify(tr('Auto log prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="refresh" size={16} /> {tr('Auto log')}</button>
+            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'interactive')).then(() => notify(tr('Require validation prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="doc" size={16} /> {tr('Require validation')}</button>
           </div>
           <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
         </section>
