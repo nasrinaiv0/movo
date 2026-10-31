@@ -28,7 +28,7 @@ export const shortcutPrompt = (origin, key) => [
   'Use Shortcut Input fields to set Amount, Merchant, Card or Account, and transaction date/reference if available. The request body is JSON, so do not URL-encode Merchant and do not place transaction details in the URL.',
   'Add Choose from Menu with prompt text: Log [Amount] transaction at [Merchant]? Add menu options Log and Skip.',
   'Under Skip, add Stop This Shortcut. Do not send a request or open MOVO.',
-  'Under Log, add Get Contents of URL (never Open URLs) and set URL to ${origin}/api/log. Set Method to POST and Request Body to JSON. Add headers Content-Type: application/json and Authorization: Bearer ${key}.',
+  `Under Log, add Get Contents of URL (never Open URLs) and set URL to ${origin}/api/log. Set Method to POST and Request Body to JSON. Add headers Content-Type: application/json and Authorization: Bearer ${key}.`,
   'In the JSON body, map amount to the Amount variable, merchant to Merchant, card to Card or Account, source to the literal applepay, occurredAt to the transaction date if provided, and reference to the transaction reference if provided. Omit optional values that are unavailable; do not enter the bracketed labels as literal values.',
   'Turn Show When Run off if the action offers it. The Choose from Menu action still asks the user to select Log or Skip. Get Contents of URL sends the request without opening Safari.',
   'MOVO must be signed in with cloud storage and this device key must be registered in Automatic logging settings before background logging can succeed. After setup, test one small real transaction and verify the success response and exactly one saved expense in MOVO.'
