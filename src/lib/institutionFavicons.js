@@ -264,6 +264,10 @@ export function getInstitutionFaviconUrl(institutionName, { size = 128, countryC
 
   const entry = INSTITUTION_FAVICONS[institutionName.trim()];
   if (!entry) return null;
+  // Fail closed: remote brand favicons stay disabled until this exact
+  // institution/domain has an evidence-backed legal review. Pending entries
+  // should render a generic local icon and a readable institution name.
+  if (!['APPROVED_POLICY_REVIEW', 'APPROVED_BY_COUNSEL'].includes(entry.reviewStatus)) return null;
   if (countryCode && entry.countryCode && entry.countryCode !== countryCode) return null;
 
   const safeSize = [16, 32, 48, 64, 128].includes(Number(size)) ? Number(size) : 128;
