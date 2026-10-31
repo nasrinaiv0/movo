@@ -38,13 +38,13 @@ export function accountBalance(account, transactions, convertAmount = (amount) =
 
 /**
  * Savings is the value held outside physical cash. Credit-card accounts are excluded because a card limit
- * is not savings; account balances remain separately visible in Wallet.
+ * is not savings; an unclassified card is also excluded until its debit/credit kind is known.
  */
 export function savingsBalance(accounts, convertToHome = (amount) => amount, accountStyles = {}) {
   if (!Array.isArray(accounts)) return 0;
   return accounts.reduce((sum, account) => {
     if (!account || account.is_archived || account.account_type === 'cash') return sum;
-    if (account.account_type === 'card' && (accountStyles[account.id]?.cardKind || account.cardKind) === 'credit') return sum;
+    if (account.account_type === 'card' && (accountStyles[account.id]?.cardKind || account.cardKind) !== 'debit') return sum;
     const balance = Number(account.balance);
     if (!Number.isFinite(balance)) return sum;
     const converted = Number(convertToHome(balance, account.currency || 'PHP'));
