@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
@@ -52,6 +52,13 @@ export default function Home({ c }) {
   const startEditing = () => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } };
   const [mascotSheet, setMascotSheet] = useState(false);
   const [periodSheet, setPeriodSheet] = useState(false);
+  const [showPeriodOnTop, setShowPeriodOnTop] = useState(true);
+  useEffect(() => {
+    const updatePeriodVisibility = () => setShowPeriodOnTop((window.scrollY || window.pageYOffset || 0) <= 8);
+    updatePeriodVisibility();
+    window.addEventListener('scroll', updatePeriodVisibility, { passive: true });
+    return () => window.removeEventListener('scroll', updatePeriodVisibility);
+  }, []);
   const [mascotError, setMascotError] = useState('');
   const file = useRef(null);
   const selectedYear = Number((homeMonthKey || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`).slice(0, 4));
@@ -133,7 +140,7 @@ export default function Home({ c }) {
           <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} />
           <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} />
         </div>
-        <button type="button" className="home-period-filter" aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" onClick={() => setPeriodSheet(true)}>
+        <button type="button" className={`home-period-filter${showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!showPeriodOnTop} tabIndex={showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
           <span className="home-period-icon"><Icon name="calendar" size={15} /></span>
           <span className="home-period-current">{monthName(homeMonthKey)}</span>
           <Icon name="chevron" size={13} className="home-period-chevron" />
