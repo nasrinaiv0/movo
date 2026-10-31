@@ -2868,3 +2868,13 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .total-card::after {
   content: "";
 }
+
+
+/* Remove decorative accent rails from all dashboard summary cards. */
+.movo-app .balance-card::after,
+.movo-app .total-card::after,
+.movo-app .stat-card::after,
+.movo-app .spending-card::after {
+  content: none !important;
+  display: none !important;
+}
