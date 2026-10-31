@@ -31,7 +31,7 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Responsive Home dashboard and five-item navigation.
 - Balance visibility toggle that masks balances and transaction amounts.
 - Income and expense totals are calculated from posted records; internal transfers affect account balances but never inflate income, expenses or net activity.
-- Account balances derive from opening balances plus routed ledger entries. The Savings tile sums eligible non-cash account balances (excluding credit-card accounts); it is distinct from monthly net cash flow.
+- Account balances derive from opening balances plus routed ledger entries. The Savings tile sums eligible non-cash account balances (excluding credit cards and cards whose debit/credit kind is unknown); it is distinct from monthly net cash flow.
 - Week/month/year period selection and spending-category breakdown.
 - Create, edit, and delete transaction records; create, edit, and archive tracked accounts.
 - Record income, expenses, and transfers; transfer records do not move money between financial institutions.
