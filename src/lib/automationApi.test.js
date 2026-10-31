@@ -23,6 +23,12 @@ describe('background automation API input helpers', () => {
     expect(_test.accountFor(accounts, '')).toBeNull();
     expect(_test.accountFor([{ id: 'only', name: 'Cash' }], '') .id).toBe('only');
     expect(_test.accountFor(accounts, 'Unknown Card')).toBeNull();
+    const sameBank = [
+      { id: 'visa', name: 'BPI Visa', institution_name: 'BPI' },
+      { id: 'savings', name: 'BPI Savings', institution_name: 'BPI' },
+    ];
+    expect(_test.accountFor(sameBank, 'BPI Visa').id).toBe('visa');
+    expect(_test.accountFor(sameBank, 'BPI')).toBeNull();
   });
 
   test('idempotency keys are stable for the same payment and differ across transactions', () => {
