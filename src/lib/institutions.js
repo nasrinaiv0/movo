@@ -50,3 +50,23 @@ export function searchInstitutions(countryCode, query = '', accountType = 'bank'
     .filter(item => !q || [item.name, ...item.aliases].some(value => value.toLocaleLowerCase().includes(q)))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
+
+
+const INSTITUTION_DOMAINS = {
+  'bdo unibank': 'bdo.com.ph', bdo: 'bdo.com.ph', bpi: 'bpi.com.ph', metrobank: 'metrobank.com.ph',
+  'land bank of the philippines': 'landbank.com', 'philippine national bank': 'pnb.com.ph', pnb: 'pnb.com.ph',
+  unionbank: 'unionbankph.com', 'security bank': 'securitybank.com', 'china banking corporation (chinabank)': 'chinabank.ph',
+  chinabank: 'chinabank.ph', rcbc: 'rcbc.com', 'development bank of the philippines': 'dbp.ph',
+  gcash: 'gcash.com', maya: 'maya.ph', chase: 'chase.com', 'bank of america': 'bankofamerica.com',
+  'wells fargo': 'wellsfargo.com', citibank: 'citi.com', 'capital one': 'capitalone.com',
+  barclays: 'barclays.co.uk', 'hsbc uk': 'hsbc.co.uk', 'lloyds bank': 'lloydsbank.com', natwest: 'natwest.com',
+  monzo: 'monzo.com', 'starling bank': 'starlingbank.com', 'rbc royal bank': 'rbc.com', 'td canada trust': 'td.com',
+  scotiabank: 'scotiabank.com', 'bmo bank of montreal': 'bmo.com', cibc: 'cibc.com',
+  'commonwealth bank': 'commbank.com.au', westpac: 'westpac.com.au', nab: 'nab.com.au', anz: 'anz.com',
+  'dbs / posb': 'dbs.com.sg', ocbc: 'ocbc.com', uob: 'uob.com.sg', 'state bank of india': 'sbi.co.in',
+  'hdfc bank': 'hdfcbank.com', 'icici bank': 'icicibank.com', 'axis bank': 'axisbank.com'
+};
+export const institutionLogoUrl = (name) => {
+  const domain = INSTITUTION_DOMAINS[String(name || '').trim().toLowerCase()];
+  return domain ? 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=128' : '';
+};
