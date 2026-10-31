@@ -60,7 +60,7 @@ export async function createLoan(input, userId) {
   if (!newProceeds) return loan;
   try {
     await recordLoanEvent({ loan_id: loan.id, event_type: 'borrowed', amount: principal, currency: loan.currency, account_id: input.account_id, note: 'Initial loan proceeds' });
-    return unwrap(await client.from('financial_loans').select('*').eq('id', loan.id).single());
+    return loan;
   } catch (error) {
     await client.from('financial_loans').delete().eq('id', loan.id);
     throw error;
@@ -103,7 +103,7 @@ export async function createReceivable(input, userId) {
   if (!newLending) return receivable;
   try {
     await recordReceivableEvent({ receivable_id: receivable.id, event_type: 'lent', amount, currency: receivable.currency, account_id: input.account_id, note: 'Initial amount lent' });
-    return unwrap(await client.from('financial_receivables').select('*').eq('id', receivable.id).single());
+    return receivable;
   } catch (error) {
     await client.from('financial_receivables').delete().eq('id', receivable.id);
     throw error;
