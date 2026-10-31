@@ -2870,9 +2870,11 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 
-/* Remove the decorative accent rails from Total Balance and Total Spent cards. */
+/* Remove decorative accent rails from all dashboard summary cards. */
 .movo-app .balance-card::after,
-.movo-app .total-card::after {
+.movo-app .total-card::after,
+.movo-app .stat-card::after,
+.movo-app .spending-card::after {
   content: none !important;
   display: none !important;
 }
