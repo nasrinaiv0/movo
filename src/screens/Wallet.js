@@ -58,7 +58,8 @@ export default function Wallet({ c }) {
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
   const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
-  const openAccount = (a) => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); };
+  // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
+  const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
   const cardVisual = (a) => (wv.cardFormat === 'tile' ? <AccountTile key={`${a.id}:${styleFor(a, prefs.accountStyles).color}:${styleFor(a, prefs.accountStyles).icon}`} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size="preview" /> : <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}`} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />);
   const renderAccounts = (items) => (wv.view === 'list'
