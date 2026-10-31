@@ -1,10 +1,11 @@
-import React, { memo, useId } from 'react';
+import React, { memo, useEffect, useId, useState } from 'react';
 import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from '../lib/stickers';
 import { money, shown } from '../lib/format';
 import { canAnimate } from '../lib/motion';
 import { EmvChip, Contactless } from './EmvChip';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
+import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
 const build = (node, key) => {
   if (!node) return null;
@@ -44,14 +45,17 @@ export const resolveSticker = (id, list) => findSticker(id, list);
 /* A bank card with reserved room for logo/name, chip, network, number and holder over any sticker. */
 export default function CardArt({ a, show, styleId, holder, preview, compact }) {
   const custom = useCustomStickers();
-  const sticker = resolveSticker(styleId, custom);
-  const theme = sticker || (preview ? defaultThemeFor(a.id) : null);
+  const remoteSticker = isStorageStickerId(styleId);
+  const [remoteUrl, setRemoteUrl] = useState('');
+  useEffect(() => { let active = true; setRemoteUrl(''); if (remoteSticker) resolvePremiumStickerUrl(storageStickerPath(styleId)).then(url => { if (active) setRemoteUrl(url); }).catch(() => { if (active) setRemoteUrl(''); }); return () => { active = false; }; }, [styleId, remoteSticker]);
+  const sticker = remoteSticker ? null : resolveSticker(styleId, custom);
+  const theme = sticker || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
   const ink = theme ? theme.ink : 'light';
   const number = `•••• •••• •••• ${a.mask || '••••'}`;
   const network = /mastercard/i.test(String(a.brand || '')) ? 'mastercard.com' : /visa/i.test(String(a.brand || '')) ? 'visa.com' : '';
   const institutionLogo = institutionLogoUrl(a.institution_name);
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
-    {theme && <StickerArt theme={theme} compact={compact} />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
+    {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="cc-face">
     <div className="cc-top">
       <span className="cc-logo">{institutionLogo ? <img className="cc-institution-logo" src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}<span className="cc-name">{a.institution_name || a.name}</span></span>
