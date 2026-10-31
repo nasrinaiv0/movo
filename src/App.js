@@ -147,19 +147,27 @@ function CurrencySheet({ value, fx, locale, onPick, onClose }) {
 
 function PostTourLegalDisclosure({ onReview, onDismiss }) {
   const [acknowledged, setAcknowledged] = useState(false);
+  const accept = () => { if (!acknowledged) return; onReview(); };
   return <div className="legal-disclosure-backdrop" role="presentation">
     <section className="legal-disclosure-card" role="dialog" aria-modal="true" aria-labelledby="movo-disclosure-title" aria-describedby="movo-disclosure-description">
-      <span className="legal-disclosure-mark" aria-hidden="true"><MovoMark size={42} /></span>
-      <p className="legal-disclosure-eyebrow">{tr('Important notice')}</p>
-      <h2 id="movo-disclosure-title">{tr('Third-party logo disclaimer')}</h2>
-      <p id="movo-disclosure-description">{tr('Please read and acknowledge the following before reviewing MOVO’s Terms of Service and Privacy Policy.')}</p>
-      <ol className="legal-disclosure-points legal-disclosure-numbered">
-        <li>{tr('Logos are for identification only. They help users recognize their cards, bank accounts, e-wallets, subscriptions, and track their financial activity.')}</li>
-        <li>{tr('MOVO does not connect to your banks or financial accounts. Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
-        <li>{tr('PayMongo is MOVO’s designated payment gateway. Third-party logos are not payment gateways and must not imply that a bank or other institution has partnered with MOVO.')}</li>
-      </ol>
-      <label className="legal-disclosure-check"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} /><span>{tr('I have read and acknowledge this disclaimer.')}</span></label>
-      <div className="legal-disclosure-actions"><button type="button" className="secondary-button" onClick={onDismiss}>{tr('Review later')}</button><button type="button" className="primary-button" disabled={!acknowledged} onClick={onReview}>{tr('Review Terms & Privacy')} <Icon name="arrow-right" size={16} /></button></div>
+      <div className="legal-disclosure-content">
+        <span className="legal-disclosure-mark" aria-hidden="true"><MovoMark size={42} /></span>
+        <p className="legal-disclosure-eyebrow">{tr('Important notice')}</p>
+        <h2 id="movo-disclosure-title">{tr('Third-party logo disclaimer')}</h2>
+        <p id="movo-disclosure-description">{tr('Please read and acknowledge the following before reviewing MOVO’s Terms of Service and Privacy Policy.')}</p>
+        <ol className="legal-disclosure-points legal-disclosure-numbered">
+          <li>{tr('Logos are for identification only. They help users recognize their cards, bank accounts, e-wallets, subscriptions, and track their financial activity.')}</li>
+          <li>{tr('MOVO does not connect to your banks or financial accounts. Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
+          <li>{tr('PayMongo is MOVO’s designated payment gateway. Third-party logos are not payment gateways and must not imply that a bank or other institution has partnered with MOVO.')}</li>
+        </ol>
+      </div>
+      <div className="legal-disclosure-footer">
+        <label className="legal-disclosure-check"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} /><span>{tr('I have read and acknowledge this disclaimer.')}</span></label>
+        <div className="legal-disclosure-actions">
+          <button type="button" className="secondary-button" disabled={!acknowledged} onClick={() => { if (acknowledged) onDismiss(); }}>{tr('Review later')}</button>
+          <button type="button" className="primary-button" disabled={!acknowledged} aria-disabled={!acknowledged} onClick={accept}>{tr('Review Terms & Privacy')} <Icon name="arrow-right" size={16} /></button>
+        </div>
+      </div>
     </section>
   </div>;
 }

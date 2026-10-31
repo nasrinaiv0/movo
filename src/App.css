@@ -2226,3 +2226,74 @@ button.account-tile:active { transform: scale(.98); }
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Mobile-first fit for the post-tour third-party logo disclaimer.
+   The content scrolls inside the panel while acknowledgement/actions remain visible. */
+.legal-disclosure-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  background: rgba(9,12,22,.68);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.legal-disclosure-card {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 560px);
+  max-height: min(100%, 820px);
+  max-height: min(calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px), 820px);
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--sheet-bg, var(--card-solid));
+  color: var(--text);
+  box-shadow: 0 24px 80px rgba(0,0,0,.28);
+}
+.legal-disclosure-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(18px, 4vw, 26px);
+}
+.legal-disclosure-mark { margin: 0 0 12px; }
+.legal-disclosure-card h2 { font-size: clamp(21px, 5vw, 29px); }
+.legal-disclosure-card > .legal-disclosure-content > p:not(.legal-disclosure-eyebrow) { margin-bottom: 14px; }
+.legal-disclosure-numbered { gap: 9px; }
+.legal-disclosure-numbered li { padding: 11px 12px 11px 8px; font-size: 13px; line-height: 1.48; overflow-wrap: anywhere; }
+.legal-disclosure-footer {
+  flex: 0 0 auto;
+  padding: 12px clamp(18px, 4vw, 26px) max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--sheet-bg, var(--card-solid));
+}
+.legal-disclosure-check { margin: 0 0 12px; font-size: 13px; }
+.legal-disclosure-check input { width: 19px; height: 19px; }
+.legal-disclosure-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.legal-disclosure-actions button { width: 100%; min-height: 46px; margin: 0; }
+.legal-disclosure-actions button:disabled { opacity: .42; cursor: not-allowed; filter: grayscale(.12); }
+.legal-disclosure-actions button:not(:disabled) { cursor: pointer; }
+@media (max-height: 760px) {
+  .legal-disclosure-backdrop { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .legal-disclosure-card { max-height: min(calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px), 820px); border-radius: 22px; }
+  .legal-disclosure-content { padding: 15px 17px; }
+  .legal-disclosure-mark { width: 48px; height: 48px; margin-bottom: 9px; }
+  .legal-disclosure-mark svg { width: 36px; height: 36px; }
+  .legal-disclosure-eyebrow { margin-bottom: 4px; }
+  .legal-disclosure-card h2 { margin-bottom: 6px; }
+  .legal-disclosure-card > .legal-disclosure-content > p:not(.legal-disclosure-eyebrow) { margin-bottom: 10px; font-size: 13px; line-height: 1.45; }
+  .legal-disclosure-numbered { gap: 7px; }
+  .legal-disclosure-numbered li { padding-top: 9px; padding-bottom: 9px; font-size: 12px; line-height: 1.42; }
+  .legal-disclosure-footer { padding-top: 9px; }
+  .legal-disclosure-check { margin-bottom: 9px; font-size: 12px; }
+  .legal-disclosure-actions button { min-height: 42px; }
+}
