@@ -1,29 +1,40 @@
 # Third-Party Brand Icons, Dynamic Favicons, and Subscription Catalog
 
-**Status:** Proposed legal/product disclosure for review. Confirm the final Terms of Service location and publication status before representing this as live legal copy.
+**Status:** Proposed legal/product disclosure for review. This file is not proof that the live Terms of Service or Privacy Policy has been updated. Confirm the canonical published policy locations and verify deployment before treating the wording as effective.
 
 ## Third-party names, marks, and icons
 
-MOVO may display third-party service names, brand marks, website icons, and favicons to help users identify and categorize subscriptions and expenses. These names and marks belong to their respective owners. Their display does not imply that MOVO is affiliated with, sponsored by, endorsed by, or partnered with those providers, nor that MOVO can access, verify, cancel, or manage a user's account with those providers.
+MOVO may display third-party service names and institution names to help users identify and categorize subscriptions, expenses, and financial institutions. Third-party names and marks remain the property of their respective owners. Display does not imply affiliation, sponsorship, endorsement, or partnership, or that MOVO can access, verify, cancel, or manage a user's account with a provider.
 
-## Dynamic Domain Favicons
+A disclaimer does not grant MOVO a license to use a logo, icon, or other protected artwork. MOVO must follow the applicable provider terms, official trademark/brand guidance, and applicable law. Where a provider's rules or the legal basis for a particular icon are unclear, MOVO should use a plain text label and a generic locally created icon unless and until permission or a documented lawful basis is established.
 
-MOVO may use a dynamic domain favicon service (currently the Google S2 favicon endpoint) to retrieve a website icon based on a curated mapping of a service or institution to its website domain. This is a visual-identification feature only. A returned favicon may be a website icon, a simplified mark, a generic icon, low-resolution artwork, or an unavailable image; it is not guaranteed to be the provider's official logo or an exact representation of its current brand identity.
+## Dynamic Domain Favicons and Google
 
-MOVO does not guarantee that every displayed icon is accurate, current, available, or suitable for every use. If an icon is missing, incorrect, or fails to load, MOVO may show a generic fallback or the provider's text name. A favicon lookup must not be treated as verification that a subscription exists or that MOVO has a connection with the third party.
+MOVO may attempt to retrieve a website favicon through Google's S2 favicon endpoint using a curated service/institution-to-domain mapping. The endpoint may return a website favicon, a simplified or low-resolution mark, a generic icon, an incorrect icon, or no image. It is not guaranteed to return an official logo or the provider's current approved brand asset.
 
-When a favicon service is used, the browser or client may make a request to that service to retrieve the icon. The service may receive technical request information such as IP address, requested domain, and standard request metadata according to its own practices. MOVO should disclose this third-party request in the applicable privacy notice where required and avoid sending account balances, transactions, credentials, subscription amounts, or other financial details to the favicon provider. The favicon request should contain only the domain and parameters needed to fetch the icon.
+The fact that an image is publicly retrievable through Google does not by itself grant MOVO permission to reuse the underlying artwork. MOVO does not represent that Google has endorsed MOVO, licensed every returned image, or confirmed the rights associated with an image. Provider-specific review is required; see `docs/legal/DYNAMIC_FAVICON_AND_THIRD_PARTY_BRAND_AUDIT.md`.
 
-## Subscription catalog
+Where rights clearance is pending or uncertain, MOVO should show the provider's name and a generic local icon instead of the remote favicon. MOVO must not describe an unverified favicon as an official or verified logo.
 
-MOVO may provide a catalog of third-party apps and services—including social networks, messaging services, streaming and entertainment platforms, cloud storage, productivity software, AI services, gaming memberships, and other digital products—to help users record their recurring expenses. Catalog inclusion is informational and does not imply that a listed service offers a paid plan in every country, that a user subscribes to it, or that MOVO has an official integration with it. Availability, plan names, pricing, renewal periods, and billing terms vary by provider and region and should be entered or confirmed by the user.
+## Third-party requests and privacy
 
-Examples may include Facebook, Instagram, WhatsApp, Messenger, Threads, TikTok, Snapchat, X, LinkedIn, Pinterest, Reddit, Discord, Telegram, Netflix, YouTube Premium, Spotify, Apple Music, Disney+, Amazon Prime Video, Twitch, ChatGPT, Claude, Google Gemini, Microsoft 365, Google One, iCloud+, Dropbox, Canva, Adobe Creative Cloud, PlayStation Plus, and Xbox Game Pass. This list is illustrative, not exhaustive or an endorsement.
+When a user's browser or device requests a remote favicon, the request goes to the favicon provider and may expose technical information such as IP address, requested domain, device/browser request metadata, and timing. The precise information depends on the implementation and provider practices. MOVO should minimize request data, avoid sending user identifiers or financial information, and describe applicable third-party requests in the live Privacy Policy as required by law.
 
-Third-party marks remain the property of their respective owners. A general disclaimer does not grant MOVO permission to use a particular logo or artwork. MOVO should follow the applicable provider's brand guidelines and service terms. Where usage rights or the accuracy of a favicon are uncertain, use the service name or a generic icon rather than implying an approved official logo.
+Favicon requests must never include account balances, transaction details, bank-account numbers, subscription prices, credentials, or other financial records. The implementation must not use a user's list of services to create an analytics or advertising profile.
 
-## User choice and limitations
+## Catalog and domain mappings
 
-Users may enter a service that is not present in the catalog. MOVO should not infer or fabricate a provider domain from arbitrary user-entered text. A curated domain mapping is required before requesting a favicon. Icons are decorative identification aids and must not affect subscription amounts, calculations, reminders, account balances, or other financial behavior.
+The subscription and institution catalogs are informational convenience features. Listing a provider does not establish that the user has a subscription, that a paid plan is available in every region, or that MOVO has an official integration with the provider. Pricing, plans, availability, and billing terms vary by provider and region and should be confirmed by the user.
 
-Rights holders may contact support@nasrinai.com with concerns about the display of their names or marks.
+MOVO must not infer domains from arbitrary user-entered names. Only curated mappings with recorded official-domain provenance may initiate a favicon request. Unknown or manually entered services must use a generic icon unless and until reviewed.
+
+## Accuracy, fallback, and rights-holder requests
+
+MOVO does not guarantee that remote icons are accurate, current, available, or suitable for every use. If an icon is missing, inaccurate, mismatched, or disputed, MOVO should replace it with a generic local icon and readable name while reviewing the issue. Icon display must never affect financial calculations, account balances, subscription amounts, reminders, or automation.
+
+Rights holders may contact MOVO through the published support channel to report concerns. MOVO should provide a prompt review/removal workflow. Contact details in this document must be confirmed against the canonical support contact before publication.
+
+## No blanket legal assurance
+
+This notice is a disclosure, not a license and not a statement that every catalog entry has been cleared. Provider-specific terms and brand policies must be reviewed and recorded before remote icons are enabled for that entry. If a policy is ambiguous, seek permission or use a text label and generic icon.
+
