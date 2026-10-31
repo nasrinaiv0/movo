@@ -5,6 +5,8 @@ describe('background automation API input helpers', () => {
     expect(_test.amountValue('109.009')).toBe(109.01);
     expect(_test.amountValue(0)).toBe(0);
     expect(_test.amountValue(-1)).toBe(0);
+    expect(_test.amountValue('-109.00')).toBe(0);
+    expect(_test.amountValue('1.234,50')).toBe(1234.5);
     expect(_test.amountValue('not a number')).toBe(0);
     expect(_test.amountValue(1000000000)).toBe(0);
   });
