@@ -4,7 +4,7 @@
  * that started on the 31st renews on the last day of shorter months and returns to the 31st afterwards.
  */
 export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['yearly', 'Yearly']];
-export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Shopping', 'Phone & internet', 'News', 'Other'];
+export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Restaurants & cafés', 'Shopping', 'Phone & internet', 'News', 'Other'];
 
 /*
  * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH'),
@@ -67,6 +67,19 @@ export const CATALOG = [
   ['foodpanda pandapro', 'Food & delivery', '#d70f64', 'foodpanda', 'PH', 'foodpanda.ph'],
   ['Amazon Prime', 'Shopping', '#ff9900', '', 'US', 'amazon.com'], ['Walmart+', 'Shopping', '#0071ce', '', 'US', 'walmart.com'], ['Costco membership', 'Shopping', '#e31837', '', 'US', 'costco.com'],
   ['Shopee VIP', 'Shopping', '#ee4d2d', 'shopee', 'PH', 'shopee.ph'], ['LazMall / LazPlus', 'Shopping', '#0f146d', '', 'PH', 'lazada.com.ph'],
+  // Restaurants, fast food and cafes (global and Philippines)
+  ['Jollibee', 'Restaurants & cafés', '#d71920', '', 'PH', 'jollibee.com.ph'], ['McDonald’s', 'Restaurants & cafés', '#ffc72c', '', '', 'mcdonalds.com'], ['KFC', 'Restaurants & cafés', '#e4002b', '', '', 'kfc.com'], ['Burger King', 'Restaurants & cafés', '#d62300', '', '', 'bk.com'],
+  ['Wendy’s', 'Restaurants & cafés', '#e2203d', '', '', 'wendys.com'], ['Popeyes', 'Restaurants & cafés', '#f36f21', '', '', 'popeyes.com'], ['Chowking', 'Restaurants & cafés', '#e31b23', '', 'PH', 'chowking.ph'],
+  ['Mang Inasal', 'Restaurants & cafés', '#f5a623', '', 'PH', 'manginasal.ph'], ['Greenwich', 'Restaurants & cafés', '#78be20', '', 'PH', 'greenwich.com.ph'], ['Red Ribbon', 'Restaurants & cafés', '#c8102e', '', 'PH', 'redribbonbakeshop.com'],
+  ['Shakey’s', 'Restaurants & cafés', '#d71920', '', 'PH', 'shakeys.com.ph'], ['Pizza Hut', 'Restaurants & cafés', '#ee3124', '', '', 'pizzahut.com'], ['Domino’s Pizza', 'Restaurants & cafés', '#006491', '', '', 'dominos.com'],
+  ['Starbucks', 'Restaurants & cafés', '#00704a', '', '', 'starbucks.com'], ['Dunkin’', 'Restaurants & cafés', '#ff671f', '', '', 'dunkindonuts.com'], ['Tim Hortons', 'Restaurants & cafés', '#c8102e', '', '', 'timhortons.com'],
+  ['The Coffee Bean & Tea Leaf', 'Restaurants & cafés', '#5b2c20', '', 'PH', 'coffeebean.com'], ['Bo’s Coffee', 'Restaurants & cafés', '#6b4f3a', '', 'PH', 'boscoffee.com'], ['Pickup Coffee', 'Restaurants & cafés', '#ffcc00', '', 'PH', 'pickup-coffee.com'],
+  ['Zus Coffee', 'Restaurants & cafés', '#173f35', '', 'PH', 'zuscoffee.com'], ['Krispy Kreme', 'Restaurants & cafés', '#007a3d', '', '', 'krispykreme.com'], ['Cinnabon', 'Restaurants & cafés', '#003b70', '', '', 'cinnabon.com'],
+  ['Army Navy', 'Restaurants & cafés', '#1c355e', '', 'PH', 'armynavy.com.ph'], ['Kenny Rogers Roasters', 'Restaurants & cafés', '#1d4b36', '', 'PH', 'kennyrogersdelivery.com.ph'], ['Tokyo Tokyo', 'Restaurants & cafés', '#e31837', '', 'PH', 'tokyotokyo.com.ph'],
+  ['Bonchon', 'Restaurants & cafés', '#c8102e', '', 'PH', 'bonchon.com'], ['Subway', 'Restaurants & cafés', '#008c45', '', '', 'subway.com'], ['Taco Bell', 'Restaurants & cafés', '#702082', '', '', 'tacobell.com'],
+  ['Chipotle', 'Restaurants & cafés', '#a81612', '', '', 'chipotle.com'], ['Shake Shack', 'Restaurants & cafés', '#006341', '', '', 'shakeshack.com'], ['Five Guys', 'Restaurants & cafés', '#c8102e', '', '', 'fiveguys.com'],
+  ['Chick-fil-A', 'Restaurants & cafés', '#e51636', '', '', 'chick-fil-a.com'], ['Dairy Queen', 'Restaurants & cafés', '#e31837', '', '', 'dairyqueen.com'], ['Panda Express', 'Restaurants & cafés', '#d62300', '', '', 'pandaexpress.com'],
+  ['7-Eleven', 'Restaurants & cafés', '#ed1c24', '', 'PH', '7-eleven.com.ph'], ['Uncle John’s', 'Restaurants & cafés', '#d71920', '', 'PH', 'unclejohns.ph'], ['Lawson', 'Restaurants & cafés', '#0068b7', '', 'PH', 'lawson.com.ph'],
   // News
   ['The New York Times', 'News', '#000000', 'newyorktimes', 'US', 'nytimes.com'], ['The Wall Street Journal', 'News', '#0274b6', '', 'US', 'wsj.com'], ['The Washington Post', 'News', '#111111', '', 'US', 'washingtonpost.com'],
   ['Inquirer Plus', 'News', '#003b7b', '', 'PH', 'inquirer.net'], ['Philstar+', 'News', '#c8102e', '', 'PH', 'philstar.com'],
