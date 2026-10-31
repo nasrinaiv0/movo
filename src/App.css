@@ -2297,3 +2297,75 @@ button.account-tile:active { transform: scale(.98); }
   .legal-disclosure-check { margin-bottom: 9px; font-size: 12px; }
   .legal-disclosure-actions button { min-height: 42px; }
 }
+
+
+/* Institution country: match the other account placeholders and adapt to the active theme. */
+.movo-app .acct-institution-country {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  height: 54px;
+  margin: 0;
+  padding: 0 42px 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--field);
+  background-image: var(--acct-select-chevron, none);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-transform: none;
+  color-scheme: light dark;
+  cursor: pointer;
+}
+.movo-app .acct-institution-country:focus,
+.movo-app .acct-institution-country:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), .42);
+  outline-offset: 2px;
+  border-color: rgba(var(--accent-rgb), .55) !important;
+  box-shadow: none !important;
+}
+.movo-app .acct-institution-country option {
+  background-color: var(--card-solid);
+  color: var(--text);
+}
+.movo-app .acct-institution-country option:checked {
+  background-color: var(--accent);
+  color: var(--on-accent, #fff);
+}
+.movo-app .acct-institution-options {
+  background: var(--card-solid);
+  color: var(--text);
+  border-color: var(--line);
+}
+.movo-app .acct-institution-options button {
+  color: var(--text);
+}
+.movo-app .acct-institution-options button.selected {
+  background: rgba(var(--accent-rgb), .12);
+  color: var(--accent-ink, var(--accent));
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), .3);
+}
+.movo-app .acct-institution-options button:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), .5);
+  outline-offset: -2px;
+}
+.movo-app .acct-institution-options button small {
+  color: var(--muted);
+  opacity: 1;
+}
+@media (max-width: 480px) {
+  .movo-app .acct-institution-country {
+    min-height: 54px;
+    height: 54px;
+    padding-left: 14px;
+    font-size: 16px;
+  }
+}
