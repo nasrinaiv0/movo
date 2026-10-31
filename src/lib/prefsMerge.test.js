@@ -1,4 +1,4 @@
-import { mergePreferences, unionById } from './prefsMerge';
+import { mergePreferences, unionById, cloudSafePreferences } from './prefsMerge';
 
 const D = { theme: 'system', cardStyles: {}, layouts: {}, budgets: [], subscriptions: [], readIds: [], pushed: [], notifSeenAt: '', onboarded: false };
 
@@ -23,4 +23,10 @@ test('ignores malformed values', () => {
 
 test('unionById puts the account copy first and caps the list', () => {
   expect(unionById([{ id: 'a', v: 1 }], [{ id: 'a', v: 2 }, { id: 'b' }], 1)).toEqual([{ id: 'a', v: 1 }]);
+});
+
+test('device automation keys never sync with account preferences', () => {
+  expect(cloudSafePreferences({ theme: 'dark', autoLogKey: 'device-secret', autoLog: true })).toEqual({ theme: 'dark', autoLog: true });
+  const merged = mergePreferences(D, { autoLogKey: 'this-device-key' }, cloudSafePreferences({ autoLogKey: 'other-device-key', theme: 'light' }));
+  expect(merged.autoLogKey).toBe('this-device-key');
 });

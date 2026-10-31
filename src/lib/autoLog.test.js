@@ -25,12 +25,18 @@ test('matches the paying card to an account', () => {
   expect(matchAccount('savings account', [...accounts, { id: '3', name: 'BPI Savings', account_type: 'bank' }]).id).toBe('3');
 });
 
-test('the Shortcuts prompt carries the private link and names the fields to fill', () => {
+test('the Shortcuts prompt uses secure POST logging and an interactive Log Skip menu', () => {
   const { shortcutPrompt } = require('./autoLog');
   const text = shortcutPrompt('https://movo.nasrinai.com', 'abc123');
-  expect(text).toContain('https://movo.nasrinai.com/#log?src=applepay&k=abc123&amount=AMOUNT&merchant=MERCHANT&card=CARD');
+  expect(text).toContain('https://movo.nasrinai.com/api/log');
+  expect(text).toContain('Authorization: Bearer abc123');
+  expect(text).toContain('Method to POST');
+  expect(text).toContain('Request Body to JSON');
+  expect(text).toContain('Choose from Menu');
+  expect(text).toContain('Log and Skip');
+  expect(text).toContain('Get Contents of URL');
+  expect(text).toContain('never Open URLs');
   expect(text).toMatch(/Amount.*Merchant.*Card/);
-  expect(text).toMatch(/URL-encoding/);
 });
 
 test('automation links can carry a reference ID or the raw notification text', () => {

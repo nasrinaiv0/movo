@@ -22,7 +22,7 @@ import { answerLocally } from './lib/localAnswer';
 import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate, refOf } from './lib/duplicates';
-import { mergePreferences, unionById } from './lib/prefsMerge';
+import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMerge';
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
@@ -193,6 +193,7 @@ function App() {
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
   const [pendingLog, setPendingLog] = useState(null);
+  const [automationStatus, setAutomationStatus] = useState('idle');
   const [toast, setToast] = useState('');
   const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
   const pendingLocalDataRef = useRef(null);
@@ -759,7 +760,7 @@ function App() {
     loadPreferences(userId).then(row => {
       if (!live) return;
       if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
-        setPrefs(cur => mergePreferences(DEFAULTS, cur, row.prefs));
+        setPrefs(cur => mergePreferences(DEFAULTS, cur, cloudSafePreferences(row.prefs)));
         if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
       }
       sync.ready = true;
@@ -775,7 +776,7 @@ function App() {
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
       let size = 0;
       const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
-      const shared = { ...prefs };
+      const shared = cloudSafePreferences(prefs);
       if ((shared.mascot || '').length > 120_000) delete shared.mascot;
       savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
@@ -839,6 +840,29 @@ function App() {
     });
     if (unlocked) { const badge = unlocked; setTimeout(() => celebrate(tr('Badge unlocked: {name}', { name: tr(badge.name) }), badge), 900); }
   }, [authReady, todayKey, celebrate]);
+  useEffect(() => {
+    if (sheet?.name !== 'autolog') return undefined;
+    if (!cloudMode || !session?.access_token || !prefs.autoLogKey) {
+      setAutomationStatus('needs-signin');
+      return undefined;
+    }
+    let cancelled = false;
+    setAutomationStatus('registering');
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action: 'register', deviceKey: prefs.autoLogKey }),
+    }).then(async response => {
+      if (!response.ok) throw new Error('registration_failed');
+      return response.json();
+    }).then(() => {
+      if (!cancelled) setAutomationStatus('ready');
+    }).catch(() => {
+      if (!cancelled) setAutomationStatus('error');
+    });
+    return () => { cancelled = true; };
+  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey]);
+
   const handledLink = useRef('');
   const recordsRef = useRef(rawTxs);
   recordsRef.current = rawTxs;
@@ -1059,9 +1083,9 @@ function App() {
         <section className="card shortcut-quick" aria-label={tr('Set up with one prompt')}>
           <strong><Icon name="spark" size={16} strokeWidth={2.2} /> {tr('Set up with one prompt (iPhone)')}</strong>
           <ol className="setup-steps">
-            <li>{rich('Open {shortcuts} → {automation} → {plus} → {transaction}. Pick your cards, choose {run}, then tap {create}.', { shortcuts: <em>Shortcuts</em>, automation: <em>Automation</em>, plus: <em>+</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, create: <em>Create New Shortcut</em> })}</li>
-            <li>{rich('Paste the prompt into {describe} and send it.', { describe: <em>Describe a shortcut</em> })}</li>
-            <li>{tr('Check that it opens your Movo link with Amount, Merchant and Card, then tap Done.')}</li>
+            <li>{rich('Open {shortcuts} → {automation} → {plus} → {transaction}. Pick your cards and choose {run}.', { shortcuts: <em>Shortcuts</em>, automation: <em>Automation</em>, plus: <em>+</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em> })}</li>
+            <li>{rich('Paste the prompt into {describe} and send it. Choose from Menu shows Log and Skip; Log sends a secure POST request, and Skip stops.', { describe: <em>Describe a shortcut</em> })}</li>
+            <li>{tr('Keep this screen open until the device shows as registered, then test both menu options before relying on it.')}</li>
           </ol>
           <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy. Select the link below instead.'))); }}><Icon name="doc" size={16} /> {tr('Copy prompt for Shortcuts')}</button>
           <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
@@ -1069,14 +1093,16 @@ function App() {
         <details className="setup-manual" open>
           <summary>{tr('Set it up manually instead')}</summary>
           <ol className="setup-steps">
-            <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → New → {transaction}. Pick your cards, choose {run}, then add {open} with the link below. Replace AMOUNT, MERCHANT and CARD with the Shortcut Input variables.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em>, open: <em>Open URLs</em> })}</li>
-            <li><strong>{tr('Android (Google Pay / bank alerts):')}</strong> {rich('In an automation app such as MacroDroid or Tasker, trigger on a Google Wallet or bank notification and open the link below with {src}, filling in the amount and merchant from the notification.', { src: <em>src=googlepay</em> })}</li>
-            <li>{rich('To record the bank reference number and time, add {ref} or {text} with the full notification text, and {date} if the payment happened earlier.', { ref: <em>&amp;ref=REF</em>, text: <em>&amp;text=</em>, date: <em>&amp;date=</em> })}</li>
-          <li>{tr('Keep this link private. It contains a key unique to this device; links without it always ask first.')}</li>
+            <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → + → {transaction}. Choose Run Immediately and turn Notify When Run off if available. Extract transaction fields, add Choose from Menu with Log and Skip, and under Log use Get Contents of URL → POST → JSON to {endpoint}. Set Authorization to Bearer plus your device key. Skip must stop without sending a request.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, endpoint: <code>/api/log</code> })}</li>
+            <li><strong>{tr('Bank notifications:')}</strong> {tr('Only use a separate notification trigger if your iOS version actually offers one. Shortcuts does not expose a universal trigger for every banking app notification.')}</li>
+            <li>{tr('Background logging requires a signed-in MOVO cloud account and a registered device key. The server rejects unknown keys, ambiguous account matches, invalid amounts, and duplicate requests.')}</li>
+            <li>{tr('Keep the device key private. Resetting it should revoke the old server registration before creating a replacement.')}</li>
           </ol>
         </details>
+        <p className="form-note" role="status" aria-live="polite">{automationStatus === 'ready' ? tr('This device is registered for secure background logging.') : automationStatus === 'registering' ? tr('Registering this device…') : automationStatus === 'error' ? tr('Could not register this device. Check the server configuration and try again.') : tr('Sign in and enable cloud storage to register this device for background logging.')}</p>
+        <small>{tr('Legacy review link (opens MOVO instead of logging in the background):')}</small>
         <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setPref('autoLogKey', newKey()); notify(tr('New link created. Update your automations; the old link now asks first.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy link')}</button></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Review link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy review link')}</button></div>
       </Sheet>}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
