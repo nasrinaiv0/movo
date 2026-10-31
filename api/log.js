@@ -59,11 +59,10 @@ module.exports = async function handler(req, res) {
       return json(res, 200, { success: true, registered: true });
     }
     if (action === 'revoke') {
-      const deviceKey = typeof body.deviceKey === 'string' ? body.deviceKey : '';
-      if (!token || !KEY_RE.test(deviceKey)) return json(res, 400, { error: 'invalid_revocation' });
-      const { data: authData, error: authError } = await api.auth.auth.getUser(token);
-      if (authError || !authData?.user?.id) return json(res, 401, { error: 'sign_in_required' });
-      const { error } = await api.admin.from('movo_automation_tokens').update({ active: false }).eq('token_hash', sha256(deviceKey)).eq('user_id', authData.user.id);
+      // Possession of a device key may revoke only that same key; no account session is needed.
+      if (!KEY_RE.test(token)) return json(res, 400, { error: 'invalid_revocation' });
+      const { error } = await api.admin.from('movo_automation_tokens')
+        .update({ active: false }).eq('token_hash', sha256(token));
       if (error) throw error;
       return json(res, 200, { success: true, revoked: true });
     }
