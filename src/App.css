@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --accent: #13b45f; --accent-rgb: 19,180,95; --accent-2: #0fa3a3;
+  --accent: #086b3a; --accent-rgb: 8,107,58; --accent-2: #138653;
   --bg: #f3f3f7; --bg-grad: none;
   --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #7d8294; --line: rgba(20,24,40,.045);
   --shadow: 0 8px 28px rgba(30,38,70,.06); --shadow-sm: 0 2px 10px rgba(30,38,70,.05);
@@ -12,7 +12,7 @@
 }
 .accent-purple { --accent: #7c4dff; --accent-rgb: 124,77,255; --accent-2: #a56bff; }
 .accent-orange { --accent: #ff8a1f; --accent-rgb: 255,138,31; --accent-2: #ff5e62; }
-.accent-green { --accent: #13b45f; --accent-rgb: 19,180,95; --accent-2: #0fa3a3; }
+.accent-green { --accent: #086b3a; --accent-rgb: 8,107,58; --accent-2: #138653; }
 .accent-red { --accent: #ef4444; --accent-rgb: 239,68,68; --accent-2: #f97316; }
 .accent-slate { --accent: #334155; --accent-rgb: 51,65,85; --accent-2: #64748b; }
 .theme-dark {
@@ -2724,3 +2724,69 @@ button.account-tile:active { transform: scale(.98); }
 .home-header .header-actions { gap: 8px; }
 .home-header .header-action-buttons .round-button > * { flex: 0 0 auto; }
 @media (prefers-reduced-motion: reduce) { .home-period-filter { transition: none; } }
+
+
+/* PR #116: refined adaptive accent treatment for Home dashboard cards and charts. */
+.movo-app {
+  --home-box-accent: var(--accent);
+  --home-chart-ink: var(--accent);
+  --home-chart-soft: rgba(var(--accent-rgb), .14);
+}
+.movo-app .balance-card,
+.movo-app .stat-card,
+.movo-app .spending-card,
+.movo-app .total-card {
+  position: relative;
+  isolation: isolate;
+}
+.movo-app .balance-card::after,
+.movo-app .stat-card::after,
+.movo-app .spending-card::after,
+.movo-app .total-card::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 12%;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 999px 0 0 999px;
+  background: linear-gradient(90deg, transparent 0%, rgba(var(--accent-rgb), .14) 12%, var(--accent) 100%);
+  opacity: .72;
+  pointer-events: none;
+}
+.movo-app .balance-card > *,
+.movo-app .stat-card > *,
+.movo-app .spending-card > *,
+.movo-app .total-card > * { position: relative; z-index: 1; }
+.movo-app .stat-card {
+  background: color-mix(in srgb, var(--card) 96%, var(--accent) 4%);
+  transition: background-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.movo-app .stat-card .stat-icon {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-solid));
+  color: var(--accent);
+}
+.movo-app .balance-art .spark-line,
+.movo-app .balance-art .mini-bars-bar,
+.movo-app .balance-art .mini-bar {
+  stroke: var(--home-chart-ink);
+  color: var(--home-chart-ink);
+}
+.movo-app .balance-art .spark-line {
+  filter: drop-shadow(0 2px 5px rgba(var(--accent-rgb), .18));
+}
+.movo-app .bars-plot span { background: var(--home-chart-soft); }
+.movo-app .bars-plot span.hot { background: var(--home-chart-ink); }
+.movo-app .theme-dark,
+.movo-app.theme-dark {
+  --home-chart-ink: #fff;
+  --home-chart-soft: rgba(255,255,255,.18);
+}
+.theme-dark .movo-app .balance-art .spark-line,
+.theme-dark.movo-app .balance-art .spark-line {
+  stroke: var(--home-chart-ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .stat-card { transition: none; }
+}
