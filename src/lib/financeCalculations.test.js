@@ -35,6 +35,13 @@ describe('MOVO transaction routing', () => {
     expect(accountTransactionDelta(eur, tx, (amount, from, to) => amount * (from === 'USD' && to === 'EUR' ? 0.9 : 1))).toBeCloseTo(4.5);
   });
 
+  test('obligation cash postings change account balance without becoming income or expense', () => {
+    const account = { id: 'bank-a', currency: 'PHP', opening_balance: 10000 };
+    const postings = [{ transaction_type: 'accounting_posting', account_id: 'bank-a', signed_amount: 500, currency: 'PHP' }, { transaction_type: 'accounting_posting', account_id: 'bank-a', signed_amount: -200, currency: 'PHP' }];
+    expect(accountBalance(account, postings)).toBe(10300);
+    expect(activityNetAmount(postings[0])).toBe(0);
+  });
+
   test('transfers do not affect income/expense activity net', () => {
     expect(activityNetAmount({ type: 'income', amount: 100 })).toBe(100);
     expect(activityNetAmount({ type: 'expense', amount: 30 })).toBe(-30);
