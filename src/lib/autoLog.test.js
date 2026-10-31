@@ -25,18 +25,31 @@ test('matches the paying card to an account', () => {
   expect(matchAccount('savings account', [...accounts, { id: '3', name: 'BPI Savings', account_type: 'bank' }]).id).toBe('3');
 });
 
-test('the Shortcuts prompt uses secure POST logging and an interactive Log Skip menu', () => {
+test('the fully automatic Shortcuts prompt logs in the background and notifies without a menu', () => {
   const { shortcutPrompt } = require('./autoLog');
-  const text = shortcutPrompt('https://movo.nasrinai.com', 'abc123');
+  const text = shortcutPrompt('https://movo.nasrinai.com', 'abc123', 'automatic');
   expect(text).toContain('https://movo.nasrinai.com/api/log');
   expect(text).toContain('Authorization: Bearer abc123');
-  expect(text).toContain('Method to POST');
-  expect(text).toContain('Request Body to JSON');
-  expect(text).toContain('Choose from Menu');
-  expect(text).toContain('Log and Skip');
+  expect(text).toContain('Method POST');
+  expect(text).toContain('Request Body JSON');
+  expect(text).toContain('Show Notification');
+  expect(text).toContain('Do not add menus');
+  expect(text).not.toContain('Choose from Menu');
   expect(text).toContain('Get Contents of URL');
   expect(text).toContain('never Open URLs');
   expect(text).toMatch(/Amount.*Merchant.*Card/);
+});
+
+test('the interactive Shortcuts prompt includes Log / Skip and secure POST logging', () => {
+  const { shortcutPrompt } = require('./autoLog');
+  const text = shortcutPrompt('https://movo.nasrinai.com', 'abc123', 'interactive');
+  expect(text).toContain('https://movo.nasrinai.com/api/log');
+  expect(text).toContain('Authorization: Bearer abc123');
+  expect(text).toContain('Choose from Menu');
+  expect(text).toContain('Log and Skip');
+  expect(text).toContain('Under Skip');
+  expect(text).toContain('Get Contents of URL');
+  expect(text).toContain('never Open URLs');
 });
 
 test('automation links can carry a reference ID or the raw notification text', () => {

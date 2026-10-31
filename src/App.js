@@ -1084,10 +1084,13 @@ function App() {
           <strong><Icon name="spark" size={16} strokeWidth={2.2} /> {tr('Set up with one prompt (iPhone)')}</strong>
           <ol className="setup-steps">
             <li>{rich('Open {shortcuts} → {automation} → {plus} → {transaction}. Pick your cards and choose {run}.', { shortcuts: <em>Shortcuts</em>, automation: <em>Automation</em>, plus: <em>+</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em> })}</li>
-            <li>{rich('Paste the prompt into {describe} and send it. Choose from Menu shows Log and Skip; Log sends a secure POST request, and Skip stops.', { describe: <em>Describe a shortcut</em> })}</li>
+            <li>{rich('Choose one of the two prompt buttons below, paste the copied prompt into {describe}, and send it. Fully automatic logs without a choice; Interactive asks you to choose Log or Skip.', { describe: <em>Describe a shortcut</em> })}</li>
             <li>{tr('Keep this screen open until the device shows as registered, then test both menu options before relying on it.')}</li>
           </ol>
-          <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy. Select the link below instead.'))); }}><Icon name="doc" size={16} /> {tr('Copy prompt for Shortcuts')}</button>
+          <div className="shortcut-prompt-actions" role="group" aria-label={tr('Choose automation style')}>
+            <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'automatic')).then(() => notify(tr('Fully automatic prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="refresh" size={16} /> {tr('Option 1: Fully automatic (No Clicking)')}</button>
+            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'interactive')).then(() => notify(tr('Interactive prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="doc" size={16} /> {tr('Option 2: Interactive (Log / Skip)')}</button>
+          </div>
           <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
         </section>
         <details className="setup-manual" open>
