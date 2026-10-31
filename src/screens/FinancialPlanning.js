@@ -48,8 +48,8 @@ export default function FinancialPlanning({ c }) {
 
   const run = async (fn, success) => {
     setBusy(true); setError(''); setNotice('');
-    try { await fn(); await reload(); if (c.refreshFinance) await c.refreshFinance(); setNotice(success); }
-    catch (e) { setError(e?.message || 'Could not save. Please try again.'); }
+    try { await fn(); await reload(); if (c.refreshFinance) await c.refreshFinance(); setNotice(success); return true; }
+    catch (e) { setError(e?.message || 'Could not save. Please try again.'); return false; }
     finally { setBusy(false); }
   };
   const beginEvent = (kind, item) => {
@@ -63,7 +63,7 @@ export default function FinancialPlanning({ c }) {
     const fn = selected.kind === 'loan'
       ? () => recordLoanEvent({ ...input, loan_id: selected.item.id })
       : () => recordReceivableEvent({ ...input, receivable_id: selected.item.id });
-    run(fn, 'Payment or adjustment recorded.').then(() => { setSelected(null); setEventForm(blankEvent); });
+    run(fn, 'Payment or adjustment recorded.').then(ok => { if (ok) { setSelected(null); setEventForm(blankEvent); } });
   };
 
   if (!c.cloudMode) return <>
@@ -84,7 +84,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Loans & debts' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan(loanForm, c.session?.user?.id), 'Loan or debt added.').then(() => setLoanForm(blankLoan)); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan(loanForm, c.session?.user?.id), 'Loan or debt added.').then(ok => { if (ok) setLoanForm(blankLoan); }); }}>
         <h2>{tr('Add a loan or debt')}</h2>
         <label>{tr('Record type')}<select value={loanForm.obligation_type} onChange={e => setLoanForm({ ...loanForm, obligation_type: e.target.value })}><option value="loan">{tr('Loan')}</option><option value="debt">{tr('Other debt')}</option></select></label>
         <label>{tr('Name')}<input required maxLength="120" value={loanForm.name} onChange={e => setLoanForm({ ...loanForm, name: e.target.value })} /></label>
@@ -100,7 +100,7 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Owed to you' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createReceivable(receivableForm, c.session?.user?.id), 'Receivable added.').then(() => setReceivableForm(blankReceivable)); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createReceivable(receivableForm, c.session?.user?.id), 'Receivable added.').then(ok => { if (ok) setReceivableForm(blankReceivable); }); }}>
         <h2>{tr('Record money owed to you')}</h2>
         <label>{tr('Description')}<input required maxLength="120" value={receivableForm.name} onChange={e => setReceivableForm({ ...receivableForm, name: e.target.value })} /></label>
         <label>{tr('Person / organization')}<input maxLength="120" value={receivableForm.counterparty} onChange={e => setReceivableForm({ ...receivableForm, counterparty: e.target.value })} /></label>
@@ -115,14 +115,14 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'Goals' && <>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createGoal(goalForm, c.session?.user?.id), 'Savings goal created.').then(() => setGoalForm(blankGoal)); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createGoal(goalForm, c.session?.user?.id), 'Savings goal created.').then(ok => { if (ok) setGoalForm(blankGoal); }); }}>
         <h2>{tr('Create a savings goal')}</h2>
         <label>{tr('Goal name')}<input required maxLength="120" value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} /></label>
         <label>{tr('Target amount')}<input required type="number" min="0.01" step="0.01" value={goalForm.target_amount} onChange={e => setGoalForm({ ...goalForm, target_amount: e.target.value })} /></label>
         <label>{tr('Target date')}<input type="date" value={goalForm.target_date} onChange={e => setGoalForm({ ...goalForm, target_date: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Create goal')}</button>
       </form>
-      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => allocateToGoal(allocationForm), 'Funds allocated to goal.').then(() => setAllocationForm({ ...allocationForm, amount: '' })); }}>
+      <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => allocateToGoal(allocationForm), 'Funds allocated to goal.').then(ok => { if (ok) setAllocationForm({ ...allocationForm, amount: '' }); }); }}>
         <h2>{tr('Allocate existing funds')}</h2>
         <label>{tr('Goal')}<select required value={allocationForm.goal_id} onChange={e => { const goal = goals.find(g => g.id === e.target.value); setAllocationForm({ ...allocationForm, goal_id: e.target.value, currency: goal?.currency || 'PHP' }); }}><option value="">{tr('Choose goal')}</option>{goals.filter(g => g.status === 'active').map(g => <option key={g.id} value={g.id}>{g.name}</option>)}</select></label>
         <label>{tr('Account to reserve from')}<select required value={allocationForm.account_id} onChange={e => { const account = accounts.find(a => a.id === e.target.value); setAllocationForm({ ...allocationForm, account_id: e.target.value, currency: account?.currency || 'PHP' }); }}><option value="">{tr('Choose account')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
