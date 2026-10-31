@@ -2859,12 +2859,12 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 
-/* Keep balance and spending summary cards neutral; reserve accent color for controls and data. */
+/* Use the selected accent color as a subtle default background for balance/spending summary cards. */
 .movo-app .balance-card,
 .movo-app .total-card {
-  background: var(--card);
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-solid));
 }
 .movo-app .balance-card::after,
 .movo-app .total-card::after {
-  content: none;
+  content: "";
 }
