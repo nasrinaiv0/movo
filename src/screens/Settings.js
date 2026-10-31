@@ -8,7 +8,7 @@ import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
 import { enablePush, pushSupported } from '../lib/alerts';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
 
-export const ACCENTS = [['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['green', '#13b45f'], ['red', '#ef4444'], ['slate', '#334155']];
+export const ACCENTS = [['green', '#13b45f'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#ef4444'], ['slate', '#334155']];
 export const THEMES = [
   ['system', 'System (Default)', 'Follows your device setting', 'contrast'],
   ['light', 'Light', 'Clean and minimal', 'sun'],
