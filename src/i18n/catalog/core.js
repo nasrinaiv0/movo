@@ -2632,4 +2632,75 @@ export default [
     "지갑 계정",
     "वॉलेट खाते"
   ]
+,
+  [
+    "Banks & Cash",
+    "Mga Bangko at Cash",
+    "البنوك والنقد",
+    "银行和现金",
+    "Bancos y efectivo",
+    "Banche e contanti",
+    "Banken und Bargeld",
+    "Banques et espèces",
+    "Bancos e dinheiro",
+    "銀行と現金",
+    "은행 및 현금",
+    "बैंक और नकद"
+  ],
+  [
+    "Change card style",
+    "Baguhin ang estilo ng card",
+    "تغيير نمط البطاقة",
+    "更改卡片样式",
+    "Cambiar estilo de tarjeta",
+    "Cambia stile della carta",
+    "Kartenstil ändern",
+    "Changer le style de carte",
+    "Alterar estilo do cartão",
+    "カードのスタイルを変更",
+    "카드 스타일 변경",
+    "कार्ड शैली बदलें"
+  ],
+  [
+    "High balance",
+    "Pinakamataas na balanse",
+    "أعلى رصيد",
+    "余额从高到低",
+    "Saldo más alto",
+    "Saldo più alto",
+    "Höchster Kontostand",
+    "Solde le plus élevé",
+    "Maior saldo",
+    "残高が多い順",
+    "잔액 높은 순",
+    "सबसे अधिक शेष राशि"
+  ],
+  [
+    "Low balance",
+    "Pinakamababang balanse",
+    "أقل رصيد",
+    "余额从低到高",
+    "Saldo más bajo",
+    "Saldo più basso",
+    "Niedrigster Kontostand",
+    "Solde le plus bas",
+    "Menor saldo",
+    "残高が少ない順",
+    "잔액 낮은 순",
+    "सबसे कम शेष राशि"
+  ],
+  [
+    "Name A–Z",
+    "Pangalan A–Z",
+    "الاسم أ–ي",
+    "名称 A–Z",
+    "Nombre A–Z",
+    "Nome A–Z",
+    "Name A–Z",
+    "Nom A–Z",
+    "Nome A–Z",
+    "名前 A–Z",
+    "이름 A–Z",
+    "नाम A–Z"
+  ]
 ];
