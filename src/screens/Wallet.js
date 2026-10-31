@@ -52,12 +52,15 @@ export default function Wallet({ c }) {
     if (next && next.id !== selectedCard?.id) setSelectedCardId(next.id);
   };
   const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
+  const displayModeOf = (a) => prefs.cardDisplayModes?.[a?.id] || 'details';
+  const fieldsOf = (a) => ({ accountName: true, cardNumber: true, holderName: true, balance: true, ...(prefs.cardDisplayFields?.[a?.id] || {}) });
+  const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
   const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
   const openAccount = (a) => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
-  const cardVisual = (a) => (wv.cardFormat === 'tile' ? <AccountTile key={`${a.id}:${styleFor(a, prefs.accountStyles).color}:${styleFor(a, prefs.accountStyles).icon}`} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size="preview" /> : <CardArt key={`${a.id}:${styleOf(a)}`} a={a} show={show} styleId={styleOf(a)} holder={holder} />);
+  const cardVisual = (a) => (wv.cardFormat === 'tile' ? <AccountTile key={`${a.id}:${styleFor(a, prefs.accountStyles).color}:${styleFor(a, prefs.accountStyles).icon}`} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size="preview" /> : <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}`} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />);
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
     : <section className={`account-tiles at-${wv.view}`}>{items.map(a => <AccountTile key={a.id} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size={wv.view === 'grid' ? 'grid' : 'tile'} onClick={() => openAccount(a)} />)}</section>);
@@ -118,6 +121,18 @@ export default function Wallet({ c }) {
       </div>
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
       <button type="button" className="style-button" onClick={() => { if (wv.cardFormat !== 'card') setWv({ cardFormat: 'card' }); setSheet({ name: 'cardStyle' }); }}><Icon name="palette" size={18} /> {tr('Card style')}</button>
+      <section className="card card-display-settings" aria-label={tr("Card display options")}>
+        <p className="card-display-title">{tr("Card display")}</p>
+        <div className="card-display-modes" role="group" aria-label={tr("Choose card display")}>
+          <button type="button" className={displayModeOf(selectedCard) === "details" ? "selected" : ""} aria-pressed={displayModeOf(selectedCard) === "details"} onClick={() => updateCardPreference("cardDisplayModes", "details")}><Icon name="card" size={17} /><span><strong>{tr("Card details")}</strong><small>{tr("Show card information")}</small></span></button>
+          <button type="button" className={displayModeOf(selectedCard) === "amount" ? "selected" : ""} aria-pressed={displayModeOf(selectedCard) === "amount"} onClick={() => updateCardPreference("cardDisplayModes", "amount")}><Icon name="wallet" size={17} /><span><strong>{tr("Amount focused")}</strong><small>{tr("Prioritize the balance")}</small></span></button>
+        </div>
+        <p className="card-display-title">{tr("Show on card")}</p>
+        <div className="card-display-fields">
+          {["accountName", "cardNumber", "holderName", "balance"].map((field) => { const labels = { accountName: "Account name", cardNumber: "Card number", holderName: "Cardholder name", balance: "Balance" }; const disabled = displayModeOf(selectedCard) === "amount" && field !== "accountName" && field !== "balance"; return <label key={field} className={disabled ? "is-disabled" : ""}><input type="checkbox" checked={fieldsOf(selectedCard)[field] !== false} disabled={disabled} onChange={e => updateCardPreference("cardDisplayFields", { ...fieldsOf(selectedCard), [field]: e.target.checked })} /><span>{tr(labels[field])}</span></label>; })}
+        </div>
+        <label className="card-network-field"><span>{tr("Card network")}</span><select aria-label={tr("Card network")} value={String(prefs.cardNetworks?.[selectedCard?.id] || selectedCard?.cardNetwork || "")} onChange={e => updateCardPreference("cardNetworks", e.target.value)}><option value="">{tr("Not specified")}</option><option value="visa">Visa</option><option value="mastercard">Mastercard</option><option value="american express">American Express</option><option value="discover">Discover</option><option value="jcb">JCB</option><option value="unionpay">UnionPay</option></select></label>
+      </section>
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
