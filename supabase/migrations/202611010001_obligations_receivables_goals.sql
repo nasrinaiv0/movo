@@ -12,6 +12,8 @@ create table if not exists public.accounting_postings (
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null check (char_length(trim(name)) between 1 and 120),
   lender text,
+  obligation_type text not null default 'loan' check (obligation_type in ('loan','debt')),
+  opening_principal numeric(18,2) not null default 0 check (opening_principal >= 0),
   currency text not null default 'PHP' check (currency ~ '^[A-Z]{3}$'),
   principal_amount numeric(18,2) not null check (principal_amount > 0),
   outstanding_principal numeric(18,2) not null check (outstanding_principal >= 0),
@@ -178,6 +180,7 @@ begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
   if p_amount is null or p_amount <= 0 or p_amount >= 1e16 then raise exception 'invalid_amount' using errcode = '22023'; end if;
   if p_event_type not in ('borrowed','principal_increase','principal_payment','interest_payment','fee') then raise exception 'invalid_loan_event' using errcode = '22023'; end if;
+  if p_account_id is null then raise exception 'loan_event_account_required' using errcode = '22023'; end if;
   select * into v_loan from public.financial_loans where id = p_loan_id and user_id = v_user for update;
   if not found then raise exception 'loan_not_found' using errcode = 'P0002'; end if;
   if p_event_type = 'principal_payment' and p_amount > v_loan.outstanding_principal then raise exception 'payment_exceeds_principal' using errcode = '22023'; end if;
@@ -206,6 +209,7 @@ begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
   if p_amount is null or p_amount <= 0 or p_amount >= 1e16 then raise exception 'invalid_amount' using errcode = '22023'; end if;
   if p_event_type not in ('lent','amount_increased','collected','written_off') then raise exception 'invalid_receivable_event' using errcode = '22023'; end if;
+  if p_event_type <> 'written_off' and p_account_id is null then raise exception 'receivable_event_account_required' using errcode = '22023'; end if;
   select * into v_item from public.financial_receivables where id = p_receivable_id and user_id = v_user for update;
   if not found then raise exception 'receivable_not_found' using errcode = 'P0002'; end if;
   if p_event_type in ('collected','written_off') and p_amount > v_item.outstanding_amount then raise exception 'event_exceeds_receivable' using errcode = '22023'; end if;
@@ -240,7 +244,7 @@ begin
   if not found or v_goal.status in ('archived','paused') then raise exception 'goal_not_available' using errcode = 'P0002'; end if;
   select * into v_account from public.financial_accounts where id = p_account_id and user_id = v_user for update;
   if not found then raise exception 'account_not_found' using errcode = 'P0002'; end if;
-  if v_account.currency <> coalesce(p_currency,'PHP') then raise exception 'goal_currency_mismatch' using errcode = '22023'; end if;
+  if v_account.currency <> coalesce(p_currency,'PHP') or v_goal.currency <> coalesce(p_currency,'PHP') then raise exception 'goal_currency_mismatch' using errcode = '22023'; end if;
   if exists(select 1 from public.transactions where user_id=v_user and (account_id=p_account_id or transfer_to_account_id=p_account_id) and currency <> v_account.currency) then
     raise exception 'mixed_currency_account_requires_reconciliation' using errcode = '22023';
   end if;
