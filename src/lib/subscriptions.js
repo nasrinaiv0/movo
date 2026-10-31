@@ -44,7 +44,7 @@ export const CATALOG = [
   ['Notion', 'Productivity', '#191919', 'notion', '', 'notion.so'], ['Microsoft 365', 'Productivity', '#d83b01', '', '', 'microsoft365.com'], ['Slack', 'Productivity', '#4a154b', '', '', 'slack.com'],
   ['Zoom', 'Productivity', '#0b5cff', 'zoom', '', 'zoom.us'], ['Linear', 'Productivity', '#5e6ad2', 'linear', '', 'linear.app'], ['Evernote', 'Productivity', '#00a82d', 'evernote', '', 'evernote.com'],
   ['Todoist', 'Productivity', '#e44332', 'todoist', '', 'todoist.com'], ['QuickBooks', 'Productivity', '#2ca01c', 'quickbooks', 'US', 'quickbooks.intuit.com'],
-  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', '', 'mailchimp.com'], ['Telegram Premium', 'Productivity', '#26a5e4', 'telegram', '', 'telegram.org'], ['Discord Nitro', 'Productivity', '#5865f2', 'discord', '', 'discord.com'],
+  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', '', 'mailchimp.com'],
   ['Figma', 'Design', '#a259ff', 'figma', '', 'figma.com'], ['Canva Pro', 'Design', '#00c4cc', '', '', 'canva.com'], ['Adobe Creative Cloud', 'Design', '#da1f26', '', '', 'adobe.com'],
   ['Google One', 'Cloud storage', '#4285f4', 'googledrive', '', 'one.google.com'], ['iCloud+', 'Cloud storage', '#3693f3', 'icloud', '', 'icloud.com'], ['Dropbox', 'Cloud storage', '#0061fe', 'dropbox', '', 'dropbox.com'],
   ['Box', 'Cloud storage', '#0061d5', 'box', '', 'box.com'], ['Proton', 'Cloud storage', '#6d4aff', 'proton', '', 'proton.me'], ['MEGA', 'Cloud storage', '#d9272e', '', '', 'mega.io'],
