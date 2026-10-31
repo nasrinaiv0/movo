@@ -36,5 +36,6 @@ describe('background automation API input helpers', () => {
     expect(_test.idempotencyKey(payment)).toBe(_test.idempotencyKey({ ...payment }));
     expect(_test.idempotencyKey(payment)).not.toBe(_test.idempotencyKey({ ...payment, amount: 110 }));
     expect(_test.idempotencyKey({ ...payment, reference: 'REF-1' })).toBe(_test.idempotencyKey({ ...payment, reference: 'REF-1' }));
+    expect(_test.idempotencyKey({ ...payment, reference: 'REF-1', amount: 110 })).not.toBe(_test.idempotencyKey({ ...payment, reference: 'REF-1' }));
   });
 });
