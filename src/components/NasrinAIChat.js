@@ -531,7 +531,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <div className="movo-ai-suggestions">
           {[
             { label: 'Briefing', prompt: 'Give me a financial briefing based on my recent MOVO income, spending, balances, and budgets.' },
-            { label: 'Daily, Weekly, Monthly Trends', prompt: 'Compare my income and spending trends daily, weekly, and monthly using my MOVO records.' },
+            { label: 'Daily, Weekly, Monthly Trends', prompt: 'Analyze my actual MOVO transaction history and compare income, expenses, and net cash flow by day, week, and month. Use only available records, state the date ranges and totals clearly, and explain when there is insufficient historical data to identify a reliable trend. Do not estimate or invent transactions or figures.' },
             { label: 'Summarize my recent spending', prompt: 'Summarize my recent spending.' },
             { label: 'Which categories cost me the most?', prompt: 'Which spending categories cost me the most?' }
           ].map(({ label, prompt }) =>
