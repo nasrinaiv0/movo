@@ -36,6 +36,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return json(res, 405, { error: 'method_not_allowed' }); }
   if (Number(req.headers['content-length'] || 0) > MAX_BODY_BYTES) return json(res, 413, { error: 'payload_too_large' });
   const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+  if (Buffer.byteLength(JSON.stringify(body), 'utf8') > MAX_BODY_BYTES) return json(res, 413, { error: 'payload_too_large' });
   const action = body.action || 'log', token = bearer(req), api = clients();
   if (!api) return json(res, 503, { error: 'automation_service_unavailable' });
   try {
