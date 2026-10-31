@@ -617,10 +617,8 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelectorAll('.note-row .red-dot').length).toBe(0);
     expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
   });
-});
 
-
-  test('Apple Pay payment prompt Log button opens a prefilled expense form', async () => {
+test('Apple Pay payment prompt Log button opens a prefilled expense form', async () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';
     act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
@@ -643,7 +641,7 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"][aria-label="Add transaction"]')).toBeNull();
     expect(window.localStorage.getItem('movo.local.transactions.v1') || '').not.toContain('Gadc');
   });
-
+});
 test('accent text stays readable on dark backgrounds', () => {
   const { readableAccent } = require('./App');
   const lum = (hex) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
