@@ -4,6 +4,7 @@ import { money, shown } from '../lib/format';
 import { canAnimate } from '../lib/motion';
 import { EmvChip, Contactless } from './EmvChip';
 import { t as tr } from '../lib/i18n';
+import { institutionLogoUrl } from '../lib/institutions';
 
 const build = (node, key) => {
   if (!node) return null;
@@ -47,12 +48,14 @@ export default function CardArt({ a, show, styleId, holder, preview, compact }) 
   const theme = sticker || (preview ? defaultThemeFor(a.id) : null);
   const ink = theme ? theme.ink : 'light';
   const number = `•••• •••• •••• ${a.mask || '••••'}`;
+  const network = /mastercard/i.test(String(a.brand || '')) ? 'mastercard.com' : /visa/i.test(String(a.brand || '')) ? 'visa.com' : '';
+  const institutionLogo = institutionLogoUrl(a.institution_name);
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
     {theme && <StickerArt theme={theme} compact={compact} />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="cc-face">
     <div className="cc-top">
-      <span className="cc-logo"><i aria-hidden="true">{(a.name || '?').trim().charAt(0).toUpperCase()}</i><span className="cc-name">{a.name}</span></span>
-      <span className="cc-net">{a.institution_name}</span>
+      <span className="cc-logo">{institutionLogo ? <img className="cc-institution-logo" src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}<span className="cc-name">{a.institution_name || a.name}</span></span>
+      <span className="cc-net">{network && <img className="cc-network-logo" src={'https://www.google.com/s2/favicons?domain=' + network + '&sz=128'} alt={network === 'visa.com' ? 'Visa' : 'Mastercard'} width="36" height="24" loading="lazy" referrerPolicy="no-referrer" />}</span>
     </div>
     <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? tr('Credit') : tr('Debit')}</span>}</span>
     <div className="cc-bottom">
