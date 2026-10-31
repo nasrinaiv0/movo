@@ -135,7 +135,7 @@ end $$;
 
 -- Enforce ownership across references; RLS on the child row alone is not sufficient.
 create or replace function public.assert_movo_finance_child_ownership()
-returns trigger language plpgsql security invoker set search_path = public, pg_temp as $
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
 declare parent_user uuid; ref_user uuid;
 begin
   if tg_table_name = 'loan_events' then
@@ -157,7 +157,7 @@ begin
     if ref_user is distinct from new.user_id then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
   end if;
   return new;
-end $;
+end $$;
 
 drop trigger if exists financial_loans_owner_guard on public.financial_loans;
 create trigger financial_loans_owner_guard before insert or update on public.financial_loans
@@ -181,7 +181,7 @@ create or replace function public.record_loan_event(
   p_account_id uuid default null, p_transaction_id uuid default null,
   p_occurred_at timestamptz default null, p_note text default null
 ) returns public.loan_events
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_loan public.financial_loans; v_event public.loan_events;
 begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
@@ -204,14 +204,14 @@ begin
       status = case when outstanding_principal - round(p_amount,2) <= 0 then 'paid_off' else 'active' end where id = p_loan_id;
   end if;
   return v_event;
-end $;
+end $$;
 
 create or replace function public.record_receivable_event(
   p_receivable_id uuid, p_event_type text, p_amount numeric, p_currency text default 'PHP',
   p_account_id uuid default null, p_transaction_id uuid default null,
   p_occurred_at timestamptz default null, p_note text default null
 ) returns public.receivable_events
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_item public.financial_receivables; v_event public.receivable_events;
 begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
@@ -235,14 +235,14 @@ begin
       where id = p_receivable_id;
   end if;
   return v_event;
-end $;
+end $$;
 
 -- Serialize allocations per account and enforce same-currency allocation against ledger balance.
 create or replace function public.allocate_goal_funds(
   p_goal_id uuid, p_amount numeric, p_currency text default 'PHP', p_account_id uuid default null,
   p_transaction_id uuid default null, p_note text default null
 ) returns public.goal_allocations
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_goal public.savings_goals; v_account public.financial_accounts;
   v_balance numeric; v_reserved numeric; v_allocation public.goal_allocations;
 begin
@@ -275,11 +275,11 @@ begin
   values(v_user,p_goal_id,round(p_amount,2),coalesce(p_currency,'PHP'),p_account_id,p_transaction_id,left(p_note,1000))
   returning * into v_allocation;
   return v_allocation;
-end $;
+end $$;
 
 create or replace function public.release_goal_allocation(p_allocation_id uuid)
 returns public.goal_allocations
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_item public.goal_allocations;
 begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
@@ -288,7 +288,7 @@ begin
   returning * into v_item;
   if not found then raise exception 'active_allocation_not_found' using errcode = 'P0002'; end if;
   return v_item;
-end $;
+end $$;
 
 revoke all on function public.record_loan_event(uuid,text,numeric,text,uuid,uuid,timestamptz,text) from public, anon;
 revoke all on function public.record_receivable_event(uuid,text,numeric,text,uuid,uuid,timestamptz,text) from public, anon;
@@ -302,7 +302,7 @@ grant execute on function public.release_goal_allocation(uuid) to authenticated;
 
 -- Ledger postings make loan and receivable cash movement affect the same account balance as transactions.
 create or replace function public.post_movo_obligation_cash_movement()
-returns trigger language plpgsql security definer set search_path = public, pg_temp as $
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
 declare delta numeric;
 begin
   if new.account_id is null then return new; end if;
@@ -324,7 +324,7 @@ begin
     end if;
   end if;
   return new;
-end $;
+end $$;
 revoke all on function public.post_movo_obligation_cash_movement() from public, anon, authenticated;
 drop trigger if exists loan_event_cash_posting on public.loan_events;
 create trigger loan_event_cash_posting after insert on public.loan_events
@@ -461,7 +461,7 @@ end $$;
 
 -- Enforce ownership across references; RLS on the child row alone is not sufficient.
 create or replace function public.assert_movo_finance_child_ownership()
-returns trigger language plpgsql security invoker set search_path = public, pg_temp as $
+returns trigger language plpgsql security definer set search_path = public, pg_temp as $$
 declare parent_user uuid; ref_user uuid;
 begin
   if tg_table_name = 'loan_events' then
@@ -483,7 +483,7 @@ begin
     if ref_user is distinct from new.user_id then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
   end if;
   return new;
-end $;
+end $$;
 
 drop trigger if exists loan_events_owner_guard on public.loan_events;
 create trigger loan_events_owner_guard before insert or update on public.loan_events
@@ -501,7 +501,7 @@ create or replace function public.record_loan_event(
   p_account_id uuid default null, p_transaction_id uuid default null,
   p_occurred_at timestamptz default null, p_note text default null
 ) returns public.loan_events
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_loan public.financial_loans; v_event public.loan_events;
 begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
@@ -522,14 +522,14 @@ begin
       status = case when outstanding_principal - round(p_amount,2) <= 0 then 'paid_off' else 'active' end where id = p_loan_id;
   end if;
   return v_event;
-end $;
+end $$;
 
 create or replace function public.record_receivable_event(
   p_receivable_id uuid, p_event_type text, p_amount numeric, p_currency text default 'PHP',
   p_account_id uuid default null, p_transaction_id uuid default null,
   p_occurred_at timestamptz default null, p_note text default null
 ) returns public.receivable_events
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_item public.financial_receivables; v_event public.receivable_events;
 begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
@@ -551,14 +551,14 @@ begin
       where id = p_receivable_id;
   end if;
   return v_event;
-end $;
+end $$;
 
 -- Serialize allocations per account and enforce same-currency allocation against ledger balance.
 create or replace function public.allocate_goal_funds(
   p_goal_id uuid, p_amount numeric, p_currency text default 'PHP', p_account_id uuid default null,
   p_transaction_id uuid default null, p_note text default null
 ) returns public.goal_allocations
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_goal public.savings_goals; v_account public.financial_accounts;
   v_balance numeric; v_reserved numeric; v_allocation public.goal_allocations;
 begin
@@ -587,11 +587,11 @@ begin
   values(v_user,p_goal_id,round(p_amount,2),coalesce(p_currency,'PHP'),p_account_id,p_transaction_id,left(p_note,1000))
   returning * into v_allocation;
   return v_allocation;
-end $;
+end $$;
 
 create or replace function public.release_goal_allocation(p_allocation_id uuid)
 returns public.goal_allocations
-language plpgsql security invoker set search_path = public, pg_temp as $
+language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_user uuid := auth.uid(); v_item public.goal_allocations;
 begin
   if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
@@ -600,7 +600,7 @@ begin
   returning * into v_item;
   if not found then raise exception 'active_allocation_not_found' using errcode = 'P0002'; end if;
   return v_item;
-end $;
+end $$;
 
 revoke all on function public.record_loan_event(uuid,text,numeric,text,uuid,uuid,timestamptz,text) from public, anon;
 revoke all on function public.record_receivable_event(uuid,text,numeric,text,uuid,uuid,timestamptz,text) from public, anon;
