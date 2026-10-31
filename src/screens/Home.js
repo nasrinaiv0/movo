@@ -101,7 +101,7 @@ export default function Home({ c }) {
         : <button type="button" className="budget-empty" onClick={() => go('Subscriptions')}><Icon name="refresh" size={20} /><span><strong>{tr('Track your subscriptions')}</strong><small>{tr('See every renewal before it charges.')}</small></span></button>}
     </section> },
     { id: 'spending', label: tr('Spending this month'), styles: SPENDING_STYLES, node: ({ size, style }) => <section aria-label={tr('Spending overview')}>
-      <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending this month')} · {monthName(homeMonthKey)}</SectionTitle>
+      <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending')} This Month · {monthName(homeMonthKey)}</SectionTitle>
       <div className={`card spending-card is-${style}`}>
         {!breakdown.data.length ? <p className="empty">{tr('Add expenses to see your category breakdown.')}</p>
           : style === 'bars' ? <CategoryBars data={size === 'S' ? byAmount.slice(0, 3) : byAmount} show={show} />
