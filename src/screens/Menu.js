@@ -12,7 +12,7 @@ export default function Menu({ c }) {
   const next = nextBadge(streak);
   const over = budgetList.filter(b => b.level === 'over').length;
   const items = [
-    { icon: 'user', tone: 'blue', title: 'Profile', sub: user.email || tr('Your details, accounts and settings'), onClick: () => go('Profile') },
+
     { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
     { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals with a target date'), onClick: () => c.openBudgets('plans') },
     { icon: 'bank', tone: 'blue', title: 'Financial planning', sub: tr('Loans, debts and money owed to you'), onClick: () => go('FinancialPlanning') },
