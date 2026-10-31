@@ -137,7 +137,7 @@ export default function Wallet({ c }) {
       {!list.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>{tr(`No ${walletFilter.toLowerCase()} yet`)}</h3><p>{tr('Add an account to start organizing your finances.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: walletFilter === 'Bank Accounts' ? 'bank' : walletFilter === 'E-Wallets' ? 'e_wallet' : 'cash' })}>{tr('Add account')}</button></div>}
     </>}
 
-    {sheet?.name === 'walletView' && <Sheet title={tr('Sort & view')} subtitle={tr('Choose how accounts and cards appear in your wallet.')} onClose={() => setSheet(null)} label={tr('Sort and view')}>
+    {sheet?.name === 'walletView' && <Sheet title={tr('Sort & view')} subtitle={tr('Choose how accounts and cards appear in your wallet.')} onClose={() => setSheet(null)} label={tr('Sort and view')} className="wallet-menu-motion">
       <p className="mini-title">{tr('Sort accounts by')}</p>
       <div className="sheet-list">{SORTS.map(([key, label]) => <button type="button" key={key} className={`sheet-card${wv.sort === key ? ' selected' : ''}`} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span className="account-main"><strong>{tr(label)}</strong></span>{wv.sort === key && <Icon name="check" size={18} />}</button>)}</div>
       <p className="mini-title">{tr('Layout')}</p>
