@@ -57,7 +57,7 @@ export default function Wallet({ c }) {
   const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
-  const groups = [['Cards', accountsByType.card, 'card'], ['Bank Accounts', accountsByType.bank, 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
+  const groups = [['Cards', accountsByType.card, 'card'], ['Banks & Cash', [...accountsByType.bank, ...accounts.filter(a => ['cash', 'investment', 'other'].includes(a.account_type))], 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
@@ -83,8 +83,8 @@ export default function Wallet({ c }) {
     { id: 'types', sizes: ['M'], label: tr('Balance by type'), node: <section className="mini-grid" aria-label={tr('Balance by account type')}>
       {groups.map(([label, items, icon]) => {
         const sum = items.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
-        return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label)}>
-          <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{tr(label === 'Bank Accounts' ? tr('Banks') : label)}</small></span>
+        return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label === 'Banks & Cash' ? 'All' : label)}>
+          <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{tr(label)}</small></span>
           <strong className={sum < 0 ? 'neg' : ''}><Money value={sum} show={show} digits={0} /></strong>
           {sum > 0 && total > 0 && <em className="pct">{Math.round((sum / total) * 100)}%</em>}{sum < 0 && <em className="pct owed">{tr('Owed')}</em>}
         </button>;
