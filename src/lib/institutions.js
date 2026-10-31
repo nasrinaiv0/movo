@@ -44,7 +44,7 @@ export const INSTITUTIONS = [
 
 export function searchInstitutions(countryCode, query = '', accountType = 'bank') {
   const q = String(query || '').trim().toLocaleLowerCase();
-  const allowedKinds = accountType === 'e_wallet' ? ['ewallet'] : ['bank', 'ewallet'];
+  const allowedKinds = accountType === 'e_wallet' ? ['ewallet'] : ['bank'];
   return INSTITUTIONS
     .filter(item => item.country === countryCode && allowedKinds.includes(item.kind))
     .filter(item => !q || [item.name, ...item.aliases].some(value => value.toLocaleLowerCase().includes(q)))
