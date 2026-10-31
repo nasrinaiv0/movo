@@ -360,7 +360,9 @@ function App() {
     const savings = savingsBalance(accountsView, toBase, prefs.accountStyles);
     return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings, netCashFlow: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
   }, [accountsView, txs, homeMonth, toBase, prefs.accountStyles]);
-  const deltas = useMemo(() => monthOverMonth(txs, refDate, stats.balance), [txs, refDate, stats.balance]);
+  // Savings is an account-balance measure (cash excluded), not monthly net cash flow. Until a historical
+  // savings-balance snapshot is available, do not display a misleading cash-flow trend beside that balance.
+  const deltas = useMemo(() => ({ ...monthOverMonth(txs, refDate, stats.balance), savings: null }), [txs, refDate, stats.balance]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
