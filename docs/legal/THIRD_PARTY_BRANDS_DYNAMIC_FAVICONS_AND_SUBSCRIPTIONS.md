@@ -8,6 +8,16 @@ MOVO may display third-party service names and institution names to help users i
 
 A disclaimer does not grant MOVO a license to use a logo, icon, or other protected artwork. MOVO must follow the applicable provider terms, official trademark/brand guidance, and applicable law. Where a provider's rules or the legal basis for a particular icon are unclear, MOVO should use a plain text label and a generic locally created icon unless and until permission or a documented lawful basis is established.
 
+## Purpose and limits of displayed logos and favicons
+
+Logos, icons, favicons, and institution names displayed in MOVO are visual identification aids only. They help users recognize and organize their own cards, bank accounts, e-wallets, subscriptions, expenses, and money flow. They do not mean that MOVO represents, is affiliated with, is endorsed by, or acts on behalf of the institution or brand owner.
+
+A displayed logo or favicon is not used by MOVO to authorize, initiate, route, or process a payment; authenticate a user or financial institution; connect to a bank account; access an institution's systems; or collect credentials or financial information from the institution. The icon itself must not trigger data collection or financial actions. MOVO must not use these images to impersonate an institution, mislead users about an official relationship, or interfere with an institution's services or systems. Any financial information users choose to enter into MOVO is handled separately from decorative icon retrieval and must be governed by MOVO's actual privacy and security practices.
+
+## Payments and payment gateway
+
+For payment functionality offered by MOVO, PayMongo is the designated payment gateway. Third-party logos and favicons are not payment gateways and do not process payments. MOVO must not use a displayed bank, card, e-wallet, subscription-service, or other third-party logo to imply that the institution processes a MOVO payment or has partnered with MOVO. Any payment functionality must use the configured PayMongo integration and comply with the applicable PayMongo terms, security requirements, and relevant law. This statement describes the intended payment architecture and does not by itself verify that every payment flow is implemented or configured correctly.
+
 ## Dynamic Domain Favicons and Google
 
 MOVO may attempt to retrieve a website favicon through Google's S2 favicon endpoint using a curated service/institution-to-domain mapping. The endpoint may return a website favicon, a simplified or low-resolution mark, a generic icon, an incorrect icon, or no image. It is not guaranteed to return an official logo or the provider's current approved brand asset.
