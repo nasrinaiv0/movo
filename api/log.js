@@ -34,7 +34,7 @@ function accountFor(accounts, hint) {
   return institution.length === 1 ? institution[0] : null;
 }
 function idempotencyKey({ source, amount, merchant, card, occurredAt, reference }) {
-  const stable = reference ? `${source}|ref:${reference.toLowerCase()}|${amount.toFixed(2)}|${merchant.toLowerCase()}` : [source, amount.toFixed(2), merchant.toLowerCase(), card.toLowerCase(), String(Math.floor(Date.parse(occurredAt) / 60000))].join('|');
+  const stable = reference ? `${source}|ref:${reference.toLowerCase()}|${amount.toFixed(2)}|${merchant.toLowerCase()}|${card.toLowerCase()}` : [source, amount.toFixed(2), merchant.toLowerCase(), card.toLowerCase(), String(Math.floor(Date.parse(occurredAt) / 60000))].join('|');
   return sha256(stable);
 }
 module.exports = async function handler(req, res) {
