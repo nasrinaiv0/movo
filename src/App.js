@@ -152,7 +152,7 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
       <p id="movo-disclosure-description">{tr('Please read and acknowledge the following before reviewing MOVO’s Terms of Service and Privacy Policy.')}</p>
       <ol className="legal-disclosure-points legal-disclosure-numbered">
         <li>{tr('Logos are for identification only. They help users recognize their cards, bank accounts, e-wallets, subscriptions, and track their financial activity.')}</li>
-        <li>{tr('Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
+        <li>{tr('MOVO does not connect to your banks or financial accounts. Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
         <li>{tr('PayMongo is MOVO’s designated payment gateway. Third-party logos are not payment gateways and must not imply that a bank or other institution has partnered with MOVO.')}</li>
       </ol>
       <label className="legal-disclosure-check"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} /><span>{tr('I have read and acknowledge this disclaimer.')}</span></label>
