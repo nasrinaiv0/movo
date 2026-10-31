@@ -480,6 +480,8 @@ describe('MOVO finance frontend', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
     clickButton(container, 'Add Card');
+    // This lifecycle test covers an independent card; debit cards now require a linked bank account.
+    clickButton(container, 'Credit');
     const name = container.querySelector('#acct-name');
     setInputValue(name, 'My Test Card');
     clickButton(container, 'Add account');
