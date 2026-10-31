@@ -2429,11 +2429,11 @@ button.account-tile:active { transform: scale(.98); }
 }
 .movo-app .flow-lines .in-line,
 .movo-app .flow-lines .out-line {
-  stroke: color-mix(in srgb, var(--text) 82%, var(--accent));
+  stroke: var(--home-chart-ink, var(--accent));
 }
 .movo-app .flow-legend .in,
 .movo-app .flow-legend .out {
-  background: color-mix(in srgb, var(--text) 82%, var(--accent));
+  background: var(--home-chart-ink, var(--accent));
 }
 .movo-app .search-field {
   display: flex;
@@ -2729,8 +2729,8 @@ button.account-tile:active { transform: scale(.98); }
 /* PR #116: refined adaptive accent treatment for Home dashboard cards and charts. */
 .movo-app {
   --home-box-accent: var(--accent);
-  --home-chart-ink: var(--accent);
-  --home-chart-soft: rgba(var(--accent-rgb), .14);
+  --home-chart-ink: color-mix(in srgb, var(--accent) 78%, var(--text));
+  --home-chart-soft: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 .movo-app .balance-card,
 .movo-app .stat-card,
@@ -2862,7 +2862,7 @@ button.account-tile:active { transform: scale(.98); }
 /* Use the selected accent color as a subtle default background for balance/spending summary cards. */
 .movo-app .balance-card,
 .movo-app .total-card {
-  background: color-mix(in srgb, var(--accent) 5%, var(--card-solid));
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-solid));
 }
 .movo-app .balance-card::after,
 .movo-app .total-card::after {
