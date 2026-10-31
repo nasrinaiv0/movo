@@ -587,7 +587,7 @@ describe('MOVO finance frontend', () => {
     expect(saved[0]).toMatchObject({ name: 'Netflix', amount: 549, cycle: 'monthly', status: 'active' });
     expect(container.querySelector('[aria-label="Subscription summary"]').textContent).toContain('549');
     clickButton(container, 'Back');
-    act(() => container.querySelectorAll('.menu-tile')[3].click());
+    act(() => container.querySelectorAll('.menu-tile')[4].click());
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   });
 
