@@ -88,6 +88,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
             </span>
           </button>)}
         </div>
+      </>}
       {hasNumber && <>
         <label className="acct-label" htmlFor="acct-mask">{form.account_type === 'card' ? tr('Card number · last 4 digits') : tr('Account number · last 4 digits')}</label>
         <div className="acct-input acct-mask"><span aria-hidden="true">•••• •••• ••••</span><input id="acct-mask" inputMode="numeric" autoComplete="off" pattern="\d{4}" title={tr('Exactly 4 digits')} value={form.mask || ''} onChange={e => set({ mask: e.target.value.replace(/\D/g, '').slice(0, 4) })} placeholder="1234" aria-describedby="acct-mask-hint" /></div>
@@ -110,6 +111,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       </>}
 
 
+      {form.account_type === 'card' && <>
         <span className="acct-label">{tr('Chip')}</span>
         <div className="chip-picks" role="radiogroup" aria-label={tr('Chip color')}>{CHIPS.map(([id, name]) => <button type="button" key={id} role="radio" aria-checked={form.chip === id} aria-label={`${name} chip`} className={form.chip === id ? 'on' : ''} onClick={() => set({ chip: id })}><EmvChip finish={id} /><span>{name}</span></button>)}</div>
         <div className="acct-field acct-toggle"><span className="acct-field-icon"><Contactless /></span><span><strong>{tr('Contactless symbol')}</strong><small>{tr('Show the tap-to-pay (RFID) mark on the card')}</small></span><Toggle checked={!!form.contactless} onChange={v => set({ contactless: v })} label={tr('Contactless symbol')} /></div>
