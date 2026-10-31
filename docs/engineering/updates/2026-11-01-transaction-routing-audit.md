@@ -11,7 +11,7 @@
 - Expenses post negatively only to their selected account.
 - Transfers post negatively to the source and positively to the destination. They have zero effect on income, expenses and net activity.
 - Account balance is opening balance plus routed transaction effects. Cross-currency effects are converted from the transaction currency into the account currency through the supplied conversion function.
-- Savings is calculated separately from monthly net cash flow: it includes active non-cash accounts and excludes credit-card accounts when their card kind is explicitly marked `credit`.
+- Savings is calculated separately from monthly net cash flow: it includes active non-cash accounts and counts card accounts only when explicitly classified as debit; credit and unclassified cards are excluded.
 - Transaction day-group net totals no longer count internal transfers as new money.
 - The Savings tile no longer displays a monthly cash-flow trend as if it were a savings-balance trend.
 - Added regression tests for income/expense routing, transfer source/destination posting, balance reconciliation, currency conversion, activity net and savings eligibility.
