@@ -32,7 +32,7 @@ Date: 2026-11-01. Scope: MOVO only.
 
 ## Remaining limitations / verification gates
 
-- The migration has not been applied to the user's Supabase project by this change; no live database mutation was performed. Cloud UI will need that migration applied before those screens can load/save.
+- The migration was applied to the Movo Supabase project and registered as version 20261031170235. Verified that all seven new tables have RLS enabled, the four RPCs are SECURITY DEFINER, authenticated can execute them, anon cannot, and the new tables are empty at verification time. No test financial records were inserted.
 - A newly entered loan or receivable is treated as an existing opening balance. Additional borrowing/lending, principal payments, collections, interest and fees are recorded as events. Interest and fee postings currently affect cash/account balance but still need to be incorporated into the main expense analytics totals without double-counting the account posting.
 - Loan/receivable events and account postings are atomic via database functions/triggers, but event posting behavior has not yet been tested against a live Supabase database.
 - Goal allocation is restricted to same-currency bank/e-wallet/cash accounts and serialized by account lock. Accounts with mixed historical transaction currencies are rejected until reconciled.
