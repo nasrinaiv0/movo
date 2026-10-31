@@ -43,7 +43,7 @@ export const StickerArt = memo(function StickerArt({ theme, compact }) {
 export const resolveSticker = (id, list) => findSticker(id, list);
 
 /* A bank card with reserved room for logo/name, chip, network, number and holder over any sticker. */
-export default function CardArt({ a, show, styleId, holder, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '' }) {
+export default function CardArt({ a, show, styleId, holder, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape' }) {
   const custom = useCustomStickers();
   const remoteSticker = isStorageStickerId(styleId);
   const [remoteUrl, setRemoteUrl] = useState('');
@@ -59,7 +59,7 @@ export default function CardArt({ a, show, styleId, holder, preview, compact, di
   const showBalance = visibleFields.balance !== false;
   const networkName = ({ visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' })[network] || '';
   const institutionLogo = institutionLogoUrl(a.institution_name);
-  return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
+  return <div className={`credit-card orientation-${orientation}${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
     {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="cc-face">
     <div className="cc-top">
