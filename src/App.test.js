@@ -569,7 +569,7 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Profile', 'Subscriptions', 'Plans', 'Limits']);
+    expect(tiles).toEqual(['Profile', 'Subscriptions', 'Plans', 'Financial planning', 'Limits']);
     act(() => container.querySelectorAll('.menu-tile')[1].click());
     expect(container.querySelector('h1').textContent).toBe('Subscriptions');
     clickButton(container, 'Add subscription');
