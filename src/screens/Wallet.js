@@ -117,7 +117,7 @@ export default function Wallet({ c }) {
         {cards.map(a => <div className="card-slide" key={a.id}>{cardVisual(a)}</div>)}
       </div>
       <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
-      {wv.cardFormat === 'card' ? <button type="button" className="style-button" onClick={() => setSheet({ name: 'cardStyle' })}><Icon name="palette" size={18} /> {tr('Card style')}</button> : <button type="button" className="style-button" onClick={() => c.openEditAccount?.(selectedCard)}><Icon name="palette" size={18} /> {tr('Account style')}</button>}
+      <button type="button" className="style-button" onClick={() => { if (wv.cardFormat !== 'card') setWv({ cardFormat: 'card' }); setSheet({ name: 'cardStyle' }); }}><Icon name="palette" size={18} /> {tr('Card style')}</button>
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
