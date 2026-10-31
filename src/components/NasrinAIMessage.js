@@ -1,9 +1,17 @@
 import React from 'react';
 import { t as tr } from '../lib/i18n';
 
+// Money amounts (₱1,234.50, PHP 250, -₱90, USD 12) and signed percentages are
+// highlighted; a leading minus or "+" colours them as money out or in.
+const AMOUNT = /^[-+−]?\s?(?:₱|PHP\s?|USD\s?|\$|€|£|¥)\s?\d[\d,]*(?:\.\d+)?[KkMm]?$/;
+const PERCENT = /^[-+−]\d+(?:\.\d+)?%$/;
 function InlineText({ text }) {
-  const parts = String(text || '').split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\[[^\]]+\]\([^)]+\))/g);
+  const parts = String(text || '').split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|~~[^~]+~~|\[[^\]]+\]\([^)]+\)|https?:\/\/[^\s<>()]+[^\s<>().,;:!?]|[-+−]?\s?(?:₱|PHP\s?|USD\s?|\$|€|£|¥)\s?\d[\d,]*(?:\.\d+)?[KkMm]?\b|[-+−]\d+(?:\.\d+)?%)/g);
   return parts.map((part, index) => {
+    if (!part) return null;
+    if (AMOUNT.test(part)) return <span key={index} className={`movo-ai-amount${/^[-−]/.test(part) ? ' is-out' : /^\+/.test(part) ? ' is-in' : ''}`}>{part}</span>;
+    if (PERCENT.test(part)) return <span key={index} className={`movo-ai-delta ${/^\+/.test(part) ? 'is-up' : 'is-down'}`}>{part}</span>;
+    if (/^https?:\/\//.test(part)) return <a key={index} href={part} target="_blank" rel="noopener noreferrer">{part.replace(/^https?:\/\/(www\.)?/, '').slice(0, 48)}</a>;
     if (part.startsWith('`') && part.endsWith('`')) return <code key={index} className="movo-ai-inline-code">{part.slice(1, -1)}</code>;
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>;
     if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>;
@@ -145,20 +153,35 @@ export default function NasrinAIMessage({ content }) {
       const headers = line.split('|').slice(1,-1).map(s=>s.trim());
       i += 2; const rows = [];
       while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(lines[i].split('|').slice(1,-1).map(s=>s.trim())); i++; }
-      blocks.push(<div className="movo-ai-table-wrap" key={blocks.length}><table className="movo-ai-table"><thead><tr>{headers.map((h,j)=><th key={j}>{renderInline(h,j)}</th>)}</tr></thead><tbody>{rows.map((row,j)=><tr key={j}>{headers.map((_,k)=><td key={k}>{renderInline(row[k]||'—',k)}</td>)}</tr>)}</tbody></table></div>);
+      blocks.push(<div className="movo-ai-table-wrap" key={blocks.length}><table className="movo-ai-table"><thead><tr>{headers.map((h,j)=><th key={j}>{renderInline(h,j)}</th>)}</tr></thead><tbody>{rows.map((row,j)=><tr key={j} className={/^\**\s*(total|net|balance)\b/i.test(row[0]||'') ? 'is-total' : undefined}>{headers.map((_,k)=><td key={k} className={k>0 && /^[-+−]?\s?(?:₱|PHP|USD|\$|€|£|¥)?\s?\d[\d,]*(?:\.\d+)?%?$/.test((row[k]||'').replace(/\*/g,'').trim()) ? 'is-num' : undefined}>{renderInline(row[k]||'—',k)}</td>)}</tr>)}</tbody></table></div>);
       continue;
     }
-    const heading = line.match(/^\s*(#{1,3})\s+(.+)$/);
+    if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { blocks.push(<hr className="movo-ai-divider" key={blocks.length} />); i++; continue; }
+    const heading = line.match(/^\s*(#{1,6})\s+(.+)$/);
     if (heading) { const Tag = heading[1].length === 1 ? 'h2' : heading[1].length === 2 ? 'h3' : 'h4'; blocks.push(<Tag className="movo-ai-rich-heading" key={blocks.length}>{renderInline(heading[2],0)}</Tag>); i++; continue; }
     if (/^\s*([-*•])\s+/.test(line)) {
-      const items=[]; while(i<lines.length && /^\s*([-*•])\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*([-*•])\s+/,'')); blocks.push(<ul className="movo-ai-rich-list" key={blocks.length}>{items.map((item,j)=><li key={j}>{renderInline(item,j)}</li>)}</ul>); continue;
+      const items=[]; while(i<lines.length && /^\s*([-*•])\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*([-*•])\s+/,''));
+      blocks.push(<ul className="movo-ai-rich-list" key={blocks.length}>{items.map((item,j)=>{ const task = item.match(/^\[([ xX])\]\s+(.+)$/); return task
+        ? <li key={j} className={`movo-ai-task${task[1].trim() ? ' is-done' : ''}`}><span className="movo-ai-check" aria-hidden="true" />{task[1].trim() ? <span className="sr-only">{tr('Done:')} </span> : null}{renderInline(task[2],j)}</li>
+        : <li key={j}>{renderInline(item,j)}</li>; })}</ul>); continue;
     }
     if (/^\s*\d+[.)]\s+/.test(line)) {
-      const items=[]; while(i<lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*\d+[.)]\s+/,'')); blocks.push(<ol className="movo-ai-rich-list" key={blocks.length}>{items.map((item,j)=><li key={j}>{renderInline(item,j)}</li>)}</ol>); continue;
+      const start = Number(line.match(/^\s*(\d+)/)[1]) || 1;
+      const items=[]; while(i<lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*\d+[.)]\s+/,'')); blocks.push(<ol className="movo-ai-rich-list" start={start} key={blocks.length}>{items.map((item,j)=><li key={j}>{renderInline(item,j)}</li>)}</ol>); continue;
     }
-    if (/^\s*>\s?/.test(line)) { blocks.push(<blockquote className="movo-ai-quote" key={blocks.length}>{renderInline(line.replace(/^\s*>\s?/,''),0)}</blockquote>); i++; continue; }
+    if (/^\s*>\s?/.test(line)) {
+      const rows=[]; while(i<lines.length && /^\s*>\s?/.test(lines[i])) rows.push(lines[i++].replace(/^\s*>\s?/,''));
+      const callout = rows[0].match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$/i);
+      const body = (callout ? rows.slice(1) : rows).filter(r => r.trim());
+      if (callout) {
+        const kind = callout[1].toLowerCase();
+        const title = callout[2].trim() || tr({ note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' }[kind]);
+        blocks.push(<aside className={`movo-ai-callout is-${kind}`} role="note" key={blocks.length}><strong className="movo-ai-callout-title">{title}</strong>{body.map((r,j)=><p key={j}>{renderInline(r,j)}</p>)}</aside>);
+      } else blocks.push(<blockquote className="movo-ai-quote" key={blocks.length}>{body.map((r,j)=><React.Fragment key={j}>{j>0 && <br />}{renderInline(r,j)}</React.Fragment>)}</blockquote>);
+      continue;
+    }
     const paragraph=[line.trim()]; i++;
-    while(i<lines.length && lines[i].trim() && !/^\s*(```|#{1,3}\s+|[-*•]\s+|\d+[.)]\s+|>\s?)/.test(lines[i]) && !(/^\s*\|.*\|\s*$/.test(lines[i]) && i+1<lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i+1]))) paragraph.push(lines[i++].trim());
+    while(i<lines.length && lines[i].trim() && !/^\s*(```|#{1,6}\s+|[-*•]\s+|\d+[.)]\s+|>\s?|-{3,}\s*$|\*{3,}\s*$|_{3,}\s*$)/.test(lines[i]) && !(/^\s*\|.*\|\s*$/.test(lines[i]) && i+1<lines.length && /^\s*\|?\s*:?-{3,}/.test(lines[i+1]))) paragraph.push(lines[i++].trim());
     blocks.push(<p className="movo-ai-rich-paragraph" key={blocks.length}>{paragraph.map((part,j)=><React.Fragment key={j}>{j>0 && ' '}{renderInline(part,j)}</React.Fragment>)}</p>);
   }
   return <div className="movo-ai-rich-content">{blocks}</div>;
