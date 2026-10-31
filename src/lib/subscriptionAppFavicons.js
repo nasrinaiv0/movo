@@ -122,6 +122,10 @@ export function getSubscriptionFaviconUrl(appName, { size = 128 } = {}) {
   if (!appName || typeof appName !== 'string') return null;
   const entry = SUBSCRIPTION_APP_FAVICONS[appName.trim()];
   if (!entry) return null;
+  // Fail closed: no remote brand favicon until this exact provider/domain has
+  // an evidence-backed legal review recorded in the registry. Pending entries
+  // deliberately use the UI's generic local icon and visible text label.
+  if (!['APPROVED_POLICY_REVIEW', 'APPROVED_BY_COUNSEL'].includes(entry.reviewStatus)) return null;
   const safeSize = [16, 32, 48, 64, 128].includes(Number(size) * 1)
     ? Number(size)
     : 128;
