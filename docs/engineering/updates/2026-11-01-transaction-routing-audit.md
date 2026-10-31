@@ -36,7 +36,7 @@ All entered amounts must be positive. Direction comes from transaction type and 
 
 `total account balance = sum of active account balances, converted to home currency`
 
-Cash remains part of total account balance, but is excluded from the Savings tile. Credit cards are excluded from savings when explicitly classified as credit cards. MOVO does not initiate transfers or verify bank balances.
+Cash remains part of total account balance, but is excluded from the Savings tile. Cards count as savings only when explicitly classified as debit; credit or unclassified cards are excluded. MOVO does not initiate transfers or verify bank balances.
 
 ## Entry paths that must preserve the same contract
 
