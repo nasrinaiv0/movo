@@ -1,6 +1,8 @@
 /* Core interface strings. Columns: English, then Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi. */
 export default [
   // navigation & headers
+  ["Health & fitness", "Kalusugan at fitness", "الصحة واللياقة", "健康与健身", "Salud y bienestar físico", "Salute e fitness", "Gesundheit & Fitness", "Santé et fitness", "Saúde e fitness", "健康とフィットネス", "건강 및 피트니스", "स्वास्थ्य और फ़िटनेस"],
+  ["American Express", "American Express", "أمريكان إكسبريس", "美国运通", "American Express", "American Express", "American Express", "American Express", "American Express", "アメリカン・エキスプレス", "아메리칸 익스프레스", "अमेरिकन एक्सप्रेस"],
   ["Social media & messaging", "Social media at pagmemensahe", "التواصل الاجتماعي والمراسلة", "社交媒体与消息", "Redes sociales y mensajería", "Social media e messaggistica", "Soziale Medien & Nachrichten", "Réseaux sociaux et messagerie", "Redes sociais e mensagens", "ソーシャルメディアとメッセージ", "소셜 미디어 및 메시징", "सोशल मीडिया और मैसेजिंग"],
   ["Streaming & entertainment", "Streaming at libangan", "البث والترفيه", "流媒体与娱乐", "Streaming y entretenimiento", "Streaming e intrattenimento", "Streaming & Unterhaltung", "Streaming et divertissement", "Streaming e entretenimento", "ストリーミングとエンタメ", "스트리밍 및 엔터테인먼트", "स्ट्रीमिंग और मनोरंजन"],
   ["AI, productivity & cloud storage", "AI, produktibidad at cloud storage", "الذكاء الاصطناعي والإنتاجية والتخزين السحابي", "AI、效率工具与云存储", "IA, productividad y almacenamiento en la nube", "IA, produttività e archiviazione cloud", "KI, Produktivität & Cloud-Speicher", "IA, productivité et stockage cloud", "IA, produtividade e armazenamento em nuvem", "AI、生産性、クラウドストレージ", "AI, 생산성 및 클라우드 저장소", "AI, उत्पादकता और क्लाउड स्टोरेज"],
