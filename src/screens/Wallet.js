@@ -15,7 +15,7 @@ const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
 const FORMATS = [['landscape', 'Landscape'], ['portrait', 'Portrait']];
-export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'landscape' };
+export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'portrait' };
 const sorters = { 'balance-desc': (a, b) => b.balance - a.balance, 'balance-asc': (a, b) => a.balance - b.balance, name: (a, b) => a.name.localeCompare(b.name), type: (a, b) => a.account_type.localeCompare(b.account_type) || a.name.localeCompare(b.name) };
 const mask = (a) => (a.mask ? `•••• ${a.mask}` : '');
 const subtitle = (a) => (a.account_type === 'bank' ? 'Savings' : a.account_type === 'e_wallet' ? 'Balance' : a.institution_name || 'Account');
