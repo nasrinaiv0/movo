@@ -4,7 +4,7 @@
  * that started on the 31st renews on the last day of shorter months and returns to the 31st afterwards.
  */
 export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['yearly', 'Yearly']];
-export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Shopping', 'Phone & internet', 'News', 'Other'];
+export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Restaurants & cafés', 'Laundry & cleaning', 'Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel', 'Shopping', 'Phone & internet', 'News', 'Other'];
 
 /*
  * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH'),
@@ -44,7 +44,7 @@ export const CATALOG = [
   ['Notion', 'Productivity', '#191919', 'notion', '', 'notion.so'], ['Microsoft 365', 'Productivity', '#d83b01', '', '', 'microsoft365.com'], ['Slack', 'Productivity', '#4a154b', '', '', 'slack.com'],
   ['Zoom', 'Productivity', '#0b5cff', 'zoom', '', 'zoom.us'], ['Linear', 'Productivity', '#5e6ad2', 'linear', '', 'linear.app'], ['Evernote', 'Productivity', '#00a82d', 'evernote', '', 'evernote.com'],
   ['Todoist', 'Productivity', '#e44332', 'todoist', '', 'todoist.com'], ['QuickBooks', 'Productivity', '#2ca01c', 'quickbooks', 'US', 'quickbooks.intuit.com'],
-  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', '', 'mailchimp.com'], ['Telegram Premium', 'Productivity', '#26a5e4', 'telegram', '', 'telegram.org'], ['Discord Nitro', 'Productivity', '#5865f2', 'discord', '', 'discord.com'],
+  ['Mailchimp', 'Productivity', '#241c15', 'mailchimp', '', 'mailchimp.com'],
   ['Figma', 'Design', '#a259ff', 'figma', '', 'figma.com'], ['Canva Pro', 'Design', '#00c4cc', '', '', 'canva.com'], ['Adobe Creative Cloud', 'Design', '#da1f26', '', '', 'adobe.com'],
   ['Google One', 'Cloud storage', '#4285f4', 'googledrive', '', 'one.google.com'], ['iCloud+', 'Cloud storage', '#3693f3', 'icloud', '', 'icloud.com'], ['Dropbox', 'Cloud storage', '#0061fe', 'dropbox', '', 'dropbox.com'],
   ['Box', 'Cloud storage', '#0061d5', 'box', '', 'box.com'], ['Proton', 'Cloud storage', '#6d4aff', 'proton', '', 'proton.me'], ['MEGA', 'Cloud storage', '#d9272e', '', '', 'mega.io'],
@@ -52,6 +52,14 @@ export const CATALOG = [
   ['1Password', 'Security & VPN', '#3b66bc', '1password', '', '1password.com'], ['Bitwarden', 'Security & VPN', '#175ddc', 'bitwarden', '', 'bitwarden.com'], ['Dashlane', 'Security & VPN', '#0e353d', 'dashlane', '', 'dashlane.com'],
   ['LastPass', 'Security & VPN', '#d32d27', 'lastpass', '', 'lastpass.com'], ['NordVPN', 'Security & VPN', '#4687ff', 'nordvpn', '', 'nordvpn.com'], ['ExpressVPN', 'Security & VPN', '#da3940', 'expressvpn', '', 'expressvpn.com'],
   ['Surfshark', 'Security & VPN', '#178a9e', 'surfshark', '', 'surfshark.com'], ['Proton VPN', 'Security & VPN', '#66deb1', 'protonvpn', '', 'protonvpn.com'], ['Ring Protect', 'Security & VPN', '#1c9ad6', 'ring', 'US', 'ring.com'],
+  // Health, laundry, transport, household bills, insurance, pets and travel
+  ['Apple Fitness+', 'Health', '#fa243c', '', '', 'apple.com'], ['Strava', 'Health', '#fc4c02', 'strava', '', 'strava.com'], ['Fitbit Premium', 'Health', '#00b0b9', '', '', 'fitbit.com'], ['MyFitnessPal Premium', 'Health', '#0066ee', '', '', 'myfitnesspal.com'], ['Calm', 'Health', '#5a7b8c', '', '', 'calm.com'], ['Headspace', 'Health', '#f47d31', '', '', 'headspace.com'],
+  ['Laundry service', 'Laundry & cleaning', '#4f83cc', '', 'PH', ''], ['Laundryheap', 'Laundry & cleaning', '#00a3e0', '', '', 'laundryheap.com'], ['Rinse', 'Laundry & cleaning', '#2355d6', '', 'US', ' rinse.com'.trim()], ['CleanCloud', 'Laundry & cleaning', '#26a69a', '', '', 'cleancloudapp.com'],
+  ['Grab', 'Transport & mobility', '#00b14f', '', 'PH', 'grab.com'], ['Angkas', 'Transport & mobility', '#f9c80e', '', 'PH', 'angkas.com'], ['JoyRide', 'Transport & mobility', '#ed1c24', '', 'PH', 'joyride.com.ph'], ['Move It', 'Transport & mobility', '#f15a24', '', 'PH', 'moveit.com.ph'], ['Uber One', 'Transport & mobility', '#000000', '', '', 'uber.com'], ['Lyft Pink', 'Transport & mobility', '#ff00bf', '', 'US', 'lyft.com'],
+  ['Meralco', 'Utilities & bills', '#f58220', '', 'PH', 'meralco.com.ph'], ['PLDT Home', 'Utilities & bills', '#e31837', '', 'PH', 'pldthome.com'], ['Globe One', 'Utilities & bills', '#0070c0', '', 'PH', 'globe.com.ph'], ['Converge ICT', 'Utilities & bills', '#f58220', '', 'PH', 'convergeict.com'], ['Manila Water', 'Utilities & bills', '#0086c9', '', 'PH', 'manilawater.com'], ['Davao Light', 'Utilities & bills', '#f58220', '', 'PH', 'davaolight.com'],
+  ['AppleCare+', 'Insurance', '#555555', '', '', 'apple.com'], ['Lemonade', 'Insurance', '#ff0083', '', 'US', 'lemonade.com'], ['Geico', 'Insurance', '#00529b', '', 'US', 'geico.com'],
+  ['Chewy Autoship', 'Pets', '#1c49c2', '', 'US', 'chewy.com'], ['Petco Vital Care', 'Pets', '#001952', '', 'US', 'petco.com'],
+  ['AirAsia MOVE', 'Travel', '#ff0000', '', 'PH', 'airasia.com'], ['Trip.com', 'Travel', '#287dfa', '', '', 'trip.com'], ['Booking.com', 'Travel', '#003580', '', '', 'booking.com'], ['Airbnb', 'Travel', '#ff5a5f', '', '', 'airbnb.com'], ['Agoda', 'Travel', '#5142ab', '', '', 'agoda.com'],
   // Gaming
   ['Xbox Game Pass', 'Gaming', '#107c10', '', '', 'xbox.com'], ['PlayStation Plus', 'Gaming', '#0070d1', 'playstation', '', 'playstation.com'], ['Nintendo Switch Online', 'Gaming', '#e60012', '', '', 'nintendo.com'],
   ['Apple Arcade', 'Gaming', '#111111', 'applearcade', '', 'apple.com'], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', '', 'ubisoft.com'], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', '', 'play.google.com'], ['EA Play', 'Gaming', '#ff4747', '', '', 'ea.com'], ['Minecraft Realms', 'Gaming', '#62a44a', '', '', 'minecraft.net'], ['Roblox Premium', 'Gaming', '#111111', '', '', 'roblox.com'], ['GeForce NOW', 'Gaming', '#76b900', '', '', 'nvidia.com'],
