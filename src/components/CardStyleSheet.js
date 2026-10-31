@@ -60,6 +60,5 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
     {list.length > limit && <button type="button" className="manage-button" onClick={() => setLimit(limit + PAGE)}><Icon name="down" size={18} /> {tr('Show more ({n} left)', { n: list.length - limit })}</button>}
     {error && <p className="form-error" role="alert">{error}</p>}
     <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden onChange={upload} aria-label={tr('Choose a sticker image')} />
-    <p className="style-note">{tr('Upload PNG, JPEG, WebP, GIF or AVIF up to 10 MB. Images are cropped to the card ratio and saved on this device only; they are not synced to your cloud account.')}</p>
   </Sheet>;
 }
