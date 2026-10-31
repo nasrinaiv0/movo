@@ -26,13 +26,14 @@ function useMarks() {
 }
 const isLight = (hex) => { const n = parseInt(String(hex).slice(1), 16); if (Number.isNaN(n)) return false; return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 186; };
 
-/** The service's own logo (downloaded from its website and served by MOVO), else its Simple Icons mark, else initials. */
+/** Prefer bundled official logos, then Simple Icons, then official-site favicons, then initials. */
 export function SubIcon({ sub, size = 40 }) {
   const marks = useMarks();
   const known = catalogFor(sub.name);
   const color = sub.color || known?.color || '#64748b';
   const mark = marks && known?.mark ? marks[known.mark] : null;
   const [broken, setBroken] = useState(false);
+  const [faviconBroken, setFaviconBroken] = useState(false);
   const logo = known && !broken ? BRAND_LOGOS[known.id] : null;
   if (logo) {
     const fill = /\.(png|jpe?g|webp)$/.test(logo);
@@ -40,9 +41,14 @@ export function SubIcon({ sub, size = 40 }) {
       <img src={`${process.env.PUBLIC_URL || ''}/brands/${logo}`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
     </span>;
   }
-  if (mark) {
+  if (mark && !broken) {
     return <span className="sub-icon has-mark" style={{ width: size, height: size, background: color }} aria-hidden="true">
       <svg viewBox="0 0 24 24" width={Math.round(size * 0.54)} height={Math.round(size * 0.54)}><path d={mark.path} fill={isLight(color) ? '#111' : '#fff'} /></svg>
+    </span>;
+  }
+  if (known?.site && !faviconBroken) {
+    return <span className="sub-icon has-logo favicon-logo" style={{ width: size, height: size, padding: Math.round(size * 0.18) }} aria-hidden="true">
+      <img src={`https://${known.site}/favicon.ico`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFaviconBroken(true)} />
     </span>;
   }
   const initials = String(sub.name || '?').replace(/[^A-Za-z0-9+ ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
@@ -121,22 +127,43 @@ function Insights({ summary, show, income }) {
   </>;
 }
 
-/** Search the catalog, or start a custom subscription. Services popular in the person's country come first. */
+const catalogSection = (category) => {
+  if (category === 'Social media & messaging') return 'Social media & messaging';
+  if (['Entertainment', 'Music'].includes(category)) return 'Streaming & entertainment';
+  if (['AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage'].includes(category)) return 'AI, productivity & cloud storage';
+  if (['Food & delivery', 'Restaurants & cafés'].includes(category)) return 'Food delivery, restaurants & cafés';
+  if (['Laundry & cleaning', 'Health'].includes(category)) return category;
+  if (['Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel'].includes(category)) return category;
+  return 'Gaming & other memberships';
+};
+
+/** Searchable, grouped catalog; regional items are surfaced first without hiding the full catalog. */
 function CatalogSheet({ onPick, onClose, country }) {
   const [q, setQ] = useState('');
   const query = q.trim().toLowerCase();
-  const list = CATALOG.filter(c => `${c.name} ${tr(c.category)}`.toLowerCase().includes(query));
+  const list = CATALOG.filter(c => `${c.name} ${tr(c.category)} ${tr(catalogSection(c.category))}`.toLowerCase().includes(query));
   const local = country ? list.filter(c => c.region === country) : [];
   const rest = list.filter(c => !local.includes(c));
   const row = (c) => <button type="button" key={c.id} className="catalog-row" onClick={() => onPick({ name: c.name, category: c.category, color: c.color })}><SubIcon sub={c} /><span className="sub-main"><strong>{c.name}</strong><small>{tr(c.category)}</small></span><Icon name="chevron" size={16} /></button>;
+  const renderGrouped = (items) => {
+    const order = ['Social media & messaging', 'Streaming & entertainment', 'AI, productivity & cloud storage', 'Food delivery, restaurants & cafés', 'Laundry & cleaning', 'Health', 'Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel', 'Gaming & other memberships'];
+    return order.map(title => {
+      const group = items.filter(c => catalogSection(c.category) === title);
+      if (!group.length) return null;
+      return <section className="catalog-section" key={title} aria-label={tr(title)}>
+        <h3 className="catalog-group">{tr(title)} <span className="count-pill">{group.length}</span></h3>
+        {group.map(row)}
+      </section>;
+    });
+  };
   return <Sheet title={tr('Apps & services')} onClose={onClose} label={tr('Apps & services')} className="sheet-search">
     <label className="search-field"><Icon name="search" size={17} /><input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder={tr('Search for an app or service')} aria-label={tr('Search for an app or service')} /></label>
     <div className="sheet-list catalog-list">
       <button type="button" className="catalog-row" onClick={() => onPick({ name: q.trim(), category: 'Other' })}><span className="sub-icon custom"><Icon name="plus" size={18} /></span><span className="sub-main"><strong>{q.trim() ? tr('Add “{name}”', { name: q.trim() }) : tr('Custom subscription')}</strong><small>{tr('Anything not in the list')}</small></span><Icon name="chevron" size={16} /></button>
-      {local.length > 0 && <h3 className="catalog-group">{tr('Popular in your region')}</h3>}
-      {local.map(row)}
+      {local.length > 0 && <><h3 className="catalog-group">{tr('Popular in your region')}</h3>{renderGrouped(local)}</>}
       {local.length > 0 && rest.length > 0 && <h3 className="catalog-group">{tr('More apps & services')}</h3>}
-      {rest.map(row)}
+      {renderGrouped(rest)}
+      {!list.length && <p className="empty">{tr('No apps or services found.')}</p>}
     </div>
     <BrandNotice />
   </Sheet>;
