@@ -742,7 +742,10 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 
 /* Legal documents */
 .legal-page { display:flex; flex-direction:column; gap:16px; padding-bottom:24px; }
-.legal-intro { padding:21px 20px 18px; border:1px solid var(--line); border-radius:22px; background:var(--card); box-shadow:var(--shadow-sm); }
+.legal-intro { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:21px 20px 18px; border:1px solid var(--line); border-radius:22px; background:var(--card); box-shadow:var(--shadow-sm); }
+.legal-intro-copy { min-width:0; flex:1; }
+.legal-intro-brand { display:flex; align-items:center; justify-content:center; gap:9px; flex:none; color:var(--text); font-size:clamp(17px, 2.2vw, 24px); font-weight:800; letter-spacing:-.7px; }
+.legal-intro-brand .movo-mark { display:block; width:clamp(30px, 4vw, 44px); height:auto; }
 .legal-readiness-notice { padding:14px 16px; border:1px solid #d69b36; border-radius:16px; background:color-mix(in srgb, #d69b36 10%, var(--card)); color:var(--text); }
 .legal-readiness-notice strong { display:block; margin-bottom:5px; font-size:11px; }
 .legal-readiness-notice p { margin:0; color:var(--muted); font-size:11px; line-height:1.65; overflow-wrap:anywhere; }
@@ -773,7 +776,8 @@ button:focus-visible { outline: 3px solid rgba(var(--accent-rgb),.45); outline-o
 .movo-ai-consent input { flex:none; margin:2px 0 0; accent-color:var(--accent); }
 .movo-ai-consent label { cursor:pointer; }
 .movo-ai-legal-links { justify-content:flex-start; padding:0 3px 4px 25px; }
-@media (max-width:480px) { .legal-intro,.legal-section,.legal-contact { padding:15px; } .legal-intro h2 { font-size:20px; } .legal-nav button { font-size:10px; } }
+@media (max-width:480px) { .legal-intro,.legal-section,.legal-contact { padding:15px; } .legal-intro { gap:10px; } .legal-intro h2 { font-size:20px; } .legal-intro-brand { gap:5px; font-size:15px; } .legal-intro-brand .movo-mark { width:28px; } .legal-nav button { font-size:10px; } }
+@media (max-width:350px) { .legal-intro-brand span { display:none; } .legal-intro-brand .movo-mark { width:25px; } }
 
 .action-strip button:disabled { opacity:.42; cursor:not-allowed; }
 
