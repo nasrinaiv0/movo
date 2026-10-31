@@ -27,6 +27,20 @@ export async function listAccountingPostings() {
   return unwrap(await requireClient().from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at', { ascending: false }).limit(5000)).then(rows => rows.map(row => ({ ...row, transaction_type: 'accounting_posting', amount: Math.abs(Number(row.signed_amount)), type: 'accounting_posting' })));
 }
 
+/** Non-cash accounting events that must appear in expense analytics without posting cash a second time. */
+export async function listAccountingActivities() {
+  const client = requireClient();
+  const [loanResult, receivableResult] = await Promise.all([
+    client.from('loan_events').select('id,event_type,amount,currency,occurred_at,note').in('event_type', ['interest_payment','fee']).order('occurred_at', { ascending: false }).limit(2000),
+    client.from('receivable_events').select('id,event_type,amount,currency,occurred_at,note').eq('event_type', 'written_off').order('occurred_at', { ascending: false }).limit(2000),
+  ]);
+  if (loanResult.error) throw loanResult.error;
+  if (receivableResult.error) throw receivableResult.error;
+  const loanRows = (loanResult.data || []).map(row => ({ ...row, transaction_type: 'expense', type: 'expense', category: row.event_type === 'fee' ? 'Loan fees' : 'Interest', merchant: row.event_type === 'fee' ? 'Loan fee' : 'Loan interest', source: 'accounting_event', account_id: null, transfer_to_account_id: null }));
+  const receivableRows = (receivableResult.data || []).map(row => ({ ...row, transaction_type: 'expense', type: 'expense', category: 'Bad debt', merchant: 'Receivable write-off', source: 'accounting_event', account_id: null, transfer_to_account_id: null }));
+  return [...loanRows, ...receivableRows];
+}
+
 export async function listLoans() {
   return unwrap(await requireClient().from('financial_loans').select('*').order('created_at', { ascending: false }));
 }
