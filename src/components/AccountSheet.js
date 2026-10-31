@@ -118,6 +118,6 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       {!cloudMode && <p className="acct-hint">{tr('Stored on this device only. Sign in to sync it to your MOVO account.')}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || !form.name.trim() || !Number.isFinite(balance) || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
+    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || !form.name.trim() || !Number.isFinite(balance) || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
   </form>}</Sheet>;
 }
