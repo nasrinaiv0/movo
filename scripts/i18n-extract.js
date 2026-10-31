@@ -33,7 +33,7 @@ for (const f of files) {
       if ((!isLegal || node.arguments[0].value.length <= 100) && (node.callee.name !== 't' || /lib\/(format|i18n)\.js$/.test(f) || /import \{ t \}/.test(code))) keys.add(node.arguments[0].value);
     }
     if (isDemo && node.type === 'StringLiteral' && parent?.type === 'ObjectProperty' && parent.value === node && ['title', 'body'].includes(parent.key.name)) keys.add(node.value);
-    if (isData && !isDemo && (!isLegal || node.value.length <= 100) && node.type === 'StringLiteral' && human(node.value)) {
+    if (isData && !isDemo && node.type === 'StringLiteral' && (!isLegal || node.value.length <= 100) && human(node.value)) {
       const inImport = stack.some(n => n.type === 'ImportDeclaration' || n.type === 'ExportAllDeclaration');
       const isKey = parent && parent.type === 'ObjectProperty' && parent.key === node;
       const attr = [...stack].reverse().find(n => n.type === 'JSXAttribute');
