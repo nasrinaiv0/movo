@@ -1969,6 +1969,92 @@ button.account-tile:active { transform: scale(.98); }
 }
 .ref-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; }
 
+/* ---------- Receipt scanner v3 (2026-10-31): centred viewer, framed guide, calm motion ---------- */
+.scan-camera { align-items: center; padding: 10px 10px 0; animation: scan-in .32s cubic-bezier(.2,.8,.2,1) both; }
+.scan-view { width: min(100%, calc(56vh * 3 / 4)); margin: 0 auto; border-radius: 18px; overflow: hidden; }
+.scan-view video { opacity: 0; transform: scale(1.03); transition: opacity .35s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
+.scan-view.is-live video { opacity: 1; transform: none; }
+.scan-guide { inset: 9% 10% 14%; border: 0 !important; border-radius: 18px; box-shadow: 0 0 0 9999px rgba(0,0,0,.32); }
+.scan-view .scan-guide i.c { position: absolute; width: 28px; height: 28px; border-color: #fff; border-style: solid; border-width: 0 !important; }
+.scan-view .scan-guide .c.tl { top: 0; left: 0; border-top-width: 3px !important; border-left-width: 3px !important; border-top-left-radius: 18px; }
+.scan-view .scan-guide .c.tr { top: 0; right: 0; border-top-width: 3px !important; border-right-width: 3px !important; border-top-right-radius: 18px; }
+.scan-view .scan-guide .c.bl { bottom: 0; left: 0; border-bottom-width: 3px !important; border-left-width: 3px !important; border-bottom-left-radius: 18px; }
+.scan-view .scan-guide .c.br { bottom: 0; right: 0; border-bottom-width: 3px !important; border-right-width: 3px !important; border-bottom-right-radius: 18px; }
+.scan-line { position: absolute; left: 6%; right: 6%; top: 8%; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), .95), transparent); box-shadow: 0 0 14px rgba(var(--accent-rgb), .7); animation: scan-sweep 2.4s ease-in-out infinite; }
+.scan-hint { position: absolute; left: 0; right: 0; bottom: 4%; text-align: center; color: rgba(255,255,255,.85); font-size: 12.5px; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+.scan-controls { width: 100%; }
+.scan-shutter { transition: transform .15s ease-out, background-color .15s ease-out; }
+.scan-shutter:active { transform: scale(.9); background: rgba(255,255,255,.9); }
+.scan-working { flex-direction: column; gap: 14px; padding: 34px 0 30px; text-align: center; }
+.scan-doc { position: relative; display: grid; align-content: center; gap: 7px; width: 84px; height: 108px; padding: 0 14px; border-radius: 14px; background: var(--field); overflow: hidden; }
+.scan-doc i:not(.scan-line) { display: block; height: 6px; border-radius: 3px; background: rgba(var(--accent-rgb), .25); }
+.scan-doc i:nth-child(2) { width: 70%; }
+.scan-doc i:nth-child(3) { width: 85%; }
+.scan-hero { transition: transform .2s ease-out, background-color .2s ease-out; }
+.scan-hero:active { transform: scale(.98); }
+@keyframes scan-in { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes scan-sweep { 0% { top: 8%; opacity: .2; } 50% { top: 88%; opacity: 1; } 100% { top: 8%; opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .scan-line, .scan-camera { animation: none; } .scan-view video { transition: none; opacity: 1; transform: none; } }
+
+/* ---------- Tappable stat tiles (2026-10-31) ---------- */
+.stat-card.is-link { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: transform .18s ease-out, box-shadow .18s ease-out; }
+.stat-card.is-link:active { transform: scale(.97); }
+.stat-card.is-link:focus-visible { outline: 2px solid rgba(var(--accent-rgb), .6); outline-offset: 2px; }
+.stat-card.is-link.is-active { box-shadow: inset 0 0 0 1.5px rgba(var(--accent-rgb), .55); }
+
+
+/* ---------- Navigation preview matches the applied bar (2026-10-31) ---------- */
+.movo-app .nav-preview > span.orb { color: var(--on-accent); background: var(--accent); width: 40px; height: 40px; flex: none; margin: 0 auto; padding: 0; box-shadow: 0 2px 8px rgba(var(--accent-rgb), .26); }
+.movo-app .nav-preview > span.orb .nasrin-mark { width: 21px; height: 21px; }
+.movo-app .nav-preview > span.on { color: var(--text); }
+
+/* ---------- Transactions filter bar: four equal segments that always fit beside the tools (2026-10-31) ---------- */
+.movo-app .chip-bar { gap: 6px; }
+.movo-app .chip-bar > .chip-row { overflow: visible; padding-right: 0; gap: 4px; -webkit-mask-image: none; mask-image: none; }
+.movo-app .chip-bar > .chip-row button[data-chip] { flex: 1 1 0; min-width: 0; padding: 0 4px; font-size: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .chip-bar > .chip-tools { display: flex; gap: 6px; }
+.movo-app .chip-bar > .chip-tools .round-button { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+@media (max-width: 350px) { .movo-app .chip-bar > .chip-row button[data-chip] { font-size: 12px; } }
+
+/* ---------- NasrinAI replies in MOVO: richer rendering (2026-10-31) ---------- */
+.movo-ai-amount { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.movo-ai-amount.is-in { color: var(--green, #2fa36b); }
+.movo-ai-amount.is-out { color: var(--red, #e5484d); }
+.movo-ai-delta { display: inline-block; padding: 0 6px; border-radius: 999px; font-size: .92em; font-weight: 600; font-variant-numeric: tabular-nums; }
+.movo-ai-delta.is-up { color: var(--green, #2fa36b); background: rgba(47,163,107,.12); }
+.movo-ai-delta.is-down { color: var(--red, #e5484d); background: rgba(229,72,77,.12); }
+.movo-ai-divider { border: 0; border-top: var(--hair) solid var(--line); margin: 12px 0; }
+.movo-ai-callout { margin: 8px 0; padding: 10px 12px; border-radius: 14px; border-left: 3px solid rgba(var(--accent-rgb), .7); background: rgba(var(--accent-rgb), .08); }
+.movo-ai-callout p { margin: 4px 0 0; }
+.movo-ai-callout-title { display: block; font-size: 13px; }
+.movo-ai-callout.is-tip { border-left-color: #2fa36b; background: rgba(47,163,107,.09); }
+.movo-ai-callout.is-warning, .movo-ai-callout.is-important { border-left-color: #d98a1c; background: rgba(217,138,28,.1); }
+.movo-ai-callout.is-caution { border-left-color: #e5484d; background: rgba(229,72,77,.09); }
+.movo-ai-task { list-style: none; display: flex; align-items: flex-start; gap: 8px; margin-left: -18px; }
+.movo-ai-check { flex: none; width: 16px; height: 16px; margin-top: 3px; border-radius: 5px; border: 1.5px solid var(--muted) !important; }
+.movo-ai-task.is-done .movo-ai-check { background: var(--accent); border-color: var(--accent) !important; }
+.movo-ai-task.is-done { color: var(--muted); text-decoration: line-through; }
+.movo-ai-table td.is-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.movo-ai-table tr.is-total td { font-weight: 700; border-top: var(--hair) solid var(--line); }
+.movo-ai-rich-content > * { animation: movo-ai-block-in .28s ease-out both; }
+@keyframes movo-ai-block-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .movo-ai-rich-content > * { animation: none; } }
+
+/* Country-aware institution picker: contained scrolling keeps options inside the mobile sheet. */
+.acct-institution { display: grid; gap: 8px; min-width: 0; margin: 10px 0 16px; }
+.acct-institution-search { margin: 0; }
+.acct-institution-search input { min-width: 0; width: 100%; }
+.acct-institution-options { display: grid; gap: 5px; max-height: min(30vh, 240px); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 14px; padding: 5px; background: var(--surface, rgba(20,24,34,.98)); }
+.acct-institution-options button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 46px; padding: 9px 11px; border: 0; border-radius: 10px; text-align: left; color: inherit; background: transparent; cursor: pointer; }
+.acct-institution-options button.selected, .acct-institution-options button:hover { background: var(--surface-raised, rgba(127,145,180,.14)); }
+.acct-institution-options button span { display: grid; gap: 2px; }
+.acct-institution-options button small { opacity: .65; font-size: 12px; }
+.acct-manual-toggle { justify-self: start; padding: 5px 0; border: 0; color: var(--accent, #7aa7ff); background: transparent; text-align: left; cursor: pointer; }
+.acct-institution .acct-input { width: 100%; }
+@media (max-width: 600px) {
+  .acct-institution-options { max-height: min(26vh, 190px); }
+  .acct-institution-options button { min-height: 48px; }
+}
 
 /* Post-tour legal and brand disclosure: shown before the first policy review. */
 .legal-disclosure-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(9,12,22,.68);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
