@@ -47,15 +47,20 @@ function toMascot(file) {
 }
 
 export default function Home({ c }) {
-  const { show, setShow, stats, deltas, breakdown, recent, refDate, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
+  const { show, setShow, stats, deltas, breakdown, recent, refDate, homeMonthKey, setHomeMonthKey, homeYears = [], homeMonthStats, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
   const [editing, setEditing] = useState(false);
   const startEditing = () => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } };
   const [mascotSheet, setMascotSheet] = useState(false);
   const [mascotError, setMascotError] = useState('');
   const file = useRef(null);
+  const selectedYear = Number((homeMonthKey || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`).slice(0, 4));
+  const selectedMonth = Number((homeMonthKey || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`).slice(5, 7));
+  const monthName = (key) => new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(new Date(`${key}-15T12:00:00`));
+  const chooseMonth = (value) => setHomeMonthKey(`${selectedYear}-${String(value).padStart(2, '0')}`);
+  const openMonthTransactions = (filter) => { c.setMonth?.(homeMonthKey); go('Transactions', { filter }); };
   const tiles = [
-    { label: tr('Income'), icon: 'arrowDown', tone: 'green', value: stats.income, delta: deltas.income, open: () => go('Transactions', { filter: 'Income' }) },
-    { label: tr('Expenses'), icon: 'arrowUp', tone: 'red', value: stats.expenses, delta: deltas.expenses, open: () => go('Transactions', { filter: 'Expenses' }) },
+    { label: tr('Income'), icon: 'arrowDown', tone: 'green', value: stats.income, delta: deltas.income, open: () => openMonthTransactions('Income') },
+    { label: tr('Expenses'), icon: 'arrowUp', tone: 'red', value: stats.expenses, delta: deltas.expenses, open: () => openMonthTransactions('Expenses') },
     { label: tr('Savings'), icon: 'bank', tone: 'slate', value: stats.savings, delta: deltas.savings, open: () => go('Wallet') },
   ];
   const todayKey = dayKey(new Date());
@@ -70,7 +75,7 @@ export default function Home({ c }) {
   };
 
   const byAmount = [...breakdown.data].sort((a, b) => b.amount - a.amount);
-  const recentFor = (size) => (size === 'M' ? recent : txs.filter(t => t.type !== 'transfer').slice(0, size === 'S' ? 2 : 8));
+  const recentFor = (size) => (size === 'M' ? recent : (homeMonthStats?.list || txs).filter(t => t.type !== 'transfer').slice(0, size === 'S' ? 2 : 8));
   const boxes = [
     { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <section className={`card balance-card size-${size}`} aria-label={tr('Total balance')}>
       <div className="balance-label">{tr('Total Balance')}
@@ -96,7 +101,7 @@ export default function Home({ c }) {
         : <button type="button" className="budget-empty" onClick={() => go('Subscriptions')}><Icon name="refresh" size={20} /><span><strong>{tr('Track your subscriptions')}</strong><small>{tr('See every renewal before it charges.')}</small></span></button>}
     </section> },
     { id: 'spending', label: tr('Spending this month'), styles: SPENDING_STYLES, node: ({ size, style }) => <section aria-label={tr('Spending overview')}>
-      <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending This Month')}</SectionTitle>
+      <SectionTitle action={tr('See All')} onAction={() => go('Transactions', { filter: 'Expenses' })}>{tr('Spending this month')} · {monthName(homeMonthKey)}</SectionTitle>
       <div className={`card spending-card is-${style}`}>
         {!breakdown.data.length ? <p className="empty">{tr('Add expenses to see your category breakdown.')}</p>
           : style === 'bars' ? <CategoryBars data={size === 'S' ? byAmount.slice(0, 3) : byAmount} show={show} />
@@ -127,6 +132,16 @@ export default function Home({ c }) {
         <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} />
       </div>
     </header>
+
+    <div className="home-period-wrap">
+      <div className="home-period-filter" role="group" aria-label={tr('Filter Home by month and year')}>
+        <span className="home-period-icon"><Icon name="calendar" size={18} /></span>
+        <label className="home-period-select month-select"><span>{tr('Month')}</span><select aria-label={tr('Select Home month')} value={selectedMonth} onChange={e => chooseMonth(e.target.value)}>{Array.from({ length: 12 }, (_, i) => i + 1).map(m => <option key={m} value={m}>{new Intl.DateTimeFormat(undefined, { month: 'long' }).format(new Date(2024, m - 1, 1))}</option>)}</select></label>
+        <span className="home-period-divider" aria-hidden="true" />
+        <label className="home-period-select year-select"><span>{tr('Year')}</span><select aria-label={tr('Select Home year')} value={selectedYear} onChange={e => setHomeMonthKey(`${e.target.value}-${String(selectedMonth).padStart(2, '0')}`)}>{Array.from(new Set([...homeYears, selectedYear])).sort((a, b) => b - a).map(y => <option key={y} value={y}>{y}</option>)}</select></label>
+        <span className="home-period-current" aria-live="polite">{monthName(homeMonthKey)}</span>
+      </div>
+    </div>
 
     <EditableBoxes title={tr('Home')} boxes={boxes} layout={prefs.layouts?.home} editing={editing} onEdit={startEditing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), home: l })} />
     {!editing && <button type="button" className="customize-button" onClick={startEditing}><Icon name="edit" size={16} /> {tr('Customize Home')}</button>}
