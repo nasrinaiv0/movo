@@ -14,8 +14,8 @@ const ADD_TYPE = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_walle
 const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash & other', 'Cash, investments and more']];
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
-const FORMATS = [['card', 'Bank card'], ['tile', 'Account tile']];
-export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'card' };
+const FORMATS = [['landscape', 'Landscape'], ['portrait', 'Portrait']];
+export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'portrait' };
 const sorters = { 'balance-desc': (a, b) => b.balance - a.balance, 'balance-asc': (a, b) => a.balance - b.balance, name: (a, b) => a.name.localeCompare(b.name), type: (a, b) => a.account_type.localeCompare(b.account_type) || a.name.localeCompare(b.name) };
 const mask = (a) => (a.mask ? `•••• ${a.mask}` : '');
 const subtitle = (a) => (a.account_type === 'bank' ? 'Savings' : a.account_type === 'e_wallet' ? 'Balance' : a.institution_name || 'Account');
@@ -61,10 +61,12 @@ export default function Wallet({ c }) {
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
-  const cardVisual = (a) => (wv.cardFormat === 'tile' ? <AccountTile key={`${a.id}:${styleFor(a, prefs.accountStyles).color}:${styleFor(a, prefs.accountStyles).icon}`} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size="preview" /> : <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}`} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />);
+  const cardVisual = (a) => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${wv.cardFormat}`} orientation={wv.cardFormat} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />;
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
-    : <section className={`account-tiles at-${wv.view}`}>{items.map(a => <AccountTile key={a.id} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size={wv.view === 'grid' ? 'grid' : 'tile'} onClick={() => openAccount(a)} />)}</section>);
+    : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
+        {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a)}</button>)}
+      </section>);
   const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], ['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : ['bank', 'Add Account', () => setSheet({ name: 'account', type: 'bank' })]];
 
   const boxes = [
@@ -141,10 +143,10 @@ export default function Wallet({ c }) {
       <p className="mini-title">{tr('Sort accounts by')}</p>
       <div className="sheet-list">{SORTS.map(([key, label]) => <button type="button" key={key} className={`sheet-card${wv.sort === key ? ' selected' : ''}`} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span className="account-main"><strong>{tr(label)}</strong></span>{wv.sort === key && <Icon name="check" size={18} />}</button>)}</div>
       <p className="mini-title">{tr('Layout')}</p>
-      <div className="seg-control">{VIEWS.map(([key, , label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}>{tr(label)}</button>)}</div>
+      <div className="seg-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={18} /><span>{tr(label)}</span></button>)}</div>
       <p className="mini-title">{tr('Card format')}</p>
       <div className="format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
-        {key === 'card' ? <CardArt a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 12500, currency: 'PHP' }} show={show} styleId="" /> : <AccountTile a={{ name: 'Your Bank', account_type: 'card', balance: 12500, currency: 'PHP' }} show={show} size="preview" />}<span>{label}</span></button>)}</div>
+        <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" /><span>{tr(label)}</span></button>)}</div>
       <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
     </Sheet>}
 
