@@ -132,6 +132,13 @@ const catalogSection = (category) => {
   if (['Entertainment', 'Music'].includes(category)) return 'Streaming & entertainment';
   if (['AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage'].includes(category)) return 'AI, productivity & cloud storage';
   if (category === 'Food & delivery' || category === 'Restaurants & cafés') return 'Food delivery, restaurants & cafés';
+  if (['Health'].includes(category)) return 'Health & fitness';
+  if (['Laundry & cleaning'].includes(category)) return 'Laundry & cleaning';
+  if (['Transport & mobility'].includes(category)) return 'Transport & mobility';
+  if (['Utilities & bills'].includes(category)) return 'Utilities & bills';
+  if (['Insurance'].includes(category)) return 'Insurance';
+  if (['Pets'].includes(category)) return 'Pets';
+  if (['Travel'].includes(category)) return 'Travel';
   return 'Gaming & other memberships';
 };
 
@@ -144,7 +151,7 @@ function CatalogSheet({ onPick, onClose, country }) {
   const rest = list.filter(c => !local.includes(c));
   const row = (c) => <button type="button" key={c.id} className="catalog-row" onClick={() => onPick({ name: c.name, category: c.category, color: c.color })}><SubIcon sub={c} /><span className="sub-main"><strong>{c.name}</strong><small>{tr(c.category)}</small></span><Icon name="chevron" size={16} /></button>;
   const renderGrouped = (items) => {
-    const order = ['Social media & messaging', 'Streaming & entertainment', 'AI, productivity & cloud storage', 'Food delivery, restaurants & cafés', 'Gaming & other memberships'];
+    const order = ['Social media & messaging', 'Streaming & entertainment', 'AI, productivity & cloud storage', 'Food delivery, restaurants & cafés', 'Health & fitness', 'Laundry & cleaning', 'Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel', 'Gaming & other memberships'];
     return order.map(title => {
       const group = items.filter(c => catalogSection(c.category) === title);
       if (!group.length) return null;
