@@ -936,7 +936,7 @@ function App() {
 
   const c = {
     refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
-    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, homeMonthStats: homeStats, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, homeMonthStats: homeStats, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
