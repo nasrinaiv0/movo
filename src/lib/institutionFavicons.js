@@ -161,7 +161,7 @@ export const INSTITUTION_FAVICONS = {
   'Banorte': { domain: 'banorte.com', countryCode: 'MX' },
   'Santander México': { domain: 'santander.com.mx', countryCode: 'MX' },
   'Citibanamex': { domain: 'citibanamex.com', countryCode: 'MX' },
-  'Banco Azteca': { domain: ' Bancoazteca.com.mx'.trim(), countryCode: 'MX' },
+  'Banco Azteca': { domain: 'bancoazteca.com.mx', countryCode: 'MX' },
 
   // South Africa
   'Standard Bank': { domain: 'standardbank.co.za', countryCode: 'ZA' },
