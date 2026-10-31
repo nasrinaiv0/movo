@@ -101,4 +101,4 @@ Motion is calm by design: no device vibration, no overshooting "bounce" springs,
 
 ## Financial Planning
 
-The financial planning area tracks loans and debts, money owed to you, savings goals, and goal allocations. Accounting rules separate loan principal from interest, receivable collections from income, and goal reservations from actual assets. Apply the migration in `supabase/migrations/202611010001_obligations_receivables_goals.sql` through the normal Supabase migration process before enabling cloud use. Cross-currency transfers and live database behavior remain subject to verification.
+The financial planning area tracks loans and debts, money owed to you, savings goals, and goal allocations. Accounting rules separate loan principal from interest, receivable collections from income, and goal reservations from actual assets. Apply the migration in `supabase/migrations/20261101000100_obligations_receivables_goals.sql` through the normal Supabase migration process before enabling cloud use. Cross-currency transfers and live database behavior remain subject to verification.
