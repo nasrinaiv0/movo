@@ -571,8 +571,9 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Profile', 'Subscriptions', 'Plans', 'Financial planning', 'Limits']);
-    act(() => container.querySelectorAll('.menu-tile')[1].click());
+    expect(tiles).toEqual(['Subscriptions', 'Plans', 'Financial planning', 'Limits']);
+    expect(tiles).not.toContain('Profile');
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Subscriptions')).click());
     expect(container.querySelector('h1').textContent).toBe('Subscriptions');
     clickButton(container, 'Add subscription');
     const search = container.querySelector('input[aria-label="Search for an app or service"]');
@@ -589,7 +590,7 @@ describe('MOVO finance frontend', () => {
     expect(saved[0]).toMatchObject({ name: 'Netflix', amount: 549, cycle: 'monthly', status: 'active' });
     expect(container.querySelector('[aria-label="Subscription summary"]').textContent).toContain('549');
     clickButton(container, 'Back');
-    act(() => container.querySelectorAll('.menu-tile')[4].click());
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Limits')).click());
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   });
 

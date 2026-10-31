@@ -2,6 +2,7 @@ import React from 'react';
 import { SubHeader } from '../components/ui';
 import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
+import { MovoMark } from '../components/MovoLogo';
 
 const TERMS_EFFECTIVE_DATE = '2026-10-29T12:00:00Z';
 const PRIVACY_EFFECTIVE_DATE = '2026-10-30T12:00:00Z';
@@ -19,9 +20,15 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
     <SubHeader title={title} onBack={() => c.go(back)} />
     <article className="legal-page" aria-labelledby="legal-title">
       <header className="legal-intro">
-        <p className="legal-eyebrow">{tr('MOVO · IMPORTANT INFORMATION')}</p>
-        <h2 id="legal-title">{title}</h2>
-        <p>{tr('Effective date: {date}', { date: formatDate(effectiveDate, { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }, 'effective') })}</p>
+        <div className="legal-intro-copy">
+          <p className="legal-eyebrow">{tr('MOVO · IMPORTANT INFORMATION')}</p>
+          <h2 id="legal-title">{title}</h2>
+          <p>{tr('Effective date: {date}', { date: formatDate(effectiveDate, { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }, 'effective') })}</p>
+        </div>
+        <div className="legal-intro-brand" aria-label="MOVO">
+          <MovoMark size={44} tone="color" />
+          <span>MOVO</span>
+        </div>
       </header>
       <LegalNavigation c={c} current={current} />
       <aside className="legal-readiness-notice" role="note" aria-label={tr('Important publication notice')}>
