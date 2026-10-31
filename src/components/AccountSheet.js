@@ -83,7 +83,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
             { value: 'other', label: tr('Other'), domain: '' }
           ].map(network => <button type="button" key={network.value} className={`acct-network-option${(form.cardNetwork || '') === network.value ? ' selected' : ''}`} aria-pressed={(form.cardNetwork || '') === network.value} onClick={() => set({ cardNetwork: network.value })}>
             <span className="acct-network-name">{network.label}</span>
-            <span className="acct-network-preview" aria-label={network.domain ? `${network.label} logo preview` : tr('No logo preview')}>
+            <span className="acct-network-preview" aria-label={network.domain ? `${network.label} logo preview` : 'No logo preview'}>
               {network.domain ? <img src={`https://www.google.com/s2/favicons?domain=${network.domain}&sz=64`} alt="" width="28" height="28" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.visibility = 'hidden'; }} /> : <span className="acct-network-other">—</span>}
             </span>
           </button>)}
