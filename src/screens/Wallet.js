@@ -107,7 +107,7 @@ export default function Wallet({ c }) {
   ];
 
   return <>
-    <RootHeader title={tr('Wallet')} subtitle={tr('Your accounts, cards and balances.')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <RootHeader title={tr('Wallet')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <div className="chip-bar wallet-chip-bar">
       <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(key) }))} value={walletFilter} onChange={setWalletFilter} />
       <button type="button" className="round-button flat wallet-menu-button" aria-label={tr('Sort and view options')} title={tr('Sort and view options')} onClick={() => setSheet({ name: 'walletView' })}><Icon name="sliders" size={20} /></button>
