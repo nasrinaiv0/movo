@@ -35,7 +35,7 @@ test('the Shortcuts prompt uses secure POST logging and an interactive Log Skip 
   expect(text).toContain('Choose from Menu');
   expect(text).toContain('Log and Skip');
   expect(text).toContain('Get Contents of URL');
-  expect(text).not.toContain('Open URLs');
+  expect(text).toContain('never Open URLs');
   expect(text).toMatch(/Amount.*Merchant.*Card/);
 });
 
