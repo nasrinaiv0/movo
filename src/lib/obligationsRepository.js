@@ -23,6 +23,10 @@ const validDate = value => {
 };
 
 /** List functions rely on RLS as the primary ownership boundary. */
+export async function listAccountingPostings() {
+  return unwrap(await requireClient().from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at', { ascending: false }).limit(5000)).then(rows => rows.map(row => ({ ...row, transaction_type: 'accounting_posting', amount: Math.abs(Number(row.signed_amount)), type: 'accounting_posting' })));
+}
+
 export async function listLoans() {
   return unwrap(await requireClient().from('financial_loans').select('*').order('created_at', { ascending: false }));
 }
