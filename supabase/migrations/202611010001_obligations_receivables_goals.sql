@@ -191,6 +191,7 @@ begin
   if not found then raise exception 'loan_not_found' using errcode = 'P0002'; end if;
   if p_event_type = 'principal_payment' and p_amount > v_loan.outstanding_principal then raise exception 'payment_exceeds_principal' using errcode = '22023'; end if;
   if p_account_id is not null and not exists (select 1 from public.financial_accounts where id = p_account_id and user_id = v_user) then raise exception 'account_owner_mismatch' using errcode = '42501'; end if;
+  if p_account_id is not null and exists (select 1 from public.financial_accounts where id = p_account_id and currency <> coalesce(p_currency,'PHP')) then raise exception 'obligation_account_currency_mismatch' using errcode = '22023'; end if;
   if p_transaction_id is not null and not exists (select 1 from public.transactions where id = p_transaction_id and user_id = v_user) then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
   insert into public.loan_events(user_id,loan_id,event_type,amount,currency,account_id,transaction_id,occurred_at,note)
   values(v_user,p_loan_id,p_event_type,round(p_amount,2),coalesce(p_currency,'PHP'),p_account_id,p_transaction_id,coalesce(p_occurred_at,now()),left(p_note,1000))
@@ -220,6 +221,7 @@ begin
   if not found then raise exception 'receivable_not_found' using errcode = 'P0002'; end if;
   if p_event_type in ('collected','written_off') and p_amount > v_item.outstanding_amount then raise exception 'event_exceeds_receivable' using errcode = '22023'; end if;
   if p_account_id is not null and not exists (select 1 from public.financial_accounts where id = p_account_id and user_id = v_user) then raise exception 'account_owner_mismatch' using errcode = '42501'; end if;
+  if p_account_id is not null and exists (select 1 from public.financial_accounts where id = p_account_id and currency <> coalesce(p_currency,'PHP')) then raise exception 'obligation_account_currency_mismatch' using errcode = '22023'; end if;
   if p_transaction_id is not null and not exists (select 1 from public.transactions where id = p_transaction_id and user_id = v_user) then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
   insert into public.receivable_events(user_id,receivable_id,event_type,amount,currency,account_id,transaction_id,occurred_at,note)
   values(v_user,p_receivable_id,p_event_type,round(p_amount,2),coalesce(p_currency,'PHP'),p_account_id,p_transaction_id,coalesce(p_occurred_at,now()),left(p_note,1000))
