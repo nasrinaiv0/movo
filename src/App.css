@@ -2396,3 +2396,117 @@ button.account-tile:active { transform: scale(.98); }
 .acct-network-preview img { display: block; width: 24px; height: 24px; object-fit: contain; }
 .acct-network-other { color: var(--muted); font-size: 15px; }
 @media (max-width: 360px) { .acct-network-grid { grid-template-columns: 1fr; } }
+
+
+/* Accent-aware dashboard surfaces, adaptive money-flow graph, and compact catalog search */
+.movo-app .balance-card,
+.movo-app .stat-card,
+.movo-app .mini-card {
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+}
+.movo-app .balance-card {
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-solid));
+}
+.movo-app .stat-card,
+.movo-app .mini-card {
+  background: color-mix(in srgb, var(--accent) 4%, var(--card-solid));
+}
+.movo-app .balance-card .balance-art {
+  opacity: .72;
+}
+.movo-app .flow-lines .in-line,
+.movo-app .flow-lines .out-line {
+  stroke: color-mix(in srgb, var(--text) 82%, var(--accent));
+}
+.movo-app .flow-legend .in,
+.movo-app .flow-legend .out {
+  background: color-mix(in srgb, var(--text) 82%, var(--accent));
+}
+.movo-app .search-field {
+  display: flex;
+  min-width: 0;
+  gap: 10px;
+  border: 1px solid transparent;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.movo-app .search-field > .movo-icon,
+.movo-app .search-field > svg {
+  flex: 0 0 auto;
+}
+.movo-app .search-field input {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  width: 0;
+  max-width: 100%;
+  padding: 13px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  outline: none;
+}
+.movo-app .search-field input::placeholder {
+  opacity: 1;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.movo-app .search-field:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--accent) 4%, var(--field));
+}
+.movo-app .catalog-row {
+  min-width: 0;
+  gap: 12px;
+}
+.movo-app .catalog-row .sub-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+}
+.movo-app .catalog-row .sub-icon.has-logo {
+  display: grid;
+  place-items: center;
+  padding: 3px;
+  background: #fff;
+}
+.movo-app .catalog-row .sub-icon.has-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.movo-app .catalog-row .sub-icon.has-logo.fill img {
+  object-fit: cover;
+}
+.movo-app .catalog-row .sub-main {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+.movo-app .catalog-row .sub-main strong,
+.movo-app .catalog-row .sub-main small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.movo-app .catalog-row .sub-main strong {
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.movo-app .catalog-row .sub-main small {
+  margin-top: 3px;
+  line-height: 1.3;
+}
+.movo-app .catalog-row > .movo-icon:last-child {
+  flex: 0 0 auto;
+  margin-inline-start: 4px;
+}
