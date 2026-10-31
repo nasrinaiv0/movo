@@ -158,6 +158,12 @@ begin
   return new;
 end $;
 
+drop trigger if exists financial_loans_owner_guard on public.financial_loans;
+create trigger financial_loans_owner_guard before insert or update on public.financial_loans
+for each row execute function public.assert_movo_finance_child_ownership();
+drop trigger if exists financial_receivables_owner_guard on public.financial_receivables;
+create trigger financial_receivables_owner_guard before insert or update on public.financial_receivables
+for each row execute function public.assert_movo_finance_child_ownership();
 drop trigger if exists loan_events_owner_guard on public.loan_events;
 create trigger loan_events_owner_guard before insert or update on public.loan_events
 for each row execute function public.assert_movo_finance_child_ownership();
@@ -246,16 +252,19 @@ begin
   if not found then raise exception 'account_not_found' using errcode = 'P0002'; end if;
   if v_account.account_type not in ('bank','e_wallet','cash') then raise exception 'goal_requires_spendable_account' using errcode = '22023'; end if;
   if v_account.currency <> coalesce(p_currency,'PHP') or v_goal.currency <> coalesce(p_currency,'PHP') then raise exception 'goal_currency_mismatch' using errcode = '22023'; end if;
-  if exists(select 1 from public.transactions where user_id=v_user and (account_id=p_account_id or transfer_to_account_id=p_account_id) and currency <> v_account.currency) then
+  if exists(select 1 from public.transactions where user_id=v_user and (account_id=p_account_id or transfer_to_account_id=p_account_id) and currency <> v_account.currency)
+     or exists(select 1 from public.accounting_postings where user_id=v_user and account_id=p_account_id and currency <> v_account.currency) then
     raise exception 'mixed_currency_account_requires_reconciliation' using errcode = '22023';
   end if;
-  select v_account.opening_balance + coalesce(sum(case
-    when transaction_type='income' and account_id=p_account_id then amount
-    when transaction_type='expense' and account_id=p_account_id then -amount
-    when transaction_type='transfer' and account_id=p_account_id then -amount
-    when transaction_type='transfer' and transfer_to_account_id=p_account_id then amount
-    else 0 end),0)
-    into v_balance from public.transactions where user_id=v_user and (account_id=p_account_id or transfer_to_account_id=p_account_id);
+  select v_account.opening_balance
+    + coalesce((select sum(case
+      when transaction_type='income' and account_id=p_account_id then amount
+      when transaction_type='expense' and account_id=p_account_id then -amount
+      when transaction_type='transfer' and account_id=p_account_id then -amount
+      when transaction_type='transfer' and transfer_to_account_id=p_account_id then amount
+      else 0 end) from public.transactions where user_id=v_user and (account_id=p_account_id or transfer_to_account_id=p_account_id)),0)
+    + coalesce((select sum(signed_amount) from public.accounting_postings where user_id=v_user and account_id=p_account_id),0)
+    into v_balance;
   select coalesce(sum(amount),0) into v_reserved from public.goal_allocations where user_id=v_user and account_id=p_account_id and status='allocated';
   if v_balance - v_reserved < round(p_amount,2) then raise exception 'insufficient_available_funds' using errcode = '22023'; end if;
   if p_transaction_id is not null and not exists(select 1 from public.transactions where id=p_transaction_id and user_id=v_user) then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
