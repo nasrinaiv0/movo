@@ -145,6 +145,47 @@ describe('NasrinAI consent and legal links', () => {
     expect(container.textContent).toContain('Here is your summary.');
   });
 
+  test('composer placeholder starts with a helpful NasrinAI example', () => {
+    const prompt = container.querySelector('#movo-ai-prompt');
+    expect(prompt.getAttribute('placeholder')).toContain('Ask NasrinAI');
+  });
+
+  test('clicking Briefing automatically sends a useful prompt to chat', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ conversationId: 'briefing-conversation', reply: 'Your financial briefing.' })
+    });
+    act(() => button('I understand').click());
+
+    await act(async () => {
+      button('Briefing').click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const post = global.fetch.mock.calls.find(([, options]) => options?.method === 'POST');
+    expect(post).toBeTruthy();
+    expect(JSON.parse(post[1].body).message).toBe('Give me a financial briefing based on my recent MOVO income, spending, balances, and budgets.');
+    expect(container.textContent).toContain('Your financial briefing.');
+  });
+
+  test('clicking Daily, Weekly, Monthly Trends automatically sends a trend prompt', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ conversationId: 'trends-conversation', reply: 'Your trends.' })
+    });
+    act(() => button('I understand').click());
+
+    await act(async () => {
+      button('Daily, Weekly, Monthly Trends').click();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    const post = global.fetch.mock.calls.find(([, options]) => options?.method === 'POST');
+    expect(post).toBeTruthy();
+    expect(JSON.parse(post[1].body).message).toBe('Analyze my actual MOVO transaction history and compare income, expenses, and net cash flow by day, week, and month. Use only available records, state the date ranges and totals clearly, and explain when there is insufficient historical data to identify a reliable trend. Do not estimate or invent transactions or figures.');
+    expect(container.textContent).toContain('Your trends.');
+  });
+
   test('does not append an old account response after switching users', async () => {
     let resolvePost;
     global.fetch.mockImplementation((url, options) => {

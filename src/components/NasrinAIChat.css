@@ -75,3 +75,53 @@ h2.movo-ai-rich-heading { font-size: 17.5px; } h3.movo-ai-rich-heading { font-si
 .movo-ai-user-text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .movo-ai-message.log { align-self: flex-start; background: none; box-shadow: none; padding: 0; border: 0; }
 .movo-ai-message.log .movo-ai-message-label { padding: 0 4px 6px; display: block; }
+
+/* Subtle, compact rotating examples keep the MOVO composer helpful without
+   competing with the user's message text. */
+.movo-ai-prompt-input {
+  font-size: 14px;
+}
+.movo-ai-prompt-input::placeholder {
+  opacity: .48;
+  font-size: 14px;
+  line-height: 1.45;
+}
+@media (max-width: 480px) {
+  .movo-ai-prompt-input::placeholder {
+    font-size: 12.5px;
+    opacity: .46;
+  }
+}
+
+/* Compact, tactile welcome suggestions with clear keyboard focus. */
+.movo-ai-suggestions button {
+  min-height: 72px;
+  transition: background-color 140ms ease, transform 140ms ease, opacity 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.movo-ai-suggestions button:active:not(:disabled) {
+  transform: scale(.99);
+}
+.movo-ai-suggestions button:focus-visible {
+  outline: 2px solid var(--accent, #8b9dff);
+  outline-offset: 3px;
+}
+.movo-ai-suggestions button:disabled {
+  cursor: wait;
+  opacity: .68;
+}
+@media (max-width: 480px) {
+  .movo-ai-suggestions {
+    gap: 10px;
+  }
+  .movo-ai-suggestions button {
+    min-height: 62px;
+    padding-block: 14px;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-ai-suggestions button {
+    transition: none;
+  }
+}

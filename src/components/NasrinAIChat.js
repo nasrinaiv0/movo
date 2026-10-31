@@ -10,6 +10,7 @@ import { Tile } from './ui';
 import { MovoMark } from './MovoLogo';
 import { SubIcon } from '../screens/Subscriptions';
 import { catalogFor } from '../lib/subscriptions';
+import { MOVO_FINANCIAL_SUGGESTIONS, MOVO_PLACEHOLDER_EXAMPLES } from '../lib/movoPrompts';
 
 const ackKey = (id) => `movo.ai.ack.v1.${id}`;
 const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) === '1'; } catch { return false; } };
@@ -61,6 +62,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [conversationId, setConversationId] = useState(null);
   const requestEpochRef = useRef(0);
   const [draft, setDraft] = useState('');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setPlaceholderIndex((index) => (index + 1) % MOVO_PLACEHOLDER_EXAMPLES.length), 2600);
+    return () => window.clearInterval(timer);
+  }, []);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const pendingVoiceTextsRef = useRef([]);
@@ -523,8 +529,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <h2>{tr('Your money, with context.')}</h2>
         <p>{tr('Ask about spending, income, categories, accounts, or budgets. NasrinAI receives a limited, user-scoped snapshot—not access to your MOVO database.')}</p>
         <div className="movo-ai-suggestions">
-          {['Spent 250 on Grab', 'Salary 50000', 'Summarize my recent spending', 'Which categories cost me the most?'].map((prompt) =>
-            <button key={prompt} type="button" onClick={() => { setDraft(prompt); inputRef.current?.focus(); }}><span>{prompt}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
+          {MOVO_FINANCIAL_SUGGESTIONS.map(({ label, prompt }) =>
+            <button key={label} type="button" onClick={() => send(null, prompt)} disabled={busy} aria-label={label}><span>{label}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
           )}
         </div>
       </div>}
@@ -550,7 +556,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         </div>}
         <label className="sr-only" htmlFor="movo-ai-prompt">{tr('Message NasrinAI')}</label>
         {/* Enter starts a new line; only the send button sends. */}
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr('Log “Grab 250” or ask NasrinAI…')} disabled={busy} enterKeyHint="enter" />
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
         <div className="movo-ai-composer-bar">
           <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
           <span className="movo-ai-composer-gap" />
