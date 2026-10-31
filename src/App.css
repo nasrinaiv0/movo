@@ -2510,3 +2510,40 @@ button.account-tile:active { transform: scale(.98); }
   flex: 0 0 auto;
   margin-inline-start: 4px;
 }
+
+
+/* Wallet controls follow the compact Transactions filter/action row. */
+.movo-app .wallet-chip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 14px;
+}
+.movo-app .wallet-chip-bar > .chip-row {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 0;
+  overflow-x: auto;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app .wallet-chip-bar > .round-button {
+  flex: 0 0 44px;
+  margin-left: auto;
+}
+.movo-app :is(.balance-card, .total-card, .stat-card, .mini-card) {
+  box-shadow: 0 1px 4px rgba(20, 24, 40, .035);
+  border-color: var(--line);
+}
+.movo-app.theme-dark :is(.balance-card, .total-card, .stat-card, .mini-card) {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .16);
+  border-color: var(--line);
+}
+.movo-app.glass-on :is(.balance-card, .total-card, .stat-card, .mini-card) {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 2px 8px rgba(var(--glass-ink), .045);
+}
+.movo-app.theme-dark.glass-on :is(.balance-card, .total-card, .stat-card, .mini-card) {
+  box-shadow: inset 0 .5px 0 rgba(255,255,255,.06);
+}

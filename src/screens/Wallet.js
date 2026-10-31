@@ -106,12 +106,9 @@ export default function Wallet({ c }) {
 
   return <>
     <RootHeader title={tr('Wallet')} subtitle={tr('Your accounts, cards and balances.')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
-    <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(key) }))} value={walletFilter} onChange={setWalletFilter} />
-    <div className="wallet-tools" role="toolbar" aria-label={tr('Wallet view')}>
-      <button type="button" className="tool-pill" onClick={() => setSheet({ name: 'walletView' })} aria-label={tr('Sort and view options')}><Icon name="sort" size={15} />{tr(SORTS.find(x => x[0] === wv.sort)?.[1] || '')}</button>
-      <div className="tool-seg" role="group" aria-label={tr('Layout')}>{VIEWS.map(([key, icon, label]) => <button type="button" key={key} aria-pressed={wv.view === key} aria-label={tr('{name} view', { name: tr(label) })} onClick={() => setWv({ view: key })}><Icon name={icon} size={16} /></button>)}</div>
-      {walletFilter === 'All' && <button type="button" className="tool-pill icon" onClick={() => setEditing(v => !v)} aria-pressed={editing} aria-label={tr('Customize wallet')}><Icon name="edit" size={15} /></button>}
-      <button type="button" className="tool-pill icon" onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))} aria-label={tr('New account')} title={tr('New account')}><Icon name="plus" size={16} /></button>
+    <div className="chip-bar wallet-chip-bar">
+      <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(key) }))} value={walletFilter} onChange={setWalletFilter} />
+      <button type="button" className="round-button accent" aria-label={tr('New account')} title={tr('New account')} onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
     </div>
 
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
