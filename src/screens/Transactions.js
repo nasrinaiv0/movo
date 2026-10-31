@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
 import { money, shown, monthRange, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { activityNetAmount } from '../lib/financeCalculations';
 
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
 const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
@@ -16,7 +17,7 @@ export function sortList(list, sort) {
   if (sort === 'Account') return copy.sort((a, b) => (a.accountName || '').localeCompare(b.accountName || ''));
   return copy;
 }
-const net = (list) => list.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : t.amount), 0);
+const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
 
 export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
