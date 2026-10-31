@@ -47,7 +47,7 @@ function toMascot(file) {
 }
 
 export default function Home({ c }) {
-  const { show, setShow, stats, deltas, breakdown, recent, refDate, homeMonthKey, setHomeMonthKey, homeYears = [], homeMonthStats, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
+  const { show, setShow, stats, deltas, breakdown, recent, refDate, homeRefDate, homeMonthKey, setHomeMonthKey, homeYears = [], homeMonthStats, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
   const [editing, setEditing] = useState(false);
   const startEditing = () => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } };
   const [mascotSheet, setMascotSheet] = useState(false);
@@ -93,7 +93,7 @@ export default function Home({ c }) {
         {size !== 'S' && <Trend value={t.delta} />}
       </button>)}
     </section> },
-    { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={refDate} show={show} variant={style} /> },
+    { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={homeRefDate || refDate} show={show} variant={style} /> },
     { id: 'budgets', label: tr('Budgets & plans'), node: ({ size }) => <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} size={size} /> },
     { id: 'subscriptions', label: tr('Upcoming renewals'), node: ({ size }) => <section aria-label={tr('Upcoming renewals')}>
       <SectionTitle action={c.subSummary?.activeCount ? tr('See All') : tr('Add')} onAction={() => go('Subscriptions')}>{tr('Upcoming Renewals')}</SectionTitle>
