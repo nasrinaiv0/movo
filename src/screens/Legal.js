@@ -119,6 +119,11 @@ export function PrivacyPolicy({ c }) {
       <p><strong>{tr('Important:')}</strong> {tr('Before relying on the service for sensitive financial information, review the disclosures and remember that cloud security, deletion, retention, and provider controls must be verified against actual implementation.')}</p>
     </section>
     <section className="legal-section">
+      <h2>{tr('Third-party brands and logos')}</h2>
+      <p>{tr('MOVO is not affiliated with, sponsored by, partnered with, endorsed by, or advertising on behalf of any institution, merchant, or company.')}</p>
+      <p>{tr('Except for your own records, third-party materials, and components governed by their own licences, the MOVO name, original interface, software, and documentation are owned by the service operator or its licensors. All third-party names, logos, product names, trademarks, and service marks remain the property of their respective owners. Where shown, third-party names or logos are used only to identify or describe a user-entered institution, merchant, payment method, or related service; their display does not mean that MOVO is affiliated with, sponsored by, partnered with, endorsed by, or advertising on behalf of that institution, merchant, or company. No ownership of a third-party mark is claimed. Display does not grant MOVO any ownership rights in those marks, and use must be limited to what is lawful. A rights holder or authorized representative may request review or removal of a name or logo at any time by emailing support@nasrinai.com with the item and relevant details. MOVO will review the request promptly and take appropriate action, including removal where warranted. Users must not upload or use logos or artwork they are not authorized to use. You may use MOVO for your own lawful personal tracking. Do not copy, redistribute, reverse engineer, or misuse MOVO-owned materials except where applicable law permits it.')}</p>
+    </section>
+    <section className="legal-section">
       <h2>{tr('2. Information MOVO may handle')}</h2>
       <ul>
         <li><strong>{tr('Account information:')}</strong> {tr('email address and, if provided, display name and profile details returned by your sign-in provider.')}</li>
