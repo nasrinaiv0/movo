@@ -48,6 +48,14 @@ describe('MOVO transaction routing', () => {
     expect(activityNetAmount({ type: 'transfer', amount: 70 })).toBe(0);
   });
 
+  test('linked debit cards are not counted as a second savings asset', () => {
+    expect(savingsBalance([
+      { id: 'bank', account_type: 'bank', balance: 8500, currency: 'PHP' },
+      { id: 'debit-card', account_type: 'card', cardKind: 'debit', linkedAccountId: 'bank', balance: 8500, currency: 'PHP' },
+      { id: 'credit-card', account_type: 'card', cardKind: 'credit', balance: -1200, currency: 'PHP' },
+    ], amount => amount, { 'credit-card': { cardKind: 'credit' }, 'debit-card': { cardKind: 'debit' } })).toBe(8500);
+  });
+
   test('savings includes bank accounts but excludes physical cash, archived accounts and credit cards', () => {
     expect(savingsBalance([
       { id: 'bank', account_type: 'bank', balance: 1200, currency: 'PHP' },
