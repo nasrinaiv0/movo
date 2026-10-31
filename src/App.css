@@ -2565,3 +2565,25 @@ button.account-tile:active { transform: scale(.98); }
 @keyframes wallet-menu-pop-in { from { opacity: 0; transform: translateY(18px) scale(.965); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes wallet-menu-pop-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(8px) scale(.975); } }
 @media (prefers-reduced-motion: reduce) { .sheet.wallet-menu-motion, .sheet.wallet-menu-motion.closing { animation: none; } }
+
+
+/* Wallet controls: preserve every filter button at its natural width and scroll the row horizontally. */
+.movo-app .chip-bar { min-width: 0; }
+.movo-app .chip-bar > .chip-row { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x; scroll-snap-type: x proximity; }
+.movo-app .chip-bar > .chip-row button[data-chip] { flex: 0 0 auto; min-width: max-content; padding-inline: 16px; white-space: nowrap; overflow: visible; text-overflow: clip; scroll-snap-align: start; }
+.movo-app .chip-bar > .wallet-menu-button, .movo-app .chip-bar > .round-button.accent { flex: 0 0 44px; }
+.movo-app .seg-control button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.movo-app .seg-control button svg { flex: 0 0 auto; }
+.movo-app .seg-control button span { display: inline-block; }
+/* Landscape and portrait use the same card artwork and fields, adapted to their orientation. */
+.movo-app .credit-card.orientation-portrait { aspect-ratio: 540 / 856; }
+.movo-app .credit-card.orientation-portrait .cc-face { padding: 7.5cqw; }
+.movo-app .credit-card.orientation-portrait .cc-top { align-items: flex-start; flex-direction: column; gap: 5cqw; }
+.movo-app .credit-card.orientation-portrait .cc-logo { align-items: flex-start; }
+.movo-app .credit-card.orientation-portrait .cc-mid { gap: 3cqw; }
+.movo-app .credit-card.orientation-portrait .cc-bottom { align-items: flex-start; flex-direction: column; gap: 2cqw; }
+.movo-app .credit-card.orientation-portrait .cc-name { font-size: 5.2cqw; }
+.movo-app .credit-card.orientation-portrait .cc-number { font-size: 5.2cqw; }
+.movo-app .format-pick .credit-card { width: 100%; }
+.movo-app .format-pick .credit-card.orientation-portrait { max-width: 150px; align-self: center; }
+@media (prefers-reduced-motion: reduce) { .movo-app .chip-bar > .chip-row { scroll-behavior: auto; } }
