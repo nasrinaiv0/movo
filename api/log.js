@@ -19,14 +19,19 @@ function clients() {
 function bearer(req) { const match = /^Bearer\s+(.+)$/i.exec(req.headers.authorization || ''); return match ? match[1].trim() : ''; }
 function accountFor(accounts, hint) {
   const normalized = cleanText(hint, 100).toLowerCase();
-  if (normalized) {
-    const matches = accounts.filter((a) => {
-      const name = String(a.name || '').toLowerCase(), institution = String(a.institution_name || '').toLowerCase();
-      return name === normalized || institution === normalized || normalized.includes(name) || name.includes(normalized) || (institution && (normalized.includes(institution) || institution.includes(normalized)));
-    });
-    return matches.length === 1 ? matches[0] : null;
-  }
-  return accounts.length === 1 ? accounts[0] : null;
+  if (!normalized) return accounts.length === 1 ? accounts[0] : null;
+  const names = accounts.map((a) => ({ account: a, name: String(a.name || '').toLowerCase() }));
+  const exact = names.filter((x) => x.name === normalized);
+  if (exact.length === 1) return exact[0].account;
+  if (exact.length > 1) return null;
+  const partial = names.filter((x) => x.name && (normalized.includes(x.name) || x.name.includes(normalized)));
+  if (partial.length === 1) return partial[0].account;
+  if (partial.length > 1) return null;
+  const institution = accounts.filter((a) => {
+    const value = String(a.institution_name || '').toLowerCase();
+    return value && (normalized === value || normalized.includes(value) || value.includes(normalized));
+  });
+  return institution.length === 1 ? institution[0] : null;
 }
 function idempotencyKey({ source, amount, merchant, card, occurredAt, reference }) {
   const stable = reference ? `${source}|ref:${reference.toLowerCase()}` : [source, amount.toFixed(2), merchant.toLowerCase(), card.toLowerCase(), String(Math.floor(Date.parse(occurredAt) / 60000))].join('|');
