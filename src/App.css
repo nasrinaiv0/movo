@@ -2565,3 +2565,143 @@ button.account-tile:active { transform: scale(.98); }
 @keyframes wallet-menu-pop-in { from { opacity: 0; transform: translateY(18px) scale(.965); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes wallet-menu-pop-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(8px) scale(.975); } }
 @media (prefers-reduced-motion: reduce) { .sheet.wallet-menu-motion, .sheet.wallet-menu-motion.closing { animation: none; } }
+
+
+/* Wallet controls: preserve every filter button at its natural width and scroll the row horizontally. */
+.movo-app .chip-bar { min-width: 0; }
+.movo-app .chip-bar > .chip-row { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; touch-action: pan-x; scroll-snap-type: x proximity; }
+.movo-app .chip-bar > .chip-row button[data-chip] { flex: 0 0 auto; min-width: max-content; padding-inline: 16px; white-space: nowrap; overflow: visible; text-overflow: clip; scroll-snap-align: start; }
+.movo-app .chip-bar > .wallet-menu-button, .movo-app .chip-bar > .round-button.accent { flex: 0 0 44px; }
+.movo-app .seg-control button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.movo-app .seg-control button svg { flex: 0 0 auto; }
+.movo-app .seg-control button span { display: inline-block; }
+/* Landscape and portrait use the same card artwork and fields, adapted to their orientation. */
+.movo-app .credit-card.orientation-portrait { aspect-ratio: 540 / 856; }
+.movo-app .credit-card.orientation-portrait .cc-face { padding: 7.5cqw; }
+.movo-app .credit-card.orientation-portrait .cc-top { align-items: flex-start; flex-direction: column; gap: 5cqw; }
+.movo-app .credit-card.orientation-portrait .cc-logo { align-items: flex-start; }
+.movo-app .credit-card.orientation-portrait .cc-mid { gap: 3cqw; }
+.movo-app .credit-card.orientation-portrait .cc-bottom { align-items: flex-start; flex-direction: column; gap: 2cqw; }
+.movo-app .credit-card.orientation-portrait .cc-name { font-size: 5.2cqw; }
+.movo-app .credit-card.orientation-portrait .cc-number { font-size: 5.2cqw; }
+.movo-app .format-pick .credit-card { width: 100%; }
+.movo-app .format-pick .credit-card.orientation-portrait { max-width: 150px; align-self: center; }
+@media (prefers-reduced-motion: reduce) { .movo-app .chip-bar > .chip-row { scroll-behavior: auto; } }
+
+
+/* PR #115: true portrait payment-card layout for Wallet account collections. */
+.movo-app .wallet-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  justify-items: center;
+  gap: clamp(16px, 2.2vw, 28px);
+  padding: 12px clamp(4px, 1vw, 12px) 30px;
+  min-width: 0;
+}
+.movo-app .wallet-card-item {
+  display: block;
+  width: 100%;
+  max-width: 248px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--cr, 22px);
+  background: transparent;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.movo-app .wallet-card-item > .credit-card {
+  width: 100%;
+  aspect-ratio: 856 / 540;
+  min-height: 0;
+  border-radius: clamp(15px, 1.6vw, 22px);
+  box-shadow:
+    0 2px 5px rgba(16, 24, 40, .10),
+    0 8px 18px rgba(16, 24, 40, .14),
+    0 18px 30px rgba(16, 24, 40, .10);
+  transition: box-shadow .22s ease, transform .22s ease;
+}
+.movo-app .wallet-card-item:hover > .credit-card {
+  transform: translateY(-2px);
+  box-shadow:
+    0 3px 7px rgba(16, 24, 40, .12),
+    0 12px 24px rgba(16, 24, 40, .17),
+    0 22px 34px rgba(16, 24, 40, .12);
+}
+.movo-app .wallet-card-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait {
+  aspect-ratio: 54 / 85.6;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait .cc-face {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 7.5cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait .cc-top {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4cqw;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait .cc-mid {
+  align-items: center;
+  gap: 3cqw;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait .cc-bottom {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 2cqw;
+}
+@media (max-width: 760px) {
+  .movo-app .wallet-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .movo-app .wallet-card-item { max-width: 230px; }
+}
+@media (max-width: 390px) {
+  .movo-app .wallet-card-grid { gap: 12px; padding-inline: 2px; }
+  .movo-app .wallet-card-item > .credit-card.orientation-portrait .cc-name { font-size: 5cqw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .wallet-card-item > .credit-card { transition: none; }
+}
+
+/* PR #115 refinement: real portrait card proportions and balanced all-side elevation. */
+.movo-app .wallet-card-item {
+  max-width: 224px;
+  overflow: visible;
+  isolation: isolate;
+}
+.movo-app .wallet-card-item > .credit-card.orientation-portrait {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 54 / 85.6;
+  overflow: hidden;
+  border: 0;
+  box-shadow:
+    0 0 10px rgba(16, 24, 40, .09),
+    0 0 24px rgba(16, 24, 40, .08),
+    0 8px 16px rgba(16, 24, 40, .12),
+    0 18px 28px rgba(16, 24, 40, .09);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.movo-app .wallet-card-item:hover > .credit-card.orientation-portrait {
+  box-shadow:
+    0 0 12px rgba(16, 24, 40, .10),
+    0 0 28px rgba(16, 24, 40, .09),
+    0 12px 22px rgba(16, 24, 40, .15),
+    0 22px 34px rgba(16, 24, 40, .11);
+}
+@media (max-width: 760px) {
+  .movo-app .wallet-card-item { max-width: 216px; }
+}
+@media (max-width: 390px) {
+  .movo-app .wallet-card-item { max-width: none; }
+}
