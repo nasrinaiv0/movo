@@ -6,6 +6,7 @@ import Icon, { NasrinMark } from './components/Icon';
 import { Sheet, Toggle } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
+import FinancialPlanning from './screens/FinancialPlanning';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
 import Menu from './screens/Menu';
@@ -79,8 +80,8 @@ const DEFAULTS = {
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
-const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
-const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const DEPTH = { FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit' };
@@ -920,6 +921,7 @@ function App() {
   };
 
   const c = {
+    refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
@@ -956,6 +958,7 @@ function App() {
   const screen = (() => {
     switch (view) {
       case 'Wallet': return <Wallet c={c} />;
+      case 'FinancialPlanning': return <FinancialPlanning c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
       case 'Menu': return <Menu c={c} />;
