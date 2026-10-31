@@ -52,7 +52,12 @@ export default function CardArt({ a, show, styleId, holder, preview, compact }) 
     <div className="cc-face">
     <div className="cc-top">
       <span className="cc-logo"><i aria-hidden="true">{(a.name || '?').trim().charAt(0).toUpperCase()}</i><span className="cc-name">{a.name}</span></span>
-      <span className="cc-net">{a.institution_name}</span>
+      <span className="cc-net">
+        {a.institution_name}
+        {(/visa/i.test(a.brand || '') || /visa/i.test(a.name || '')) && <img className="cc-network-logo" src="https://www.google.com/s2/favicons?domain=visa.com&sz=128" alt="Visa" width="28" height="28" loading="lazy" referrerPolicy="no-referrer" />}
+        {(/mastercard/i.test(a.brand || '') || /mastercard/i.test(a.name || '')) && <img className="cc-network-logo" src="https://www.google.com/s2/favicons?domain=mastercard.com&sz=128" alt="Mastercard" width="28" height="28" loading="lazy" referrerPolicy="no-referrer" />}
+        {(/amex|american express/i.test(a.brand || '') || /amex|american express/i.test(a.name || '')) && <img className="cc-network-logo" src="https://www.google.com/s2/favicons?domain=americanexpress.com&sz=128" alt="American Express" width="28" height="28" loading="lazy" referrerPolicy="no-referrer" />}
+      </span>
     </div>
     <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? tr('Credit') : tr('Debit')}</span>}</span>
     <div className="cc-bottom">
