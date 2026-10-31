@@ -13,7 +13,7 @@ import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLog
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
-export default function AccountSheet({ base = 'PHP', country = 'PH', form, setForm, editing, cloudMode, busy, error, onSave, onClose }) {
+export default function AccountSheet({ base = 'PHP', country = 'PH', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose }) {
   const [openStyle, setOpenStyle] = useState(false);
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
@@ -21,6 +21,9 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
   const [manualInstitution, setManualInstitution] = useState(!!form.institution_name && !INSTITUTIONS.some(item => item.country === (INSTITUTION_COUNTRIES.includes(country) ? country : 'PH') && item.name.toLowerCase() === form.institution_name.toLowerCase()));
   const institutionOptions = useMemo(() => searchInstitutions(institutionCountry, institutionQuery, form.account_type), [institutionCountry, institutionQuery, form.account_type]);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
+  const bankAccounts = accounts.filter(account => account.account_type === 'bank' && !account.is_archived);
+  const debitCard = form.account_type === 'card' && form.cardKind !== 'credit';
+  const linkedBank = bankAccounts.find(account => account.id === form.linkedBankId);
   const [pad, setPad] = useState(false);
   const meta = typeMeta(form.account_type);
   const color = form.color || meta.color; const icon = form.icon || meta.icon;
@@ -63,6 +66,14 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       {form.account_type === 'card' && <>
         <span className="acct-label">{tr('Card kind')}</span>
         <div className="seg-control two" role="group" aria-label={tr('Card kind')}>{[['debit', 'Debit'], ['credit', 'Credit']].map(([k, l]) => <button type="button" key={k} className={form.cardKind === k ? 'selected' : ''} aria-pressed={form.cardKind === k} onClick={() => set({ cardKind: k })}>{l}</button>)}</div>
+        {form.cardKind !== 'credit' && <div className="acct-linked-bank">
+          <label className="acct-label" htmlFor="acct-linked-bank">{tr('Linked bank account')}</label>
+          {bankAccounts.length ? <select id="acct-linked-bank" className="acct-input" value={form.linkedBankId || ''} onChange={e => set({ linkedBankId: e.target.value })} required aria-describedby="acct-linked-bank-hint">
+            <option value="">{tr('Choose a bank account')}</option>
+            {bankAccounts.map(account => <option key={account.id} value={account.id}>{account.name} · {account.institution_name || tr('Bank account')} ({account.currency || base})</option>)}
+          </select> : <p className="acct-hint" role="status">{tr('Add a bank account before creating a debit card. Credit cards can be added separately.')}</p>}
+          <p className="acct-hint" id="acct-linked-bank-hint">{tr('The debit card shares this bank account’s balance. Card transactions update the linked account and are never counted twice.')}</p>
+        </div>}
         <label className="acct-label" htmlFor="acct-card-network">{tr('Card network')}</label>
         <select id="acct-card-network" className="acct-input" value={form.cardNetwork || ''} onChange={e => set({ cardNetwork: e.target.value })}>
           <option value="">{tr('Choose card network')}</option><option value="visa">Visa</option><option value="mastercard">Mastercard</option><option value="amex">American Express</option><option value="other">{tr('Other')}</option>
@@ -93,6 +104,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         </div>}
       </div>
 
+{debitCard ? <div className="acct-linked-balance"><span className="acct-label">{tr('Card balance')}</span><strong>{linkedBank ? linkedBank.name + ' · ' + (linkedBank.currency || base) : tr('Shared with linked bank account')}</strong><p className="acct-hint">{tr('This card has no separate balance. Its balance always matches the linked bank account.')}</p></div> : <>
       <label className="acct-label" htmlFor="acct-balance">{editing ? tr('Opening balance') : tr('Starting balance')}</label>
       <div className="acct-input with-action">
         <input id="acct-balance" inputMode="decimal" value={form.opening_balance} onChange={e => set({ opening_balance: e.target.value.replace(/[^\d.+\-−×÷*/]/g, '').replace(/\*/g, '×').replace(/\//g, '÷') })} placeholder={tr('Starting balance (e.g. 5,000)')} />
@@ -100,11 +112,12 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       </div>
       {pad && <div className="acct-pad">{PAD.map(k => <button type="button" key={k} className={/[÷×−+]/.test(k) ? 'op' : ''} onClick={() => set({ opening_balance: press(String(form.opening_balance || '').replace(/^0$/, ''), k) })}>{k === '⌫' ? <Icon name="backspace" size={18} /> : k}</button>)}<button type="button" className="eq" onClick={() => set({ opening_balance: Number.isFinite(balance) ? String(balance) : '' })}>=</button></div>}
       <p className="acct-hint">{tr('Your account\'s starting point before expenses, income, transfers and adjustments.')}</p>
+</>}
 
 
       {!cloudMode && <p className="acct-hint">{tr('Stored on this device only. Sign in to sync it to your MOVO account.')}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || !form.name.trim() || !Number.isFinite(balance)}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
+    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || !form.name.trim() || !Number.isFinite(balance) || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
   </form>}</Sheet>;
 }
