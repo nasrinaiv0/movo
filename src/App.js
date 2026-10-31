@@ -42,6 +42,7 @@ import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate, sho
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
+import { listAccountingPostings } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
@@ -176,6 +177,7 @@ function App() {
   const [prefs, setPrefs] = useState(readPrefs);
   const [fx, setFx] = useState(loadRates);
   const [cloudAccounts, setCloudAccounts] = useState([]);
+  const [cloudPostings, setCloudPostings] = useState([]);
   const [cloudBudgets, setCloudBudgets] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions());
@@ -273,8 +275,8 @@ function App() {
     if (!user) return;
     setBusy(true); setError('');
     try {
-      const [a, t] = await Promise.all([listAccounts(), listTransactions()]);
-      setCloudAccounts(a || []); setRawTxs(t || []); setCloudMode(true);
+      const [a, t, postings] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => [])]);
+      setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudMode(true);
       listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
     } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
@@ -309,6 +311,7 @@ function App() {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
         setCloudAccounts([]);
+        setCloudPostings([]);
         setRawTxs(pending?.transactions || loadLocalTransactions());
         setLocalAccounts(pending?.accounts || loadLocalAccounts());
       }
@@ -326,9 +329,9 @@ function App() {
     const st = prefs.accountStyles?.[a.id] || {};
     const currency = a.currency || 'PHP';
     const opening = cloudMode ? Number(a.opening_balance || 0) : Number(a.opening_balance ?? a.balance ?? 0);
-    const balance = accountBalance(a, txs, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
+    const balance = accountBalance(a, cloudMode ? [...txs, ...cloudPostings] : txs, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
     return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency };
-  }), [baseAccounts, txs, cloudMode, prefs.accountStyles, rates]);
+  }), [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -908,6 +911,7 @@ function App() {
       setSession(null);
       setCloudMode(false);
       setCloudAccounts([]);
+      setCloudPostings([]);
       setRawTxs(pending?.transactions || loadLocalTransactions());
       setLocalAccounts(pending?.accounts || loadLocalAccounts());
       go('Home');
