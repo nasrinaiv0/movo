@@ -61,6 +61,12 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [conversationId, setConversationId] = useState(null);
   const requestEpochRef = useRef(0);
   const [draft, setDraft] = useState('');
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const placeholderExamples = ['Ask NasrinAI to… “check expenses”', 'Ask NasrinAI about “money flow”', 'Ask NasrinAI for trends', 'Ask NasrinAI for forecasting', 'Ask NasrinAI for average expenses', 'Ask NasrinAI anything about your money…'];
+  useEffect(() => {
+    const timer = window.setInterval(() => setPlaceholderIndex((index) => (index + 1) % placeholderExamples.length), 2600);
+    return () => window.clearInterval(timer);
+  }, []);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const pendingVoiceTextsRef = useRef([]);
@@ -555,7 +561,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         </div>}
         <label className="sr-only" htmlFor="movo-ai-prompt">{tr('Message NasrinAI')}</label>
         {/* Enter starts a new line; only the send button sends. */}
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr('Log “Grab 250” or ask NasrinAI…')} disabled={busy} enterKeyHint="enter" />
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr(placeholderExamples[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
         <div className="movo-ai-composer-bar">
           <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
           <span className="movo-ai-composer-gap" />
