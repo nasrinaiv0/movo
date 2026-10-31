@@ -47,6 +47,7 @@ describe('MOVO transaction routing', () => {
       { id: 'cash', account_type: 'cash', balance: 300, currency: 'PHP' },
       { id: 'archived', account_type: 'bank', balance: 900, currency: 'PHP', is_archived: true },
       { id: 'credit', account_type: 'card', balance: 50000, currency: 'PHP' },
+      { id: 'unknown-card', account_type: 'card', balance: 700, currency: 'PHP' },
     ], amount => amount, { credit: { cardKind: 'credit' } })).toBe(1200);
   });
 });
