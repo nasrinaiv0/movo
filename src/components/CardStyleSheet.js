@@ -15,8 +15,7 @@ const nameOf = (t) => (t.custom || t.video ? t.name : t.wallpaper ? `${tr(t.genr
 export default function CardStyleSheet({ account, show, holder, current, onPick, onClose }) {
   const custom = useCustomStickers();
   const [remote, setRemote] = useState([]);
-  const [remoteError, setRemoteError] = useState('');
-  useEffect(() => { let active = true; listPremiumStickers().then(items => { if (active) { setRemote(items); setRemoteError(''); } }).catch(() => { if (active) setRemoteError(tr('Premium stickers could not be loaded. Check Storage access and try again.')); }); return () => { active = false; }; }, []);
+  useEffect(() => { let active = true; listPremiumStickers().then(items => { if (active) setRemote(items); }).catch(() => { if (active) setRemote([]); }); return () => { active = false; }; }, []);
   const [genre, setGenre] = useState('All');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);
@@ -59,8 +58,8 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
     </div>
     {!list.length && <p className="empty">{tr('No stickers match “{query}”.', { query })}</p>}
     {list.length > limit && <button type="button" className="manage-button" onClick={() => setLimit(limit + PAGE)}><Icon name="down" size={18} /> {tr('Show more ({n} left)', { n: list.length - limit })}</button>}
-    {(error || remoteError) && <p className="form-error" role="alert">{error || remoteError}</p>}
+    {error && <p className="form-error" role="alert">{error}</p>}
     <input ref={file} type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" hidden onChange={upload} aria-label={tr('Choose a sticker image')} />
-    <p className="style-note">{tr('Premium WebP stickers load from your premium-stickers Storage bucket. Your selection is saved with your account preferences. Uploading your own sticker remains local to this device.')}</p>
+    <p className="style-note">{tr('Upload PNG, JPEG, WebP, GIF or AVIF up to 10 MB. Images are cropped to the card ratio and saved on this device only; they are not synced to your cloud account.')}</p>
   </Sheet>;
 }
