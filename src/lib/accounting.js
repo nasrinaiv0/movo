@@ -19,7 +19,7 @@ export function loanOutstanding(loan, events = []) {
 
 export function receivableOutstanding(receivable, events = []) {
   if (!receivable) return 0;
-  const opening = amountOf(receivable.opening_amount ?? receivable.amount);
+  const opening = amountOf(receivable.opening_outstanding_amount ?? receivable.opening_amount ?? receivable.amount);
   const delta = (Array.isArray(events) ? events : []).filter(e => e.receivable_id === receivable.id).reduce((sum, e) => {
     const amount = amountOf(e.amount);
     if (e.event_type === 'lent' || e.event_type === 'amount_increased') return sum + amount;
