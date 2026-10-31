@@ -39,7 +39,7 @@ The current Vercel project has the existing client Supabase variables and a prod
 - `occurredAt` (optional ISO date)
 - `reference` (optional bank/transaction reference)
 
-The registration and revocation actions use `action: "register"` or `action: "revoke"`, a Supabase user access token in the Authorization header, and the device key in the JSON body.
+Registration uses `action: "register"`, a Supabase user access token in the Authorization header, and the device key in the JSON body. Revocation uses `action: "revoke"` with the old device key in the Authorization bearer value; possession of that key can revoke only itself, even if the user has signed out.
 
 ## Platform limitations
 
