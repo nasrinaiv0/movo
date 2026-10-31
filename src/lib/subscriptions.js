@@ -4,7 +4,7 @@
  * that started on the 31st renews on the last day of shorter months and returns to the 31st afterwards.
  */
 export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['yearly', 'Yearly']];
-export const SUB_CATEGORIES = ['Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Security & VPN', 'Gaming', 'Education', 'Health', 'Food & delivery', 'Shopping', 'Phone & internet', 'News', 'Other'];
+export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Shopping', 'Phone & internet', 'News', 'Other'];
 
 /*
  * name, category, brand colour, Simple Icons slug for the official mark ('' = initials), region ('' = global, 'US', 'PH'),
@@ -12,6 +12,13 @@ export const SUB_CATEGORIES = ['Entertainment', 'Music', 'AI Tools', 'Developer'
  * Marks are trademarks of their owners, shown only to identify each service (see BRAND_NOTICE in the UI).
  */
 export const CATALOG = [
+  // Social media and messaging
+  ['Facebook', 'Social media & messaging', '#0866ff', '', '', 'facebook.com'], ['Instagram', 'Social media & messaging', '#e1306c', '', '', 'instagram.com'],
+  ['WhatsApp', 'Social media & messaging', '#25d366', '', '', 'whatsapp.com'], ['Messenger', 'Social media & messaging', '#0866ff', '', '', 'messenger.com'],
+  ['TikTok', 'Social media & messaging', '#111111', '', '', 'tiktok.com'], ['Snapchat+', 'Social media & messaging', '#fffc00', '', '', 'snapchat.com'],
+  ['LinkedIn Premium', 'Social media & messaging', '#0a66c2', '', '', 'linkedin.com'], ['Telegram Premium', 'Social media & messaging', '#26a5e4', 'telegram', '', 'telegram.org'],
+  ['Discord Nitro', 'Social media & messaging', '#5865f2', 'discord', '', 'discord.com'], ['X Premium', 'Social media & messaging', '#000000', 'x', '', 'x.com'],
+  ['Reddit Premium', 'Social media & messaging', '#ff4500', 'reddit', '', 'reddit.com'], ['Pinterest Premium', 'Social media & messaging', '#e60023', 'pinterest', '', 'pinterest.com'],
   // Video
   ['Netflix', 'Entertainment', '#e50914', 'netflix', '', 'netflix.com'], ['YouTube Premium', 'Entertainment', '#ff0000', 'youtube', '', 'youtube.com'], ['Disney+', 'Entertainment', '#113ccf', '', '', 'disneyplus.com'],
   ['Prime Video', 'Entertainment', '#1a98ff', '', '', 'primevideo.com'], ['HBO Max', 'Entertainment', '#002be7', 'hbomax', '', 'hbomax.com'], ['Apple TV+', 'Entertainment', '#111111', 'appletv', '', 'tv.apple.com'],
@@ -28,7 +35,7 @@ export const CATALOG = [
   // AI
   ['ChatGPT Plus', 'AI Tools', '#10a37f', '', '', 'chatgpt.com'], ['ChatGPT Go', 'AI Tools', '#10a37f', '', '', 'chatgpt.com'], ['Claude', 'AI Tools', '#d97757', 'claude', '', 'claude.ai'],
   ['Gemini Pro', 'AI Tools', '#8e75b2', 'googlegemini', '', 'gemini.google.com'], ['Perplexity Pro', 'AI Tools', '#1fb8cd', 'perplexity', '', 'perplexity.ai'], ['Midjourney', 'AI Tools', '#222222', '', '', 'midjourney.com'],
-  ['Grammarly', 'AI Tools', '#027e6f', 'grammarly', '', 'grammarly.com'],
+  ['Grammarly', 'AI Tools', '#027e6f', 'grammarly', '', 'grammarly.com'], ['Microsoft Copilot Pro', 'AI Tools', '#0078d4', '', '', 'copilot.microsoft.com'], ['Poe', 'AI Tools', '#5b5bd6', '', '', 'poe.com'], ['ElevenLabs', 'AI Tools', '#111111', '', '', 'elevenlabs.io'],
   // Developer
   ['GitHub Copilot', 'Developer', '#24292f', 'githubcopilot', '', 'github.com'], ['GitHub Pro', 'Developer', '#181717', 'github', '', 'github.com'], ['Cursor', 'Developer', '#111111', 'cursor', '', 'cursor.com'],
   ['Vercel Pro', 'Developer', '#000000', 'vercel', '', 'vercel.com'], ['Netlify Pro', 'Developer', '#00ad9f', 'netlify', '', 'netlify.com'], ['JetBrains', 'Developer', '#000000', 'jetbrains', '', 'jetbrains.com'],
@@ -41,14 +48,14 @@ export const CATALOG = [
   ['X Premium', 'Productivity', '#000000', 'x', '', 'x.com'],
   ['Figma', 'Design', '#a259ff', 'figma', '', 'figma.com'], ['Canva Pro', 'Design', '#00c4cc', '', '', 'canva.com'], ['Adobe Creative Cloud', 'Design', '#da1f26', '', '', 'adobe.com'],
   ['Google One', 'Cloud storage', '#4285f4', 'googledrive', '', 'one.google.com'], ['iCloud+', 'Cloud storage', '#3693f3', 'icloud', '', 'icloud.com'], ['Dropbox', 'Cloud storage', '#0061fe', 'dropbox', '', 'dropbox.com'],
-  ['Box', 'Cloud storage', '#0061d5', 'box', '', 'box.com'], ['Proton', 'Cloud storage', '#6d4aff', 'proton', '', 'proton.me'],
+  ['Box', 'Cloud storage', '#0061d5', 'box', '', 'box.com'], ['Proton', 'Cloud storage', '#6d4aff', 'proton', '', 'proton.me'], ['MEGA', 'Cloud storage', '#d9272e', '', '', 'mega.io'],
   // Security
   ['1Password', 'Security & VPN', '#3b66bc', '1password', '', '1password.com'], ['Bitwarden', 'Security & VPN', '#175ddc', 'bitwarden', '', 'bitwarden.com'], ['Dashlane', 'Security & VPN', '#0e353d', 'dashlane', '', 'dashlane.com'],
   ['LastPass', 'Security & VPN', '#d32d27', 'lastpass', '', 'lastpass.com'], ['NordVPN', 'Security & VPN', '#4687ff', 'nordvpn', '', 'nordvpn.com'], ['ExpressVPN', 'Security & VPN', '#da3940', 'expressvpn', '', 'expressvpn.com'],
   ['Surfshark', 'Security & VPN', '#178a9e', 'surfshark', '', 'surfshark.com'], ['Proton VPN', 'Security & VPN', '#66deb1', 'protonvpn', '', 'protonvpn.com'], ['Ring Protect', 'Security & VPN', '#1c9ad6', 'ring', 'US', 'ring.com'],
   // Gaming
   ['Xbox Game Pass', 'Gaming', '#107c10', '', '', 'xbox.com'], ['PlayStation Plus', 'Gaming', '#0070d1', 'playstation', '', 'playstation.com'], ['Nintendo Switch Online', 'Gaming', '#e60012', '', '', 'nintendo.com'],
-  ['Apple Arcade', 'Gaming', '#111111', 'applearcade', '', 'apple.com'], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', '', 'ubisoft.com'], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', '', 'play.google.com'],
+  ['Apple Arcade', 'Gaming', '#111111', 'applearcade', '', 'apple.com'], ['Ubisoft+', 'Gaming', '#000000', 'ubisoft', '', 'ubisoft.com'], ['Google Play Pass', 'Gaming', '#414141', 'googleplay', '', 'play.google.com'], ['EA Play', 'Gaming', '#ff4747', '', '', 'ea.com'], ['Minecraft Realms', 'Gaming', '#62a44a', '', '', 'minecraft.net'], ['Roblox Premium', 'Gaming', '#111111', '', '', 'roblox.com'], ['GeForce NOW', 'Gaming', '#76b900', '', '', 'nvidia.com'],
   // Learning
   ['Duolingo Super', 'Education', '#58cc02', 'duolingo', '', 'duolingo.com'], ['Coursera Plus', 'Education', '#0056d2', 'coursera', '', 'coursera.org'], ['Udemy', 'Education', '#a435f0', 'udemy', '', 'udemy.com'],
   ['Skillshare', 'Education', '#00ff84', 'skillshare', '', 'skillshare.com'], ['MasterClass', 'Education', '#111111', '', 'US', 'masterclass.com'], ['Medium', 'Education', '#000000', 'medium', '', 'medium.com'], ['Patreon', 'Education', '#000000', 'patreon', '', 'patreon.com'],
