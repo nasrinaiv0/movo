@@ -25,30 +25,33 @@ export const linkTemplate = (origin, key, src = 'applepay') => `${origin}/#log?s
  * Builds a private iOS Shortcuts prompt. The prompt is copied only when the user selects a mode button.
  * mode="automatic" logs silently then shows a notification; mode="interactive" asks Log / Skip first.
  */
+/**
+ * Builds a private iOS Shortcuts prompt. mode="automatic" logs then notifies;
+ * mode="interactive" asks the user to choose Log or Skip.
+ */
 export const shortcutPrompt = (origin, key, mode = 'interactive') => {
   const shared = [
     'Create an iOS Shortcuts automation for MOVO transaction logging.',
     'Apple Pay trigger: Shortcuts > Automation > + > Transaction. Select Any Card or the cards I choose, select Run Immediately, and turn Notify When Run off if iOS offers that setting.',
-    'If creating a separate bank-notification automation, only use a notification trigger if this iOS version actually offers one. Otherwise explain that Shortcuts cannot trigger directly from that banking app notification on this device. Never guess missing transaction details.',
-    'Use Shortcut Input fields to set Amount, Merchant, Card or Account, and transaction date/reference if available. The request body is JSON, so do not URL-encode Merchant and do not put transaction details in the URL.',
+    'Only create a separate bank-notification automation if this iOS version actually offers a suitable trigger. Never guess missing transaction details.',
+    'Use Shortcut Input fields for Amount, Merchant, Card or Account, and transaction date/reference if available. Send JSON; do not URL-encode Merchant or put transaction details in the URL.',
     `Send the request to ${origin}/api/log using Get Contents of URL (never Open URLs), Method POST, Request Body JSON, and headers Content-Type: application/json and Authorization: Bearer ${key}.`,
-    'In the JSON body, map amount to Amount, merchant to Merchant, card to Card or Account, source to the literal applepay, occurredAt to transaction date if provided, and reference to transaction reference if provided. Omit optional values that are unavailable; do not enter bracketed labels as literal values.',
-    'Turn Show When Run off for the network action if that setting is available. Get Contents of URL sends the request without opening Safari.',
-    'MOVO must be signed in with cloud storage and this device key must be registered in Automatic logging settings before logging can succeed. Test with one small real transaction and verify exactly one expense is saved.'
+    'Map amount to Amount, merchant to Merchant, card to Card or Account, source to applepay, occurredAt to the transaction date if available, and reference to the transaction reference if available. Omit unavailable optional values.',
+    'Turn Show When Run off for the network action if available. Get Contents of URL sends the request without opening Safari.',
+    'MOVO must be signed in with cloud storage and this device key must be registered in Automatic logging settings. Test with one small real transaction and verify exactly one expense is saved.'
   ];
   if (mode === 'automatic') return [
-    'Create a fully automatic iOS Shortcuts transaction automation for MOVO. Do not add menus, Ask for Input, confirmation dialogs, or other actions that require a tap.',
+    'Create a fully automatic iOS Shortcuts transaction automation for MOVO. Do not add menus, Ask for Input, confirmation dialogs, or any action requiring a tap.',
     ...shared,
-    'After Get Contents of URL, add Show Notification. Set the title to “MOVO · Transaction logged” and the body to show the Amount and Merchant variables, for example “Logged [Amount] at [Merchant]”.',
-    'Do not show a success notification before the POST succeeds. If the request fails or the server response is not successful, show a failure notification instead and do not claim the transaction was logged.',
-    'This mode requires no manual choice after the automation trigger. It is not possible to guarantee every bank app exposes notification data or a suitable Shortcuts trigger; do not invent unsupported triggers.'
+    'After the POST, add Show Notification titled “MOVO · Transaction logged” with body “Logged [Amount] at [Merchant]”. Only show success after the server confirms success. On failure, show a failure notification and never claim it logged.',
+    'This mode needs no manual choice after the automation trigger. Do not invent unsupported bank-app triggers or assume notification data is available.'
   ].join(' ');
   return [
-    'Create an iOS Shortcuts transaction automation for MOVO with an interactive Log / Skip choice before any transaction is sent.',
+    'Create an iOS Shortcuts transaction automation for MOVO with an interactive Log / Skip choice before sending any transaction.',
     ...shared,
-    'Add Choose from Menu with prompt text “Log [Amount] transaction at [Merchant]?” and exactly two options: Log and Skip.',
-    'Under Skip, add Stop This Shortcut. Do not send a request and do not open MOVO.',
-    'Under Log, run the POST request described above. Show a success notification only after a successful response; if the request fails, show a failure notification and do not claim it was logged.'
+    'Add Choose from Menu with prompt “Log [Amount] transaction at [Merchant]?” and exactly two options: Log and Skip.',
+    'Under Skip, add Stop This Shortcut. Do not send a request or open MOVO.',
+    'Under Log, send the POST request described above. Show success only after a successful response; otherwise show a failure notification.'
   ].join(' ');
 };/** Constant-time comparison so the key can't be guessed by timing. */
 export function sameKey(a = '', b = '') {
