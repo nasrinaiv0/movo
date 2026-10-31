@@ -18,7 +18,7 @@ export const CATALOG = [
   ['TikTok', 'Social media & messaging', '#111111', '', '', 'tiktok.com'], ['Snapchat+', 'Social media & messaging', '#fffc00', '', '', 'snapchat.com'],
   ['LinkedIn Premium', 'Social media & messaging', '#0a66c2', '', '', 'linkedin.com'], ['Telegram Premium', 'Social media & messaging', '#26a5e4', 'telegram', '', 'telegram.org'],
   ['Discord Nitro', 'Social media & messaging', '#5865f2', 'discord', '', 'discord.com'], ['X Premium', 'Social media & messaging', '#000000', 'x', '', 'x.com'],
-  ['Reddit Premium', 'Social media & messaging', '#ff4500', 'reddit', '', 'reddit.com'], ['Pinterest Premium', 'Social media & messaging', '#e60023', 'pinterest', '', 'pinterest.com'],
+  ['Reddit Premium', 'Social media & messaging', '#ff4500', '', '', 'reddit.com'], ['Pinterest Premium', 'Social media & messaging', '#e60023', '', '', 'pinterest.com'],
   // Video
   ['Netflix', 'Entertainment', '#e50914', 'netflix', '', 'netflix.com'], ['YouTube Premium', 'Entertainment', '#ff0000', 'youtube', '', 'youtube.com'], ['Disney+', 'Entertainment', '#113ccf', '', '', 'disneyplus.com'],
   ['Prime Video', 'Entertainment', '#1a98ff', '', '', 'primevideo.com'], ['HBO Max', 'Entertainment', '#002be7', 'hbomax', '', 'hbomax.com'], ['Apple TV+', 'Entertainment', '#111111', 'appletv', '', 'tv.apple.com'],
@@ -55,7 +55,7 @@ export const CATALOG = [
   // Health, laundry, transport, household bills, insurance, pets and travel
   ['Apple Fitness+', 'Health', '#fa243c', '', '', 'apple.com'], ['Strava', 'Health', '#fc4c02', 'strava', '', 'strava.com'], ['Fitbit Premium', 'Health', '#00b0b9', '', '', 'fitbit.com'], ['MyFitnessPal Premium', 'Health', '#0066ee', '', '', 'myfitnesspal.com'], ['Calm', 'Health', '#5a7b8c', '', '', 'calm.com'], ['Headspace', 'Health', '#f47d31', '', '', 'headspace.com'],
   ['Laundry service', 'Laundry & cleaning', '#4f83cc', '', 'PH', ''], ['Laundryheap', 'Laundry & cleaning', '#00a3e0', '', '', 'laundryheap.com'], ['Rinse', 'Laundry & cleaning', '#2355d6', '', 'US', ' rinse.com'.trim()], ['CleanCloud', 'Laundry & cleaning', '#26a69a', '', '', 'cleancloudapp.com'],
-  ['Grab', 'Transport & mobility', '#00b14f', '', 'PH', 'grab.com'], ['Angkas', 'Transport & mobility', '#f9c80e', '', 'PH', 'angkas.com'], ['JoyRide', 'Transport & mobility', '#ed1c24', '', 'PH', 'joyride.com.ph'], ['Move It', 'Transport & mobility', '#f15a24', '', 'PH', 'moveit.com.ph'], ['Uber One', 'Transport & mobility', '#000000', '', '', 'uber.com'], ['Lyft Pink', 'Transport & mobility', '#ff00bf', '', 'US', 'lyft.com'],
+  ['Grab', 'Transport & mobility', '#00b14f', '', 'PH', 'grab.com'], ['Angkas', 'Transport & mobility', '#f9c80e', '', 'PH', 'angkas.com'], ['JoyRide', 'Transport & mobility', '#ed1c24', '', 'PH', 'joyride.com.ph'], ['Move It', 'Transport & mobility', '#f15a24', '', 'PH', 'moveit.com.ph'], ['Bolt Plus', 'Transport & mobility', '#34c759', '', '', 'bolt.eu'], ['Lyft Pink', 'Transport & mobility', '#ff00bf', '', 'US', 'lyft.com'],
   ['Meralco', 'Utilities & bills', '#f58220', '', 'PH', 'meralco.com.ph'], ['PLDT Home', 'Utilities & bills', '#e31837', '', 'PH', 'pldthome.com'], ['Globe One', 'Utilities & bills', '#0070c0', '', 'PH', 'globe.com.ph'], ['Converge ICT', 'Utilities & bills', '#f58220', '', 'PH', 'convergeict.com'], ['Manila Water', 'Utilities & bills', '#0086c9', '', 'PH', 'manilawater.com'], ['Davao Light', 'Utilities & bills', '#f58220', '', 'PH', 'davaolight.com'],
   ['AppleCare+', 'Insurance', '#555555', '', '', 'apple.com'], ['Lemonade', 'Insurance', '#ff0083', '', 'US', 'lemonade.com'], ['Geico', 'Insurance', '#00529b', '', 'US', 'geico.com'],
   ['Chewy Autoship', 'Pets', '#1c49c2', '', 'US', 'chewy.com'], ['Petco Vital Care', 'Pets', '#001952', '', 'US', 'petco.com'],
@@ -67,7 +67,7 @@ export const CATALOG = [
   ['Duolingo Super', 'Education', '#58cc02', 'duolingo', '', 'duolingo.com'], ['Coursera Plus', 'Education', '#0056d2', 'coursera', '', 'coursera.org'], ['Udemy', 'Education', '#a435f0', 'udemy', '', 'udemy.com'],
   ['Skillshare', 'Education', '#00ff84', 'skillshare', '', 'skillshare.com'], ['MasterClass', 'Education', '#111111', '', 'US', 'masterclass.com'], ['Medium', 'Education', '#000000', 'medium', '', 'medium.com'], ['Patreon', 'Education', '#000000', 'patreon', '', 'patreon.com'],
   // Health
-  ['Peloton', 'Health', '#181a1d', 'peloton', 'US', 'onepeloton.com'], ['Strava', 'Health', '#fc4c02', 'strava', '', 'strava.com'], ['Headspace', 'Health', '#f47d31', 'headspace', '', 'headspace.com'], ['Calm', 'Health', '#4a90e2', '', '', 'calm.com'],
+  ['Peloton', 'Health', '#181a1d', 'peloton', 'US', 'onepeloton.com'], ['WHOOP', 'Health', '#000000', '', 'US', 'whoop.com'], ['Noom', 'Health', '#5e8c31', '', 'US', 'noom.com'], ['BetterHelp', 'Health', '#1f8f8a', '', 'US', 'betterhelp.com'],
   ['Planet Fitness', 'Health', '#5c2d91', '', 'US', 'planetfitness.com'], ['Anytime Fitness', 'Health', '#5e2d91', '', 'PH', 'anytimefitness.ph'], ['Gym membership', 'Health', '#ef6c00', '', '', ''],
   // Food, delivery and shopping
   ['DoorDash DashPass', 'Food & delivery', '#ff3008', 'doordash', 'US', 'doordash.com'], ['Uber One', 'Food & delivery', '#000000', 'uber', '', 'uber.com'], ['Instacart+', 'Food & delivery', '#43b02a', 'instacart', 'US', 'instacart.com'],
