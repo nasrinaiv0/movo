@@ -21,7 +21,18 @@ export const linkTemplate = (origin, key, src = 'applepay') => `${origin}/#log?s
  * A plain-language prompt for the iPhone Shortcuts "Describe a shortcut" box (Apple Intelligence). It is kept in
  * English on purpose: it is read by Shortcuts, not shown as interface text. It carries the person's private link.
  */
-export const shortcutPrompt = (origin, key) => `Open this URL: ${linkTemplate(origin, key)} — before opening it, replace AMOUNT with the Amount, MERCHANT with the Merchant and CARD with the Card from the Shortcut Input (the Apple Pay transaction), URL-encoding each value. Run it without asking and without showing a notification.`;
+export const shortcutPrompt = (origin, key) => [
+  'Create an iOS Shortcuts transaction automation. Keep this prompt hidden in MOVO; it is only copied by the Copy prompt for Shortcuts button.',
+  'Apple Pay: Shortcuts > Automation > + > Transaction. Choose Any Card or selected cards and Run Immediately. Turn Notify When Run off if the option is available.',
+  'For bank alerts, create a separate App Notification automation for the selected banking apps if supported by this iOS version. Notification formats vary; only use amount, merchant or sender, and account/card values actually present in the notification. Never invent missing values.',
+  'Create a shortcut that extracts Amount and Merchant from Shortcut Input (or notification content). URL Encode Merchant and set the result to EncodedMerchant. Extract Card or Account when available and set Card.',
+  'Add Choose from Menu with prompt: Log [Amount] transaction at [Merchant]? Add Log and Skip options.',
+  'Under Skip, add Stop This Shortcut. Do not send a request or open a URL.',
+  'Under Log, use the MOVO review link below after replacing its placeholders with the actual Shortcuts variables and URL-encoding text values:',
+  linkTemplate(origin, key),
+  'Important: MOVO currently reads this link from a browser URL fragment (#log). It opens MOVO review; it is not a background API endpoint. Get Contents of URL cannot save a transaction using this fragment. Silent background saving needs a separately implemented and secured MOVO API endpoint. Until that endpoint is implemented and tested, open the MOVO review link and confirm the transaction there.',
+  'Test both menu branches: Log should open MOVO with the amount and merchant prefilled; Skip should stop without opening MOVO.'
+].join(' ');
 
 /** Constant-time comparison so the key can't be guessed by timing. */
 export function sameKey(a = '', b = '') {
