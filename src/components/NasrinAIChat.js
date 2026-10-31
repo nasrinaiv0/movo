@@ -523,8 +523,13 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <h2>{tr('Your money, with context.')}</h2>
         <p>{tr('Ask about spending, income, categories, accounts, or budgets. NasrinAI receives a limited, user-scoped snapshot—not access to your MOVO database.')}</p>
         <div className="movo-ai-suggestions">
-          {['Spent 250 on Grab', 'Salary 50000', 'Summarize my recent spending', 'Which categories cost me the most?'].map((prompt) =>
-            <button key={prompt} type="button" onClick={() => { setDraft(prompt); inputRef.current?.focus(); }}><span>{prompt}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
+          {[
+            { label: 'Briefing', prompt: 'Give me a financial briefing based on my recent MOVO income, spending, balances, and budgets.' },
+            { label: 'Daily, Weekly, Monthly Trends', prompt: 'Compare my income and spending trends daily, weekly, and monthly using my MOVO records.' },
+            { label: 'Summarize my recent spending', prompt: 'Summarize my recent spending.' },
+            { label: 'Which categories cost me the most?', prompt: 'Which spending categories cost me the most?' }
+          ].map(({ label, prompt }) =>
+            <button key={label} type="button" onClick={() => send(null, prompt)} disabled={busy} aria-label={label}><span>{label}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
           )}
         </div>
       </div>}
