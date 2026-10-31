@@ -68,7 +68,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         <div className="seg-control two" role="group" aria-label={tr('Card kind')}>{[['debit', 'Debit'], ['credit', 'Credit']].map(([k, l]) => <button type="button" key={k} className={form.cardKind === k ? 'selected' : ''} aria-pressed={form.cardKind === k} onClick={() => set({ cardKind: k })}>{l}</button>)}</div>
         {form.cardKind !== 'credit' && <div className="acct-linked-bank">
           <label className="acct-label" htmlFor="acct-linked-bank">{tr('Linked bank account')}</label>
-          {bankAccounts.length ? <select id="acct-linked-bank" className="acct-input" value={form.linkedBankId || ''} onChange={e => set({ linkedBankId: e.target.value })} required aria-describedby="acct-linked-bank-hint">
+          {bankAccounts.length ? <select id="acct-linked-bank" className="acct-input" value={form.linkedBankId || ''} onChange={e => { const selected = bankAccounts.find(account => account.id === e.target.value); set({ linkedBankId: e.target.value, ...(selected?.currency ? { currency: selected.currency } : {}) }); }} required aria-describedby="acct-linked-bank-hint">
             <option value="">{tr('Choose a bank account')}</option>
             {bankAccounts.map(account => <option key={account.id} value={account.id}>{account.name} · {account.institution_name || tr('Bank account')} ({account.currency || base})</option>)}
           </select> : <p className="acct-hint" role="status">{tr('Add a bank account before creating a debit card. Credit cards can be added separately.')}</p>}
