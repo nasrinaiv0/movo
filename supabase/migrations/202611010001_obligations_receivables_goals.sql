@@ -244,6 +244,7 @@ begin
   if not found or v_goal.status in ('archived','paused') then raise exception 'goal_not_available' using errcode = 'P0002'; end if;
   select * into v_account from public.financial_accounts where id = p_account_id and user_id = v_user for update;
   if not found then raise exception 'account_not_found' using errcode = 'P0002'; end if;
+  if v_account.account_type not in ('bank','e_wallet','cash') then raise exception 'goal_requires_spendable_account' using errcode = '22023'; end if;
   if v_account.currency <> coalesce(p_currency,'PHP') or v_goal.currency <> coalesce(p_currency,'PHP') then raise exception 'goal_currency_mismatch' using errcode = '22023'; end if;
   if exists(select 1 from public.transactions where user_id=v_user and (account_id=p_account_id or transfer_to_account_id=p_account_id) and currency <> v_account.currency) then
     raise exception 'mixed_currency_account_requires_reconciliation' using errcode = '22023';
