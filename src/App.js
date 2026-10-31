@@ -192,6 +192,7 @@ function App() {
   const [sortKey, setSortKey] = useState('Date');
   const [expanded, setExpanded] = useState(false);
   const [month, setMonth] = useState('');
+  const [homeMonthKey, setHomeMonthKey] = useState('');
   const [walletFilter, setWalletFilter] = useState('All');
   const [selectedCardId, setSelectedCardId] = useState('');
   const [nFilter, setNFilter] = useState('All');
@@ -362,30 +363,33 @@ function App() {
     const total = Object.values(totals).reduce((s, v) => s + v, 0);
     return { total, data: BUCKETS.filter(b => totals[b.key]).map(b => ({ ...b, amount: totals[b.key], percent: Math.round((totals[b.key] / total) * 100) })) };
   }, [statsFor]);
-  const homeMonth = useMemo(() => statsFor(refMonth), [statsFor, refMonth]);
+  const activeHomeMonth = homeMonthKey || monthKey(new Date());
+  const homeRefDate = useMemo(() => { const [y, m] = activeHomeMonth.split('-').map(Number); return new Date(y, m, 0, 12); }, [activeHomeMonth]);
+  const homeYears = useMemo(() => Array.from(new Set([new Date().getFullYear(), ...txs.map(t => Number(monthKey(t.date).slice(0, 4)))] )).sort((a, b) => b - a), [txs]);
+  const homeStats = useMemo(() => statsFor(activeHomeMonth), [statsFor, activeHomeMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
   const stats = useMemo(() => {
     const balance = accountsView.length ? accountsView.reduce((s, a) => s + toBase(a.balance, a.currency), 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
-    let running = balance - homeMonth.net; const daily = new Map();
-    homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
-    let points = [balance - homeMonth.net, ...daily.values()];
+    let running = balance - homeStats.net; const daily = new Map();
+    homeStats.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
+    let points = [balance - homeStats.net, ...daily.values()];
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
     const savings = savingsBalance(accountsView, toBase, prefs.accountStyles);
-    return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings, netCashFlow: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeMonth, toBase, prefs.accountStyles]);
+    return { balance, income: homeStats.income, expenses: homeStats.expenses, savings, netCashFlow: homeStats.net, trend: points.length > 1 ? points : [balance, balance] };
+  }, [accountsView, txs, homeStats, toBase, prefs.accountStyles]);
   // Savings is an account-balance measure (cash excluded), not monthly net cash flow. Until a historical
   // savings-balance snapshot is available, do not display a misleading cash-flow trend beside that balance.
-  const deltas = useMemo(() => ({ ...monthOverMonth(txs, refDate, stats.balance), savings: null }), [txs, refDate, stats.balance]);
-  const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
+  const deltas = useMemo(() => ({ ...monthOverMonth(txs, homeRefDate, stats.balance), savings: null }), [txs, homeRefDate, stats.balance]);
+  const homeBreakdown = useMemo(() => breakdownFor(activeHomeMonth), [breakdownFor, activeHomeMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
     const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer' }[txFilter];
     const q = search.trim().toLowerCase();
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
-  const recent = useMemo(() => txs.filter(t => t.type !== 'transfer').slice(0, 4), [txs]);
+  const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer').slice(0, 4), [homeStats]);
   const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
-  const budgetList = useMemo(() => budgetProgress(budgets, homeMonth.list), [budgets, homeMonth]);
+  const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
   const subscriptions = useMemo(() => (Array.isArray(prefs.subscriptions) ? prefs.subscriptions.filter(s => s && typeof s === 'object' && typeof s.name === 'string' && s.id) : []), [prefs.subscriptions]);
   const todayKey = dayKey(new Date());
@@ -932,8 +936,8 @@ function App() {
 
   const c = {
     refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
-    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
-    breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
+    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, homeMonthStats: homeStats, user, unread, go, session, cloudMode, supabaseConfigured,
+    breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
