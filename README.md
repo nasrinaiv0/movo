@@ -30,7 +30,8 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 ### Implemented frontend behavior
 - Responsive Home dashboard and five-item navigation.
 - Balance visibility toggle that masks balances and transaction amounts.
-- Income, expense, and net-activity totals calculated from stored records.
+- Income and expense totals are calculated from posted records; internal transfers affect account balances but never inflate income, expenses or net activity.
+- Account balances derive from opening balances plus routed ledger entries. The Savings tile sums eligible non-cash account balances (excluding credit cards and cards whose debit/credit kind is unknown); it is distinct from monthly net cash flow.
 - Week/month/year period selection and spending-category breakdown.
 - Create, edit, and delete transaction records; create, edit, and archive tracked accounts.
 - Record income, expenses, and transfers; transfer records do not move money between financial institutions.
@@ -96,3 +97,8 @@ Wallet → Cards → **Card style** lets users dress each card with a sticker. T
 ## Motion
 
 Motion is calm by design: no device vibration, no overshooting "bounce" springs, no breathing or pulsing orb. Transitions use a single smooth ease-out curve.
+
+
+## Financial Planning
+
+The financial planning area tracks loans and debts, money owed to you, savings goals, and goal allocations. Accounting rules separate loan principal from interest, receivable collections from income, and goal reservations from actual assets. The migration in `supabase/migrations/20261031170235_obligations_receivables_goals.sql` has been applied to the Movo Supabase project. Cross-currency transfers and live database behavior remain subject to verification.

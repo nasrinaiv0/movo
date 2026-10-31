@@ -6,6 +6,7 @@ import Icon, { NasrinMark } from './components/Icon';
 import { Sheet, Toggle } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
+import FinancialPlanning from './screens/FinancialPlanning';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
 import Menu from './screens/Menu';
@@ -41,6 +42,8 @@ import ScannerSheet from './components/ScannerSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate, shortcutPrompt } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
+import { accountBalance, savingsBalance } from './lib/financeCalculations';
+import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
@@ -77,8 +80,8 @@ const DEFAULTS = {
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
 };
-const ROOT_FOR = { Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
-const DEPTH = { Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const DEPTH = { FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit' };
@@ -175,6 +178,8 @@ function App() {
   const [prefs, setPrefs] = useState(readPrefs);
   const [fx, setFx] = useState(loadRates);
   const [cloudAccounts, setCloudAccounts] = useState([]);
+  const [cloudPostings, setCloudPostings] = useState([]);
+  const [cloudActivities, setCloudActivities] = useState([]);
   const [cloudBudgets, setCloudBudgets] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions());
@@ -272,8 +277,8 @@ function App() {
     if (!user) return;
     setBusy(true); setError('');
     try {
-      const [a, t] = await Promise.all([listAccounts(), listTransactions()]);
-      setCloudAccounts(a || []); setRawTxs(t || []); setCloudMode(true);
+      const [a, t, postings, activities] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => [])]);
+      setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
       listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
     } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
@@ -308,6 +313,8 @@ function App() {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
         setCloudAccounts([]);
+        setCloudPostings([]);
+        setCloudActivities([]);
         setRawTxs(pending?.transactions || loadLocalTransactions());
         setLocalAccounts(pending?.accounts || loadLocalAccounts());
       }
@@ -320,17 +327,21 @@ function App() {
   const base = /^[A-Z]{3}$/.test(prefs.currency || '') ? prefs.currency : 'PHP';
   const rates = fx.rates;
   const toBase = useCallback((value, from) => convert(value, from || 'PHP', base, rates), [base, rates]);
-  const txs = useMemo(() => rawTxs.map(t => normalize(t, baseAccounts, base, rates)).filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date)), [rawTxs, baseAccounts, base, rates]);
+  const txs = useMemo(() => {
+    const regular = rawTxs.map(t => normalize(t, baseAccounts, base, rates));
+    const accounting = cloudActivities.map(t => ({
+      ...t, type: 'expense', date: t.occurred_at, origAmount: Number(t.amount), origCurrency: t.currency || base,
+      currency: base, amount: convert(Number(t.amount), t.currency || base, base, rates), accountName: tr('Accounting event'),
+    }));
+    return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [rawTxs, cloudActivities, baseAccounts, base, rates]);
   const accountsView = useMemo(() => baseAccounts.map(a => {
-    const delta = txs.reduce((s, t) => {
-      const own = convert(t.origAmount, t.origCurrency, a.currency || 'PHP', rates);
-      if (t.account_id === a.id) return s + (t.type === 'income' ? own : -own);
-      if (t.type === 'transfer' && t.transfer_to_account_id === a.id) return s + own;
-      return s;
-    }, 0);
     const st = prefs.accountStyles?.[a.id] || {};
-    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance: (cloudMode ? Number(a.opening_balance || 0) : Number(a.balance)) + delta, currency: a.currency || 'PHP' };
-  }), [baseAccounts, txs, cloudMode, prefs.accountStyles, rates]);
+    const currency = a.currency || 'PHP';
+    const opening = cloudMode ? Number(a.opening_balance || 0) : Number(a.opening_balance ?? a.balance ?? 0);
+    const balance = accountBalance(a, cloudMode ? [...txs, ...cloudPostings] : txs, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
+    return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency };
+  }), [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -359,9 +370,12 @@ function App() {
     homeMonth.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
     let points = [balance - homeMonth.net, ...daily.values()];
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
-    return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeMonth, toBase]);
-  const deltas = useMemo(() => monthOverMonth(txs, refDate, stats.balance), [txs, refDate, stats.balance]);
+    const savings = savingsBalance(accountsView, toBase, prefs.accountStyles);
+    return { balance, income: homeMonth.income, expenses: homeMonth.expenses, savings, netCashFlow: homeMonth.net, trend: points.length > 1 ? points : [balance, balance] };
+  }, [accountsView, txs, homeMonth, toBase, prefs.accountStyles]);
+  // Savings is an account-balance measure (cash excluded), not monthly net cash flow. Until a historical
+  // savings-balance snapshot is available, do not display a misleading cash-flow trend beside that balance.
+  const deltas = useMemo(() => ({ ...monthOverMonth(txs, refDate, stats.balance), savings: null }), [txs, refDate, stats.balance]);
   const homeBreakdown = useMemo(() => breakdownFor(refMonth), [breakdownFor, refMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
@@ -907,6 +921,8 @@ function App() {
       setSession(null);
       setCloudMode(false);
       setCloudAccounts([]);
+      setCloudPostings([]);
+      setCloudActivities([]);
       setRawTxs(pending?.transactions || loadLocalTransactions());
       setLocalAccounts(pending?.accounts || loadLocalAccounts());
       go('Home');
@@ -915,6 +931,7 @@ function App() {
   };
 
   const c = {
+    refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
@@ -951,6 +968,7 @@ function App() {
   const screen = (() => {
     switch (view) {
       case 'Wallet': return <Wallet c={c} />;
+      case 'FinancialPlanning': return <FinancialPlanning c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
       case 'Menu': return <Menu c={c} />;
@@ -1069,7 +1087,7 @@ function App() {
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
         <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}</dl>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>
+        {detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
       </Sheet>}
 
       {pendingLog && <div className="log-prompt" role="alertdialog" aria-label={tr('Log this payment?')}>
