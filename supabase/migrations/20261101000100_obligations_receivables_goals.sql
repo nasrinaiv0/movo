@@ -1,5 +1,5 @@
 -- MOVO financial obligations, receivables and savings goals.
--- Apply through the normal Supabase migration pipeline; this commit does not mutate a live database.
+-- Additive schema migration for the MOVO financial planning feature.
 begin;
 
 create table if not exists public.accounting_postings (
