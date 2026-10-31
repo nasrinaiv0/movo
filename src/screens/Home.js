@@ -54,9 +54,9 @@ export default function Home({ c }) {
   const [mascotError, setMascotError] = useState('');
   const file = useRef(null);
   const tiles = [
-    { label: tr('Income'), icon: 'arrowDown', tone: 'green', value: stats.income, delta: deltas.income },
-    { label: tr('Expenses'), icon: 'arrowUp', tone: 'red', value: stats.expenses, delta: deltas.expenses },
-    { label: tr('Savings'), icon: 'bank', tone: 'slate', value: stats.savings, delta: deltas.savings },
+    { label: tr('Income'), icon: 'arrowDown', tone: 'green', value: stats.income, delta: deltas.income, open: () => go('Transactions', { filter: 'Income' }) },
+    { label: tr('Expenses'), icon: 'arrowUp', tone: 'red', value: stats.expenses, delta: deltas.expenses, open: () => go('Transactions', { filter: 'Expenses' }) },
+    { label: tr('Savings'), icon: 'bank', tone: 'slate', value: stats.savings, delta: deltas.savings, open: () => go('Wallet') },
   ];
   const todayKey = dayKey(new Date());
   const spentToday = txs.filter(t => t.type === 'expense' && dayKey(t.date) === todayKey).reduce((s, t) => s + t.amount, 0);
@@ -82,11 +82,11 @@ export default function Home({ c }) {
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
     </section> },
     { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
-      {tiles.map(t => <article className={`card stat-card tint-${t.tone}`} key={t.label}>
+      {tiles.map(t => <button type="button" className={`card stat-card is-link tint-${t.tone}`} key={t.label} onClick={t.open} aria-label={tr('Open {label}', { label: t.label })}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
         <strong><Money value={t.value} show={show} digits={0} /></strong>
         {size !== 'S' && <Trend value={t.delta} />}
-      </article>)}
+      </button>)}
     </section> },
     { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={refDate} show={show} variant={style} /> },
     { id: 'budgets', label: tr('Budgets & plans'), node: ({ size }) => <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} size={size} /> },

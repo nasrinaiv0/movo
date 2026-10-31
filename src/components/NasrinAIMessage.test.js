@@ -91,3 +91,37 @@ describe('NasrinAI chart rendering', () => {
     expect(html).toContain('₱1,700');
   });
 });
+
+describe('NasrinAI rich replies in MOVO', () => {
+  const render = (content) => renderToStaticMarkup(<NasrinAIMessage content={content} />);
+
+  test('highlights money in and out, and signed percentages', () => {
+    const html = render('You earned +₱50,000.00 and spent -₱918 this week, up +12% from last week but food was -4.5%.');
+    expect(html).toContain('<span class="movo-ai-amount is-in">+₱50,000.00</span>');
+    expect(html).toContain('<span class="movo-ai-amount is-out">-₱918</span>');
+    expect(html).toContain('<span class="movo-ai-delta is-up">+12%</span>');
+    expect(html).toContain('<span class="movo-ai-delta is-down">-4.5%</span>');
+  });
+
+  test('renders callouts, multi-line quotes, dividers, task lists and numbered lists that keep their start', () => {
+    const html = render('> [!WARNING]\n> Your Food budget is over.\n\n---\n\n- [x] Pay rent\n- [ ] Cancel unused app\n\n3. Third\n4. Fourth\n\n> one\n> two');
+    expect(html).toContain('class="movo-ai-callout is-warning"');
+    expect(html).toContain('Your Food budget is over.');
+    expect(html).toContain('<hr class="movo-ai-divider"/>');
+    expect(html).toContain('movo-ai-task is-done');
+    expect(html).toContain('<ol class="movo-ai-rich-list" start="3">');
+    expect(html).toMatch(/<blockquote class="movo-ai-quote">one<br\/>two<\/blockquote>/);
+  });
+
+  test('right-aligns numbers in tables and marks the total row', () => {
+    const html = render('| Category | Amount |\n|---|---|\n| Food | ₱500 |\n| **Total** | ₱918 |');
+    expect(html).toContain('<td class="is-num">');
+    expect(html).toContain('<tr class="is-total">');
+  });
+
+  test('bare links open safely; other text stays text', () => {
+    const html = render('See https://movo.nasrinai.com/help for details. <script>alert(1)</script>');
+    expect(html).toContain('href="https://movo.nasrinai.com/help" target="_blank" rel="noopener noreferrer"');
+    expect(html).not.toContain('<script>');
+  });
+});

@@ -30,12 +30,13 @@ export default function ScannerSheet({ show, onLog, onClose }) {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [active, setActive] = useState(null);
+  const [live, setLive] = useState(false);
   const video = useRef(null);
   const stream = useRef(null);
   const photoRef = useRef(null);
   const docRef = useRef(null);
 
-  const stopCamera = () => { stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; };
+  const stopCamera = () => { stream.current?.getTracks().forEach(t => t.stop()); stream.current = null; setLive(false); };
   useEffect(() => { warmUpOcr(); return () => stopCamera(); }, []);
   // Attach the stream once the <video> exists (iOS needs autoplay + muted + playsInline to show a live preview).
   useEffect(() => {
@@ -92,10 +93,12 @@ export default function ScannerSheet({ show, onLog, onClose }) {
       </div>
     </div>}
     {mode === 'camera' && <div className="scan-camera">
-      <div className="scan-view"><video ref={video} autoPlay playsInline muted aria-label={tr('Camera preview')} /><span className="scan-guide" aria-hidden="true" /></div>
+      <div className={`scan-view${live ? ' is-live' : ''}`}><video ref={video} autoPlay playsInline muted aria-label={tr('Camera preview')} onPlaying={() => setLive(true)} />
+        <span className="scan-guide" aria-hidden="true"><i className="c tl" /><i className="c tr" /><i className="c bl" /><i className="c br" /><i className="scan-line" /></span>
+        <span className="scan-hint">{tr('Fit the whole receipt inside the frame')}</span></div>
       <div className="scan-controls"><button type="button" className="scan-text-btn" onClick={() => { stopCamera(); setMode('home'); }}>{tr('Cancel')}</button><button type="button" className="scan-shutter" onClick={capture} aria-label={tr('Capture receipt')} /><button type="button" className="scan-text-btn" onClick={() => { stopCamera(); setMode('home'); photoRef.current?.click(); }}>{tr('Upload')}</button></div>
     </div>}
-    {mode === 'working' && <div className="scan-working" role="status"><span className="spinner" /> {status}</div>}
+    {mode === 'working' && <div className="scan-working" role="status"><span className="scan-doc" aria-hidden="true"><i /><i /><i /><i className="scan-line" /></span><span>{status}</span></div>}
     {mode === 'review' && active && <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); log(); }}>
       {active.thumb && <img className="scan-thumb" src={active.thumb} alt={tr('Scanned receipt')} />}
       <label>{tr('Merchant')}<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder={tr('Store or payee')} /></label>
