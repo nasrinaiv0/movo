@@ -64,7 +64,9 @@ export default function Wallet({ c }) {
   const cardVisual = (a) => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${wv.cardFormat}`} orientation={wv.cardFormat} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />;
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
-    : <section className={`account-tiles at-${wv.view}`}>{items.map(a => <AccountTile key={a.id} a={a} show={show} style={styleFor(a, prefs.accountStyles)} size={wv.view === 'grid' ? 'grid' : 'tile'} onClick={() => openAccount(a)} />)}</section>);
+    : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
+        {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a)}</button>)}
+      </section>);
   const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], ['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : ['bank', 'Add Account', () => setSheet({ name: 'account', type: 'bank' })]];
 
   const boxes = [
