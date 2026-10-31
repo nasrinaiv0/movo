@@ -2857,3 +2857,14 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .credit-card.orientation-landscape { transition: none; }
 }
+
+
+/* Keep balance and spending summary cards neutral; reserve accent color for controls and data. */
+.movo-app .balance-card,
+.movo-app .total-card {
+  background: var(--card);
+}
+.movo-app .balance-card::after,
+.movo-app .total-card::after {
+  content: none;
+}
