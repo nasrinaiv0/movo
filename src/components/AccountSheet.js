@@ -16,9 +16,9 @@ const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.'
 export default function AccountSheet({ base = 'PHP', country = 'PH', form, setForm, editing, cloudMode, busy, error, onSave, onClose }) {
   const [openStyle, setOpenStyle] = useState(false);
   const [openMore, setOpenMore] = useState(!!form.institution_name);
-  const [institutionQuery, setInstitutionQuery] = useState('');
+  const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
   const [institutionCountry, setInstitutionCountry] = useState(INSTITUTION_COUNTRIES.includes(country) ? country : 'PH');
-  const [manualInstitution, setManualInstitution] = useState(!!form.institution_name && !INSTITUTIONS.some(item => item.name.toLowerCase() === form.institution_name.toLowerCase()));
+  const [manualInstitution, setManualInstitution] = useState(!!form.institution_name && !INSTITUTIONS.some(item => item.country === (INSTITUTION_COUNTRIES.includes(country) ? country : 'PH') && item.name.toLowerCase() === form.institution_name.toLowerCase()));
   const institutionOptions = useMemo(() => searchInstitutions(institutionCountry, institutionQuery, form.account_type), [institutionCountry, institutionQuery, form.account_type]);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
   const [pad, setPad] = useState(false);
