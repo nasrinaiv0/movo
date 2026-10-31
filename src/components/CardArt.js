@@ -43,7 +43,7 @@ export const StickerArt = memo(function StickerArt({ theme, compact }) {
 export const resolveSticker = (id, list) => findSticker(id, list);
 
 /* A bank card with reserved room for logo/name, chip, network, number and holder over any sticker. */
-export default function CardArt({ a, show, styleId, holder, preview, compact }) {
+export default function CardArt({ a, show, styleId, holder, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '' }) {
   const custom = useCustomStickers();
   const remoteSticker = isStorageStickerId(styleId);
   const [remoteUrl, setRemoteUrl] = useState('');
@@ -52,19 +52,24 @@ export default function CardArt({ a, show, styleId, holder, preview, compact }) 
   const theme = sticker || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
   const ink = theme ? theme.ink : 'light';
   const number = `•••• •••• •••• ${a.mask || '••••'}`;
-  const network = /mastercard/i.test(String(a.brand || '')) ? 'mastercard.com' : /visa/i.test(String(a.brand || '')) ? 'visa.com' : '';
+  const network = String(cardNetwork || a.cardNetwork || a.card_network || '').toLowerCase();
+  const showName = visibleFields.accountName !== false;
+  const showNumber = visibleFields.cardNumber !== false && displayMode === 'details';
+  const showHolder = visibleFields.holderName !== false && displayMode === 'details';
+  const showBalance = visibleFields.balance !== false;
+  const networkName = ({ visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' })[network] || '';
   const institutionLogo = institutionLogoUrl(a.institution_name);
   return <div className={`credit-card${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
     {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="cc-face">
     <div className="cc-top">
-      <span className="cc-logo">{institutionLogo ? <img className="cc-institution-logo" src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}<span className="cc-name">{a.institution_name || a.name}</span></span>
-      <span className="cc-net">{network && <img className="cc-network-logo" src={'https://www.google.com/s2/favicons?domain=' + network + '&sz=128'} alt={network === 'visa.com' ? 'Visa' : 'Mastercard'} width="36" height="24" loading="lazy" referrerPolicy="no-referrer" />}</span>
+      <span className="cc-logo">{institutionLogo ? <img className="cc-institution-logo" src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}{showName && <span className="cc-name">{a.institution_name || a.name}</span>}</span>
+      <span className={'cc-net network-' + network.replace(/[^a-z]/g, '-')} aria-label={networkName || undefined}>{networkName && <span className="cc-network-mark" role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : networkName}</span>}</span>
     </div>
-    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? tr('Credit') : tr('Debit')}</span>}</span>
-    <div className="cc-bottom">
-      <div className="cc-id"><span className="cc-number">{number}</span>{holder && <small className="cc-holder">{holder}</small>}</div>
-      <b>{shown(show, money(a.balance, a.currency))}</b>
+    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless && <Contactless className="cc-nfc" />}{displayMode === 'details' && a.cardKind && <span className="cc-kind">{a.cardKind === 'credit' ? tr('Credit') : tr('Debit')}</span>}</span>
+    <div className={'cc-bottom' + (displayMode === 'amount' ? ' cc-bottom-amount' : '')}>
+      <div className="cc-id">{showNumber && <span className="cc-number">{number}</span>}{showHolder && holder && <small className="cc-holder">{holder}</small>}</div>
+      {showBalance && <b className="cc-balance">{shown(show, money(a.balance, a.currency))}</b>}
     </div>
     </div>
   </div>;
