@@ -261,7 +261,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
     expect(container.textContent).toContain('Selecting a country, language, or currency in Settings changes localization preferences');
     expect(container.textContent).toContain('Apple App Store and Google Play policies');
-    expect(container.textContent).toContain('the actual provider inventory and transfer arrangements must be maintained and disclosed accurately');
+    expect(container.textContent).toContain('The actual provider inventory and transfer arrangements must be maintained and disclosed accurately');
     expect(container.textContent).toContain('provide and maintain a direct, publicly accessible deletion-request page');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
