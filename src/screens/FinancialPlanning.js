@@ -6,8 +6,8 @@ import { allocateToGoal, createGoal, createLoan, createReceivable, listGoals, li
 import { financialPosition, goalProgress } from '../lib/accounting';
 
 const TABS = ['Overview', 'Loans & debts', 'Owed to you', 'Goals'];
-const blankLoan = { name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: 'PHP', interest_rate: '0', due_date: '', account_id: '', notes: '' };
-const blankReceivable = { name: '', counterparty: '', reason: '', opening_amount: '', currency: 'PHP', due_date: '', account_id: '', notes: '' };
+const blankLoan = { name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: 'PHP', interest_rate: '0', due_date: '', account_id: '', new_proceeds: false, notes: '' };
+const blankReceivable = { name: '', counterparty: '', reason: '', opening_amount: '', currency: 'PHP', due_date: '', account_id: '', new_lending: false, notes: '' };
 const blankGoal = { name: '', target_amount: '', currency: 'PHP', target_date: '', notes: '' };
 const blankEvent = { event_type: '', amount: '', currency: 'PHP', account_id: '', note: '' };
 const cash = (value, currency) => money(Number(value) || 0, currency || 'PHP');
@@ -92,7 +92,8 @@ export default function FinancialPlanning({ c }) {
         <label>{tr('Lender / creditor')}<input maxLength="120" value={loanForm.lender} onChange={e => setLoanForm({ ...loanForm, lender: e.target.value })} /></label>
         <label>{tr('Original principal')}<input required type="number" min="0.01" step="0.01" value={loanForm.principal_amount} onChange={e => setLoanForm({ ...loanForm, principal_amount: e.target.value })} /></label>
         <label>{tr('Interest rate (% per year)')}<input type="number" min="0" step="0.001" value={loanForm.interest_rate} onChange={e => setLoanForm({ ...loanForm, interest_rate: e.target.value })} /></label>
-        <label>{tr('Payment account')}<select value={loanForm.account_id} onChange={e => setLoanForm({ ...loanForm, account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option>{spendableAccounts.filter(a => a.currency === (loanForm.currency || c.base)).map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
+        <label className="legal-disclosure-check"><input type="checkbox" checked={loanForm.new_proceeds} onChange={e => setLoanForm({ ...loanForm, new_proceeds: e.target.checked })} /><span>{tr('This is a new loan draw; add the proceeds to the account balance')}</span></label>
+        <label>{tr('Payment account')}<select required={loanForm.new_proceeds} value={loanForm.account_id} onChange={e => setLoanForm({ ...loanForm, account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option>{spendableAccounts.filter(a => a.currency === (loanForm.currency || c.base)).map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
         <label>{tr('Due date')}<input type="date" value={loanForm.due_date} onChange={e => setLoanForm({ ...loanForm, due_date: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Save loan / debt')}</button>
       </form>
@@ -107,7 +108,8 @@ export default function FinancialPlanning({ c }) {
         <label>{tr('Person / organization')}<input maxLength="120" value={receivableForm.counterparty} onChange={e => setReceivableForm({ ...receivableForm, counterparty: e.target.value })} /></label>
         <label>{tr('Reason')}<input maxLength="500" value={receivableForm.reason} onChange={e => setReceivableForm({ ...receivableForm, reason: e.target.value })} /></label>
         <label>{tr('Amount owed')}<input required type="number" min="0.01" step="0.01" value={receivableForm.opening_amount} onChange={e => setReceivableForm({ ...receivableForm, opening_amount: e.target.value })} /></label>
-        <label>{tr('Deposit / collection account')}<select value={receivableForm.account_id} onChange={e => setReceivableForm({ ...receivableForm, account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option>{spendableAccounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
+        <label className="legal-disclosure-check"><input type="checkbox" checked={receivableForm.new_lending} onChange={e => setReceivableForm({ ...receivableForm, new_lending: e.target.checked })} /><span>{tr('This is money I am lending now; subtract it from my account')}</span></label>
+        <label>{tr('Deposit / collection account')}<select required={receivableForm.new_lending} value={receivableForm.account_id} onChange={e => setReceivableForm({ ...receivableForm, account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option>{spendableAccounts.map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
         <label>{tr('Due date')}<input type="date" value={receivableForm.due_date} onChange={e => setReceivableForm({ ...receivableForm, due_date: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Save receivable')}</button>
       </form>
