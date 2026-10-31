@@ -75,3 +75,20 @@ h2.movo-ai-rich-heading { font-size: 17.5px; } h3.movo-ai-rich-heading { font-si
 .movo-ai-user-text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
 .movo-ai-message.log { align-self: flex-start; background: none; box-shadow: none; padding: 0; border: 0; }
 .movo-ai-message.log .movo-ai-message-label { padding: 0 4px 6px; display: block; }
+
+/* Subtle, compact rotating examples keep the MOVO composer helpful without
+   competing with the user's message text. */
+.movo-ai-prompt-input {
+  font-size: 14px;
+}
+.movo-ai-prompt-input::placeholder {
+  opacity: .48;
+  font-size: 14px;
+  line-height: 1.45;
+}
+@media (max-width: 480px) {
+  .movo-ai-prompt-input::placeholder {
+    font-size: 12.5px;
+    opacity: .46;
+  }
+}
