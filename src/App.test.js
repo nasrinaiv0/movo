@@ -654,3 +654,79 @@ test('accent text stays readable on dark backgrounds', () => {
   expect(readableAccent('#334155', false)).toBe('#334155');
   expect(readableAccent('#c7f0dc', true)).toBe('#c7f0dc');
 });
+
+
+describe('post-tour third-party logo disclaimer regression coverage', () => {
+  let container;
+  let root;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  test('both actions remain disabled until the disclaimer checkbox is checked', () => {
+    const onReview = jest.fn();
+    const onDismiss = jest.fn();
+    const { PostTourLegalDisclosure } = require('./App');
+
+    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
+
+    const dialog = container.querySelector('[role="dialog"][aria-labelledby="movo-disclosure-title"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog.querySelector('.legal-disclosure-content')).not.toBeNull();
+    expect(dialog.querySelector('.legal-disclosure-footer')).not.toBeNull();
+
+    const checkbox = dialog.querySelector('input[type="checkbox"]');
+    const reviewLater = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent.includes('Review later'));
+    const reviewTerms = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent.includes('Review Terms & Privacy'));
+
+    expect(checkbox.checked).toBe(false);
+    expect(reviewLater.disabled).toBe(true);
+    expect(reviewTerms.disabled).toBe(true);
+
+    act(() => reviewLater.click());
+    act(() => reviewTerms.click());
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(onReview).not.toHaveBeenCalled();
+
+    act(() => checkbox.click());
+    expect(checkbox.checked).toBe(true);
+    expect(reviewLater.disabled).toBe(false);
+    expect(reviewTerms.disabled).toBe(false);
+  });
+
+  test('acknowledged users can choose either action and only the selected callback runs', () => {
+    const { PostTourLegalDisclosure } = require('./App');
+    const onReview = jest.fn();
+    const onDismiss = jest.fn();
+
+    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
+    act(() => container.querySelector('input[type="checkbox"]').click());
+
+    const reviewLater = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Review later'));
+    act(() => reviewLater.click());
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(onReview).not.toHaveBeenCalled();
+  });
+
+  test('Terms and Privacy action opens the legal review only after acknowledgement', () => {
+    const { PostTourLegalDisclosure } = require('./App');
+    const onReview = jest.fn();
+    const onDismiss = jest.fn();
+
+    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
+    const reviewTerms = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Review Terms & Privacy'));
+    expect(reviewTerms.disabled).toBe(true);
+    act(() => container.querySelector('input[type="checkbox"]').click());
+    act(() => reviewTerms.click());
+    expect(onReview).toHaveBeenCalledTimes(1);
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+});
