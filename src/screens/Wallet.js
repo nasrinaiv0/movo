@@ -140,14 +140,18 @@ export default function Wallet({ c }) {
     </>}
 
     {sheet?.name === 'walletView' && <Sheet title={tr('Sort & view')} subtitle={tr('Choose how accounts and cards appear in your wallet.')} onClose={() => setSheet(null)} label={tr('Sort and view')} className="wallet-menu-motion">
-      <p className="mini-title">{tr('Sort accounts by')}</p>
-      <div className="sheet-list">{SORTS.map(([key, label]) => <button type="button" key={key} className={`sheet-card${wv.sort === key ? ' selected' : ''}`} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span className="account-main"><strong>{tr(label)}</strong></span>{wv.sort === key && <Icon name="check" size={18} />}</button>)}</div>
-      <p className="mini-title">{tr('Layout')}</p>
-      <div className="seg-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={18} /><span>{tr(label)}</span></button>)}</div>
-      <p className="mini-title">{tr('Card format')}</p>
-      <div className="format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
+      <p className="mini-title wallet-sort-title">{tr('Sort accounts by')}</p>
+      <div className="wallet-sort-row" role="group" aria-label={tr('Sort accounts by')}>{SORTS.map(([key, label]) => {
+        const compactLabel = { 'balance-desc': 'High balance', 'balance-asc': 'Low balance', name: 'Name A–Z', type: 'Type' }[key];
+        return <button type="button" key={key} className={`wallet-sort-option${wv.sort === key ? ' selected' : ''}`} aria-label={tr(label)} title={tr(label)} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span>{tr(compactLabel)}</span>{wv.sort === key && <Icon name="check" size={14} />}</button>;
+      })}</div>
+      <p className="mini-title wallet-view-title">{tr('Layout')}</p>
+      <div className="seg-control wallet-view-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={17} /><span>{tr(label)}</span></button>)}</div>
+      <p className="mini-title wallet-format-title">{tr('Card format')}</p>
+      <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
         <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" /><span>{tr(label)}</span></button>)}</div>
-      <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
+      {selectedCard && <button type="button" className="manage-button wallet-change-card-style" onClick={() => { setWv({ cardFormat: 'card' }); setSheet({ name: 'cardStyle' }); }}><Icon name="palette" size={17} /> {tr('Change card style')}</button>}
+      <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={17} /> {tr('Customize wallet')}</button>
     </Sheet>}
 
     {sheet?.name === 'cardStyle' && selectedCard && <CardStyleSheet account={selectedCard} show={show} holder={holder} current={styleOf(selectedCard)} onPick={pickStyle} onClose={() => setSheet(null)} />}

@@ -2857,3 +2857,63 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .credit-card.orientation-landscape { transition: none; }
 }
+
+
+/* Compact Wallet sort/view sheet: one-line sort controls and smaller card previews. */
+.movo-app .wallet-menu-motion .sheet-list { gap: 7px; margin-top: 9px; }
+.movo-app .wallet-menu-motion .wallet-sort-title { margin: 2px 0 8px; }
+.movo-app .wallet-sort-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+.movo-app .wallet-sort-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 7px 5px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--field);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+}
+.movo-app .wallet-sort-option span { min-width: 0; overflow-wrap: anywhere; }
+.movo-app .wallet-sort-option.selected {
+  color: var(--accent-ink, var(--accent));
+  background: color-mix(in srgb, var(--accent) 10%, var(--field));
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+}
+.movo-app .wallet-view-title,
+.movo-app .wallet-format-title { margin: 14px 0 7px; }
+.movo-app .wallet-view-control { min-height: 44px; }
+.movo-app .wallet-view-control button { min-height: 40px; padding: 7px 8px; gap: 6px; }
+.movo-app .wallet-format-pick { gap: 8px; }
+.movo-app .wallet-format-pick button {
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 126px;
+  padding: 8px;
+  border-radius: 15px;
+}
+.movo-app .wallet-format-pick .credit-card,
+.movo-app .wallet-format-pick .account-tile { flex: 0 0 auto; }
+.movo-app .wallet-format-pick .credit-card.orientation-landscape { width: min(100%, 156px); }
+.movo-app .wallet-format-pick .credit-card.orientation-portrait { width: 76px; max-width: 76px; }
+.movo-app .wallet-format-pick .account-tile { width: min(100%, 156px); padding: 7px; }
+.movo-app .wallet-format-pick .account-tile.orientation-portrait { width: 76px; aspect-ratio: 2 / 3; }
+.movo-app .wallet-format-pick > button > span { font-size: 11px; line-height: 1.1; }
+.movo-app .wallet-change-card-style,
+.movo-app .wallet-edit-layout { min-height: 42px; margin-top: 8px; padding: 9px 12px; }
+@media (max-width: 360px) {
+  .movo-app .wallet-sort-row { gap: 4px; }
+  .movo-app .wallet-sort-option { font-size: 10px; padding-inline: 3px; }
+}
