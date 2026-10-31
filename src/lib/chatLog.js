@@ -35,7 +35,7 @@ function knownService(words) {
   const alias = [[/\b(chat ?gpt|gpt|openai)\b/, 'ChatGPT Plus'], [/\byt\b|\byoutube\b/, 'YouTube Premium'], [/\bclaude\b/, 'Claude'], [/\bicloud\b/, 'iCloud+']];
   const hit = alias.find(([re]) => re.test(text));
   if (hit) return CATALOG.find(c => c.name === hit[1]);
-  return CATALOG.find(c => c.category !== 'Transport & mobility' && text.includes(c.name.toLowerCase().replace(/\+$/, '')) && c.name.length > 2) || null;
+  return CATALOG.find(c => !['Food & delivery', 'Restaurants & cafés', 'Laundry & cleaning', 'Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel', 'Shopping'].includes(c.category) && text.includes(c.name.toLowerCase().replace(/\+$/, '')) && c.name.length > 2) || null;
 }
 
 /** One line → a draft record, or null when the line is not a request to log something. */
