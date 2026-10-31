@@ -1968,3 +1968,20 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .card-scroller > .card-slide > *, .movo-app .tx-row.tx-fresh, .movo-app .bottom-nav .nav-item.nav-active .nav-icon, .movo-app .side-item.active .side-icon { animation: none; }
 }
 .ref-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; }
+
+
+/* Country-aware institution picker: contained scrolling keeps options inside the mobile sheet. */
+.acct-institution { display: grid; gap: 8px; min-width: 0; margin: 10px 0 16px; }
+.acct-institution-search { margin: 0; }
+.acct-institution-search input { min-width: 0; width: 100%; }
+.acct-institution-options { display: grid; gap: 5px; max-height: min(30vh, 240px); overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 14px; padding: 5px; background: var(--surface, rgba(20,24,34,.98)); }
+.acct-institution-options button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 46px; padding: 9px 11px; border: 0; border-radius: 10px; text-align: left; color: inherit; background: transparent; cursor: pointer; }
+.acct-institution-options button.selected, .acct-institution-options button:hover { background: var(--surface-raised, rgba(127,145,180,.14)); }
+.acct-institution-options button span { display: grid; gap: 2px; }
+.acct-institution-options button small { opacity: .65; font-size: 12px; }
+.acct-manual-toggle { justify-self: start; padding: 5px 0; border: 0; color: var(--accent, #7aa7ff); background: transparent; text-align: left; cursor: pointer; }
+.acct-institution .acct-input { width: 100%; }
+@media (max-width: 600px) {
+  .acct-institution-options { max-height: min(26vh, 190px); }
+  .acct-institution-options button { min-height: 48px; }
+}
