@@ -1,5 +1,7 @@
 # MOVO Implementation Status and Claude Handoff
 
+> **Financial Planning & Bills (2026-11-01):** continue from [FINANCIAL_PLANNING_HANDOFF.md](FINANCIAL_PLANNING_HANDOFF.md) and the spec in [docs/specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md](../specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md).
+
 ## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
 
 **This section supersedes older status rows below wherever they disagree.**
