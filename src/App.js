@@ -50,6 +50,7 @@ import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
+import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import NasrinAIChat from './components/NasrinAIChat';
@@ -887,6 +888,37 @@ function App() {
     setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey }));
     setShowPostTourDisclosure(true);
   }, [todayKey]);
+  /* Welcome choices: sign in or sign up skips the tour and opens the account page in that mode. */
+  const [authMode, setAuthMode] = useState('signin');
+  const startAccount = useCallback((mode) => {
+    setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey }));
+    setAuthMode(mode); go('Sign in');
+  }, [todayKey, go]);
+  /* Reads a CSV or JSON file on this device and adds what is new; nothing already saved is overwritten. */
+  const importDataFile = useCallback(async (file) => {
+    if (cloudMode) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
+    if (file.size > IMPORT_MAX_BYTES) return { ok: false, message: tr('The file must be 5 MB or smaller.') };
+    if (!/\.(csv|json)$/i.test(file.name || '')) return { ok: false, message: tr('Choose a CSV or JSON file.') };
+    const parsed = parseImportFile(file.name, await file.text());
+    if (parsed.errors.length) return { ok: false, message: tr(parsed.errors[0]) };
+    const batchId = `import-${Date.now().toString(36)}`;
+    const plan = planImport(parsed, { accounts: localAccounts, transactions: rawTxs, subscriptions, budgets: prefs.budgets || [], plans: prefs.plans || [] },
+      { base, batchId, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
+    if (plan.accounts.length) setLocalAccounts(cur => [...cur, ...plan.accounts]);
+    if (plan.transactions.length) setRawTxs(cur => [...plan.transactions, ...cur]);
+    setPrefs(cur => ({
+      ...cur,
+      subscriptions: [...(cur.subscriptions || []), ...plan.subscriptions],
+      budgets: [...(cur.budgets || []), ...plan.budgets],
+      plans: [...(cur.plans || []), ...plan.plans],
+      accountStyles: { ...(cur.accountStyles || {}), ...Object.fromEntries(plan.accounts.filter(a => a.mask).map(a => [a.id, { mask: a.mask }])) },
+    }));
+    const added = plan.accounts.length + plan.transactions.length + plan.subscriptions.length + plan.budgets.length + plan.plans.length;
+    const skipped = plan.skipped.duplicates + plan.skipped.conflicts + plan.skipped.invalid;
+    const summary = tr('Added {items}.', { items: [['{n} accounts', plan.accounts], ['{n} transactions', plan.transactions], ['{n} subscriptions', plan.subscriptions], ['{n} budgets', plan.budgets], ['{n} goals', plan.plans]].filter(([, list]) => list.length).map(([label, list]) => tr(label, { n: list.length })).join(', ') });
+    if (!added) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
+    return { ok: true, message: skipped ? `${summary} ${tr('{n} rows were skipped as duplicates or incomplete.', { n: skipped })}` : summary };
+  }, [cloudMode, localAccounts, rawTxs, subscriptions, prefs.budgets, prefs.plans, base]);
   /* Usage streak: today counts once Movo is open; a new badge gets its own moment. */
   useEffect(() => {
     if (!authReady) return;
@@ -1028,7 +1060,7 @@ function App() {
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
       case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
-      case 'Sign in': return <AuthPanel onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
+      case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
   })();
@@ -1091,7 +1123,7 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {showTour && !locked && <Walkthrough onDone={finishTour} />}
+      {showTour && !locked && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {showPostTourDisclosure && !locked && <PostTourLegalDisclosure onReview={() => { setShowPostTourDisclosure(false); openLegal('TermsOfService'); }} onDismiss={() => setShowPostTourDisclosure(false)} />}
       {locked && <LockScreen onUnlock={unlock} onForgot={() => {
         // Never unlock on "forgot": the only way past the lock is erasing this device's MOVO data (and the lock).
