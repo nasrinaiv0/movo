@@ -10,7 +10,9 @@ import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets', 'Cash & Other'];
-const typeOf = { Cards: ['card'], 'Bank Accounts': ['bank'], 'E-Wallets': ['e_wallet'], 'Cash & Other': ['cash', 'investment', 'other'] };
+const typeOf = { Cards: ['card'], 'Bank Accounts': ['bank'], 'E-Wallets': ['e_wallet'], 'Cash & Other': ['cash', 'investment', 'coupon', 'gift_card', 'other'] };
+/* Short chip labels so all five filters fit on one row; Others covers cash, investments, e-gifts, coupons and merchant cards. */
+const FILTER_LABEL = { 'Bank Accounts': 'Banks', 'Cash & Other': 'Others' };
 const ADD_TYPE = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_wallet', 'Cash & Other': 'cash' };
 const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash & other', 'Cash, investments and more']];
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
@@ -51,7 +53,7 @@ export default function Wallet({ c }) {
   const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
-  const groups = [['Cards & Bank Accounts', [...accountsByType.card, ...accountsByType.bank], 'card'], ['Cash & Other', live.filter(a => ['cash', 'investment', 'other'].includes(a.account_type)), 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
+  const groups = [['Cards & Bank Accounts', [...accountsByType.card, ...accountsByType.bank], 'card'], ['Cash & Other', live.filter(a => typeOf['Cash & Other'].includes(a.account_type)), 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
@@ -103,7 +105,7 @@ export default function Wallet({ c }) {
   return <>
     <RootHeader title={tr('Wallet')} action={{ icon: 'edit', label: tr('Sort and view options'), onClick: () => setSheet({ name: 'walletView' }) }} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <div className="chip-bar wallet-chip-bar">
-      <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(key) }))} value={walletFilter} onChange={setWalletFilter} />
+      <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(FILTER_LABEL[key] || key) }))} value={walletFilter} onChange={setWalletFilter} />
       <button type="button" className="round-button accent" aria-label={tr('New account')} title={tr('New account')} onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
     </div>
 

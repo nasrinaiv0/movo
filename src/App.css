@@ -3245,3 +3245,10 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-cylinder { padding-bottom: 34px; }
 .movo-app .card-stack { margin-bottom: 20px; }
 .movo-app .card-stack-front { padding-bottom: 6px; }
+
+/* Wallet filters: All · Cards · Banks · E-Wallets · Others and the add button on one row, no scrolling. */
+.movo-app .wallet-chip-bar { gap: 6px; }
+.movo-app .wallet-chip-bar > .chip-row { display: flex; gap: 4px; overflow: visible; }
+.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
+.movo-app .wallet-chip-bar > .round-button { flex: 0 0 38px; width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
+@media (max-width: 380px) { .movo-app .wallet-chip-bar { gap: 4px; } .movo-app .wallet-chip-bar > .chip-row { gap: 2px; } .movo-app .wallet-chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
