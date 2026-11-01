@@ -3169,3 +3169,18 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-stack-front { width: 84%; max-width: 340px; margin: 0 auto; }
 .movo-app .card-cylinder-face { flex-basis: 36%; }
 .movo-app .card-cylinder::before, .movo-app .card-cylinder::after { flex-basis: 32%; }
+
+/* Home balance box with a smooth notch at the top-right holding the month pill. */
+.movo-app .home-header:not(:has(.home-period-filter)) { grid-template-areas: "avatar hello actions"; }
+.notched-box { position: relative; filter: drop-shadow(0 1px 2px rgba(16,24,40,.06)) drop-shadow(0 8px 18px rgba(16,24,40,.09)); }
+.theme-dark .notched-box, .movo-app.theme-dark .notched-box { filter: drop-shadow(0 8px 18px rgba(0,0,0,.35)); }
+.movo-app .notched-box.is-cut > .balance-card { box-shadow: none !important; border-color: transparent !important; }
+.notch-slot { position: absolute; top: 0; right: 0; z-index: 3; }
+.movo-app .home-period-filter.in-notch { display: inline-flex; align-items: center; gap: 8px; height: 40px; min-height: 40px; max-height: none; margin: 0; padding: 0 14px 0 7px; border: 0; border-radius: 999px; background: var(--card-solid); color: var(--text); box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--text) 8%, transparent); opacity: 1; transform: none; transition: transform .2s ease-out, background-color .2s ease-out; }
+.movo-app .home-period-filter.in-notch:active { transform: scale(.97); }
+.movo-app .home-period-filter.in-notch .home-period-icon { display: grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; border-radius: 50%; background: rgba(var(--accent-rgb), .12); color: var(--accent); }
+.movo-app .home-period-filter.in-notch .home-period-current { font-size: 13px; font-weight: 650; letter-spacing: -.01em; }
+.movo-app .home-period-filter.in-notch .home-period-chevron { color: var(--muted); transform: rotate(90deg); }
+.movo-app .balance-card.notched .balance-label { min-height: 24px; }
+.movo-app .balance-card.notched .balance-go { top: auto; bottom: var(--box-pad); right: var(--box-pad); z-index: 2; }
+@media (prefers-reduced-motion: reduce) { .movo-app .home-period-filter.in-notch { transition: none; } }
