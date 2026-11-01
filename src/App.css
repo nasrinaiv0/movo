@@ -3303,3 +3303,8 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .sub-hero .balance-amount, .movo-app.movo-app .sub-hero-row b { color: #fff; }
 .movo-app.movo-app .sub-hero-row { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
 .movo-app :is(.back-button, .sub-header > button:first-child) { box-shadow: none; }
+
+/* Profile: the card holds the profile row and, when signed out, a Sign in button. */
+.movo-app .profile-card-wrap { padding: 0; margin-bottom: 14px; overflow: hidden; }
+.movo-app .profile-card-wrap > .profile-card { margin: 0; background: none; border: 0; box-shadow: none; border-radius: inherit; }
+.movo-app .profile-card-wrap > .profile-signin { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 2 * var(--box-pad, 16px)); height: 48px; min-height: 48px; margin: 0 var(--box-pad, 16px) var(--box-pad, 16px); border-radius: 16px; }

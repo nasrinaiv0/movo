@@ -13,11 +13,14 @@ export default function Profile({ c }) {
   const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
     <SubHeader title={tr('Profile')} onBack={() => go('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gear" size={19} /></button>} />
-    <button type="button" className="card profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
-      <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
-      <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small><em className="plan-pill"><Icon name="info" size={13} /> {tr('Plan details unavailable')}</em></span>
-      <Icon name="chevron" size={18} />
-    </button>
+    <div className="card profile-card-wrap">
+      <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
+        <span className="avatar big">{user.initial}<i><Icon name="camera" size={13} /></i></span>
+        <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small>{c.cloudMode && <em className="plan-pill"><Icon name="info" size={13} /> {tr('Plan details unavailable')}</em>}</span>
+        <Icon name="chevron" size={18} />
+      </button>
+      {!c.cloudMode && c.supabaseConfigured && <button type="button" className="primary-button profile-signin" onClick={() => go('Sign in')}><Icon name="user" size={18} /> {tr('Sign in')}</button>}
+    </div>
     <section className="stat-grid" aria-label={tr('Profile summary')}>
       {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance], ['Total Income', 'arrowDown', 'green', stats.income, deltas.income], ['Total Expense', 'arrowUp', 'red', stats.expenses, deltas.expenses]].map(([label, icon, tone, value, d]) =>
         <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, undefined, 0))}</strong><Trend value={d} size={11} /></article>)}
