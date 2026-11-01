@@ -445,7 +445,13 @@ function App() {
   // The bell / Home dot means "something new since you last opened Notifications"; row dots clear when each is opened.
   const seenAt = Date.parse(prefs.notifSeenAt || '') || 0;
   const unread = notifications.some(n => !prefs.readIds.includes(n.id) && (Date.parse(n.at) || 0) > seenAt);
-  useEffect(() => { if (view === 'Notifications') setPref('notifSeenAt', new Date().toISOString()); }, [view, notifications.length, setPref]);
+  useEffect(() => {
+    if (view !== 'Notifications') return;
+    // Mark everything currently visible as seen, even if a notification's
+    // timestamp is slightly ahead of the device clock.
+    const latestVisibleAt = notifications.reduce((latest, n) => Math.max(latest, Date.parse(n.at) || 0), Date.now());
+    setPref('notifSeenAt', new Date(latestVisibleAt).toISOString());
+  }, [view, notifications.length, setPref]);
   // The Subscriptions badge clears once the person has opened Subscriptions, until a different renewal comes due.
   const dueKey = subSummary.dueSoon.map(s => `${s.id}:${s.next}`).join(',');
   useEffect(() => { if (view === 'Subscriptions' && dueKey && prefs.subsSeen !== dueKey) setPref('subsSeen', dueKey); }, [view, dueKey, prefs.subsSeen, setPref]);
