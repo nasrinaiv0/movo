@@ -43,7 +43,8 @@ module.exports = async function handler(req, res) {
   const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
   if (Buffer.byteLength(JSON.stringify(body), 'utf8') > MAX_BODY_BYTES) return json(res, 413, { error: 'payload_too_large' });
   const action = body.action || 'log', token = bearer(req), api = clients();
-  if (!api) return json(res, 503, { error: 'automation_service_unavailable' });
+  let stage = 'request_received';
+  if (!api) { console.error('[movo-automation] request failed', { stage, reason: 'service_not_configured' }); return json(res, 503, { error: 'automation_service_unavailable' }); }
   try {
     if (action === 'register') {
       const deviceKey = typeof body.deviceKey === 'string' ? body.deviceKey : '';
@@ -67,17 +68,20 @@ module.exports = async function handler(req, res) {
       return json(res, 200, { success: true, revoked: true });
     }
     if (action !== 'log') return json(res, 400, { error: 'invalid_action' });
+    stage = 'authenticate_device';
     if (!KEY_RE.test(token)) return json(res, 401, { error: 'invalid_device_key' });
     const tokenHash = sha256(token);
     const { data: registered, error: tokenError } = await api.admin.from('movo_automation_tokens').select('user_id,active').eq('token_hash', tokenHash).maybeSingle();
     if (tokenError) throw tokenError;
     if (!registered?.active) return json(res, 401, { error: 'device_not_registered' });
+    stage = 'validate_transaction';
     const amount = amountValue(body.amount), merchant = cleanText(body.merchant, 160), card = cleanText(body.card || body.account, 100), reference = cleanText(body.reference, 120);
     const source = SOURCES.has(body.source) ? body.source : 'notification';
     if (!amount || !merchant) return json(res, 400, { error: 'invalid_transaction' });
     const parsedDate = body.occurredAt ? Date.parse(body.occurredAt) : Date.now();
     if (!Number.isFinite(parsedDate) || parsedDate < Date.now() - 366 * 86400000 || parsedDate > Date.now() + 86400000) return json(res, 400, { error: 'invalid_transaction_date' });
     const occurredAt = new Date(parsedDate).toISOString();
+    stage = 'match_account';
     const { data: accounts, error: accountsError } = await api.admin.from('financial_accounts').select('id,name,account_type,institution_name,currency,is_archived,display_order').eq('user_id', registered.user_id).eq('is_archived', false).order('display_order', { ascending: true });
     if (accountsError) throw accountsError;
     const account = accountFor(accounts || [], card);
@@ -85,16 +89,19 @@ module.exports = async function handler(req, res) {
     const requestId = idempotencyKey({ source, amount, merchant, card, occurredAt, reference });
     const sourceLabel = source === 'applepay' ? 'Apple Pay' : source === 'googlepay' ? 'Google Pay' : source === 'bank' ? 'bank notification' : 'notification';
     const note = [`Logged from ${sourceLabel}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ').slice(0, 1000);
-    const { data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_amount: amount, p_currency: account.currency || 'PHP', p_merchant: merchant, p_category: 'Other', p_occurred_at: occurredAt, p_note: note, p_external_reference: reference || null });
+    stage = 'persist_transaction';
+    const { data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_amount: amount, p_currency: account.currency || 'PHP', p_merchant: merchant, p_category: 'Other', p_occurred_at: occurredAt, p_note: note, p_source: source, p_external_reference: reference || null });
     if (rpcError) {
       if (String(rpcError.message || '').includes('rate_limited')) return json(res, 429, { error: 'rate_limited' });
       if (String(rpcError.message || '').includes('account_invalid')) return json(res, 409, { error: 'account_invalid' });
       throw rpcError;
     }
-    await api.admin.from('movo_automation_tokens').update({ last_used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
+    const { error: usageError } = await api.admin.from('movo_automation_tokens').update({ last_used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
+    if (usageError) console.error('[movo-automation] usage timestamp update failed', { message: String(usageError.message || 'unknown').slice(0, 160) });
+    console.info('[movo-automation] transaction persisted', { source, duplicate: Boolean(result?.duplicate), transactionIdPresent: Boolean(result?.transaction_id) });
     return json(res, 200, { success: true, duplicate: Boolean(result?.duplicate), transactionId: result?.transaction_id || null });
   } catch (error) {
-    console.error('[movo-automation] request failed', { message: String(error?.message || 'unknown').slice(0, 200) });
+    console.error('[movo-automation] request failed', { stage, message: String(error?.message || 'unknown').slice(0, 200) });
     return json(res, 500, { error: 'automation_request_failed' });
   }
 };
