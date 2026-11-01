@@ -3055,16 +3055,6 @@ button.account-tile:active { transform: scale(.98); }
 .card-stack-leaving { position: absolute; inset: 0; z-index: -1; pointer-events: none; animation: stack-leave .52s cubic-bezier(.22,.61,.36,1) both; }
 @keyframes stack-rise { from { transform: translateY(64px) scale(.94); opacity: .5; } }
 @keyframes stack-leave { to { transform: translateY(-12%) scale(.9); opacity: 0; } }
-.card-stack-strips { display: grid; gap: 6px; margin-top: 8px; }
-.card-stack-strip { position: relative; display: block; height: 48px; padding: 0; border: 0; border-radius: 16px; overflow: hidden; background: none; cursor: pointer; animation: strip-in .4s cubic-bezier(.22,.61,.36,1) both; animation-delay: calc(var(--i, 0) * 40ms); transition: transform .2s ease-out; }
-.card-stack-strip:active { transform: scale(.985); }
-.card-stack-peek { position: absolute; inset: 0 0 auto 0; pointer-events: none; }
-.card-stack-peek .credit-card { border-radius: 16px; box-shadow: none !important; }
-.card-stack-peek .cc-face { opacity: 0; }
-.card-stack-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px; background: rgba(0,0,0,.28); color: #fff; font-size: 13.5px; }
-.card-stack-label strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-stack-label span { font-variant-numeric: tabular-nums; font-weight: 600; }
-@keyframes strip-in { from { opacity: 0; transform: translateY(-10px); } }
 
 /* Portrait: 3D cylinder carousel. */
 .card-cylinder { display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -18px 14px; padding: 10px 0 16px; }
@@ -3073,7 +3063,7 @@ button.account-tile:active { transform: scale(.98); }
 .card-cylinder-face { flex: 0 0 54%; padding: 0; border: 0; background: none; scroll-snap-align: center; transform: perspective(900px) rotateY(calc(var(--d, 0) * -42deg)) translateZ(calc(var(--ad, 0) * -70px)) scale(calc(1 - var(--ad, 0) * .06)); opacity: calc(1 - var(--ad, 0) * .4); transform-origin: 50% 50%; will-change: transform; cursor: pointer; }
 .card-cylinder-face .credit-card { width: 100%; }
 @media (prefers-reduced-motion: reduce) {
-  .card-stack-card.entering, .card-stack-leaving, .card-stack-strip { animation: none; }
+  .card-stack-card.entering, .card-stack-leaving { animation: none; }
   .card-cylinder-face { transform: none; opacity: 1; }
 }
 /* Tuning: neighbours stay visible on the cylinder; the four sort options share one row. */
@@ -3097,3 +3087,9 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .home-header .header-action-buttons > * { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
 .movo-app .home-header .home-period-filter { grid-area: period; justify-self: end; display: inline-flex; align-items: center; gap: 8px; height: 40px; min-height: 40px; margin: 0; padding: 0 14px; border-radius: 999px; }
 .movo-app .home-header .home-period-filter.is-hidden { display: none; }
+
+/* Landscape wallet: no peeking strips; small dots switch cards. */
+.card-stack-dots { display: flex; justify-content: center; gap: 2px; margin-top: 6px; }
+.card-stack-dots button { width: 20px; height: 20px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.card-stack-dots button::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--muted, #8e8e93); opacity: .35; transition: width .25s ease-out, opacity .25s ease-out, background-color .25s ease-out; }
+.card-stack-dots button.active::before { width: 16px; opacity: 1; background: var(--accent); }

@@ -1,26 +1,23 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { canAnimate } from '../lib/motion';
 import { t as tr } from '../lib/i18n';
-import { money, shown } from '../lib/format';
 
 /*
  * How the wallet shows several cards.
- * - Landscape: a stacked wallet. The chosen card sits in front; the others peek below as strips (name and balance).
- *   Tapping a strip, or swiping the front card up/down, sends the front card up and back while the chosen one rises
- *   into place.
+ * - Landscape: one card at a time. Swiping the front card (any direction) or tapping a dot sends it up and back
+ *   while the next one rises into place.
  * - Portrait: a 3D cylinder. Cards sit on a curved surface and turn as the row is swiped; the centred card faces you.
  * Motion is transform/opacity only (GPU-composited) and is skipped for reduced-motion users and in tests.
  */
-export default function CardDeck({ cards, selectedId, onSelect, renderCard, orientation = 'landscape', show = true }) {
+export default function CardDeck({ cards, selectedId, onSelect, renderCard, orientation = 'landscape' }) {
   return orientation === 'portrait'
     ? <CardCylinder cards={cards} selectedId={selectedId} onSelect={onSelect} renderCard={renderCard} />
-    : <CardStack cards={cards} selectedId={selectedId} onSelect={onSelect} renderCard={renderCard} show={show} />;
+    : <CardStack cards={cards} selectedId={selectedId} onSelect={onSelect} renderCard={renderCard} />;
 }
 
-function CardStack({ cards, selectedId, onSelect, renderCard, show }) {
+function CardStack({ cards, selectedId, onSelect, renderCard }) {
   const index = Math.max(0, cards.findIndex(a => a.id === selectedId));
   const front = cards[index];
-  const rest = cards.filter((_, i) => i !== index);
   const [leaving, setLeaving] = useState(null); // the previous front card, animating up and behind
   const [entering, setEntering] = useState(false);
   const prev = useRef(front?.id);
@@ -38,11 +35,14 @@ function CardStack({ cards, selectedId, onSelect, renderCard, show }) {
 
   if (!front) return null;
   const step = (dir) => { if (cards.length > 1) onSelect(cards[(index + dir + cards.length) % cards.length].id); };
-  const onTouchStart = (e) => { touch.current = e.touches[0].clientY; };
+  const onTouchStart = (e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
   const onTouchEnd = (e) => {
-    if (touch.current == null) return;
-    const dy = e.changedTouches[0].clientY - touch.current; touch.current = null;
-    if (Math.abs(dy) > 40) step(dy < 0 ? 1 : -1);
+    if (!touch.current) return;
+    const dx = (e.changedTouches[0].clientX ?? touch.current.x) - touch.current.x;
+    const dy = (e.changedTouches[0].clientY ?? touch.current.y) - touch.current.y;
+    touch.current = null;
+    const d = Math.abs(dx) > Math.abs(dy) ? dx : dy;
+    if (Math.abs(d) > 40) step(d < 0 ? 1 : -1);
   };
 
   return <div className="card-stack" aria-label={tr('Your cards')}>
@@ -50,11 +50,8 @@ function CardStack({ cards, selectedId, onSelect, renderCard, show }) {
       {leaving && <div className="card-stack-leaving" aria-hidden="true">{renderCard(leaving)}</div>}
       <div key={front.id} className={`card-stack-card${entering ? ' entering' : ''}`}>{renderCard(front)}</div>
     </div>
-    {rest.length > 0 && <div className="card-stack-strips" role="list">
-      {rest.map((a, i) => <button type="button" role="listitem" key={a.id} className="card-stack-strip" style={{ '--i': i }} onClick={() => onSelect(a.id)} aria-label={tr('Show {name} card', { name: a.name })}>
-        <span className="card-stack-peek" aria-hidden="true">{renderCard(a)}</span>
-        <span className="card-stack-label"><strong>{a.name}</strong><span>{shown(show, money(a.balance, a.currency))}</span></span>
-      </button>)}
+    {cards.length > 1 && <div className="card-stack-dots">
+      {cards.map((a, i) => <button type="button" key={a.id} className={i === index ? 'active' : ''} onClick={() => onSelect(a.id)} aria-label={tr('Show {name} card', { name: a.name })} aria-current={i === index ? 'true' : undefined} />)}
     </div>}
   </div>;
 }

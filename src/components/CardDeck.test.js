@@ -13,19 +13,21 @@ function mount(props) {
   return { el, root };
 }
 
-test('landscape stacks the chosen card in front with the others as strips', () => {
+test('landscape shows only the chosen card, with dots to switch', () => {
   const picked = [];
   const { el, root } = mount({ selectedId: 'b', onSelect: (id) => picked.push(id), orientation: 'landscape' });
   expect(el.querySelector('.card-stack-front').textContent).toBe('GoTyme');
-  const strips = Array.from(el.querySelectorAll('.card-stack-strip'));
-  expect(strips.map(s => s.querySelector('strong').textContent)).toEqual(['BPI', 'Metrobank']);
-  act(() => strips[1].click());
+  expect(el.querySelector('.card-stack-strip')).toBeNull();
+  const dots = Array.from(el.querySelectorAll('.card-stack-dots button'));
+  expect(dots).toHaveLength(3);
+  expect(dots[1].getAttribute('aria-current')).toBe('true');
+  act(() => dots[2].click());
   expect(picked).toEqual(['c']);
   // Swiping up on the front card shows the next card.
   const front = el.querySelector('.card-stack-front');
   act(() => {
-    front.dispatchEvent(Object.assign(new Event('touchstart', { bubbles: true }), { touches: [{ clientY: 300 }] }));
-    front.dispatchEvent(Object.assign(new Event('touchend', { bubbles: true }), { changedTouches: [{ clientY: 200 }] }));
+    front.dispatchEvent(Object.assign(new Event('touchstart', { bubbles: true }), { touches: [{ clientX: 100, clientY: 300 }] }));
+    front.dispatchEvent(Object.assign(new Event('touchend', { bubbles: true }), { changedTouches: [{ clientX: 100, clientY: 200 }] }));
   });
   expect(picked).toEqual(['c', 'c']);
   act(() => root.unmount());
