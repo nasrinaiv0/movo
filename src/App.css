@@ -2878,3 +2878,32 @@ button.account-tile:active { transform: scale(.98); }
   content: none !important;
   display: none !important;
 }
+
+
+/* Match the Home Total Balance hero height to the Transactions Total Spent card. */
+.movo-app .balance-card.size-L {
+  box-sizing: border-box;
+  height: 130px;
+  min-height: 130px;
+  padding: 14px 18px;
+}
+.movo-app .balance-card.size-L .balance-amount {
+  font-size: 26px;
+  line-height: 1.05;
+  margin: 4px 0 7px;
+}
+.movo-app .balance-card.size-L .balance-art {
+  width: 48%;
+  height: 74%;
+  bottom: 0;
+}
+.movo-app .total-card {
+  min-height: 130px;
+}
+@media (max-width: 360px) {
+  .movo-app .balance-card.size-L {
+    height: 136px;
+    min-height: 136px;
+    padding-inline: 14px;
+  }
+}
