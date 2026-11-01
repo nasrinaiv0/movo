@@ -21,6 +21,11 @@ import App from './App';
 import { seedLocalRecords } from './testFixtures';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Keep month-sensitive dashboard and notification tests deterministic.
+// The fixture transactions are intentionally dated in October 2026.
+const NativeDate = Date;
+const FIXED_TEST_NOW = '2026-10-29T12:00:00+08:00';
 window.scrollTo = jest.fn();
 function clickButton(container, name) {
   const button = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === name || item.textContent.trim() === name);
@@ -50,8 +55,19 @@ const openProfile = (container) => {
 
 describe('MOVO finance frontend', () => {
   let container; let root;
-  beforeEach(() => { window.localStorage.clear(); seedLocalRecords(); container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container); act(() => root.render(<App />)); });
-  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
+  beforeEach(() => {
+    global.Date = class FixedDate extends NativeDate {
+      constructor(...args) { super(...(args.length ? args : [FIXED_TEST_NOW])); }
+      static now() { return new NativeDate(FIXED_TEST_NOW).getTime(); }
+    };
+    window.localStorage.clear();
+    seedLocalRecords();
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+    act(() => root.render(<App />));
+  });
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); global.Date = NativeDate; });
 
   test('renders the home dashboard from the design: balance, summary, spending and recent activity', () => {
     expect(container.querySelector('h1').textContent).toContain('Friend');
