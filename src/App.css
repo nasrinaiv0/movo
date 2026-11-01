@@ -3184,3 +3184,39 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .balance-card.notched .balance-label { min-height: 24px; }
 .movo-app .balance-card.notched .balance-go { top: auto; bottom: var(--box-pad); right: var(--box-pad); z-index: 2; }
 @media (prefers-reduced-motion: reduce) { .movo-app .home-period-filter.in-notch { transition: none; } }
+
+/* Card face v3: proportions measured from the owner's mockups (landscape 85.6×54, portrait 54×85.6). */
+.movo-app .credit-card.ccx .ccx-face { padding: 8.4cqw 7.4cqw 7.6cqw 9cqw; text-shadow: none; }
+.movo-app .credit-card.ccx .ccx-brand { gap: 2.4cqw; }
+.movo-app .credit-card.ccx .ccx-brand img { width: 9.6cqw; height: 9.6cqw; padding: 0; background: none; border-radius: 22%; object-fit: contain; }
+.movo-app .credit-card.ccx .ccx-brand i { width: 9.6cqw; height: 9.6cqw; font-size: 5.2cqw; }
+.movo-app .credit-card.ccx .ccx-name { font-size: 5.8cqw; font-weight: 700; letter-spacing: -.025em; }
+.movo-app .credit-card.ccx .ccx-type { font-size: 4.2cqw; font-weight: 500; letter-spacing: -.01em; }
+.movo-app .credit-card.ccx .ccx-chiprow { gap: 5cqw; margin-top: 5cqw; }
+.movo-app .credit-card.ccx .ccx-chip.emv-chip { width: 12.2cqw; }
+.movo-app .credit-card.ccx .ccx-nfc { width: 6.8cqw; height: 6.8cqw; }
+.movo-app .credit-card.ccx .ccx-figures { gap: 1.6cqw; }
+.movo-app .credit-card.ccx .ccx-number { font-size: 3.4cqw; font-weight: 500; letter-spacing: .12em; opacity: .95; }
+.movo-app .credit-card.ccx .ccx-caption { font-size: 2.4cqw; }
+.movo-app .credit-card.ccx .ccx-balance { font-size: 5.8cqw; font-weight: 700; }
+.movo-app .credit-card.ccx .ccx-net { font-size: 8.2cqw; font-weight: 900; font-style: italic; letter-spacing: -.02em; }
+.movo-app .credit-card.ccx .ccx-net.net-mastercard { width: 18cqw; height: 10cqw; }
+.movo-app .credit-card.ccx .ccx-net.net-mastercard i { width: 10cqw; height: 10cqw; }
+.movo-app .credit-card.ccx.ink-light .ccx-net.net-visa { color: #fff; }
+.movo-app .credit-card.ccx.ink-dark .ccx-net.net-visa { color: #1a1f71; }
+/* Portrait */
+.movo-app .credit-card.ccx.orientation-portrait .ccx-face { padding: 10cqw 8cqw 8.4cqw 7.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-brand img, .movo-app .credit-card.ccx.orientation-portrait .ccx-brand i { width: 12.4cqw; height: 12.4cqw; font-size: 6.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-name { font-size: 7.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-type { font-size: 6.2cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chiprow { justify-content: center; gap: 5cqw; margin-top: 18cqw; padding-left: 16cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chip.emv-chip { width: 24cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-nfc { width: 11cqw; height: 11cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-figures { gap: 2.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-number { font-size: 5.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-caption { font-size: 3.8cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-balance { font-size: 8.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net { font-size: 7.2cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 11cqw; height: 6.8cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
+.movo-app .credit-card.ccx .ccx-net.net-visa { text-transform: uppercase; }

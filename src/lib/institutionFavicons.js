@@ -35,6 +35,7 @@ export const INSTITUTION_FAVICONS = {
   GrabPay: { domain: 'grab.com', countryCode: 'PH', kind: 'e_wallet' },
   ShopeePay: { domain: 'shopee.ph', countryCode: 'PH', kind: 'e_wallet' },
   'Coins.ph': { domain: 'coins.ph', countryCode: 'PH', kind: 'e_wallet' },
+  PayPal: { domain: 'paypal.com', countryCode: 'INTL', kind: 'e_wallet' },
 
   // United States
   Chase: { domain: 'chase.com', countryCode: 'US' },
