@@ -3152,3 +3152,15 @@ button.account-tile:active { transform: scale(.98); }
 /* Real brand logos (Google S2 favicons, owner-approved): a white squircle tile in rows; plain on cards. */
 .movo-app img.tile.tile-logo { flex: none; width: 44px; height: 44px; padding: 7px; box-sizing: border-box; border-radius: var(--r-tile, 30%); background: #fff; object-fit: contain; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.08); }
 .ccx-brand img { background: #fff; padding: .6cqw; box-sizing: border-box; }
+
+/* One inner padding for every summary box (16px on all sides); the trend chip sits on the bottom edge. */
+.movo-app { --box-pad: 16px; }
+.movo-app :is(.balance-card, .balance-card.size-L, .total-card, .stat-card, .spending-card, .breakdown-card, .mini-card, .balance-row, .transfer-card) { padding: var(--box-pad); }
+.movo-app :is(.balance-card, .balance-card.size-L) { display: flex; flex-direction: column; align-items: flex-start; }
+.movo-app .balance-card .balance-amount { margin: 6px 0 0; }
+.movo-app .balance-card > :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { margin-top: auto; }
+.movo-app .balance-card .balance-go { top: var(--box-pad); right: var(--box-pad); }
+.movo-app .balance-card:has(.balance-go) .balance-label { min-height: 34px; }
+.movo-app .total-card { align-items: stretch; }
+.movo-app .total-card > div:first-child { display: flex; flex-direction: column; align-items: flex-start; align-self: stretch; }
+.movo-app .total-card > div:first-child > :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { margin-top: auto; }
