@@ -3220,3 +3220,28 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 11cqw; height: 6.8cqw; }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
 .movo-app .credit-card.ccx .ccx-net.net-visa { text-transform: uppercase; }
+
+/* Card depth: no border ring. Blended outer shadow tinted by the card colour, plus inner light and shade. */
+.movo-app.movo-app .credit-card.ccx {
+  border: 0;
+  box-shadow:
+    0 1px 1px rgba(10, 14, 24, .05),
+    0 3px 6px -1px rgba(10, 14, 24, .07),
+    0 10px 20px -6px color-mix(in srgb, var(--card-tint, #1b2433) 38%, transparent),
+    0 22px 44px -14px color-mix(in srgb, var(--card-tint, #1b2433) 46%, transparent),
+    0 36px 64px -28px rgba(10, 14, 24, .3);
+}
+.movo-app.movo-app .credit-card.ccx::before {
+  content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .34),
+    inset 0 18px 28px -22px rgba(255, 255, 255, .5),
+    inset 0 -1px 0 rgba(0, 0, 0, .18),
+    inset 0 -26px 40px -28px rgba(0, 0, 0, .45),
+    inset 0 0 0 .5px rgba(255, 255, 255, .06);
+}
+.movo-app .credit-card.ccx .ccx-face { z-index: 2; }
+.movo-app .credit-card.ccx .ccx-chip.emv-chip { filter: drop-shadow(0 .4cqw .7cqw rgba(0, 0, 0, .28)); }
+.movo-app .card-cylinder { padding-bottom: 34px; }
+.movo-app .card-stack { margin-bottom: 20px; }
+.movo-app .card-stack-front { padding-bottom: 6px; }

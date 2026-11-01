@@ -33,4 +33,7 @@ export default [
   ["Available credit", "Available na credit", "الائتمان المتاح", "可用额度", "Crédito disponible", "Credito disponibile", "Verfügbarer Kredit", "Crédit disponible", "Crédito disponível", "利用可能額", "사용 가능 한도", "उपलब्ध क्रेडिट"],
   ["E-Wallet", "E-Wallet", "محفظة إلكترونية", "电子钱包", "Billetera digital", "Portafoglio digitale", "E-Wallet", "Portefeuille électronique", "Carteira digital", "電子ウォレット", "전자지갑", "ई-वॉलेट"],
   ["Pay Later", "Pay Later", "ادفع لاحقًا", "先买后付", "Paga después", "Paga dopo", "Später bezahlen", "Payer plus tard", "Pague depois", "後払い", "나중에 결제", "बाद में भुगतान"],
+  ["Platinum", "Platinum", "بلاتيني", "白金", "Platino", "Platino", "Platin", "Platine", "Platina", "プラチナ", "플래티넘", "प्लैटिनम"],
+  ["Gradient", "Gradient", "متدرّج", "渐变", "Degradado", "Sfumato", "Verlauf", "Dégradé", "Degradê", "グラデーション", "그라데이션", "ग्रेडिएंट"],
+  ["{name} finish", "{name} na finish", "لمسة {name}", "{name} 质感", "Acabado {name}", "Finitura {name}", "{name}-Finish", "Finition {name}", "Acabamento {name}", "{name} 仕上げ", "{name} 마감", "{name} फ़िनिश"],
 ];

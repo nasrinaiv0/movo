@@ -5,6 +5,7 @@ import { Sheet, Chips } from './ui';
 import { THEMES, GENRES, WALLPAPER_THEMES, WALLPAPER_GENRES, useCustomStickers, addCustomSticker, removeCustomSticker } from '../lib/stickers';
 import { t as tr } from '../lib/i18n';
 import { listPremiumStickers } from '../lib/premiumStickers';
+import { FINISHES, FINISH_PREFIX } from '../lib/cardFaces';
 
 const ALL = [...WALLPAPER_THEMES, ...THEMES];
 
@@ -42,6 +43,9 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
       <button type="button" role="listitem" className={`style-tile${!current ? ' selected' : ''}`} onClick={() => onPick('')} aria-label={tr('Classic, no sticker')} aria-pressed={!current}>
         <CardArt a={account} show={show} styleId="" /><span>{tr('Classic')}</span>{!current && <i className="style-check"><Icon name="check" size={14} strokeWidth={2.6} /></i>}
       </button>
+      {Object.entries(FINISHES).map(([key, f]) => { const id = `${FINISH_PREFIX}${key}`; return <button type="button" role="listitem" key={id} className={`style-tile${current === id ? ' selected' : ''}`} onClick={() => onPick(id)} aria-label={tr('{name} finish', { name: tr(f.name) })} aria-pressed={current === id}>
+        <CardArt a={account} show={show} styleId={id} compact /><span>{tr(f.name)}</span>{current === id && <i className="style-check"><Icon name="check" size={14} strokeWidth={2.6} /></i>}
+      </button>; })}
       <button type="button" role="listitem" className="style-tile upload" onClick={() => file.current?.click()} aria-label={tr('Upload your own sticker')}>
         <span className="upload-box"><Icon name="plus" size={26} /></span><span>{tr('Upload yours')}</span>
       </button>

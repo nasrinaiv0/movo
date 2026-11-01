@@ -6,7 +6,7 @@ import { EmvChip, Contactless } from './EmvChip';
 import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
-import { cardFaceFor, cardTypeLabel } from '../lib/cardFaces';
+import { cardFaceFor, cardTypeLabel, finishOf } from '../lib/cardFaces';
 import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
 const build = (node, key) => {
@@ -44,8 +44,53 @@ export const StickerArt = memo(function StickerArt({ theme, compact }) {
 
 export const resolveSticker = (id, list) => findSticker(id, list);
 
+/* Large 3D geometric shapes (sphere, cube, pyramid, torus, cylinder), shaded with light/dark overlays so they suit any
+   base colour. Placement is seeded by the card id: random per card, stable across renders. */
+function GeoShapes({ u, w, h, seed }) {
+  const r = rng(hash(seed || 'card'));
+  const kinds = ['sphere', 'cube', 'pyramid', 'torus', 'cylinder'];
+  const pick = []; while (pick.length < 3) { const k = kinds[Math.floor(r() * kinds.length)]; if (!pick.includes(k)) pick.push(k); }
+  // Clear areas: away from the logo row, chip row and the number/balance block.
+  const spots = h > w ? [[.8, .56], [.18, .6], [1.02, 1]] : [[.72, .58], [1.03, .04], [.56, 1.14]];
+  const S = Math.min(w, h);
+  return pick.map((k, i) => {
+    const x = w * (spots[i][0] + (r() - .5) * .08); const y = h * (spots[i][1] + (r() - .5) * .08);
+    const s = S * (i === 0 ? .26 : .2 + r() * .1);
+    const shadow = <ellipse cx={x + s * .25} cy={y + s * 1.05} rx={s * .95} ry={s * .22} fill="#000" opacity=".22" filter={`url(#${u}b)`} />;
+    let body;
+    if (k === 'sphere') body = <circle cx={x} cy={y} r={s} fill={`url(#${u}sph)`} />;
+    else if (k === 'cube') {
+      const c = s * .87;
+      body = <g>
+        <polygon points={`${x},${y - s} ${x + c},${y - s / 2} ${x},${y} ${x - c},${y - s / 2}`} fill="#fff" opacity=".34" />
+        <polygon points={`${x - c},${y - s / 2} ${x},${y} ${x},${y + s} ${x - c},${y + s / 2}`} fill="#fff" opacity=".1" />
+        <polygon points={`${x},${y} ${x + c},${y - s / 2} ${x + c},${y + s / 2} ${x},${y + s}`} fill="#000" opacity=".2" />
+      </g>;
+    } else if (k === 'pyramid') {
+      body = <g>
+        <polygon points={`${x},${y - s * 1.1} ${x - s},${y + s * .5} ${x + s * .15},${y + s * .8}`} fill="#fff" opacity=".3" />
+        <polygon points={`${x},${y - s * 1.1} ${x + s * .15},${y + s * .8} ${x + s},${y + s * .4}`} fill="#000" opacity=".2" />
+      </g>;
+    } else if (k === 'torus') {
+      const rot = Math.round(r() * 60 - 30);
+      body = <g transform={`rotate(${rot} ${x} ${y})`}>
+        <ellipse cx={x} cy={y} rx={s} ry={s * .55} fill="none" stroke={`url(#${u}tor)`} strokeWidth={s * .42} />
+        <ellipse cx={x} cy={y - s * .08} rx={s * .98} ry={s * .5} fill="none" stroke="#fff" strokeOpacity=".22" strokeWidth={s * .06} />
+      </g>;
+    } else {
+      const cw = s * .8; const top = y - s * .7; const bot = y + s * .7;
+      body = <g>
+        <rect x={x - cw} y={top} width={cw * 2} height={bot - top} fill={`url(#${u}cyl)`} />
+        <ellipse cx={x} cy={bot} rx={cw} ry={cw * .32} fill={`url(#${u}cyl)`} />
+        <ellipse cx={x} cy={top} rx={cw} ry={cw * .32} fill="#fff" opacity=".32" />
+      </g>;
+    }
+    return <g key={k}>{shadow}{body}</g>;
+  });
+}
+
 /* Default face art, after the owner's mockups: gradient base, soft highlight, and one motif per palette. */
-const CardFaceArt = memo(function CardFaceArt({ face, orientation }) {
+const CardFaceArt = memo(function CardFaceArt({ face, orientation, seed }) {
   const raw = useId(); const u = `f${raw.replace(/[^a-z0-9]/gi, '')}`;
   const P = orientation === 'portrait';
   const w = P ? 540 : 856; const h = P ? 856 : 540;
@@ -106,10 +151,16 @@ const CardFaceArt = memo(function CardFaceArt({ face, orientation }) {
       <linearGradient id={`${u}pan`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".1" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
       <radialGradient id={`${u}hl`} cx=".18" cy=".1" r=".7"><stop offset="0" stopColor="#fff" stopOpacity={face.ink === 'dark' ? '.35' : '.14'} /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
       <filter id={`${u}b`} x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14" /></filter>
+      <radialGradient id={`${u}sph`} cx=".34" cy=".3" r=".75"><stop offset="0" stopColor="#fff" stopOpacity=".6" /><stop offset=".5" stopColor="#fff" stopOpacity=".08" /><stop offset="1" stopColor="#000" stopOpacity=".3" /></radialGradient>
+      <linearGradient id={`${u}cyl`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#000" stopOpacity=".22" /><stop offset=".35" stopColor="#fff" stopOpacity=".34" /><stop offset="1" stopColor="#000" stopOpacity=".28" /></linearGradient>
+      <linearGradient id={`${u}tor`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".45" /><stop offset=".55" stopColor="#fff" stopOpacity=".06" /><stop offset="1" stopColor="#000" stopOpacity=".3" /></linearGradient>
+      <linearGradient id={`${u}sh`} x1="0" y1="0" x2="1" y2="1"><stop offset=".25" stopColor="#fff" stopOpacity="0" /><stop offset=".45" stopColor="#fff" stopOpacity=".55" /><stop offset=".52" stopColor="#fff" stopOpacity=".1" /><stop offset=".7" stopColor="#fff" stopOpacity="0" /></linearGradient>
     </defs>
     <rect width={w} height={h} fill={`url(#${u}bg)`} />
     <rect width={w} height={h} fill={`url(#${u}hl)`} />
     {motif}
+    {face.geo && <GeoShapes u={u} w={w} h={h} seed={seed} />}
+    {face.sheen && <rect width={w} height={h} fill={`url(#${u}sh)`} />}
   </svg>;
 });
 
@@ -127,9 +178,10 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
   const remoteSticker = isStorageStickerId(styleId);
   const [remoteUrl, setRemoteUrl] = useState('');
   useEffect(() => { let active = true; setRemoteUrl(''); if (remoteSticker) resolvePremiumStickerUrl(storageStickerPath(styleId)).then(url => { if (active) setRemoteUrl(url); }).catch(() => { if (active) setRemoteUrl(''); }); return () => { active = false; }; }, [styleId, remoteSticker]);
-  const sticker = remoteSticker ? null : resolveSticker(styleId, custom);
+  const sticker = remoteSticker || finishOf(styleId) ? null : resolveSticker(styleId, custom);
   const theme = sticker || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
-  const face = theme || remoteSticker ? null : cardFaceFor(a);
+  const finish = finishOf(styleId);
+  const face = finish || (theme || remoteSticker ? null : cardFaceFor(a));
   const ink = theme ? theme.ink : face ? face.ink : 'light';
   const network = String(cardNetwork || a.cardNetwork || a.card_network || '').toLowerCase();
   const networkName = NETWORKS[network] || '';
@@ -139,9 +191,9 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
   const showBalance = visibleFields.balance !== false;
   const institutionLogo = institutionLogoUrl(a.institution_name) || institutionLogoUrl(a.name);
   const credit = a.cardKind === 'credit';
-  return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`}>
+  return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`} style={face ? { '--card-tint': face.c2 } : undefined}>
     {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}
-    {face && <CardFaceArt face={face} orientation={orientation} />}
+    {face && <CardFaceArt face={face} orientation={orientation} seed={a.id || a.name} />}
     {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="ccx-face">
       <div className="ccx-head">

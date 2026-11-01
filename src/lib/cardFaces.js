@@ -58,3 +58,16 @@ export function cardTypeLabel(a = {}, face) {
   if (face?.label) return face.label;
   return ({ bank: 'Bank', card: 'Card', e_wallet: 'E-Wallet', cash: 'Cash', investment: 'Investment', coupon: 'Coupon', gift_card: 'Gift card', other: 'Other' })[a.account_type] || 'Card';
 }
+
+/*
+ * Premium finishes a person can pick in Card Style (stored as the card's style id "finish:<name>").
+ * Metallic finishes get a brushed sheen; every finish gets large 3D geometric shapes, placed per card.
+ */
+export const FINISHES = {
+  gold: F('#f6e3a6', '#b7862a', '#fff6d8', { c3: '#e4bf62', ink: 'dark', chip: 'gold', sheen: true, geo: true, name: 'Gold' }),
+  platinum: F('#f4f6f9', '#a7aeb9', '#ffffff', { c3: '#d9dee5', ink: 'dark', chip: 'silver', sheen: true, geo: true, name: 'Platinum' }),
+  silver: F('#e3e6ea', '#7f8792', '#ffffff', { c3: '#bfc5cc', ink: 'dark', chip: 'silver', sheen: true, geo: true, name: 'Silver' }),
+  gradient: F('#6d5bff', '#ffae5c', '#ffffff', { c3: '#ff5fa2', chip: 'gold', geo: true, name: 'Gradient' }),
+};
+export const FINISH_PREFIX = 'finish:';
+export const finishOf = (styleId) => (typeof styleId === 'string' && styleId.startsWith(FINISH_PREFIX) ? FINISHES[styleId.slice(FINISH_PREFIX.length)] || null : null);
