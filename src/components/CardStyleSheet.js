@@ -10,7 +10,7 @@ const ALL = [...WALLPAPER_THEMES, ...THEMES];
 
 const PAGE = 18;
 /* Display names follow the app language: collection names and palette/motif words are translated. */
-const nameOf = (t) => (t.custom || t.video ? t.name : t.wallpaper ? `${tr(t.genre)} ${t.name.split(' ').pop()}` : `${tr(t.palette.n)} ${tr(t.motif.n)}`);
+const nameOf = (t) => (t.storage || t.custom || t.video ? t.name : t.wallpaper ? `${tr(t.genre)} ${t.name.split(' ').pop()}` : `${tr(t.palette.n)} ${tr(t.motif.n)}`);
 
 export default function CardStyleSheet({ account, show, holder, current, onPick, onClose }) {
   const custom = useCustomStickers();
