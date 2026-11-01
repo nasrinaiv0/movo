@@ -8,9 +8,16 @@ describe('institution favicon registry', () => {
     });
   });
 
-  test('fails closed for known institutions until provider-specific review is recorded', () => {
-    expect(getInstitutionFaviconUrl('BDO Unibank')).toBeNull();
-    expect(getInstitutionFaviconUrl('BPI')).toBeNull();
+  test('owner approval enables curated institutions; a BLOCKED entry stays off', () => {
+    expect(new URL(getInstitutionFaviconUrl('BDO Unibank')).searchParams.get('domain')).toBe('bdo.com.ph');
+    expect(new URL(getInstitutionFaviconUrl('bpi')).searchParams.get('domain')).toBe('bpi.com.ph');
+    const entry = INSTITUTION_FAVICONS.BPI;
+    try {
+      entry.reviewStatus = 'BLOCKED';
+      expect(getInstitutionFaviconUrl('BPI')).toBeNull();
+    } finally {
+      delete entry.reviewStatus;
+    }
   });
 
   test('generates a dynamic favicon URL only after the exact entry has an approved review status', () => {
@@ -54,11 +61,10 @@ describe('institution favicon registry', () => {
     expect(getInstitutionFaviconUrl(null)).toBeNull();
   });
 
-  test('every institution entry remains blocked until reviewed', () => {
+  test('every institution entry has a curated domain and country', () => {
     for (const entry of Object.values(INSTITUTION_FAVICONS)) {
-      expect(entry.domain).toBeTruthy();
+      expect(entry.domain).toMatch(/^[a-z0-9.-]+\.[a-z]{2,}$/);
       expect(entry.countryCode).toBeTruthy();
-      expect(entry.reviewStatus).toBeUndefined();
     }
   });
 });

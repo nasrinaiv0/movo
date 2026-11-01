@@ -22,8 +22,10 @@ describe('country-aware institution catalog', () => {
     expect(searchInstitutions('PH', 'My local cooperative', 'bank')).toHaveLength(0);
   });
 
-  test('does not request remote institution logos until the domain has a legal review status', () => {
-    expect(institutionLogoUrl('BDO Unibank')).toBe('');
+  test('resolves owner-approved logos by name or alias, never for unknown names', () => {
+    expect(new URL(institutionLogoUrl('BDO')).searchParams.get('domain')).toBe('bdo.com.ph');
+    expect(new URL(institutionLogoUrl('China Bank')).searchParams.get('domain')).toBe('chinabank.ph');
+    expect(institutionLogoUrl('My Local Credit Union')).toBe('');
   });
 
   test('catalog entries have stable ids and country metadata', () => {

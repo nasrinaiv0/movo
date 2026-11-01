@@ -5,6 +5,8 @@ import { canAnimate, useCountUp } from '../lib/motion';
 import { t as tr } from '../lib/i18n';
 import { percentLabel } from '../lib/trend';
 import { isFresh } from '../lib/freshRecords';
+import BrandLogo from './BrandLogo';
+import { merchantLogoUrl } from '../lib/merchantFavicons';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency }) {
@@ -185,7 +187,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
   return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
-    <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} tone="blue" />
+    {t.type === 'transfer' ? <Tile name={t.merchant} icon="transfer" tone="blue" /> : <BrandLogo src={merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} fallback={<Tile name={t.merchant} />} />}
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
     <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
   </button>;

@@ -3,6 +3,7 @@ import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from
 import { money, shown } from '../lib/format';
 import { canAnimate } from '../lib/motion';
 import { EmvChip, Contactless } from './EmvChip';
+import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
 import { cardFaceFor, cardTypeLabel } from '../lib/cardFaces';
@@ -104,7 +105,7 @@ export default function CardArt({ a, show, styleId, holder, preview, compact, di
   const showNumber = visibleFields.cardNumber !== false && details;
   const showHolder = visibleFields.holderName === true && details;
   const showBalance = visibleFields.balance !== false;
-  const institutionLogo = institutionLogoUrl(a.institution_name);
+  const institutionLogo = institutionLogoUrl(a.institution_name) || institutionLogoUrl(a.name);
   const credit = a.cardKind === 'credit';
   return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`}>
     {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}
@@ -112,7 +113,7 @@ export default function CardArt({ a, show, styleId, holder, preview, compact, di
     {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="ccx-face">
       <div className="ccx-head">
-        <span className="ccx-brand">{institutionLogo ? <img src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
+        <span className="ccx-brand"><BrandLogo src={institutionLogo} size={30} fallback={<i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>} />{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
         {details && <span className="ccx-type">{tr(cardTypeLabel(a))}</span>}
       </div>
       <div className="ccx-chiprow"><EmvChip finish={a.chip || 'gold'} className="ccx-chip" />{a.contactless !== false && <Contactless className="ccx-nfc" />}</div>
