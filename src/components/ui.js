@@ -5,6 +5,8 @@ import { canAnimate, useCountUp } from '../lib/motion';
 import { t as tr } from '../lib/i18n';
 import { percentLabel } from '../lib/trend';
 import { isFresh } from '../lib/freshRecords';
+import BrandLogo from './BrandLogo';
+import { merchantLogoUrl } from '../lib/merchantFavicons';
 
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency }) {
@@ -21,11 +23,11 @@ export function IconButton({ icon, label, onClick, dot, size = 20 }) {
 }
 
 /** Large-title header used by the five root screens. */
-export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell }) {
+export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell, action }) {
   return <header className="screen-header root">
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
-      {!hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
+      {action ? <IconButton icon={action.icon} label={action.label} onClick={action.onClick} /> : !hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
       {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
       {onSettings && <IconButton icon="gear" label={tr('Settings')} onClick={onSettings} />}
     </div>
@@ -51,13 +53,21 @@ export function Chips({ items, value, onChange, trailing, label }) {
   const row = useRef(null);
   const [ind, setInd] = useState(null);
   const [ready, setReady] = useState(false);
+  // The highlight copies the selected chip's box exactly (position and size), and follows it when the row resizes.
   useLayoutEffect(() => {
-    const el = row.current?.querySelector('button[data-chip][aria-pressed="true"]');
-    if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
+    const rowEl = row.current;
+    const measure = () => {
+      const el = rowEl?.querySelector('button[data-chip][aria-pressed="true"]');
+      if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+    };
+    measure();
+    if (!rowEl || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(measure); ro.observe(rowEl);
+    return () => ro.disconnect();
   }, [value, items.length]);
   useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
   return <div className="chip-row" role="group" aria-label={label} ref={row}>
-    {ind && <span className={`chip-ind${ready ? ' ready' : ''}`} aria-hidden="true" style={{ transform: `translateX(${ind.left}px)`, width: ind.width }} />}
+    {ind && <span className={`chip-ind${ready ? ' ready' : ''}`} aria-hidden="true" style={{ transform: `translateX(${ind.left}px)`, top: ind.top, width: ind.width, height: ind.height }} />}
     {items.map(item => {
       const key = typeof item === 'string' ? item : item.key; const text = typeof item === 'string' ? item : item.label;
       return <button key={key} data-chip type="button" className={value === key ? 'selected' : ''} aria-pressed={value === key} onClick={() => onChange(key)}>{text}{item.dot && <i className="red-dot inline" />}</button>;
@@ -185,7 +195,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
   return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
-    <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} tone="blue" />
+    {t.type === 'transfer' ? <Tile name={t.merchant} icon="transfer" tone="blue" /> : <BrandLogo src={merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} fallback={<Tile name={t.merchant} />} />}
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
     <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
   </button>;

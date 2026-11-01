@@ -3,8 +3,10 @@ import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from
 import { money, shown } from '../lib/format';
 import { canAnimate } from '../lib/motion';
 import { EmvChip, Contactless } from './EmvChip';
+import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
+import { cardFaceFor, cardTypeLabel, finishOf } from '../lib/cardFaces';
 import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
 const build = (node, key) => {
@@ -42,35 +44,171 @@ export const StickerArt = memo(function StickerArt({ theme, compact }) {
 
 export const resolveSticker = (id, list) => findSticker(id, list);
 
-/* A bank card with reserved room for logo/name, chip, network, number and holder over any sticker. */
-export default function CardArt({ a, show, styleId, holder, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape' }) {
+/* Large 3D geometric shapes (sphere, cube, pyramid, torus, cylinder), shaded with light/dark overlays so they suit any
+   base colour. Placement is seeded by the card id: random per card, stable across renders. */
+function GeoShapes({ u, w, h, seed }) {
+  const r = rng(hash(seed || 'card'));
+  const kinds = ['sphere', 'cube', 'pyramid', 'torus', 'cylinder'];
+  const pick = []; while (pick.length < 3) { const k = kinds[Math.floor(r() * kinds.length)]; if (!pick.includes(k)) pick.push(k); }
+  // Clear areas: away from the logo row, chip row and the number/balance block.
+  const spots = h > w ? [[.8, .56], [.18, .6], [1.02, 1]] : [[.72, .58], [1.03, .04], [.56, 1.14]];
+  const S = Math.min(w, h);
+  return pick.map((k, i) => {
+    const x = w * (spots[i][0] + (r() - .5) * .08); const y = h * (spots[i][1] + (r() - .5) * .08);
+    const s = S * (i === 0 ? .26 : .2 + r() * .1);
+    const shadow = <ellipse cx={x + s * .25} cy={y + s * 1.05} rx={s * .95} ry={s * .22} fill="#000" opacity=".22" filter={`url(#${u}b)`} />;
+    let body;
+    if (k === 'sphere') body = <circle cx={x} cy={y} r={s} fill={`url(#${u}sph)`} />;
+    else if (k === 'cube') {
+      const c = s * .87;
+      body = <g>
+        <polygon points={`${x},${y - s} ${x + c},${y - s / 2} ${x},${y} ${x - c},${y - s / 2}`} fill="#fff" opacity=".34" />
+        <polygon points={`${x - c},${y - s / 2} ${x},${y} ${x},${y + s} ${x - c},${y + s / 2}`} fill="#fff" opacity=".1" />
+        <polygon points={`${x},${y} ${x + c},${y - s / 2} ${x + c},${y + s / 2} ${x},${y + s}`} fill="#000" opacity=".2" />
+      </g>;
+    } else if (k === 'pyramid') {
+      body = <g>
+        <polygon points={`${x},${y - s * 1.1} ${x - s},${y + s * .5} ${x + s * .15},${y + s * .8}`} fill="#fff" opacity=".3" />
+        <polygon points={`${x},${y - s * 1.1} ${x + s * .15},${y + s * .8} ${x + s},${y + s * .4}`} fill="#000" opacity=".2" />
+      </g>;
+    } else if (k === 'torus') {
+      const rot = Math.round(r() * 60 - 30);
+      body = <g transform={`rotate(${rot} ${x} ${y})`}>
+        <ellipse cx={x} cy={y} rx={s} ry={s * .55} fill="none" stroke={`url(#${u}tor)`} strokeWidth={s * .42} />
+        <ellipse cx={x} cy={y - s * .08} rx={s * .98} ry={s * .5} fill="none" stroke="#fff" strokeOpacity=".22" strokeWidth={s * .06} />
+      </g>;
+    } else {
+      const cw = s * .8; const top = y - s * .7; const bot = y + s * .7;
+      body = <g>
+        <rect x={x - cw} y={top} width={cw * 2} height={bot - top} fill={`url(#${u}cyl)`} />
+        <ellipse cx={x} cy={bot} rx={cw} ry={cw * .32} fill={`url(#${u}cyl)`} />
+        <ellipse cx={x} cy={top} rx={cw} ry={cw * .32} fill="#fff" opacity=".32" />
+      </g>;
+    }
+    return <g key={k}>{shadow}{body}</g>;
+  });
+}
+
+/* Default face art, after the owner's mockups: gradient base, soft highlight, and one motif per palette. */
+const CardFaceArt = memo(function CardFaceArt({ face, orientation, seed }) {
+  const raw = useId(); const u = `f${raw.replace(/[^a-z0-9]/gi, '')}`;
+  const P = orientation === 'portrait';
+  const w = P ? 540 : 856; const h = P ? 856 : 540;
+  const g = face.glow;
+  let motif = null;
+  if (face.motif === 'sweep') {
+    const curve = P ? 'M0 600 C 170 560 370 470 540 330' : 'M300 540 C 500 420 660 300 856 250';
+    motif = <>
+      <path d={P ? `${curve} L540 856 L0 856 Z` : `${curve} L856 540 Z`} fill={`url(#${u}pan)`} />
+      <path d={curve} fill="none" stroke={g} strokeWidth="22" opacity=".35" filter={`url(#${u}b)`} />
+      <path d={curve} fill="none" stroke={g} strokeWidth="2.6" opacity=".95" strokeLinecap="round" />
+      {face.spark && <ellipse cx={P ? 470 : 760} cy={P ? 395 : 280} rx="70" ry="10" fill={face.spark} opacity=".8" filter={`url(#${u}b)`} transform={`rotate(-28 ${P ? 470 : 760} ${P ? 395 : 280})`} />}
+    </>;
+  } else if (face.motif === 'cross') {
+    const beams = P ? ['M-40 470 L560 300 L580 360 L-20 540 Z', 'M80 250 L600 700 L560 760 L40 310 Z'] : ['M260 560 L880 120 L900 190 L300 600 Z', 'M330 -20 L880 470 L840 520 L290 30 Z'];
+    const lines = P ? ['M0 505 L540 335', 'M60 280 L540 720'] : ['M280 580 L870 150', 'M310 0 L860 495'];
+    motif = <>
+      {beams.map(d => <path key={d} d={d} fill={g} opacity=".16" filter={`url(#${u}b)`} />)}
+      {lines.map(d => <path key={d} d={d} stroke={g} strokeWidth="2" opacity=".75" fill="none" />)}
+      <circle cx={P ? 300 : 560} cy={P ? 410 : 330} r="60" fill={g} opacity=".35" filter={`url(#${u}b)`} />
+    </>;
+  } else if (face.motif === 'rings') {
+    const cx = P ? 560 : 880; const cy = P ? 860 : 600;
+    motif = [520, 400, 290].map((r, i) => <circle key={r} cx={cx} cy={cy} r={P ? r * .8 : r} fill="#fff" fillOpacity={.035 + i * .015} stroke={g} strokeOpacity=".28" strokeWidth="2" />);
+  } else if (face.motif === 'waves') {
+    const y = P ? 560 : 330;
+    const wave = (dy) => `M0 ${y + dy} C ${w * .3} ${y + dy - 60} ${w * .6} ${y + dy + 60} ${w} ${y + dy - 20}`;
+    motif = <>
+      <path d={`${wave(0)} L${w} ${h} L0 ${h} Z`} fill="#000" opacity=".1" />
+      <path d={`${wave(70)} L${w} ${h} L0 ${h} Z`} fill="#000" opacity=".1" />
+      {[0, 28, 70].map(dy => <path key={dy} d={wave(dy)} stroke={g} strokeWidth="2.4" opacity=".7" fill="none" />)}
+    </>;
+  } else if (face.motif === 'stripes') {
+    motif = (face.stripes || []).map((c, i) => {
+      const bw = P ? 30 : 52; const x0 = (P ? 455 : 660) + i * bw; const lean = P ? 120 : 220;
+      return <polygon key={c} points={`${x0},0 ${x0 + bw},0 ${x0 + bw - lean},${h} ${x0 - lean},${h}`} fill={c} />;
+    });
+  } else if (face.motif === 'facets') {
+    const lines = P ? ['M0 330 L540 120', 'M120 0 L540 600', 'M0 700 L540 380', 'M300 856 L80 0', 'M540 820 L0 520'] : ['M0 380 L856 60', 'M260 0 L856 470', 'M420 540 L856 180', 'M560 540 L250 0', 'M0 120 L500 540'];
+    motif = <>
+      <path d={P ? 'M120 0 L540 600 L540 0 Z' : 'M260 0 L856 470 L856 0 Z'} fill="#fff" opacity=".05" />
+      <path d={P ? 'M0 700 L540 380 L540 856 L0 856 Z' : 'M420 540 L856 180 L856 540 Z'} fill="#000" opacity=".12" />
+      <g stroke={g} strokeWidth="1.4" opacity=".5" fill="none">{lines.map(d => <path key={d} d={d} />)}</g>
+    </>;
+  } else if (face.motif === 'pastel') {
+    const dots = [];
+    for (let r = 0; r < 4; r += 1) for (let c = 0; c < 9; c += 1) dots.push(<circle key={`${r}-${c}`} cx={(P ? 300 : 560) + c * 26} cy={36 + r * 26} r="2.4" fill="#fff" opacity=".8" />);
+    const y = P ? 620 : 380;
+    motif = <>
+      <circle cx={P ? 80 : 120} cy={h} r={P ? 320 : 300} fill={face.c3} opacity=".55" filter={`url(#${u}b)`} />
+      {dots}
+      <path d={`M0 ${y} C ${w * .3} ${y - 50} ${w * .6} ${y + 40} ${w} ${y - 30} L${w} ${h} L0 ${h} Z`} fill="#fff" opacity=".35" />
+    </>;
+  }
+  return <svg className="ccx-art" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id={`${u}bg`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={face.c1} />{face.c3 && <stop offset=".55" stopColor={face.c3} />}<stop offset="1" stopColor={face.c2} /></linearGradient>
+      <linearGradient id={`${u}pan`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".1" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+      <radialGradient id={`${u}hl`} cx=".18" cy=".1" r=".7"><stop offset="0" stopColor="#fff" stopOpacity={face.ink === 'dark' ? '.35' : '.14'} /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <filter id={`${u}b`} x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="14" /></filter>
+      <radialGradient id={`${u}sph`} cx=".34" cy=".3" r=".75"><stop offset="0" stopColor="#fff" stopOpacity=".6" /><stop offset=".5" stopColor="#fff" stopOpacity=".08" /><stop offset="1" stopColor="#000" stopOpacity=".3" /></radialGradient>
+      <linearGradient id={`${u}cyl`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#000" stopOpacity=".22" /><stop offset=".35" stopColor="#fff" stopOpacity=".34" /><stop offset="1" stopColor="#000" stopOpacity=".28" /></linearGradient>
+      <linearGradient id={`${u}tor`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".45" /><stop offset=".55" stopColor="#fff" stopOpacity=".06" /><stop offset="1" stopColor="#000" stopOpacity=".3" /></linearGradient>
+      <linearGradient id={`${u}sh`} x1="0" y1="0" x2="1" y2="1"><stop offset=".25" stopColor="#fff" stopOpacity="0" /><stop offset=".45" stopColor="#fff" stopOpacity=".55" /><stop offset=".52" stopColor="#fff" stopOpacity=".1" /><stop offset=".7" stopColor="#fff" stopOpacity="0" /></linearGradient>
+    </defs>
+    <rect width={w} height={h} fill={`url(#${u}bg)`} />
+    <rect width={w} height={h} fill={`url(#${u}hl)`} />
+    {motif}
+    {face.geo && <GeoShapes u={u} w={w} h={h} seed={seed} />}
+    {face.sheen && <rect width={w} height={h} fill={`url(#${u}sh)`} />}
+  </svg>;
+});
+
+const NETWORKS = { visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' };
+
+/*
+ * A payment card laid out like a real one:
+ *   top: institution logo + name · type label (Card, Bank, E-wallet…)
+ *   then: EMV chip + contactless symbol
+ *   bottom: masked number, balance · card network
+ * Any sticker can sit behind it; with none, a palette matched to the institution is drawn.
+ */
+export default function CardArt({ a, show, styleId, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape' }) {
   const custom = useCustomStickers();
   const remoteSticker = isStorageStickerId(styleId);
   const [remoteUrl, setRemoteUrl] = useState('');
   useEffect(() => { let active = true; setRemoteUrl(''); if (remoteSticker) resolvePremiumStickerUrl(storageStickerPath(styleId)).then(url => { if (active) setRemoteUrl(url); }).catch(() => { if (active) setRemoteUrl(''); }); return () => { active = false; }; }, [styleId, remoteSticker]);
-  const sticker = remoteSticker ? null : resolveSticker(styleId, custom);
+  const sticker = remoteSticker || finishOf(styleId) ? null : resolveSticker(styleId, custom);
   const theme = sticker || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
-  const ink = theme ? theme.ink : 'light';
-  const number = `•••• •••• •••• ${a.mask || '••••'}`;
+  const finish = finishOf(styleId);
+  const face = finish || (theme || remoteSticker ? null : cardFaceFor(a));
+  const ink = theme ? theme.ink : face ? face.ink : 'light';
   const network = String(cardNetwork || a.cardNetwork || a.card_network || '').toLowerCase();
+  const networkName = NETWORKS[network] || '';
+  const details = displayMode === 'details';
   const showName = visibleFields.accountName !== false;
-  const showNumber = visibleFields.cardNumber !== false && displayMode === 'details';
-  const showHolder = visibleFields.holderName !== false && displayMode === 'details';
+  const showNumber = visibleFields.cardNumber !== false && details;
   const showBalance = visibleFields.balance !== false;
-  const networkName = ({ visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' })[network] || '';
-  const institutionLogo = institutionLogoUrl(a.institution_name);
-  return <div className={`credit-card orientation-${orientation}${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
-    {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
-    <div className="cc-face">
-    <div className="cc-top">
-      <span className="cc-logo">{institutionLogo ? <img className="cc-institution-logo" src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}{showName && <span className="cc-name">{a.institution_name || a.name}</span>}</span>
-      <span className={'cc-net network-' + network.replace(/[^a-z]/g, '-')} aria-label={networkName || undefined}>{networkName && <span className="cc-network-mark" role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : networkName}</span>}</span>
-    </div>
-    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless !== false && <Contactless className="cc-nfc" />}{displayMode === 'details' && <span className="cc-kind">{a.cardKind ? (a.cardKind === 'credit' ? tr('Credit') : tr('Debit')) : tr(({ bank: 'Bank account', card: 'Card', e_wallet: 'E-wallet', cash: 'Cash', investment: 'Investment', coupon: 'Coupon', gift_card: 'Gift card', other: 'Other' })[a.account_type] || 'Card')}</span>}</span>
-    <div className={'cc-bottom' + (displayMode === 'amount' ? ' cc-bottom-amount' : '')}>
-      <div className="cc-id">{showNumber && <span className="cc-number">{number}</span>}{showHolder && holder && <small className="cc-holder">{holder}</small>}</div>
-      {showBalance && <b className="cc-balance">{shown(show, money(a.balance, a.currency))}</b>}
-    </div>
+  const institutionLogo = institutionLogoUrl(a.institution_name) || institutionLogoUrl(a.name);
+  const credit = a.cardKind === 'credit';
+  return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`} style={face ? { '--card-tint': face.c2 } : undefined}>
+    {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}
+    {face && <CardFaceArt face={face} orientation={orientation} seed={a.id || a.name} />}
+    {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
+    <div className="ccx-face">
+      <div className="ccx-head">
+        <span className="ccx-brand"><BrandLogo src={institutionLogo} size={64} fallback={<i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>} />{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
+        {details && <span className="ccx-type">{tr(cardTypeLabel(a, face))}</span>}
+      </div>
+      <div className="ccx-chiprow"><EmvChip finish={a.chip || face?.chip || 'gold'} className="ccx-chip" />{a.contactless !== false && <Contactless className="ccx-nfc" />}</div>
+      <div className="ccx-foot">
+        <div className="ccx-figures">
+          {showNumber && <span className="ccx-number">{`•••• •••• •••• ${a.mask || '••••'}`}</span>}
+          {!showNumber && showBalance && <small className="ccx-caption">{credit ? tr('Available credit') : tr('Balance')}</small>}
+          {showBalance && <b className="ccx-balance">{shown(show, money(a.balance, a.currency))}</b>}
+        </div>
+        {networkName && <span className={`ccx-net net-${network.replace(/[^a-z]/g, '-')}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : networkName}</span>}
+      </div>
     </div>
   </div>;
 }

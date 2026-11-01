@@ -48,3 +48,13 @@ Rights holders may contact MOVO through the published support channel to report 
 
 This notice is a disclosure, not a license and not a statement that every catalog entry has been cleared. Provider-specific terms and brand policies must be reviewed and recorded before remote icons are enabled for that entry. If a policy is ambiguous, seek permission or use a text label and generic icon.
 
+
+## Owner decision record (2026-11-01)
+
+The owner approved Google S2 dynamic favicons for every curated entry in the institution registry (`src/lib/institutionFavicons.js`) and the merchant registry (`src/lib/merchantFavicons.js`), for identification on cards, account pickers and transaction rows. This is an owner decision (`APPROVED_BY_OWNER`), not a legal review or a licence from any brand owner. Safeguards that stay in place:
+
+- Only curated name-to-domain mappings can trigger a request; merchant text is matched on the device and never turned into a domain.
+- The request carries only the curated domain and an icon size, with `referrerPolicy="no-referrer"`; never amounts, account numbers or user identifiers.
+- A failed or missing image falls back to a local letter tile and the readable name.
+- Setting `reviewStatus: 'BLOCKED'` on an entry stops its remote icon (for example after a rights-holder request).
+- Subscription screens keep their bundled logos; card network marks (Visa, Mastercard) are drawn locally.

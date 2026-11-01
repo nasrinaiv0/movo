@@ -42,6 +42,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Borders are soft (`--line` is very light). Inputs/search/composer show **no border, outline or ring while focused**; a faint accent tint marks the active field.
 - Motion is calm: smooth ease-out only. **No** `navigator.vibrate`, no overshooting bounce springs, no breathing/pulsing orb. Respect `prefers-reduced-motion`; animations are skipped in tests via `canAnimate()`.
 - Subscription logos: official site icons fetched by `npm run brands` into `public/brands/` (never hot-linked at runtime), else Simple Icons marks via the generated `src/lib/brandMarks.js` (owner-approved for identification only) and must always appear with the trademark notice (`BrandNotice`). This does not extend to card stickers.
+- Bank, e-wallet and merchant logos on cards, account pickers and transaction rows use Google S2 dynamic favicons, owner-approved 2026-11-01, only for curated entries in `institutionFavicons.js` / `merchantFavicons.js` (never a domain derived from user text); always render through `BrandLogo` with a local fallback. Block an entry with `reviewStatus: 'BLOCKED'`.
 - Card stickers are original, procedurally generated vector art (`stickers.js`). Do not add third-party characters, franchise art or logos; users may upload their own images.
 
 ## Security (non-negotiable)

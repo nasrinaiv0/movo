@@ -54,4 +54,13 @@ export function searchInstitutions(countryCode, query = '', accountType = 'bank'
 }
 
 
-export const institutionLogoUrl = (name, options = {}) => getInstitutionFaviconUrl(name, options) || '';
+/** Logo for a curated institution, matched by its name or a known alias (e.g. "BDO", "PayMaya"); '' if none. */
+export function institutionLogoUrl(name, options = {}) {
+  const text = String(name || '').trim();
+  if (!text) return '';
+  const lower = text.toLowerCase();
+  const inst = INSTITUTIONS.find(i => i.name.toLowerCase() === lower || i.aliases.some(a => a.toLowerCase() === lower));
+  const candidates = [text, ...(inst ? [inst.name, ...inst.aliases] : [])];
+  for (const c of candidates) { const url = getInstitutionFaviconUrl(c, options); if (url) return url; }
+  return '';
+}

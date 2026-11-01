@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import NotchedBox from '../components/NotchedBox';
 import Icon from '../components/Icon';
 import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
@@ -60,6 +61,12 @@ export default function Home({ c }) {
     return () => window.removeEventListener('scroll', updatePeriodVisibility);
   }, []);
   const [mascotError, setMascotError] = useState('');
+  const balanceShown = !(prefs.layouts?.home?.hidden || []).includes('balance');
+  const periodPill = (inBox) => <button type="button" className={`home-period-filter${inBox ? ' in-notch' : showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!inBox && !showPeriodOnTop} tabIndex={inBox || showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
+    <span className="home-period-icon"><Icon name="calendar" size={15} /></span>
+    <span className="home-period-current">{monthName(homeMonthKey)}</span>
+    <Icon name="chevron" size={13} className="home-period-chevron" />
+  </button>;
   const file = useRef(null);
   const selectedYear = Number((homeMonthKey || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`).slice(0, 4));
   const selectedMonth = Number((homeMonthKey || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`).slice(5, 7));
@@ -85,7 +92,7 @@ export default function Home({ c }) {
   const byAmount = [...breakdown.data].sort((a, b) => b.amount - a.amount);
   const recentFor = (size) => (size === 'M' ? recent : (homeMonthStats?.list || txs).filter(t => t.type !== 'transfer').slice(0, size === 'S' ? 2 : 8));
   const boxes = [
-    { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <section className={`card balance-card size-${size}`} aria-label={tr('Total balance')}>
+    { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <NotchedBox className={`card balance-card notched size-${size}`} label={tr('Total balance')} corner={periodPill(true)}>
       <div className="balance-label">{tr('Total Balance')}
         <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={18} /></button>
       </div>
@@ -93,7 +100,7 @@ export default function Home({ c }) {
       <Trend value={deltas.balance} chip size={13} />
       {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={260} height={110} /> : <Sparkline values={stats.trend} width={260} height={110} />}</div>}
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>
-    </section> },
+    </NotchedBox> },
     { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
       {tiles.map(t => <button type="button" className={`card stat-card is-link tint-${t.tone}`} key={t.label} onClick={t.open} aria-label={tr('Open {label}', { label: t.label })}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
@@ -140,11 +147,7 @@ export default function Home({ c }) {
           <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} />
           <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} />
         </div>
-        <button type="button" className={`home-period-filter${showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!showPeriodOnTop} tabIndex={showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
-          <span className="home-period-icon"><Icon name="calendar" size={15} /></span>
-          <span className="home-period-current">{monthName(homeMonthKey)}</span>
-          <Icon name="chevron" size={13} className="home-period-chevron" />
-        </button>
+        {!balanceShown && periodPill(false)}
       </div>
     </header>
 

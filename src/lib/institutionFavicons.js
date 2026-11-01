@@ -27,6 +27,15 @@ export const INSTITUTION_FAVICONS = {
   'Development Bank of the Philippines': { domain: 'dbp.ph', countryCode: 'PH' },
   GCash: { domain: 'gcash.com', countryCode: 'PH', kind: 'e_wallet' },
   Maya: { domain: 'maya.ph', countryCode: 'PH', kind: 'e_wallet' },
+  MariBank: { domain: 'maribank.ph', countryCode: 'PH' },
+  GoTyme: { domain: 'gotyme.com.ph', countryCode: 'PH' },
+  SeaBank: { domain: 'seabank.ph', countryCode: 'PH' },
+  Tonik: { domain: 'tonikbank.com', countryCode: 'PH' },
+  Atome: { domain: 'atome.ph', countryCode: 'PH' },
+  GrabPay: { domain: 'grab.com', countryCode: 'PH', kind: 'e_wallet' },
+  ShopeePay: { domain: 'shopee.ph', countryCode: 'PH', kind: 'e_wallet' },
+  'Coins.ph': { domain: 'coins.ph', countryCode: 'PH', kind: 'e_wallet' },
+  PayPal: { domain: 'paypal.com', countryCode: 'INTL', kind: 'e_wallet' },
 
   // United States
   Chase: { domain: 'chase.com', countryCode: 'US' },
@@ -259,15 +268,23 @@ const FAVICON_ENDPOINT = 'https://www.google.com/s2/favicons';
  * @param {{ size?: number, countryCode?: string }} options
  * @returns {string|null}
  */
+/*
+ * Review status. The owner approved Google S2 dynamic favicons for every curated entry on 2026-11-01 (identification
+ * only; see docs/legal/THIRD_PARTY_BRANDS_DYNAMIC_FAVICONS_AND_SUBSCRIPTIONS.md). An entry without its own status uses
+ * that approval; set reviewStatus: 'BLOCKED' on an entry to stop its remote icon (e.g. after a rights-holder request).
+ */
+export const OWNER_APPROVAL = 'APPROVED_BY_OWNER';
+export const APPROVED_STATUSES = [OWNER_APPROVAL, 'APPROVED_POLICY_REVIEW', 'APPROVED_BY_COUNSEL'];
+
+const byLowerName = new Map(Object.keys(INSTITUTION_FAVICONS).map(k => [k.toLowerCase(), k]));
+
 export function getInstitutionFaviconUrl(institutionName, { size = 128, countryCode } = {}) {
   if (!institutionName || typeof institutionName !== 'string') return null;
 
-  const entry = INSTITUTION_FAVICONS[institutionName.trim()];
+  const key = byLowerName.get(institutionName.trim().toLowerCase());
+  const entry = key ? INSTITUTION_FAVICONS[key] : null;
   if (!entry) return null;
-  // Fail closed: remote brand favicons stay disabled until this exact
-  // institution/domain has an evidence-backed legal review. Pending entries
-  // should render a generic local icon and a readable institution name.
-  if (!['APPROVED_POLICY_REVIEW', 'APPROVED_BY_COUNSEL'].includes(entry.reviewStatus)) return null;
+  if (!APPROVED_STATUSES.includes(entry.reviewStatus || OWNER_APPROVAL)) return null;
   if (countryCode && entry.countryCode && entry.countryCode !== countryCode) return null;
 
   const safeSize = [16, 32, 48, 64, 128].includes(Number(size)) ? Number(size) : 128;
@@ -278,5 +295,6 @@ export function getInstitutionFaviconUrl(institutionName, { size = 128, countryC
 /** Return the catalog entry for a known institution, or null. */
 export function getInstitutionFaviconEntry(institutionName) {
   if (!institutionName || typeof institutionName !== 'string') return null;
-  return INSTITUTION_FAVICONS[institutionName.trim()] || null;
+  const key = byLowerName.get(institutionName.trim().toLowerCase());
+  return key ? INSTITUTION_FAVICONS[key] : null;
 }
