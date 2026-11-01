@@ -2948,3 +2948,51 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .total-card .bars-plot span.hot {
   background: var(--summary-card-ink);
 }
+
+
+/* Fix Home balance and Transactions spent card height/alignment.
+   Keep both summary cards the same compact height and align the label/eye row at the top. */
+.movo-app .balance-card.size-L,
+.movo-app .total-card {
+  box-sizing: border-box;
+  height: 130px;
+  min-height: 130px;
+  max-height: 130px;
+}
+.movo-app .balance-card.size-L {
+  padding: 14px 18px;
+}
+.movo-app .total-card {
+  align-items: flex-start;
+  padding: 14px 18px;
+  overflow: hidden;
+}
+.movo-app .total-card > div:first-child {
+  align-self: flex-start;
+  min-width: 0;
+}
+.movo-app .balance-card .balance-label,
+.movo-app .total-card .balance-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  line-height: 1.2;
+}
+.movo-app .balance-card .plain-icon,
+.movo-app .total-card .plain-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  margin: 0;
+  vertical-align: middle;
+}
+@media (max-width: 360px) {
+  .movo-app .balance-card.size-L,
+  .movo-app .total-card {
+    height: 136px;
+    min-height: 136px;
+    max-height: 136px;
+    padding-inline: 14px;
+  }
+}
