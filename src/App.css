@@ -3093,3 +3093,58 @@ button.account-tile:active { transform: scale(.98); }
 .card-stack-dots button { width: 20px; height: 20px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
 .card-stack-dots button::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--muted, #8e8e93); opacity: .35; transition: width .25s ease-out, opacity .25s ease-out, background-color .25s ease-out; }
 .card-stack-dots button.active::before { width: 16px; opacity: 1; background: var(--accent); }
+
+/* Card face v2 (owner mockups): logo + name · type, chip + contactless, masked number and balance · network.
+   Uses its own ccx-* classes so the older layered .cc-* rules above no longer apply. */
+.movo-app .credit-card.ccx { container-type: inline-size; position: relative; overflow: hidden; isolation: isolate; padding: 0; min-height: 0; }
+.movo-app .credit-card.ccx.orientation-landscape { aspect-ratio: 85.6 / 54; }
+.movo-app .credit-card.ccx.orientation-portrait { aspect-ratio: 54 / 85.6; }
+.movo-app .credit-card.ccx.ccx-default { background: #16171b; }
+.ccx-art { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.ccx-face { position: absolute; inset: 0; z-index: 1; box-sizing: border-box; text-align: left; display: grid; grid-template-rows: auto auto minmax(0, 1fr); padding: 6.6cqw 7.2cqw; color: #fff; }
+.credit-card.ccx.ink-dark .ccx-face { color: #1d1f2b; }
+.credit-card.ccx.has-sticker.ink-light .ccx-face { text-shadow: 0 1px 6px rgba(0,0,0,.45); background: linear-gradient(to top, rgba(0,0,0,.4), transparent 50%), linear-gradient(to bottom, rgba(0,0,0,.2), transparent 32%); }
+.credit-card.ccx.has-sticker.ink-dark .ccx-face { background: linear-gradient(to top, rgba(255,255,255,.5), transparent 50%), linear-gradient(to bottom, rgba(255,255,255,.28), transparent 32%); }
+.ccx-head { display: flex; align-items: center; justify-content: space-between; gap: 3cqw; min-width: 0; }
+.ccx-brand { display: inline-flex; align-items: center; gap: 2.2cqw; min-width: 0; }
+.ccx-brand img { flex: none; width: 7.6cqw; height: 7.6cqw; border-radius: 24%; object-fit: contain; }
+.ccx-brand i { flex: none; display: grid; place-items: center; width: 7.6cqw; height: 7.6cqw; border-radius: 28%; font-style: normal; font-weight: 700; font-size: 4.2cqw; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,.3); }
+.credit-card.ccx.ink-dark .ccx-brand i { background: rgba(0,0,0,.06); box-shadow: inset 0 0 0 1px rgba(0,0,0,.14); }
+.ccx-name { font-size: 5.4cqw; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccx-type { flex: none; font-size: 3.5cqw; font-weight: 500; opacity: .92; white-space: nowrap; }
+.ccx-chiprow { display: flex; align-items: center; gap: 3cqw; margin-top: 4.6cqw; }
+.ccx-chip.emv-chip { flex: none; width: 10.6cqw; height: auto; filter: drop-shadow(0 .3cqw .6cqw rgba(0,0,0,.22)); }
+.ccx-nfc { flex: none; width: 5.6cqw; height: 5.6cqw; opacity: .95; }
+.ccx-foot { align-self: end; display: flex; align-items: flex-end; justify-content: space-between; gap: 3cqw; min-width: 0; }
+.ccx-figures { display: grid; justify-items: start; gap: 1.2cqw; min-width: 0; }
+.ccx-number { font-size: 3.2cqw; font-weight: 500; letter-spacing: .14em; font-variant-numeric: tabular-nums; opacity: .92; white-space: nowrap; }
+.ccx-caption { font-size: 2.3cqw; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.ccx-holder { font-size: 2.6cqw; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ccx-balance { font-size: 5.8cqw; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ccx-net { flex: none; display: inline-flex; align-items: center; font-size: 6.6cqw; font-weight: 900; font-style: italic; letter-spacing: -.03em; line-height: 1; }
+.ccx-net.net-mastercard { position: relative; width: 12.6cqw; height: 8cqw; }
+.ccx-net.net-mastercard i { position: absolute; top: 0; width: 8cqw; height: 8cqw; border-radius: 50%; background: #eb001b; }
+.ccx-net.net-mastercard i:first-child { left: 0; }
+.ccx-net.net-mastercard i:last-child { right: 0; background: #f79e1b; opacity: .92; }
+/* Portrait: same order, chip row in the upper middle. */
+.credit-card.ccx.orientation-portrait .ccx-face { padding: 9cqw 8.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-brand img, .credit-card.ccx.orientation-portrait .ccx-brand i { width: 10cqw; height: 10cqw; font-size: 5.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-name { font-size: 7.4cqw; }
+.credit-card.ccx.orientation-portrait .ccx-type { font-size: 5cqw; }
+.credit-card.ccx.orientation-portrait .ccx-chiprow { justify-content: center; gap: 4cqw; margin-top: 16cqw; padding-left: 10cqw; }
+.credit-card.ccx.orientation-portrait .ccx-chip.emv-chip { width: 17cqw; }
+.credit-card.ccx.orientation-portrait .ccx-nfc { width: 8.6cqw; height: 8.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-figures { gap: 2cqw; }
+.credit-card.ccx.orientation-portrait .ccx-number { font-size: 4.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-caption { font-size: 3.4cqw; }
+.credit-card.ccx.orientation-portrait .ccx-balance { font-size: 8.4cqw; }
+.credit-card.ccx.orientation-portrait .ccx-net { font-size: 6.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 11cqw; height: 7cqw; }
+.credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 7cqw; height: 7cqw; }
+/* Small previews keep only what reads at that size. */
+@container (max-width: 200px) {
+  .orientation-landscape :is(.ccx-nfc, .ccx-type, .ccx-number, .ccx-caption, .ccx-holder) { display: none; }
+}
+@container (max-width: 110px) {
+  .orientation-portrait :is(.ccx-nfc, .ccx-type, .ccx-number, .ccx-caption, .ccx-holder) { display: none; }
+}

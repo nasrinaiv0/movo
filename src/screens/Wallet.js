@@ -47,7 +47,7 @@ export default function Wallet({ c }) {
   const recent = txs.slice(0, 3);
   const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
   const displayModeOf = (a) => prefs.cardDisplayModes?.[a?.id] || 'details';
-  const fieldsOf = (a) => ({ accountName: true, cardNumber: true, holderName: true, balance: true, ...(prefs.cardDisplayFields?.[a?.id] || {}) });
+  const fieldsOf = (a) => ({ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[a?.id] || {}) });
   const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };

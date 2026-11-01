@@ -5,6 +5,7 @@ import { canAnimate } from '../lib/motion';
 import { EmvChip, Contactless } from './EmvChip';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
+import { cardFaceFor, cardTypeLabel } from '../lib/cardFaces';
 import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
 const build = (node, key) => {
@@ -42,7 +43,51 @@ export const StickerArt = memo(function StickerArt({ theme, compact }) {
 
 export const resolveSticker = (id, list) => findSticker(id, list);
 
-/* A bank card with reserved room for logo/name, chip, network, number and holder over any sticker. */
+/* Default face art: solid base, one lit sweep and a thin light line (or bands / facets for some palettes). */
+const CardFaceArt = memo(function CardFaceArt({ face, orientation }) {
+  const raw = useId(); const u = `f${raw.replace(/[^a-z0-9]/gi, '')}`;
+  const portrait = orientation === 'portrait';
+  const w = portrait ? 540 : 856; const h = portrait ? 856 : 540;
+  const curve = portrait ? 'M0 650 C 170 590 360 470 540 300' : 'M290 540 C 500 430 650 300 856 236';
+  const panel = portrait ? `${curve} L540 856 L0 856 Z` : `${curve} L856 540 Z`;
+  let motif;
+  if (face.motif === 'stripes') {
+    const bands = face.stripes || [];
+    motif = bands.map((c, i) => {
+      const bw = portrait ? 34 : 52; const x0 = (portrait ? 400 : 620) + i * bw; const lean = portrait ? 150 : 210;
+      return <polygon key={c} points={`${x0},0 ${x0 + bw},0 ${x0 + bw - lean},${h} ${x0 - lean},${h}`} fill={c} />;
+    });
+  } else if (face.motif === 'facets') {
+    const lines = portrait
+      ? ['M0 330 L540 120', 'M120 0 L540 600', 'M0 700 L540 380', 'M300 856 L80 0']
+      : ['M0 380 L856 60', 'M260 0 L856 470', 'M420 540 L856 180', 'M560 540 L250 0'];
+    motif = <>
+      <path d={portrait ? 'M120 0 L540 600 L540 0 Z' : 'M260 0 L856 470 L856 0 Z'} fill={face.sweep} />
+      <g stroke={face.glow} strokeWidth="1.6" opacity=".55" fill="none">{lines.map(d => <path key={d} d={d} />)}</g>
+    </>;
+  } else {
+    motif = <>
+      <path d={panel} fill={face.sweep} />
+      <path d={curve} fill="none" stroke={face.glow} strokeWidth="16" opacity=".4" filter={`url(#${u}b)`} />
+      <path d={curve} fill="none" stroke={face.glow} strokeWidth="2.4" opacity=".9" strokeLinecap="round" />
+    </>;
+  }
+  return <svg className="ccx-art" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <defs><filter id={`${u}b`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="10" /></filter></defs>
+    <rect width={w} height={h} fill={face.base} />
+    {motif}
+  </svg>;
+});
+
+const NETWORKS = { visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' };
+
+/*
+ * A payment card laid out like a real one:
+ *   top: institution logo + name · type label (Card, Bank, E-wallet…)
+ *   then: EMV chip + contactless symbol
+ *   bottom: masked number, balance · card network
+ * Any sticker can sit behind it; with none, a palette matched to the institution is drawn.
+ */
 export default function CardArt({ a, show, styleId, holder, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape' }) {
   const custom = useCustomStickers();
   const remoteSticker = isStorageStickerId(styleId);
@@ -50,27 +95,36 @@ export default function CardArt({ a, show, styleId, holder, preview, compact, di
   useEffect(() => { let active = true; setRemoteUrl(''); if (remoteSticker) resolvePremiumStickerUrl(storageStickerPath(styleId)).then(url => { if (active) setRemoteUrl(url); }).catch(() => { if (active) setRemoteUrl(''); }); return () => { active = false; }; }, [styleId, remoteSticker]);
   const sticker = remoteSticker ? null : resolveSticker(styleId, custom);
   const theme = sticker || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
-  const ink = theme ? theme.ink : 'light';
-  const number = `•••• •••• •••• ${a.mask || '••••'}`;
+  const face = theme || remoteSticker ? null : cardFaceFor(a);
+  const ink = theme ? theme.ink : face ? face.ink : 'light';
   const network = String(cardNetwork || a.cardNetwork || a.card_network || '').toLowerCase();
+  const networkName = NETWORKS[network] || '';
+  const details = displayMode === 'details';
   const showName = visibleFields.accountName !== false;
-  const showNumber = visibleFields.cardNumber !== false && displayMode === 'details';
-  const showHolder = visibleFields.holderName !== false && displayMode === 'details';
+  const showNumber = visibleFields.cardNumber !== false && details;
+  const showHolder = visibleFields.holderName === true && details;
   const showBalance = visibleFields.balance !== false;
-  const networkName = ({ visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' })[network] || '';
   const institutionLogo = institutionLogoUrl(a.institution_name);
-  return <div className={`credit-card orientation-${orientation}${theme ? ' has-sticker' : ` brand-${a.brand || 'blue'}`} ink-${ink}`}>
-    {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}{theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
-    <div className="cc-face">
-    <div className="cc-top">
-      <span className="cc-logo">{institutionLogo ? <img className="cc-institution-logo" src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}{showName && <span className="cc-name">{a.institution_name || a.name}</span>}</span>
-      <span className={'cc-net network-' + network.replace(/[^a-z]/g, '-')} aria-label={networkName || undefined}>{networkName && <span className="cc-network-mark" role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : networkName}</span>}</span>
-    </div>
-    <span className="cc-mid"><EmvChip finish={a.chip || 'gold'} className="cc-chip" />{a.contactless !== false && <Contactless className="cc-nfc" />}{displayMode === 'details' && <span className="cc-kind">{a.cardKind ? (a.cardKind === 'credit' ? tr('Credit') : tr('Debit')) : tr(({ bank: 'Bank account', card: 'Card', e_wallet: 'E-wallet', cash: 'Cash', investment: 'Investment', coupon: 'Coupon', gift_card: 'Gift card', other: 'Other' })[a.account_type] || 'Card')}</span>}</span>
-    <div className={'cc-bottom' + (displayMode === 'amount' ? ' cc-bottom-amount' : '')}>
-      <div className="cc-id">{showNumber && <span className="cc-number">{number}</span>}{showHolder && holder && <small className="cc-holder">{holder}</small>}</div>
-      {showBalance && <b className="cc-balance">{shown(show, money(a.balance, a.currency))}</b>}
-    </div>
+  const credit = a.cardKind === 'credit';
+  return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`}>
+    {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}
+    {face && <CardFaceArt face={face} orientation={orientation} />}
+    {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
+    <div className="ccx-face">
+      <div className="ccx-head">
+        <span className="ccx-brand">{institutionLogo ? <img src={institutionLogo} alt="" width="30" height="30" loading="lazy" referrerPolicy="no-referrer" onError={e => { e.currentTarget.style.display = 'none'; }} /> : <i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>}{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
+        {details && <span className="ccx-type">{tr(cardTypeLabel(a))}</span>}
+      </div>
+      <div className="ccx-chiprow"><EmvChip finish={a.chip || 'gold'} className="ccx-chip" />{a.contactless !== false && <Contactless className="ccx-nfc" />}</div>
+      <div className="ccx-foot">
+        <div className="ccx-figures">
+          {showNumber && <span className="ccx-number">{`•••• •••• •••• ${a.mask || '••••'}`}</span>}
+          {!showNumber && showBalance && <small className="ccx-caption">{credit ? tr('Available credit') : tr('Balance')}</small>}
+          {showHolder && holder && <small className="ccx-holder">{holder}</small>}
+          {showBalance && <b className="ccx-balance">{shown(show, money(a.balance, a.currency))}</b>}
+        </div>
+        {networkName && <span className={`ccx-net net-${network.replace(/[^a-z]/g, '-')}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : networkName}</span>}
+      </div>
     </div>
   </div>;
 }
