@@ -3281,7 +3281,7 @@ button.account-tile:active { transform: scale(.98); }
   --btn-shadow-press: 0 1px 2px rgba(16, 24, 40, .08);
 }
 .movo-app.theme-dark { --btn-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 3px 8px -2px rgba(0, 0, 0, .35); --btn-shadow-press: 0 1px 2px rgba(0, 0, 0, .35); }
-.movo-app.movo-app :is(.chip-row button[data-chip], .chip-row > button, .round-button, .primary-button, .secondary-button, .danger-button, .manage-button, .wide-button, .customize-button, .back-button, .qa-button .qa-icon, .seg-control button.selected, .theme-segments button, .month-pill, .home-period-filter, .header-action-buttons > button, .style-tile, .action-strip) { box-shadow: var(--btn-shadow); }
+.movo-app.movo-app :is(.chip-row button[data-chip], .chip-row > button, .round-button, .primary-button, .secondary-button, .danger-button, .manage-button, .wide-button, .customize-button, .qa-button .qa-icon, .seg-control button.selected, .theme-segments button, .month-pill, .home-period-filter, .header-action-buttons > button, .style-tile, .action-strip) { box-shadow: var(--btn-shadow); }
 .movo-app.movo-app :is(.chip-row button[data-chip], .round-button, .primary-button, .secondary-button, .danger-button, .manage-button, .wide-button, .customize-button):active { box-shadow: var(--btn-shadow-press); }
 .movo-app .chip-row { padding-top: 4px; padding-bottom: 8px; margin-top: -4px; margin-bottom: -8px; }
 .movo-app .chip-bar { margin-bottom: 14px; }
@@ -3295,3 +3295,11 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
 .movo-app .chip-bar > :is(.round-button, button.round-button) { flex: 0 0 38px; width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
 @media (max-width: 380px) { .movo-app .chip-bar { gap: 4px; } .movo-app .chip-bar > .chip-row { gap: 2px; } .movo-app .chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
+
+/* Subscriptions summary uses the accent hero style (same as Total Balance): accent fill, white text. */
+.movo-app.movo-app.movo-app.movo-app .sub-hero.card { background: var(--accent); color: #fff; border-color: transparent; padding: var(--box-pad, 16px); }
+.movo-app.movo-app .sub-hero::after { box-shadow: none; }
+.movo-app.movo-app .sub-hero > small, .movo-app.movo-app .sub-hero-row small { color: rgba(255, 255, 255, .78); }
+.movo-app.movo-app .sub-hero .balance-amount, .movo-app.movo-app .sub-hero-row b { color: #fff; }
+.movo-app.movo-app .sub-hero-row { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+.movo-app :is(.back-button, .sub-header > button:first-child) { box-shadow: none; }
