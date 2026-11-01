@@ -1,6 +1,7 @@
+-- Add a source-aware overload while retaining the old service-role-only signature during rollout.
+-- This avoids a gap where the currently deployed API calls a function that was just dropped.
 -- Preserve the actual source supplied by the iOS Shortcut and make retries idempotent
--- before applying rate limits. The service-role-only execution model is retained.
-drop function if exists public.log_automation_transaction(text, text, uuid, uuid, numeric, text, text, text, timestamptz, text, text);
+-- before applying rate limits.
 
 create function public.log_automation_transaction(
   p_token_hash text,
