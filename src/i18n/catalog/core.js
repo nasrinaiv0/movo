@@ -16,20 +16,6 @@ export default [
     "कार्ड और बैंक खाते"
   ],
   [
-    "Cash & Other",
-    "Cash at Iba Pa",
-    "النقد وأخرى",
-    "现金及其他",
-    "Efectivo y otros",
-    "Contanti e altro",
-    "Bargeld & Sonstiges",
-    "Espèces et autres",
-    "Dinheiro e outros",
-    "現金・その他",
-    "현금 및 기타",
-    "नकद और अन्य"
-  ],
-  [
     "Home",
     "Home",
     "الرئيسية",
