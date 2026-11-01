@@ -3019,3 +3019,68 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .welcome-local .welcome-result.is-error { color: var(--red, #d64545); }
 @keyframes welcome-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .movo-app .tour-welcome .welcome-choice { animation: none; transition: none; } }
+
+/* =====================================================================
+   Premium compact pass (Nov 2026).
+   Summary hero cards share one compact height on Home, Wallet and
+   Transactions; trend pills stay readable on the accent fill; the wallet
+   Sort & view sheet gets real controls; cards stack (landscape) or turn on
+   a cylinder (portrait). Transform/opacity motion only, ease-out.
+   ===================================================================== */
+.movo-app .balance-card, .movo-app .total-card { position: relative; box-sizing: border-box; height: 132px; min-height: 132px; max-height: 132px; padding: 14px 18px; overflow: hidden; }
+.movo-app .balance-card .balance-amount { font-size: 28px; line-height: 1.05; margin: 4px 0 8px; letter-spacing: -.5px; }
+.movo-app .balance-card .balance-art { position: absolute; right: 0; bottom: 0; width: 50%; height: 64%; margin: 0; pointer-events: none; }
+.movo-app .balance-card .balance-art svg { width: 100%; height: 100%; display: block; }
+.movo-app .balance-card .balance-go { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; min-width: 34px; min-height: 34px; border: 0; background: rgba(255,255,255,.18) !important; box-shadow: none !important; }
+.movo-app :is(.balance-card, .total-card) :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,.2) !important; font-size: 12px; font-weight: 600; }
+
+/* Sort & view: segmented pills, compact previews, aligned buttons. */
+.movo-app .wallet-sort-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
+.movo-app .wallet-sort-option { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background-color .2s ease-out, color .2s ease-out; }
+.movo-app .wallet-sort-option.selected { background: rgba(var(--accent-rgb), .14); color: var(--accent-ink, var(--accent)); }
+.movo-app .wallet-format-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
+.movo-app .wallet-format-pick > button { display: grid; justify-items: center; align-content: center; gap: 8px; height: 176px; padding: 12px; border-radius: 18px; }
+.movo-app .wallet-format-pick .credit-card { width: auto; max-width: 100%; }
+.movo-app .wallet-format-pick .credit-card.orientation-landscape { width: 100%; max-height: 110px; }
+.movo-app .wallet-format-pick .credit-card.orientation-portrait { height: 120px; max-width: none; }
+.movo-app :is(.wallet-change-card-style, .wallet-edit-layout) { height: 48px; min-height: 48px; margin-top: 10px; }
+
+/* My Cards preview row: portrait cards stay small. */
+.movo-app .card-scroller.mini .card-slide:has(.orientation-portrait) { flex-basis: 36%; }
+
+/* Landscape: stacked wallet like Apple Wallet. */
+.card-stack { display: grid; margin: 4px 0 14px; }
+.card-stack-front { position: relative; z-index: 2; }
+.card-stack-card.entering { animation: stack-rise .52s cubic-bezier(.22,.61,.36,1) both; }
+.card-stack-leaving { position: absolute; inset: 0; z-index: -1; pointer-events: none; animation: stack-leave .52s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes stack-rise { from { transform: translateY(64px) scale(.94); opacity: .5; } }
+@keyframes stack-leave { to { transform: translateY(-12%) scale(.9); opacity: 0; } }
+.card-stack-strips { display: grid; gap: 6px; margin-top: 8px; }
+.card-stack-strip { position: relative; display: block; height: 48px; padding: 0; border: 0; border-radius: 16px; overflow: hidden; background: none; cursor: pointer; animation: strip-in .4s cubic-bezier(.22,.61,.36,1) both; animation-delay: calc(var(--i, 0) * 40ms); transition: transform .2s ease-out; }
+.card-stack-strip:active { transform: scale(.985); }
+.card-stack-peek { position: absolute; inset: 0 0 auto 0; pointer-events: none; }
+.card-stack-peek .credit-card { border-radius: 16px; box-shadow: none !important; }
+.card-stack-peek .cc-face { opacity: 0; }
+.card-stack-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px; background: rgba(0,0,0,.28); color: #fff; font-size: 13.5px; }
+.card-stack-label strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-stack-label span { font-variant-numeric: tabular-nums; font-weight: 600; }
+@keyframes strip-in { from { opacity: 0; transform: translateY(-10px); } }
+
+/* Portrait: 3D cylinder carousel. */
+.card-cylinder { display: flex; align-items: center; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -18px 14px; padding: 10px 0 16px; }
+.card-cylinder::-webkit-scrollbar { display: none; }
+.card-cylinder::before, .card-cylinder::after { content: ''; flex: 0 0 23%; }
+.card-cylinder-face { flex: 0 0 54%; padding: 0; border: 0; background: none; scroll-snap-align: center; transform: perspective(900px) rotateY(calc(var(--d, 0) * -42deg)) translateZ(calc(var(--ad, 0) * -70px)) scale(calc(1 - var(--ad, 0) * .06)); opacity: calc(1 - var(--ad, 0) * .4); transform-origin: 50% 50%; will-change: transform; cursor: pointer; }
+.card-cylinder-face .credit-card { width: 100%; }
+@media (prefers-reduced-motion: reduce) {
+  .card-stack-card.entering, .card-stack-leaving, .card-stack-strip { animation: none; }
+  .card-cylinder-face { transform: none; opacity: 1; }
+}
+/* Tuning: neighbours stay visible on the cylinder; the four sort options share one row. */
+.movo-app .card-cylinder::before, .movo-app .card-cylinder::after { flex-basis: 29%; }
+.movo-app .card-cylinder-face { flex-basis: 42%; margin: 0 -3%; }
+.movo-app .card-cylinder-face.active { z-index: 2; }
+.movo-app .wallet-sort-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.movo-app .wallet-sort-option { justify-content: center; padding: 0 8px; font-size: 13px; white-space: nowrap; }
+.movo-app .wallet-sort-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.movo-app .wallet-sort-option { font-size: 13.5px; padding: 0 12px; }

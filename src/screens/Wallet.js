@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
+import CardDeck from '../components/CardDeck';
 import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
@@ -32,7 +33,6 @@ const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
 
 export default function Wallet({ c }) {
   const { prefs, setPref, show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
-  const scroller = useRef(null);
   const [editing, setEditing] = useState(false);
   const [addAmount, setAddAmount] = useState(null);
   const [addPick, setAddPick] = useState(false);
@@ -45,12 +45,6 @@ export default function Wallet({ c }) {
   const cards = accountsByType.card;
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
   const recent = txs.slice(0, 3);
-  const onScroll = () => {
-    const el = scroller.current; if (!el || !cards.length) return;
-    const idx = Math.round(el.scrollLeft / (el.firstChild?.offsetWidth || 1));
-    const next = cards[Math.min(Math.max(idx, 0), cards.length - 1)];
-    if (next && next.id !== selectedCard?.id) setSelectedCardId(next.id);
-  };
   const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
   const displayModeOf = (a) => prefs.cardDisplayModes?.[a?.id] || 'details';
   const fieldsOf = (a) => ({ accountName: true, cardNumber: true, holderName: true, balance: true, ...(prefs.cardDisplayFields?.[a?.id] || {}) });
@@ -61,11 +55,11 @@ export default function Wallet({ c }) {
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
-  const cardVisual = (a) => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${wv.cardFormat}`} orientation={wv.cardFormat} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />;
+  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />;
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
     : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
-        {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a)}</button>)}
+        {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a, 'landscape')}</button>)}
       </section>);
   const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], ['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : ['bank', 'Add Account', () => setSheet({ name: 'account', type: 'bank' })]];
 
@@ -117,10 +111,7 @@ export default function Wallet({ c }) {
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
 
     {walletFilter === 'Cards' && (cards.length ? <>
-      <div className="card-scroller" ref={scroller} onScroll={onScroll} aria-label={tr('Your cards')}>
-        {cards.map(a => <div className="card-slide" key={a.id}>{cardVisual(a)}</div>)}
-      </div>
-      <div className="dots" aria-hidden="true">{cards.map(a => <i key={a.id} className={a.id === selectedCard?.id ? 'on' : ''} />)}</div>
+      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} show={show} />
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
@@ -149,7 +140,7 @@ export default function Wallet({ c }) {
       <p className="mini-title wallet-format-title">{tr('Card format')}</p>
       <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
         <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" /><span>{tr(label)}</span></button>)}</div>
-      {selectedCard && <button type="button" className="manage-button wallet-change-card-style" onClick={() => { setWv({ cardFormat: 'card' }); setSheet({ name: 'cardStyle' }); }}><Icon name="palette" size={17} /> {tr('Change card style')}</button>}
+      {selectedCard && <button type="button" className="manage-button wallet-change-card-style" onClick={() => setSheet({ name: 'cardStyle' })}><Icon name="palette" size={17} /> {tr('Change card style')}</button>}
       <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
     </Sheet>}
 
