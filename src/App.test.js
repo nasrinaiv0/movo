@@ -114,7 +114,7 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Wallet');
     expect(container.querySelector('h1').textContent).toBe('Wallet');
     expect(container.textContent).toContain('Quick Actions');
-    clickButton(container, 'Bank Accounts');
+    clickButton(container, 'Banks');
     expect(container.textContent).toContain('RCBC');
     clickButton(container, 'E-Wallets');
     expect(container.textContent).toContain('GCash');
