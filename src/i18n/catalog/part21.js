@@ -36,4 +36,5 @@ export default [
   ["Platinum", "Platinum", "بلاتيني", "白金", "Platino", "Platino", "Platin", "Platine", "Platina", "プラチナ", "플래티넘", "प्लैटिनम"],
   ["Gradient", "Gradient", "متدرّج", "渐变", "Degradado", "Sfumato", "Verlauf", "Dégradé", "Degradê", "グラデーション", "그라데이션", "ग्रेडिएंट"],
   ["{name} finish", "{name} na finish", "لمسة {name}", "{name} 质感", "Acabado {name}", "Finitura {name}", "{name}-Finish", "Finition {name}", "Acabamento {name}", "{name} 仕上げ", "{name} 마감", "{name} फ़िनिश"],
+  ["Personal details", "Personal na detalye", "البيانات الشخصية", "个人信息", "Datos personales", "Dati personali", "Persönliche Angaben", "Informations personnelles", "Dados pessoais", "個人情報", "개인 정보", "व्यक्तिगत विवरण"],
 ];

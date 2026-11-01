@@ -3308,3 +3308,25 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .profile-card-wrap { padding: 0; margin-bottom: 14px; overflow: hidden; }
 .movo-app .profile-card-wrap > .profile-card { margin: 0; background: none; border: 0; box-shadow: none; border-radius: inherit; }
 .movo-app .profile-card-wrap > .profile-signin { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 2 * var(--box-pad, 16px)); height: 48px; min-height: 48px; margin: 0 var(--box-pad, 16px) var(--box-pad, 16px); border-radius: 16px; }
+
+/* Edit profile: header, then grouped cards with one 16px rhythm; notes sit under their card. */
+.movo-app .edit-profile .ep-head { display: grid; justify-items: center; gap: 4px; margin: 4px 0 8px; text-align: center; }
+.movo-app .edit-profile .ep-head .avatar.huge { width: 88px; height: 88px; font-size: 36px; margin-bottom: 6px; }
+.movo-app .edit-profile .ep-head strong { font-size: 18px; font-weight: 650; color: var(--text); }
+.movo-app .edit-profile .ep-head small { font-size: 13px; color: var(--muted); }
+.movo-app .edit-profile .section-title { margin: 20px 4px 8px; }
+.movo-app.movo-app .edit-profile .ep-card { padding: 0 var(--box-pad, 16px); margin: 0; overflow: hidden; }
+.movo-app .edit-profile .ep-field { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 52px; background: none; }
+.movo-app .edit-profile :is(.ep-field, .ep-row) + :is(.ep-field, .ep-row) { box-shadow: inset 0 .5px 0 var(--line); }
+.movo-app .edit-profile .ep-label { font-size: 13.5px; color: var(--muted); }
+.movo-app .edit-profile .ep-value { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--muted); }
+.movo-app.movo-app .edit-profile .ep-value input { flex: 1; min-width: 0; height: 40px; padding: 0; border: 0; outline: 0; box-shadow: none; background: none; color: var(--text); font: inherit; font-size: 15px; }
+.movo-app .edit-profile .ep-field.is-readonly input { color: var(--muted); }
+.movo-app .edit-profile .ep-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 0; box-sizing: border-box; }
+.movo-app .edit-profile .ep-icon { flex: 0 0 36px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-tile, 30%); background: color-mix(in srgb, var(--accent) 10%, var(--card-solid)); color: var(--accent); }
+.movo-app .edit-profile .ep-main { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.movo-app .edit-profile .ep-main strong { font-size: 15px; font-weight: 600; color: var(--text); }
+.movo-app .edit-profile .ep-main small { font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.movo-app .edit-profile .ep-row > .pill { flex: none; }
+.movo-app .edit-profile .ep-note { margin: 8px 4px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.movo-app .edit-profile .form-error { margin: 8px 4px 0; }

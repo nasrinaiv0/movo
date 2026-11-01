@@ -92,28 +92,47 @@ export function EditProfile({ c }) {
     c.notify('Profile saved on this device.');
     go('Profile');
   };
-  const field = (label, key, value, readOnly, extra, maxLength) => <label className="field-row"><span>{tr(label)}</span>
-    <span className="field-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} maxLength={maxLength} onChange={e => setDraft(current => ({ ...current, [key]: e.target.value }))} /></span></label>;
+  const field = (label, key, value, readOnly, extra, maxLength) => <label className={`ep-field${readOnly ? ' is-readonly' : ''}`}><span className="ep-label">{tr(label)}</span>
+    <span className="ep-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} maxLength={maxLength} onChange={e => setDraft(current => ({ ...current, [key]: e.target.value }))} /></span></label>;
+  const google = session?.user?.app_metadata?.provider === 'google';
+  const providers = [
+    ['mail', 'Google', google ? session.user.email : c.supabaseConfigured ? tr('Google sign-in is available') : tr('Google sign-in is not configured'), google ? 'on' : 'off'],
+    ['phone', 'Apple', tr('Apple sign-in is not available in MOVO yet'), 'na'],
+    ['message', 'Facebook', tr('Facebook sign-in is not available in MOVO yet'), 'na'],
+  ];
   return <>
     <SubHeader title={tr('Profile')} onBack={() => go('Profile')} right={<button type="submit" form="movo-profile-form" className="link-button strong">{tr('Save')}</button>} />
-    <div className="avatar-edit"><span className="avatar huge">{(draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span></div>
-    <form id="movo-profile-form" className="card form-card" onSubmit={saveProfile} noValidate>
-      <p className="fineprint">{tr('Name, phone number, and location are saved in this browser only. Your sign-in email is managed by your authentication provider.')}</p>
-      {field('Full Name', 'profileName', draft.profileName, false, undefined, 100)}
-      {field('Email', 'email', user.email, true)}
-      {field('Phone Number', 'phone', draft.phone, false, <span className="flag">🇵🇭 <small>–</small></span>, 40)}
-      {field('Location', 'location', draft.location, false, <Icon name="pin" size={17} />, 100)}
+    <div className="edit-profile">
+      <header className="ep-head">
+        <span className="avatar huge">{(draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span>
+        <strong>{draft.profileName.trim() || user.name}</strong>
+        <small>{user.email}</small>
+      </header>
+
+      <SectionTitle>{tr('Personal details')}</SectionTitle>
+      <form id="movo-profile-form" className="card ep-card" onSubmit={saveProfile} noValidate>
+        {field('Full Name', 'profileName', draft.profileName, false, undefined, 100)}
+        {field('Email', 'email', user.email, true)}
+        {field('Phone Number', 'phone', draft.phone, false, <span className="flag">🇵🇭</span>, 40)}
+        {field('Location', 'location', draft.location, false, <Icon name="pin" size={17} />, 100)}
+      </form>
       {error && <p className="form-error" role="alert">{error}</p>}
-    </form>
-    <SectionTitle>{tr('Plan & Usage')}</SectionTitle>
-    <section className="card plan-card">
-      <div className="plan-top"><span className="tile tone-gray"><Icon name="info" size={22} /></span><span><strong>{tr('Plan management unavailable')}</strong><small>{tr('MOVO billing and token-usage data are not connected.')}</small></span></div>
-      <p className="fineprint">{tr('No active plan or usage amount is asserted by this screen. Plan details will appear here when a verified billing integration is available.')}</p>
-    </section>
-    <SectionTitle>{tr('Connected Accounts')}</SectionTitle>
-    <section className="card menu-card">
-      {[['mail', 'Google', session?.user?.app_metadata?.provider === 'google' ? session.user.email : c.supabaseConfigured ? tr('Google sign-in is available') : tr('Google sign-in is not configured'), session?.user?.app_metadata?.provider === 'google'], ['phone', 'Apple', 'Apple sign-in is not available in MOVO yet', false], ['message', 'Facebook', 'Facebook sign-in is not available in MOVO yet', false]].map(([icon, name, sub, on]) =>
-        <div className="menu-row" key={name}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{name}</strong>{sub && <small>{sub}</small>}</span><em className={`pill ${on ? 'tone-green' : 'tone-gray'}`}>{on ? tr('Connected') : name === 'Google' ? tr('Not connected') : tr('Unavailable')}</em></div>)}
-    </section>
+      <p className="ep-note">{tr('Name, phone number, and location are saved in this browser only. Your sign-in email is managed by your authentication provider.')}</p>
+
+      <SectionTitle>{tr('Plan & Usage')}</SectionTitle>
+      <section className="card ep-card">
+        <div className="ep-row"><span className="ep-icon"><Icon name="info" size={20} /></span><span className="ep-main"><strong>{tr('Plan management unavailable')}</strong><small>{tr('MOVO billing and token-usage data are not connected.')}</small></span></div>
+      </section>
+      <p className="ep-note">{tr('No active plan or usage amount is asserted by this screen. Plan details will appear here when a verified billing integration is available.')}</p>
+
+      <SectionTitle>{tr('Connected Accounts')}</SectionTitle>
+      <section className="card ep-card">
+        {providers.map(([icon, name, sub, state]) => <div className="ep-row" key={name}>
+          <span className="ep-icon"><Icon name={icon} size={20} /></span>
+          <span className="ep-main"><strong>{name}</strong><small>{sub}</small></span>
+          <em className={`pill ${state === 'on' ? 'tone-green' : 'tone-gray'}`}>{state === 'on' ? tr('Connected') : state === 'off' ? tr('Not connected') : tr('Unavailable')}</em>
+        </div>)}
+      </section>
+    </div>
   </>;
 }
