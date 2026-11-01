@@ -3252,3 +3252,25 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .wallet-chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
 .movo-app .wallet-chip-bar > .round-button { flex: 0 0 38px; width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
 @media (max-width: 380px) { .movo-app .wallet-chip-bar { gap: 4px; } .movo-app .wallet-chip-bar > .chip-row { gap: 2px; } .movo-app .wallet-chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
+
+/* Buttons: one soft shadow per button (no shadow strips). Chip rows keep room above and below so a row that
+   scrolls sideways never clips its buttons' shadows into straight edges. */
+.movo-app {
+  --btn-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 3px 8px -2px rgba(16, 24, 40, .08);
+  --btn-shadow-press: 0 1px 2px rgba(16, 24, 40, .08);
+}
+.movo-app.theme-dark { --btn-shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 3px 8px -2px rgba(0, 0, 0, .35); --btn-shadow-press: 0 1px 2px rgba(0, 0, 0, .35); }
+.movo-app.movo-app :is(.chip-row button[data-chip], .chip-row > button, .round-button, .primary-button, .secondary-button, .danger-button, .manage-button, .wide-button, .customize-button, .back-button, .qa-button .qa-icon, .seg-control button.selected, .theme-segments button, .month-pill, .home-period-filter, .header-action-buttons > button, .style-tile, .action-strip) { box-shadow: var(--btn-shadow); }
+.movo-app.movo-app :is(.chip-row button[data-chip], .round-button, .primary-button, .secondary-button, .danger-button, .manage-button, .wide-button, .customize-button):active { box-shadow: var(--btn-shadow-press); }
+.movo-app .chip-row { padding-top: 4px; padding-bottom: 8px; margin-top: -4px; margin-bottom: -8px; }
+.movo-app .chip-bar { margin-bottom: 14px; }
+.movo-app :is(.link-button, .plain-icon, .tx-row) { box-shadow: none; }
+.movo-app .chip-row button[data-chip].selected { box-shadow: none; }
+.movo-app .chip-row > .chip-ind { bottom: auto; box-shadow: var(--btn-shadow); }
+.movo-app .chip-bar > .chip-row { scroll-padding-inline: 18px; }
+/* Every filter bar (Wallet, Transactions…) fits on one row: compact chips that share the width, no clipping. */
+.movo-app .chip-bar { gap: 6px; }
+.movo-app .chip-bar > .chip-row { margin-left: 0; padding-left: 0; padding-right: 0; gap: 4px; overflow: visible; scroll-snap-type: none; -webkit-mask-image: none; mask-image: none; }
+.movo-app .chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
+.movo-app .chip-bar > :is(.round-button, button.round-button) { flex: 0 0 38px; width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
+@media (max-width: 380px) { .movo-app .chip-bar { gap: 4px; } .movo-app .chip-bar > .chip-row { gap: 2px; } .movo-app .chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }

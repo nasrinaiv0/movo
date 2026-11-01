@@ -53,13 +53,21 @@ export function Chips({ items, value, onChange, trailing, label }) {
   const row = useRef(null);
   const [ind, setInd] = useState(null);
   const [ready, setReady] = useState(false);
+  // The highlight copies the selected chip's box exactly (position and size), and follows it when the row resizes.
   useLayoutEffect(() => {
-    const el = row.current?.querySelector('button[data-chip][aria-pressed="true"]');
-    if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
+    const rowEl = row.current;
+    const measure = () => {
+      const el = rowEl?.querySelector('button[data-chip][aria-pressed="true"]');
+      if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+    };
+    measure();
+    if (!rowEl || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(measure); ro.observe(rowEl);
+    return () => ro.disconnect();
   }, [value, items.length]);
   useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
   return <div className="chip-row" role="group" aria-label={label} ref={row}>
-    {ind && <span className={`chip-ind${ready ? ' ready' : ''}`} aria-hidden="true" style={{ transform: `translateX(${ind.left}px)`, width: ind.width }} />}
+    {ind && <span className={`chip-ind${ready ? ' ready' : ''}`} aria-hidden="true" style={{ transform: `translateX(${ind.left}px)`, top: ind.top, width: ind.width, height: ind.height }} />}
     {items.map(item => {
       const key = typeof item === 'string' ? item : item.key; const text = typeof item === 'string' ? item : item.label;
       return <button key={key} data-chip type="button" className={value === key ? 'selected' : ''} aria-pressed={value === key} onClick={() => onChange(key)}>{text}{item.dot && <i className="red-dot inline" />}</button>;
