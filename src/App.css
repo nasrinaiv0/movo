@@ -2997,6 +2997,29 @@ button.account-tile:active { transform: scale(.98); }
   }
 }
 
+/* ---------- First-run welcome: account choices and local import ---------- */
+.movo-app .tour-welcome .welcome-choices { display: grid; gap: 10px; margin: 18px 0 6px; text-align: left; }
+.movo-app .tour-welcome .welcome-choice { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 12px 14px; border-radius: 18px; background: var(--field); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform .18s ease-out, background-color .18s ease-out; animation: welcome-in .32s ease-out both; }
+.movo-app .tour-welcome .welcome-choice:nth-child(2) { animation-delay: .05s; }
+.movo-app .tour-welcome .welcome-choice:nth-child(3) { animation-delay: .1s; }
+.movo-app .tour-welcome .welcome-choice:active { transform: scale(.985); }
+.movo-app .tour-welcome .welcome-choice > span { flex: 1 1 auto; min-width: 0; display: grid; gap: 2px; }
+.movo-app .tour-welcome .welcome-choice strong { font-weight: 600; font-size: 15px; }
+.movo-app .tour-welcome .welcome-choice small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.movo-app .tour-welcome .welcome-choice.is-primary { background: var(--accent); color: var(--on-accent, #fff); }
+.movo-app .tour-welcome .welcome-choice.is-primary small { color: inherit; opacity: .82; }
+.movo-app .tour-welcome .welcome-skip { margin-top: 6px; }
+.movo-app .welcome-local .welcome-badge { display: inline-grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 6px; border-radius: 18px; background: var(--accent); color: var(--on-accent, #fff); }
+.movo-app .welcome-local .welcome-drop { display: flex; align-items: center; gap: 12px; width: 100%; margin: 14px 0 6px; padding: 16px; border-radius: 18px; border: 1.5px dashed var(--accent) !important; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.movo-app .welcome-local .welcome-drop > span { display: grid; gap: 2px; }
+.movo-app .welcome-local .welcome-drop small { color: var(--muted); font-size: 12.5px; }
+.movo-app .welcome-local .welcome-drop[aria-busy="true"] { opacity: .7; }
+.movo-app .welcome-local .welcome-result { margin: 8px 0 4px; font-size: 13.5px; line-height: 1.45; }
+.movo-app .welcome-local .welcome-result.is-ok { color: var(--green, #1f9d55); }
+.movo-app .welcome-local .welcome-result.is-error { color: var(--red, #d64545); }
+@keyframes welcome-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .movo-app .tour-welcome .welcome-choice { animation: none; transition: none; } }
+
 /* ---------- Bills & Payments ---------- */
 .movo-app .progress-track { display: block; height: 6px; margin: 8px 0 2px; border-radius: 999px; background: var(--field); overflow: hidden; }
 .movo-app .progress-track > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .4s ease-out; }

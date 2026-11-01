@@ -13,8 +13,8 @@ test('welcome, then each step in order with a counter; Done finishes and Skip/Es
   const steps = [{ target: '.a', icon: 'chart', title: 'First', text: 'one' }, { target: '.missing', icon: 'chart', title: 'Gone', text: 'skipped' }, { target: '.b', icon: 'grid', title: 'Last', text: 'two' }];
   act(() => root.render(<Walkthrough steps={steps} onDone={onDone} />));
   expect(app.textContent).toContain('Welcome to MOVO');
-  const click = (label) => act(() => Array.from(app.querySelectorAll('button')).find(b => b.textContent === label).click());
-  click('Take a quick tour');
+  const click = (label) => act(() => Array.from(app.querySelectorAll('button')).find(b => b.textContent.startsWith(label)).click());
+  click('Continue with local');
   expect(app.textContent).toContain('First');
   expect(app.textContent).toContain('1 of 3');
   expect(app.querySelector('.tour-spot')).not.toBeNull();
@@ -25,4 +25,22 @@ test('welcome, then each step in order with a counter; Done finishes and Skip/Es
   act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
   expect(onDone).toHaveBeenCalledTimes(2);
   act(() => root.unmount()); app.remove(); host.remove();
+});
+
+test('welcome offers sign in, sign up and local with a file import', async () => {
+  const app = document.createElement('div'); document.body.appendChild(app);
+  const root = createRoot(app); const onAccount = jest.fn(); const onImport = jest.fn(async () => ({ ok: true, message: 'Added 2 accounts.' }));
+  act(() => root.render(<Walkthrough steps={[]} onDone={() => {}} onAccount={onAccount} onImport={onImport} />));
+  const click = (label) => act(() => Array.from(app.querySelectorAll('button')).find(b => b.textContent.startsWith(label)).click());
+  click('Have an account already'); expect(onAccount).toHaveBeenLastCalledWith('signin');
+  click('Sign up'); expect(onAccount).toHaveBeenLastCalledWith('signup');
+  click('Continue with local');
+  expect(app.textContent).toContain('Bring your money data');
+  const input = app.querySelector('input[type="file"]');
+  const file = new File(['{}'], 'backup.json', { type: 'application/json' });
+  Object.defineProperty(input, 'files', { value: [file] });
+  await act(async () => { input.dispatchEvent(new Event('change', { bubbles: true })); });
+  expect(onImport).toHaveBeenCalledWith(file);
+  expect(app.querySelector('[role="status"]').textContent).toBe('Added 2 accounts.');
+  act(() => root.unmount()); app.remove();
 });

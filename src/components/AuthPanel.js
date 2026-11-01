@@ -4,8 +4,8 @@ import { supabaseConfigured } from '../lib/supabaseClient';
 import './AuthPanel.css';
 import { t as tr } from '../lib/i18n';
 
-export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLegal }) {
-  const [mode, setMode] = useState('signin');
+export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLegal, initialMode = 'signin' }) {
+  const [mode, setMode] = useState(initialMode === 'signup' ? 'signup' : 'signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
