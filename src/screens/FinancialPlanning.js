@@ -4,8 +4,9 @@ import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { allocateToGoal, createGoal, createLoan, createReceivable, listGoals, listGoalAllocations, listLoans, listReceivables, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation } from '../lib/obligationsRepository';
 import { financialPosition, goalProgress } from '../lib/accounting';
+import BillsPanel from '../components/BillsPanel';
 
-const TABS = ['Overview', 'Loans & debts', 'Owed to you', 'Goals'];
+const TABS = ['Overview', 'Bills', 'Loans & debts', 'Owed to you', 'Goals'];
 const blankLoan = { name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: 'PHP', interest_rate: '0', due_date: '', account_id: '', new_proceeds: false, notes: '' };
 const blankReceivable = { name: '', counterparty: '', reason: '', opening_amount: '', currency: 'PHP', due_date: '', account_id: '', new_lending: false, notes: '' };
 const blankGoal = { name: '', target_amount: '', currency: 'PHP', target_date: '', notes: '' };
@@ -69,11 +70,11 @@ export default function FinancialPlanning({ c }) {
 
   if (!c.cloudMode) return <>
     <RootHeader title={tr('Financial planning')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
-    <section className="card pad"><h2>{tr('Sign in to manage your financial records')}</h2><p>{tr('Loans, debts, receivables and goal allocations use secure cloud records so balances stay consistent across your devices.')}</p><button type="button" className="primary-button" onClick={() => c.go('Sign in')}>{tr('Sign in')}</button></section>
+    <section className="card pad"><h2>{tr('Sign in to manage your financial records')}</h2><p>{tr('Bills, loans, debts, receivables and goal allocations use secure cloud records so balances stay consistent across your devices.')}</p><button type="button" className="primary-button" onClick={() => c.go('Sign in')}>{tr('Sign in')}</button></section>
   </>;
 
   return <>
-    <RootHeader title={tr('Financial planning')} subtitle={tr('Loans, debts, money owed to you and goals.')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
+    <RootHeader title={tr('Financial planning')} subtitle={tr('Bills, loans, debts, money owed to you and goals.')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
     <div className="chip-bar" role="tablist" aria-label={tr('Financial planning sections')}>{TABS.map(t => <button type="button" role="tab" aria-selected={tab === t} className={`chip${tab === t ? ' active' : ''}`} key={t} onClick={() => { setTab(t); setError(''); setNotice(''); }}>{tr(t)}</button>)}</div>
     {error && <p className="app-alert" role="alert">{error}</p>}{notice && <p className="form-note" role="status">{notice}</p>}
 
@@ -83,6 +84,8 @@ export default function FinancialPlanning({ c }) {
       </section>
       <section className="card pad"><h2>{tr('At a glance')}</h2><p>{tr('Outstanding loans and debts')}: <strong>{loans.filter(l => l.status === 'active').length}</strong></p><p>{tr('People who owe you')}: <strong>{receivables.filter(r => r.status === 'active').length}</strong></p><p>{tr('Active savings goals')}: <strong>{goals.filter(g => g.status === 'active').length}</strong></p><p className="form-note">{tr('Loans are liabilities; receivables are assets but are not available cash. Goal allocations reserve existing funds and do not create new assets.')}</p></section>
     </>}
+
+    {tab === 'Bills' && <BillsPanel c={c} accounts={(c.accountsView || []).filter(a => !a.is_archived)} onChanged={c.refreshFinance} />}
 
     {tab === 'Loans & debts' && <>
       <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan({ ...loanForm, currency: loanForm.currency || c.base }, c.session?.user?.id), 'Loan or debt added.').then(ok => { if (ok) setLoanForm({ ...blankLoan, currency: c.base || 'PHP' }); }); }}>

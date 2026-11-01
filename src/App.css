@@ -3020,6 +3020,27 @@ button.account-tile:active { transform: scale(.98); }
 @keyframes welcome-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .movo-app .tour-welcome .welcome-choice { animation: none; transition: none; } }
 
+/* ---------- Bills & Payments ---------- */
+.movo-app .progress-track { display: block; height: 6px; margin: 8px 0 2px; border-radius: 999px; background: var(--field); overflow: hidden; }
+.movo-app .progress-track > span { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .4s ease-out; }
+.movo-app .bills-list h2 { margin: 0 0 6px; }
+.movo-app .bill-row { padding: 12px 0; border-top: var(--hair) solid var(--line, rgba(127,127,127,.18)); }
+.movo-app .bill-row:first-of-type { border-top: 0; }
+.movo-app .bill-row .detail-row { gap: 12px; }
+.movo-app .bill-row .detail-row > span { min-width: 0; display: grid; gap: 2px; }
+.movo-app .bill-row small { color: var(--muted); }
+.movo-app .bill-state { font-style: normal; font-weight: 600; }
+.movo-app .bill-state.is-overdue { color: var(--red); }
+.movo-app .bill-state.is-due_today, .movo-app .bill-state.is-due_soon { color: var(--amber, #c27a00); }
+.movo-app .bill-state.is-partially_paid { color: var(--accent); }
+.movo-app .bill-row.is-overdue > .detail-row b { color: var(--red); }
+.movo-app .bill-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.movo-app .bill-actions .primary-button { min-height: 36px; padding: 0 18px; }
+.movo-app .bill-pay { margin-top: 10px; animation: welcome-in .25s ease-out both; }
+.movo-app .stat-card.tint-red strong { color: var(--red); }
+.movo-app .stat-card small { color: var(--muted); font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { .movo-app .bill-pay { animation: none; } .movo-app .progress-track > span { transition: none; } }
+
 /* =====================================================================
    Premium compact pass (Nov 2026).
    Summary hero cards share one compact height on Home, Wallet and
