@@ -2907,3 +2907,44 @@ button.account-tile:active { transform: scale(.98); }
     padding-inline: 14px;
   }
 }
+
+
+/* PR #121 follow-up: accent-filled balance/spending hero cards with adaptive white content.
+   The selected accent remains the source of the fill, so user accent/theme preferences still apply. */
+.movo-app {
+  --summary-card-ink: #fff;
+  --summary-card-chart-soft: rgba(255, 255, 255, .22);
+}
+.movo-app .balance-card,
+.movo-app .total-card {
+  background: var(--accent) !important;
+  color: var(--summary-card-ink);
+  border-color: transparent;
+  color-scheme: dark;
+}
+.movo-app .balance-card *,
+.movo-app .total-card * {
+  color: var(--summary-card-ink) !important;
+}
+.movo-app .balance-card svg,
+.movo-app .total-card svg {
+  color: var(--summary-card-ink);
+  stroke: currentColor;
+}
+.movo-app .balance-card .balance-art .spark-line,
+.movo-app .balance-card .balance-art .mini-bars-bar,
+.movo-app .balance-card .balance-art .mini-bar,
+.movo-app .total-card .balance-art .spark-line,
+.movo-app .total-card .balance-art .mini-bars-bar,
+.movo-app .total-card .balance-art .mini-bar {
+  stroke: var(--summary-card-ink);
+  color: var(--summary-card-ink);
+}
+.movo-app .balance-card .bars-plot span,
+.movo-app .total-card .bars-plot span {
+  background: var(--summary-card-chart-soft);
+}
+.movo-app .balance-card .bars-plot span.hot,
+.movo-app .total-card .bars-plot span.hot {
+  background: var(--summary-card-ink);
+}
