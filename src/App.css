@@ -2878,3 +2878,73 @@ button.account-tile:active { transform: scale(.98); }
   content: none !important;
   display: none !important;
 }
+
+
+/* Match the Home Total Balance hero height to the Transactions Total Spent card. */
+.movo-app .balance-card.size-L {
+  box-sizing: border-box;
+  height: 130px;
+  min-height: 130px;
+  padding: 14px 18px;
+}
+.movo-app .balance-card.size-L .balance-amount {
+  font-size: 26px;
+  line-height: 1.05;
+  margin: 4px 0 7px;
+}
+.movo-app .balance-card.size-L .balance-art {
+  width: 48%;
+  height: 74%;
+  bottom: 0;
+}
+.movo-app .total-card {
+  min-height: 130px;
+}
+@media (max-width: 360px) {
+  .movo-app .balance-card.size-L {
+    height: 136px;
+    min-height: 136px;
+    padding-inline: 14px;
+  }
+}
+
+
+/* PR #121 follow-up: accent-filled balance/spending hero cards with adaptive white content.
+   The selected accent remains the source of the fill, so user accent/theme preferences still apply. */
+.movo-app {
+  --summary-card-ink: #fff;
+  --summary-card-chart-soft: rgba(255, 255, 255, .22);
+}
+.movo-app .balance-card,
+.movo-app .total-card {
+  background: var(--accent) !important;
+  color: var(--summary-card-ink);
+  border-color: transparent;
+  color-scheme: dark;
+}
+.movo-app .balance-card *,
+.movo-app .total-card * {
+  color: var(--summary-card-ink) !important;
+}
+.movo-app .balance-card svg,
+.movo-app .total-card svg {
+  color: var(--summary-card-ink);
+  stroke: currentColor;
+}
+.movo-app .balance-card .balance-art .spark-line,
+.movo-app .balance-card .balance-art .mini-bars-bar,
+.movo-app .balance-card .balance-art .mini-bar,
+.movo-app .total-card .balance-art .spark-line,
+.movo-app .total-card .balance-art .mini-bars-bar,
+.movo-app .total-card .balance-art .mini-bar {
+  stroke: var(--summary-card-ink);
+  color: var(--summary-card-ink);
+}
+.movo-app .balance-card .bars-plot span,
+.movo-app .total-card .bars-plot span {
+  background: var(--summary-card-chart-soft);
+}
+.movo-app .balance-card .bars-plot span.hot,
+.movo-app .total-card .bars-plot span.hot {
+  background: var(--summary-card-ink);
+}
