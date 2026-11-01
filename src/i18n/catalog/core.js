@@ -1,5 +1,20 @@
 /* Core interface strings. Columns: English, then Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi. */
 export default [
+
+  [
+    "Cards & Bank Accounts",
+    "Mga Card at Bank Account",
+    "البطاقات والحسابات البنكية",
+    "银行卡与银行账户",
+    "Tarjetas y cuentas bancarias",
+    "Carte e conti bancari",
+    "Karten & Bankkonten",
+    "Cartes et comptes bancaires",
+    "Cartões e contas bancárias",
+    "カード・銀行口座",
+    "카드 및 은행 계좌",
+    "कार्ड और बैंक खाते"
+  ],
   [
     "Home",
     "Home",
