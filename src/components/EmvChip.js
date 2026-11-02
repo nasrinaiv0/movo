@@ -18,17 +18,18 @@ const GROOVES = [
 ];
 
 /**
- * EMV chip: no outline, metallic gradient, soft inner shadow, bevelled pad grooves and a slow shine that sweeps
- * across every few seconds (CSS; off for reduced motion).
+ * EMV chip: no outline, banded metal gradient with fine brushed grain, soft inner shadow, bevelled pad grooves
+ * and a faint sheen that drifts across now and then (CSS; off for reduced motion).
  */
 export function EmvChip({ finish = 'gold', className = '' }) {
   const [, , fill, line, light, shade] = chipColors(finish);
   const raw = useId(); const u = `c${raw.replace(/[^a-z0-9]/gi, '')}`;
   return <svg className={`emv-chip ${className}`.trim()} viewBox="0 0 100 76" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id={`${u}m`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={light} /><stop offset=".42" stopColor={fill} /><stop offset=".7" stopColor={fill} /><stop offset="1" stopColor={shade} /></linearGradient>
-      <linearGradient id={`${u}g`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".85" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
-      <radialGradient id={`${u}s`} cx=".28" cy=".18" r=".7"><stop offset="0" stopColor="#fff" stopOpacity=".55" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <linearGradient id={`${u}m`} x1="0" y1="0" x2="1" y2=".55"><stop offset="0" stopColor={light} /><stop offset=".22" stopColor={fill} /><stop offset=".38" stopColor={shade} /><stop offset=".55" stopColor={fill} /><stop offset=".72" stopColor={light} stopOpacity=".9" /><stop offset=".86" stopColor={fill} /><stop offset="1" stopColor={shade} /></linearGradient>
+      <linearGradient id={`${u}g`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".28" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+      <radialGradient id={`${u}s`} cx=".3" cy=".2" r=".7"><stop offset="0" stopColor="#fff" stopOpacity=".16" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <pattern id={`${u}b`} width="100" height="1.6" patternUnits="userSpaceOnUse"><rect width="100" height=".55" fill="#fff" fillOpacity=".09" /><rect y=".8" width="100" height=".45" fill="#000" fillOpacity=".07" /></pattern>
       <clipPath id={`${u}c`}><rect x="2" y="2" width="96" height="72" rx="13" /></clipPath>
       <filter id={`${u}i`} x="-10%" y="-10%" width="120%" height="120%">
         <feOffset dx="0" dy="1.6" /><feGaussianBlur stdDeviation="2" result="o" />
@@ -39,8 +40,9 @@ export function EmvChip({ finish = 'gold', className = '' }) {
     </defs>
     <rect x="2" y="2" width="96" height="72" rx="13" fill={`url(#${u}m)`} filter={`url(#${u}i)`} />
     <g clipPath={`url(#${u}c)`} fill="none" strokeLinecap="round">
-      <g stroke="#fff" strokeOpacity=".55" strokeWidth="1" transform="translate(.7 .7)">{GROOVES.map(d => <path key={d} d={d} />)}</g>
-      <g stroke={line} strokeOpacity=".6" strokeWidth="1.1">{GROOVES.map(d => <path key={d} d={d} />)}</g>
+      <rect x="2" y="2" width="96" height="72" fill={`url(#${u}b)`} stroke="none" />
+      <g stroke="#fff" strokeOpacity=".4" strokeWidth=".9" transform="translate(.6 .6)">{GROOVES.map(d => <path key={d} d={d} />)}</g>
+      <g stroke={line} strokeOpacity=".75" strokeWidth="1.2">{GROOVES.map(d => <path key={d} d={d} />)}</g>
       <rect x="2" y="2" width="96" height="72" fill={`url(#${u}s)`} stroke="none" />
       <rect className="chip-shine" x="-60" y="-20" width="34" height="120" fill={`url(#${u}g)`} stroke="none" transform="rotate(20 50 38)" />
     </g>

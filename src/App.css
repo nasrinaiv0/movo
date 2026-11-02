@@ -3396,7 +3396,7 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 /* Chip shine: a soft highlight sweeps across the chip, then rests (loop). */
-.emv-chip .chip-shine { transform-box: view-box; animation: chip-shine 4.8s cubic-bezier(.4, 0, .2, 1) infinite; }
+.emv-chip .chip-shine { transform-box: view-box; animation: chip-shine 7s cubic-bezier(.4, 0, .2, 1) infinite; }
 @keyframes chip-shine { 0% { translate: 0 0; } 38%, 100% { translate: 180px 0; } }
 .movo-app .credit-card.ccx .ccx-chip.emv-chip { filter: drop-shadow(0 .3cqw .6cqw rgba(0, 0, 0, .22)); }
 @media (prefers-reduced-motion: reduce) { .emv-chip .chip-shine { animation: none; display: none; } }
