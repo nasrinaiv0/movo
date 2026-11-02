@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { TRANSACTION_SOURCES } from './transactionSources';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
@@ -84,7 +85,7 @@ export async function createTransaction(transaction, userId) {
     category: typeof transaction.category === 'string' ? transaction.category.trim().slice(0, 60) || 'Other' : 'Other',
     note: typeof transaction.note === 'string' ? transaction.note.trim().slice(0, 1000) || null : null,
     occurred_at: occurredAt,
-    source: ['manual', 'csv_import', 'bank_sync', 'notification', 'apple_pay_export', 'other'].includes(transaction.source) ? transaction.source : 'manual',
+    source: TRANSACTION_SOURCES.includes(transaction.source) ? transaction.source : 'manual',
     external_reference: typeof transaction.external_reference === 'string' ? transaction.external_reference.slice(0, 200) || null : null,
   }).select().single());
 }

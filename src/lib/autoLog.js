@@ -40,14 +40,27 @@ export const shortcutPrompt = (origin, key, mode = 'interactive') => {
     'Turn Show When Run off for the network action if available. Get Contents of URL sends the request without opening Safari.',
     'MOVO must be signed in with cloud storage and this device key must be registered in Automatic logging settings. Test with one small real transaction and verify exactly one expense is saved.'
   ];
+  if (mode === 'voice') return [
+    'Create an iOS shortcut named “Log to MOVO” that I can run by saying “Hey Siri, Log to MOVO”.',
+    'Add Dictate Text (language: the language I speak, stop listening: after pause). Do not add Choose from Menu or Ask for Input.',
+    `Add Get Contents of URL to ${origin}/api/log (never Open URLs), Method POST, Request Body JSON, headers Content-Type: application/json and Authorization: Bearer ${key}.`,
+    'JSON fields: text set to the Dictated Text, source set to siri_shortcut. Do not add amount or merchant; MOVO reads them from the sentence and asks again if it is unclear.',
+    'Add Get Dictionary Value for key message from the response, then Speak Text with that value. If the response has no message or an error, speak “MOVO could not log that, please try again” and never claim it was logged.',
+    'Example sentences: “I spent 150 pesos on lunch”, “I received 2,000 pesos from work”, “I paid 500 for electricity yesterday using my BPI card”.',
+    'MOVO must be signed in with cloud storage and this device key must be registered in Automatic logging settings.'
+  ].join(' ');
   if (mode === 'automatic') return [
+    'Name the automation “Auto MOVO Transactions”.',
+    'MOVO recognises the same purchase if a bank alert or another device also reports it, so it is never logged twice.',
     'Create a fully automatic iOS Shortcuts transaction automation for MOVO. Do not add menus, Ask for Input, confirmation dialogs, or any action requiring a tap.',
     ...shared,
     'After the POST, add Show Notification titled “MOVO · Transaction logged” with body “Logged [Amount] at [Merchant]”. Only show success after the server confirms success. On failure, show a failure notification and never claim it logged.',
     'This mode needs no manual choice after the automation trigger. Do not invent unsupported bank-app triggers or assume notification data is available.'
   ].join(' ');
   return [
+    'Name the automation “Auto MOVO Transactions”.',
     'Create an iOS Shortcuts transaction automation for MOVO with an interactive Log / Skip choice before sending any transaction.',
+    'MOVO recognises the same purchase if a bank alert or another device also reports it, so it is never logged twice.',
     ...shared,
     'Add Choose from Menu with prompt “Log [Amount] transaction at [Merchant]?” and exactly two options: Log and Skip.',
     'Under Skip, add Stop This Shortcut. Do not send a request or open MOVO.',

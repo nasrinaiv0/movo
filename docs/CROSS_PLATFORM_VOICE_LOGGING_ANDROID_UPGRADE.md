@@ -131,12 +131,12 @@ Test Android on at least one current Pixel/Gemini configuration and one non-Pixe
 - [x] Document Siri Shortcut implementation plan.
 - [x] Add this Android/Gemini cross-platform upgrade plan.
 - [ ] Inspect the deployed MOVO app architecture and select the supported Android entry mechanism.
-- [ ] Define one shared request/response contract for iOS and Android.
-- [ ] Implement natural-language parsing and strict server-side validation.
-- [ ] Add platform-specific transaction source values to database constraints and UI labels.
-- [ ] Add parser, API, security, isolation, idempotency, and regression tests.
-- [ ] Implement the iOS Shortcut against the shared contract.
-- [ ] Implement the supported Android assistant/shortcut entry flow.
+- [x] Define one shared request/response contract for iOS and Android (`POST /api/log` with `text` + `source`; see docs/secure-phone-automation.md).
+- [x] Implement deterministic natural-language parsing and strict server-side validation (`api/_lib/voice.js`; unclear speech → 422, nothing logged).
+- [x] Add `siri_shortcut` and `android_assistant` to the database source constraint (migration `20261102010000`).
+- [x] Add parser, API, security, isolation, idempotency and cross-source duplicate tests (`src/lib/automationApi.test.js`, `supabase/tests/automation_dedup.test.sql`).
+- [x] Provide the iOS Siri voice Shortcut prompt against the shared contract (Settings → Automatic logging → Siri voice). Not yet device-tested.
+- [ ] Android entry flow: documented via third-party automation apps (docs/secure-phone-automation.md); no native Android app or App Actions yet.
 - [ ] Run CI, typecheck, build, preview deployment, and migration verification.
 - [ ] Perform real-device end-to-end tests on iOS and Android.
 - [ ] Update this document with PR/commit/check/deployment/migration/device-test evidence.

@@ -648,6 +648,37 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     expect(dialog.querySelector('[aria-label="Amount"]')?.textContent).toContain('109');
   });
 
+  test('trusted Apple Pay links log with their own source, and the bank alert for the same purchase is not added twice', async () => {
+    const key = 'f'.repeat(32);
+    act(() => root.unmount());
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), autoLog: true, autoLogKey: key, onboarded: true }));
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    const stored = () => JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').filter(t => Number(t.amount) === 109);
+    window.location.hash = `#log?src=applepay&k=${key}&amount=109&merchant=Gadc&card=BPI%20Visa`;
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(stored()).toHaveLength(1);
+    expect(stored()[0]).toMatchObject({ source: 'applepay', merchant: 'Gadc', transaction_type: 'expense' });
+    window.location.hash = `#log?src=bank&k=${key}&amount=109&merchant=POS%20GADC%20MAKATI&card=BPI%20Visa`;
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(stored()).toHaveLength(1);
+    expect(container.textContent).toMatch(/not added twice/);
+  });
+
+  test('a confirmed (Log) Google Pay prompt keeps Google Pay as its source', async () => {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    window.location.hash = '#log?src=googlepay&k=untrusted&amount=77&merchant=Starbucks&card=BPI%20Visa';
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    clickButton(container, 'Log');
+    const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
+    act(() => dialog.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    const saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').find(t => t.merchant === 'Starbucks' && Number(t.amount) === 77);
+    expect(saved).toMatchObject({ source: 'googlepay' });
+  });
+
   test('Apple Pay payment prompt Skip button dismisses the payment without opening a transaction form', async () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';

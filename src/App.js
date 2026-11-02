@@ -45,6 +45,7 @@ import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
+import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
@@ -482,7 +483,7 @@ function App() {
   }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
-  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type }); };
+  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '' })); setSheet({ name: 'transaction', type }); };
   /* "Add amount" on a card or account: a transfer into it from another account, or a manual top-up (income). */
   const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type: 'transfer' }); };
   const openEditAccount = (account) => {
@@ -522,27 +523,28 @@ function App() {
     const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
-    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id }, rawTxs);
+    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id, ref: form.ref || '' }, rawTxs);
     const sig = `${type}|${amount}|${form.merchant.trim().toLowerCase()}|${form.occurred_at}|${form.account_id}`;
     if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
     dupAck.current = '';
     setBusy(true);
     try {
       if (cloudMode) {
+        const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
         const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
-        const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
+        const row = editingId ? await updateTransaction(editingId, payload) : auto.source ? await createAutomated({ ...payload, ...auto }) : await createTransaction(payload, session.user.id);
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
         if (!editingId) celebrate();
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
         if (!editingId) celebrate();
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today() }); setSheet(null);
+      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '' }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
   };
@@ -733,6 +735,15 @@ function App() {
     finally { setBusy(false); }
   };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
+  // Saves with the real channel (applepay, googlepay, bank, notification). Until migration 20261102010000 is applied the
+  // database only accepts 'notification', so a rejected source is retried once as 'notification' instead of losing the record.
+  const createAutomated = useCallback(async (payload) => {
+    try { return await createTransaction(payload, session.user.id); }
+    catch (cause) {
+      if (payload.source !== 'notification' && /transactions_source_check/.test(String(cause?.message || ''))) return createTransaction({ ...payload, source: 'notification' }, session.user.id);
+      throw cause;
+    }
+  }, [session]);
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
     if (!account) { notify(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
@@ -740,12 +751,12 @@ function App() {
     const dup = findDuplicate({ ...payload, ref: entry.ref }, rawTxs);
     if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
     try {
-      if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
-      else { const row = { ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }; markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
+      if (cloudMode) { const row = await createAutomated({ ...payload, source: AUTOMATION_SOURCES.includes(entry.src) ? entry.src : 'notification', external_reference: entry.ref || undefined }); markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
+      else { const row = { ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: AUTOMATION_SOURCES.includes(entry.src) ? entry.src : 'notification' }; markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
       celebrate();
     } catch { setPendingLog(entry); }
-  }, [accountsView, cloudMode, session, notify, rawTxs, celebrate]);
+  }, [accountsView, cloudMode, notify, rawTxs, celebrate, createAutomated]);
   /* ---------- logging from the NasrinAI chat (parsed on this device; see lib/chatLog.js) ---------- */
   const logFromChat = useCallback(async (entries, force = false) => {
     const open = accountsView.filter(a => !a.is_archived);
@@ -988,7 +999,7 @@ function App() {
   }, [authReady, prefs.onboarded, prefs.briefing, prefs.briefingDay, todayKey]);
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
-    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
+    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id, source: e.src, ref: e.ref || '' }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
 
@@ -1110,7 +1121,7 @@ function App() {
         const acct = (f.last4 && live.find(a => a.mask === f.last4)) || (bank && live.find(a => [a.institution_name, a.name].some(n => String(n || '').toLowerCase() === bank)));
         const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type, ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs);
         setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : '');
-        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, ...(acct ? { account_id: acct.id } : {}) }));
+        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', ...(acct ? { account_id: acct.id } : {}) }));
         setSheet({ name: 'transaction', type });
       }} />}
 
@@ -1195,6 +1206,7 @@ function App() {
           <div className="shortcut-prompt-actions" role="group" aria-label={tr('Choose automation style')}>
             <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'automatic')).then(() => notify(tr('Auto log prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="refresh" size={16} /> {tr('Auto log')}</button>
             <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'interactive')).then(() => notify(tr('Require validation prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="doc" size={16} /> {tr('Require validation')}</button>
+            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'voice')).then(() => notify(tr('Siri voice prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="mic" size={16} /> {tr('Siri voice')}</button>
           </div>
           <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
         </section>

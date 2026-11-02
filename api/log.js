@@ -3,7 +3,11 @@ const { createClient } = require('@supabase/supabase-js');
 
 const MAX_BODY_BYTES = 8192;
 const KEY_RE = /^[a-f0-9]{32,128}$/i;
-const SOURCES = new Set(['applepay', 'googlepay', 'bank', 'notification']);
+const { parseVoice, guessCategory } = require('./_lib/voice');
+// Every channel that may post here; stored as transactions.source (see migration 20261102010000).
+const SOURCES = new Set(['applepay', 'googlepay', 'bank', 'notification', 'siri_shortcut', 'android_assistant']);
+const SOURCE_LABELS = { applepay: 'Apple Pay', googlepay: 'Google Pay', bank: 'bank notification', notification: 'notification', siri_shortcut: 'Siri', android_assistant: 'Android assistant' };
+const VOICE_SOURCES = new Set(['siri_shortcut', 'android_assistant']);
 function json(res, status, body) { res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff'); return res.status(status).json(body); }
 function sha256(value) { return crypto.createHash('sha256').update(String(value)).digest('hex'); }
 function cleanText(value, max) { return typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, max) : ''; }
@@ -33,8 +37,10 @@ function accountFor(accounts, hint) {
   });
   return institution.length === 1 ? institution[0] : null;
 }
-function idempotencyKey({ source, amount, merchant, card, occurredAt, reference }) {
-  const stable = reference ? `${source}|ref:${reference.toLowerCase()}|${amount.toFixed(2)}|${merchant.toLowerCase()}|${card.toLowerCase()}` : [source, amount.toFixed(2), merchant.toLowerCase(), card.toLowerCase(), String(Math.floor(Date.parse(occurredAt) / 60000))].join('|');
+function idempotencyKey({ source, amount, merchant, card, occurredAt, reference, type = 'expense' }) {
+  // Per device retry key. Cross-channel duplicates are matched separately in the database (log_automation_transaction_v2).
+  const kind = type === 'income' ? 'income|' : '';
+  const stable = reference ? `${kind}${source}|ref:${reference.toLowerCase()}|${amount.toFixed(2)}|${merchant.toLowerCase()}|${card.toLowerCase()}` : kind + [source, amount.toFixed(2), merchant.toLowerCase(), card.toLowerCase(), String(Math.floor(Date.parse(occurredAt) / 60000))].join('|');
   return sha256(stable);
 }
 module.exports = async function handler(req, res) {
@@ -55,7 +61,7 @@ module.exports = async function handler(req, res) {
       const { data: existing, error: lookupError } = await api.admin.from('movo_automation_tokens').select('user_id').eq('token_hash', tokenHash).maybeSingle();
       if (lookupError) throw lookupError;
       if (existing && existing.user_id !== authData.user.id) return json(res, 409, { error: 'key_already_registered' });
-      const { error } = await api.admin.from('movo_automation_tokens').upsert({ token_hash: tokenHash, user_id: authData.user.id, label: 'iOS Shortcuts', active: true }, { onConflict: 'token_hash' });
+      const { error } = await api.admin.from('movo_automation_tokens').upsert({ token_hash: tokenHash, user_id: authData.user.id, label: body.platform === 'android' ? 'Android automation' : 'iOS Shortcuts', active: true }, { onConflict: 'token_hash' });
       if (error) throw error;
       return json(res, 200, { success: true, registered: true });
     }
@@ -75,10 +81,21 @@ module.exports = async function handler(req, res) {
     if (tokenError) throw tokenError;
     if (!registered?.active) return json(res, 401, { error: 'device_not_registered' });
     stage = 'validate_transaction';
-    const amount = amountValue(body.amount), merchant = cleanText(body.merchant, 160), card = cleanText(body.card || body.account, 100), reference = cleanText(body.reference, 120);
     const source = SOURCES.has(body.source) ? body.source : 'notification';
+    // Voice paths may send the spoken sentence instead of fields; it is parsed here, never trusted blindly.
+    let voice = null;
+    if (typeof body.text === 'string' && body.text.trim() && (body.amount === undefined || body.amount === null || body.amount === '')) {
+      voice = parseVoice(body.text);
+      if (!voice.ok) return json(res, 422, { error: 'clarification_required', reason: voice.reason, message: 'Say one amount and what it was for, for example “I spent 150 pesos on lunch”.' });
+    }
+    const amount = voice ? voice.amount : amountValue(body.amount);
+    const merchant = voice ? cleanText(voice.merchant, 160) : cleanText(body.merchant, 160);
+    const card = cleanText(voice ? (body.card || body.account || voice.accountHint) : (body.card || body.account), 100);
+    const reference = cleanText(body.reference, 120);
+    const type = (voice && voice.type) || (body.type === 'income' ? 'income' : 'expense');
+    const requestedCurrency = typeof body.currency === 'string' && /^[A-Z]{3}$/.test(body.currency.trim().toUpperCase()) ? body.currency.trim().toUpperCase() : (voice && voice.currency) || '';
     if (!amount || !merchant) return json(res, 400, { error: 'invalid_transaction' });
-    const parsedDate = body.occurredAt ? Date.parse(body.occurredAt) : Date.now();
+    const parsedDate = body.occurredAt ? Date.parse(body.occurredAt) : voice ? Date.parse(voice.occurredAt) : Date.now();
     if (!Number.isFinite(parsedDate) || parsedDate < Date.now() - 366 * 86400000 || parsedDate > Date.now() + 86400000) return json(res, 400, { error: 'invalid_transaction_date' });
     const occurredAt = new Date(parsedDate).toISOString();
     stage = 'match_account';
@@ -86,23 +103,34 @@ module.exports = async function handler(req, res) {
     if (accountsError) throw accountsError;
     const account = accountFor(accounts || [], card);
     if (!account) return json(res, 409, { error: accounts?.length ? 'account_match_required' : 'account_required', message: accounts?.length ? 'Add the exact matching account name to the shortcut or resolve account matching in MOVO first.' : 'Add a financial account in MOVO before enabling automation.' });
-    const requestId = idempotencyKey({ source, amount, merchant, card, occurredAt, reference });
-    const sourceLabel = source === 'applepay' ? 'Apple Pay' : source === 'googlepay' ? 'Google Pay' : source === 'bank' ? 'bank notification' : 'notification';
-    const note = [`Logged from ${sourceLabel}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ').slice(0, 1000);
+    const requestId = idempotencyKey({ source, amount, merchant, card, occurredAt, reference, type });
+    const note = [`Logged from ${SOURCE_LABELS[source]}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ').slice(0, 1000);
+    const category = cleanText(body.category, 40) || guessCategory(`${merchant} ${voice ? body.text : ''}`, type);
     stage = 'persist_transaction';
-    const { data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_amount: amount, p_currency: account.currency || 'PHP', p_merchant: merchant, p_category: 'Other', p_occurred_at: occurredAt, p_note: note, p_source: source, p_external_reference: reference || null });
+    // One shared, idempotent path for every channel: request retries, cross-source duplicates, RLS-equivalent
+    // ownership checks and rate limits all live in log_automation_transaction_v2.
+    let { data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction_v2', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_transaction_type: type, p_amount: amount, p_currency: requestedCurrency || account.currency || 'PHP', p_merchant: merchant, p_category: category, p_occurred_at: occurredAt, p_note: note, p_source: source, p_external_reference: reference || null });
+    // Rollout safety: until migration 20261102010000 is applied, v2 does not exist and the old constraint only
+    // accepts 'notification'. Expenses still log through the earlier function (without the channel name).
+    if (rpcError && type === 'expense' && /PGRST202|could not find the function|does not exist/i.test(`${rpcError.code || ''} ${rpcError.message || ''}`)) {
+      ({ data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_amount: amount, p_currency: requestedCurrency || account.currency || 'PHP', p_merchant: merchant, p_category: category, p_occurred_at: occurredAt, p_note: note, p_source: 'notification', p_external_reference: reference || null }));
+    }
     if (rpcError) {
-      if (String(rpcError.message || '').includes('rate_limited')) return json(res, 429, { error: 'rate_limited' });
-      if (String(rpcError.message || '').includes('account_invalid')) return json(res, 409, { error: 'account_invalid' });
+      const message = String(rpcError.message || '');
+      if (message.includes('rate_limited')) return json(res, 429, { error: 'rate_limited' });
+      if (message.includes('account_invalid')) return json(res, 409, { error: 'account_invalid' });
+      if (message.includes('token_invalid')) return json(res, 401, { error: 'device_not_registered' });
+      if (message.includes('invalid_transaction') || message.includes('invalid_request')) return json(res, 400, { error: 'invalid_transaction' });
       throw rpcError;
     }
     const { error: usageError } = await api.admin.from('movo_automation_tokens').update({ last_used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
     if (usageError) console.error('[movo-automation] usage timestamp update failed', { message: String(usageError.message || 'unknown').slice(0, 160) });
-    console.info('[movo-automation] transaction persisted', { source, duplicate: Boolean(result?.duplicate), transactionIdPresent: Boolean(result?.transaction_id) });
-    return json(res, 200, { success: true, duplicate: Boolean(result?.duplicate), transactionId: result?.transaction_id || null });
+    console.info('[movo-automation] transaction persisted', { source, type, duplicate: Boolean(result?.duplicate), matchedBy: result?.matched_by || null, transactionIdPresent: Boolean(result?.transaction_id) });
+    const spoken = result?.duplicate ? `Already in MOVO: ${type === 'income' ? 'received' : 'spent'} ${amount.toFixed(2)} ${merchant}.` : `Logged ${type === 'income' ? 'income of' : ''} ${amount.toFixed(2)} for ${merchant}.`.replace(/\s+/g, ' ');
+    return json(res, 200, { success: true, duplicate: Boolean(result?.duplicate), matchedBy: result?.matched_by || null, transactionId: result?.transaction_id || null, type, amount, currency: requestedCurrency || account.currency || 'PHP', merchant, source, message: spoken });
   } catch (error) {
     console.error('[movo-automation] request failed', { stage, message: String(error?.message || 'unknown').slice(0, 200) });
     return json(res, 500, { error: 'automation_request_failed' });
   }
 };
-module.exports._test = { sha256, cleanText, amountValue, accountFor, idempotencyKey };
+module.exports._test = { sha256, cleanText, amountValue, accountFor, idempotencyKey, SOURCES };
