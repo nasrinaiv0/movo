@@ -68,6 +68,25 @@ export const FINISHES = {
   platinum: F('#f4f6f9', '#a7aeb9', '#ffffff', { c3: '#d9dee5', ink: 'dark', chip: 'platinum', sheen: true, geo: true, name: 'Platinum' }),
   silver: F('#e3e6ea', '#7f8792', '#ffffff', { c3: '#bfc5cc', ink: 'dark', chip: 'silver', sheen: true, geo: true, name: 'Silver' }),
   gradient: F('#6d5bff', '#ffae5c', '#ffffff', { c3: '#ff5fa2', chip: 'gold', geo: true, name: 'Gradient' }),
+  black: F('#34343a', '#08080a', '#d9dde3', { c3: '#17171a', chip: 'gold', geo: true, name: 'Black' }),
 };
 export const FINISH_PREFIX = 'finish:';
 export const finishOf = (styleId) => (typeof styleId === 'string' && styleId.startsWith(FINISH_PREFIX) ? FINISHES[styleId.slice(FINISH_PREFIX.length)] || null : null);
+
+/*
+ * MOVO card faces: used for any account whose institution logo cannot be fetched (cash, unknown banks, merchants,
+ * e-wallets without a curated logo…), after the owner's reference cards. The picked finish chooses the variant;
+ * with none, the card is MOVO green. Every variant has a gold chip and a large MOVO mark at the bottom right.
+ */
+export const MOVO_FACES = {
+  green: { c1: '#13945c', c2: '#03412a', c3: '#0a6b43', glow: '#3dffb0', ink: 'light', motif: 'glow', mark: .14 },
+  black: { c1: '#3b3b41', c2: '#070709', c3: '#1b1b1f', glow: '#ffffff', ink: 'light', motif: 'silk', mark: .1 },
+  gold: { c1: '#f6d77e', c2: '#8f6418', c3: '#c99a3b', glow: '#fff4cf', ink: 'light', motif: 'silk', mark: .24 },
+  platinum: { c1: '#f7f8fa', c2: '#a8aeb7', c3: '#d8dce2', glow: '#ffffff', ink: 'dark', motif: 'facets', mark: .5, tier: 'Platinum' },
+  silver: { c1: '#eef0f3', c2: '#9aa1ab', c3: '#cfd3d9', glow: '#ffffff', ink: 'dark', motif: 'brushed', mark: .5 },
+  gradient: { c1: '#6d5bff', c2: '#ffae5c', c3: '#ff5fa2', glow: '#ffffff', ink: 'light', motif: 'glow', mark: .16 },
+};
+export const movoFaceFor = (styleId) => {
+  const key = typeof styleId === 'string' && styleId.startsWith(FINISH_PREFIX) ? styleId.slice(FINISH_PREFIX.length) : '';
+  return { key: MOVO_FACES[key] ? key : 'green', ...(MOVO_FACES[key] || MOVO_FACES.green) };
+};

@@ -6,7 +6,8 @@ import { EmvChip, Contactless } from './EmvChip';
 import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
-import { cardFaceFor, cardTypeLabel, finishOf } from '../lib/cardFaces';
+import { cardFaceFor, cardTypeLabel, finishOf, movoFaceFor } from '../lib/cardFaces';
+import { MovoMark } from './MovoLogo';
 import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
 const build = (node, key) => {
@@ -143,6 +144,62 @@ const CardFaceArt = memo(function CardFaceArt({ face, orientation, seed }) {
   </svg>;
 });
 
+/* Background of a MOVO card (no institution logo), per finish: a lit sweep (green), silk lines (black, gold),
+   light facets with a dotted field (platinum) or brushed metal (silver). */
+const MovoFaceArt = memo(function MovoFaceArt({ face, orientation }) {
+  const raw = useId(); const u = `m${raw.replace(/[^a-z0-9]/gi, '')}`;
+  const P = orientation === 'portrait'; const w = P ? 540 : 856; const h = P ? 856 : 540;
+  const curve = P ? `M0 ${h * .82} C ${w * .35} ${h * .62} ${w * .6} ${h * .42} ${w} ${h * .3}` : `M${w * .04} ${h * .98} C ${w * .32} ${h * .62} ${w * .62} ${h * .36} ${w} ${h * .27}`;
+  let motif = null;
+  if (face.motif === 'glow') {
+    motif = <>
+      <path d={curve} stroke={face.glow} strokeWidth="26" opacity=".18" fill="none" filter={`url(#${u}b)`} />
+      <path d={curve} stroke={face.glow} strokeWidth="3.4" opacity=".9" fill="none" />
+    </>;
+  } else if (face.motif === 'silk') {
+    const lines = [];
+    for (let i = 0; i < 26; i += 1) {
+      const y = (P ? h * .34 : h * .3) + i * (P ? 9 : 7);
+      lines.push(<path key={i} d={`M0 ${y + 120} C ${w * .3} ${y + 40} ${w * .55} ${y - 90} ${w} ${y - 150}`} stroke={face.glow} strokeWidth="1" opacity={0.05 + (i % 6) * 0.02} fill="none" />);
+    }
+    motif = <>
+      {lines}
+      <path d={curve} stroke={face.glow} strokeWidth="18" opacity=".16" fill="none" filter={`url(#${u}b)`} />
+      <path d={curve} stroke={face.glow} strokeWidth="2" opacity=".55" fill="none" />
+    </>;
+  } else if (face.motif === 'facets') {
+    const dots = [];
+    for (let r = 0; r < 9; r += 1) for (let c = 0; c < 16; c += 1) dots.push(<circle key={`${r}-${c}`} cx={(P ? 250 : 470) + c * 14 + (r % 2) * 7} cy={14 + r * 13} r={1.6 - r * .12} fill="#fff" opacity=".7" />);
+    motif = <>
+      <path d={P ? `M0 ${h * .3} L${w} ${h * .1} L${w} ${h * .42} Z` : `M0 ${h * .58} L${w} ${h * .1} L${w} ${h * .48} Z`} fill="#fff" opacity=".35" />
+      <path d={P ? `M0 ${h * .62} L${w} ${h * .5} L${w} ${h} L0 ${h} Z` : `M${w * .1} ${h} L${w} ${h * .52} L${w} ${h} Z`} fill="#000" opacity=".06" />
+      <path d={P ? `M0 ${h * .3} L${w} ${h * .1}` : `M0 ${h * .58} L${w} ${h * .1}`} stroke="#fff" strokeWidth="3" opacity=".9" />
+      {dots}
+    </>;
+  } else if (face.motif === 'brushed') {
+    // brushed metal: fine rays fanning out from one point, like a spun finish
+    const cx = w * .78; const cy = h * .36; const rays = [];
+    for (let i = 0; i < 180; i += 1) {
+      const a = (i / 180) * Math.PI * 2; const len = Math.hypot(w, h);
+      rays.push(<path key={i} d={`M${cx} ${cy} L${cx + Math.cos(a) * len} ${cy + Math.sin(a) * len}`} stroke={i % 3 ? '#ffffff' : '#7d8590'} strokeWidth={i % 3 ? 2.2 : 1.2} opacity={i % 3 ? .16 : .1} />);
+    }
+    motif = <>
+      {rays}
+      <path d={`M0 ${h * .62} C ${w * .25} ${h * .5} ${w * .45} ${h * .78} ${w * .7} ${h * .5} S ${w} ${h * .44} ${w} ${h * .44} L${w} ${h * .56} C ${w * .75} ${h * .6} ${w * .5} ${h * .86} ${w * .25} ${h * .66} S 0 ${h * .74} 0 ${h * .74} Z`} fill="#fff" opacity=".45" />
+    </>;
+  }
+  return <svg className="ccx-art" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id={`${u}bg`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={face.c1} /><stop offset=".55" stopColor={face.c3} /><stop offset="1" stopColor={face.c2} /></linearGradient>
+      <radialGradient id={`${u}hl`} cx=".2" cy=".08" r=".8"><stop offset="0" stopColor="#fff" stopOpacity={face.ink === 'dark' ? '.5' : '.16'} /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <filter id={`${u}b`} x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="10" /></filter>
+    </defs>
+    <rect width={w} height={h} fill={`url(#${u}bg)`} />
+    <rect width={w} height={h} fill={`url(#${u}hl)`} />
+    {motif}
+  </svg>;
+});
+
 // Short marks drawn on the card (original lettering, no third-party artwork); the full name is the accessible label.
 const NETWORK_MARK = { visa: 'VISA', amex: 'AMEX', 'american express': 'AMEX', discover: 'DISCOVER', jcb: 'JCB', unionpay: 'UnionPay' };
 const NETWORK_KEY = { visa: 'visa', mastercard: 'mastercard', amex: 'amex', 'american express': 'amex', discover: 'discover', jcb: 'jcb', unionpay: 'unionpay' };
@@ -173,16 +230,27 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
   const showBalance = visibleFields.balance !== false;
   const institutionLogo = institutionLogoUrl(a.institution_name) || institutionLogoUrl(a.name);
   const credit = a.cardKind === 'credit';
-  return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`} style={face ? { '--card-tint': face.c2, '--card-tint-2': face.c1 } : undefined}>
+  // No fetchable institution logo (cash, unknown bank, merchant…) and no sticker: the card becomes a MOVO card.
+  const [logoMissing, setLogoMissing] = useState(!institutionLogo);
+  useEffect(() => { setLogoMissing(!institutionLogo); }, [institutionLogo]);
+  const movo = !theme && !remoteSticker && logoMissing ? movoFaceFor(styleId) : null;
+  const typeLabel = cardTypeLabel(a, face);
+  const cardInk = movo ? movo.ink : ink;
+  return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'}${movo ? ` ccx-movo movo-${movo.key}` : ''} ink-${cardInk}`} style={movo ? { '--card-tint': movo.c2, '--card-tint-2': movo.c1, '--movo-mark': movo.mark } : face ? { '--card-tint': face.c2, '--card-tint-2': face.c1 } : undefined} aria-label={movo ? `${a.institution_name || a.name || tr('Account')} · MOVO` : undefined}>
     {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}
-    {face && <CardFaceArt face={face} orientation={orientation} seed={a.id || a.name} />}
+    {movo ? <><MovoFaceArt face={movo} orientation={orientation} /><span className="ccx-watermark" aria-hidden="true"><MovoMark size={240} tone="white" /></span></>
+      : face && <CardFaceArt face={face} orientation={orientation} seed={a.id || a.name} />}
     {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="ccx-face">
       <div className="ccx-head">
-        <span className="ccx-brand"><span className="ccx-logo"><BrandLogo src={institutionLogo} size={128} /></span>{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
-        {details && <span className="ccx-type">{tr(cardTypeLabel(a, face))}</span>}
+        {movo
+          ? <span className="ccx-brand"><span className="ccx-logo ccx-movo-logo"><MovoMark size={44} /></span><span className="ccx-titles"><span className="ccx-name">MOVO</span><small className="ccx-sub">{tr('Financial Tracker')}</small></span></span>
+          : <span className="ccx-brand"><span className="ccx-logo"><BrandLogo src={institutionLogo} size={128} onMissing={setLogoMissing} /></span>{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>}
+        {details && (movo
+          ? <span className="ccx-type"><span className="ccx-type-line"><b>{tr(typeLabel)}</b>{a.account_type === 'card' && typeLabel !== 'Card' ? <> {tr('Card')}</> : null}</span>{movo.tier && <em className="ccx-tier">{tr(movo.tier)}</em>}</span>
+          : <span className="ccx-type">{tr(typeLabel)}</span>)}
       </div>
-      <div className="ccx-chiprow"><EmvChip finish={a.chip || face?.chip || 'gold'} className="ccx-chip" />{a.contactless !== false && <Contactless className="ccx-nfc" />}</div>
+      <div className="ccx-chiprow"><EmvChip finish={movo ? 'gold' : a.chip || face?.chip || 'gold'} className="ccx-chip" />{a.contactless !== false && <Contactless className="ccx-nfc" />}</div>
       <div className="ccx-foot">
         <div className="ccx-figures">
           {showNumber && <span className="ccx-number">{`•••• •••• •••• ${a.mask || '••••'}`}</span>}

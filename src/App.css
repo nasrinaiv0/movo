@@ -4092,3 +4092,37 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-dark { fill: #d4d4d8; }
 .movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-mid { fill: #e9e9ec; }
 .movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-light { fill: #ffffff; }
+
+/* ── MOVO card face (no fetchable institution logo) — owner reference 2026-11-02 ──
+   MOVO mark + "MOVO / Financial Tracker" top left, card type top right (Platinum adds a tier line), carved gold chip,
+   number + amount bottom left, a large MOVO mark at the bottom right behind the network mark. */
+.movo-app .credit-card.ccx.ccx-movo .ccx-watermark { position: absolute; z-index: 0; right: 2.2cqw; bottom: 2.2cqw; width: 45cqw; line-height: 0; opacity: var(--movo-mark, .14); pointer-events: none; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-watermark .movo-mark { width: 100%; height: auto; }
+.movo-app .credit-card.ccx.ccx-movo.ink-dark .ccx-watermark { filter: drop-shadow(0 .4cqw 1cqw rgba(0, 0, 0, .12)); }
+.movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-watermark { right: 4cqw; bottom: 4cqw; width: 72cqw; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo .ccx-movo-logo { width: 44px; height: 44px; border-radius: 0; overflow: visible; background: none; box-shadow: none; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-movo-logo .movo-mark { width: 100%; height: auto; filter: drop-shadow(0 .3cqw .8cqw rgba(0, 0, 0, .25)); }
+.movo-app .credit-card.ccx.ccx-movo .ccx-titles { display: grid; min-width: 0; line-height: 1.05; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo .ccx-name { font-size: 22px; font-weight: 800; letter-spacing: .01em; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-sub { font-size: 13px; font-weight: 500; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo .ccx-type { display: grid; justify-items: end; gap: 3px; font-size: 14px; opacity: 1; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-type-line { font-weight: 400; white-space: nowrap; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-type-line b { font-weight: 800; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-tier { display: flex; align-items: center; gap: 4px; font-size: 8px; font-style: normal; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; opacity: .8; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-tier::before, .movo-app .credit-card.ccx.ccx-movo .ccx-tier::after { content: ''; width: 9px; height: 1px; background: currentColor; opacity: .7; }
+.movo-app .credit-card.ccx.ccx-movo .ccx-sub { overflow: visible; text-overflow: clip; }
+.movo-app .credit-card.ccx.ccx-movo.ink-light .ccx-face { text-shadow: 0 1px 3px rgba(0, 0, 0, .22); }
+.movo-app .credit-card.ccx.ccx-movo.movo-gold .ccx-face { text-shadow: 0 1px 4px rgba(90, 60, 0, .35); }
+.movo-app .credit-card.ccx.ccx-movo .ccx-foot { position: relative; z-index: 1; }
+/* Portrait MOVO cards: the titles sit beside the mark; the type stays in the middle of the card. */
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-name { font-size: clamp(14px, 10cqw, 20px); }
+.movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-sub { font-size: clamp(9px, 6cqw, 12px); }
+@container (max-width: 240px) {
+  .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo .ccx-movo-logo { width: 30px; height: 30px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-landscape .ccx-name { font-size: 15px; }
+  .movo-app .credit-card.ccx.ccx-movo.orientation-landscape .ccx-sub { font-size: 10px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo .ccx-type { font-size: 11px; }
+}
+
+/* The chip is carved into the card (recess drawn in the SVG): no outward drop shadow on any card. */
+.movo-app .credit-card .emv-chip, .movo-app .credit-card.ccx .ccx-chip.emv-chip, .movo-app .cc-chip.emv-chip { filter: none; }
