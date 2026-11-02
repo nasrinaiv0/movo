@@ -80,7 +80,7 @@ export const shortcutPrompt = (origin, key, mode = 'interactive') => {
     ...r.steps.map((step, i) => `${i + 1}. ${step}`),
     'Rules: use Get Contents of URL and never Open URLs, Safari or a web view. Put the device key only in the Authorization header, never in the URL. Use the field names exactly as written, in lowercase.',
     mode === 'messages' ? 'Send the whole message text as it is: do not split it, add menus or ask for input. MOVO reads income, payments and transfers from it, and ignores one-time codes and promos without storing them.' :
-    mode === 'automatic' ? 'Do not add menus, Ask for Input, Choose from List, alerts or any action that needs a tap.' : mode === 'interactive' ? 'Only the Log and Skip menu may ask for a tap; under Skip, stop without sending anything.' : 'Do not add amount or merchant fields: MOVO reads them from the sentence and replies with a question when it is unclear.',
+    mode === 'automatic' ? 'Do not add menus, Ask for Input, Choose from List, alerts or any action that needs a tap.' : mode === 'interactive' ? 'Only the Log and Skip menu may ask for a tap; under Skip, stop without sending anything.' : 'Do not add amount or merchant fields: MOVO reads them from the sentence and replies with a question when it is unclear. It understands expenses (“I spent 150 on lunch”), income (“I received 2,000 from work”) and transfers between your own accounts (“I transferred 500 from BPI to GCash”).',
     'Always show or speak MOVO’s reply (the message value) as it is: never claim it was logged unless MOVO says so.',
     'MOVO recognises the same purchase if a bank alert or another device also reports it, so it is never logged twice.',
   ].join('\n');

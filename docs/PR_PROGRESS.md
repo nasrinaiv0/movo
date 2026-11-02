@@ -13,7 +13,7 @@ Checked against GitHub on 2026-11-02: #93 is the only open PR. #41 was closed wi
 
 ## Production database: migrations not yet applied (checked 2026-11-02, read-only)
 
-Supabase `cjsjmorqvuvvwbfyztiz` has every migration up to `20261101174508_allow_authenticated_read_premium_stickers`. These four on `main` are **not applied**, so the features that depend on them fall back or show an error in production:
+Supabase `cjsjmorqvuvvwbfyztiz` has every migration up to `20261101174508_allow_authenticated_read_premium_stickers`. These on `main` are **not applied** (`user_preferences` was applied on 2026-11-02), so the features that depend on them fall back or show an error in production:
 
 | Migration | Feature on main that needs it | Effect until applied |
 |---|---|---|
@@ -21,6 +21,7 @@ Supabase `cjsjmorqvuvvwbfyztiz` has every migration up to `20261101174508_allow_
 | `20261101120000_bills_payments.sql` | Bills tab (#127) | Bills tab shows an error; other tabs work |
 | `20261102010000_automation_sources_and_cross_source_dedup.sql` | Real automation sources, cross-channel dedup, default account | API falls back to the older logger and stores expenses as `notification` |
 | `20261102020000_automation_inbox.sql` | Failed automations in "While you were away" | Inbox reads as empty; failures are not stored |
+| `20261103010000_automation_transfers.sql` (open PR) | Siri / Android voice transfers between own accounts | Siri says transfers are not switched on yet; nothing is logged |
 
 Each has a matching test in `supabase/tests/` that passed on local Postgres 16. Applying them needs the owner's approval.
 

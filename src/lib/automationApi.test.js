@@ -85,6 +85,21 @@ describe('voice parser (Siri Shortcut / Android assistant)', () => {
     expect(parseVoice('150 pesos', now)).toEqual({ ok: false, reason: 'description_missing' });
   });
 
+  test.each([
+    ['I transferred 500 pesos from BPI to GCash', { type: 'transfer', amount: 500, fromHint: 'BPI', toHint: 'GCash' }],
+    ['Moved 200 from my cash to Maya', { type: 'transfer', amount: 200, fromHint: 'cash', toHint: 'Maya' }],
+    ['Cash in 1000 from BPI to my GCash wallet', { type: 'transfer', amount: 1000, fromHint: 'BPI', toHint: 'GCash' }],
+    ['Inilipat ko ang 1,000 mula sa BPI papunta sa GCash', { type: 'transfer', amount: 1000, fromHint: 'BPI', toHint: 'GCash' }],
+    ['I got 500 from mom', { type: 'income', amount: 500, merchant: 'mom' }],
+    ['I received my salary of 20,000 to my BPI account', { type: 'income', amount: 20000, merchant: 'Salary', accountHint: 'BPI' }],
+    ['Nakatanggap ako ng 300 bonus', { type: 'income', amount: 300 }],
+  ])('income and transfers: %s', (text, expected) => { expect(parseVoice(text, now)).toMatchObject({ ok: true, ...expected }); });
+
+  test('a transfer needs two different named accounts', () => {
+    expect(parseVoice('Transfer 300 to GCash', now)).toEqual({ ok: false, reason: 'transfer_accounts_missing' });
+    expect(parseVoice('I transferred 50 from GCash to GCash', now)).toEqual({ ok: false, reason: 'transfer_same_account' });
+  });
+
   test('brand names with digits are not counted as a second amount', () => {
     expect(parseVoice('spent 99 at 7-Eleven', now)).toMatchObject({ ok: true, amount: 99 });
   });
@@ -178,6 +193,35 @@ describe('POST /api/log handler', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body).toMatchObject({ success: false, ignored: true, reason: 'not_a_transaction' });
     expect(calls).toEqual([]);
+  });
+
+  test('Siri transfers log one transfer between the two named accounts', async () => {
+    const handler = load();
+    rpcResult = { data: { duplicate: false, transaction_id: 'tx-9' }, error: null };
+    const res = await call(handler, { text: 'I transferred 500 pesos from BPI Visa to cash', source: 'siri_shortcut' });
+    expect(res.statusCode).toBe(200);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].name).toBe('log_automation_transfer');
+    expect(calls[0].params).toMatchObject({ p_from_account_id: 'acct-bpi', p_to_account_id: 'acct-cash', p_amount: 500, p_currency: 'PHP', p_source: 'siri_shortcut', p_user_id: 'user-1' });
+    expect(res.body).toMatchObject({ success: true, type: 'transfer', fromAccount: 'BPI Visa', toAccount: 'Cash' });
+    expect(res.body.message).toMatch(/Logged transfer of PHP 500.00 from BPI Visa to Cash/);
+  });
+
+  test('a transfer to an account MOVO cannot match is refused, never guessed', async () => {
+    const handler = load();
+    const res = await call(handler, { text: 'I transferred 500 from BPI Visa to Maya', source: 'siri_shortcut' });
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toMatchObject({ success: false, error: 'transfer_account_match_required' });
+    expect(calls).toEqual([]);
+  });
+
+  test('before the transfers migration, Siri transfers say so instead of logging something else', async () => {
+    const handler = load();
+    rpcResult = { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.log_automation_transfer' } };
+    const res = await call(handler, { text: 'I transferred 500 from BPI Visa to cash', source: 'siri_shortcut' });
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toMatchObject({ success: false, error: 'transfer_unavailable' });
+    expect(calls.map(c => c.name)).toEqual(['log_automation_transfer']);
   });
 
   test('unclear speech is not logged and asks for clarification', async () => {
