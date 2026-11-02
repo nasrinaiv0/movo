@@ -3597,3 +3597,40 @@ button.account-tile:active { transform: scale(.98); }
 @container (max-width: 96px) {
   .movo-app .stat-card .stat-head .stat-icon { display: none; }
 }
+
+/* ── Card faces, larger identity (2026-11-02): bank logo and name 150%, amount 150% landscape / 120% portrait ──
+   Portrait cards stack the logo above the name so long bank names stay whole at the larger size. */
+.movo-app .credit-card.ccx .ccx-logo { width: 21.6cqw; height: 21.6cqw; }
+.movo-app.movo-app .credit-card.ccx .ccx-logo > i { font-size: 11.1cqw; }
+.movo-app .credit-card.ccx .ccx-name { font-size: 8.7cqw; line-height: 1.05; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.movo-app .credit-card.ccx .ccx-head { align-items: flex-start; }
+.movo-app .credit-card.ccx .ccx-brand { align-items: center; gap: 3.6cqw; }
+.movo-app .credit-card.ccx .ccx-type { flex: none; padding-top: 1cqw; }
+.movo-app .credit-card.ccx .ccx-chiprow { margin-top: 1.6cqw; }
+.movo-app .credit-card.ccx .ccx-balance { font-size: 8.7cqw; letter-spacing: -.03em; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-brand { flex-direction: column; align-items: flex-start; gap: 2.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-logo { width: 27.9cqw; height: 27.9cqw; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait .ccx-logo > i { font-size: 14.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-name { font-size: 11.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chiprow { margin-top: 5cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-balance { font-size: 10.1cqw; }
+/* Small thumbnails (pickers, grid tiles) keep the brand compact. */
+@container (max-width: 200px) {
+  .movo-app .credit-card.ccx.orientation-landscape .ccx-logo { width: 16cqw; height: 16cqw; }
+  .movo-app .credit-card.ccx.orientation-landscape .ccx-name { font-size: 7cqw; }
+}
+/* The amount never runs under the network mark: it keeps its size when it fits and shrinks for long figures. */
+.movo-app .credit-card.ccx .ccx-figures { flex: 1 1 auto; }
+.movo-app .credit-card.ccx .ccx-balance { font-size: min(8.7cqw, calc(60cqw / (var(--len, 9) * .6))); }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-balance { font-size: min(10.1cqw, calc(58cqw / (var(--len, 9) * .6))); }
+/* Network marks: compact lettering sized with the card. */
+.movo-app .credit-card.ccx .ccx-net { flex: none; }
+.movo-app .credit-card.ccx :is(.ccx-net.net-amex, .ccx-net.net-discover, .ccx-net.net-jcb, .ccx-net.net-unionpay, .ccx-net.net-other) { font-style: normal; font-weight: 800; letter-spacing: .02em; }
+.movo-app .credit-card.ccx .ccx-net.net-amex { padding: 1cqw 1.6cqw; border-radius: 1.2cqw; font-size: 4.6cqw; box-shadow: inset 0 0 0 .5cqw currentColor; }
+.movo-app .credit-card.ccx :is(.ccx-net.net-discover, .ccx-net.net-unionpay) { font-size: 4.4cqw; }
+.movo-app .credit-card.ccx .ccx-net.net-jcb { font-size: 6.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-visa { font-size: 9.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 17cqw; height: 10.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 10.6cqw; height: 10.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-amex { font-size: 5.6cqw; padding: 1.2cqw 2cqw; }
+.movo-app .credit-card.ccx.orientation-portrait :is(.ccx-net.net-discover, .ccx-net.net-unionpay) { font-size: 5.2cqw; }

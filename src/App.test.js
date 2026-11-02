@@ -499,8 +499,13 @@ describe('MOVO finance frontend', () => {
     // A credit card is named after its issuing bank (there is no separate name field).
     clickButton(container, 'Credit');
     setInputValue(container.querySelector('#acct-linked-bank'), 'demo-gotyme');
+    act(() => container.querySelector('.acct-network-row button[aria-label="Mastercard"]').click());
     clickButton(container, 'Add account');
-    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).some(a => a.account_type === 'card' && a.name === 'GoTyme')).toBe(true);
+    const created = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(a => a.account_type === 'card' && a.name === 'GoTyme');
+    expect(created).toBeTruthy();
+    // The chosen card network is kept and drawn on the card.
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).accountStyles[created.id].cardNetwork).toBe('mastercard');
+    expect(container.querySelector('.ccx-net.net-mastercard')).not.toBeNull();
     clickButton(container, 'Cards');
     clickButton(container, 'Switch card');
     const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('GoTyme'));

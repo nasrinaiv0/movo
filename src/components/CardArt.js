@@ -143,6 +143,9 @@ const CardFaceArt = memo(function CardFaceArt({ face, orientation, seed }) {
   </svg>;
 });
 
+// Short marks drawn on the card (original lettering, no third-party artwork); the full name is the accessible label.
+const NETWORK_MARK = { visa: 'VISA', amex: 'AMEX', 'american express': 'AMEX', discover: 'DISCOVER', jcb: 'JCB', unionpay: 'UnionPay' };
+const NETWORK_KEY = { visa: 'visa', mastercard: 'mastercard', amex: 'amex', 'american express': 'amex', discover: 'discover', jcb: 'jcb', unionpay: 'unionpay' };
 const NETWORKS = { visa: 'Visa', mastercard: 'Mastercard', 'american express': 'American Express', amex: 'American Express', discover: 'Discover', jcb: 'JCB', unionpay: 'UnionPay' };
 
 /*
@@ -184,9 +187,9 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
         <div className="ccx-figures">
           {showNumber && <span className="ccx-number">{`•••• •••• •••• ${a.mask || '••••'}`}</span>}
           {!showNumber && showBalance && <small className="ccx-caption">{credit ? tr('Available credit') : tr('Balance')}</small>}
-          {showBalance && <b className="ccx-balance">{shown(show, money(a.balance, a.currency))}</b>}
+          {showBalance && <b className="ccx-balance" style={{ '--len': shown(show, money(a.balance, a.currency)).length }}>{shown(show, money(a.balance, a.currency))}</b>}
         </div>
-        {networkName && <span className={`ccx-net net-${network.replace(/[^a-z]/g, '-')}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : networkName}</span>}
+        {networkName && <span className={`ccx-net net-${NETWORK_KEY[network] || 'other'}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : NETWORK_MARK[network] || networkName}</span>}
       </div>
     </div>
   </div>;
