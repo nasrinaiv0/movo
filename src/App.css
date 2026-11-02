@@ -3577,3 +3577,23 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .al-steps .al-action { display: block; font-size: 13.5px; font-weight: 650; color: var(--text); }
 .movo-app .al-steps .al-settings { display: grid; gap: 2px; margin-top: 4px; color: var(--muted); font-size: 12.5px; }
 .movo-app .al-steps .al-settings > span { overflow-wrap: anywhere; }
+
+/* ── Adaptive pass (2026-11-02): nothing is cut or pushed off-screen from 320px phones to desktop ──
+   Amounts in small boxes scale down with the box (container query + the figure's length from <Money>), so
+   "₱1,128,200" stays whole in a 3-up row on a 320px phone and keeps its full size wherever it fits. */
+.movo-app .stat-card, .movo-app .mini-card, .movo-app .donut-hole { container-type: inline-size; }
+.movo-app :is(.stat-card, .mini-card, .donut-hole) strong { overflow: visible; text-overflow: clip; }
+.movo-app :is(.stat-card, .mini-card, .donut-hole) strong .money { font-size: min(1em, calc(100cqi / (var(--len, 8) * .6))); white-space: nowrap; }
+@media (max-width: 360px) {
+  .movo-app .stat-grid { gap: 8px; }
+  .movo-app .stat-card { padding: 11px 9px 10px; }
+  .movo-app .stat-card .stat-head { gap: 5px; }
+  /* Add transaction: the type switch shares the row with the close and scan buttons. */
+  .movo-app .tx-sheet .tx-top { gap: 6px; }
+  .movo-app .tx-sheet .tx-seg { flex: 1 1 auto; min-width: 0; }
+  .movo-app .tx-sheet .tx-seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; font-size: 12.5px; }
+}
+/* Very narrow summary tiles keep the whole label ("Expenses") rather than an icon and "Ex…". */
+@container (max-width: 96px) {
+  .movo-app .stat-card .stat-head .stat-icon { display: none; }
+}

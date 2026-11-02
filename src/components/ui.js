@@ -11,7 +11,9 @@ import { merchantLogoUrl } from '../lib/merchantFavicons';
 /** Animated currency amount: counts up when it appears and eases between values. */
 export function Money({ value, show, digits = 2, currency }) {
   const v = useCountUp(Number(value) || 0);
-  return <span key={show ? 'on' : 'off'} className="money">{show ? money(v, currency, digits) : HIDDEN}</span>;
+  // --len (characters of the final figure) lets small boxes shrink the amount to fit instead of cutting it off.
+  const len = show ? money(Number(value) || 0, currency, digits).length : HIDDEN.length;
+  return <span key={show ? 'on' : 'off'} className="money" style={{ '--len': len }}>{show ? money(v, currency, digits) : HIDDEN}</span>;
 }
 
 export function Toggle({ checked, onChange, label, disabled = false, reason, describedBy }) {
