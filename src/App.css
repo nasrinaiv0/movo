@@ -3923,3 +3923,50 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 11cqw; height: 6.8cqw; }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
 
+
+/* Card face balance — owner request 2026-11-02 (supersedes the logo/name sizes above).
+   The bank logo is the real fetched favicon at 40×40px with no tile, padding or shadow behind it; the bank name is a
+   normal single-line title; logo, chip, number and amount share one left edge. Doubled classes outrank the older
+   ".ccx-logo:has(img)" tile rules. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-brand { gap: 10px; padding-left: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo,
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo:has(img) {
+  flex: none; width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+  background: none; box-shadow: none; isolation: auto;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo img {
+  display: block; width: 100%; height: 100%; padding: 0; border-radius: inherit;
+  background: none; box-shadow: none; object-fit: cover; mix-blend-mode: normal;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo > i {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: inherit;
+  font-size: 18px; font-weight: 700; font-style: normal;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-name {
+  display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  -webkit-line-clamp: unset; font-size: 17px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-type { font-size: 13px; font-weight: 500; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-chiprow { margin-top: 6cqw; padding-left: 0; justify-content: flex-start; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-balance { font-size: 7cqw; letter-spacing: -.02em; }
+/* Portrait: same logo and name; chip on the shared left edge. */
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { font-size: 15px; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { font-size: 12px; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-chiprow { justify-content: flex-start; margin-top: 14cqw; padding-left: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-balance { font-size: 9cqw; }
+/* Portrait: the logo spans two rows with the bank name above the card type, so the name gets the whole width. */
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 1px; align-items: center; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-brand { display: contents; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-logo { grid-row: 1 / span 2; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { grid-column: 2; align-self: end; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { grid-column: 2; grid-row: 2; align-self: start; margin: 0; padding: 0; opacity: .78; }
+/* Thumbnails (pickers, small tiles) scale the brand down so it never crowds the card. */
+@container (max-width: 240px) {
+  .movo-app.movo-app .credit-card.ccx.ccx .ccx-logo { width: 28px; height: 28px; border-radius: 8px; }
+  .movo-app.movo-app .credit-card.ccx.ccx .ccx-name { font-size: 13px; }
+  .movo-app.movo-app .credit-card.ccx.ccx .ccx-type { font-size: 11px; }
+  .movo-app.movo-app .credit-card.ccx.ccx .ccx-brand { gap: 7px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-head { column-gap: 7px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { font-size: 12px; letter-spacing: -.015em; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { font-size: 11px; }
+}
