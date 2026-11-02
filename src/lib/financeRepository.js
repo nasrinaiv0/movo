@@ -12,27 +12,26 @@ const unwrap = ({ data, error }) => { if (error) throw error; return data; };
 export async function getCurrentSession() {
   return unwrap(await requireClient().auth.getSession())?.session ?? null;
 }
-export async function signInWithPassword(email, password) {
-  return unwrap(await requireClient().auth.signInWithPassword({ email: email.trim(), password }));
+// Sign-in is passwordless: a one-time code sent by email (new and returning people alike), or Google / Apple.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export async function sendEmailCode(email) {
+  const address = String(email || '').trim();
+  if (!EMAIL_RE.test(address) || address.length > 254) throw new Error('invalid_email');
+  const emailRedirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  return unwrap(await requireClient().auth.signInWithOtp({ email: address, options: { shouldCreateUser: true, ...(emailRedirectTo ? { emailRedirectTo } : {}) } }));
 }
-export async function signInWithGoogle() {
+export async function verifyEmailCode(email, code) {
+  const token = String(code || '').replace(/\s+/g, '');
+  if (!/^\d{6,10}$/.test(token)) throw new Error('invalid_code');
+  return unwrap(await requireClient().auth.verifyOtp({ email: String(email || '').trim(), token, type: 'email' }));
+}
+async function signInWithProvider(provider, queryParams) {
   const client = requireClient();
   const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
-  return unwrap(await client.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      ...(redirectTo ? { redirectTo } : {}),
-      queryParams: { prompt: 'select_account' },
-    },
-  }));
+  return unwrap(await client.auth.signInWithOAuth({ provider, options: { ...(redirectTo ? { redirectTo } : {}), ...(queryParams ? { queryParams } : {}) } }));
 }
-export async function signUpWithPassword(email, password, displayName = '') {
-  return unwrap(await requireClient().auth.signUp({
-    email: email.trim(),
-    password,
-    options: { data: { full_name: displayName.trim().slice(0, 100) } },
-  }));
-}
+export async function signInWithGoogle() { return signInWithProvider('google', { prompt: 'select_account' }); }
+export async function signInWithApple() { return signInWithProvider('apple'); }
 export async function signOut() { return unwrap(await requireClient().auth.signOut()); }
 
 export async function listAccounts() {

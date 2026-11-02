@@ -417,7 +417,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Logging works on this device. Sign in to ask NasrinAI about your money.');
     expect(container.querySelector('textarea#movo-ai-prompt')).not.toBeNull();
     clickButton(container, 'Sign in to MOVO');
-    expect(container.querySelector('h2').textContent).toBe('Welcome back');
+    expect(container.querySelector('h2').textContent).toBe('Sign in to MOVO');
   });
 
   test('logs transactions typed in the chat, renders a card, and can undo without contacting NasrinAI', async () => {

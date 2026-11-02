@@ -5,8 +5,9 @@ import AuthPanel from './AuthPanel';
 jest.mock('../lib/supabaseClient', () => ({ supabaseConfigured: false }));
 jest.mock('../lib/financeRepository', () => ({
   signInWithGoogle: jest.fn(),
-  signInWithPassword: jest.fn(),
-  signUpWithPassword: jest.fn(),
+  signInWithApple: jest.fn(),
+  sendEmailCode: jest.fn(),
+  verifyEmailCode: jest.fn(),
 }));
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -36,6 +37,8 @@ describe('MOVO unavailable cloud-auth controls', () => {
     expect(note.getAttribute('role')).toBe('note');
     expect(note.textContent).toContain('local-only mode');
     expect(google.disabled).toBe(true);
+    expect(container.querySelector('.auth-apple').disabled).toBe(true);
+    expect(container.querySelector('input[type="password"]')).toBeNull();
     expect(emailSubmit.disabled).toBe(true);
     expect(google.getAttribute('aria-describedby')).toBe('auth-config-note');
     expect(emailSubmit.getAttribute('aria-describedby')).toBe('auth-config-note');
