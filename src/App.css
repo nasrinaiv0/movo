@@ -3426,3 +3426,30 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .chip-bar > .chip-row > button[data-chip] { height: 40px; min-height: 40px; }
 .movo-app.movo-app .wallet-fx-option { background: color-mix(in srgb, var(--text) 6%, var(--card-solid)); }
 .movo-app.movo-app .wallet-fx-option.selected { background: color-mix(in srgb, var(--accent) 16%, var(--card-solid)); }
+
+/* Card corners follow the ISO/IEC 7810 ID-1 card: 3.18 mm (0.125 in) corner on an 85.60 × 53.98 mm card,
+   i.e. 3.71% of the width by 5.89% of the height (swapped in portrait). Same in previews and the wallet. */
+.movo-app.movo-app .credit-card.ccx, .movo-app.movo-app .credit-card.ccx::before { border-radius: 3.71% / 5.89%; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait, .movo-app.movo-app .credit-card.ccx.orientation-portrait::before { border-radius: 5.89% / 3.71%; }
+
+/* Add account: bank picker, compact network row and chip row. */
+.movo-app .acct-bank-pick, .movo-app .acct-add-bank { position: relative; width: 100%; text-align: left; }
+.movo-app .acct-bank-logo { flex: 0 0 36px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-tile, 30%); overflow: hidden; background: color-mix(in srgb, var(--accent) 12%, var(--card-solid)); color: var(--accent); }
+.movo-app .acct-bank-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.movo-app .acct-network-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.movo-app .acct-net { display: grid; justify-items: center; align-content: center; gap: 4px; height: 60px; padding: 0; border: 0; border-radius: 14px; background: var(--field); color: var(--muted); box-shadow: none !important; }
+.movo-app .acct-net.selected { background: color-mix(in srgb, var(--accent) 16%, var(--card-solid)); color: var(--text); box-shadow: inset 0 0 0 1.5px var(--accent) !important; }
+.movo-app .acct-net small { font-size: 10.5px; font-weight: 600; }
+.movo-app .acct-net-mark { position: relative; display: grid; place-items: center; width: 38px; height: 20px; font-size: 11px; font-weight: 900; font-style: italic; letter-spacing: -.02em; color: var(--text); }
+.movo-app .net-visa .acct-net-mark { color: #1a1f71; }
+.movo-app.theme-dark .net-visa .acct-net-mark, .theme-dark .movo-app .net-visa .acct-net-mark { color: #fff; }
+.movo-app .net-mastercard .acct-net-mark i { position: absolute; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #eb001b; }
+.movo-app .net-mastercard .acct-net-mark i:first-child { left: 6px; } .movo-app .net-mastercard .acct-net-mark i:last-child { right: 6px; background: #f79e1b; opacity: .92; }
+.movo-app .net-amex .acct-net-mark { border-radius: 4px; background: #2e77bc; color: #fff; font-style: normal; font-size: 9px; }
+.movo-app .net-discover .acct-net-mark { font-style: normal; font-size: 0; }
+.movo-app .net-discover .acct-net-mark b { font-size: 12px; } .movo-app .net-discover .acct-net-mark i { position: absolute; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #f58220; }
+.movo-app .chip-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.movo-app .chip-picks > button { display: grid; justify-items: center; gap: 6px; padding: 10px 6px; min-height: 0; }
+.movo-app .chip-picks .emv-chip { width: 40px; }
+.movo-app .scan-type { margin-bottom: 10px; }
+.movo-app .acct-field > .acct-bank-logo { flex: 0 0 36px; width: 36px; height: 36px; }

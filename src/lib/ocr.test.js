@@ -15,3 +15,14 @@ test('guesses categories from merchant names', () => {
   expect(guessCategory('Petron station 12')).toBe('Transport');
   expect(guessCategory('Unknown merchant')).toBe('Other');
 });
+
+test('reads an e-wallet payment confirmation: recipient, bank, reason, ref, time, fee', () => {
+  const text = 'GCash\nSent via GCash\nAmount PHP 1,250.00\nSent to: Juan Dela Cruz\nMessage: Rent share for November\nTransaction Fee: 15.00\nRef No. 1234 567 890123\nNov 1, 2026 8:15 PM\nAccount ****4321';
+  expect(parseReceipt(text)).toMatchObject({ amount: 1250, fee: 15, merchant: 'Juan Dela Cruz', reason: 'Rent share for November', bank: 'GCash', date: '2026-11-01', time: '20:15:00', last4: '4321', type: 'expense' });
+  expect(parseReceipt(text).ref).toMatch(/^1234/);
+});
+
+test('recognises money received and day-first dates', () => {
+  const text = 'BPI\nYou received PHP 5,000.00\nReceived from: Maria Santos\nPurpose: Freelance payment\n01 Nov 2026 09:30';
+  expect(parseReceipt(text)).toMatchObject({ amount: 5000, merchant: 'Maria Santos', reason: 'Freelance payment', bank: 'BPI', date: '2026-11-01', type: 'income' });
+});

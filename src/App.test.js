@@ -496,36 +496,33 @@ describe('MOVO finance frontend', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
     clickButton(container, 'Add Card');
-    // This lifecycle test covers an independent card; debit cards now require a linked bank account.
+    // A credit card is named after its issuing bank (there is no separate name field).
     clickButton(container, 'Credit');
-    const name = container.querySelector('#acct-name');
-    setInputValue(name, 'My Test Card');
+    setInputValue(container.querySelector('#acct-linked-bank'), 'demo-gotyme');
     clickButton(container, 'Add account');
-    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).some(a => a.account_type === 'card' && a.name === 'GoTyme')).toBe(true);
     clickButton(container, 'Cards');
     clickButton(container, 'Switch card');
-    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('My Test Card'));
+    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('GoTyme'));
     expect(targetCard).toBeTruthy();
     act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Edit account');
-    setInputValue(container.querySelector('#acct-name'), 'Updated Test Card');
+    setInputValue(container.querySelector('#acct-linked-bank'), 'demo-rcbc');
     clickButton(container, 'Save changes');
-    expect(container.textContent).toContain('Updated Test Card');
-    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).some(a => a.account_type === 'card' && a.name === 'RCBC')).toBe(true);
     act(() => root.unmount());
     root = createRoot(container);
     act(() => root.render(<App />));
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    expect(container.textContent).toContain('Updated Test Card');
     clickButton(container, 'Switch card');
-    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('Updated Test Card'));
+    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('RCBC'));
     expect(updatedCard).toBeTruthy();
     act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
-    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'Updated Test Card').is_archived).toBe(true);
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC').is_archived).toBe(true);
   });
 
   test('edits a transaction and persists the change locally', () => {

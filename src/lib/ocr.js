@@ -1,3 +1,4 @@
+import { INSTITUTIONS } from './institutions';
 /*
  * On-device text recognition. Images never leave the browser: the OCR engine, its WebAssembly core and the
  * English model are self-hosted under /public/ocr and loaded only the first time someone scans or attaches a photo.
@@ -102,6 +103,8 @@ function findDate(text) {
   if (m) { const y = m[3].length === 2 ? `20${m[3]}` : m[3]; return `${y}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; }
   m = text.match(/\b([a-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(20\d{2})\b/i);
   if (m && MONTHS.includes(m[1].toLowerCase())) return `${m[3]}-${String(MONTHS.indexOf(m[1].toLowerCase()) + 1).padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+  m = text.match(/\b(\d{1,2})\s+([a-z]{3})[a-z]*\.?,?\s+(20\d{2})\b/i);
+  if (m && MONTHS.includes(m[2].toLowerCase())) return `${m[3]}-${String(MONTHS.indexOf(m[2].toLowerCase()) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
   return '';
 }
 
@@ -121,14 +124,58 @@ export function findTime(text = '') {
   return `${String(h).padStart(2, '0')}:${m[2]}:${m[3] || '00'}`;
 }
 
+/* Banks and e-wallets named on payment slips (longest first, so "BPI" never wins over a longer name). */
+const SOURCES = [
+  ...INSTITUTIONS.flatMap(i => [i.name, ...i.aliases].map(n => [n, i.name])),
+  ['GoTyme', 'GoTyme'], ['SeaBank', 'SeaBank'], ['MariBank', 'MariBank'], ['Tonik', 'Tonik'], ['ShopeePay', 'ShopeePay'],
+  ['GrabPay', 'GrabPay'], ['Coins.ph', 'Coins.ph'], ['PayPal', 'PayPal'], ['InstaPay', ''], ['PESONet', ''],
+].filter(([n]) => n && n.length > 1).sort((x, y) => y[0].length - x[0].length);
+const esc = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Bank or e-wallet the payment came from, as its catalogue name, or ''. */
+export function findBank(text = '') {
+  let best = null;
+  for (const [n, canonical] of SOURCES) {
+    if (!canonical) continue;
+    const m = new RegExp(`(^|[^a-z])${esc(n)}(?![a-z])`, 'i').exec(text);
+    if (m && (!best || m.index < best.index)) best = { index: m.index, name: canonical };
+  }
+  return best ? best.name : '';
+}
+
+const field = (text, labels) => {
+  const m = String(text).match(new RegExp(`(?:^|\\n)\\s*(?:${labels})\\b\\s*[:\\-–]?\\s*([^\\n]{2,80})`, 'i'));
+  return m ? m[1].replace(/\s{2,}/g, ' ').trim() : '';
+};
+
+/**
+ * Best-effort fields from a receipt, invoice or payment confirmation (GCash, Maya, bank transfers, store slips):
+ * amount, fee, merchant or recipient, date, time, reason, bank or wallet, reference, card/account last 4 and whether
+ * money came in or went out. Everything runs on the device; people always review before saving.
+ */
 export function parseReceipt(text = '') {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   let amount = 0;
-  const totalLine = lines.find(l => /\b(grand\s*total|total\s*(amount|due)?|amount\s*(due|paid)|you\s*paid|amount)\b/i.test(l) && !/sub\s*-?\s*total/i.test(l));
-  if (totalLine) { const hits = [...totalLine.matchAll(AMOUNT)]; if (hits.length) amount = num(hits[hits.length - 1][1]); }
+  const totalLine = lines.find(l => /\b(grand\s*total|total\s*(amount|due|paid)?|amount\s*(due|paid|sent|received|transferred)?|you\s*(paid|sent|received))\b/i.test(l) && !/sub\s*-?\s*total|fee/i.test(l));
+  if (totalLine) {
+    const hits = [...totalLine.matchAll(AMOUNT)];
+    if (hits.length) amount = num(hits[hits.length - 1][1]);
+    else { const m = totalLine.match(/(?:₱|php|p)\s*(\d[\d,]*)/i); if (m) amount = num(m[1]); }
+  }
   if (!amount) { const all = [...text.matchAll(AMOUNT)].map(h => num(h[1])).filter(n => n > 0 && n < 1e9); if (all.length) amount = Math.max(...all); }
-  const merchant = (lines.find(l => /[a-z]{3}/i.test(l) && !/\d{4,}|receipt|invoice|official|tin\b|vat|date|time|cashier/i.test(l)) || '').replace(/[^\w&'.\- ]/g, '').trim().slice(0, 60);
-  return { amount: Math.round(amount * 100) / 100, merchant, date: findDate(text), time: findTime(text), ref: findReference(text) };
+  const feeM = text.match(/(?:transaction\s*fee|service\s*(?:fee|charge)|convenience\s*fee|\bfee)\s*[:\-]?\s*(?:₱|php|p)?\s*(\d[\d,]*(?:\.\d{2})?)/i);
+  const recipient = field(text, 'sent\\s*to|paid\\s*to|transfer(?:red)?\\s*to|recipient(?:\\s*name)?|receiver|merchant(?:\\s*name)?|biller|payee|to');
+  const sender = field(text, 'received\\s*from|sender(?:\\s*name)?|from');
+  const income = /\b(you\s*received|received\s*from|cash\s*in|incoming|credited|deposit(?:ed)?|refund(?:ed)?)\b/i.test(text);
+  const storeLine = (lines.find(l => /[a-z]{3}/i.test(l) && !/\d{4,}|receipt|invoice|official|tin\b|vat|date|time|cashier|successful|confirmation|transaction|reference|amount|total/i.test(l)) || '').replace(/[^\w&'.\- ]/g, '').trim();
+  const merchant = ((income ? sender : recipient) || storeLine).replace(/[^\w&'.,\- ]/g, '').trim().slice(0, 60);
+  const reason = field(text, 'purpose|reason|note|notes|message|remarks?|description|details|for').slice(0, 120);
+  const last4 = (text.match(/(?:\*{2,}|x{2,}|•{2,}|ending\s*(?:in)?|acct\.?\s*no\.?\s*[\dx*]*?)\s*(\d{4})\b/i) || [])[1] || '';
+  return {
+    amount: Math.round(amount * 100) / 100, fee: feeM ? Math.round(num(feeM[1]) * 100) / 100 : 0,
+    merchant, date: findDate(text), time: findTime(text), ref: findReference(text),
+    reason, bank: findBank(text), last4, type: income ? 'income' : 'expense',
+  };
 }
 
 const GUESS = [

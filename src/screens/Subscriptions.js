@@ -224,7 +224,7 @@ export default function Subscriptions({ c }) {
   const paused = subs.filter(s => s.status !== 'active');
 
   return <>
-    <SubHeader title={tr('Subscriptions')} onBack={() => go('Menu')} right={<button type="button" className="round-button" aria-label={tr('Add subscription')} onClick={() => setCatalog(true)}><Icon name="plus" size={20} /></button>} />
+    <SubHeader title={tr('Subscriptions')} onBack={() => go('Menu')} right={<button type="button" className="round-button accent" aria-label={tr('Add subscription')} onClick={() => setCatalog(true)}><Icon name="plus" size={20} /></button>} />
     <section className="card sub-hero" aria-label={tr('Subscription summary')}>
       <small>{tr('Monthly subscriptions')}</small>
       <div className="balance-amount"><Money value={summary.monthly} show={show} /></div>
