@@ -1,6 +1,6 @@
 # MOVO Pull Request Progress Register
 
-**Last reconciled:** 2026-11-02 10:10 UTC  
+**Last reconciled:** 2026-11-02 20:00 UTC  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
@@ -9,26 +9,43 @@
 |---|---|---|---|
 | [#93 — Privacy and legal verification](https://github.com/nasrinaiv0/movo/pull/93) | Legal review draft (verification matrix, Philippines notes). | Open; must not merge until every legal/operational item has evidence and counsel review. | Owner supplies verified legal facts; counsel review. |
 
-Checked against GitHub on 2026-11-02: #93 is the only open PR. #41 was closed without merging (its consent wording was superseded by later chat work).
+Checked against GitHub on 2026-11-02 20:00 UTC: #93 is the only open PR. #41 was closed without merging (its consent wording was superseded by later chat work).
 
-## Production database: migrations not yet applied (checked 2026-11-02, read-only)
+## Production database (checked 2026-11-02 20:00 UTC)
 
-Supabase `cjsjmorqvuvvwbfyztiz` has every migration up to `20261101174508_allow_authenticated_read_premium_stickers`. These on `main` are **not applied** (`user_preferences` was applied on 2026-11-02), so the features that depend on them fall back or show an error in production:
+Supabase `cjsjmorqvuvvwbfyztiz` has **every migration on `main`**, through `20261103010000_automation_transfers`.
+`user_preferences` was applied on 2026-11-02 via the Supabase tools; `bills_payments`,
+`automation_sources_and_cross_source_dedup`, `automation_inbox` and `automation_transfers` were applied by the owner
+in the SQL Editor from one reviewed script. Before that, the script was run on a local Postgres 16 copy built to
+match production, and the SQL test suites passed there. A production read-back confirmed:
+- the bills tables and the automation inbox exist, with RLS on;
+- both automation loggers exist and are server-only;
+- `user_preferences` has RLS on.
 
-| Migration | Feature on main that needs it | Effect until applied |
-|---|---|---|
-| `20261030160000_user_preferences.sql` | Preference sync across devices | Preferences stay on each device only (device fallback) |
-| `20261101120000_bills_payments.sql` | Bills tab (#127) | Bills tab shows an error; other tabs work |
-| `20261102010000_automation_sources_and_cross_source_dedup.sql` | Real automation sources, cross-channel dedup, default account | API falls back to the older logger and stores expenses as `notification` |
-| `20261102020000_automation_inbox.sql` | Failed automations in "While you were away" | Inbox reads as empty; failures are not stored |
-| `20261103010000_automation_transfers.sql` (open PR) | Siri / Android voice transfers between own accounts | Siri says transfers are not switched on yet; nothing is logged |
-
-Each has a matching test in `supabase/tests/` that passed on local Postgres 16. Applying them needs the owner's approval.
+**Supabase advisors (2026-11-02, after applying):**
+- `assert_movo_finance_child_ownership()` (a trigger function) is executable by anon/authenticated. Calling it directly
+  only errors, but EXECUTE should be revoked.
+- 34 RLS policies call `auth.uid()` per row; they should use `(select auth.uid())` (bills, loans, receivables, goals,
+  postings).
+- 15 foreign keys have no covering index.
+- Also reported:
+  - 8 authenticated SECURITY DEFINER RPCs: intended, each checks `auth.uid()`;
+  - leaked-password protection off: no passwords since #133;
+  - `movo_ai_upstream_conversations` has RLS with no policy: server-only by design;
+  - 13 unused indexes on new, nearly empty tables.
+- A hardening migration with tests is proposed; applying it needs the owner's approval.
 
 ## Recent merged implementation
 
 | PR | Result | Validation / notes |
 |---|---|---|
+| [#146 — Account deletion in the app](https://github.com/nasrinaiv0/movo/pull/146) | Merged 2026-11-02 as `a44b22e`. | iOS phase 3 (App Store 5.1.1(v)): Settings → Delete Account → `POST /api/account/delete` (verified token; transactions, then the Auth user via the Admin API; the rest cascades). Local Postgres check: no `user_id` row left in any public table. 366 tests; `verify` + `build-ios` green. |
+| [#145 — Siri income and transfers](https://github.com/nasrinaiv0/movo/pull/145) | Squash-merged 2026-11-02 as `21cd33d`. | Voice transfers between own accounts as one transfer row via `log_automation_transfer` (migration `20261103010000`, SQL test + mutation checks); more income phrasing. 373 tests; `verify` + `build-ios` green. |
+| [#144 — Bank and e-wallet payment texts](https://github.com/nasrinaiv0/movo/pull/144) | Squash-merged 2026-11-02 as `32fae1c`. | `api/_lib/messageText.js` reads GCash / Maya / bank SMS, email or Android notifications into income, expense or transfer with reference, date and account hint; OTPs and promos ignored and never stored; "Bank texts" Shortcut recipe. 362 tests. |
+| [#141 — iOS phase 2](https://github.com/nasrinaiv0/movo/pull/141) | Merged 2026-11-02 as `8187aca`. | Sign-in through the system browser + `movo://auth-callback`, native storage mirror, local notifications, Face ID app lock, `movo://` links, native Liquid Glass top bar and dock (`GlassChrome.swift`), macOS 26 CI compile (`build-ios`). |
+| [#139 — iOS phase 1](https://github.com/nasrinaiv0/movo/pull/139) | Merged 2026-11-02 as `51f55c4`. | Capacitor 8 iOS project (SPM, bundled, `com.nasrinai.movo`), `apiUrl()` / `appOrigin()`, CapacitorHttp; the website is unchanged. See `docs/IOS_APP.md`. |
+| [#140](https://github.com/nasrinaiv0/movo/pull/140), [#138](https://github.com/nasrinaiv0/movo/pull/138) — Money Flow | Merged 2026-11-02 (`0541847`, `ed39c36`). | The last column is today; compact From/To fields with labels inside; legend colours match the bars. Production deploy of `ed39c36` READY. |
+| [#137](https://github.com/nasrinaiv0/movo/pull/137), [#136](https://github.com/nasrinaiv0/movo/pull/136) — Categories | Merged 2026-11-02 (`d6725ab`, `6805489`). | 12 compact categories, 22 groups / 233 subcategories with stable ids; category icon badge on transaction rows. |
 | [#133 — While you were away, card layout, badges, passwordless sign-in](https://github.com/nasrinaiv0/movo/pull/133) | Squash-merged 2026-11-02 as `3215631`. | Recent-logs popup and failed-automation inbox (migration `20261102020000`, not applied); automation matches the bank account; card faces per owner spec (landscape and vertical BPI reference); Pro/Max/Ultra streak badges with the MOVO mark; MOVO logo fallback; email-code + Google + Apple sign-in (no passwords). `verify` passed on the final head `ea0124e`; 61 suites / 337 tests locally. |
 | [#132](https://github.com/nasrinaiv0/movo/pull/132), [#131](https://github.com/nasrinaiv0/movo/pull/131) — Card layout dimensions | Merged 2026-11-02. | Owner-approved card spec block in `App.css`; logo and name sizes later superseded by #133 at the owner's request. |
 | [#130 — Automation, voice, adaptive CSS, card faces](https://github.com/nasrinaiv0/movo/pull/130) | Merged 2026-11-02 as `c99d94a`. | Automation sources and cross-source dedup (migration `20261102010000`, not applied), NasrinAI voice on iPhone, adaptive CSS audit, network marks. |
@@ -64,8 +81,18 @@ Each has a matching test in `supabase/tests/` that passed on local Postgres 16. 
 These are not resolved by a green frontend CI run or a READY deployment:
 
 - **Legal readiness:** Formal operator/data-controller identity and address, actual retention periods, provider details, and jurisdiction-specific disclosures still need verification and legal review. The in-app pages explicitly warn users about the missing details; do not invent them.
-- **Database migrations:** four migrations on `main` are not applied in production (table above). Bills, preference sync, automation sources and the failed-automation inbox depend on them.
-- **Supabase Auth (sign-in is passwordless since #133):** add `{{ .Token }}` to the Magic Link email template so the email shows the one-time code (without it, people sign in through the link instead); enable the Apple provider (Services ID, Team ID, Key ID, private key); allow `https://movo.nasrinai.com` as a redirect URL. Leaked-password protection still matters only for older accounts that had a password; enable it through authorized project settings: [Supabase password-security guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- **Email sign-in codes (2026-11-02):** Supabase Auth logs show every `/otp` request since 16:02 UTC failing with SMTP
+  `535 "Authentication credentials invalid"`. The custom SMTP credentials in Authentication → Emails → SMTP Settings
+  need correcting by the owner, so codes are not delivered until then. Google sign-in works. Apple fails with
+  `provider is not enabled`.
+- **iOS app:** phases 1–3 are merged (`docs/IOS_APP.md`). Phase 4 (Codemagic signing, TestFlight) and phase 5
+  (device testing, App Store submission) need the owner's Apple Developer Program membership, App Store Connect API
+  key and Codemagic account. The look of the native Liquid Glass bars is unverified on a device.
+- **Database hardening:** the Supabase advisor findings above are not yet fixed (a proposed migration needs approval).
+- **Supabase Auth (sign-in is passwordless since #133):**
+  - Paste the MOVO code email (with `{{ .Token }}`) into the Magic Link and Confirm signup templates.
+  - Enable the Apple provider (Services ID, Team ID, Key ID, private key).
+  - Allow `https://movo.nasrinai.com/**` and `movo://auth-callback` as redirect URLs. Leaked-password protection still matters only for older accounts that had a password; enable it through authorized project settings: [Supabase password-security guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
 - **Dependencies:** Latest main CI install reports 34 npm audit findings (16 low, 5 moderate, 13 high). Review advisories and use targeted upgrades with regression tests rather than a blind forced upgrade.
 - **NasrinAI chat:** Production logs on 2026-10-29 showed upstream HTTP 401 responses (last observed 2026-10-29T05:42:54Z). Not re-checked since; a successful authenticated production chat request is still unconfirmed. Never expose or log credential values.
 - **Interactive verification:** Full browser smoke tests on the production custom domain, including mobile, auth, consent, financial writes, CSV flows, and keyboard/focus behavior, remain unverified. Phone automations (Siri Shortcut, Apple Pay, Android voice) and NasrinAI voice chat have not been tested on a real device.
