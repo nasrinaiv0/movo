@@ -1,6 +1,8 @@
 /* Columns: English, Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi. */
 /* While you were away (recent logs and automations that could not be logged). */
 export default [
+  /* MOVO card face. */
+  ["Financial Tracker", "Financial Tracker", "متتبع مالي", "财务记录", "Control financiero", "Tracker finanziario", "Finanztracker", "Suivi financier", "Controle financeiro", "家計トラッカー", "금융 트래커", "वित्तीय ट्रैकर"],
   /* Passwordless sign-in. */
   ["Apple sign-in could not start. Please try again.", "Hindi masimulan ang pag-sign in gamit ang Apple. Pakisubukang muli.", "تعذّر بدء تسجيل الدخول عبر Apple. حاول مرة أخرى.", "无法开始 Apple 登录，请重试。", "No se pudo iniciar sesión con Apple. Inténtalo de nuevo.", "Impossibile avviare l'accesso con Apple. Riprova.", "Die Anmeldung mit Apple konnte nicht starten. Bitte erneut versuchen.", "Impossible de lancer la connexion avec Apple. Veuillez réessayer.", "Não foi possível iniciar o login com a Apple. Tente novamente.", "Apple でのサインインを開始できませんでした。もう一度お試しください。", "Apple 로그인을 시작할 수 없습니다. 다시 시도하세요.", "Apple से साइन इन शुरू नहीं हो सका। कृपया फिर कोशिश करें।"],
   ["Checking…", "Sinusuri…", "جارٍ التحقق…", "正在验证…", "Comprobando…", "Verifica in corso…", "Wird geprüft…", "Vérification…", "Verificando…", "確認中…", "확인 중…", "जाँच हो रही है…"],

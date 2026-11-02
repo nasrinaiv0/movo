@@ -1,57 +1,47 @@
 import React, { useId } from 'react';
+import chipImage from '../assets/emv-chip-gold.png';
 
 /* EMV chip finishes: [id, name, base, groove, highlight, shade]. Older saved ids map to the nearest finish. */
 export const CHIPS = [
-  ['gold', 'Gold', '#DDB157', '#7A5617', '#FFF0BF', '#A9782A'],
-  ['silver', 'Silver', '#C3C9D1', '#5A626D', '#F4F6F9', '#838B96'],
-  ['platinum', 'Platinum', '#E8E4EC', '#76707F', '#FFFFFF', '#B3ACBA'],
+  ['gold', 'Gold', '#EFC659', '#8A6214', '#FFF3C2', '#C08F25'],
+  ['silver', 'Silver', '#C9CFD6', '#5A626D', '#F6F8FA', '#8A929D'],
+  ['platinum', 'Platinum', '#ECE8F0', '#76707F', '#FFFFFF', '#B6AFBE'],
 ];
 const LEGACY = { bronze: 'gold', black: 'silver', gray: 'silver', white: 'platinum' };
 export const chipColors = (id) => CHIPS.find(c => c[0] === (LEGACY[id] || id)) || CHIPS[0];
 
-/* Contact pads after a real EMV module: a left column of four, a large centre pad, a right column and a split
-   bottom row. Each groove is drawn twice (dark cut + light edge) so it reads as bevelled metal. */
-const GROOVES = [
-  'M30 2 V60', 'M64 2 V60', 'M2 60 H98', 'M50 60 V74',
-  'M2 18 H30', 'M2 32 H30', 'M2 46 H30',
-  'M64 18 H98', 'M46 18 H64', 'M46 2 V18', 'M64 38 H98',
-];
+/* The chip module is the owner's actual chip image (src/assets/emv-chip-gold.png, 248 × 193, cut out with rounded
+   corners). Silver and platinum finishes show the same chip desaturated. */
+const MODULE = { x: 4.9, y: 2.9, w: 90.2, h: 70.2, r: 10.6 };
 
 /**
- * EMV chip: no outline, banded metal gradient with fine brushed grain, soft inner shadow, bevelled pad grooves
- * and a faint sheen that drifts across now and then (CSS; off for reduced motion).
+ * EMV chip: the owner's chip image with a soft shadow under its top edge and a faint sheen that drifts across now and
+ * then (CSS; off for reduced motion). No frame, outline or outward shadow.
  */
 export function EmvChip({ finish = 'gold', className = '' }) {
-  const [, , fill, line, light, shade] = chipColors(finish);
+  const id = LEGACY[finish] || finish;
   const raw = useId(); const u = `c${raw.replace(/[^a-z0-9]/gi, '')}`;
+  const { x, y, w, h, r } = MODULE;
   return <svg className={`emv-chip ${className}`.trim()} viewBox="0 0 100 76" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id={`${u}m`} x1="0" y1="0" x2="1" y2=".55"><stop offset="0" stopColor={light} /><stop offset=".22" stopColor={fill} /><stop offset=".38" stopColor={shade} /><stop offset=".55" stopColor={fill} /><stop offset=".72" stopColor={light} stopOpacity=".9" /><stop offset=".86" stopColor={fill} /><stop offset="1" stopColor={shade} /></linearGradient>
-      <linearGradient id={`${u}g`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".28" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
-      <radialGradient id={`${u}s`} cx=".3" cy=".2" r=".7"><stop offset="0" stopColor="#fff" stopOpacity=".16" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
-      <pattern id={`${u}b`} width="100" height="1.6" patternUnits="userSpaceOnUse"><rect width="100" height=".55" fill="#fff" fillOpacity=".09" /><rect y=".8" width="100" height=".45" fill="#000" fillOpacity=".07" /></pattern>
-      <clipPath id={`${u}c`}><rect x="2" y="2" width="96" height="72" rx="13" /></clipPath>
-      <filter id={`${u}i`} x="-10%" y="-10%" width="120%" height="120%">
-        <feOffset dx="0" dy="1.6" /><feGaussianBlur stdDeviation="2" result="o" />
-        <feComposite operator="out" in="SourceGraphic" in2="o" result="inv" />
-        <feFlood floodColor="#000" floodOpacity=".35" /><feComposite operator="in" in2="inv" result="sh" />
-        <feComposite operator="over" in="sh" in2="SourceGraphic" />
-      </filter>
+      <linearGradient id={`${u}g`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".3" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+      <clipPath id={`${u}c`}><rect x={x} y={y} width={w} height={h} rx={r} /></clipPath>
+      {id !== 'gold' && <filter id={`${u}f`}><feColorMatrix type="saturate" values="0" /><feComponentTransfer><feFuncR type="linear" slope={id === 'platinum' ? 1.12 : 1.02} intercept={id === 'platinum' ? .08 : .02} /><feFuncG type="linear" slope={id === 'platinum' ? 1.1 : 1.02} intercept={id === 'platinum' ? .08 : .02} /><feFuncB type="linear" slope={id === 'platinum' ? 1.16 : 1.08} intercept={id === 'platinum' ? .1 : .04} /></feComponentTransfer></filter>}
     </defs>
-    <rect x="2" y="2" width="96" height="72" rx="13" fill={`url(#${u}m)`} filter={`url(#${u}i)`} />
-    <g clipPath={`url(#${u}c)`} fill="none" strokeLinecap="round">
-      <rect x="2" y="2" width="96" height="72" fill={`url(#${u}b)`} stroke="none" />
-      <g stroke="#fff" strokeOpacity=".4" strokeWidth=".9" transform="translate(.6 .6)">{GROOVES.map(d => <path key={d} d={d} />)}</g>
-      <g stroke={line} strokeOpacity=".75" strokeWidth="1.2">{GROOVES.map(d => <path key={d} d={d} />)}</g>
-      <rect x="2" y="2" width="96" height="72" fill={`url(#${u}s)`} stroke="none" />
-      <rect className="chip-shine" x="-60" y="-20" width="34" height="120" fill={`url(#${u}g)`} stroke="none" transform="rotate(20 50 38)" />
+    {/* the chip itself, seated slightly below the surface */}
+    <g clipPath={`url(#${u}c)`}>
+      <image href={chipImage} x={x} y={y} width={w} height={h} preserveAspectRatio="none" filter={id !== 'gold' ? `url(#${u}f)` : undefined} />
+      <rect className="chip-shine" x="-60" y="-20" width="34" height="120" fill={`url(#${u}g)`} transform="rotate(20 50 38)" />
+      {/* a soft shadow under the top edge, so the chip sits in the card without a visible frame */}
+      <rect x={x} y={y} width={w} height={h} rx={r} fill="none" stroke="#000" strokeOpacity=".16" strokeWidth="2" transform="translate(.4 .8)" />
     </g>
   </svg>;
 }
 
-/** Contactless (RFID / NFC) payment symbol. */
+/** Contactless (RFID / NFC) payment symbol, drawn after the owner's chip image: a short thick arc and three wider ones,
+    heavy round-capped strokes. Takes the text colour so it reads on any card. */
 export function Contactless({ className = '' }) {
-  return <svg className={`contactless ${className}`.trim()} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" focusable="false">
-    <path d="M6.5 9a4.5 4.5 0 0 1 0 6" /><path d="M10 6.5a8.5 8.5 0 0 1 0 11" /><path d="M13.5 4a12.5 12.5 0 0 1 0 16" /><path d="M17 1.8a16 16 0 0 1 0 20.4" />
+  return <svg className={`contactless ${className}`.trim()} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" focusable="false">
+    <path d="M5 10 A2.4 2.4 0 0 1 5 14" /><path d="M8.4 7.4 A5.6 5.6 0 0 1 8.4 16.6" /><path d="M12.2 4.6 A9 9 0 0 1 12.2 19.4" /><path d="M16 1.8 A12.4 12.4 0 0 1 16 22.2" />
   </svg>;
 }

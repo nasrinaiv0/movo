@@ -2,7 +2,7 @@
 
 **Status date:** 2026-11-02  
 **Feature:** Natural-language voice logging from Siri into MOVO  
-**Related work:** PR #123, `fix/automation-source-persistence-20261101`  
+**Related work:** PR #123 (`fix/automation-source-persistence-20261101`), PR #130 (sources, dedup, voice parser, exact Shortcut recipe), PR #133 (bank-account matching, failed-automation inbox)  
 **Production status:** Infrastructure exists; end-to-end Siri voice logging is **not yet verified**.
 
 ## Goal
@@ -114,9 +114,12 @@ Use a dedicated `siri_shortcut` source for Siri-originated transactions, distinc
 - [x] Implement natural-language parsing on the trusted server side with strict validation (`api/_lib/voice.js`).
 - [x] Add `siri_shortcut` to the source allowlist (migration `20261102010000`) with tests; cross-source duplicate detection added to `log_automation_transaction_v2`.
 - [x] Add or update tests for parser, API, database isolation, idempotency, retry and cross-source duplicates.
-- [ ] Configure the iOS Shortcut to call the documented endpoint and speak only confirmed outcomes.
-- [ ] Apply/verify production migrations and test with the user's actual iPhone.
-- [ ] Update this document with PR, commit, CI, deployment, migration, and live-test results.
+- [x] In-app recipe and copyable prompt for the Siri voice Shortcut (Automatic logging → Siri voice), which speaks the server's `message`, never a guessed success (PR #130).
+- [x] Card/account hints that fit several accounts of one bank log to that bank's bank account; a per-device default account covers the rest (PR #133).
+- [x] A phrase MOVO cannot log (unclear amount, no matching account, rate limit, server error) is kept for review in the app's "While you were away" sheet, to log to a chosen account or dismiss (PR #133, migration `20261102020000`).
+- [ ] Build the Shortcut on the user's iPhone from the in-app recipe and confirm it speaks only confirmed outcomes.
+- [ ] Apply production migrations `20261102010000` and `20261102020000` (not applied as of 2026-11-02; until then expenses log as `notification` through the older logger, income from voice is refused, and failures are not kept for review), then test with the user's actual iPhone.
+- [ ] Record the migration and live-test results here. (PR #130 merged as `c99d94a`, #133 merged as `3215631`; CI passed on both.)
 
 ## Current blockers / honesty notes
 

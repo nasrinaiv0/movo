@@ -2,6 +2,14 @@
 
 > **Financial Planning & Bills (2026-11-01):** continue from [FINANCIAL_PLANNING_HANDOFF.md](FINANCIAL_PLANNING_HANDOFF.md) and the spec in [docs/specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md](../specs/FINANCIAL_PLANNING_AND_BILLS_SPEC.md).
 
+## Status update — 2026-11-02 10:10 UTC (newer than the snapshots below)
+
+- `main` is at `3215631` (PR #133 squash-merged). The only open PR is #93 (legal draft). The PR register in `docs/PR_PROGRESS.md` is current.
+- **Production database:** four migrations on `main` are not applied: `user_preferences`, `bills_payments`, `automation_sources_and_cross_source_dedup` and `automation_inbox`. Read-only check of `supabase_migrations` on 2026-11-02. Preference sync, the Bills tab, automation sources and the failed-automation inbox depend on them; each has a passing local DB test. Applying them needs owner approval.
+- **Auth:** sign-in is passwordless (Apple, Google, email one-time code). The Supabase Magic Link template, Apple provider and redirect URLs still need owner configuration (`docs/NASRINAI_CHAT_INTEGRATION.md`).
+- **Feature gaps** (spec phases 3–7, owner requests): see the phase table in `docs/claude/FINANCIAL_PLANNING_HANDOFF.md`. Home dashboard cards (phase 6) are the next build.
+- **Still unverified:** NasrinAI production upstream 401 (last seen 2026-10-29), real-device tests of phone automations and voice chat, production smoke and RLS checks, accessibility pass. The phase tracker in section 3 below predates this update; treat its statuses as historical where they conflict.
+
 ## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
 
 **This section supersedes older status rows below wherever they disagree.**

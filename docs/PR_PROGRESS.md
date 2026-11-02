@@ -1,24 +1,41 @@
 # MOVO Pull Request Progress Register
 
-**Last reconciled:** 2026-11-02 UTC  
+**Last reconciled:** 2026-11-02 10:10 UTC  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
-| `claude/movo-ui-motion-refinement-vafrxa` (post-#129) | Automation sources + cross-source dedup, voice logging, adaptive automation sheet, account picker, card faces (logo/name/network/amount), NasrinAI voice on iPhone, adaptive CSS audit, While you were away + automation inbox. | 331 tests, typecheck and strict build pass locally; DB tests `automation_dedup` and `automation_inbox` pass on local Postgres 16. Migrations `20261102010000` and `20261102020000` not yet applied to Supabase (app and API degrade safely until then). | Owner applies migrations; confirm CI and preview. |
-| [#127 — Bills & Payments](https://github.com/nasrinaiv0/movo/pull/127) | Spec phase 5: bills, occurrences, idempotent payments (recorded / paid elsewhere / partial), Bills tab. | Open; 264 tests, typecheck and build passed locally; DB test passed on local Postgres 16. Migration not yet applied to Supabase. | Apply migration (owner), confirm CI and preview. |
-| [#80 — Tappable tiles, receipt scanner, rich replies](https://github.com/nasrinaiv0/movo/pull/80) | Stat tiles open their data, centred animated scanner, richer NasrinAI replies, filter-bar and nav-preview fixes. | Open; head `c7d4a257` passed 42 suites / 206 tests, typecheck and build locally. | Confirm CI and Vercel preview on the head. |
-| [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Clearer opt-in disclosure, accessible disabled-send guidance, consent/legal-link regression tests. | Open; latest reviewed head `b93afb517dbdaad53dc07423b5b36571439d4c39`; historical CI run [40874336883](https://github.com/nasrinaiv0/movo/actions/runs/40874336883) passed 15 suites / 88 tests, typecheck, and production build. Its branch predates the latest main merge; recheck mergeability and exact-head checks. | Reconcile the branch with current main without losing the consent changes, then complete preview/browser verification. |
-| [#42 — Accessible disabled cloud-auth guidance](https://github.com/nasrinaiv0/movo/pull/42) | Associate disabled Google/email sign-in actions with visible configuration guidance and add regression tests. | Draft; branch `fix/auth-disabled-control-guidance`; exact head `e695e24ecb57dd610226ddffdb2bc1d7846d8b89` passed GitHub Actions run [40877723949](https://github.com/nasrinaiv0/movo/actions/runs/40877723949): 15 suites / 88 tests, typecheck, production build; matching Vercel preview `dpl_2vZfsvxJ77AAjnnRhnCB5QpaJwNu` is READY. | Recheck CI on the latest docs-refresh commit, then complete browser, keyboard, and screen-reader verification before marking ready. |
+| [#93 — Privacy and legal verification](https://github.com/nasrinaiv0/movo/pull/93) | Legal review draft (verification matrix, Philippines notes). | Open; must not merge until every legal/operational item has evidence and counsel review. | Owner supplies verified legal facts; counsel review. |
 
-PR #40 (UI motion refinement) is merged into main as `f1db0aaea96f5fae9983013bb63fcf4087657187`. Reconcile this register against live GitHub state before each follow-up pass.
-  
+Checked against GitHub on 2026-11-02: #93 is the only open PR. #41 was closed without merging (its consent wording was superseded by later chat work).
+
+## Production database: migrations not yet applied (checked 2026-11-02, read-only)
+
+Supabase `cjsjmorqvuvvwbfyztiz` has every migration up to `20261101174508_allow_authenticated_read_premium_stickers`. These four on `main` are **not applied**, so the features that depend on them fall back or show an error in production:
+
+| Migration | Feature on main that needs it | Effect until applied |
+|---|---|---|
+| `20261030160000_user_preferences.sql` | Preference sync across devices | Preferences stay on each device only (device fallback) |
+| `20261101120000_bills_payments.sql` | Bills tab (#127) | Bills tab shows an error; other tabs work |
+| `20261102010000_automation_sources_and_cross_source_dedup.sql` | Real automation sources, cross-channel dedup, default account | API falls back to the older logger and stores expenses as `notification` |
+| `20261102020000_automation_inbox.sql` | Failed automations in "While you were away" | Inbox reads as empty; failures are not stored |
+
+Each has a matching test in `supabase/tests/` that passed on local Postgres 16. Applying them needs the owner's approval.
+
 ## Recent merged implementation
 
 | PR | Result | Validation / notes |
 |---|---|---|
+| [#133 — While you were away, card layout, badges, passwordless sign-in](https://github.com/nasrinaiv0/movo/pull/133) | Squash-merged 2026-11-02 as `3215631`. | Recent-logs popup and failed-automation inbox (migration `20261102020000`, not applied); automation matches the bank account; card faces per owner spec (landscape and vertical BPI reference); Pro/Max/Ultra streak badges with the MOVO mark; MOVO logo fallback; email-code + Google + Apple sign-in (no passwords). `verify` passed on the final head `ea0124e`; 61 suites / 337 tests locally. |
+| [#132](https://github.com/nasrinaiv0/movo/pull/132), [#131](https://github.com/nasrinaiv0/movo/pull/131) — Card layout dimensions | Merged 2026-11-02. | Owner-approved card spec block in `App.css`; logo and name sizes later superseded by #133 at the owner's request. |
+| [#130 — Automation, voice, adaptive CSS, card faces](https://github.com/nasrinaiv0/movo/pull/130) | Merged 2026-11-02 as `c99d94a`. | Automation sources and cross-source dedup (migration `20261102010000`, not applied), NasrinAI voice on iPhone, adaptive CSS audit, network marks. |
+| [#127 — Bills & Payments](https://github.com/nasrinaiv0/movo/pull/127) | Merged 2026-11-01. | Bills tab and idempotent payments. Migration `20261101120000` **not applied** in production. Bill reminders (`reminderFor`) are computed but not wired. |
+| [#126 — First-run welcome + import](https://github.com/nasrinaiv0/movo/pull/126) | Merged 2026-11-01. | Local CSV/JSON import; does not cover loans, receivables or bills. |
+| [#80 — Tappable tiles, receipt scanner, rich replies](https://github.com/nasrinaiv0/movo/pull/80) | Merged 2026-10-31. | |
+| [#42 — Accessible disabled cloud-auth guidance](https://github.com/nasrinaiv0/movo/pull/42) | Merged 2026-10-29. | The auth panel was later rebuilt as passwordless in #133; the disabled-state guidance is kept. |
+| [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Closed without merge 2026-10-29. | |
 | [#34 — Wallet validation and security status](https://github.com/nasrinaiv0/movo/pull/34) | Merged as `e43670bb56295e2fcf881b0c897d8d808b81bedc`. | Documentation refresh. Main CI [run 40852563341](https://github.com/nasrinaiv0/movo/actions/runs/40852563341) passed 13 suites / 76 tests, typecheck, and production build. Vercel production deployment `dpl_61HwBdJZwg1hpQZshMH8SB4uZr2p` is READY with `movo.nasrinai.com` attached. |
 | [#33 — Wallet quick-action correction](https://github.com/nasrinaiv0/movo/pull/33) | Merged as `8fed594d571602c8d7f0cdca55afb286d47dabab`. | Replaced the duplicate Transfer action with Add Transaction. CI [run 40851881401](https://github.com/nasrinaiv0/movo/actions/runs/40851881401) passed 13 suites / 76 tests, typecheck, and production build; preview reached READY. |
 | [#32 — Validated profile form](https://github.com/nasrinaiv0/movo/pull/32) | Merged as `782ac74568570ef27cc942f7e7a1bc5147ddd7a6`. | Profile editing now validates and saves browser-local fields; CI [run 40845667667](https://github.com/nasrinaiv0/movo/actions/runs/40845667667) passed 13 suites / 74 tests and build. |
@@ -39,16 +56,18 @@ PR #40 (UI motion refinement) is merged into main as `f1db0aaea96f5fae9983013bb6
 | [#23 — Earlier frontend completion](https://github.com/nasrinaiv0/movo/pull/23) | Closed without merge; superseded by the reconciled PR #26 and follow-up fixes. |
 | [#22 — Earlier legal/help pages](https://github.com/nasrinaiv0/movo/pull/22) | Closed without merge; legal/help functionality was consolidated into the in-app Legal and Help Center screens to avoid duplicate policy sources. |
 | [#12 and #13 — Reference UI / notification parity](https://github.com/nasrinaiv0/movo/pull/12) | Closed without merge; superseded by the later merged responsive frontend and notification implementations. |
+| [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Closed without merge on 2026-10-29; the consent disclosure in the chat was reworked in later merged chat changes. |
 
 ## Current release blockers
 
 These are not resolved by a green frontend CI run or a READY deployment:
 
 - **Legal readiness:** Formal operator/data-controller identity and address, actual retention periods, provider details, and jurisdiction-specific disclosures still need verification and legal review. The in-app pages explicitly warn users about the missing details; do not invent them.
-- **Supabase Auth:** Security Advisor still reports leaked-password protection disabled. Enable it through authorized project settings: [Supabase password-security guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+- **Database migrations:** four migrations on `main` are not applied in production (table above). Bills, preference sync, automation sources and the failed-automation inbox depend on them.
+- **Supabase Auth (sign-in is passwordless since #133):** add `{{ .Token }}` to the Magic Link email template so the email shows the one-time code (without it, people sign in through the link instead); enable the Apple provider (Services ID, Team ID, Key ID, private key); allow `https://movo.nasrinai.com` as a redirect URL. Leaked-password protection still matters only for older accounts that had a password; enable it through authorized project settings: [Supabase password-security guidance](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
 - **Dependencies:** Latest main CI install reports 34 npm audit findings (16 low, 5 moderate, 13 high). Review advisories and use targeted upgrades with regression tests rather than a blind forced upgrade.
-- **NasrinAI chat:** Production logs show 7 upstream HTTP 401 responses in the last 24-hour window, last observed at 2026-10-29T05:42:54Z. No successful authenticated production chat request has been confirmed in this run; never expose or log credential values.
-- **Interactive verification:** Full browser smoke tests on the production custom domain, including mobile, auth, consent, financial writes, CSV flows, and keyboard/focus behavior, remain unverified.
+- **NasrinAI chat:** Production logs on 2026-10-29 showed upstream HTTP 401 responses (last observed 2026-10-29T05:42:54Z). Not re-checked since; a successful authenticated production chat request is still unconfirmed. Never expose or log credential values.
+- **Interactive verification:** Full browser smoke tests on the production custom domain, including mobile, auth, consent, financial writes, CSV flows, and keyboard/focus behavior, remain unverified. Phone automations (Siri Shortcut, Apple Pay, Android voice) and NasrinAI voice chat have not been tested on a real device.
 - **Data isolation:** Read-only production catalog checks confirm RLS enabled on profiles, financial accounts, transactions, budgets, and NasrinAI chat tables. Owner-scoped policies are present; the upstream mapping intentionally has no browser policy/grants and remains server-only.
 
 ## Required PR lifecycle
