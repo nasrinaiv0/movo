@@ -47,7 +47,7 @@ is needed: the native project is generated and synced on Linux, and builds, sign
 ## Commands
 
 ```sh
-npm run ios:sync      # typecheck + tests + build, then copy build/ into ios/App/App/public
+npm run ios:sync      # (Node 22+) typecheck + tests + build, then copy build/ into ios/App/App/public
 npx cap sync ios      # copy an existing build/ only
 ```
 
