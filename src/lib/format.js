@@ -1,3 +1,4 @@
+import { categoryOf } from './categories';
 import { t } from './i18n';
 
 /* Dates follow the device time zone; numbers, currencies and dates follow the chosen language. */
@@ -83,20 +84,16 @@ export const BUCKETS = [
   { key: 'Others', color: '#8e98ac' },
 ];
 export function bucketOf(category = '') {
-  if (['Groceries', 'Food & drinks'].includes(category)) return 'Food';
-  if (category === 'Shopping') return 'Shopping';
-  if (['Bills', 'Subscriptions'].includes(category)) return 'Bills';
-  if (category === 'Transport') return 'Transportation';
-  return 'Others';
+  return { food: 'Food', shopping: 'Shopping', bills: 'Bills', transport: 'Transportation' }[categoryOf(category).primary] || 'Others';
 }
 
 /** Tone of the category chip shown next to a transaction. */
 export const chipTone = (t) => {
   if (t.type === 'transfer') return 'gray';
   if (t.type === 'income') return 'green';
-  return { Groceries: 'orange', Transport: 'blue', Subscriptions: 'violet', 'Food & drinks': 'violet', Shopping: 'amber', Bills: 'red', Health: 'teal' }[t.category] || 'gray';
+  return categoryOf(t.categoryId || t.category).tone;
 };
-export const chipLabel = (t) => (t.type === 'transfer' ? 'Transfer' : t.category === 'Transport' ? 'Transportation' : t.category || 'Other');
+export const chipLabel = (t) => (t.type === 'transfer' ? 'Transfer' : categoryOf(t.categoryId || t.category).label);
 
 /** Neutral monogram tile colours (no third-party logos are reproduced). */
 const TILES = ['#1f6fff', '#12a66a', '#111827', '#e5484d', '#f08a24', '#7c5cf0', '#0e9aa7', '#c2410c'];

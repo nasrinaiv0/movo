@@ -11,9 +11,9 @@ test('falls back to the largest amount and ISO dates', () => {
 
 test('guesses categories from merchant names', () => {
   const { guessCategory } = require('./ocr');
-  expect(guessCategory('JOLLIBEE QC')).toBe('Food & drinks');
-  expect(guessCategory('Petron station 12')).toBe('Transport');
-  expect(guessCategory('Unknown merchant')).toBe('Other');
+  expect(guessCategory('JOLLIBEE QC')).toBe('food:fast_food');
+  expect(guessCategory('Petron station 12')).toBe('transport:fuel_gas');
+  expect(guessCategory('Unknown merchant')).toBe('misc:uncategorized_expense');
 });
 
 test('reads an e-wallet payment confirmation: recipient, bank, reason, ref, time, fee', () => {

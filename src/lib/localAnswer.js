@@ -1,3 +1,4 @@
+import { PRIMARY, categoryOf } from './categories';
 import { dayKey, monthKey } from './format';
 
 /*
@@ -6,7 +7,8 @@ import { dayKey, monthKey } from './format';
  * "Food budget left", "Upcoming renewals", "Last transaction". Returns null when it cannot answer, so the question
  * can go to NasrinAI instead. Nothing here leaves the device.
  */
-const CATEGORY_NAMES = ['Food & drinks', 'Groceries', 'Transport', 'Bills', 'Shopping', 'Subscriptions', 'Health', 'Entertainment', 'Education', 'Housing', 'Travel'];
+// Words people use for categories; each resolves to its compact category (lib/categories), which records are grouped by.
+const CATEGORY_NAMES = [...PRIMARY.map(p => p.label), 'Food & drinks', 'Groceries', 'Transport', 'Bills', 'Shopping', 'Subscriptions', 'Health', 'Entertainment', 'Education', 'Housing', 'Travel'];
 const has = (re, s) => re.test(s);
 const startOfWeek = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
 
@@ -28,7 +30,8 @@ export function answerLocally(text, { txs = [], accounts = [], budgets = [], upc
   const period = periodOf(t, now);
   const inPeriod = txs.filter(x => period.test(x.date));
   const cats = [...new Set([...CATEGORY_NAMES, ...txs.map(x => x.category)].filter(Boolean))];
-  const cat = cats.find(c => t.includes(c.toLowerCase()) || (c === 'Food & drinks' && /\b(food|pagkain|kain)\b/.test(t)) || (c === 'Transport' && /\b(transport|pamasahe|commute)\b/.test(t)));
+  const said = cats.find(c => t.includes(c.toLowerCase()) || (c === 'Food & drinks' && /\b(food|pagkain|kain)\b/.test(t)) || (c === 'Transport' && /\b(transport|pamasahe|commute)\b/.test(t)));
+  const cat = said ? categoryOf(said).label : '';
   const merchant = !cat && [...new Set(txs.map(x => x.merchant))].find(m => m && m.length > 2 && t.includes(m.toLowerCase()));
   const sum = (list, type) => list.filter(x => x.type === type).reduce((s, x) => s + x.amount, 0);
   const P = period.label;
@@ -40,9 +43,9 @@ export function answerLocally(text, { txs = [], accounts = [], budgets = [], upc
     return [`**Total balance: ${fmt(total)}**`, ...open.slice(0, 6).map(a => `- ${a.name}: ${fmt(Number(a.baseBalance ?? a.balance) || 0)}`)].join('\n');
   }
   if (has(/\b(budget|limit|badyet)\b/, t)) {
-    const list = cat ? budgets.filter(b => b.category === cat) : budgets;
+    const list = cat ? budgets.filter(b => categoryOf(b.category).label === cat) : budgets;
     if (!list.length) return cat ? `There is no monthly limit for ${cat} yet.` : 'You have no monthly limits yet. Add one in Menu → Limits.';
-    return list.map(b => `- **${b.category}**: ${fmt(b.spent)} of ${fmt(b.monthly_limit)} used (${b.percent}%), ${b.left >= 0 ? `${fmt(b.left)} left` : `${fmt(-b.left)} over`}`).join('\n');
+    return list.map(b => `- **${categoryOf(b.category).label}**: ${fmt(b.spent)} of ${fmt(b.monthly_limit)} used (${b.percent}%), ${b.left >= 0 ? `${fmt(b.left)} left` : `${fmt(-b.left)} over`}`).join('\n');
   }
   if (has(/\b(renew\w*|subscription\w*|bills due|due)\b/, t)) {
     if (!upcoming.length) return 'No subscription renewals are coming up.';
@@ -50,10 +53,10 @@ export function answerLocally(text, { txs = [], accounts = [], budgets = [], upc
   }
   if (has(/\b(last|latest|recent|huli|pinakabago)\b.*\b(transaction|expense|purchase|record|gastos|bili)\b|\blast (one|thing)\b/, t)) {
     const last = txs[0]; if (!last) return 'You have no records yet.';
-    return `Your latest record: **${last.merchant}**, ${last.type === 'income' ? '+' : '−'}${fmt(last.amount)} (${last.category}) on ${new Date(last.date).toLocaleString()}.`;
+    return `Your latest record: **${last.merchant}**, ${last.type === 'income' ? '+' : '−'}${fmt(last.amount)} (${categoryOf(last.category).label}) on ${new Date(last.date).toLocaleString()}.`;
   }
   if (has(/\b(most|top|biggest|largest|pinakamalaki|pinakamarami)\b/, t)) {
-    const by = {}; inPeriod.filter(x => x.type === 'expense').forEach(x => { by[x.category] = (by[x.category] || 0) + x.amount; });
+    const by = {}; inPeriod.filter(x => x.type === 'expense').forEach(x => { const k = categoryOf(x.category).label; by[k] = (by[k] || 0) + x.amount; });
     const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 3);
     if (!top.length) return `No spending recorded for ${P.toLowerCase()} yet.`;
     return [`**${P}, most spending went to:**`, ...top.map(([c, v], i) => `${i + 1}. ${c}: ${fmt(v)}`)].join('\n');
@@ -63,7 +66,7 @@ export function answerLocally(text, { txs = [], accounts = [], budgets = [], upc
   const asksSummary = has(/\b(summary|summarize|summarise|overview|buod|recap|report)\b/, t);
   if (!(asksIncome || asksSpend || asksSummary || cat || merchant)) return null;
   let list = inPeriod;
-  if (cat) list = list.filter(x => x.category === cat);
+  if (cat) list = list.filter(x => categoryOf(x.category).label === cat);
   if (merchant) list = list.filter(x => x.merchant === merchant);
   const what = cat || merchant || '';
   if (!list.length) return `No ${what ? `${what} ` : ''}records for ${P.toLowerCase()} yet.`;

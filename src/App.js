@@ -43,6 +43,7 @@ import ScannerSheet from './components/ScannerSheet';
 import AutoLogSheet from './components/AutoLogSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
+import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
@@ -110,8 +111,14 @@ const normalize = (t, accounts, base, rates) => {
   const transferTarget = accounts.find(a => a.id === t.transfer_to_account_id);
   const origCurrency = t.origCurrency || t.currency || account?.currency || 'PHP';
   const origAmount = Number(t.origAmount ?? t.amount);
+  // category: the stored value is kept as categoryId (stable id, or custom text); `category` becomes the compact
+  // category's label so totals, budgets and insights group consistently (docs/TRANSACTION_CATEGORIES.md).
+  const cat = categoryOf(t.category);
   return {
     ...t,
+    categoryId: categoryId(t.category) || t.category || '',
+    category: cat.label,
+    subcategory: cat.subLabel,
     type: t.transaction_type || t.type,
     date: t.occurred_at || t.date,
     origAmount, origCurrency, currency: base,
@@ -222,7 +229,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
-  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'Groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '' });
+  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '' });
   const [csvRows, setCsvRows] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [csvFileName, setCsvFileName] = useState('');
@@ -426,7 +433,7 @@ function App() {
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer').slice(0, 4), [homeStats]);
-  const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
+  const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
   const subscriptions = useMemo(() => (Array.isArray(prefs.subscriptions) ? prefs.subscriptions.filter(s => s && typeof s === 'object' && typeof s.name === 'string' && s.id) : []), [prefs.subscriptions]);
@@ -507,7 +514,7 @@ function App() {
     setError('');
     setForm({
       merchant: t.merchant || '', amount: String(t.origAmount ?? t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
-      category: t.category || 'Other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
+      category: t.categoryId || t.category || 'other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
       occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '',
     });
     setSheet({ name: 'transaction', id: t.id });
@@ -691,7 +698,9 @@ function App() {
     try { if (cloudMode) await deleteTransaction(t.id); setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null); notify(tr('Transaction deleted.')); }
     catch { notify(tr('Could not delete this transaction.')); }
   };
-  const saveBudget = async ({ id, category, monthly_limit }) => {
+  const saveBudget = async ({ id, category: picked, monthly_limit }) => {
+    // Budgets are kept per compact category id (custom text stays as written).
+    const c = categoryOf(picked); const category = c.custom ? picked : c.primary;
     if (cloudMode && session?.user) {
       const row = id ? await updateBudget(id, { category, monthly_limit, currency: base }) : await createBudget({ category, monthly_limit, currency: base }, session.user.id);
       setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
@@ -721,7 +730,7 @@ function App() {
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
-    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, t.category, t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName])];
+    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, categoryFullLabel(t.categoryId || t.category), t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName])];
     const csv = buildCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click();
@@ -1241,7 +1250,7 @@ function App() {
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || tr('Other'))}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}</dl>
         {detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
       </Sheet>}
 

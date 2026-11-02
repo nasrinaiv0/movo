@@ -90,10 +90,11 @@ describe('voice parser (Siri Shortcut / Android assistant)', () => {
   });
 
   test('categories', () => {
-    expect(guessCategory('banana', 'expense')).toBe('Food & drinks');
-    expect(guessCategory('tricycle', 'expense')).toBe('Transport');
-    expect(guessCategory('work', 'income')).toBe('Income');
-    expect(guessCategory('something', 'expense')).toBe('Other');
+    expect(guessCategory('banana', 'expense')).toBe('food:groceries');
+    expect(guessCategory('tricycle', 'expense')).toBe('transport:public_transportation');
+    expect(guessCategory('jollibee and shell gas', 'expense')).toBe('misc:uncategorized_expense'); // mixed signals: review, not a guess
+    expect(guessCategory('work', 'income')).toBe('income');
+    expect(guessCategory('something', 'expense')).toBe('misc:uncategorized_expense');
   });
 });
 
@@ -146,14 +147,14 @@ describe('POST /api/log handler', () => {
     const handler = load();
     const res = await call(handler, { text: 'I spent 80 pesos on a tricycle using my cash', source: 'siri_shortcut' });
     expect(res.statusCode).toBe(200);
-    expect(calls[0].params).toMatchObject({ p_source: 'siri_shortcut', p_amount: 80, p_merchant: 'a tricycle', p_account_id: 'acct-cash', p_category: 'Transport', p_transaction_type: 'expense' });
+    expect(calls[0].params).toMatchObject({ p_source: 'siri_shortcut', p_amount: 80, p_merchant: 'a tricycle', p_account_id: 'acct-cash', p_category: 'transport:public_transportation', p_transaction_type: 'expense' });
     expect(res.body.message).toMatch(/Logged/);
   });
 
   test('Android assistant income is stored as income', async () => {
     const handler = load();
     await call(handler, { text: 'I received 2,000 pesos from work to my BPI Visa', source: 'android_assistant' });
-    expect(calls[0].params).toMatchObject({ p_source: 'android_assistant', p_transaction_type: 'income', p_amount: 2000, p_account_id: 'acct-bpi', p_category: 'Income' });
+    expect(calls[0].params).toMatchObject({ p_source: 'android_assistant', p_transaction_type: 'income', p_amount: 2000, p_account_id: 'acct-bpi', p_category: 'income' });
   });
 
   test('unclear speech is not logged and asks for clarification', async () => {

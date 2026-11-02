@@ -39,15 +39,39 @@ function parseVoice(input, now = new Date()) {
   return { ok: true, type, amount, currency, merchant, accountHint, occurredAt: day.toISOString() };
 }
 
+// Same stable ids as src/lib/categories.js (docs/TRANSACTION_CATEGORIES.md); kept small and in step with it.
+// No clear signal, or signals from different categories, means Needs review instead of a guess.
+const NEEDS_REVIEW = 'misc:uncategorized_expense';
 const CATEGORY_WORDS = [
-  ['Food & drinks', /banana|lunch|dinner|breakfast|snack|coffee|cafe|meal|food|jollibee|mcdo|mcdonald|kfc|starbucks|milk ?tea|pagkain|ulam|kape|merienda/i],
-  ['Groceries', /grocery|groceries|supermarket|market|palengke|puregold|7-?eleven|sari-?sari|bigas|rice/i],
-  ['Transport', /tricycle|jeep|taxi|grab|angkas|bus|fare|pamasahe|gas|fuel|petron|shell|toll|parking|mrt|lrt/i],
-  ['Bills', /electric|electricity|meralco|water|maynilad|internet|pldt|globe|smart|converge|load|bill|rent|kuryente|tubig/i],
-  ['Health', /medicine|pharmacy|mercury|watsons|clinic|doctor|hospital|gamot/i],
-  ['Shopping', /shopee|lazada|clothes|shoes|mall|uniqlo/i],
-  ['Income', /salary|sweldo|work|freelance|client|payment received|refund/i],
+  ['food:food_delivery', /grab ?food|food ?panda|food ?delivery/i],
+  ['food:fast_food', /jollibee|mcdo|mcdonald|kfc|chowking|greenwich|mang inasal/i],
+  ['food:coffee_and_tea', /coffee|cafe|starbucks|milk ?tea|kape/i],
+  ['food:groceries', /grocery|groceries|supermarket|market|palengke|puregold|bigas|rice|banana|saging/i],
+  ['food:convenience_stores', /7-?eleven|sari-?sari|ministop|alfamart/i],
+  ['food:restaurants', /lunch|dinner|breakfast|snack|meal|food|pagkain|ulam|merienda/i],
+  ['transport:fuel_gas', /\b(gas|fuel|petron|shell|caltex)\b|gasolina/i],
+  ['transport:ride_hailing', /\bgrab\b|angkas|joyride/i],
+  ['transport:public_transportation', /tricycle|jeep|bus|fare|pamasahe|mrt|lrt/i],
+  ['transport:taxi', /taxi/i],
+  ['transport:toll_fees', /\btoll\b/i],
+  ['transport:parking', /parking/i],
+  ['bills:electricity', /electric|electricity|meralco|kuryente/i],
+  ['bills:water', /\bwater\b|maynilad|tubig/i],
+  ['bills:internet', /internet|pldt|converge|wifi/i],
+  ['bills:mobile_phone', /\bload\b|globe|smart|prepaid|postpaid/i],
+  ['housing:rent', /\brent\b|upa/i],
+  ['health:medicine_and_pharmacy', /medicine|pharmacy|mercury|watsons|gamot/i],
+  ['health:doctor_consultation', /clinic|doctor/i],
+  ['health:hospital', /hospital/i],
+  ['shopping:online_shopping', /shopee|lazada/i],
+  ['shopping:clothing', /clothes|shoes|uniqlo/i],
 ];
-const guessCategory = (text, type) => (type === 'income' ? 'Income' : ((CATEGORY_WORDS.find(([, re]) => re.test(text)) || ['Other'])[0]));
+function guessCategory(text, type) {
+  if (type === 'income') return 'income';
+  const hits = CATEGORY_WORDS.filter(([, re]) => re.test(text)).map(([id]) => id);
+  if (!hits.length) return NEEDS_REVIEW;
+  const primaries = new Set(hits.map(id => id.split(':')[0]));
+  return primaries.size === 1 ? hits[0] : NEEDS_REVIEW;
+}
 
 module.exports = { parseVoice, guessCategory };
