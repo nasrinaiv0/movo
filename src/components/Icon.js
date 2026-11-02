@@ -86,6 +86,15 @@ const P = {
   grip: <><circle cx="9" cy="6" r="1.3" /><circle cx="15" cy="6" r="1.3" /><circle cx="9" cy="12" r="1.3" /><circle cx="15" cy="12" r="1.3" /><circle cx="9" cy="18" r="1.3" /><circle cx="15" cy="18" r="1.3" /></>,
   minus: <path d="M6 12h12" />,
   external: <path d="M14 4.5h5.5V10M19.5 4.5 11 13M18 14v3.5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2H10" />,
+  // Category icons (docs/TRANSACTION_CATEGORIES.md): fork & spoon, car, plane, bag, pill, scissors, ticket, book.
+  utensils: <path d="M7 3v7M5 3v4a2 2 0 0 0 4 0V3M7 10v11M17 3c-1.7 0-3 2-3 4.3S15.3 11 17 11s3-1.4 3-3.7S18.7 3 17 3ZM17 11v10" />,
+  car: <path d="M3.5 13.5 5.2 8.6a2 2 0 0 1 1.9-1.3h9.8a2 2 0 0 1 1.9 1.3l1.7 4.9V17a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1ZM3.5 13.5h17M7 18v1.5M17 18v1.5M7 15.6h.01M17 15.6h.01" />,
+  plane: <path d="M21 15.5 13.5 11V5.5a1.5 1.5 0 0 0-3 0V11L3 15.5v2l7.5-2.3v3.6L8.5 20v1.5l3.5-1 3.5 1V20l-2-1.2v-3.6l7.5 2.3Z" />,
+  bag: <path d="M5.8 8h12.4l-1 12.2H6.8ZM9 8V6.6a3 3 0 0 1 6 0V8" />,
+  pill: <path d="M10.6 20.4a5 5 0 0 1-7-7l6-6a5 5 0 0 1 7 7ZM7.6 10.4l6 6" />,
+  scissors: <path d="M8 6.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM8 17.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0ZM7.4 8.1 20 18M7.4 15.9 20 6" />,
+  ticket: <path d="M4 7.5h16v3a1.5 1.5 0 0 0 0 3v3H4v-3a1.5 1.5 0 0 0 0-3ZM14.5 7.5v1.5M14.5 11v2M14.5 15v1.5" />,
+  book: <path d="M5 4.5h9.5A2.5 2.5 0 0 1 17 7v13H7.5A2.5 2.5 0 0 1 5 17.5ZM5 17.5A2.5 2.5 0 0 1 7.5 15H17" />,
   diamond: <path d="M7 4h10l4 5.3a1 1 0 0 1 0 1.3l-8.4 9.8a1 1 0 0 1-1.2 0L2.6 10.6a1 1 0 0 1 0-1.3Z M2.8 9.8h18.4M9 4l-.8 5.8L12 20M15 4l.8 5.8L12 20" />,
 };
 
