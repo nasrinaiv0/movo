@@ -61,4 +61,10 @@ export default [
   ["New Zealand", "New Zealand", "نيوزيلندا", "新西兰", "Nueva Zelanda", "Nuova Zelanda", "Neuseeland", "Nouvelle-Zélande", "Nova Zelândia", "ニュージーランド", "뉴질랜드", "न्यूज़ीलैंड"],
   ["Siri voice", "Siri voice", "صوت Siri", "Siri 语音", "Voz de Siri", "Voce Siri", "Siri-Sprache", "Voix Siri", "Voz da Siri", "Siri音声", "Siri 음성", "Siri आवाज़"],
   ["Siri voice prompt copied. Paste it into Shortcuts.", "Nakopya ang Siri voice prompt. I-paste ito sa Shortcuts.", "تم نسخ موجّه صوت Siri. الصقه في الاختصارات.", "已复制 Siri 语音提示。请粘贴到“快捷指令”。", "Indicación de voz de Siri copiada. Pégala en Atajos.", "Prompt vocale Siri copiato. Incollalo in Comandi Rapidi.", "Siri-Sprach-Prompt kopiert. Füge ihn in Kurzbefehle ein.", "Invite vocale Siri copiée. Collez-la dans Raccourcis.", "Prompt de voz da Siri copiado. Cole-o em Atalhos.", "Siri音声プロンプトをコピーしました。ショートカットに貼り付けてください。", "Siri 음성 프롬프트를 복사했습니다. 단축어에 붙여 넣으세요.", "Siri वॉइस प्रॉम्प्ट कॉपी हुआ। इसे Shortcuts में पेस्ट करें।"],
+  ["Bank accounts", "Mga bank account", "الحسابات البنكية", "银行账户", "Cuentas bancarias", "Conti bancari", "Bankkonten", "Comptes bancaires", "Contas bancárias", "銀行口座", "은행 계좌", "बैंक खाते"],
+  ["Credit card", "Credit card", "بطاقة ائتمان", "信用卡", "Tarjeta de crédito", "Carta di credito", "Kreditkarte", "Carte de crédit", "Cartão de crédito", "クレジットカード", "신용카드", "क्रेडिट कार्ड"],
+  ["Debit card", "Debit card", "بطاقة خصم", "借记卡", "Tarjeta de débito", "Carta di debito", "Debitkarte", "Carte de débit", "Cartão de débito", "デビットカード", "체크카드", "डेबिट कार्ड"],
+  ["E-wallets", "Mga e-wallet", "المحافظ الإلكترونية", "电子钱包", "Billeteras digitales", "Portafogli digitali", "E-Wallets", "Portefeuilles électroniques", "Carteiras digitais", "電子ウォレット", "전자지갑", "ई-वॉलेट"],
+  ["Investments", "Mga investment", "الاستثمارات", "投资", "Inversiones", "Investimenti", "Investitionen", "Investissements", "Investimentos", "投資", "투자", "निवेश"],
+  ["Paid with", "Ibinayad gamit ang", "الدفع عبر", "支付方式", "Pagado con", "Pagato con", "Bezahlt mit", "Payé avec", "Pago com", "支払い方法", "결제 수단", "भुगतान का माध्यम"],
 ];

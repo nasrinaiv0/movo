@@ -3453,3 +3453,81 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .chip-picks .emv-chip { width: 40px; }
 .movo-app .scan-type { margin-bottom: 10px; }
 .movo-app .acct-field > .acct-bank-logo { flex: 0 0 36px; width: 36px; height: 36px; }
+
+/* ---------- Add / edit transaction: solid, readable, accent-led, fits one screen ---------- */
+.movo-app.movo-app .tx-sheet { --tone: var(--accent); --tone-bg: rgba(var(--accent-rgb), .14); background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.movo-app .tx-sheet { --tx-field: color-mix(in srgb, var(--text) 5%, var(--card-solid)); }
+.movo-app.movo-app .tx-sheet :is(.tx-note, .tx-chips button, .tx-meta label, .tx-clock, .acct-pick, .tx-pad .k) { background: var(--tx-field); backdrop-filter: none; -webkit-backdrop-filter: none; border: 0; box-shadow: none; }
+.movo-app.movo-app .tx-sheet .tx-pad { background: none; backdrop-filter: none; border: 0; padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-bottom { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.movo-app .tx-sheet .tx-bottom::before { background: linear-gradient(to bottom, transparent, var(--bg)); }
+.movo-app.movo-app .tx-sheet .tx-seg { background: var(--tx-field); border: 0; }
+.movo-app.movo-app .tx-sheet .tx-seg button.selected { background: var(--accent); color: var(--on-accent, #fff); box-shadow: 0 2px 8px rgba(var(--accent-rgb), .3); }
+/* Amount: symbol and figures centred together. */
+.movo-app.movo-app .tx-sheet .tx-amount { justify-content: center; align-items: baseline; gap: 6px; min-height: 76px; padding: 6px 0 2px; }
+.movo-app.movo-app .tx-sheet .tx-currency { font-size: 26px; font-weight: 600; color: var(--muted); }
+.movo-app.movo-app .tx-sheet .tx-figures { flex: 0 1 auto; align-items: center; text-align: center; min-width: 0; }
+.movo-app.movo-app .tx-sheet .tx-value { font-size: 46px; letter-spacing: -1.4px; }
+.movo-app.movo-app .tx-sheet .tx-value.empty { opacity: .45; }
+.movo-app .tx-sheet .tx-note { min-height: 50px; border-radius: 16px; }
+/* Account pickers (one, or From / To side by side). */
+.movo-app .tx-accounts { display: grid; gap: 8px; margin: 10px 0 2px; }
+.movo-app .tx-accounts.two { grid-template-columns: 1fr 1fr; }
+.movo-app .acct-pick { position: relative; display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 12px; border-radius: 16px; background: var(--tx-field, var(--field)); color: var(--text); cursor: pointer; }
+.movo-app .acct-pick select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.movo-app .acct-pick-logo { flex: 0 0 34px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-tile, 30%); overflow: hidden; background: rgba(var(--accent-rgb), .14); color: var(--accent); }
+.movo-app .acct-pick-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.movo-app .acct-pick-text { flex: 1; display: grid; min-width: 0; line-height: 1.2; }
+.movo-app .acct-pick-text small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.movo-app .acct-pick-text strong { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .acct-pick-text em { font-style: normal; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.movo-app .acct-pick.is-empty strong { color: var(--accent); }
+.movo-app .acct-pick-chevron { flex: none; color: var(--muted); }
+.movo-app .acct-pick:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--accent-rgb), .55); }
+/* Categories and keypad pick up the accent. */
+.movo-app.movo-app .tx-sheet .tx-chips button.selected { background: rgba(var(--accent-rgb), .16); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--text); }
+.movo-app .tx-sheet .tx-cats-head button { color: var(--accent); }
+.movo-app.movo-app .tx-sheet .tx-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 10px; }
+.movo-app.movo-app .tx-sheet .tx-pad .k { height: 48px; min-height: 48px; border-radius: 14px; font-size: 21px; font-weight: 500; color: var(--text); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.op { background: rgba(var(--accent-rgb), .14); color: var(--accent); font-size: 22px; }
+.movo-app.movo-app .tx-sheet .tx-pad .k.eq { background: var(--accent); color: var(--on-accent, #fff); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.clear { background: color-mix(in srgb, var(--red) 14%, var(--card-solid)); color: var(--red); }
+.movo-app .tx-sheet .tx-meta { margin-top: 8px; }
+.movo-app .tx-sheet .tx-meta label, .movo-app .tx-sheet .tx-clock { min-height: 54px; border-radius: 16px; }
+.movo-app.movo-app .tx-sheet .tx-bottom { display: block; padding-top: 10px; }
+.movo-app.movo-app .tx-sheet .tx-save { width: 100%; height: 52px; min-height: 52px; border-radius: 16px; background: var(--accent); color: var(--on-accent, #fff); font-weight: 650; }
+.movo-app.movo-app .tx-sheet .tx-save:disabled { background: rgba(var(--accent-rgb), .22); color: color-mix(in srgb, var(--text) 45%, transparent); }
+@media (max-height: 760px) { .movo-app.movo-app .tx-sheet .tx-pad .k { height: 42px; min-height: 42px; } .movo-app.movo-app .tx-sheet .tx-amount { min-height: 60px; } }
+/* Fit: compact rhythm so Expense (with categories) fits a 6.1"+ phone without scrolling; no focus ring on the note. */
+.movo-app.movo-app .tx-sheet .tx-pad .k { height: 44px; min-height: 44px; }
+.movo-app.movo-app .tx-sheet .tx-pad { gap: 6px; margin-top: 8px; }
+.movo-app.movo-app .tx-sheet .tx-pad-toggle { display: none; }
+.movo-app.movo-app .tx-sheet .tx-amount { min-height: 62px; padding: 2px 0 0; }
+.movo-app.movo-app .tx-sheet .tx-value { font-size: 42px; }
+.movo-app.movo-app .tx-sheet .tx-note { min-height: 46px; }
+.movo-app.movo-app .tx-sheet .tx-note input, .movo-app.movo-app .tx-sheet .tx-note input:focus { outline: none; box-shadow: none; border: 0; }
+.movo-app .tx-sheet .tx-note:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--accent-rgb), .45); }
+.movo-app .acct-pick { min-height: 52px; padding: 6px 12px; }
+.movo-app .tx-accounts { margin: 8px 0 0; }
+.movo-app.movo-app .tx-sheet .tx-cats { margin-top: 8px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head { margin-bottom: 6px; }
+.movo-app.movo-app .tx-sheet .tx-chips button { min-height: 40px; height: 40px; }
+.movo-app.movo-app .tx-sheet .tx-meta label, .movo-app.movo-app .tx-sheet .tx-clock { min-height: 48px; padding-top: 6px; padding-bottom: 6px; }
+.movo-app.movo-app .tx-sheet .tx-save { height: 50px; min-height: 50px; }
+/* Fit within ~740 px of visible height (iPhone Safari with toolbars). */
+.movo-app.movo-app .tx-sheet .tx-form { display: flex; flex-direction: column; gap: 8px; }
+.movo-app.movo-app .tx-sheet :is(.tx-accounts, .tx-cats, .tx-meta, .tx-pad, .tx-amount, .tx-note) { margin-top: 0; margin-bottom: 0; }
+.movo-app.movo-app .tx-sheet .tx-amount { min-height: 56px; height: 56px; padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-value { font-size: 40px; line-height: 1; }
+.movo-app.movo-app .tx-sheet .tx-cats-head { margin-bottom: 4px; min-height: 22px; }
+.movo-app.movo-app .tx-sheet .tx-bottom { padding-top: 6px; }
+@media (max-height: 820px) { .movo-app.movo-app .tx-sheet .tx-pad .k { height: 40px; min-height: 40px; font-size: 20px; } }
+.movo-app.movo-app .tx-sheet .tx-cats { padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-chips { padding-top: 2px; padding-bottom: 2px; }
+.movo-app.movo-app .tx-sheet .tx-meta label, .movo-app.movo-app .tx-sheet .tx-clock { min-height: 44px; padding-top: 4px; padding-bottom: 4px; }
+.movo-app.movo-app .tx-sheet { padding-top: 6px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head { height: 22px; min-height: 22px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head button { min-height: 22px; height: 22px; padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-bottom { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.op, .movo-app .tx-sheet .tx-cats-head button, .movo-app .acct-pick.is-empty strong { color: var(--accent-ink, var(--accent)); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.op { background: rgba(var(--accent-rgb), .2); }
