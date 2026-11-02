@@ -4,6 +4,7 @@ import AccountPicker from './AccountPicker';
 import { Sheet, Toggle } from './ui';
 import { shortcutRecipe, shortcutPrompt, linkTemplate } from '../lib/autoLog';
 import { t as tr } from '../lib/i18n';
+import { appOrigin } from '../lib/platform';
 
 /*
  * Automatic logging: registration status, the default account for unmatched card names, and the exact iPhone
@@ -26,7 +27,7 @@ const STATUS = {
 export default function AutoLogSheet({ prefs, setPref, status, accounts = [], cloudMode, notify, onResetKey, onClose }) {
   const [mode, setMode] = useState(prefs.autoLog === false ? 'interactive' : 'automatic');
   const key = prefs.autoLogKey || '';
-  const origin = window.location.origin;
+  const origin = appOrigin();
   const masked = key ? `${key.slice(0, 4)}••••${key.slice(-4)}` : '…';
   const recipe = shortcutRecipe(origin, masked, mode);
   const copy = (text, done) => navigator.clipboard?.writeText(text).then(() => notify(done), () => notify(tr('Could not copy the prompt. Please try again.')));

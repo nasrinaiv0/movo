@@ -23,6 +23,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - `src/lib/` — `financeRepository.js` (cloud), `localFinanceStore.js` (browser), CSV import/export, `format.js`, `demoData.js`, `motion.js`, `stickers.js`, `supabaseClient.js`.
 - `api/nasrinai/` — Vercel serverless chat proxy (server-only secrets).
 - `supabase/migrations/` — schema, RLS, grants; `supabase/tests/` — isolation tests.
+- `ios/`, `capacitor.config.json` — the iOS app (Capacitor, SPM). Use `apiUrl()` / `appOrigin()` from `src/lib/platform.js` for API calls and public links, never relative `/api` or `window.location.origin`. See `docs/IOS_APP.md`.
 - `src/App.css` — all app styling. Later blocks intentionally override earlier ones (glass, motion, icons, stickers, consistency, borders); append new blocks at the end with a comment header rather than editing scattered rules.
 
 ## Preferences and data

@@ -63,6 +63,7 @@ import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
+import { apiUrl } from './lib/platform';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -1016,7 +1017,7 @@ function App() {
     }
     let cancelled = false;
     setAutomationStatus('registering');
-    fetch('/api/log', {
+    fetch(apiUrl('/api/log'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body: JSON.stringify({ action: 'register', deviceKey: prefs.autoLogKey, ...(prefs.autoLogAccount ? { defaultAccountId: prefs.autoLogAccount } : {}) }),
@@ -1260,7 +1261,7 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
+      {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
       {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />

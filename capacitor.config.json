@@ -1,0 +1,15 @@
+{
+  "appId": "com.nasrinai.movo",
+  "appName": "MOVO",
+  "webDir": "build",
+  "loggingBehavior": "none",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#f5f5f8",
+    "limitsNavigationsToAppBoundDomains": false,
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}
