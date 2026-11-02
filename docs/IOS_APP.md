@@ -58,8 +58,8 @@ npx cap sync ios      # copy an existing build/ only
 - Camera, microphone, photo library and Face ID permission text.
 - `ITSAppUsesNonExemptEncryption = false` (HTTPS only), so TestFlight does not ask about export compliance.
 - App icon (1024px, opaque) and splash use the MOVO mark.
-- Bundle id `com.nasrinai.movo` and display name `MOVO`: **confirm both before the first App Store Connect record**;
-  the bundle id cannot be changed after the first upload.
+- Bundle id `com.nasrinai.movo` (owner-confirmed 2026-11-02; it cannot change after the first upload) and display
+  name `MOVO`. App Store subtitle: up to 30 characters, still to be chosen.
 
 ## Phases
 
@@ -75,7 +75,7 @@ npx cap sync ios      # copy an existing build/ only
 
 - Apple Developer Program membership and an App Store Connect API key (App Manager).
 - A Codemagic account linked to this GitHub repository.
-- Confirmed bundle id and app name; completed legal details and a privacy policy URL; a reviewer demo account.
+- Completed legal details and a privacy policy URL; a reviewer demo account.
 - **Before Google/Apple sign-in works in the app:** add `movo://auth-callback` to Supabase → Authentication → URL
   Configuration → Redirect URLs, and enable the Apple provider. Email codes work without this.
 - Paid plans must use In-App Purchase on iOS (guideline 3.1.1); the first release ships without them.
