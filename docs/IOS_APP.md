@@ -67,8 +67,8 @@ npx cap sync ios      # copy an existing build/ only
 |---|---|---|
 | 1 | Capacitor setup, iOS project (SPM), platform helper, native HTTP, icons, permission text | Done (#139) |
 | 2 | Sign-in through the system browser + `movo://auth-callback`, native storage mirror, local notifications, Face ID app lock, `movo://` links, native Liquid Glass top bar and dock, macOS CI compile | Done (#139) |
-| 3 | In-app account deletion (server endpoint + migration + tests); legal details from the owner | Needs owner input |
-| 4 | Cloud build (Codemagic, automatic signing with an App Store Connect API key), TestFlight | Needs owner accounts |
+| 3 | In-app account deletion: Settings → Delete Account → type DELETE → `POST /api/account/delete` (verified token; transactions, then the Auth user via the Admin API; every other table cascades). No migration needed. Legal details still come from the owner | Account deletion done; legal details need the owner |
+| 4 | Cloud build (`codemagic.yaml`, workflow "iOS TestFlight"): tests, web build, `cap sync`, automatic signing with the App Store Connect API key, unique build number, upload to TestFlight | Config ready; needs the owner's API key and env group in Codemagic |
 | 5 | Device testing, screenshots, App Store submission | — |
 
 ## Owner prerequisites
@@ -79,6 +79,18 @@ npx cap sync ios      # copy an existing build/ only
 - **Before Google/Apple sign-in works in the app:** add `movo://auth-callback` to Supabase → Authentication → URL
   Configuration → Redirect URLs, and enable the Apple provider. Email codes work without this.
 - Paid plans must use In-App Purchase on iOS (guideline 3.1.1); the first release ships without them.
+
+## Codemagic (phase 4)
+
+`codemagic.yaml` → workflow **iOS TestFlight** (Mac mini M2, Node 22, latest Xcode). One-time setup by the owner:
+
+1. App Store Connect → Users and Access → Integrations → create an API key (App Manager); download the `.p8` once.
+2. Codemagic → Team → Integrations → Developer Portal → add that key and name it **`MOVO_ASC`**.
+3. Codemagic → the MOVO app → Environment variables → group **`movo_web`**: `REACT_APP_SUPABASE_URL` and
+   `REACT_APP_SUPABASE_ANON_KEY` (the public browser values Vercel uses; never the service role key).
+4. App Store Connect → My Apps → + → iOS app, bundle id `com.nasrinai.movo`, name MOVO.
+5. Start **iOS TestFlight** in Codemagic, or push a tag `ios-vX.Y.Z`. Codemagic creates the distribution
+   certificate and profile, builds, signs (build number = Codemagic build number) and uploads to TestFlight.
 
 ## CI
 

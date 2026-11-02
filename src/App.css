@@ -4248,6 +4248,11 @@ button.account-tile:active { transform: scale(.98); }
 .native-chrome main.screen { padding-top: calc(env(safe-area-inset-top) + 62px); padding-bottom: calc(env(safe-area-inset-bottom) + 96px); }
 .native-chrome main.screen .home-header { padding-right: 0; }
 
+/* Automatic logging: four automation styles (Apple Pay ×2, Siri voice, bank texts) sit in a 2 × 2 grid. */
+.movo-app .autolog-sheet .al-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.movo-app .autolog-sheet .al-mode { min-height: 78px; }
+@media (max-width: 370px) { .movo-app .autolog-sheet .al-modes { grid-template-columns: 1fr; } }
+
 /* ===== Home ram mascot (3D, mood follows the spending limits) ===== */
 /* Compact: the ram takes the avatar slot, the greeting sits right after it, and its feet rest on the first card. */
 .ram-mascot { grid-area: avatar; position: relative; width: 76px; height: 52px; z-index: 2; }

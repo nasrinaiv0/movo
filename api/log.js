@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const MAX_BODY_BYTES = 8192;
 const KEY_RE = /^[a-f0-9]{32,128}$/i;
 const { parseVoice, guessCategory } = require('./_lib/voice');
+const { parseMessage } = require('./_lib/messageText');
 // Every channel that may post here; stored as transactions.source (see migration 20261102010000).
 const SOURCES = new Set(['applepay', 'googlepay', 'bank', 'notification', 'siri_shortcut', 'android_assistant']);
 const SOURCE_LABELS = { applepay: 'Apple Pay', googlepay: 'Google Pay', bank: 'bank notification', notification: 'notification', siri_shortcut: 'Siri', android_assistant: 'Android assistant' };
@@ -27,6 +28,11 @@ const ERROR_MESSAGES = {
   account_match_required: 'MOVO could not tell which account this was. Choose a default account in Automatic logging.',
   account_invalid: 'That account is archived or not yours, so nothing was logged.',
   clarification_required: 'Say one amount and what it was for, for example “I spent 150 pesos on lunch”.',
+  transfer_accounts_missing: 'Say both accounts, for example “I transferred 500 from BPI to GCash”.',
+  transfer_account_match_required: 'MOVO could not tell which of your accounts you meant. Use the account names shown in MOVO.',
+  transfer_same_account: 'A transfer needs two different accounts.',
+  transfer_currency_mismatch: 'Both accounts need the same currency for a transfer. Log this one in the app.',
+  transfer_unavailable: 'Transfers from Siri are not switched on for MOVO yet. Log this transfer in the app.',
   rate_limited: 'Too many payments in a short time. MOVO will accept more in a minute.',
   automation_request_failed: 'MOVO could not log this payment. Open MOVO to add it.',
 };
@@ -159,16 +165,30 @@ module.exports = async function handler(req, res) {
     const source = SOURCES.has(body.source) ? body.source : 'notification';
     review = { tokenHash, userId: registered.user_id, source, type: body.type === 'income' ? 'income' : 'expense', text: cleanText(body.text, 300), amount: amountValue(body.amount), merchant: cleanText(body.merchant, 160), card: cleanText(body.card || body.account, 100), reference: cleanText(body.reference, 120) };
     // Voice paths may send the spoken sentence instead of fields; it is parsed here, never trusted blindly.
-    let voice = null;
+    // Other channels may send a bank / e-wallet message (SMS, email, Android notification) as `text`.
+    let voice = null; let message = null;
     if (typeof body.text === 'string' && body.text.trim() && (body.amount === undefined || body.amount === null || body.amount === '')) {
-      voice = parseVoice(body.text);
-      if (!voice.ok) return fail(422, 'clarification_required', { reason: voice.reason });
+      if (VOICE_SOURCES.has(source)) {
+        voice = parseVoice(body.text);
+        // Unclear transfers are refused with a clear reason (the review inbox holds income and expenses only).
+        if (!voice.ok && /^transfer_/.test(voice.reason)) return json(res, 422, { error: voice.reason, reason: voice.reason });
+        if (!voice.ok) return fail(422, 'clarification_required', { reason: voice.reason });
+      } else {
+        message = parseMessage(body.text, { app: cleanText(body.app || body.sender, 60) });
+        if (!message.ok && message.reason === 'not_a_transaction') {
+          // One-time codes, log-in alerts and promos: nothing is logged and nothing is stored.
+          review = null;
+          return json(res, 200, { success: false, ignored: true, reason: 'not_a_transaction', message: 'Not a payment message, so MOVO ignored it.' });
+        }
+        if (!message.ok) return fail(422, 'clarification_required', { reason: message.reason, message: 'MOVO could not read an amount from that message.' });
+        voice = { ...message, accountHint: message.accountHint };
+      }
     }
     const amount = voice ? voice.amount : amountValue(body.amount);
     // Wallet sometimes reports a payment without a merchant name; keep the payment rather than dropping it.
     const merchant = voice ? cleanText(voice.merchant, 160) : (cleanText(body.merchant, 160) || (amountValue(body.amount) ? `${SOURCE_LABELS[source].replace(/^./, c => c.toUpperCase())} purchase` : ''));
     const card = cleanText(voice ? (body.card || body.account || voice.accountHint) : (body.card || body.account), 100);
-    const reference = cleanText(body.reference, 120);
+    const reference = cleanText(body.reference || (message && message.reference), 120);
     const type = (voice && voice.type) || (body.type === 'income' ? 'income' : 'expense');
     const requestedCurrency = typeof body.currency === 'string' && /^[A-Z]{3}$/.test(body.currency.trim().toUpperCase()) ? body.currency.trim().toUpperCase() : (voice && voice.currency) || '';
     Object.assign(review, { type, amount, merchant, card, currency: requestedCurrency });
@@ -180,11 +200,37 @@ module.exports = async function handler(req, res) {
     stage = 'match_account';
     const { data: accounts, error: accountsError } = await api.admin.from('financial_accounts').select('id,name,account_type,institution_name,currency,is_archived,display_order').eq('user_id', registered.user_id).eq('is_archived', false).order('display_order', { ascending: true });
     if (accountsError) throw accountsError;
+    if (type === 'transfer') {
+      // A transfer moves money between two of the person's own accounts; both are named, never guessed.
+      const from = accountFor(accounts || [], voice.fromHint); const to = accountFor(accounts || [], voice.toHint);
+      const reply = (status, error) => json(res, status, { error });
+      if (!from || !to) return reply(409, 'transfer_account_match_required');
+      if (from.id === to.id) return reply(422, 'transfer_same_account');
+      const currency = requestedCurrency || from.currency || 'PHP';
+      const transferId = idempotencyKey({ source, amount, merchant: `${from.id}>${to.id}`, card: '', occurredAt, reference, type });
+      const transferNote = [`Logged from ${SOURCE_LABELS[source]}`, reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ');
+      stage = 'persist_transfer';
+      const { data: moved, error: moveError } = await api.admin.rpc('log_automation_transfer', { p_token_hash: tokenHash, p_request_id: transferId, p_user_id: registered.user_id, p_from_account_id: from.id, p_to_account_id: to.id, p_amount: amount, p_currency: currency, p_occurred_at: occurredAt, p_note: transferNote, p_source: source, p_external_reference: reference || null });
+      if (moveError) {
+        const text = `${moveError.code || ''} ${moveError.message || ''}`;
+        if (/PGRST202|could not find the function|does not exist/i.test(text)) return reply(503, 'transfer_unavailable');
+        if (text.includes('rate_limited')) return reply(429, 'rate_limited');
+        if (text.includes('transfer_currency_mismatch')) return reply(422, 'transfer_currency_mismatch');
+        if (text.includes('transfer_same_account')) return reply(422, 'transfer_same_account');
+        if (text.includes('account_invalid')) return reply(409, 'account_invalid');
+        if (text.includes('token_invalid')) return reply(401, 'device_not_registered');
+        if (text.includes('invalid_transaction') || text.includes('invalid_request')) return reply(400, 'invalid_transaction');
+        throw moveError;
+      }
+      const said = moved?.duplicate ? `Already in MOVO: transfer of ${currency} ${amount.toFixed(2)} from ${from.name} to ${to.name}. Not added twice.` : `Logged transfer of ${currency} ${amount.toFixed(2)} from ${from.name} to ${to.name}.`;
+      console.info('[movo-automation] transfer persisted', { source, duplicate: Boolean(moved?.duplicate) });
+      return json(res, 200, { success: true, duplicate: Boolean(moved?.duplicate), transactionId: moved?.transaction_id || null, type, amount, currency, fromAccount: from.name, toAccount: to.name, source, message: said });
+    }
     const account = accountFor(accounts || [], card) || (registered.default_account_id && (accounts || []).find(a => a.id === registered.default_account_id)) || null;
     if (!account) return fail(409, accounts?.length ? 'account_match_required' : 'account_required');
     const requestId = idempotencyKey({ source, amount, merchant, card, occurredAt, reference, type });
-    const note = [`Logged from ${SOURCE_LABELS[source]}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ').slice(0, 1000);
-    const category = cleanText(body.category, 40) || guessCategory(`${merchant} ${voice ? body.text : ''}`, type);
+    const note = [`Logged from ${SOURCE_LABELS[source]}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : '', message ? message.text : ''].filter(Boolean).join(' · ').slice(0, 1000);
+    const category = cleanText(body.category, 40) || (message && message.transfer ? 'transfer' : guessCategory(`${merchant} ${voice ? body.text : ''}`, type));
     stage = 'persist_transaction';
     // One shared, idempotent path for every channel: request retries, cross-source duplicates, RLS-equivalent
     // ownership checks and rate limits all live in log_automation_transaction_v2.

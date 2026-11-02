@@ -41,6 +41,15 @@ export function shortcutRecipe(origin, key, mode = `interactive`) {
       `Speak Text — Dictionary Value.`,
     ],
   };
+  if (mode === `messages`) return {
+    name: `MOVO Bank Texts`,
+    trigger: `Shortcuts → Automation → + → Message → Message Contains: Ref (bank and e-wallet payment texts include a reference number) → Run Immediately → turn off Notify When Run → Next → New Blank Automation. Optional: make a second automation with Email → Subject Contains: payment, and use Shortcut Input › Body instead of Content.`,
+    steps: [
+      post(`text = Shortcut Input › Content, app = Shortcut Input › Sender, source = bank`),
+      reply,
+      `Show Notification — Title: MOVO · Body: Dictionary Value.`,
+    ],
+  };
   if (mode === `automatic`) return {
     name: `Auto MOVO Transactions`,
     trigger,
@@ -70,7 +79,8 @@ export const shortcutPrompt = (origin, key, mode = 'interactive') => {
     'Add exactly these actions, in this order, and nothing else:',
     ...r.steps.map((step, i) => `${i + 1}. ${step}`),
     'Rules: use Get Contents of URL and never Open URLs, Safari or a web view. Put the device key only in the Authorization header, never in the URL. Use the field names exactly as written, in lowercase.',
-    mode === 'automatic' ? 'Do not add menus, Ask for Input, Choose from List, alerts or any action that needs a tap.' : mode === 'interactive' ? 'Only the Log and Skip menu may ask for a tap; under Skip, stop without sending anything.' : 'Do not add amount or merchant fields: MOVO reads them from the sentence and replies with a question when it is unclear.',
+    mode === 'messages' ? 'Send the whole message text as it is: do not split it, add menus or ask for input. MOVO reads income, payments and transfers from it, and ignores one-time codes and promos without storing them.' :
+    mode === 'automatic' ? 'Do not add menus, Ask for Input, Choose from List, alerts or any action that needs a tap.' : mode === 'interactive' ? 'Only the Log and Skip menu may ask for a tap; under Skip, stop without sending anything.' : 'Do not add amount or merchant fields: MOVO reads them from the sentence and replies with a question when it is unclear. It understands expenses (“I spent 150 on lunch”), income (“I received 2,000 from work”) and transfers between your own accounts (“I transferred 500 from BPI to GCash”).',
     'Always show or speak MOVO’s reply (the message value) as it is: never claim it was logged unless MOVO says so.',
     'MOVO recognises the same purchase if a bank alert or another device also reports it, so it is never logged twice.',
   ].join('\n');
