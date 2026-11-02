@@ -28,7 +28,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
 /* --- poses: each mood returns the full pose for time t; the scene blends them by mood weight --- */
 function basePose() {
   return { bodyY: 0, squash: 0, rotX: 0, rotZ: 0, rotY: 0, head: [0, 0, 0], armL: [0, 0, 0], armR: [0, 0, 0, 0], legL: [0, 0], legR: [0, 0], ear: 0, flap: 1, cloth: 1,
-    browLift: 0, browTilt: 0, lid: 0, lidSlant: 0, happyEyes: 0, open: 0, omega: 0, frown: 0, frownW: 1, blush: 0.35, flush: 0, gloom: 0, wink: 0 };
+    browLift: 0, browTilt: 0, lid: 0, lidSlant: 0, happyEyes: 0, open: 0, smileLine: 0, frown: 0, frownW: 1, blush: 0.35, flush: 0, gloom: 0, wink: 0 };
 }
 
 function smilePose(t) {
@@ -41,7 +41,7 @@ function smilePose(t) {
   p.legL = [0.035 * hop + 0.02 * Math.max(0, Math.sin(t * 5)), 0.01];
   p.legR = [0.035 * hop + 0.02 * Math.max(0, -Math.sin(t * 5)), 0.01];
   p.flap = 1.8; p.cloth = 1.4; p.browLift = 0.022; p.browTilt = -0.25;
-  p.happyEyes = 1; p.open = 1; p.omega = 1; p.blush = 0.75;
+  p.happyEyes = 1; p.open = 1; p.smileLine = 1; p.blush = 0.75;
   return p;
 }
 
@@ -54,7 +54,7 @@ function cutePose(t) {
   p.armR = [0.012 * Math.sin(t * 2), 0, 0, 0];
   const tap = wave > 0.5 && wave < 0.8 ? 1 : 0;
   p.legR = [0.028 * tap * Math.max(0, Math.sin(t * 7)), 0.01 * tap];
-  p.browLift = 0.012; p.browTilt = -0.2; p.omega = 1; p.blush = 1;
+  p.browLift = 0.012; p.browTilt = -0.2; p.smileLine = 1; p.blush = 1;
   const wk = (t % 5.3) / 5.3; p.wink = bump((wk - 0.62) / 0.09);
   return p;
 }
@@ -258,16 +258,17 @@ export function createRamScene(container, { mood = 'cute', still = false, base =
     const surfaceCurve = (fn, off = 0.008, n = 10) => { const pts = []; for (let i = 0; i <= n; i += 1) { const [x, y] = fn(i / n); const h = hit(x, y); pts.push(h.p.clone().addScaledVector(h.n, off)); } return pts; };
     const grouped = (cx, cy) => { const g = new THREE.Group(); g.userData.c = new THREE.Vector3(cx, cy, hit(cx, cy).p.z); face.add(g); return g; };
 
-    // mouths: ω (cute/smile), open smile + tongue, frown
-    const omega = grouped(MOUTH.x, MOUTH.y);
-    [-1, 1].forEach(sd => omega.add(tube(surfaceCurve(t => [MOUTH.x + sd * 0.07 * t, MOUTH.y - 0.044 * Math.sin(Math.PI * t) + 0.012 * t * t]), 0.0055)));
+    // mouths: a soft single-curve smile (cute/smile), open smile + tongue, frown
+    const smileLine = grouped(MOUTH.x, MOUTH.y - 0.02);
+    smileLine.add(tube(surfaceCurve(t => { const u = t * 2 - 1; return [MOUTH.x + u * 0.048, MOUTH.y - 0.012 - 0.02 * (1 - u * u)]; }), 0.0055));
     const open = new THREE.Group(); face.add(open);
     const mouthMat = track(new THREE.MeshStandardMaterial({ color: 0x7a1620, roughness: 0.6, side: THREE.DoubleSide }));
     const tongueMat = track(new THREE.MeshStandardMaterial({ color: 0xff7f90, roughness: 0.6, side: THREE.DoubleSide }));
     const circle = track(new THREE.CircleGeometry(1, 28));
-    const mouthHole = new THREE.Mesh(circle, mouthMat); const tongue = new THREE.Mesh(circle, tongueMat);
-    const mh = hit(MOUTH.x, 0.05); mouthHole.position.copy(mh.p).addScaledVector(mh.n, 0.0065); mouthHole.quaternion.setFromUnitVectors(Z, mh.n); open.add(mouthHole);
-    const th = hit(MOUTH.x, 0.034); tongue.position.copy(th.p).addScaledVector(th.n, 0.0075); tongue.quaternion.setFromUnitVectors(Z, th.n); open.add(tongue);
+    const lowerHalf = track(new THREE.CircleGeometry(1, 28, Math.PI, Math.PI)); // flat top, round bottom: an open "D" smile
+    const mouthHole = new THREE.Mesh(lowerHalf, mouthMat); const tongue = new THREE.Mesh(circle, tongueMat);
+    const mh = hit(MOUTH.x, 0.066); mouthHole.position.copy(mh.p).addScaledVector(mh.n, 0.0065); mouthHole.quaternion.setFromUnitVectors(Z, mh.n); open.add(mouthHole);
+    const th = hit(MOUTH.x, 0.04); tongue.position.copy(th.p).addScaledVector(th.n, 0.0075); tongue.quaternion.setFromUnitVectors(Z, th.n); open.add(tongue);
     const frown = grouped(MOUTH.x, MOUTH.y - 0.012);
     frown.add(tube(surfaceCurve(t => { const u = t * 2 - 1; return [MOUTH.x + u * 0.06, MOUTH.y - 0.03 + 0.026 * (1 - u * u)]; }), 0.0062));
 
@@ -306,7 +307,7 @@ export function createRamScene(container, { mood = 'cute', still = false, base =
     const shadow = new THREE.Mesh(track(new THREE.PlaneGeometry(1.9, 0.75)), track(new THREE.MeshBasicMaterial({ map: track(radial('rgba(40,5,10,.5)', 'rgba(40,5,10,0)')), transparent: true, depthWrite: false })));
     shadow.rotation.x = -Math.PI / 2; shadow.position.y = -0.94; scene.add(shadow);
 
-    parts = { mesh, head, omega, open, mouthHole, tongue, frown, brows, eyes, blushes, flush, gloom, anger, sweat, shadow };
+    parts = { mesh, head, smileLine, open, mouthHole, tongue, frown, brows, eyes, blushes, flush, gloom, anger, sweat, shadow };
   }
 
   const ease = (dt, rate) => 1 - Math.exp(-dt * rate);
@@ -351,10 +352,10 @@ export function createRamScene(container, { mood = 'cute', still = false, base =
       e.arc.visible = close > 0.85 && (happy > 0.5 || wink > 0.5);
     });
     parts.brows.forEach(b => { b.m.position.y = p.browLift; b.m.rotation.z = b.side * p.browTilt; });
-    const om = clamp01(p.omega); const fr = clamp01(p.frown);
-    scaleAbout(parts.omega, om * (1 + 0.5 * p.open), om * (1 + 0.15 * p.open));
-    parts.omega.visible = om > 0.02;
-    parts.mouthHole.scale.set(0.05, Math.max(0.001, 0.036 * p.open), 1); parts.tongue.scale.set(0.026, Math.max(0.001, 0.017 * p.open), 1);
+    const sl = clamp01(p.smileLine); const fr = clamp01(p.frown);
+    scaleAbout(parts.smileLine, sl * (1 + 0.35 * p.open), sl);
+    parts.smileLine.visible = sl > 0.02 && p.open < 0.5;
+    parts.mouthHole.scale.set(0.054, Math.max(0.001, 0.042 * p.open), 1); parts.tongue.scale.set(0.025, Math.max(0.001, 0.012 * p.open), 1);
     parts.open.visible = p.open > 0.02;
     scaleAbout(parts.frown, fr, fr * (p.frownW || 1));
     parts.frown.visible = fr > 0.02;
