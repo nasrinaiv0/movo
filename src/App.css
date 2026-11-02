@@ -3924,11 +3924,20 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
 
 
-/* Card face balance — owner request 2026-11-02 (supersedes the logo/name sizes above).
-   The bank logo is the real fetched favicon at 40×40px with no tile, padding or shadow behind it; the bank name is a
-   normal single-line title; logo, chip, number and amount share one left edge. Doubled classes outrank the older
-   ".ccx-logo:has(img)" tile rules. */
-.movo-app.movo-app .credit-card.ccx.ccx .ccx-brand { gap: 10px; padding-left: 0; }
+/* Card face — owner specification 2026-11-02 (supersedes the card logo, name, padding and chip rules above).
+   Landscape: padding 15px top / 15px right / 15px bottom / 20px left, bank name 20px.
+   Portrait:  padding 20px top / 15px right / 20px bottom / 15px left, bank name 17px.
+   Bank logo: the real fetched favicon at 40×40px with no tile, padding or shadow.
+   Chip: placed like ISO/IEC 7816-2 contacts on a real debit/credit card. On an 85.60 × 53.98 mm card the module sits
+   about 9 mm from the left edge and a third of the way down, about 11.6 × 8.8 mm. In cqw (1% of card width; a
+   landscape card is 63.08cqw tall) that is left 10.5cqw, top 20.5cqw, width 13.6cqw. On a vertical card the module is
+   turned 90° and keeps the same physical size (21.5% of the card's width). Doubled classes outrank older card rules. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-face { padding: 15px 15px 15px 20px; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-face { padding: 20px 15px 20px 15px; }
+
+/* Header: logo + bank name, card type on the right. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-brand { display: flex; flex: 1 1 auto; align-items: center; gap: 10px; min-width: 0; padding-left: 0; }
 .movo-app.movo-app .credit-card.ccx.ccx .ccx-logo,
 .movo-app.movo-app .credit-card.ccx.ccx .ccx-logo:has(img) {
   flex: none; width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
@@ -3944,31 +3953,48 @@ button.account-tile:active { transform: scale(.98); }
 }
 .movo-app.movo-app .credit-card.ccx.ccx .ccx-name {
   display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  -webkit-line-clamp: unset; font-size: 17px; font-weight: 700; line-height: 1.2; letter-spacing: -.01em;
+  -webkit-line-clamp: unset; font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -.015em;
 }
-.movo-app.movo-app .credit-card.ccx.ccx .ccx-type { font-size: 13px; font-weight: 500; }
-.movo-app.movo-app .credit-card.ccx.ccx .ccx-chiprow { margin-top: 6cqw; padding-left: 0; justify-content: flex-start; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-type { flex: none; margin: 0; padding: 0; font-size: 13px; font-weight: 500; opacity: .82; }
+
+/* Chip at the real contact position (landscape), contactless mark beside it. Never under the header. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-chiprow {
+  position: absolute; left: 10.5cqw; top: max(20.5cqw, 63px); margin: 0; padding: 0;
+  display: flex; align-items: center; gap: 3.2cqw;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-chip.emv-chip { width: 13.6cqw; height: auto; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-nfc { width: 6.4cqw; height: 6.4cqw; }
+
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-face { grid-template-rows: auto minmax(0, 1fr); }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-foot { grid-row: 2; align-self: end; }
 .movo-app.movo-app .credit-card.ccx.ccx .ccx-balance { font-size: 7cqw; letter-spacing: -.02em; }
-/* Portrait: same logo and name; chip on the shared left edge. */
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { font-size: 15px; }
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { font-size: 12px; }
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-chiprow { justify-content: flex-start; margin-top: 14cqw; padding-left: 0; }
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-balance { font-size: 9cqw; }
-/* Portrait: the logo spans two rows with the bank name above the card type, so the name gets the whole width. */
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 1px; align-items: center; }
+
+/* Portrait (vertical card): logo with the card type on the first row, the bank name on its own full-width row,
+   then the chip turned 90° as on vertical debit/credit cards. */
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 8px; align-items: center; }
 .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-brand { display: contents; }
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-logo { grid-row: 1 / span 2; }
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { grid-column: 2; align-self: end; }
-.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { grid-column: 2; grid-row: 2; align-self: start; margin: 0; padding: 0; opacity: .78; }
-/* Thumbnails (pickers, small tiles) scale the brand down so it never crowds the card. */
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-logo { grid-row: 1; grid-column: 1; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { grid-row: 1; grid-column: 2; justify-self: end; font-size: 12px; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { grid-row: 2; grid-column: 1 / -1; font-size: 17px; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-chiprow {
+  left: 15px; top: max(56cqw, 108px); flex-direction: column; align-items: center; gap: 3cqw;
+}
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-chip.emv-chip {
+  width: 21.5cqw; transform: rotate(90deg);
+  /* the rotated module is 16.3cqw wide and 21.5cqw tall; margins make its layout box match */
+  margin: 2.6cqw -2.6cqw;
+}
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-nfc { width: 9cqw; height: 9cqw; transform: rotate(90deg); }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-balance { font-size: 9cqw; }
+
+/* Landscape thumbnails (pickers, small tiles) scale the brand down so it never crowds the card. */
 @container (max-width: 240px) {
-  .movo-app.movo-app .credit-card.ccx.ccx .ccx-logo { width: 28px; height: 28px; border-radius: 8px; }
-  .movo-app.movo-app .credit-card.ccx.ccx .ccx-name { font-size: 13px; }
-  .movo-app.movo-app .credit-card.ccx.ccx .ccx-type { font-size: 11px; }
-  .movo-app.movo-app .credit-card.ccx.ccx .ccx-brand { gap: 7px; }
-  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-head { column-gap: 7px; }
-  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { font-size: 12px; letter-spacing: -.015em; }
-  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { font-size: 11px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-face { padding: 10px 10px 10px 13px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-logo { width: 26px; height: 26px; border-radius: 7px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-name { font-size: 13px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-type { font-size: 10.5px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-brand { gap: 7px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-chiprow { top: max(20.5cqw, 42px); }
 }
 
 /* ── Streak badges: standard, Pro, Max and Ultra finishes (2026-11-02) ──
