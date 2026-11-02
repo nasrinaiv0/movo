@@ -50,8 +50,8 @@ export function buildFlow(txs, range, ref = new Date(), custom = {}, now = new D
    tapping opens the system picker without iOS zooming in. */
 function DateField({ label, value, min, max, onChange }) {
   const shown = value ? fmt(`${value}T12:00:00`, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-  return <label className="flow-date"><span className="flow-date-label">{label}</span>
-    <span className="flow-date-box"><b>{shown}</b><Icon name="calendar" size={14} />
+  return <label className="flow-date">
+    <span className="flow-date-box"><span className="flow-date-label">{label}</span><b>{shown}</b><Icon name="calendar" size={13} />
       <input type="date" aria-label={label} value={value} min={min} max={max} onClick={e => { try { e.currentTarget.showPicker?.(); } catch { /* picker opens natively */ } }} onChange={e => onChange(e.target.value)} />
     </span></label>;
 }
