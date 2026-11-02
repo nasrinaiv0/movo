@@ -273,7 +273,6 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
      authenticated MOVO proxy. Audio stays transient; no provider key reaches the browser. */
   const voiceRef = useRef(false);
   const spokenRef = useRef('');
-  const sendRef = useRef(null);
   const audioQueueRef = useRef([]);
   const audioPlayingRef = useRef(false);
   const currentAudioRef = useRef(null);
@@ -288,7 +287,6 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const lastVoiceAtRef = useRef(0);
   const transcribingRef = useRef(false);
   const transcriptionQueueRef = useRef(Promise.resolve());
-  sendRef.current = send;
   const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_#>`|]/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\s+/g, ' ').trim();
 
   // Speech playback goes through the AudioContext that was created and resumed inside the mic tap, so iOS/Safari
