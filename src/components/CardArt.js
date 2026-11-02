@@ -6,6 +6,7 @@ import { EmvChip, Contactless } from './EmvChip';
 import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
+import { MovoMark } from './MovoLogo';
 import { cardFaceFor, cardTypeLabel, finishOf } from '../lib/cardFaces';
 import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
@@ -176,6 +177,7 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
   return <div className={`credit-card ccx orientation-${orientation}${theme || remoteSticker ? ' has-sticker' : ' ccx-default'} ink-${ink}`} style={face ? { '--card-tint': face.c2, '--card-tint-2': face.c1 } : undefined}>
     {theme && <StickerArt theme={theme} compact={compact} />}{remoteSticker && remoteUrl && <img className="cc-storage-sticker" src={remoteUrl} alt="" aria-hidden="true" loading="lazy" />}
     {face && <CardFaceArt face={face} orientation={orientation} seed={a.id || a.name} />}
+    <span className="ccx-watermark" aria-hidden="true"><MovoMark size={360} tone="white" /></span>
     {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="ccx-face">
       <div className="ccx-head">
