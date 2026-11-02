@@ -13,7 +13,7 @@ export default function LoggedBurst({ id, label, badge, onDone }) {
   }, [id, badge, onDone]);
   if (!id) return null;
   if (badge) return <div key={id} className="logged-burst badge-burst" role="status" aria-live="polite">
-    <span className="streak-badge earned unlocking" style={{ '--badge': badge.color }}><Icon name={badge.icon} size={26} strokeWidth={2} /></span>
+    <span className={`streak-badge earned unlocking tier-${badge.tier || 'standard'}`} style={{ '--badge': badge.color }}><Icon name={badge.icon} size={26} strokeWidth={2} /></span>
     <strong>{label}</strong>
   </div>;
   return <div key={id} className="logged-burst" role="status" aria-live="polite">

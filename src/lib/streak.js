@@ -2,15 +2,17 @@
  * Usage streak: consecutive days on which the person opened Movo. Badges unlock at milestones and stay earned
  * (best streak), even after a streak resets. Stored in preferences, so it follows a signed-in person across devices.
  */
+// tier: standard badges, then Pro (30, 60 days), Max (100) and Ultra (365) with their own premium finish.
 export const BADGES = [
-  { days: 3, id: 'b3', name: 'Getting started', icon: 'spark', color: '#c98a4b' },
-  { days: 7, id: 'b7', name: 'One-week streak', icon: 'star', color: '#8e99a8' },
-  { days: 14, id: 'b14', name: 'Two-week habit', icon: 'target', color: '#d9a21b' },
-  { days: 30, id: 'b30', name: 'Monthly regular', icon: 'coin', color: '#10a866' },
-  { days: 60, id: 'b60', name: 'Steady tracker', icon: 'shield', color: '#2f6bff' },
-  { days: 100, id: 'b100', name: '100-day streak', icon: 'diamond', color: '#8b5cf6' },
-  { days: 365, id: 'b365', name: 'A year with Movo', icon: 'gift', color: '#e5484d' },
+  { days: 3, id: 'b3', name: 'Getting started', icon: 'sprout', color: '#2fa36b', tier: 'standard' },
+  { days: 7, id: 'b7', name: 'One-week streak', icon: 'flame', color: '#f0743a', tier: 'standard' },
+  { days: 14, id: 'b14', name: 'Two-week habit', icon: 'calendarCheck', color: '#2f7ff0', tier: 'standard' },
+  { days: 30, id: 'b30', name: 'Monthly regular', icon: 'medal', color: '#6f7d92', tier: 'pro' },
+  { days: 60, id: 'b60', name: 'Steady tracker', icon: 'bolt', color: '#4d5fd6', tier: 'pro' },
+  { days: 100, id: 'b100', name: '100-day streak', icon: 'trophy', color: '#c8951f', tier: 'max' },
+  { days: 365, id: 'b365', name: 'A year with Movo', icon: 'crown', color: '#7c4dff', tier: 'ultra' },
 ];
+export const TIER_LABEL = { pro: 'Pro', max: 'Max', ultra: 'Ultra' };
 
 const prevDay = (key) => { const d = new Date(`${key}T12:00:00`); d.setDate(d.getDate() - 1); return d.toLocaleDateString('en-CA'); };
 const valid = (s) => s && typeof s === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(s.last || '') && Number.isFinite(s.count) && s.count > 0;

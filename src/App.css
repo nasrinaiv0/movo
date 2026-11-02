@@ -3970,3 +3970,67 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { font-size: 12px; letter-spacing: -.015em; }
   .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type { font-size: 11px; }
 }
+
+/* ── Streak badges: standard, Pro, Max and Ultra finishes (2026-11-02) ──
+   Earned badges glow in their own colour. Pro adds a brushed-silver ring and a slow glint; Max a gold ring, warm glow
+   and a sweeping shine; Ultra a holographic ring, a deeper glow and a soft sparkle. Motion is ease-out, spaced out and
+   switched off for reduced motion. Locked premium badges keep a faint ring so their tier still reads. */
+.movo-app .streak-badges li { position: relative; }
+.movo-app .streak-badge { width: 42px; height: 42px; }
+.movo-app .streak-badge.earned { background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--badge) 70%, #fff) 0%, var(--badge) 55%, color-mix(in srgb, var(--badge) 75%, #000) 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 3px 10px -3px color-mix(in srgb, var(--badge) 70%, transparent); }
+.movo-app .streak-badge.earned svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .18)); }
+
+/* Tier rings (drawn with a padding-box/border-box gradient so the ring sits outside the fill). */
+.movo-app .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) { border: 2px solid transparent; background-clip: padding-box; }
+.movo-app .streak-badge.tier-pro { --ring: linear-gradient(135deg, #f4f6f9, #9aa4b2 45%, #e9edf2 60%, #7d8796); }
+.movo-app .streak-badge.tier-max { --ring: linear-gradient(135deg, #fff3c4, #d9a521 40%, #ffe9a3 60%, #a87414); }
+.movo-app .streak-badge.tier-ultra { --ring: conic-gradient(from 210deg, #ffd36e, #ff7eb6, #9b7bff, #5ad7ff, #7dffb2, #ffd36e); }
+.movo-app .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) {
+  background: linear-gradient(var(--field), var(--field)) padding-box, linear-gradient(var(--card-solid), var(--card-solid)) padding-box, var(--ring) border-box;
+}
+.movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra) {
+  background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--badge) 70%, #fff) 0%, var(--badge) 55%, color-mix(in srgb, var(--badge) 75%, #000) 100%) padding-box, var(--ring) border-box;
+}
+.movo-app .streak-badge:not(.earned):is(.tier-pro, .tier-max, .tier-ultra) { opacity: .7; }
+.movo-app .streak-badge.earned.tier-pro { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 0 0 3px rgba(154, 164, 178, .18), 0 4px 14px -3px color-mix(in srgb, var(--badge) 70%, transparent); }
+.movo-app .streak-badge.earned.tier-max { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 0 0 3px rgba(217, 165, 33, .2), 0 0 18px -2px rgba(240, 190, 60, .55); }
+.movo-app .streak-badge.earned.tier-ultra { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 0 3px rgba(155, 123, 255, .18), 0 0 20px -2px rgba(155, 123, 255, .55), 0 0 32px -8px rgba(90, 215, 255, .5); }
+
+/* Shine: one soft sweep, then a long rest (Pro 7s, Max 5s, Ultra 4s). */
+.movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra)::after {
+  content: ''; position: absolute; inset: -30% auto -30% -70%; width: 40%; border-radius: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .7), transparent); transform: skewX(-20deg);
+  animation: badge-shine var(--shine-every, 7s) ease-out 1s infinite;
+}
+.movo-app .streak-badge.earned.tier-max::after { --shine-every: 5s; }
+.movo-app .streak-badge.earned.tier-ultra::after { --shine-every: 4s; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .85), rgba(190, 220, 255, .5), transparent); }
+@keyframes badge-shine { 0% { left: -70%; opacity: 0; } 4% { opacity: 1; } 22% { left: 130%; opacity: 0; } 100% { left: 130%; opacity: 0; } }
+
+/* Ultra: a small four-point sparkle that fades in and out at the top-right of the badge. */
+.movo-app .streak-badges li.tier-ultra::after {
+  content: ''; position: absolute; top: -3px; left: calc(50% + 11px); width: 10px; height: 10px; pointer-events: none;
+  background: radial-gradient(circle, #fff 0 18%, transparent 20%), conic-gradient(from 45deg, transparent 0 22%, #fff 25%, transparent 28% 47%, #fff 50%, transparent 53% 72%, #fff 75%, transparent 78% 97%, #fff 100%);
+  -webkit-mask: radial-gradient(circle, #000 35%, transparent 70%); mask: radial-gradient(circle, #000 35%, transparent 70%);
+  opacity: 0;
+}
+.movo-app .streak-badges li.tier-ultra:has(.streak-badge.earned)::after { animation: badge-sparkle 4s ease-out 2.2s infinite; }
+@keyframes badge-sparkle { 0% { opacity: 0; transform: scale(.4); } 10% { opacity: 1; transform: scale(1); } 30% { opacity: 0; transform: scale(.8); } 100% { opacity: 0; } }
+
+/* Tier ribbon under the badge. */
+.movo-app .streak-badges .badge-tier {
+  position: absolute; top: 34px; left: 50%; transform: translateX(-50%); z-index: 1;
+  padding: 1px 5px; border-radius: 999px; font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: .08em; line-height: 1.35; text-transform: uppercase;
+  color: #1d2330; background: linear-gradient(135deg, #f4f6f9, #b9c1cc); box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+}
+.movo-app .streak-badges li.tier-max .badge-tier { color: #4a3305; background: linear-gradient(135deg, #fff1bd, #e2b23a); }
+.movo-app .streak-badges li.tier-ultra .badge-tier { color: #fff; background: linear-gradient(120deg, #ff7eb6, #9b7bff 50%, #5ad7ff); text-shadow: 0 1px 1px rgba(0, 0, 0, .2); }
+.movo-app .streak-badges li:has(.streak-badge:not(.earned)) .badge-tier { opacity: .65; filter: saturate(.6); }
+.movo-app .streak-badges small { margin-top: 4px; }
+
+/* The unlock celebration keeps the tier finish at its larger size. */
+.movo-app .badge-burst .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) { border-width: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra)::after { animation: none; display: none; }
+  .movo-app .streak-badges li.tier-ultra::after { animation: none; opacity: 0; }
+}
