@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
-import CardDeck, { LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
+import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
 import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
@@ -88,9 +88,7 @@ export default function Wallet({ c }) {
     </section> },
     { id: 'cards', sizes: ['M'], label: tr('My cards'), node: cards.length > 0 && <section aria-label={tr('My cards')}>
       <SectionTitle action={tr('See All')} onAction={() => setWalletFilter('Cards')}>{tr('My Cards')}</SectionTitle>
-      <div className="card-scroller mini" aria-label={tr('Your cards')}>
-        {cards.map(a => <button type="button" className="card-slide" key={a.id} aria-label={tr('Open {name} card', { name: a.name })} onClick={() => { setSelectedCardId(a.id); setWalletFilter('Cards'); }}>{cardVisual(a)}</button>)}
-      </div>
+      <CardPile cards={cards} renderCard={(a) => cardVisual(a, 'landscape')} onOpen={(a) => { setSelectedCardId(a.id); setWalletFilter('Cards'); }} />
     </section> },
     { id: 'accounts', sizes: ['M'], label: tr('Accounts'), node: <section aria-label={tr('Accounts')}>
       <SectionTitle>{tr('Accounts')}</SectionTitle>

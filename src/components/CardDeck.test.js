@@ -13,10 +13,12 @@ function mount(props) {
   return { el, root };
 }
 
-test('landscape shows only the chosen card, with dots to switch', () => {
+test('landscape shows the chosen card in front, the next ones peeking behind, and dots to switch', () => {
   const picked = [];
   const { el, root } = mount({ selectedId: 'b', onSelect: (id) => picked.push(id), orientation: 'landscape' });
-  expect(el.querySelector('.card-stack-front').textContent).toBe('GoTyme');
+  expect(el.querySelector('.card-stack-card').textContent).toBe('GoTyme');
+  // Stack transition: the next two cards wait behind, nearest last (peek-1 is right behind the front card).
+  expect(Array.from(el.querySelectorAll('.card-stack-peek')).map(p => [p.className.split(' ')[1], p.textContent])).toEqual([['peek-2', 'BPI'], ['peek-1', 'Metrobank']]);
   expect(el.querySelector('.card-stack-strip')).toBeNull();
   const dots = Array.from(el.querySelectorAll('.card-stack-dots button'));
   expect(dots).toHaveLength(3);

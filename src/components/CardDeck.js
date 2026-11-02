@@ -53,14 +53,28 @@ function CardStack({ cards, selectedId, onSelect, renderCard, effect }) {
     if (Math.abs(d) > 40) step(d < 0 ? 1 : -1);
   };
 
-  return <div className="card-stack" data-fx={effect} style={{ '--dir': dir }} aria-label={tr('Your cards')}>
+  // Stack transition: the next cards wait behind the front one, their top edges showing like a real pile.
+  const peeks = effect === 'stack' ? [2, 1].filter(k => k < cards.length).map(k => cards[(index + k) % cards.length]) : [];
+  return <div className={`card-stack${peeks.length ? ` has-peeks peeks-${peeks.length}` : ''}`} data-fx={effect} style={{ '--dir': dir }} aria-label={tr('Your cards')}>
     <div className="card-stack-front" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      {peeks.map((c, i) => <button type="button" key={c.id} className={`card-stack-peek peek-${peeks.length - i}`} onClick={() => onSelect(c.id)} aria-label={tr('Show {name} card', { name: c.name })} tabIndex={-1}>{renderCard(c)}</button>)}
       {leaving && <div className="card-stack-leaving" aria-hidden="true">{renderCard(leaving)}</div>}
       <div key={front.id} className={`card-stack-card${entering ? ' entering' : ''}`}>{renderCard(front)}</div>
     </div>
     {cards.length > 1 && <div className="card-stack-dots">
       {cards.map((a, i) => <button type="button" key={a.id} className={i === index ? 'active' : ''} onClick={() => onSelect(a.id)} aria-label={tr('Show {name} card', { name: a.name })} aria-current={i === index ? 'true' : undefined} />)}
     </div>}
+  </div>;
+}
+
+/**
+ * A pile of cards (Wallet → My Cards): the first card in front, the next ones behind it with only their top edge
+ * (logo and name) showing, like cards stacked in a wallet. Tapping any card opens it.
+ */
+export function CardPile({ cards, renderCard, onOpen, max = 4 }) {
+  const shown = cards.slice(0, max).reverse(); // back-most first, the front card last
+  return <div className="card-pile" data-count={shown.length} aria-label={tr('Your cards')}>
+    {shown.map((a, i) => <button type="button" key={a.id} className={`card-pile-item${i === shown.length - 1 ? ' front' : ''}`} onClick={() => onOpen(a)} aria-label={tr('Open {name} card', { name: a.name })}>{renderCard(a)}</button>)}
   </div>;
 }
 
