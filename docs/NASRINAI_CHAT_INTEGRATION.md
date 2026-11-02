@@ -31,6 +31,17 @@ Configure this in the dedicated MOVO Supabase project (`cjsjmorqvuvvwbfyztiz`):
 
 The repository implementation is complete for initiating Google OAuth, but enabling the provider requires the Google client ID/secret and Supabase dashboard settings. Those credentials are not stored in source control or in browser environment variables. Do not put the Google client secret in Vercel `REACT_APP_*` variables; Supabase stores it in the Auth provider configuration.
 
+## Email code and Apple sign-in (passwordless, since #133)
+
+MOVO has no passwords. The sign-in screen offers **Continue with Apple**, **Continue with Google**, and **Email me a code**. The email path calls `signInWithOtp({ email, options: { shouldCreateUser: true } })`, then `verifyOtp({ email, token, type: 'email' })`. The first code creates the account, so there is no separate sign-up. Every path requires the Terms/Privacy acknowledgement first. Accounts created with a password before #133 sign in with an email code to the same address.
+
+Supabase dashboard settings the owner must set (they are not in the repository):
+
+1. **Authentication → Email Templates → Magic Link:** include `{{ .Token }}` in the email so it shows the one-time code. Without it, the email contains only a link, and people sign in by tapping the link (still valid, returns to the site origin). Supabase's default code length is 6 digits; the app accepts 6–10.
+2. **Authentication → Sign In / Providers → Apple:** enable Apple and enter the Services ID, Team ID, Key ID and private key from the Apple Developer account. The Apple button shows an error until this is done.
+3. **Authentication → URL Configuration:** allow `https://movo.nasrinai.com` (and preview origins if needed) as redirect URLs for the OAuth providers and the email link.
+4. Email rate limits apply (one code per address about every 60 seconds); the app's Resend button waits 60 seconds.
+
 ## Data isolation
 
 - The server verifies the bearer token against MOVO Supabase Auth; client-provided user IDs are never trusted.

@@ -34,6 +34,9 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Signed-in preferences sync through `public.user_preferences` (debounced upsert; device-only fallback). Add new preference keys to `DEFAULTS`; they sync automatically. On sign-in the account copy is merged with this device's cache (`lib/prefsMerge.js`), never replacing it; add new map/list keys there. The scenery photo stays on its device.
 - Indicators: the bell/Home dot means new since Notifications was last opened (`notifSeenAt`); row dots clear per item (`readIds`); the Subscriptions badge clears once Subscriptions is opened (`subsSeen`).
 - Never imply mock settings deliver real push/email notifications or that balances are bank-verified.
+- "While you were away" (`components/RecentLogsSheet.js`) opens on launch or after 2+ minutes in the background when records arrived since `logsSeenAt` (set to now on first run, so history is never dumped). Failed phone automations live server-side in `movo_automation_inbox` (owner RLS; written only by `record_automation_failure`); the app logs or dismisses them.
+- Automation account matching prefers the bank account of the card's bank (`accountFor` in `api/log.js`, `matchAccount` in `lib/autoLog.js`); keep both in step.
+- Sign-in is passwordless (`components/AuthPanel.js`): Apple, Google, or an email one-time code (`sendEmailCode` / `verifyEmailCode`). Do not reintroduce passwords.
 
 ## UI conventions (owner-approved)
 - Match the approved mockups: iOS-style layout, Liquid Glass theme with a user clarity slider, light/dark/tinted themes, accent colours.
@@ -44,6 +47,8 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Subscription logos: official site icons fetched by `npm run brands` into `public/brands/` (never hot-linked at runtime), else Simple Icons marks via the generated `src/lib/brandMarks.js` (owner-approved for identification only) and must always appear with the trademark notice (`BrandNotice`). This does not extend to card stickers.
 - Bank, e-wallet and merchant logos on cards, account pickers and transaction rows use Google S2 dynamic favicons, owner-approved 2026-11-01, only for curated entries in `institutionFavicons.js` / `merchantFavicons.js` (never a domain derived from user text); always render through `BrandLogo` with a local fallback. Block an entry with `reviewStatus: 'BLOCKED'`.
 - Card stickers are original, procedurally generated vector art (`stickers.js`). Do not add third-party characters, franchise art or logos; users may upload their own images.
+- Card faces (owner spec 2026-11-02, last blocks of `App.css`): landscape padding 15/15/15/20px, bank name 20px beside a 40×40px favicon with no tile, chip at the ISO 7816 contact position; portrait follows the vertical BPI reference (padding 20/15/20/15px, logo + name on top, upright chip centred with contactless at the right, card type in the middle, number + amount bottom-left, network bottom-right). Avoid `calc()` mixing `var()` and `cqw` (the CSS minifier rejects it).
+- The MOVO mark (`MovoMark`) is the fallback for any bank/e-wallet/merchant logo (`BrandLogo` default) and the emblem on streak badges; show it without a frame or tile. Badge tiers Pro/Max/Ultra are visual only and imply no paid plan.
 
 ## Security (non-negotiable)
 - Quality and security over speed. Never weaken Supabase RLS, policies or grants; schema changes go in a new migration with tests.
