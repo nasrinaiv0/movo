@@ -3,7 +3,8 @@ import Icon from '../components/Icon';
 import { RootHeader } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-import { BADGES, nextBadge } from '../lib/streak';
+import { BADGES, TIER_LABEL, nextBadge } from '../lib/streak';
+import { MovoMark } from '../components/MovoLogo';
 
 /** The fifth tab: profile, subscriptions, savings plans and spending limits in one place. */
 export default function Menu({ c }) {
@@ -38,10 +39,11 @@ export default function Menu({ c }) {
         <small className="streak-best">{tr('Best: {n}', { n: streak.best || 0 })}</small>
       </div>
       <ul className="streak-badges">
-        {BADGES.map(b => { const earned = (streak.best || 0) >= b.days; return <li key={b.id} title={tr(b.name)}>
-          <span className={`streak-badge${earned ? ' earned' : ''}`} style={{ '--badge': b.color }} aria-hidden="true"><Icon name={b.icon} size={18} strokeWidth={2} /></span>
+        {BADGES.map(b => { const earned = (streak.best || 0) >= b.days; const tier = TIER_LABEL[b.tier]; return <li key={b.id} title={tier ? `${tr(b.name)} · ${tier}` : tr(b.name)} className={`tier-${b.tier}`}>
+          <span className={`streak-badge tier-${b.tier}${earned ? ' earned' : ''}`} style={{ '--badge': b.color }} aria-hidden="true"><MovoMark size={24} tone={earned ? 'white' : 'mono'} /></span>
+          {tier && <i className="badge-tier" aria-hidden="true">{tier}</i>}
           <small>{tr('{n}d', { n: b.days })}</small>
-          <span className="sr-only">{tr(b.name)}: {earned ? tr('Earned') : tr('Locked')}</span>
+          <span className="sr-only">{tr(b.name)}{tier ? ` (${tier})` : ''}: {earned ? tr('Earned') : tr('Locked')}</span>
         </li>; })}
       </ul>
       <p className="streak-note">{tr('A day counts when you open Movo. Badges stay earned even if a streak resets.')}</p>

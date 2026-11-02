@@ -12,27 +12,26 @@ const unwrap = ({ data, error }) => { if (error) throw error; return data; };
 export async function getCurrentSession() {
   return unwrap(await requireClient().auth.getSession())?.session ?? null;
 }
-export async function signInWithPassword(email, password) {
-  return unwrap(await requireClient().auth.signInWithPassword({ email: email.trim(), password }));
+// Sign-in is passwordless: a one-time code sent by email (new and returning people alike), or Google / Apple.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export async function sendEmailCode(email) {
+  const address = String(email || '').trim();
+  if (!EMAIL_RE.test(address) || address.length > 254) throw new Error('invalid_email');
+  const emailRedirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  return unwrap(await requireClient().auth.signInWithOtp({ email: address, options: { shouldCreateUser: true, ...(emailRedirectTo ? { emailRedirectTo } : {}) } }));
 }
-export async function signInWithGoogle() {
+export async function verifyEmailCode(email, code) {
+  const token = String(code || '').replace(/\s+/g, '');
+  if (!/^\d{6,10}$/.test(token)) throw new Error('invalid_code');
+  return unwrap(await requireClient().auth.verifyOtp({ email: String(email || '').trim(), token, type: 'email' }));
+}
+async function signInWithProvider(provider, queryParams) {
   const client = requireClient();
   const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
-  return unwrap(await client.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      ...(redirectTo ? { redirectTo } : {}),
-      queryParams: { prompt: 'select_account' },
-    },
-  }));
+  return unwrap(await client.auth.signInWithOAuth({ provider, options: { ...(redirectTo ? { redirectTo } : {}), ...(queryParams ? { queryParams } : {}) } }));
 }
-export async function signUpWithPassword(email, password, displayName = '') {
-  return unwrap(await requireClient().auth.signUp({
-    email: email.trim(),
-    password,
-    options: { data: { full_name: displayName.trim().slice(0, 100) } },
-  }));
-}
+export async function signInWithGoogle() { return signInWithProvider('google', { prompt: 'select_account' }); }
+export async function signInWithApple() { return signInWithProvider('apple'); }
 export async function signOut() { return unwrap(await requireClient().auth.signOut()); }
 
 export async function listAccounts() {
@@ -154,6 +153,21 @@ const validBudget = (category, limit) => {
   if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Budget limit must be greater than zero.');
   return { category: name, monthly_limit: Math.round(amount * 100) / 100 };
 };
+/* Phone automations that could not be logged (movo_automation_inbox): read and resolved by their owner only (RLS). */
+export async function listAutomationInbox() {
+  const { data, error } = await requireClient().from('movo_automation_inbox')
+    .select('id,source,reason,transaction_type,amount,currency,merchant,account_hint,spoken_text,external_reference,occurred_at,status,transaction_id,created_at')
+    .eq('status', 'failed').order('created_at', { ascending: false }).limit(100);
+  // Until migration 20261102020000 is applied the table does not exist: there is simply nothing to review.
+  if (error && /PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) return [];
+  return unwrap({ data, error });
+}
+export async function resolveAutomationInboxItem(id, { status, transactionId = null }) {
+  if (!['logged', 'dismissed'].includes(status)) throw new Error('Choose logged or dismissed.');
+  return unwrap(await requireClient().from('movo_automation_inbox')
+    .update({ status, transaction_id: status === 'logged' ? transactionId : null, resolved_at: new Date().toISOString() })
+    .eq('id', id).select('id,status').single());
+}
 export async function listBudgets() {
   return unwrap(await requireClient().from('budgets')
     .select('id,category,monthly_limit,currency,starts_on,is_active').eq('is_active', true).order('category', { ascending: true }));

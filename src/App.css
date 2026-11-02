@@ -3635,6 +3635,55 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-amex { font-size: 5.6cqw; padding: 1.2cqw 2cqw; }
 .movo-app .credit-card.ccx.orientation-portrait :is(.ccx-net.net-discover, .ccx-net.net-unionpay) { font-size: 5.2cqw; }
 
+/* ── Dark mode: secondary actions are white pills with dark text (owner request 2026-11-02) ── */
+.theme-dark.movo-app :is(.secondary-button, .al-mode:not(.selected)) { background: #fff; color: #14161f; box-shadow: var(--btn-shadow, 0 2px 8px rgba(0, 0, 0, .25)); }
+.theme-dark.movo-app .al-mode:not(.selected) small { color: #5b6170; }
+.theme-dark.movo-app .al-mode:not(.selected) .al-mode-icon { background: rgba(var(--accent-rgb), .16); color: var(--accent); }
+.theme-dark.movo-app .secondary-button:disabled { background: rgba(255, 255, 255, .55); color: #3a3f4b; }
+/* Automatic logging sheet, compact: tighter rhythm, no element overlapping another. */
+.movo-app .autolog-sheet .al-card, .movo-app .autolog-sheet .al-default, .movo-app .autolog-sheet .al-modes { margin-block: 0 10px; }
+.movo-app .autolog-sheet .al-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.movo-app .autolog-sheet .al-mode { min-height: 0; padding: 10px; gap: 3px; position: relative; }
+.movo-app .autolog-sheet .al-steps { margin: 8px 0; }
+.movo-app .autolog-sheet .al-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.movo-app .autolog-sheet .al-actions > button { min-height: 48px; min-width: 0; }
+@media (max-width: 370px) { .movo-app .autolog-sheet .al-modes { grid-template-columns: 1fr; } }
+
+/* ── While you were away (recent logs) ── */
+.movo-app .recent-logs-sheet .rl-filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -2px 12px; padding: 2px; }
+.movo-app .recent-logs-sheet .rl-filters::-webkit-scrollbar { display: none; }
+.movo-app .recent-logs-sheet .rl-filters button { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font-size: 13px; font-weight: 600; transition: background-color .2s ease-out, color .2s ease-out; }
+.movo-app .recent-logs-sheet .rl-filters button.selected { background: var(--accent); color: var(--on-accent, #fff); }
+.movo-app .recent-logs-sheet .rl-count { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: rgba(127, 127, 127, .18); font-size: 11.5px; font-variant-numeric: tabular-nums; text-align: center; }
+.movo-app .recent-logs-sheet .rl-filters button.selected .rl-count { background: rgba(255, 255, 255, .25); }
+.movo-app .recent-logs-sheet .rl-count.warn { background: rgba(var(--red-rgb, 229, 72, 77), .16); color: var(--red); }
+.movo-app .recent-logs-sheet .rl-section { margin-bottom: 14px; }
+.movo-app .recent-logs-sheet .rl-head { display: grid; gap: 2px; margin: 0 2px 8px; font-size: 14px; font-weight: 700; }
+.movo-app .recent-logs-sheet .rl-head small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.movo-app .recent-logs-sheet .rl-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.movo-app .recent-logs-sheet .rl-failed { padding: 10px 12px; border-radius: var(--r-card, 22px); background: var(--card-solid); box-shadow: inset 0 0 0 1px rgba(var(--red-rgb, 229, 72, 77), .22); }
+.movo-app .recent-logs-sheet .rl-failed-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.movo-app .recent-logs-sheet .rl-failed-icon { width: 40px; height: 40px; }
+.movo-app .recent-logs-sheet .rl-failed .tx-main { display: grid; min-width: 0; }
+.movo-app .recent-logs-sheet .rl-failed .tx-main strong { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; }
+.movo-app .recent-logs-sheet .rl-failed .tx-main small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; color: var(--muted); }
+.movo-app .recent-logs-sheet .rl-failed-side { display: grid; justify-items: end; gap: 4px; }
+.movo-app .recent-logs-sheet .rl-failed-side b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.movo-app .recent-logs-sheet .rl-log-btn { min-height: 30px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent, #fff); font-size: 12.5px; font-weight: 700; box-shadow: var(--btn-shadow, none); }
+.movo-app .recent-logs-sheet .rl-fix { display: grid; gap: 8px; margin-top: 10px; animation: rl-open .22s ease-out both; }
+.movo-app .recent-logs-sheet .rl-fix-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 8px; }
+.movo-app .recent-logs-sheet .rl-fix-fields label { display: grid; gap: 4px; min-width: 0; padding: 8px 12px; border-radius: 14px; background: var(--field); }
+.movo-app .recent-logs-sheet .rl-fix-fields span { font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--muted); }
+.movo-app .recent-logs-sheet .rl-fix-fields input { width: 100%; min-width: 0; padding: 0; border: 0; outline: none; background: none; color: var(--text); font-size: 15px; font-weight: 600; }
+.movo-app .recent-logs-sheet .rl-fix-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.movo-app .recent-logs-sheet .rl-fix-actions > button { min-height: 48px; border-radius: 16px; }
+.movo-app .recent-logs-sheet .rl-logged { padding: 4px 6px; }
+.movo-app .recent-logs-sheet .rl-empty { margin: 18px 0; text-align: center; color: var(--muted); font-size: 14px; }
+.movo-app .recent-logs-sheet .rl-done { width: 100%; min-height: 50px; margin-top: 4px; }
+@media (max-width: 360px) { .movo-app .recent-logs-sheet .rl-fix-fields { grid-template-columns: 1fr; } }
+@keyframes rl-open { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .movo-app .recent-logs-sheet .rl-fix { animation: none; } }
+
 /* MOVO card dimensions — owner-approved specification (2026-11-02).
    cqw is 1% of the rendered card container's width. Keep this block last so
    older card-face tuning cannot override the approved landscape/portrait values. */
@@ -3874,3 +3923,172 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 11cqw; height: 6.8cqw; }
 .movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
 
+
+/* Card face — owner specification 2026-11-02 (supersedes the card logo, name, padding and chip rules above).
+   Landscape: padding 15px top / 15px right / 15px bottom / 20px left, bank name 20px.
+   Portrait:  padding 20px top / 15px right / 20px bottom / 15px left, bank name 17px.
+   Bank logo: the real fetched favicon at 40×40px with no tile, padding or shadow.
+   Chip: placed like ISO/IEC 7816-2 contacts on a real debit/credit card. On an 85.60 × 53.98 mm card the module sits
+   about 9 mm from the left edge and a third of the way down, about 11.6 × 8.8 mm. In cqw (1% of card width; a
+   landscape card is 63.08cqw tall) that is left 10.5cqw, top 20.5cqw, width 13.6cqw. On a vertical card the module is
+   turned 90° and keeps the same physical size (21.5% of the card's width). Doubled classes outrank older card rules. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-face { padding: 15px 15px 15px 20px; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-face { padding: 20px 15px 20px 15px; }
+
+/* Header: logo + bank name, card type on the right. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-brand { display: flex; flex: 1 1 auto; align-items: center; gap: 10px; min-width: 0; padding-left: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo,
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo:has(img) {
+  flex: none; width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+  background: none; box-shadow: none; isolation: auto;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo img {
+  display: block; width: 100%; height: 100%; padding: 0; border-radius: inherit;
+  background: none; box-shadow: none; object-fit: cover; mix-blend-mode: normal;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo > i {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: inherit;
+  font-size: 18px; font-weight: 700; font-style: normal;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-name {
+  display: block; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  -webkit-line-clamp: unset; font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -.015em;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-type { flex: none; margin: 0; padding: 0; font-size: 13px; font-weight: 500; opacity: .82; }
+
+/* Chip at the real contact position (landscape), contactless mark beside it. Never under the header. */
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-chiprow {
+  position: absolute; left: 10.5cqw; top: max(20.5cqw, 63px); margin: 0; padding: 0;
+  display: flex; align-items: center; gap: 3.2cqw;
+}
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-chip.emv-chip { width: 13.6cqw; height: auto; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-nfc { width: 6.4cqw; height: 6.4cqw; }
+
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-face { grid-template-rows: auto minmax(0, 1fr); }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-foot { grid-row: 2; align-self: end; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-balance { font-size: 7cqw; letter-spacing: -.02em; }
+
+/* Portrait (vertical card), following the owner's BPI vertical reference:
+   - top: bank logo + name across the full width;
+   - chip centred horizontally in the upper part, upright (turned 90°, real module size), contactless on the same line
+     at the right edge, as on vertical debit/credit cards;
+   - card type ("Debit", "Credit"…) in the middle centre of the card;
+   - bottom: masked number and amount on the left, network mark on the right. */
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-face { --chip-top: max(20.6cqw, 76px); }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-head { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; justify-self: stretch; width: 100%; gap: 10px; text-align: left; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-brand { display: flex; flex-direction: row; flex: 1 1 auto; align-items: center; justify-content: flex-start; gap: 10px; min-width: 0; text-align: left; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-logo { grid-row: auto; grid-column: auto; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-name { grid-row: auto; grid-column: auto; font-size: clamp(12px, 8cqw, 17px); }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-type {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: 0;
+  font-size: clamp(13px, 9cqw, 17px); font-weight: 600; letter-spacing: .01em; opacity: .92; white-space: nowrap;
+}
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-chiprow { display: contents; }
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-chip.emv-chip {
+  position: absolute; left: 50%; top: var(--chip-top); width: 21.5cqw; margin: 0;
+  /* rotating about its centre: the upright module is 16.3cqw wide and 21.5cqw tall */
+  transform: translateX(-50%) rotate(90deg);
+}
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-nfc {
+  position: absolute; right: 15px; top: var(--chip-top); margin-top: 3.6cqw; width: 9cqw; height: 9cqw; min-width: 16px; min-height: 16px; transform: none;
+}
+.movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-balance { font-size: 9cqw; }
+/* Narrow portrait cards (the wallet deck): a smaller logo so the bank name fits on the top row. */
+@container (max-width: 240px) {
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-face { --chip-top: max(20.6cqw, 64px); }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-logo { width: 28px; height: 28px; border-radius: 8px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-portrait .ccx-brand { gap: 8px; }
+}
+
+/* Landscape thumbnails (pickers, small tiles) scale the brand down so it never crowds the card. */
+@container (max-width: 240px) {
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-face { padding: 10px 10px 10px 13px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-logo { width: 26px; height: 26px; border-radius: 7px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-name { font-size: 13px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-type { font-size: 10.5px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-brand { gap: 7px; }
+  .movo-app.movo-app .credit-card.ccx.ccx.orientation-landscape .ccx-chiprow { top: max(20.5cqw, 42px); }
+}
+
+/* ── Streak badges: standard, Pro, Max and Ultra finishes (2026-11-02) ──
+   Earned badges glow in their own colour. Pro adds a brushed-silver ring and a slow glint; Max a gold ring, warm glow
+   and a sweeping shine; Ultra a holographic ring, a deeper glow and a soft sparkle. Motion is ease-out, spaced out and
+   switched off for reduced motion. Locked premium badges keep a faint ring so their tier still reads. */
+.movo-app .streak-badges li { position: relative; }
+.movo-app .streak-badge { width: 42px; height: 42px; }
+.movo-app .streak-badge.earned { background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--badge) 70%, #fff) 0%, var(--badge) 55%, color-mix(in srgb, var(--badge) 75%, #000) 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 3px 10px -3px color-mix(in srgb, var(--badge) 70%, transparent); }
+.movo-app .streak-badge.earned svg { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .18)); }
+
+/* Tier rings (drawn with a padding-box/border-box gradient so the ring sits outside the fill). */
+.movo-app .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) { border: 2px solid transparent; background-clip: padding-box; }
+.movo-app .streak-badge.tier-pro { --ring: linear-gradient(135deg, #f4f6f9, #9aa4b2 45%, #e9edf2 60%, #7d8796); }
+.movo-app .streak-badge.tier-max { --ring: linear-gradient(135deg, #fff3c4, #d9a521 40%, #ffe9a3 60%, #a87414); }
+.movo-app .streak-badge.tier-ultra { --ring: conic-gradient(from 210deg, #ffd36e, #ff7eb6, #9b7bff, #5ad7ff, #7dffb2, #ffd36e); }
+.movo-app .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) {
+  background: linear-gradient(var(--field), var(--field)) padding-box, linear-gradient(var(--card-solid), var(--card-solid)) padding-box, var(--ring) border-box;
+}
+.movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra) {
+  background: radial-gradient(120% 120% at 30% 20%, color-mix(in srgb, var(--badge) 70%, #fff) 0%, var(--badge) 55%, color-mix(in srgb, var(--badge) 75%, #000) 100%) padding-box, var(--ring) border-box;
+}
+.movo-app .streak-badge:not(.earned):is(.tier-pro, .tier-max, .tier-ultra) { opacity: .7; }
+.movo-app .streak-badge.earned.tier-pro { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), 0 0 0 3px rgba(154, 164, 178, .18), 0 4px 14px -3px color-mix(in srgb, var(--badge) 70%, transparent); }
+.movo-app .streak-badge.earned.tier-max { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 0 0 3px rgba(217, 165, 33, .2), 0 0 18px -2px rgba(240, 190, 60, .55); }
+.movo-app .streak-badge.earned.tier-ultra { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 0 0 3px rgba(155, 123, 255, .18), 0 0 20px -2px rgba(155, 123, 255, .55), 0 0 32px -8px rgba(90, 215, 255, .5); }
+
+/* Shine: one soft sweep, then a long rest (Pro 7s, Max 5s, Ultra 4s). */
+.movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra)::after {
+  content: ''; position: absolute; inset: -30% auto -30% -70%; width: 40%; border-radius: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .7), transparent); transform: skewX(-20deg);
+  animation: badge-shine var(--shine-every, 7s) ease-out 1s infinite;
+}
+.movo-app .streak-badge.earned.tier-max::after { --shine-every: 5s; }
+.movo-app .streak-badge.earned.tier-ultra::after { --shine-every: 4s; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .85), rgba(190, 220, 255, .5), transparent); }
+@keyframes badge-shine { 0% { left: -70%; opacity: 0; } 4% { opacity: 1; } 22% { left: 130%; opacity: 0; } 100% { left: 130%; opacity: 0; } }
+
+/* Ultra: a small four-point sparkle that fades in and out at the top-right of the badge. */
+.movo-app .streak-badges li.tier-ultra::after {
+  content: ''; position: absolute; top: -3px; left: calc(50% + 11px); width: 10px; height: 10px; pointer-events: none;
+  background: radial-gradient(circle, #fff 0 18%, transparent 20%), conic-gradient(from 45deg, transparent 0 22%, #fff 25%, transparent 28% 47%, #fff 50%, transparent 53% 72%, #fff 75%, transparent 78% 97%, #fff 100%);
+  -webkit-mask: radial-gradient(circle, #000 35%, transparent 70%); mask: radial-gradient(circle, #000 35%, transparent 70%);
+  opacity: 0;
+}
+.movo-app .streak-badges li.tier-ultra:has(.streak-badge.earned)::after { animation: badge-sparkle 4s ease-out 2.2s infinite; }
+@keyframes badge-sparkle { 0% { opacity: 0; transform: scale(.4); } 10% { opacity: 1; transform: scale(1); } 30% { opacity: 0; transform: scale(.8); } 100% { opacity: 0; } }
+
+/* Tier ribbon under the badge. */
+.movo-app .streak-badges .badge-tier {
+  position: absolute; top: 34px; left: 50%; transform: translateX(-50%); z-index: 1;
+  padding: 1px 5px; border-radius: 999px; font-size: 8px; font-style: normal; font-weight: 800; letter-spacing: .08em; line-height: 1.35; text-transform: uppercase;
+  color: #1d2330; background: linear-gradient(135deg, #f4f6f9, #b9c1cc); box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+}
+.movo-app .streak-badges li.tier-max .badge-tier { color: #4a3305; background: linear-gradient(135deg, #fff1bd, #e2b23a); }
+.movo-app .streak-badges li.tier-ultra .badge-tier { color: #fff; background: linear-gradient(120deg, #ff7eb6, #9b7bff 50%, #5ad7ff); text-shadow: 0 1px 1px rgba(0, 0, 0, .2); }
+.movo-app .streak-badges li:has(.streak-badge:not(.earned)) .badge-tier { opacity: .65; filter: saturate(.6); }
+.movo-app .streak-badges small { margin-top: 4px; }
+
+/* The unlock celebration keeps the tier finish at its larger size. */
+.movo-app .badge-burst .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) { border-width: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra)::after { animation: none; display: none; }
+  .movo-app .streak-badges li.tier-ultra::after { animation: none; opacity: 0; }
+}
+
+/* ── MOVO mark as the logo fallback (banks, e-wallets, merchants) and in streak badges (2026-11-02) ── */
+.movo-app .brand-fallback { display: grid; place-items: center; box-sizing: border-box; width: 100%; height: 100%; min-width: 0; border-radius: inherit; background: #fff; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); overflow: hidden; }
+.movo-app .brand-fallback .movo-mark { width: 62%; height: auto; }
+.theme-dark.movo-app .brand-fallback { background: #f4f5f7; box-shadow: none; }
+.movo-app .tx-row .brand-fallback.tile { width: 44px; height: 44px; flex: none; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo .brand-fallback { border-radius: inherit; box-shadow: 0 1px 4px rgba(0, 0, 0, .14); }
+.movo-app .streak-badge .movo-mark { width: 58%; height: auto; }
+.movo-app .streak-badge.earned .movo-mark { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .2)); }
+.movo-app .badge-burst .streak-badge .movo-mark { width: 60%; }
+/* The MOVO mark as a logo fallback has no frame or tile (owner request). */
+.movo-app .brand-fallback, .theme-dark.movo-app .brand-fallback,
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo .brand-fallback { background: none; box-shadow: none; }
+.movo-app .brand-fallback .movo-mark { width: 78%; }
+/* On cards with light text, the fallback MOVO mark uses its white tones so it reads on any card colour. */
+.movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-dark { fill: #d4d4d8; }
+.movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-mid { fill: #e9e9ec; }
+.movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-light { fill: #ffffff; }

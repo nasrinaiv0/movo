@@ -116,10 +116,17 @@ export function isRepeat(entry) {
 
 const GENERIC = new Set(['account', 'card', 'wallet', 'bank', 'using', 'with', 'from', 'gamit']);
 export function matchAccount(card, accounts) {
-  const c = card.toLowerCase();
+  const c = String(card || '').toLowerCase();
   const words = c.split(/[^\p{L}\p{N}]+/u).filter(w => w.length >= 4 && !GENERIC.has(w));
-  return (c && accounts.find(a => c.includes(a.name.toLowerCase()) || (a.institution_name && c.includes(a.institution_name.toLowerCase())) || (a.mask && c.includes(a.mask))))
-    // "my savings" finds "BPI Savings": any distinctive word of the hint names the account.
-    || (words.length && accounts.find(a => `${a.name} ${a.institution_name || ''}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).some(w => words.includes(w))))
-    || accounts.find(a => a.account_type === 'card') || accounts[0] || null;
+  // Account names follow the bank ("BPI" card and "BPI" savings), so among several matches the bank account wins.
+  const prefer = (list) => list.find(a => a.account_type === 'bank') || list[0];
+  const byMask = c ? accounts.filter(a => a.mask && c.includes(a.mask)) : [];
+  if (byMask.length) return byMask[0];
+  const byName = c ? accounts.filter(a => (a.name && c.includes(a.name.toLowerCase())) || (a.institution_name && c.includes(a.institution_name.toLowerCase()))) : [];
+  if (byName.length) return prefer(byName);
+  // "my savings" finds "BPI Savings": any distinctive word of the hint names the account.
+  const byWord = words.length ? accounts.filter(a => `${a.name || ''} ${a.institution_name || ''}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).some(w => words.includes(w))) : [];
+  if (byWord.length) return prefer(byWord);
+  // No hint matched: a bank account, else a card, else the first account.
+  return accounts.find(a => a.account_type === 'bank') || accounts.find(a => a.account_type === 'card') || accounts[0] || null;
 }

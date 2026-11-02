@@ -197,7 +197,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
   return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
-    {t.type === 'transfer' ? <Tile name={t.merchant} icon="transfer" tone="blue" /> : <BrandLogo src={merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} fallback={<Tile name={t.merchant} />} />}
+    {t.type === 'transfer' ? <Tile name={t.merchant} icon="transfer" tone="blue" /> : <BrandLogo src={merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />}
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
     <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
   </button>;

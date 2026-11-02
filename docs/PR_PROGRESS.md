@@ -1,12 +1,13 @@
 # MOVO Pull Request Progress Register
 
-**Last reconciled:** 2026-10-31 UTC  
+**Last reconciled:** 2026-11-02 UTC  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
+| `claude/movo-ui-motion-refinement-vafrxa` (post-#129) | Automation sources + cross-source dedup, voice logging, adaptive automation sheet, account picker, card faces (logo/name/network/amount), NasrinAI voice on iPhone, adaptive CSS audit, While you were away + automation inbox. | 331 tests, typecheck and strict build pass locally; DB tests `automation_dedup` and `automation_inbox` pass on local Postgres 16. Migrations `20261102010000` and `20261102020000` not yet applied to Supabase (app and API degrade safely until then). | Owner applies migrations; confirm CI and preview. |
 | [#127 — Bills & Payments](https://github.com/nasrinaiv0/movo/pull/127) | Spec phase 5: bills, occurrences, idempotent payments (recorded / paid elsewhere / partial), Bills tab. | Open; 264 tests, typecheck and build passed locally; DB test passed on local Postgres 16. Migration not yet applied to Supabase. | Apply migration (owner), confirm CI and preview. |
 | [#80 — Tappable tiles, receipt scanner, rich replies](https://github.com/nasrinaiv0/movo/pull/80) | Stat tiles open their data, centred animated scanner, richer NasrinAI replies, filter-bar and nav-preview fixes. | Open; head `c7d4a257` passed 42 suites / 206 tests, typecheck and build locally. | Confirm CI and Vercel preview on the head. |
 | [#41 — NasrinAI financial-context consent](https://github.com/nasrinaiv0/movo/pull/41) | Clearer opt-in disclosure, accessible disabled-send guidance, consent/legal-link regression tests. | Open; latest reviewed head `b93afb517dbdaad53dc07423b5b36571439d4c39`; historical CI run [40874336883](https://github.com/nasrinaiv0/movo/actions/runs/40874336883) passed 15 suites / 88 tests, typecheck, and production build. Its branch predates the latest main merge; recheck mergeability and exact-head checks. | Reconcile the branch with current main without losing the consent changes, then complete preview/browser verification. |

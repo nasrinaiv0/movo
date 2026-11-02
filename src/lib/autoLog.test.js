@@ -25,6 +25,19 @@ test('matches the paying card to an account', () => {
   expect(matchAccount('savings account', [...accounts, { id: '3', name: 'BPI Savings', account_type: 'bank' }]).id).toBe('3');
 });
 
+test('a card named after its bank logs to that bank account', () => {
+  const accounts = [
+    { id: 'bpi-card', name: 'BPI', institution_name: 'BPI', account_type: 'card' },
+    { id: 'bpi-bank', name: 'BPI', institution_name: 'BPI', account_type: 'bank' },
+    { id: 'gt-card', name: 'GoTyme Bank', institution_name: 'GoTyme Bank', account_type: 'card', mask: '2829' },
+    { id: 'gt-bank', name: 'GoTyme Bank', institution_name: 'GoTyme Bank', account_type: 'bank' },
+  ];
+  expect(matchAccount('BPI Visa', accounts).id).toBe('bpi-bank');
+  expect(matchAccount('GoTyme Bank Debit', accounts).id).toBe('gt-bank');
+  expect(matchAccount('Card ••2829', accounts).id).toBe('gt-card'); // the exact last 4 digits still name the card
+  expect(matchAccount('Unknown', accounts).id).toBe('bpi-bank');
+});
+
 test('the fully automatic Shortcuts prompt logs in the background and notifies without a menu', () => {
   const { shortcutPrompt } = require('./autoLog');
   const text = shortcutPrompt('https://movo.nasrinai.com', 'abc123', 'automatic');

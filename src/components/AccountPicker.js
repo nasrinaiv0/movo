@@ -11,7 +11,6 @@ import { t as tr } from '../lib/i18n';
  */
 const GROUPS = [['bank', 'Bank accounts'], ['card', 'Cards'], ['e_wallet', 'E-wallets'], ['cash', 'Cash'], ['investment', 'Investments']];
 const TYPE_NAME = { bank: 'Bank account', e_wallet: 'E-wallet', cash: 'Cash', investment: 'Investment', other: 'Other' };
-const ICON = { bank: 'bank', card: 'card', e_wallet: 'wallet', cash: 'wallet', investment: 'chart', other: 'layout' };
 
 /** Bank/wallet name, adding the account's own name when it says more ("BPI Savings"). */
 export function accountName(a) {
@@ -45,7 +44,7 @@ export default function AccountPicker({ id, label, ariaLabel, accounts = [], val
   const chosen = accounts.find(a => a.id === value);
   const logo = chosen ? institutionLogoUrl(chosen.institution_name) || institutionLogoUrl(chosen.name) : '';
   return <label className={`acct-pick${chosen ? '' : ' is-empty'}`} htmlFor={id}>
-    <span className="acct-pick-logo" aria-hidden="true"><BrandLogo src={logo} size={64} fallback={<Icon name={ICON[chosen?.account_type] || 'wallet'} size={18} />} /></span>
+    <span className="acct-pick-logo" aria-hidden="true"><BrandLogo src={logo} size={64} fallback={chosen ? undefined : <Icon name="wallet" size={18} />} /></span>
     <span className="acct-pick-text">
       <small>{label}</small>
       <strong>{chosen ? accountName(chosen) : (placeholder || tr('Choose account'))}</strong>
