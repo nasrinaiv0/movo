@@ -13,7 +13,8 @@
     "pdfjs-dist": "^4.10.38",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tesseract.js": "^5.1.1"
+    "tesseract.js": "^5.1.1",
+    "three": "0.170.0"
   },
   "scripts": {
     "start": "react-scripts start",

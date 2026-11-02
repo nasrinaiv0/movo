@@ -1,12 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import NotchedBox from '../components/NotchedBox';
 import Icon from '../components/Icon';
-import { IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
+import { Chips, IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
 import EditableBoxes from '../components/EditableBoxes';
 import { UpcomingList } from './Subscriptions';
 import { toDay } from '../lib/subscriptions';
 import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
+import RamMascot from '../components/RamMascot';
+import { mascotMood, moodMessage } from '../lib/mascotMood';
 import { dayKey, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
@@ -83,10 +85,14 @@ export default function Home({ c }) {
   const over = budgetList.find(b => b.level === 'over');
   const subline = over ? tr('Heads up: your {category} budget is over its limit.', { category: tr(over.category) })
     : spentToday ? tr("You've spent {amount} today.", { amount: shown(show, money(spentToday)) }) : tr('Ready to log today’s first expense?');
+  const ramOn = (prefs.mascotStyle || 'ram') === 'ram';
+  const ram = useMemo(() => mascotMood({ budgets: budgetList, income: stats.income, expenses: stats.expenses }), [budgetList, stats.income, stats.expenses]);
+  const [ramKey, ramVars] = moodMessage(ram);
+  const ramMessage = tr(ramKey, ramVars.category ? { category: tr(ramVars.category) } : {});
   const pickMascot = async (e) => {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     setMascotError('');
-    try { setPref('mascot', await toMascot(f)); setMascotSheet(false); } catch (err) { setMascotError(err.message); }
+    try { setPref('mascot', await toMascot(f)); setPref('mascotStyle', 'photo'); setMascotSheet(false); } catch (err) { setMascotError(err.message); }
   };
 
   const byAmount = [...breakdown.data].sort((a, b) => b.amount - a.amount);
@@ -136,11 +142,12 @@ export default function Home({ c }) {
   ];
 
   return <>
-    <header className="screen-header home-header">
-      <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
-        {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}
-      </button>
-      <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{subline}</p></div>
+    <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}`}>
+      {ramOn ? <RamMascot mood={ram.mood} message={ramMessage} onChangeMascot={() => setMascotSheet(true)} />
+        : <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
+          {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}
+        </button>}
+      <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{ramOn ? ramMessage : subline}</p></div>
       <div className="header-actions">
         <div className="header-action-buttons">
           <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} />
@@ -160,11 +167,12 @@ export default function Home({ c }) {
         <label className="home-period-option"><span>{tr('Year')}</span><select aria-label={tr('Select Home year')} value={selectedYear} onChange={e => setHomeMonthKey(`${e.target.value}-${String(selectedMonth).padStart(2, '0')}`)}>{Array.from(new Set([...homeYears, selectedYear])).sort((a, b) => b - a).map(y => <option key={y} value={y}>{y}</option>)}</select></label>
       </div>
     </Sheet>}
-    {mascotSheet && <Sheet title={tr('Your mascot')} subtitle={tr('Use your own photo as the Home mascot. It greets you and stays on this device.')} onClose={() => setMascotSheet(false)} label={tr('Mascot photo')}>
-      <div className="mascot-preview"><span className="mascot big">{prefs.mascot ? <img src={prefs.mascot} alt={tr('Current mascot')} /> : <span>{user.initial}</span>}</span><div className="hello bubble"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1></div></div>
+    {mascotSheet && <Sheet title={tr('Your mascot')} subtitle={ramOn ? tr('The MOVO ram watches your spending limits: it smiles when you are well under, looks disappointed near a limit and gets angry past one.') : tr('Use your own photo as the Home mascot. It greets you and stays on this device.')} onClose={() => setMascotSheet(false)} label={tr('Mascot photo')}>
+      <Chips label={tr('Home mascot')} items={[{ key: 'ram', label: tr('3D ram') }, { key: 'photo', label: tr('Photo') }]} value={ramOn ? 'ram' : 'photo'} onChange={(v) => setPref('mascotStyle', v)} />
+      {!ramOn && <div className="mascot-preview"><span className="mascot big">{prefs.mascot ? <img src={prefs.mascot} alt={tr('Current mascot')} /> : <span>{user.initial}</span>}</span><div className="hello bubble"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1></div></div>}
       {mascotError && <p className="form-error" role="alert">{mascotError}</p>}
       <input ref={file} type="file" accept="image/*" hidden onChange={pickMascot} aria-label={tr('Choose a mascot photo')} />
-      <div className="sheet-actions">{prefs.mascot && <button type="button" className="secondary-button" onClick={() => { setPref('mascot', ''); setMascotSheet(false); }}>{tr('Remove')}</button>}<button type="button" className="primary-button" onClick={() => file.current?.click()}><Icon name="camera" size={18} /> {prefs.mascot ? tr('Change photo') : tr('Choose photo')}</button></div>
+      {!ramOn && <div className="sheet-actions">{prefs.mascot && <button type="button" className="secondary-button" onClick={() => { setPref('mascot', ''); setMascotSheet(false); }}>{tr('Remove')}</button>}<button type="button" className="primary-button" onClick={() => file.current?.click()}><Icon name="camera" size={18} /> {prefs.mascot ? tr('Change photo') : tr('Choose photo')}</button></div>}
     </Sheet>}
   </>;
 }

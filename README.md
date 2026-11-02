@@ -104,6 +104,10 @@ All icons share one smooth, rounded iOS-style set (`src/components/Icon.js`): ro
 
 Wallet → Cards → **Card style** lets users dress each card with a sticker. The library (`src/lib/stickers.js`) generates 272 original, anime-inspired vector designs (17 motifs × 16 palettes, grouped into Shonen, Ninja & Samurai, Fantasy, Sci-fi, Night and Manga), so they stay razor sharp at any size. Bank logo, chip, card number, holder and balance sit in reserved zones with an automatic light/dark text colour. Users can also upload their own artwork (cropped at 1712×1080 for HD); uploads stay on the device. The choice is stored per card in preferences (`cardStyles`). The library contains no third-party characters or franchise artwork.
 
+## Home ram mascot
+
+Home shows the MOVO ram, an original 3D mascot, in the header's avatar slot with the greeting right after it and its feet resting on the first card (`src/components/RamMascot.js`, scene in `src/lib/ramScene.js`, model in `public/mascot/`). Its mood follows this month's spending limits (`src/lib/mascotMood.js`): it **smiles** (hops, waves, ^ ^ eyes) when every budget is under 50%, stays **cute** (head tilts, blush, toe taps) in between, looks **disappointed** (head down, drooping ears, sighs, a tear) when a budget reaches 80%, and gets **angry** (stomps, shakes a fist, steam, furrowed brows) once a budget passes its limit. Without budgets, the month's income stands in as the limit. Tapping the ram makes it react and shows a short message; Settings for it live in the mascot sheet ("3D ram" or your own photo, `mascotStyle` preference). three.js and the model load lazily (three is its own chunk), rendering pauses off screen and in the background, reduced-motion users get a still pose, and tests or browsers without WebGL get the `ram-poster.png` still.
+
 ## Motion
 
 Motion is calm by design: no device vibration, no overshooting "bounce" springs, no breathing or pulsing orb. Transitions use a single smooth ease-out curve.
