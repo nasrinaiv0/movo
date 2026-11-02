@@ -4128,7 +4128,7 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card .emv-chip, .movo-app .credit-card.ccx .ccx-chip.emv-chip, .movo-app .cc-chip.emv-chip { filter: none; }
 
 /* ── Portrait MOVO card — owner reference 2026-11-02 (measured as fractions of the card width) ──
-   Top row: MOVO mark + "MOVO / Financial Tracker" left, card type right. Chip lying flat, centred, about 28% of
+   Top row: MOVO mark + "MOVO / Financial Tracker". Card type in the middle centre. Chip lying flat, centred, about 28% of
    the width down, contactless beside it. Large MOVO mark lower right, running off the right edge. Number + amount
    bottom left, network bottom right. Applies to MOVO cards only; bank cards keep the vertical BPI layout. */
 .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-face { --chip-top: max(27.7cqw, 50px); }
@@ -4138,9 +4138,10 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-name { font-size: clamp(9px, 6.2cqw, 26px); }
 .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-sub { font-size: clamp(6px, 3.5cqw, 15px); overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em; }
 .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-titles { flex: 1 1 auto; min-width: 0; }
+/* Card type (Debit Card, Credit Card, Bank, E-Wallet…) sits in the middle centre of every portrait card (owner request). */
 .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-type {
-  position: static; transform: none; justify-self: auto; align-self: center; flex: none;
-  font-size: clamp(6.5px, 3.9cqw, 16px); opacity: 1;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; margin: 0;
+  justify-items: center; text-align: center; font-size: clamp(11px, 7cqw, 18px); opacity: 1;
 }
 .movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-chip.emv-chip {
   position: absolute; left: 50%; top: var(--chip-top); width: 19.5cqw; margin: 0; transform: translateX(-50%);
