@@ -1,5 +1,6 @@
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
+import { categoryOf } from '../lib/categories';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { readImageText } from '../lib/ocr';
@@ -44,7 +45,7 @@ function LogCard({ items, removed, show, onUndo, onLogAnyway, onView }) {
       const sign = row.transaction_type === 'income' ? '+' : '−';
       return <div key={row.id} className={`chat-log-row${gone ? ' gone' : ''}${row.duplicateOf ? ' duplicate' : ' added'}`}>
         {catalogFor(row.merchant) ? <SubIcon sub={{ name: row.merchant }} size={40} /> : <Tile name={row.merchant} size={40} radius={12} />}
-        <span className="chat-log-main"><strong>{row.merchant}</strong><small>{[tr(row.category), row.accountName, new Date(row.occurred_at).toDateString() === new Date().toDateString() ? tr('Today') : formatDate(row.occurred_at, { month: 'short', day: 'numeric' }, 'md')].filter(Boolean).join(' · ')}</small></span>
+        <span className="chat-log-main"><strong>{row.merchant}</strong><small>{[tr(categoryOf(row.category).label), row.accountName, new Date(row.occurred_at).toDateString() === new Date().toDateString() ? tr('Today') : formatDate(row.occurred_at, { month: 'short', day: 'numeric' }, 'md')].filter(Boolean).join(' · ')}</small></span>
         <span className={`chat-log-amount ${row.transaction_type}`}>{sign}{shown(show, money(row.amount, row.currency))}</span>
         <span className="chat-log-status">{row.duplicateOf
           ? <><span className="dup"><Icon name="info" size={13} strokeWidth={2.4} />{tr('Already logged on {date}. Not added twice.', { date: formatDate(row.duplicateOf.occurred_at, { month: 'short', day: 'numeric' }, 'md') })}</span><button type="button" className="link-button" onClick={() => onLogAnyway(row)}>{tr('Log anyway')}</button></>

@@ -18,7 +18,7 @@ test('answers spending by period, in English and Filipino', () => {
 
 test('answers income, top categories, balance, budgets, renewals and the latest record', () => {
   expect(answerLocally('How much did I earn this month?', ctx)).toContain('₱42000');
-  expect(answerLocally('Which category did I spend the most on?', ctx)).toMatch(/1\. Groceries/);
+  expect(answerLocally('Which category did I spend the most on?', ctx)).toMatch(/1\. Food & Dining/);
   expect(answerLocally("What's my balance?", ctx)).toContain('₱48250');
   expect(answerLocally('transport budget', ctx)).toContain('₱2755 left');
   expect(answerLocally('upcoming renewals', ctx)).toContain('Streaming');
@@ -26,7 +26,7 @@ test('answers income, top categories, balance, budgets, renewals and the latest 
 });
 
 test('filters by category and leaves unrelated questions to NasrinAI', () => {
-  expect(answerLocally('food this week', ctx)).toContain('₱165');
+  expect(answerLocally('food this week', ctx)).toContain('₱2545');
   expect(answerLocally('Should I invest in index funds?', ctx)).toBeNull();
   expect(periodOf('last month', now).label).toBe('Last month');
 });

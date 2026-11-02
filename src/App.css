@@ -4151,3 +4151,16 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-watermark { right: -9cqw; bottom: 23cqw; width: 78cqw; }
 .movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-art path[stroke-width="26"],
 .movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-art path[stroke-width="18"] { opacity: .14; }
+
+/* ── Transaction categories (docs/TRANSACTION_CATEGORIES.md): optional subcategory under the 12 compact chips ── */
+.movo-app .tx-sheet .tx-sub { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 0 12px; min-height: 40px; border-radius: 14px; background: var(--tx-field, var(--field)); }
+.movo-app .tx-sheet .tx-sub > span { flex: none; font-size: 12px; font-weight: 600; color: var(--muted); }
+.movo-app .tx-sheet .tx-sub select { flex: 1 1 auto; min-width: 0; height: 38px; padding: 0; border: 0; outline: none; background: none; color: var(--text); font-size: 14px; font-weight: 600; text-align: right; text-align-last: right; appearance: none; -webkit-appearance: none; }
+/* The subcategory sits in the Category header line (no extra row, so the sheet still fits a 740px-tall phone). */
+.movo-app .tx-sheet .tx-cats-head { gap: 8px; }
+.movo-app .tx-sheet .tx-cats-head > span:first-child { flex: none; }
+.movo-app .tx-sheet .tx-sub { flex: 1 1 auto; min-width: 0; justify-content: flex-end; margin: 0; padding: 0 10px; min-height: 30px; height: 30px; border-radius: 999px; }
+.movo-app .tx-sheet .tx-sub select { height: 30px; max-width: 100%; font-size: 12.5px; text-overflow: ellipsis; }
+.movo-app .tx-sheet .tx-sub { position: relative; padding-right: 22px; }
+.movo-app .tx-sheet .tx-sub select { color: var(--accent-ink, var(--accent)); }
+.movo-app .tx-sheet .tx-sub::after { content: ''; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -5px; border-right: 1.6px solid var(--accent-ink, var(--accent)); border-bottom: 1.6px solid var(--accent-ink, var(--accent)); transform: rotate(45deg); pointer-events: none; }

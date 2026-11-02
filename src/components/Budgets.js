@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import Icon from './Icon';
 import { Sheet, Money } from './ui';
 import { CATEGORY_ICONS } from './TransactionSheet';
+import { categoryOf } from '../lib/categories';
 import { evaluate } from '../lib/calc';
 import { baseCurrency } from '../lib/format';
 import { t as tr, rich } from '../lib/i18n';
 
-const iconFor = (cat) => CATEGORY_ICONS.find(c => c[0] === cat) || ['Other', cat, 'layout', 'gray'];
+// A budget's category may be a compact id or an older label; both resolve to the compact category.
+const iconFor = (cat) => { const c = categoryOf(cat); return CATEGORY_ICONS.find(x => x[0] === c.primary) || ['other', c.label, 'layout', 'gray']; };
 const pct = (a, b) => (b > 0 ? Math.min(999, Math.round((a / b) * 100)) : 0);
 const level = (p) => (p >= 100 ? 'over' : p >= 80 ? 'warn' : 'ok');
 const monthsLeft = (due) => { if (!due) return 0; const d = new Date(`${due}T00:00:00`); const n = new Date(); return Math.max(1, (d.getFullYear() - n.getFullYear()) * 12 + d.getMonth() - n.getMonth()); };
@@ -14,7 +16,7 @@ const monthsLeft = (due) => { if (!due) return 0; const d = new Date(`${due}T00:
 /** Monthly spending limits per category, with live progress from this month's expenses. */
 export function budgetProgress(budgets, monthList) {
   return budgets.map(b => {
-    const spent = monthList.filter(t => t.type === 'expense' && t.category === b.category).reduce((s, t) => s + t.amount, 0);
+    const spent = monthList.filter(t => t.type === 'expense' && categoryOf(t.categoryId || t.category).primary === categoryOf(b.category).primary).reduce((s, t) => s + t.amount, 0);
     const p = pct(spent, b.monthly_limit);
     return { ...b, spent, left: b.monthly_limit - spent, percent: p, level: level(p) };
   });
@@ -47,7 +49,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
   const [tab, setTab] = useState(initialTab === 'plans' ? 'plans' : 'budgets');
   const [draft, setDraft] = useState(null);
   const [err, setErr] = useState('');
-  const used = new Set(progress.map(b => b.category));
+  const used = new Set(progress.map(b => categoryOf(b.category).primary));
   const save = async (e) => {
     e.preventDefault(); setErr('');
     try {
@@ -79,7 +81,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
     </div>}
     {draft && <form className="sheet-form" onSubmit={save}>
       {tab === 'budgets' ? <>
-        <label>{tr('Category')}<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === draft.category || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{tr(c[1])}</option>)}</select></label>
+        <label>{tr('Category')}<select value={categoryOf(draft.category).primary} onChange={e => setDraft({ ...draft, category: e.target.value })} disabled={!!draft.id}>{CATEGORY_ICONS.filter(c => c[0] === categoryOf(draft.category).primary || !used.has(c[0])).map(c => <option key={c[0]} value={c[0]}>{tr(c[1])}</option>)}</select></label>
         <label>{tr('Monthly limit ({code})', { code: baseCurrency() })}<input inputMode="decimal" autoFocus value={draft.limit} onChange={e => setDraft({ ...draft, limit: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 5000" /></label>
       </> : <>
         <label>{tr('Plan name')}<input autoFocus maxLength={60} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder={tr('e.g. Emergency fund, Japan trip')} /></label>

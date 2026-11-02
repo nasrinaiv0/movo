@@ -6,7 +6,7 @@ import { t as tr } from '../lib/i18n';
 
 const LIMIT = 40;
 /* Amounts are only searchable while balances are visible, so a hidden balance can't be probed by typing numbers. */
-const haystack = (t, show) => [t.merchant, t.category, t.accountName, t.type, t.note, show ? String(t.amount) : ''].filter(Boolean).join(' ').toLowerCase();
+const haystack = (t, show) => [t.merchant, t.category, t.subcategory, t.accountName, t.type, t.note, show ? String(t.amount) : ''].filter(Boolean).join(' ').toLowerCase();
 
 /** Wraps each matched term in <mark> so people see why a row matched. */
 function Highlight({ text = '', terms }) {

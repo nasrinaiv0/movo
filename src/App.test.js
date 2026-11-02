@@ -437,7 +437,7 @@ describe('MOVO finance frontend', () => {
     expect(rows[1].textContent).toContain('ChatGPT Plus');
     expect(container.textContent).toContain('Added to your transactions');
     let saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
-    expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => [t.merchant, t.amount, t.category])).toEqual([['Grab', 250, 'Transport'], ['ChatGPT Plus', 699, 'Subscriptions']]);
+    expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => [t.merchant, t.amount, t.category])).toEqual([['Grab', 250, 'transport:ride_hailing'], ['ChatGPT Plus', 699, 'Subscriptions']]);
     await act(async () => { Array.from(rows[0].querySelectorAll('.link-button')).find(b => b.textContent === 'Undo').click(); });
     expect(rows[0].textContent).toContain('Removed');
     saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));

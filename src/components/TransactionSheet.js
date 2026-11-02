@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { guessCategory } from '../lib/ocr';
+import { PRIMARY, NEEDS_REVIEW, categoryOf, subcategoriesFor } from '../lib/categories';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import AccountPicker from './AccountPicker';
@@ -7,11 +8,8 @@ import { evaluate, press, tokenize } from '../lib/calc';
 import { currencySymbol, number, getFormatLocale } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
-export const CATEGORY_ICONS = [
-  ['Food & drinks', 'Food', 'food', 'orange'], ['Groceries', 'Groceries', 'cart', 'green'], ['Transport', 'Transport', 'transfer', 'blue'],
-  ['Bills', 'Bills', 'receipt', 'amber'], ['Shopping', 'Shopping', 'tag', 'violet'], ['Subscriptions', 'Subscriptions', 'refresh', 'teal'],
-  ['Health', 'Health', 'shield', 'red'], ['Entertainment', 'Fun', 'star', 'violet'], ['Education', 'Education', 'doc', 'blue'], ['Other', 'Other', 'layout', 'gray'],
-];
+/* The 12 compact categories (docs/TRANSACTION_CATEGORIES.md §5) as [id, label, icon, tone], for pickers. */
+export const CATEGORY_ICONS = PRIMARY.map(p => [p.id, p.label, p.icon, p.tone]);
 const KEYS = [['⌫', 'AC', '%', '÷'], ['7', '8', '9', '×'], ['4', '5', '6', '−'], ['1', '2', '3', '+'], ['00', '0', '.', '=']];
 const TYPE_LABEL = { expense: 'Expense', income: 'Income', transfer: 'Transfer' };
 const keyFor = (k) => ({ '*': '×', x: '×', '/': '÷', '-': '−', Enter: '=', Backspace: '⌫', Escape: null, Delete: 'AC' }[k] ?? k);
@@ -47,6 +45,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
 
   const label = editing ? 'Edit transaction' : 'Add transaction';
   const cats = CATEGORY_ICONS;
+  const current = categoryOf(form.category);
   const canSave = !busy && Number.isFinite(value) && value > 0 && form.merchant.trim();
   const submit = (e) => { e.preventDefault(); const v = evaluate(expr); if (hasOp && Number.isFinite(v)) setExpr(String(v)); onSave(e); };
 
@@ -67,7 +66,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
       </div>
     </div>
 
-    <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => { const merchant = e.target.value; const guess = autoCategory && !catTouched && type === 'expense' ? guessCategory(merchant) : 'Other'; setForm({ ...form, merchant, ...(guess !== 'Other' ? { category: guess } : {}) }); }} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
+    <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => { const merchant = e.target.value; const guess = autoCategory && !catTouched && type === 'expense' ? guessCategory(merchant) : NEEDS_REVIEW; setForm({ ...form, merchant, ...(guess !== NEEDS_REVIEW ? { category: guess } : {}) }); }} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
 
     {(cloudMode || accounts.length > 0) ? <div className={`tx-accounts${type === 'transfer' ? ' two' : ''}`}>
       <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} required={cloudMode} onChange={v => setForm({ ...form, account_id: v })} />
@@ -75,8 +74,17 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     </div> : <p className="tx-local">{tr('Saved on this device')}</p>}
 
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>
-      <div className="tx-cats-head"><span>{tr('Category')}</span><button type="button" onClick={() => setAllCats(v => !v)}>{allCats ? tr('Less') : tr('View all')}<Icon name="down" size={14} className={allCats ? 'flip' : ''} /></button></div>
-      <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={form.category === value ? 'selected' : ''} aria-pressed={form.category === value} onClick={() => { setCatTouched(true); setForm({ ...form, category: value }); }}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{tr(name)}</button>)}</div>
+      <div className="tx-cats-head"><span>{tr('Category')}</span>
+        {/* Subcategory: optional detail inside the chosen category, or "Needs review" when unsure. */}
+        <label className="tx-sub">
+        <select aria-label={tr('Subcategory')} value={current.custom ? '' : current.id === current.primary ? '' : current.id} onChange={e => { setCatTouched(true); setForm({ ...form, category: e.target.value || current.primary }); }}>
+          <option value="">{tr('None')}</option>
+          {subcategoriesFor(current.primary).map(g => <optgroup key={g.group} label={tr(g.label)}>{g.subs.map(([id, label]) => <option key={id} value={id}>{tr(label)}</option>)}</optgroup>)}
+          {current.primary !== 'other' && <optgroup label={tr('Other')}><option value={NEEDS_REVIEW}>{tr('Needs review')}</option></optgroup>}
+        </select>
+      </label>
+        <button type="button" onClick={() => setAllCats(v => !v)}>{allCats ? tr('Less') : tr('View all')}<Icon name="down" size={14} className={allCats ? 'flip' : ''} /></button></div>
+      <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={current.primary === value ? 'selected' : ''} aria-pressed={current.primary === value} onClick={() => { setCatTouched(true); if (current.primary !== value) setForm({ ...form, category: value }); }}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{tr(name)}</button>)}</div>
     </section>}
 
     <div className="tx-meta">
