@@ -4221,3 +4221,12 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .flow-custom input[type="date"]::-webkit-calendar-picker-indicator { margin: 0 0 0 4px; opacity: .55; }
 .movo-app .flow-custom input[type="date"]:focus { background: color-mix(in srgb, var(--accent) 7%, var(--field)); }
 .movo-app .flow-col small { display: block; min-height: 10px; white-space: nowrap; }
+
+/* iOS app (Capacitor): the native Liquid Glass top bar and dock replace the web header and dock.
+   The web versions stay in the page (hidden) so the native bars can mirror them and forward taps to them. */
+.native-chrome .bottom-nav,
+.native-chrome .bottom-fade,
+.native-chrome main.screen .screen-header:not(.home-header),
+.native-chrome main.screen .home-header .header-action-buttons { display: none !important; }
+.native-chrome main.screen { padding-top: calc(env(safe-area-inset-top) + 62px); padding-bottom: calc(env(safe-area-inset-bottom) + 96px); }
+.native-chrome main.screen .home-header { padding-right: 0; }

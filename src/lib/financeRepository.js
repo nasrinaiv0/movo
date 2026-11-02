@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { TRANSACTION_SOURCES } from './transactionSources';
-import { appOrigin } from './platform';
+import { appOrigin, isNativeApp } from './platform';
+import { AUTH_CALLBACK, openAuthBrowser } from './native';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
@@ -28,8 +29,21 @@ export async function verifyEmailCode(email, code) {
 }
 async function signInWithProvider(provider, queryParams) {
   const client = requireClient();
+  if (isNativeApp()) {
+    // The iOS app opens the provider in the system browser sheet; Supabase returns to movo://auth-callback with a
+    // PKCE code, which finishOAuth() exchanges for a session.
+    const data = unwrap(await client.auth.signInWithOAuth({ provider, options: { redirectTo: AUTH_CALLBACK, skipBrowserRedirect: true, ...(queryParams ? { queryParams } : {}) } }));
+    if (!data?.url) throw new Error('oauth_url_missing');
+    await openAuthBrowser(data.url);
+    return data;
+  }
   const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
   return unwrap(await client.auth.signInWithOAuth({ provider, options: { ...(redirectTo ? { redirectTo } : {}), ...(queryParams ? { queryParams } : {}) } }));
+}
+/** iOS app: finish Google/Apple sign-in from the movo://auth-callback code. */
+export async function finishOAuth(code) {
+  if (!code) throw new Error('oauth_code_missing');
+  return unwrap(await requireClient().auth.exchangeCodeForSession(code));
 }
 export async function signInWithGoogle() { return signInWithProvider('google', { prompt: 'select_account' }); }
 export async function signInWithApple() { return signInWithProvider('apple'); }

@@ -4,6 +4,9 @@
  * verification required. This keeps MOVO closed to casual access on a shared or unlocked phone; it does not
  * encrypt stored records. Lock settings stay on this device (they are not part of preference sync).
  */
+import { isNativeApp } from './platform';
+import { nativeAuthenticate, nativeBiometricStatus } from './native';
+
 const KEY = 'movo.lock.v1';
 const ITERATIONS = 210000;
 
@@ -38,11 +41,17 @@ export async function verifyPasscode(pin) {
 export const removeLock = () => write(null);
 
 export async function biometricAvailable() {
+  if (isNativeApp()) return (await nativeBiometricStatus()).available === true;
   try { return !!(window.PublicKeyCredential && await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch { return false; }
 }
 
 export async function enableBiometric() {
   const s = read(); if (!s?.hash) throw new Error('Set a passcode first.');
+  if (isNativeApp()) {
+    // iOS app: Face ID / Touch ID through LocalAuthentication; confirm once before turning it on.
+    if (!(await nativeAuthenticate('Turn on Face ID for MOVO'))) throw new Error('Face ID / Touch ID was not set up.');
+    return write({ ...s, bioId: 'native' });
+  }
   const cred = await navigator.credentials.create({ publicKey: {
     challenge: crypto.getRandomValues(new Uint8Array(32)),
     rp: { name: 'Movo' },
@@ -59,6 +68,7 @@ export const disableBiometric = () => { const s = read(); return s ? write({ ...
 
 export async function unlockWithBiometric() {
   const s = read(); if (!s?.bioId) return false;
+  if (isNativeApp()) return nativeAuthenticate('Unlock MOVO');
   try {
     const got = await navigator.credentials.get({ publicKey: {
       challenge: crypto.getRandomValues(new Uint8Array(32)),
