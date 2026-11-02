@@ -46,3 +46,12 @@
 .auth-card .auth-legal > input[type="checkbox"] { flex: 0 0 18px; width: 18px; min-width: 18px; height: 18px; min-height: 18px; margin: 1px 0 0; padding: 0; }
 .auth-card .auth-legal > span { flex: 1 1 auto; min-width: 0; }
 .auth-card .auth-legal { margin: 0; border: 0; }
+/* Apple and Google buttons are exactly the same size (same box model and border width). */
+.auth-card .auth-provider { box-sizing: border-box; height: 50px; min-height: 50px; border: 1px solid transparent; font-size: 15px; font-weight: 650; line-height: 1; }
+.auth-card .auth-provider svg { flex: 0 0 18px; width: 18px; height: 18px; }
+.auth-card .auth-apple { border-color: #000; }
+.theme-dark .auth-card .auth-apple { border-color: #fff; }
+.auth-card .auth-google { border-color: var(--line, #e2e4ea); }
+/* The MOVO mark stands on its own: no frame, tile or shadow. */
+.auth-card .auth-logo { width: auto; height: auto; margin-bottom: 6px; border-radius: 0; background: none; box-shadow: none; }
+.auth-card .auth-logo .movo-mark { width: 56px; height: auto; }

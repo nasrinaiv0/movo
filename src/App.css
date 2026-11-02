@@ -4084,3 +4084,11 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .streak-badge .movo-mark { width: 58%; height: auto; }
 .movo-app .streak-badge.earned .movo-mark { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .2)); }
 .movo-app .badge-burst .streak-badge .movo-mark { width: 60%; }
+/* The MOVO mark as a logo fallback has no frame or tile (owner request). */
+.movo-app .brand-fallback, .theme-dark.movo-app .brand-fallback,
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo .brand-fallback { background: none; box-shadow: none; }
+.movo-app .brand-fallback .movo-mark { width: 78%; }
+/* On cards with light text, the fallback MOVO mark uses its white tones so it reads on any card colour. */
+.movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-dark { fill: #d4d4d8; }
+.movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-mid { fill: #e9e9ec; }
+.movo-app .credit-card.ccx.ink-light .ccx-logo .brand-fallback .mm-light { fill: #ffffff; }
