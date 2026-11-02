@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { MovoMark } from './MovoLogo';
-import Icon from './Icon';
 import { canAnimate } from '../lib/motion';
 import { t as tr } from '../lib/i18n';
 
@@ -13,7 +12,7 @@ export default function LoggedBurst({ id, label, badge, onDone }) {
   }, [id, badge, onDone]);
   if (!id) return null;
   if (badge) return <div key={id} className="logged-burst badge-burst" role="status" aria-live="polite">
-    <span className={`streak-badge earned unlocking tier-${badge.tier || 'standard'}`} style={{ '--badge': badge.color }}><Icon name={badge.icon} size={26} strokeWidth={2} /></span>
+    <span className={`streak-badge earned unlocking tier-${badge.tier || 'standard'}`} style={{ '--badge': badge.color }}><MovoMark size={38} tone="white" /></span>
     <strong>{label}</strong>
   </div>;
   return <div key={id} className="logged-burst" role="status" aria-live="polite">

@@ -51,7 +51,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         </select>
         {!manualInstitution && <div className="acct-institution-options" role="listbox" aria-label={tr('Matching institutions')}>
           {institutionOptions.map(item => <button type="button" role="option" aria-selected={form.institution_name === item.name} key={item.id} className={form.institution_name === item.name ? 'selected' : ''} onClick={() => { set({ institution_name: item.name, name: item.name }); setInstitutionQuery(item.name); setManualInstitution(false); }}>
-            <span className="acct-institution-option-copy"><strong>{item.name}</strong><small>{item.kind === 'ewallet' ? tr('E-wallet') : item.kind === 'lender' ? tr('Credit') : tr('Bank')}</small></span><span className="acct-institution-option-trailing">{form.institution_name === item.name && <Icon name="check" size={16} />}<span className="acct-institution-option-logo"><BrandLogo src={institutionLogoUrl(item.name)} size={28} fallback={<Icon name={item.kind === 'ewallet' ? 'phone' : 'bank'} size={20} />} /></span></span>
+            <span className="acct-institution-option-copy"><strong>{item.name}</strong><small>{item.kind === 'ewallet' ? tr('E-wallet') : item.kind === 'lender' ? tr('Credit') : tr('Bank')}</small></span><span className="acct-institution-option-trailing">{form.institution_name === item.name && <Icon name="check" size={16} />}<span className="acct-institution-option-logo"><BrandLogo src={institutionLogoUrl(item.name)} size={28} /></span></span>
           </button>)}
           {!institutionOptions.length && <p className="acct-hint">{tr('No matching institutions. Enter the name manually.')}</p>}
         </div>}
@@ -65,7 +65,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         <label className="acct-label" htmlFor="acct-linked-bank">{debitCard ? tr('Linked bank account') : tr('Issuing bank')}</label>
         {bankAccounts.length ? <div className="acct-field select acct-bank-pick">
           <span><strong>{linkedBank ? (linkedBank.institution_name || linkedBank.name) : tr('Choose a bank account')}</strong><small>{linkedBank ? `${linkedBank.name} · ${linkedBank.currency || base}` : debitCard ? tr('Shares this bank account’s balance') : tr('Optional')}</small></span>
-          <span className="acct-bank-logo" aria-hidden="true"><BrandLogo src={linkedBank ? institutionLogoUrl(linkedBank.institution_name || linkedBank.name) : ''} size={64} fallback={<Icon name="bank" size={18} />} /></span>
+          <span className="acct-bank-logo" aria-hidden="true"><BrandLogo src={linkedBank ? institutionLogoUrl(linkedBank.institution_name || linkedBank.name) : ''} size={64} fallback={linkedBank ? undefined : <Icon name="bank" size={18} />} /></span>
           <Icon name="down" size={16} />
           <select id="acct-linked-bank" aria-label={debitCard ? tr('Linked bank account') : tr('Issuing bank')} value={form.linkedBankId || ''} required={debitCard} onChange={e => {
             if (e.target.value === '__add') { onAddBank?.(); return; }

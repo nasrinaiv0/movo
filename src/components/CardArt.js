@@ -179,7 +179,7 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
     {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
     <div className="ccx-face">
       <div className="ccx-head">
-        <span className="ccx-brand"><span className="ccx-logo"><BrandLogo src={institutionLogo} size={128} fallback={<i aria-hidden="true">{(a.institution_name || a.name || '?').trim().charAt(0).toUpperCase()}</i>} /></span>{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
+        <span className="ccx-brand"><span className="ccx-logo"><BrandLogo src={institutionLogo} size={128} /></span>{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>
         {details && <span className="ccx-type">{tr(cardTypeLabel(a, face))}</span>}
       </div>
       <div className="ccx-chiprow"><EmvChip finish={a.chip || face?.chip || 'gold'} className="ccx-chip" />{a.contactless !== false && <Contactless className="ccx-nfc" />}</div>

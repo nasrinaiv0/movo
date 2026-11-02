@@ -4060,3 +4060,13 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra)::after { animation: none; display: none; }
   .movo-app .streak-badges li.tier-ultra::after { animation: none; opacity: 0; }
 }
+
+/* ── MOVO mark as the logo fallback (banks, e-wallets, merchants) and in streak badges (2026-11-02) ── */
+.movo-app .brand-fallback { display: grid; place-items: center; box-sizing: border-box; width: 100%; height: 100%; min-width: 0; border-radius: inherit; background: #fff; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06); overflow: hidden; }
+.movo-app .brand-fallback .movo-mark { width: 62%; height: auto; }
+.theme-dark.movo-app .brand-fallback { background: #f4f5f7; box-shadow: none; }
+.movo-app .tx-row .brand-fallback.tile { width: 44px; height: 44px; flex: none; }
+.movo-app.movo-app .credit-card.ccx.ccx .ccx-logo .brand-fallback { border-radius: inherit; box-shadow: 0 1px 4px rgba(0, 0, 0, .14); }
+.movo-app .streak-badge .movo-mark { width: 58%; height: auto; }
+.movo-app .streak-badge.earned .movo-mark { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .2)); }
+.movo-app .badge-burst .streak-badge .movo-mark { width: 60%; }
