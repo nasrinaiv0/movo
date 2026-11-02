@@ -82,6 +82,9 @@ npm start
 
 Production builds run the test suite before building. GitHub Actions also runs the test suite and build on feature-branch pushes and pull requests targeting `main`.
 
+## iOS app
+The iOS app wraps this same code with Capacitor (`ios/`, `capacitor.config.json`, `src/lib/platform.js`); the website is unchanged. Builds run in the cloud, so no Mac is needed. See [docs/IOS_APP.md](docs/IOS_APP.md) for phases and prerequisites.
+
 ## Remaining production-readiness requirements
 
 1. Publish and review the operator/data-controller's formal legal identity, registered address where required, verified retention schedule, and actual provider disclosures. The in-app legal pages currently warn that these launch details remain incomplete; do not use MOVO with real or highly sensitive financial data until resolved.

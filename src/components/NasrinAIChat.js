@@ -18,6 +18,7 @@ const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) 
 const MAX = 1600;
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 import './NasrinAIChat.css';
+import { apiUrl } from '../lib/platform';
 
 function friendlyError(code) {
   if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI did not confirm it used only your Movo data, so its reply was not shown.');
@@ -144,7 +145,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
         if (sessionError || !token) return;
-        const response = await fetch('/api/nasrinai/chat', { headers: { Authorization: 'Bearer ' + token } });
+        const response = await fetch(apiUrl('/api/nasrinai/chat'), { headers: { Authorization: 'Bearer ' + token } });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(result.error || 'history_load_failed');
         if (active) {
@@ -209,7 +210,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       if (!isCurrentRequest()) return;
       const accessToken = sessionData?.session?.access_token || session?.access_token;
       if (sessionError || !accessToken) throw new Error('invalid_session');
-      const ask = () => fetch('/api/nasrinai/chat', {
+      const ask = () => fetch(apiUrl('/api/nasrinai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
         body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code, voiceMode: voiceRef.current })
@@ -403,7 +404,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const bytes = new Uint8Array(await blob.arrayBuffer());
       let binary = '';
       for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
-      const response = await fetch('/api/nasrinai/chat', {
+      const response = await fetch(apiUrl('/api/nasrinai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({ action: 'transcribe', audioBase64: btoa(binary), mime: blob.type || 'audio/webm', consent: privacyAccepted })

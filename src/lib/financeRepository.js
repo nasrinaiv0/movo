@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { TRANSACTION_SOURCES } from './transactionSources';
+import { appOrigin } from './platform';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
@@ -17,7 +18,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function sendEmailCode(email) {
   const address = String(email || '').trim();
   if (!EMAIL_RE.test(address) || address.length > 254) throw new Error('invalid_email');
-  const emailRedirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  const emailRedirectTo = typeof window !== 'undefined' ? appOrigin() : undefined;
   return unwrap(await requireClient().auth.signInWithOtp({ email: address, options: { shouldCreateUser: true, ...(emailRedirectTo ? { emailRedirectTo } : {}) } }));
 }
 export async function verifyEmailCode(email, code) {
