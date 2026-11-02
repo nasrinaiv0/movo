@@ -12,16 +12,16 @@
 
 /* The 12 compact categories for quick entry (§5): id, label, icon, tone. */
 export const PRIMARY = [
-  { id: 'food', label: 'Food & Dining', icon: 'food', tone: 'orange' },
-  { id: 'transport', label: 'Transportation', icon: 'transfer', tone: 'blue' },
+  { id: 'food', label: 'Food & Dining', icon: 'utensils', tone: 'orange' },
+  { id: 'transport', label: 'Transportation', icon: 'car', tone: 'blue' },
   { id: 'housing', label: 'Housing & Home', icon: 'home', tone: 'teal' },
   { id: 'bills', label: 'Bills & Utilities', icon: 'receipt', tone: 'amber' },
-  { id: 'shopping', label: 'Shopping', icon: 'tag', tone: 'violet' },
-  { id: 'health', label: 'Health & Medical', icon: 'shield', tone: 'red' },
-  { id: 'personal_care', label: 'Personal Care', icon: 'face', tone: 'violet' },
-  { id: 'entertainment', label: 'Entertainment', icon: 'star', tone: 'violet' },
-  { id: 'travel', label: 'Travel', icon: 'globe', tone: 'teal' },
-  { id: 'education', label: 'Education', icon: 'doc', tone: 'blue' },
+  { id: 'shopping', label: 'Shopping', icon: 'bag', tone: 'amber' },
+  { id: 'health', label: 'Health & Medical', icon: 'pill', tone: 'red' },
+  { id: 'personal_care', label: 'Personal Care', icon: 'scissors', tone: 'violet' },
+  { id: 'entertainment', label: 'Entertainment', icon: 'ticket', tone: 'violet' },
+  { id: 'travel', label: 'Travel', icon: 'plane', tone: 'teal' },
+  { id: 'education', label: 'Education', icon: 'book', tone: 'blue' },
   { id: 'financial', label: 'Financial & Debt', icon: 'bank', tone: 'gray' },
   { id: 'other', label: 'Other', icon: 'layout', tone: 'gray' },
 ];
@@ -118,6 +118,9 @@ export const categoryFullLabel = (value) => { const c = categoryOf(value); retur
  * not fixed categories; when signals point at different compact categories the result is Needs review, not a guess.
  */
 export const RULES = [
+  ['transport', /\btransport(ation)?\b|\bcommute\b|\bpamasahe\b/i],
+  ['shopping:shoes', /\bshoes?\b|\bsneakers?\b|\bsapatos\b/i],
+  ['shopping:clothing', /\bclothes\b|\bclothing\b|\bshirts?\b|\bpants\b|\bdress(es)?\b|\bdamit\b/i],
   ['food:food_delivery', /grab ?food|food ?panda|foodpanda|food ?delivery|lalafood/i],
   ['transport:fuel_gas', /\b(shell|petron|caltex|seaoil|phoenix fuel|cleanfuel)\b|gasolina|\bfuel\b|gas station/i],
   ['transport:ride_hailing', /\bgrab\b(?! ?(food|mart|pay))|angkas|joyride|move ?it|\buber\b|\bindrive\b/i],

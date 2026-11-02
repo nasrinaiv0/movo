@@ -4196,3 +4196,14 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .card-pile-item.front, .movo-app .card-stack-peek { animation: none; transition: none; }
 }
+
+/* ── Category badge on transaction logos (owner request 2026-11-02) ──
+   A small round icon at the bottom left of each transaction's logo: fork & spoon for Food, car for Transportation,
+   plane for Travel… The badge carries the category tone with a ring in the row's background colour. */
+.movo-app .tx-row .tx-logo { position: relative; flex: none; display: grid; line-height: 0; }
+.movo-app .tx-row .tx-cat-badge {
+  position: absolute; left: -4px; bottom: -4px; z-index: 1; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--card-solid, #fff); box-shadow: 0 0 0 2px var(--card-solid, #fff), 0 1px 3px rgba(0, 0, 0, .18);
+}
+.movo-app .tx-row .tx-cat-badge::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: .16; }
+.movo-app .tx-row .tx-cat-badge svg { position: relative; }
