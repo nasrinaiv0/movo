@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 import { TRANSACTION_SOURCES } from './transactionSources';
-import { appOrigin, isNativeApp } from './platform';
+import { apiUrl, appOrigin, isNativeApp } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
 
 const requireClient = () => {
@@ -219,6 +219,20 @@ export async function savePreferences(userId, prefs, stickers) {
  * the explicit user filter is a second guard. Transactions go before accounts (accounts are referenced with
  * ON DELETE RESTRICT); deleting conversations cascades to their messages and server-side mappings.
  */
+/** Permanently deletes the signed-in person's MOVO account and all of its cloud data (server: api/account/delete.js). */
+export async function deleteMyAccount() {
+  const session = unwrap(await requireClient().auth.getSession())?.session;
+  if (!session?.access_token) throw new Error('sign_in_required');
+  const response = await fetch(apiUrl('/api/account/delete'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ confirm: 'DELETE' }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.deleted) throw new Error(result.error || 'delete_failed');
+  return true;
+}
+
 export async function deleteAllCloudData(userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const client = requireClient();

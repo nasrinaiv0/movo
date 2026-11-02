@@ -47,7 +47,7 @@ import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, finishOAuth } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, finishOAuth } from './lib/financeRepository';
 import { listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
@@ -765,6 +765,21 @@ function App() {
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
     finally { setBusy(false); }
   };
+  /* Delete the MOVO account itself (App Store 5.1.1(v)): server deletes the account and its cloud data, then this
+     device is cleared and signed out. */
+  const deleteAccount = async () => {
+    if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    setBusy(true); setError('');
+    try {
+      await deleteMyAccount();
+      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
+      setSheet(null); setClearText('');
+      notify(tr('Your MOVO account was deleted.'));
+      signOut().catch(() => {}).finally(() => window.location.reload());
+    } catch { setError(tr('Could not delete your account. Check your connection and try again.')); }
+    finally { setBusy(false); }
+  };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
   // Saves with the real channel (applepay, googlepay, bank, notification). Until migration 20261102010000 is applied the
   // database only accepts 'notification', so a rejected source is retried once as 'notification' instead of losing the record.
@@ -1248,6 +1263,13 @@ function App() {
           {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>{tr('Rows needing attention')}</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>{tr('Row {line}: {message}', { line: item.line, message: tr(item.message, item.vars) })}</li>)}</ul>{csvErrors.length > 8 && <p>{tr('And {n} more row(s).', { n: csvErrors.length - 8 })}</p>}</div>}
           <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Close')}</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? tr('Importing…') : tr('Import {n} transaction(s)', { n: csvRows.length })}</button></div>
         </div>
+      </Sheet>}
+      {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} subtitle={tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
+        <form className="sheet-form" onSubmit={e => { e.preventDefault(); deleteAccount(); }}>
+          <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
+        </form>
       </Sheet>}
       {sheet?.name === 'clear' && <Sheet title={tr('Clear all data?')} subtitle={cloudMode ? tr('Permanently deletes everything in your MOVO account (transactions, accounts, budgets and NasrinAI chats) and all MOVO data on this device. Your sign-in stays.') : tr('Permanently deletes all MOVO data on this device: transactions, accounts, budgets, plans, scans, mascot, card styles and preferences.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear all data')}>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); clearAll(); }}>

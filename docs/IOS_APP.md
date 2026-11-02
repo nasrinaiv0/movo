@@ -67,7 +67,7 @@ npx cap sync ios      # copy an existing build/ only
 |---|---|---|
 | 1 | Capacitor setup, iOS project (SPM), platform helper, native HTTP, icons, permission text | Done (#139) |
 | 2 | Sign-in through the system browser + `movo://auth-callback`, native storage mirror, local notifications, Face ID app lock, `movo://` links, native Liquid Glass top bar and dock, macOS CI compile | Done (#139) |
-| 3 | In-app account deletion (server endpoint + migration + tests); legal details from the owner | Needs owner input |
+| 3 | In-app account deletion: Settings → Delete Account → type DELETE → `POST /api/account/delete` (verified token; transactions, then the Auth user via the Admin API; every other table cascades). No migration needed. Legal details still come from the owner | Account deletion done; legal details need the owner |
 | 4 | Cloud build (Codemagic, automatic signing with an App Store Connect API key), TestFlight | Needs owner accounts |
 | 5 | Device testing, screenshots, App Store submission | — |
 
