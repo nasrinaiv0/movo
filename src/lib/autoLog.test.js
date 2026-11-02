@@ -32,6 +32,8 @@ test('the fully automatic Shortcuts prompt logs in the background and notifies w
   expect(text).toContain('Authorization: Bearer abc123');
   expect(text).toContain('Method POST');
   expect(text).toContain('Request Body JSON');
+  expect(text).toContain('Format Date');
+  expect(text).toContain('Get Value for Key message');
   expect(text).toContain('Show Notification');
   expect(text).toContain('Do not add menus');
   expect(text).not.toContain('Choose from Menu');
@@ -61,7 +63,8 @@ test('Siri voice prompt posts the dictated sentence with the Siri source and spe
   const { shortcutPrompt } = require('./autoLog');
   const text = shortcutPrompt('https://movo.example', 'k'.repeat(32), 'voice');
   expect(text).toMatch(/Dictate Text/);
-  expect(text).toMatch(/source set to siri_shortcut/);
+  expect(text).toMatch(/source = siri_shortcut/);
+  expect(text).toMatch(/Speak Text/);
   expect(text).toMatch(/https:\/\/movo\.example\/api\/log/);
   expect(text).toMatch(/never claim it was logged/);
   expect(shortcutPrompt('https://movo.example', 'k'.repeat(32), 'automatic')).toMatch(/Auto MOVO Transactions/);

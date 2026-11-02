@@ -180,6 +180,33 @@ describe('POST /api/log handler', () => {
     }
   });
 
+  test('a Wallet payment without a merchant name is kept under a clear placeholder', async () => {
+    const handler = load();
+    const res = await call(handler, { amount: '₱99.00', merchant: '', card: 'BPI Visa', source: 'applepay' });
+    expect(res.statusCode).toBe(200);
+    expect(calls[0].params.p_merchant).toBe('Apple Pay purchase');
+  });
+
+  test('an unmatched card name falls back to the device default account', async () => {
+    tokenRow = { user_id: 'user-1', active: true, default_account_id: 'acct-cash' };
+    const handler = load();
+    const res = await call(handler, { amount: 10, merchant: 'X', card: 'My Wallet Nickname', source: 'applepay' });
+    expect(res.statusCode).toBe(200);
+    expect(calls[0].params.p_account_id).toBe('acct-cash');
+    expect(res.body.message).toBe('Logged PHP 10.00 at X in Cash.');
+  });
+
+  test('every failure carries success:false and a plain message a Shortcut can show', async () => {
+    const handler = load();
+    for (const [body, token] of [[{ amount: 0, merchant: 'X', card: 'Cash' }, KEY], [{ amount: 1, merchant: 'X' }, KEY], [{ amount: 1, merchant: 'X', card: 'Cash' }, 'bad']]) {
+      const res = await call(handler, body, token);
+      expect(res.statusCode).toBeGreaterThanOrEqual(400);
+      expect(res.body.success).toBe(false);
+      expect(typeof res.body.message).toBe('string');
+      expect(res.body.message.length).toBeGreaterThan(10);
+    }
+  });
+
   test('income type and explicit currency are passed through', async () => {
     const handler = load();
     await call(handler, { amount: '25.00', merchant: 'Refund', card: 'BPI Visa', source: 'bank', type: 'income', currency: 'usd' });

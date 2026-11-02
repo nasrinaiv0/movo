@@ -4,7 +4,7 @@ import { flushSync } from 'react-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
-import { Sheet, Toggle } from './components/ui';
+import { Sheet } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
 import FinancialPlanning from './screens/FinancialPlanning';
@@ -34,13 +34,14 @@ import Notifications, { NotificationDetail, buildNotifications } from './screens
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
-import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr, rich } from './lib/i18n';
+import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
 import ScannerSheet from './components/ScannerSheet';
-import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate, shortcutPrompt } from './lib/autoLog';
+import AutoLogSheet from './components/AutoLogSheet';
+import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
@@ -81,7 +82,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -955,7 +956,7 @@ function App() {
     fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ action: 'register', deviceKey: prefs.autoLogKey }),
+      body: JSON.stringify({ action: 'register', deviceKey: prefs.autoLogKey, ...(prefs.autoLogAccount ? { defaultAccountId: prefs.autoLogAccount } : {}) }),
     }).then(async response => {
       if (!response.ok) throw new Error('registration_failed');
       return response.json();
@@ -965,7 +966,7 @@ function App() {
       if (!cancelled) setAutomationStatus('error');
     });
     return () => { cancelled = true; };
-  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey]);
+  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey, prefs.autoLogAccount]);
 
   const handledLink = useRef('');
   const recordsRef = useRef(rawTxs);
@@ -1195,36 +1196,7 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay and Google Pay payments from your phone\'s automations.')} onClose={() => setSheet(null)} label={tr('Automatic logging')}>
-        <div className="card menu-card"><div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Payments are added instantly.') : tr('MOVO asks you to confirm each payment.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div></div>
-        <section className="card shortcut-quick" aria-label={tr('Set up with one prompt')}>
-          <strong><Icon name="spark" size={16} strokeWidth={2.2} /> {tr('Set up with one prompt (iPhone)')}</strong>
-          <ol className="setup-steps">
-            <li>{rich('Open {shortcuts} → {automation} → {plus} → {transaction}. Pick your cards and choose {run}.', { shortcuts: <em>Shortcuts</em>, automation: <em>Automation</em>, plus: <em>+</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em> })}</li>
-            <li>{rich('Choose one of the two prompt buttons below, paste the copied prompt into {describe}, and send it. Fully automatic logs without a choice; Interactive asks you to choose Log or Skip.', { describe: <em>Describe a shortcut</em> })}</li>
-            <li>{tr('Keep this screen open until the device shows as registered, then test both menu options before relying on it.')}</li>
-          </ol>
-          <div className="shortcut-prompt-actions" role="group" aria-label={tr('Choose automation style')}>
-            <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'automatic')).then(() => notify(tr('Auto log prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="refresh" size={16} /> {tr('Auto log')}</button>
-            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'interactive')).then(() => notify(tr('Require validation prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="doc" size={16} /> {tr('Require validation')}</button>
-            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'voice')).then(() => notify(tr('Siri voice prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="mic" size={16} /> {tr('Siri voice')}</button>
-          </div>
-          <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
-        </section>
-        <details className="setup-manual" open>
-          <summary>{tr('Set it up manually instead')}</summary>
-          <ol className="setup-steps">
-            <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → + → {transaction}. Choose Run Immediately and turn Notify When Run off if available. Extract transaction fields, add Choose from Menu with Log and Skip, and under Log use Get Contents of URL → POST → JSON to {endpoint}. Set Authorization to Bearer plus your device key. Skip must stop without sending a request.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, endpoint: <code>/api/log</code> })}</li>
-            <li><strong>{tr('Bank notifications:')}</strong> {tr('Only use a separate notification trigger if your iOS version actually offers one. Shortcuts does not expose a universal trigger for every banking app notification.')}</li>
-            <li>{tr('Background logging requires a signed-in MOVO cloud account and a registered device key. The server rejects unknown keys, ambiguous account matches, invalid amounts, and duplicate requests.')}</li>
-            <li>{tr('Keep the device key private. Resetting it should revoke the old server registration before creating a replacement.')}</li>
-          </ol>
-        </details>
-        <p className="form-note" role="status" aria-live="polite">{automationStatus === 'ready' ? tr('This device is registered for secure background logging.') : automationStatus === 'registering' ? tr('Registering this device…') : automationStatus === 'error' ? tr('Could not register this device. Check the server configuration and try again.') : tr('Sign in and enable cloud storage to register this device for background logging.')}</p>
-        <small>{tr('Legacy review link (opens MOVO instead of logging in the background):')}</small>
-        <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Review link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy review link')}</button></div>
-      </Sheet>}
+      {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}

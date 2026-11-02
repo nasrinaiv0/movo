@@ -31,6 +31,13 @@ alter table public.movo_automation_events add column if not exists source text
 alter table public.movo_automation_events add column if not exists outcome text
   check (outcome is null or outcome in ('created', 'duplicate_cross_source'));
 
+-- Optional per-device default account, used when an automation's card/account hint does not match exactly one of the
+-- person's accounts (e.g. a Wallet card nickname). Ownership is checked by the API on registration and again by
+-- log_automation_transaction_v2 on every write.
+alter table public.movo_automation_tokens add column if not exists default_account_id uuid
+  references public.financial_accounts(id) on delete set null;
+create index if not exists movo_automation_tokens_default_account_idx on public.movo_automation_tokens(default_account_id);
+
 create index if not exists transactions_user_amount_time_idx
   on public.transactions(user_id, amount, occurred_at desc);
 
