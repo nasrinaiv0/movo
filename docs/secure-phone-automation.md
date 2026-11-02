@@ -83,3 +83,34 @@ Nothing here has been verified on a physical iPhone or Android phone from this r
 **Android — voice (Gemini / Google Assistant).** Gemini does not run arbitrary web requests by itself. Use an automation app's assistant/voice trigger (or a home-screen shortcut with speech input) that sends `{ "text": <spoken text>, "source": "android_assistant" }` and reads back `message`. Capabilities vary by device, language and assistant rollout; confirm on the person's phone.
 
 **Fallback (any device, no server).** A link `https://<movo>/#log?src=applepay|googlepay|bank&k=<device key>&amount=…&merchant=…&card=…` opens MOVO, which logs it (key matches and “Log without asking” is on) or shows a Log / Skip prompt. The record keeps its channel as its source and is checked against existing records with `findDuplicate`.
+
+## Bank and e-wallet payment texts (SMS, email, Android notifications)
+
+iOS does not let Shortcuts read other apps' push notifications. Banks and e-wallets also send each payment as a text
+message or email, and Shortcuts can run on those. MOVO reads the message on the server (`api/_lib/messageText.js`).
+
+- **iPhone:** Shortcuts → Automation → Message → *Message Contains: Ref* → Run Immediately, then Get Contents of URL
+  posting `{ text: Shortcut Input › Content, app: Shortcut Input › Sender, source: "bank" }` with the device key in
+  the Authorization header. The exact recipe is in MOVO → Settings → Set Up Phone Automation → **Bank texts**.
+  An Email automation works the same way with `Shortcut Input › Body`.
+- **Android:** a notification-listener automation (for example MacroDroid or Tasker: trigger *Notification Received*
+  for GCash, Maya or the bank app; action *HTTP Request* POST to `/api/log`) sending
+  `{ "text": "<notification text>", "app": "<app name>", "source": "notification" }` and the same Authorization header.
+
+What the server reads:
+
+| Message | Stored as |
+|---|---|
+| "You have paid P5.13 via GCash to PYMY Connect IQ on 10-04-26 03:01:06 AM. Ref. No. 342984713" | Expense · PYMY Connect IQ · GCash · 2026-10-04 03:01 PH time · Ref 342984713 |
+| "You have received PHP 1,500.00 … from JUAN D." | Income · JUAN D |
+| "You have sent PHP 500.00 to MARIA S. …" | Transfer out (category Transfer) |
+| "You have successfully cashed in PHP 2,000.00 from BPI …" | Transfer in (category Transfer) |
+| "Your account ending 1234 was debited PHP 1,250.00 … at SM SUPERMARKET" | Expense · SM SUPERMARKET · account hint "BDO 1234" |
+
+- The amount is the transaction amount, never a balance, limit or fee. Dates without a zone are Philippine time
+  (MM-DD-YY, as GCash and Maya write them). Phone numbers are removed from names.
+- The reference number goes to `external_reference`, so the same message sent twice, or the same payment also
+  reported by Apple Pay, is logged once (the existing cross-source checks).
+- **One-time codes, log-in alerts and promos are ignored and never stored** (`ignored: true`). A payment message
+  without a readable amount is kept in "While you were away" for the person to log by hand.
+- The full message text is kept in the transaction note, like the reference app, so the person can check it.
