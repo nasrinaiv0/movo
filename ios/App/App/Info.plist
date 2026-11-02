@@ -63,6 +63,17 @@
 	<string>MOVO opens your photo library so you can pick a receipt, a card sticker or a background.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>MOVO uses Face ID to unlock the app when App Lock is on.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.nasrinai.movo</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>movo</string>
+			</array>
+		</dict>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>

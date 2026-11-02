@@ -20,12 +20,34 @@ is needed: the native project is generated and synced on Linux, and builds, sign
 |---|---|---|
 | `apiUrl('/api/log')` | `/api/log` (same origin, as before) | `https://movo.nasrinai.com/api/log` |
 | `appOrigin()` | `window.location.origin` | `https://movo.nasrinai.com` (used for Shortcut recipes and email links) |
-| `oauthAvailable()` | `true` | `false` until phase 2 (the app offers email codes) |
+
+## Native services (phase 2, `src/lib/native.js`)
+
+| Feature | Website | iOS app |
+|---|---|---|
+| Google / Apple sign-in | Redirect in the page | System browser sheet (`@capacitor/browser`); Supabase returns to `movo://auth-callback?code=…`, which `finishOAuth()` exchanges (PKCE) |
+| Records on this device | `localStorage` | Same, plus every `movo.*` / `sb-*` key mirrored to native Preferences and restored before the first render if iOS cleared web storage |
+| Alerts | Notification API + `sw.js` | `@capacitor/local-notifications` (`pushGranted()` / `enablePush()` / `showSystemNotification()` pick the right one) |
+| App Lock biometrics | WebAuthn platform authenticator | Face ID / Touch ID through LocalAuthentication (`MovoNative.authenticate`) |
+| Payment links | `#/log?…` | `movo://log?…` becomes the same `#/log?…` link |
+
+## Liquid Glass chrome (`src/lib/nativeChrome.js`, `ios/App/App/GlassChrome.swift`)
+
+- The web header and dock still render (hidden by `.native-chrome` CSS). `readChrome()` reads their title, back
+  button, action buttons, red dots, tabs, active tab and badges from the page; icons are the web icons rendered to PNG
+  template images, so both look the same. `MovoNative.setChrome` draws them natively; native taps click the same web
+  buttons. **No screen needs to know about the native bars.**
+- Top bar: a soft blur that fades out at its lower edge, a glass back button, the title, and a glass capsule with the
+  header actions. Home keeps its greeting in the page and sends only its action buttons.
+- Dock: a floating glass capsule with an accent selection capsule that slides with an ease-out (no bounce).
+- While any sheet or dialog is open (`aria-modal="true"`) both bars fade out so they never cover it.
+- iOS 26: `UIGlassEffect` (Liquid Glass). iOS 15–18: a system blur material. The window follows MOVO's light/dark
+  theme so the status bar, keyboard and pickers match.
 
 ## Commands
 
 ```sh
-npm run ios:sync      # typecheck + tests + build, then copy build/ into ios/App/App/public
+npm run ios:sync      # (Node 22+) typecheck + tests + build, then copy build/ into ios/App/App/public
 npx cap sync ios      # copy an existing build/ only
 ```
 
@@ -36,15 +58,15 @@ npx cap sync ios      # copy an existing build/ only
 - Camera, microphone, photo library and Face ID permission text.
 - `ITSAppUsesNonExemptEncryption = false` (HTTPS only), so TestFlight does not ask about export compliance.
 - App icon (1024px, opaque) and splash use the MOVO mark.
-- Bundle id `com.nasrinai.movo` and display name `MOVO`: **confirm both before the first App Store Connect record**;
-  the bundle id cannot be changed after the first upload.
+- Bundle id `com.nasrinai.movo` (owner-confirmed 2026-11-02; it cannot change after the first upload) and display
+  name `MOVO`. App Store subtitle: up to 30 characters, still to be chosen.
 
 ## Phases
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Capacitor setup, iOS project (SPM), platform helper, native HTTP, icons, permission text | This PR |
-| 2 | Native sign-in (system browser + `movo://auth-callback`, native Sign in with Apple), native storage for session and local records, local notifications, Face ID app lock, `movo://` links, native Liquid Glass top bar and dock (`MovoGlassChrome`) | Next |
+| 1 | Capacitor setup, iOS project (SPM), platform helper, native HTTP, icons, permission text | Done (#139) |
+| 2 | Sign-in through the system browser + `movo://auth-callback`, native storage mirror, local notifications, Face ID app lock, `movo://` links, native Liquid Glass top bar and dock, macOS CI compile | Done (#139) |
 | 3 | In-app account deletion (server endpoint + migration + tests); legal details from the owner | Needs owner input |
 | 4 | Cloud build (Codemagic, automatic signing with an App Store Connect API key), TestFlight | Needs owner accounts |
 | 5 | Device testing, screenshots, App Store submission | — |
@@ -53,12 +75,18 @@ npx cap sync ios      # copy an existing build/ only
 
 - Apple Developer Program membership and an App Store Connect API key (App Manager).
 - A Codemagic account linked to this GitHub repository.
-- Confirmed bundle id and app name; completed legal details and a privacy policy URL; a reviewer demo account.
-- For phase 2: add `movo://auth-callback` to the Supabase Auth redirect URLs and enable the Apple provider.
+- Completed legal details and a privacy policy URL; a reviewer demo account.
+- **Before Google/Apple sign-in works in the app:** add `movo://auth-callback` to Supabase → Authentication → URL
+  Configuration → Redirect URLs, and enable the Apple provider. Email codes work without this.
 - Paid plans must use In-App Purchase on iOS (guideline 3.1.1); the first release ships without them.
 
-## Known limits in phase 1 builds
+## CI
 
-- Google/Apple sign-in buttons are hidden in the app; email codes work.
-- Web notifications and the WebAuthn Face ID lock are not available in the iOS web view until phase 2 replaces them.
-- Records in device-only mode live in the web view's storage, which iOS may clear; phase 2 moves them to native storage.
+`.github/workflows/ios-build.yml` compiles the app for the iOS simulator (unsigned) on `macos-26` with Xcode 26 for
+every PR that touches `ios/`, `src/` or the Capacitor config. It proves the Swift compiles; it does not sign or upload.
+
+## Known limits
+
+- Native Sign in with Apple (the system Apple ID sheet) is not used yet; Apple sign-in goes through the browser sheet.
+- Notifications are local (shown while MOVO runs or is resumed); there is no server push yet.
+- The visual result of the glass bars has to be checked on a device or simulator (first TestFlight build, phase 4).

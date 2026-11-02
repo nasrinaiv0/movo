@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { sendEmailCode, verifyEmailCode, signInWithApple, signInWithGoogle } from '../lib/financeRepository';
 import { supabaseConfigured } from '../lib/supabaseClient';
 import { MovoMark } from './MovoLogo';
-import { oauthAvailable } from '../lib/platform';
 import './AuthPanel.css';
 import { t as tr } from '../lib/i18n';
 
@@ -95,12 +94,12 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       <span>{tr('I agree to the Terms of Service and acknowledge the Privacy Policy.')} <span className="auth-legal-links"><button type="button" onClick={(e) => { e.preventDefault(); onOpenLegal?.('TermsOfService'); }}>{tr('Terms of Service')}</button> · <button type="button" onClick={(e) => { e.preventDefault(); onOpenLegal?.('PrivacyPolicy'); }}>{tr('Privacy Policy')}</button></span></span>
     </label>
 
-    {oauthAvailable() && <div className="auth-providers">
+    <div className="auth-providers">
       <button className="auth-provider auth-apple" type="button" onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}><AppleMark />{busy === 'apple' ? tr('Please wait…') : tr('Continue with Apple')}</button>
       <button className="auth-provider auth-google" type="button" onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}><GoogleMark />{busy === 'google' ? tr('Please wait…') : tr('Continue with Google')}</button>
-    </div>}
+    </div>
 
-    {oauthAvailable() && <div className="auth-divider" aria-hidden="true"><span>{tr('or use your email')}</span></div>}
+    <div className="auth-divider" aria-hidden="true"><span>{tr('or use your email')}</span></div>
 
     {step === 'email' ? <form className="auth-form" onSubmit={sendCode} noValidate>
       <label className="auth-field"><span>{tr('Email address')}</span><input type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>

@@ -25,7 +25,7 @@ import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate, refOf } from './lib/duplicates';
 import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMerge';
-import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification } from './lib/alerts';
+import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification, pushGranted } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
 import { summarize as summarizeSubscriptions } from './lib/subscriptions';
@@ -47,7 +47,9 @@ import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, finishOAuth } from './lib/financeRepository';
+import { listenForAppUrls } from './lib/native';
+import { startNativeChrome } from './lib/nativeChrome';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
@@ -328,6 +330,18 @@ function App() {
     url.hash = '';
     window.history.replaceState({}, document.title, url.pathname + url.search);
   }, []);
+
+  /* iOS app: the native Liquid Glass top bar and dock mirror the web header and dock (no-op on the web). */
+  useEffect(() => startNativeChrome(), []);
+
+  /* iOS app: movo://auth-callback finishes Google/Apple sign-in (the auth listener below picks up the session);
+     movo://log links become the same #/log links the web app already handles. No-op on the web. */
+  useEffect(() => listenForAppUrls({
+    onAuth: ({ code, error: failure }) => {
+      if (failure || !code) { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); return; }
+      finishOAuth(code).catch(() => { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); });
+    },
+  }), []);
 
   useEffect(() => {
     let mounted = true;
@@ -874,7 +888,7 @@ function App() {
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
-    if (!prefs.push || !prefs.notifications || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!prefs.push || !prefs.notifications || !pushGranted()) return;
     if (prefs.quietOn && isQuiet(new Date(), prefs.quietStart, prefs.quietEnd)) return;
     const fresh = notifications.filter(n => n.kind !== 'Transactions' && !prefs.pushed.includes(n.id) && Date.now() - (Date.parse(n.at) || 0) < 2 * 86400000 && Date.parse(n.at) <= Date.now());
     if (!fresh.length) return;

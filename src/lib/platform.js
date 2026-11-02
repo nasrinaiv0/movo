@@ -24,6 +24,3 @@ export function apiUrl(path) {
   const clean = `/${String(path || '').replace(/^\/+/, '')}`;
   return isNativeApp() ? `${WEB_ORIGIN}${clean}` : clean;
 }
-
-/** Google and Apple sign-in need the system browser in the app (phase 2); until then the app offers email codes. */
-export const oauthAvailable = () => !isNativeApp();

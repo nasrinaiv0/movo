@@ -5,7 +5,7 @@ import { t as tr } from '../lib/i18n';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
-import { enablePush, pushSupported } from '../lib/alerts';
+import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
 
 export const ACCENTS = [['green', '#13b45f'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#ef4444'], ['slate', '#334155']];
@@ -141,7 +141,7 @@ export default function Settings({ c }) {
   const [, rerender] = useState(0);
   useEffect(() => { biometricAvailable().then(setBio); }, []);
   const lock = lockState();
-  const pushOn = !!prefs.push && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const pushOn = !!prefs.push && pushGranted();
   const toggleValue = (key) => (key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? c.cloudMode : prefs[key] !== false && !!prefs[key]);
   const toggleDisabled = (key) => (key === 'email' || (key === 'push' && !pushSupported()) || (key === 'biometrics' && (!bio || !lock.enabled)) || (key === 'cloudSync' && c.cloudMode));
   const toggleChange = async (key, v) => {
@@ -289,7 +289,7 @@ export function Appearance({ c }) {
 
 export function NotificationSettings({ c }) {
   const { prefs, setPref, go } = c;
-  const pushOn = !!prefs.push && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const pushOn = !!prefs.push && pushGranted();
   const T = (key, label, { checked = prefs[key] !== false && !!prefs[key], onChange = v => setPref(key, v), disabled = false, reason } = {}) => <Toggle checked={!disabled && checked} onChange={onChange} label={tr(label)} describedBy={`notification-setting-${key}-description`} disabled={disabled} reason={reason ? tr(reason) : undefined} />;
   const item = (icon, title, sub, key, tone, opts) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong><small id={`notification-setting-${key}-description`}>{tr(sub)}</small></span>{T(key, title, opts)}</div>;
   return <>

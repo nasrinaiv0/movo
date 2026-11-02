@@ -1,4 +1,6 @@
 import { monthKey } from './format';
+import { isNativeApp } from './platform';
+import { nativeNotifyPermission, requestNativeNotify, showNativeNotification } from './native';
 
 /*
  * System notices built on this device from the person's own records (nothing is invented):
@@ -63,10 +65,14 @@ export function deviceLabel(ua = typeof navigator !== 'undefined' ? navigator.us
   return `${br} on ${os}`;
 }
 
-export const pushSupported = () => typeof window !== 'undefined' && 'Notification' in window;
+export const pushSupported = () => isNativeApp() || (typeof window !== 'undefined' && 'Notification' in window);
+
+/** Whether this device may show MOVO alerts now (iOS app: local notifications; web: the Notification API). */
+export const pushGranted = () => (isNativeApp() ? nativeNotifyPermission() === 'granted' : typeof Notification !== 'undefined' && Notification.permission === 'granted');
 
 /** Ask once for permission and register the small notification service worker. */
 export async function enablePush() {
+  if (isNativeApp()) return requestNativeNotify();
   if (!pushSupported()) return 'unsupported';
   const result = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
   if (result === 'granted' && navigator.serviceWorker) { try { await navigator.serviceWorker.register('/sw.js'); } catch { /* fall back to page notifications */ } }
@@ -75,6 +81,7 @@ export async function enablePush() {
 
 /** Show a system notification (service worker when available, so it also works when installed to the Home Screen). */
 export async function showSystemNotification(title, body, tag) {
+  if (isNativeApp()) return showNativeNotification(title, body, tag);
   if (!pushSupported() || Notification.permission !== 'granted') return false;
   try {
     const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null;
