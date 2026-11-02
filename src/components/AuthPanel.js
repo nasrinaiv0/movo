@@ -5,16 +5,36 @@ import { MovoMark } from './MovoLogo';
 import './AuthPanel.css';
 import { t as tr } from '../lib/i18n';
 
-/*
- * Passwordless sign-in: Apple, Google, or a one-time code sent to the person's email (it creates the account the first
- * time, so there is no separate sign-up). Every path needs the Terms / Privacy acknowledgement first.
- */
 const RESEND_SECONDS = 60;
 const GoogleMark = () => <svg aria-hidden="true" viewBox="0 0 48 48" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.06 13.22l7.98 6.19C11.93 13.72 17.48 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.95 46.98 31.9 46.98 24.55Z"/><path fill="#FBBC05" d="M10.04 28.59A14.4 14.4 0 0 1 9.27 24c0-1.59.27-3.13.77-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.88.93 7.55 2.58 10.78l7.46-6.19Z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.14 1.44-4.88 2.3-8.18 2.3-6.52 0-12.07-4.22-13.96-9.99l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"/></svg>;
 const AppleMark = () => <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.87-.76-1.47.02-2.83.86-3.59 2.18-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.24 2.73 2.2 1.1-.04 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.41 1.2-2.47-.03-.01-2.3-.88-2.32-3.5ZM14.2 6.13c.6-.73 1.01-1.75.9-2.76-.87.04-1.92.58-2.54 1.31-.56.64-1.05 1.67-.92 2.66.97.08 1.96-.49 2.56-1.21Z" /></svg>;
 
+/** Translate common Supabase Auth failures into actionable, non-secret diagnostics. */
+export function getEmailCodeErrorMessage(error) {
+  const code = String(error?.code || error?.error_code || '').toLowerCase();
+  const message = String(error?.message || '').toLowerCase();
+  const status = Number(error?.status || error?.statusCode || 0);
+
+  if (code.includes('rate_limit') || code.includes('over_email_send_rate_limit') || /rate limit|too many requests|email rate limit/.test(message) || status === 429) {
+    return tr('Supabase is limiting email requests. Wait at least 60 seconds before requesting another code.');
+  }
+  if (/email_address_invalid|invalid email/.test(code + ' ' + message)) {
+    return tr('That email address was rejected. Check the address and try again.');
+  }
+  if (/email_provider_disabled|signup_disabled/.test(code + ' ' + message)) {
+    return tr('Email sign-in is disabled in Supabase. Enable email authentication in Authentication → Sign In / Providers.');
+  }
+  if (/smtp|email provider|error sending confirmation|failed to send|sending email/.test(message) || status >= 500) {
+    return tr('Supabase could not deliver the email. Check Authentication → SMTP Settings and the email template, then try again.');
+  }
+  if (/invalid api key|jwt|unauthorized|project not found|fetch failed|failed to fetch|networkerror/.test(message) || status === 401 || status === 403) {
+    return tr('MOVO could not connect to Supabase. Verify the deployed Supabase project URL and publishable/anon key, then redeploy.');
+  }
+  return tr('Supabase rejected the email-code request. Check Supabase Auth logs for the request time and confirm email sign-in and SMTP are configured.');
+}
+
 export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLegal }) {
-  const [step, setStep] = useState('email'); // email -> code
+  const [step, setStep] = useState('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState('');
@@ -44,7 +64,6 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     setBusy(provider);
     try {
       await (provider === 'apple' ? signInWithApple() : signInWithGoogle());
-      // The browser is redirected to the provider; nothing else to do here.
     } catch {
       setError(provider === 'apple' ? tr('Apple sign-in could not start. Please try again.') : tr('Google sign-in could not start. Check the OAuth provider configuration and try again.'));
       setBusy('');
@@ -55,14 +74,17 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     event?.preventDefault(); setError(''); setNotice('');
     if (needsConsent()) return;
     if (!supabaseConfigured) { setError(tr('Secure cloud sign-in is not configured yet. Set the MOVO Supabase URL and publishable key in the deployment environment.')); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError(tr('Enter a valid email address.')); return; }
+    const address = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address) || address.length > 254) { setError(tr('Enter a valid email address.')); return; }
+    if (wait > 0 && step === 'code') { setError(tr('Please wait for the resend timer before requesting another code.')); return; }
     setBusy('send');
     try {
-      await sendEmailCode(email);
+      await sendEmailCode(address);
+      setEmail(address);
       setStep('code'); setCode(''); setWait(RESEND_SECONDS);
-      setNotice(tr('We sent a sign-in code to {email}.', { email: email.trim() }));
-    } catch {
-      setError(tr('We could not send a code right now. Wait a minute and try again.'));
+      setNotice(tr('We sent a sign-in code to {email}.', { email: address }));
+    } catch (cause) {
+      setError(getEmailCodeErrorMessage(cause));
     } finally { setBusy(''); }
   }
 
@@ -74,8 +96,14 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     try {
       const result = await verifyEmailCode(email, token);
       onAuthenticated?.(result?.session?.user ?? result?.user);
-    } catch {
-      setError(tr('That code is not valid or has expired. Check it or send a new one.'));
+    } catch (cause) {
+      const codeName = String(cause?.code || cause?.error_code || '').toLowerCase();
+      const message = String(cause?.message || '').toLowerCase();
+      if (/rate_limit|too many requests/.test(codeName + ' ' + message) || Number(cause?.status) === 429) {
+        setError(tr('Too many verification attempts. Wait a minute and try again.'));
+      } else {
+        setError(tr('That code is not valid or has expired. Check it or send a new one.'));
+      }
     } finally { setBusy(''); }
   }
 
@@ -108,7 +136,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => setCode(e.target.value.replace(/[^\d]/g, ''))} /></label>
       <button className="auth-submit" type="submit" disabled={!!busy}>{busy === 'verify' ? tr('Checking…') : tr('Verify and sign in')}</button>
       <div className="auth-code-actions">
-        <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); }}>{tr('Use a different email')}</button>
+        <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); setWait(0); }}>{tr('Use a different email')}</button>
         <button type="button" disabled={wait > 0 || !!busy} onClick={() => sendCode()}>{wait > 0 ? tr('Resend in {n}s', { n: wait }) : tr('Resend code')}</button>
       </div>
     </form>}
