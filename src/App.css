@@ -4207,3 +4207,17 @@ button.account-tile:active { transform: scale(.98); }
 }
 .movo-app .tx-row .tx-cat-badge::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: currentColor; opacity: .16; }
 .movo-app .tx-row .tx-cat-badge svg { position: relative; }
+
+/* Money flow: legend matches the bars (in green, out red); custom From/To fields are compact, centred and aligned. */
+.movo-app .flow-legend .in { background: var(--green); }
+.movo-app .flow-legend .out { background: var(--red); }
+.movo-app .flow-lines .in-line { stroke: var(--green); }
+.movo-app .flow-lines .out-line { stroke: var(--red); }
+.movo-app .flow-custom { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 0 0 12px; }
+.movo-app .flow-custom label { display: grid; gap: 5px; min-width: 0; margin: 0; color: var(--muted); font-size: 10px; font-weight: 600; line-height: 1; text-transform: uppercase; letter-spacing: .5px; }
+.movo-app .flow-custom label > span { padding-left: 2px; }
+.movo-app .flow-custom input[type="date"] { -webkit-appearance: none; appearance: none; display: flex; align-items: center; box-sizing: border-box; width: 100%; min-width: 0; height: 42px; min-height: 42px; margin: 0; padding: 0 12px; border: 0; border-radius: 12px; background: var(--field); color: var(--text); font-family: inherit; font-size: 16px; font-weight: 600; line-height: 42px; font-variant-numeric: tabular-nums; text-align: left; outline: none; box-shadow: none; }
+.movo-app .flow-custom input[type="date"]::-webkit-date-and-time-value { margin: 0; min-height: 0; line-height: 42px; text-align: left; }
+.movo-app .flow-custom input[type="date"]::-webkit-calendar-picker-indicator { margin: 0 0 0 4px; opacity: .55; }
+.movo-app .flow-custom input[type="date"]:focus { background: color-mix(in srgb, var(--accent) 7%, var(--field)); }
+.movo-app .flow-col small { display: block; min-height: 10px; white-space: nowrap; }

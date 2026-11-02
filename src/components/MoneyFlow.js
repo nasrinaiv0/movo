@@ -6,11 +6,15 @@ import { t as tr } from '../lib/i18n';
 const RANGES = [['day', 'Days'], ['week', 'Weeks'], ['month', 'Months'], ['year', 'Years'], ['custom', 'Custom']];
 const DAY = 86400000;
 const startOfWeek = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+const iso = (d) => dayKey(d);
+/** Custom range starts as the last 30 days through today (or through the end of a past month being viewed). */
+export const defaultCustom = (ref = new Date(), now = new Date()) => { const end = new Date(Math.min(new Date(ref).getTime(), new Date(now).getTime())); return { from: iso(new Date(end.getFullYear(), end.getMonth(), end.getDate() - 29)), to: iso(end) }; };
 const fmt = (d, opts) => new Date(d).toLocaleDateString(getFormatLocale(), opts);
 
 /** Builds income/expense buckets for the chosen granularity, ending at `ref`. */
-export function buildFlow(txs, range, ref = new Date(), custom = {}) {
-  const end = new Date(ref);
+export function buildFlow(txs, range, ref = new Date(), custom = {}, now = new Date()) {
+  // The last column is today: a reference date later than today (e.g. the end of the current month) is clamped.
+  const end = new Date(Math.min(new Date(ref).getTime(), new Date(now).getTime()));
   let buckets = [];
   if (range === 'day') {
     for (let i = 13; i >= 0; i -= 1) { const d = new Date(end.getTime() - i * DAY); buckets.push({ key: dayKey(d), label: fmt(d, { day: 'numeric' }), title: fmt(d, { weekday: 'short', month: 'short', day: 'numeric' }) }); }
@@ -59,8 +63,8 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
       <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
     </div>
-    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); }}>{tr(l)}</button>)}</div>
-    {range === 'custom' && <div className="flow-custom"><label>{tr('From')}<input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label>{tr('To')}<input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
+    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}</button>)}</div>
+    {range === 'custom' && <div className="flow-custom"><label><span>{tr('From')}</span><input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label><span>{tr('To')}</span><input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
     <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
     <div className={`flow-plot is-${variant}`} role="list">
       {variant === 'lines' && data.length > 1 && <svg className="flow-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={line('income')} className="in-line" /><path d={line('expense')} className="out-line" /></svg>}
@@ -68,7 +72,8 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
         {variant === 'bars' && <span className="flow-bars"><i className="in" style={{ height: `${(b.income / max) * 100}%` }} /><i className="out" style={{ height: `${(b.expense / max) * 100}%` }} /></span>}
         {variant === 'lines' && <span className="flow-bars" />}
         {variant === 'net' && <span className="flow-net-col"><i className={b.income - b.expense >= 0 ? 'in up' : 'out down'} style={{ height: `${(Math.abs(b.income - b.expense) / netMax) * 50}%` }} /></span>}
-        {(data.length <= 14 || i % Math.ceil(data.length / 12) === 0) && <small>{b.label}</small>}
+        {/* Every column keeps its label row so bars share one baseline; only some labels are written. */}
+        <small aria-hidden="true">{data.length <= 14 || i % Math.ceil(data.length / 10) === 0 || i === data.length - 1 ? b.label : ''}</small>
       </button>)}
     </div>
   </section>;
