@@ -1,4 +1,4 @@
-import { buildFlow } from './MoneyFlow';
+import { buildFlow, defaultCustom } from './MoneyFlow';
 import { budgetProgress } from './Budgets';
 
 const tx = (date, type, amount, category = 'Groceries') => ({ date, type, amount, category });
@@ -10,6 +10,15 @@ test('daily flow ends today and ignores transfers', () => {
   expect(days).toHaveLength(14);
   expect(days[13]).toMatchObject({ income: 500, expense: 100 });
   expect(days[12]).toMatchObject({ income: 0, expense: 0 });
+});
+
+test('a reference date after today is clamped so the last column is today', () => {
+  const now = new Date('2026-11-02T09:00:00+08:00');
+  const days = buildFlow([tx('2026-11-02T08:00:00+08:00', 'expense', 75)], 'day', new Date('2026-11-30T23:59:00+08:00'), {}, now);
+  expect(days[13]).toMatchObject({ key: '2026-11-02', expense: 75 });
+  expect(days[0].key).toBe('2026-10-20');
+  expect(defaultCustom(new Date('2026-11-30T23:59:00+08:00'), now)).toEqual({ from: '2026-10-04', to: '2026-11-02' });
+  expect(defaultCustom(new Date('2026-09-30T23:59:00+08:00'), now)).toEqual({ from: '2026-09-01', to: '2026-09-30' });
 });
 
 test('monthly and yearly flows group correctly', () => {
