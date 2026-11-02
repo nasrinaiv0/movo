@@ -1,0 +1,65 @@
+# MOVO iOS: build, sign and upload to TestFlight in the cloud (no Mac or local Xcode needed). See docs/IOS_APP.md.
+#
+# One-time setup in Codemagic (owner):
+#   1. Teams → Integrations → Developer Portal → connect the App Store Connect API key and name it MOVO_ASC
+#      (role: App Manager). Codemagic then creates the distribution certificate and provisioning profile itself.
+#   2. Environment variables → group "movo_web" with REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY
+#      (the same public browser values Vercel uses). Never put the service role key here.
+#   3. Start "iOS TestFlight" manually, or push a tag like ios-v1.0.0.
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: MOVO_ASC
+    environment:
+      groups:
+        - movo_web
+      vars:
+        BUNDLE_ID: com.nasrinai.movo
+        XCODE_PROJECT: ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+      node: 22
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.nasrinai.movo
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'ios-v*'
+          include: true
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Tests and typecheck
+        script: |
+          npx tsc --noEmit
+          CI=true npx react-scripts test --runInBand --watchAll=false
+      - name: Build the web app
+        script: |
+          if [ -z "$REACT_APP_SUPABASE_URL" ] || [ -z "$REACT_APP_SUPABASE_ANON_KEY" ]; then
+            echo "Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to the movo_web group." >&2
+            exit 1
+          fi
+          CI=true npx react-scripts build
+      - name: Copy the web app into the iOS project
+        script: npx cap sync ios
+      - name: Signing profiles
+        script: xcode-project use-profiles
+      - name: Build number (unique per Codemagic build)
+        script: |
+          sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUMBER};/" "$XCODE_PROJECT/project.pbxproj"
+          grep -m1 "CURRENT_PROJECT_VERSION" "$XCODE_PROJECT/project.pbxproj"
+      - name: Build the signed app
+        script: xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        expire_build_submitted_for_review: false
