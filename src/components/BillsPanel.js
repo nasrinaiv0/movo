@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AccountOptions } from './AccountPicker';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { BILL_CATEGORIES, BILL_FREQUENCIES, amountDue, amountRemaining, billsSummary, occurrenceState, paymentKey } from '../lib/bills';
@@ -72,7 +73,7 @@ export default function BillsPanel({ c, accounts, onChanged }) {
         {pay?.occ.id === o.id ? <form className="sheet-form bill-pay" onSubmit={e => { e.preventDefault(); submitPay('recorded'); }}>
           {pay.actual !== null && <label>{tr('Actual bill amount')}<input type="number" min="0.01" step="0.01" value={pay.actual} onChange={e => setPay({ ...pay, actual: e.target.value, amount: e.target.value || pay.amount })} placeholder={String(o.expected_amount)} /></label>}
           <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value })} /></label>
-          <label>{tr('Paid from')}<select value={pay.account_id} onChange={e => setPay({ ...pay, account_id: e.target.value })}><option value="">{tr('Choose account')}</option>{payAccounts(o.currency).map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
+          <label>{tr('Paid from')}<select value={pay.account_id} onChange={e => setPay({ ...pay, account_id: e.target.value })}><option value="">{tr('Choose account')}</option><AccountOptions accounts={payAccounts(o.currency)} currency /></select></label>
           <label>{tr('Date paid')}<input type="date" required value={pay.paid_at} max={today} onChange={e => setPay({ ...pay, paid_at: e.target.value })} /></label>
           <p className="form-note">{tr('MOVO records what you paid; it does not send money to the biller.')}</p>
           <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => submitPay('external')}>{tr('Paid elsewhere')}</button><button className="primary-button" disabled={busy || !pay.account_id}>{tr('Record payment')}</button></div>

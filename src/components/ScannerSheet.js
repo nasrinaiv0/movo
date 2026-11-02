@@ -79,7 +79,8 @@ export default function ScannerSheet({ show, onLog, onClose }) {
   const choose = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) process(f); };
   const log = () => {
     update(scans.map(s => (s.id === active.id ? { ...s, ...active, status: 'logged' } : s)));
-    onLog({ merchant: active.merchant || 'Receipt', amount: active.amount ? String(active.amount) : '', category: active.category, occurred_at: active.date || '', time: active.time || '', ref: active.ref || '', note: active.ref ? `Scanned receipt · Ref ${active.ref}` : 'Scanned receipt' });
+    const note = [active.reason, active.fee ? `Fee ${active.fee}` : '', active.ref ? `Ref ${active.ref}` : ''].filter(Boolean).join(' · ') || 'Scanned receipt';
+    onLog({ type: active.type === 'income' ? 'income' : 'expense', merchant: active.merchant || 'Receipt', amount: active.amount ? String(active.amount) : '', category: active.type === 'income' ? 'Income' : active.category, occurred_at: active.date || '', time: active.time || '', ref: active.ref || '', bank: active.bank || '', last4: active.last4 || '', note });
   };
 
   return <Sheet title={mode === 'review' ? tr('Review scan') : tr('Scan receipt')} subtitle={mode === 'review' ? tr('Check the details before logging.') : tr('Photograph or upload a receipt, invoice or payment confirmation. Files are read on this device and never uploaded.')} onClose={() => { stopCamera(); onClose(); }} label={tr('Scan receipt')}>
@@ -101,11 +102,15 @@ export default function ScannerSheet({ show, onLog, onClose }) {
     {mode === 'working' && <div className="scan-working" role="status"><span className="scan-doc" aria-hidden="true"><i /><i /><i /><i className="scan-line" /></span><span>{status}</span></div>}
     {mode === 'review' && active && <form className="sheet-form" onSubmit={(e) => { e.preventDefault(); log(); }}>
       {active.thumb && <img className="scan-thumb" src={active.thumb} alt={tr('Scanned receipt')} />}
-      <label>{tr('Merchant')}<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder={tr('Store or payee')} /></label>
+      <div className="seg-control two scan-type" role="group" aria-label={tr('Type')}>{[['expense', 'Expense'], ['income', 'Income']].map(([k, l]) => <button type="button" key={k} className={(active.type || 'expense') === k ? 'selected' : ''} aria-pressed={(active.type || 'expense') === k} onClick={() => setActive({ ...active, type: k })}>{tr(l)}</button>)}</div>
+      <label>{(active.type === 'income') ? tr('From') : tr('Merchant or recipient')}<input value={active.merchant} maxLength={160} onChange={e => setActive({ ...active, merchant: e.target.value })} placeholder={tr('Store or payee')} /></label>
       <div className="form-grid"><label>{tr('Amount ({code})', { code: baseCurrency() })}<input inputMode="decimal" value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label>
         <label>{tr('Date')}<input type="date" value={active.date || ''} onChange={e => setActive({ ...active, date: e.target.value })} /></label></div>
       <div className="form-grid"><label>{tr('Time')}<input type="time" step="1" value={active.time || ''} onChange={e => setActive({ ...active, time: e.target.value })} /></label>
         <label>{tr('Reference ID')}<input value={active.ref || ''} maxLength={60} onChange={e => setActive({ ...active, ref: e.target.value.replace(/[^\w-]/g, '').toUpperCase() })} placeholder={tr('Optional')} /></label></div>
+      <div className="form-grid"><label>{tr('Bank or wallet')}<input value={active.bank || ''} maxLength={60} onChange={e => setActive({ ...active, bank: e.target.value })} placeholder={tr('Optional')} /></label>
+        <label>{tr('Fee')}<input inputMode="decimal" value={active.fee || ''} onChange={e => setActive({ ...active, fee: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label></div>
+      <label>{tr('Reason')}<input value={active.reason || ''} maxLength={120} onChange={e => setActive({ ...active, reason: e.target.value })} placeholder={tr('Optional')} /></label>
       <details className="scan-text"><summary>{tr('Text found')}</summary><pre>{active.text || tr('No text found.')}</pre></details>
       {!active.amount && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}
       <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setMode('home'); }}>{tr('Discard')}</button><button type="submit" className="primary-button">{tr('Log transaction')}</button></div>

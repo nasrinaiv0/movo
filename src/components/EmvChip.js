@@ -1,40 +1,51 @@
 import React, { useId } from 'react';
 
-/* EMV chip finishes: [id, name, base, contact line, highlight, shade]. */
+/* EMV chip finishes: [id, name, base, groove, highlight, shade]. Older saved ids map to the nearest finish. */
 export const CHIPS = [
-  ['gold', 'Gold', '#E2B84E', '#9A6F12', '#FFF0B8', '#A5761C'], ['silver', 'Silver', '#C9CED5', '#6B737D', '#FAFBFC', '#858D97'],
-  ['bronze', 'Bronze', '#C68A4E', '#6E4218', '#F4CC9E', '#8A5524'], ['black', 'Black', '#24272C', '#5F6670', '#5A616B', '#0E1013'],
-  ['white', 'White', '#F4F5F7', '#9AA1AA', '#FFFFFF', '#C9CDD3'], ['gray', 'Light gray', '#DDE0E4', '#7A828C', '#FFFFFF', '#AEB4BB'],
+  ['gold', 'Gold', '#DDB157', '#7A5617', '#FFF0BF', '#A9782A'],
+  ['silver', 'Silver', '#C3C9D1', '#5A626D', '#F4F6F9', '#838B96'],
+  ['platinum', 'Platinum', '#E8E4EC', '#76707F', '#FFFFFF', '#B3ACBA'],
 ];
-export const chipColors = (id) => CHIPS.find(c => c[0] === id) || CHIPS[0];
+const LEGACY = { bronze: 'gold', black: 'silver', gray: 'silver', white: 'platinum' };
+export const chipColors = (id) => CHIPS.find(c => c[0] === (LEGACY[id] || id)) || CHIPS[0];
+
+/* Contact pads after a real EMV module: a left column of four, a large centre pad, a right column and a split
+   bottom row. Each groove is drawn twice (dark cut + light edge) so it reads as bevelled metal. */
+const GROOVES = [
+  'M30 2 V60', 'M64 2 V60', 'M2 60 H98', 'M50 60 V74',
+  'M2 18 H30', 'M2 32 H30', 'M2 46 H30',
+  'M64 18 H98', 'M46 18 H64', 'M46 2 V18', 'M64 38 H98',
+];
 
 /**
- * EMV contact chip, drawn as vector so it stays crisp on any card size: no outline, a metallic gradient,
- * a soft inner shadow and a specular highlight. Contact pads are fine recessed lines.
+ * EMV chip: no outline, banded metal gradient with fine brushed grain, soft inner shadow, bevelled pad grooves
+ * and a faint sheen that drifts across now and then (CSS; off for reduced motion).
  */
 export function EmvChip({ finish = 'gold', className = '' }) {
   const [, , fill, line, light, shade] = chipColors(finish);
   const raw = useId(); const u = `c${raw.replace(/[^a-z0-9]/gi, '')}`;
   return <svg className={`emv-chip ${className}`.trim()} viewBox="0 0 100 76" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id={`${u}m`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor={light} /><stop offset=".45" stopColor={fill} /><stop offset="1" stopColor={shade} /></linearGradient>
-      <radialGradient id={`${u}s`} cx=".3" cy=".22" r=".6"><stop offset="0" stopColor="#fff" stopOpacity=".75" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <linearGradient id={`${u}m`} x1="0" y1="0" x2="1" y2=".55"><stop offset="0" stopColor={light} /><stop offset=".22" stopColor={fill} /><stop offset=".38" stopColor={shade} /><stop offset=".55" stopColor={fill} /><stop offset=".72" stopColor={light} stopOpacity=".9" /><stop offset=".86" stopColor={fill} /><stop offset="1" stopColor={shade} /></linearGradient>
+      <linearGradient id={`${u}g`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".28" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+      <radialGradient id={`${u}s`} cx=".3" cy=".2" r=".7"><stop offset="0" stopColor="#fff" stopOpacity=".16" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+      <pattern id={`${u}b`} width="100" height="1.6" patternUnits="userSpaceOnUse"><rect width="100" height=".55" fill="#fff" fillOpacity=".09" /><rect y=".8" width="100" height=".45" fill="#000" fillOpacity=".07" /></pattern>
+      <clipPath id={`${u}c`}><rect x="2" y="2" width="96" height="72" rx="13" /></clipPath>
       <filter id={`${u}i`} x="-10%" y="-10%" width="120%" height="120%">
-        <feOffset dx="0" dy="2.2" /><feGaussianBlur stdDeviation="2.4" result="o" />
+        <feOffset dx="0" dy="1.6" /><feGaussianBlur stdDeviation="2" result="o" />
         <feComposite operator="out" in="SourceGraphic" in2="o" result="inv" />
-        <feFlood floodColor="#000" floodOpacity=".42" /><feComposite operator="in" in2="inv" result="sh" />
+        <feFlood floodColor="#000" floodOpacity=".35" /><feComposite operator="in" in2="inv" result="sh" />
         <feComposite operator="over" in="sh" in2="SourceGraphic" />
       </filter>
     </defs>
-    <rect x="2" y="2" width="96" height="72" rx="15" fill={`url(#${u}m)`} filter={`url(#${u}i)`} />
-    <g fill="none" stroke={line} strokeOpacity=".55" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M38 2 L48 14 L62 2 M48 14 V30" />
-      <path d="M36 74 L48 62 L62 74 M48 62 V48" />
-      <path d="M2 26 H34 V50 H2" />
-      <path d="M98 26 H64 V50 H98" />
-      <path d="M34 38 H40 V30 H58 V48 H40 V44" />
+    <rect x="2" y="2" width="96" height="72" rx="13" fill={`url(#${u}m)`} filter={`url(#${u}i)`} />
+    <g clipPath={`url(#${u}c)`} fill="none" strokeLinecap="round">
+      <rect x="2" y="2" width="96" height="72" fill={`url(#${u}b)`} stroke="none" />
+      <g stroke="#fff" strokeOpacity=".4" strokeWidth=".9" transform="translate(.6 .6)">{GROOVES.map(d => <path key={d} d={d} />)}</g>
+      <g stroke={line} strokeOpacity=".75" strokeWidth="1.2">{GROOVES.map(d => <path key={d} d={d} />)}</g>
+      <rect x="2" y="2" width="96" height="72" fill={`url(#${u}s)`} stroke="none" />
+      <rect className="chip-shine" x="-60" y="-20" width="34" height="120" fill={`url(#${u}g)`} stroke="none" transform="rotate(20 50 38)" />
     </g>
-    <rect x="2" y="2" width="96" height="72" rx="15" fill={`url(#${u}s)`} />
   </svg>;
 }
 

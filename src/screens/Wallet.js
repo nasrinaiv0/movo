@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
-import CardDeck from '../components/CardDeck';
+import CardDeck, { LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
 import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
@@ -18,7 +18,7 @@ const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
 const FORMATS = [['landscape', 'Landscape'], ['portrait', 'Portrait']];
-export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'portrait' };
+export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'portrait', fxLandscape: 'stack', fxPortrait: 'cylinder' };
 const sorters = { 'balance-desc': (a, b) => b.balance - a.balance, 'balance-asc': (a, b) => a.balance - b.balance, name: (a, b) => a.name.localeCompare(b.name), type: (a, b) => a.account_type.localeCompare(b.account_type) || a.name.localeCompare(b.name) };
 const mask = (a) => (a.mask ? `•••• ${a.mask}` : '');
 const subtitle = (a) => (a.account_type === 'bank' ? 'Savings' : a.account_type === 'e_wallet' ? 'Balance' : a.institution_name || 'Account');
@@ -112,7 +112,7 @@ export default function Wallet({ c }) {
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
 
     {walletFilter === 'Cards' && (cards.length ? <>
-      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} />
+      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
@@ -141,6 +141,10 @@ export default function Wallet({ c }) {
       <p className="mini-title wallet-format-title">{tr('Card format')}</p>
       <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
         <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" /><span>{tr(label)}</span></button>)}</div>
+      {[['fxLandscape', 'Landscape animation', LANDSCAPE_FX], ['fxPortrait', 'Portrait animation', PORTRAIT_FX]].map(([key, title, list]) => <React.Fragment key={key}>
+        <p className="mini-title wallet-fx-title">{tr(title)}</p>
+        <div className="wallet-fx-row" role="group" aria-label={tr(title)}>{list.map(([fx, label]) => <button type="button" key={fx} className={`wallet-fx-option fx-${fx}${wv[key] === fx ? ' selected' : ''}`} aria-pressed={wv[key] === fx} onClick={() => setWv({ [key]: fx })}><span className="fx-glyph" aria-hidden="true"><i /><i /><i /></span><span>{tr(label)}</span></button>)}</div>
+      </React.Fragment>)}
       {selectedCard && <button type="button" className="manage-button wallet-change-card-style" onClick={() => setSheet({ name: 'cardStyle' })}><Icon name="palette" size={17} /> {tr('Change card style')}</button>}
       <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
     </Sheet>}

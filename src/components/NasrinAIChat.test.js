@@ -220,4 +220,52 @@ describe('NasrinAI consent and legal links', () => {
     expect(container.textContent).not.toContain('STALE USER-1 FINANCIAL REPLY');
   });
 
+
+  describe('voice conversation', () => {
+    let contexts; let spoken; let saved;
+    beforeEach(() => {
+      contexts = []; spoken = [];
+      saved = { AudioContext: window.AudioContext, MediaRecorder: global.MediaRecorder, mediaDevices: navigator.mediaDevices, speechSynthesis: window.speechSynthesis, Utterance: global.SpeechSynthesisUtterance, Audio: window.Audio, raf: window.requestAnimationFrame };
+      window.AudioContext = class {
+        constructor() { this.state = 'suspended'; this.destination = {}; this.createdBeforeMic = !navigator.mediaDevices.getUserMedia.mock.calls.length; contexts.push(this); }
+        resume() { this.state = 'running'; return Promise.resolve(); }
+        close() { return Promise.resolve(); }
+        createBuffer() { return {}; }
+        createBufferSource() { return { connect() {}, start() {}, stop() {} }; }
+        createMediaStreamSource() { return { connect() {} }; }
+        createAnalyser() { return { fftSize: 1024, getByteTimeDomainData: (a) => a.fill(128) }; }
+        decodeAudioData(_b, _ok, fail) { fail(new Error('unsupported')); return Promise.reject(new Error('unsupported')); }
+      };
+      global.MediaRecorder = class { static isTypeSupported() { return false; } constructor() { this.state = 'inactive'; this.mimeType = 'audio/mp4'; } start() { this.state = 'recording'; } stop() { this.state = 'inactive'; this.onstop?.(); } };
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: jest.fn().mockResolvedValue({ getTracks: () => [{ stop() {} }] }) } });
+      window.speechSynthesis = { speak: jest.fn(u => spoken.push(u.text)), cancel: jest.fn() };
+      global.SpeechSynthesisUtterance = function Utterance(text) { this.text = text; };
+      window.Audio = function BlockedAudio() { this.play = () => Promise.reject(new Error('NotAllowedError')); this.pause = () => {}; };
+      window.requestAnimationFrame = () => 0;
+      global.URL.createObjectURL = jest.fn(() => 'blob:x'); global.URL.revokeObjectURL = jest.fn();
+    });
+    afterEach(() => {
+      window.AudioContext = saved.AudioContext; global.MediaRecorder = saved.MediaRecorder; window.speechSynthesis = saved.speechSynthesis;
+      global.SpeechSynthesisUtterance = saved.Utterance; window.Audio = saved.Audio; window.requestAnimationFrame = saved.raf;
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: saved.mediaDevices });
+    });
+
+    test('unlocks audio inside the mic tap and falls back to the device voice when playback is blocked', async () => {
+      act(() => button('I understand').click());
+      await act(async () => { button('Talk with NasrinAI').click(); await new Promise(r => setTimeout(r, 0)); });
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0].createdBeforeMic).toBe(true); // created in the tap, before any await (iOS autoplay)
+      expect(contexts[0].state).toBe('running');
+
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ conversationId: 'c1', reply: 'You spent **500** on food.', audioParts: [{ mime: 'audio/mpeg', data: btoa('mp3') }] }) });
+      setTextareaValue(container.querySelector('#movo-ai-prompt'), 'How much on food?');
+      await act(async () => {
+        container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        await new Promise(r => setTimeout(r, 20));
+      });
+      const post = global.fetch.mock.calls.find(([, o]) => o?.method === 'POST');
+      expect(JSON.parse(post[1].body).voiceMode).toBe(true);
+      expect(spoken).toContain('You spent 500 on food.');
+    });
+  });
 });

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
-import { Sheet, Toggle } from './components/ui';
+import { Sheet } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
 import FinancialPlanning from './screens/FinancialPlanning';
@@ -33,18 +34,20 @@ import Notifications, { NotificationDetail, buildNotifications } from './screens
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
-import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr, rich } from './lib/i18n';
+import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import AccountSheet from './components/AccountSheet';
 import ScannerSheet from './components/ScannerSheet';
-import { readLogLink, sameKey, isRepeat, matchAccount, newKey, linkTemplate, shortcutPrompt } from './lib/autoLog';
+import AutoLogSheet from './components/AutoLogSheet';
+import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
+import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
@@ -79,7 +82,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -370,7 +373,7 @@ function App() {
       const linkedBankId = a.account_type === 'card' && cardKindOf(a) === 'debit' ? links[a.id] || '' : '';
       const linkedBank = linkedBankId ? baseAccounts.find(item => item.id === linkedBankId && item.account_type === 'bank') : null;
       const balance = linkedBank ? balanceFor(linkedBank) : balanceFor(a);
-      return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
+      return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, cardNetwork: st.cardNetwork || a.cardNetwork || '', mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
     });
   }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
@@ -482,7 +485,7 @@ function App() {
   }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
-  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type }); };
+  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '' })); setSheet({ name: 'transaction', type }); };
   /* "Add amount" on a card or account: a transfer into it from another account, or a manual top-up (income). */
   const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type: 'transfer' }); };
   const openEditAccount = (account) => {
@@ -491,7 +494,7 @@ function App() {
       name: account.name || '', account_type: account.account_type || 'other',
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
       currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
-      chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit', linkedBankId: prefs.cardBankLinks?.[account.id] || '',
+      chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit', cardNetwork: prefs.accountStyles?.[account.id]?.cardNetwork || account.cardNetwork || '', linkedBankId: prefs.cardBankLinks?.[account.id] || '',
     });
     setSheet({ name: 'account', type: account.account_type, id: account.id });
   };
@@ -522,27 +525,28 @@ function App() {
     const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
-    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id }, rawTxs);
+    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id, ref: form.ref || '' }, rawTxs);
     const sig = `${type}|${amount}|${form.merchant.trim().toLowerCase()}|${form.occurred_at}|${form.account_id}`;
     if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
     dupAck.current = '';
     setBusy(true);
     try {
       if (cloudMode) {
+        const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
         const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
-        const row = editingId ? await updateTransaction(editingId, payload) : await createTransaction(payload, session.user.id);
+        const row = editingId ? await updateTransaction(editingId, payload) : auto.source ? await createAutomated({ ...payload, ...auto }) : await createTransaction(payload, session.user.id);
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
         if (!editingId) celebrate();
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
         if (!editingId) celebrate();
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today() }); setSheet(null);
+      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '' }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
   };
@@ -619,10 +623,11 @@ function App() {
 
   const saveAccount = async (e) => {
     e.preventDefault(); setError('');
-    const name = accountForm.name.trim();
+    // Accounts are named after their bank or institution (or their type when there is none); no separate name field.
+    const name = (accountForm.institution_name || '').trim() || accountForm.name.trim() || tr((accountTypes.find(type => type.value === accountForm.account_type) || {}).label || 'Account');
     const openingBalance = accountForm.account_type === 'card' && accountForm.cardKind !== 'credit' ? 0 : evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : base;
-    const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind } : {}) } }); };
+    const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind, cardNetwork } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind, cardNetwork: cardNetwork && cardNetwork !== 'other' ? cardNetwork : '' } : {}) } }); };
     if (!name) { setError(tr('Enter an account name.')); return; }
     if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError(tr('Enter exactly 4 digits for the last 4 numbers, or leave it empty.')); return; }
     if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) { setError(tr('Enter a valid opening balance.')); return; }
@@ -732,6 +737,15 @@ function App() {
     finally { setBusy(false); }
   };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
+  // Saves with the real channel (applepay, googlepay, bank, notification). Until migration 20261102010000 is applied the
+  // database only accepts 'notification', so a rejected source is retried once as 'notification' instead of losing the record.
+  const createAutomated = useCallback(async (payload) => {
+    try { return await createTransaction(payload, session.user.id); }
+    catch (cause) {
+      if (payload.source !== 'notification' && /transactions_source_check/.test(String(cause?.message || ''))) return createTransaction({ ...payload, source: 'notification' }, session.user.id);
+      throw cause;
+    }
+  }, [session]);
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
     if (!account) { notify(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
@@ -739,12 +753,12 @@ function App() {
     const dup = findDuplicate({ ...payload, ref: entry.ref }, rawTxs);
     if (dup) { notify(`${dupText(dup)} ${tr('The {source} notification was not added twice.', { source: tr(entry.source) })}`); return; }
     try {
-      if (cloudMode) { const row = await createTransaction({ ...payload, source: 'notification' }, session.user.id); markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
-      else { const row = { ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: 'Automation' }; markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
+      if (cloudMode) { const row = await createAutomated({ ...payload, source: AUTOMATION_SOURCES.includes(entry.src) ? entry.src : 'notification', external_reference: entry.ref || undefined }); markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
+      else { const row = { ...payload, id: window.crypto?.randomUUID?.() || `auto-${Date.now()}`, source: AUTOMATION_SOURCES.includes(entry.src) ? entry.src : 'notification' }; markFresh(row.id); setRawTxs(cur => [row, ...cur]); }
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
       celebrate();
     } catch { setPendingLog(entry); }
-  }, [accountsView, cloudMode, session, notify, rawTxs, celebrate]);
+  }, [accountsView, cloudMode, notify, rawTxs, celebrate, createAutomated]);
   /* ---------- logging from the NasrinAI chat (parsed on this device; see lib/chatLog.js) ---------- */
   const logFromChat = useCallback(async (entries, force = false) => {
     const open = accountsView.filter(a => !a.is_archived);
@@ -942,7 +956,7 @@ function App() {
     fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-      body: JSON.stringify({ action: 'register', deviceKey: prefs.autoLogKey }),
+      body: JSON.stringify({ action: 'register', deviceKey: prefs.autoLogKey, ...(prefs.autoLogAccount ? { defaultAccountId: prefs.autoLogAccount } : {}) }),
     }).then(async response => {
       if (!response.ok) throw new Error('registration_failed');
       return response.json();
@@ -952,7 +966,7 @@ function App() {
       if (!cancelled) setAutomationStatus('error');
     });
     return () => { cancelled = true; };
-  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey]);
+  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey, prefs.autoLogAccount]);
 
   const handledLink = useRef('');
   const recordsRef = useRef(rawTxs);
@@ -987,7 +1001,7 @@ function App() {
   }, [authReady, prefs.onboarded, prefs.briefing, prefs.briefingDay, todayKey]);
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
-    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id }));
+    setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id, source: e.src, ref: e.ref || '' }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
 
@@ -1102,9 +1116,18 @@ function App() {
       </nav>}
 
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
-      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => { const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type: 'expense', ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs); setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : ''); setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note })); setSheet({ name: 'transaction', type: 'expense' }); }} />}
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
+        const type = f.type === 'income' ? 'income' : 'expense';
+        // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
+        const live = accountsView.filter(a => !a.is_archived); const bank = String(f.bank || '').toLowerCase();
+        const acct = (f.last4 && live.find(a => a.mask === f.last4)) || (bank && live.find(a => [a.institution_name, a.name].some(n => String(n || '').toLowerCase() === bank)));
+        const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type, ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs);
+        setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : '');
+        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', ...(acct ? { account_id: acct.id } : {}) }));
+        setSheet({ name: 'transaction', type });
+      }} />}
 
-      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
+      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">
@@ -1140,7 +1163,7 @@ function App() {
           <label>{tr('Choose CSV file')}<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
           <p className="form-note">{tr('Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.')}</p>
           {csvFileName && <p className="form-note">{tr('File: {name}', { name: csvFileName })}</p>}
-          {formAccounts.length > 0 && <label>{tr('Default account (used when the CSV account name does not match)')}<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">{tr('Choose account')}</option>{formAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+          {formAccounts.length > 0 && <label>{tr('Default account (used when the CSV account name does not match)')}<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">{tr('Choose account')}</option><AccountOptions accounts={formAccounts} /></select></label>}
           {csvRows.length > 0 && <section className="card pad" aria-label={tr('CSV import preview')}><strong>{tr('Preview · {n} valid row(s)', { n: csvRows.length })}</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{tr(row.transaction_type[0].toUpperCase() + row.transaction_type.slice(1))} · {tr(row.category)} · {row.account_name || tr('default account')}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">{tr('Showing the first 5 rows. All valid rows will be processed.')}</p>}</section>}
           {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
           {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>{tr('Rows needing attention')}</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>{tr('Row {line}: {message}', { line: item.line, message: tr(item.message, item.vars) })}</li>)}</ul>{csvErrors.length > 8 && <p>{tr('And {n} more row(s).', { n: csvErrors.length - 8 })}</p>}</div>}
@@ -1173,35 +1196,7 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay and Google Pay payments from your phone\'s automations.')} onClose={() => setSheet(null)} label={tr('Automatic logging')}>
-        <div className="card menu-card"><div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Payments are added instantly.') : tr('MOVO asks you to confirm each payment.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div></div>
-        <section className="card shortcut-quick" aria-label={tr('Set up with one prompt')}>
-          <strong><Icon name="spark" size={16} strokeWidth={2.2} /> {tr('Set up with one prompt (iPhone)')}</strong>
-          <ol className="setup-steps">
-            <li>{rich('Open {shortcuts} → {automation} → {plus} → {transaction}. Pick your cards and choose {run}.', { shortcuts: <em>Shortcuts</em>, automation: <em>Automation</em>, plus: <em>+</em>, transaction: <em>Transaction</em>, run: <em>Run Immediately</em> })}</li>
-            <li>{rich('Choose one of the two prompt buttons below, paste the copied prompt into {describe}, and send it. Fully automatic logs without a choice; Interactive asks you to choose Log or Skip.', { describe: <em>Describe a shortcut</em> })}</li>
-            <li>{tr('Keep this screen open until the device shows as registered, then test both menu options before relying on it.')}</li>
-          </ol>
-          <div className="shortcut-prompt-actions" role="group" aria-label={tr('Choose automation style')}>
-            <button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'automatic')).then(() => notify(tr('Auto log prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="refresh" size={16} /> {tr('Auto log')}</button>
-            <button type="button" className="secondary-button" onClick={() => { navigator.clipboard?.writeText(shortcutPrompt(window.location.origin, prefs.autoLogKey, 'interactive')).then(() => notify(tr('Require validation prompt copied. Paste it into Shortcuts.')), () => notify(tr('Could not copy the prompt. Please try again.'))); }}><Icon name="doc" size={16} /> {tr('Require validation')}</button>
-          </div>
-          <small>{tr('Describing a shortcut needs Apple Intelligence. If you do not see it, follow the manual steps below.')}</small>
-        </section>
-        <details className="setup-manual" open>
-          <summary>{tr('Set it up manually instead')}</summary>
-          <ol className="setup-steps">
-            <li><strong>{tr('iPhone (Apple Pay):')}</strong> {rich('Open {shortcuts} → Automation → + → {transaction}. Choose Run Immediately and turn Notify When Run off if available. Extract transaction fields, add Choose from Menu with Log and Skip, and under Log use Get Contents of URL → POST → JSON to {endpoint}. Set Authorization to Bearer plus your device key. Skip must stop without sending a request.', { shortcuts: <em>Shortcuts</em>, transaction: <em>Transaction</em>, endpoint: <code>/api/log</code> })}</li>
-            <li><strong>{tr('Bank notifications:')}</strong> {tr('Only use a separate notification trigger if your iOS version actually offers one. Shortcuts does not expose a universal trigger for every banking app notification.')}</li>
-            <li>{tr('Background logging requires a signed-in MOVO cloud account and a registered device key. The server rejects unknown keys, ambiguous account matches, invalid amounts, and duplicate requests.')}</li>
-            <li>{tr('Keep the device key private. Resetting it should revoke the old server registration before creating a replacement.')}</li>
-          </ol>
-        </details>
-        <p className="form-note" role="status" aria-live="polite">{automationStatus === 'ready' ? tr('This device is registered for secure background logging.') : automationStatus === 'registering' ? tr('Registering this device…') : automationStatus === 'error' ? tr('Could not register this device. Check the server configuration and try again.') : tr('Sign in and enable cloud storage to register this device for background logging.')}</p>
-        <small>{tr('Legacy review link (opens MOVO instead of logging in the background):')}</small>
-        <div className="setup-link"><code>{linkTemplate(window.location.origin, prefs.autoLogKey || '…')}</code></div>
-        <div className="sheet-actions"><button type="button" className="secondary-button" onClick={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }}>{tr('Reset key')}</button><button type="button" className="primary-button" onClick={() => { navigator.clipboard?.writeText(linkTemplate(window.location.origin, prefs.autoLogKey)).then(() => notify(tr('Review link copied.')), () => notify(tr('Copy failed. Select the link and copy it manually.'))); }}>{tr('Copy review link')}</button></div>
-      </Sheet>}
+      {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}

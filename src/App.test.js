@@ -496,36 +496,38 @@ describe('MOVO finance frontend', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
     clickButton(container, 'Add Card');
-    // This lifecycle test covers an independent card; debit cards now require a linked bank account.
+    // A credit card is named after its issuing bank (there is no separate name field).
     clickButton(container, 'Credit');
-    const name = container.querySelector('#acct-name');
-    setInputValue(name, 'My Test Card');
+    setInputValue(container.querySelector('#acct-linked-bank'), 'demo-gotyme');
+    act(() => container.querySelector('.acct-network-row button[aria-label="Mastercard"]').click());
     clickButton(container, 'Add account');
-    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('My Test Card');
+    const created = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(a => a.account_type === 'card' && a.name === 'GoTyme');
+    expect(created).toBeTruthy();
+    // The chosen card network is kept and drawn on the card.
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).accountStyles[created.id].cardNetwork).toBe('mastercard');
+    expect(container.querySelector('.ccx-net.net-mastercard')).not.toBeNull();
     clickButton(container, 'Cards');
     clickButton(container, 'Switch card');
-    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('My Test Card'));
+    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('GoTyme'));
     expect(targetCard).toBeTruthy();
     act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Edit account');
-    setInputValue(container.querySelector('#acct-name'), 'Updated Test Card');
+    setInputValue(container.querySelector('#acct-linked-bank'), 'demo-rcbc');
     clickButton(container, 'Save changes');
-    expect(container.textContent).toContain('Updated Test Card');
-    expect(window.localStorage.getItem('movo.local.accounts.v1')).toContain('Updated Test Card');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).some(a => a.account_type === 'card' && a.name === 'RCBC')).toBe(true);
     act(() => root.unmount());
     root = createRoot(container);
     act(() => root.render(<App />));
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    expect(container.textContent).toContain('Updated Test Card');
     clickButton(container, 'Switch card');
-    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('Updated Test Card'));
+    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('RCBC'));
     expect(updatedCard).toBeTruthy();
     act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
-    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.name === 'Updated Test Card').is_archived).toBe(true);
+    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC').is_archived).toBe(true);
   });
 
   test('edits a transaction and persists the change locally', () => {
@@ -649,6 +651,37 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     const inputValues = Array.from(dialog.querySelectorAll('input')).map(input => input.value);
     expect(inputValues).toContain('Gadc');
     expect(dialog.querySelector('[aria-label="Amount"]')?.textContent).toContain('109');
+  });
+
+  test('trusted Apple Pay links log with their own source, and the bank alert for the same purchase is not added twice', async () => {
+    const key = 'f'.repeat(32);
+    act(() => root.unmount());
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), autoLog: true, autoLogKey: key, onboarded: true }));
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    const stored = () => JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').filter(t => Number(t.amount) === 109);
+    window.location.hash = `#log?src=applepay&k=${key}&amount=109&merchant=Gadc&card=BPI%20Visa`;
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(stored()).toHaveLength(1);
+    expect(stored()[0]).toMatchObject({ source: 'applepay', merchant: 'Gadc', transaction_type: 'expense' });
+    window.location.hash = `#log?src=bank&k=${key}&amount=109&merchant=POS%20GADC%20MAKATI&card=BPI%20Visa`;
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(stored()).toHaveLength(1);
+    expect(container.textContent).toMatch(/not added twice/);
+  });
+
+  test('a confirmed (Log) Google Pay prompt keeps Google Pay as its source', async () => {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    window.location.hash = '#log?src=googlepay&k=untrusted&amount=77&merchant=Starbucks&card=BPI%20Visa';
+    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+    clickButton(container, 'Log');
+    const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
+    act(() => dialog.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    const saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').find(t => t.merchant === 'Starbucks' && Number(t.amount) === 77);
+    expect(saved).toMatchObject({ source: 'googlepay' });
   });
 
   test('Apple Pay payment prompt Skip button dismisses the payment without opening a transaction form', async () => {

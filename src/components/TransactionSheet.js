@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { guessCategory } from '../lib/ocr';
 import Icon from './Icon';
 import { Sheet } from './ui';
+import AccountPicker from './AccountPicker';
 import { evaluate, press, tokenize } from '../lib/calc';
 import { currencySymbol, number, getFormatLocale } from '../lib/format';
 import { t as tr } from '../lib/i18n';
@@ -68,6 +69,11 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
 
     <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => { const merchant = e.target.value; const guess = autoCategory && !catTouched && type === 'expense' ? guessCategory(merchant) : 'Other'; setForm({ ...form, merchant, ...(guess !== 'Other' ? { category: guess } : {}) }); }} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
 
+    {(cloudMode || accounts.length > 0) ? <div className={`tx-accounts${type === 'transfer' ? ' two' : ''}`}>
+      <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} required={cloudMode} onChange={v => setForm({ ...form, account_id: v })} />
+      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={accounts.filter(a => a.id !== form.account_id)} value={form.transfer_to_account_id} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
+    </div> : <p className="tx-local">{tr('Saved on this device')}</p>}
+
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>
       <div className="tx-cats-head"><span>{tr('Category')}</span><button type="button" onClick={() => setAllCats(v => !v)}>{allCats ? tr('Less') : tr('View all')}<Icon name="down" size={14} className={allCats ? 'flip' : ''} /></button></div>
       <div className="tx-chips">{cats.map(([value, name, icon, tone]) => <button type="button" key={value} className={form.category === value ? 'selected' : ''} aria-pressed={form.category === value} onClick={() => { setCatTouched(true); setForm({ ...form, category: value }); }}><span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>{tr(name)}</button>)}</div>
@@ -77,7 +83,6 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
       <label><span>{tr('Date')}</span><input type="date" required value={form.occurred_at} onChange={e => setForm({ ...form, occurred_at: e.target.value })} /></label>
       {form.time ? <label><span>{tr('Time')}</span><input type="time" step="1" aria-label={tr('Time')} value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} /></label>
         : <button type="button" className="tx-clock" onClick={() => setForm({ ...form, time: new Date().toTimeString().slice(0, 8) })} aria-label={tr('Time recorded automatically when saved, now {time}. Tap to set a time.', { time: now })}><span>{tr('Time · auto')}</span><b>{now}</b></button>}
-      {type === 'transfer' && accounts.length > 0 && <label><span>{tr('To account')}</span><select aria-label={tr('To account')} value={form.transfer_to_account_id} onChange={e => setForm({ ...form, transfer_to_account_id: e.target.value })}><option value="">{tr('Choose account')}</option>{accounts.filter(a => a.id !== form.account_id).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
     </div>
 
     {padOpen ? <div className="tx-pad" role="group" aria-label={tr('Amount keypad')}>
@@ -87,7 +92,6 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
 
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="tx-bottom">
-      {(cloudMode || accounts.length > 0) ? <label className="tx-account"><span>{type === 'transfer' ? tr('From') : tr('Account')}</span><select aria-label={type === 'transfer' ? tr('From account') : tr('Account')} required={cloudMode} value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">{tr('Choose account')}</option>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label> : <p className="tx-local">{tr('Saved on this device')}</p>}
       <button type="submit" className="primary-button tx-save" disabled={!canSave}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr(`Save ${TYPE_LABEL[type]}`)}</button>
     </div>
   </form>}</Sheet>;

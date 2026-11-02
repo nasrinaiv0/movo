@@ -3330,3 +3330,307 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .edit-profile .ep-row > .pill { flex: none; }
 .movo-app .edit-profile .ep-note { margin: 8px 4px 0; font-size: 12px; line-height: 1.45; color: var(--muted); }
 .movo-app .edit-profile .form-error { margin: 8px 4px 0; }
+
+/* ---------- Card transitions (Wallet → Sort & view), after common open-source carousel effects ----------
+   Landscape (one card, dots): stack · slide · flip · cube · depth. --dir is 1 forward, -1 back.
+   Portrait (swipe row, --d = distance from centre): cylinder · coverflow · cards · focus · fan.
+   Calm ease-out only; nothing runs for reduced-motion users or in tests. */
+.movo-app .card-stack { --fx-ease: cubic-bezier(.22, .61, .36, 1); --fx-time: .52s; }
+.movo-app .card-stack-front { perspective: 1400px; }
+.movo-app .card-stack:not([data-fx="stack"]) .card-stack-leaving { z-index: 0; }
+.movo-app .card-stack:not([data-fx="stack"]) .card-stack-card { position: relative; z-index: 1; }
+
+/* Slide: the old card glides out, the new one glides in from the other side with a slight depth. */
+.movo-app .card-stack[data-fx="slide"] .card-stack-card.entering { animation: fx-slide-in var(--fx-time) var(--fx-ease) both; }
+.movo-app .card-stack[data-fx="slide"] .card-stack-leaving { animation: fx-slide-out var(--fx-time) var(--fx-ease) both; }
+@keyframes fx-slide-in { from { transform: translateX(calc(var(--dir, 1) * 70%)) scale(.94); opacity: 0; } }
+@keyframes fx-slide-out { to { transform: translateX(calc(var(--dir, 1) * -70%)) scale(.94); opacity: 0; } }
+
+/* Flip: the card turns over on its vertical axis; the new face is revealed on the second half. */
+.movo-app .card-stack[data-fx="flip"] :is(.card-stack-card, .card-stack-leaving) { backface-visibility: hidden; transform-style: preserve-3d; }
+.movo-app .card-stack[data-fx="flip"] .card-stack-leaving { animation: fx-flip-out .26s cubic-bezier(.4, 0, 1, 1) both; }
+.movo-app .card-stack[data-fx="flip"] .card-stack-card.entering { animation: fx-flip-in .3s var(--fx-ease) .26s both; }
+@keyframes fx-flip-out { to { transform: rotateY(calc(var(--dir, 1) * -90deg)) scale(.96); } }
+@keyframes fx-flip-in { from { transform: rotateY(calc(var(--dir, 1) * 90deg)) scale(.96); } }
+
+/* Cube: both faces turn around a shared edge, like the sides of a box. */
+.movo-app .card-stack[data-fx="cube"] :is(.card-stack-card, .card-stack-leaving) { backface-visibility: hidden; }
+.movo-app .card-stack[data-fx="cube"] .card-stack-leaving { transform-origin: calc(50% + var(--dir, 1) * 50%) 50%; animation: fx-cube-out .56s var(--fx-ease) both; }
+.movo-app .card-stack[data-fx="cube"] .card-stack-card.entering { transform-origin: calc(50% - var(--dir, 1) * 50%) 50%; animation: fx-cube-in .56s var(--fx-ease) both; }
+@keyframes fx-cube-out { to { transform: translateX(calc(var(--dir, 1) * -100%)) rotateY(calc(var(--dir, 1) * -90deg)); opacity: .6; } }
+@keyframes fx-cube-in { from { transform: translateX(calc(var(--dir, 1) * 100%)) rotateY(calc(var(--dir, 1) * 90deg)); opacity: .6; } }
+
+/* Depth: the old card drifts towards you and fades; the new one rises from behind. */
+.movo-app .card-stack[data-fx="depth"] .card-stack-leaving { animation: fx-depth-out .45s var(--fx-ease) both; }
+.movo-app .card-stack[data-fx="depth"] .card-stack-card.entering { animation: fx-depth-in .55s var(--fx-ease) .08s both; }
+@keyframes fx-depth-out { to { transform: scale(1.08); opacity: 0; filter: blur(4px); } }
+@keyframes fx-depth-in { from { transform: scale(.88); opacity: 0; } }
+
+/* Portrait styles: each face is placed from its distance to the centre (--d, --ad); the row still snaps. */
+.movo-app .card-cylinder[data-fx="coverflow"] .card-cylinder-face { transform: perspective(900px) translateX(calc(var(--d, 0) * -16%)) rotateY(calc(var(--d, 0) * -52deg)) translateZ(calc(var(--ad, 0) * -110px)); opacity: calc(1 - var(--ad, 0) * .2); }
+.movo-app .card-cylinder[data-fx="cards"] .card-cylinder-face { transform: translateX(calc(var(--d, 0) * -58%)) translateY(calc(var(--ad, 0) * 6%)) rotate(calc(var(--d, 0) * 7deg)) scale(calc(1 - var(--ad, 0) * .08)); opacity: calc(1 - var(--ad, 0) * .15); }
+.movo-app .card-cylinder[data-fx="focus"] .card-cylinder-face { transform: scale(calc(1 - var(--ad, 0) * .16)); opacity: calc(1 - var(--ad, 0) * .5); filter: saturate(calc(1 - var(--ad, 0) * .4)); }
+.movo-app .card-cylinder[data-fx="fan"] .card-cylinder-face { transform-origin: 50% 135%; transform: translateX(calc(var(--d, 0) * -34%)) rotate(calc(var(--d, 0) * 13deg)) scale(calc(1 - var(--ad, 0) * .05)); opacity: calc(1 - var(--ad, 0) * .12); }
+
+/* Picker in Sort & view: five equal pills per orientation, each with a tiny glyph of the motion. */
+.movo-app .wallet-fx-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.movo-app .wallet-fx-option { display: grid; justify-items: center; align-content: center; gap: 6px; height: 72px; min-height: 72px; padding: 0 4px; border: 0; border-radius: 16px; background: var(--field); color: var(--muted); font-size: 11.5px; font-weight: 600; box-shadow: none !important; }
+.movo-app .wallet-fx-option.selected { background: rgba(var(--accent-rgb), .14); color: var(--accent-ink, var(--accent)); }
+.movo-app .fx-glyph { position: relative; width: 34px; height: 22px; }
+.movo-app .fx-glyph i { position: absolute; top: 3px; left: 9px; width: 16px; height: 16px; border-radius: 4px; background: currentColor; opacity: .35; transition: transform .3s ease-out, opacity .3s ease-out; }
+.movo-app .fx-glyph i:nth-child(2) { opacity: .6; } .movo-app .fx-glyph i:nth-child(3) { opacity: 1; }
+.movo-app .fx-stack .fx-glyph i:nth-child(1) { transform: translateY(-4px) scale(.8); } .movo-app .fx-stack .fx-glyph i:nth-child(2) { transform: translateY(-2px) scale(.9); }
+.movo-app .fx-slide .fx-glyph i:nth-child(1) { transform: translateX(-12px); } .movo-app .fx-slide .fx-glyph i:nth-child(2) { transform: translateX(12px); }
+.movo-app .fx-flip .fx-glyph i:nth-child(1), .movo-app .fx-flip .fx-glyph i:nth-child(2) { opacity: 0; } .movo-app .fx-flip .fx-glyph i:nth-child(3) { transform: perspective(40px) rotateY(55deg); }
+.movo-app .fx-cube .fx-glyph i:nth-child(1) { opacity: 0; } .movo-app .fx-cube .fx-glyph i:nth-child(2) { transform: translateX(-8px) perspective(40px) rotateY(-50deg); } .movo-app .fx-cube .fx-glyph i:nth-child(3) { transform: translateX(6px) perspective(40px) rotateY(40deg); }
+.movo-app .fx-depth .fx-glyph i:nth-child(1) { transform: scale(1.3); opacity: .15; } .movo-app .fx-depth .fx-glyph i:nth-child(2) { transform: scale(1.1); opacity: .3; }
+.movo-app .fx-cylinder .fx-glyph i:nth-child(1) { transform: translateX(-11px) perspective(40px) rotateY(45deg) scale(.85); } .movo-app .fx-cylinder .fx-glyph i:nth-child(2) { transform: translateX(11px) perspective(40px) rotateY(-45deg) scale(.85); }
+.movo-app .fx-coverflow .fx-glyph i:nth-child(1) { transform: translateX(-9px) perspective(30px) rotateY(60deg); } .movo-app .fx-coverflow .fx-glyph i:nth-child(2) { transform: translateX(9px) perspective(30px) rotateY(-60deg); }
+.movo-app .fx-cards .fx-glyph i:nth-child(1) { transform: translateX(-6px) rotate(-12deg); } .movo-app .fx-cards .fx-glyph i:nth-child(2) { transform: translateX(6px) rotate(12deg); }
+.movo-app .fx-focus .fx-glyph i:nth-child(1) { transform: translateX(-12px) scale(.7); } .movo-app .fx-focus .fx-glyph i:nth-child(2) { transform: translateX(12px) scale(.7); }
+.movo-app .fx-fan .fx-glyph i { transform-origin: 50% 160%; } .movo-app .fx-fan .fx-glyph i:nth-child(1) { transform: rotate(-22deg); } .movo-app .fx-fan .fx-glyph i:nth-child(2) { transform: rotate(22deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .card-stack .card-stack-card.entering, .movo-app .card-stack .card-stack-leaving { animation: none !important; }
+  .movo-app .card-cylinder .card-cylinder-face { transform: none !important; opacity: 1 !important; filter: none !important; }
+}
+
+/* Chip shine: a soft highlight sweeps across the chip, then rests (loop). */
+.emv-chip .chip-shine { transform-box: view-box; animation: chip-shine 7s cubic-bezier(.4, 0, .2, 1) infinite; }
+@keyframes chip-shine { 0% { translate: 0 0; } 38%, 100% { translate: 180px 0; } }
+.movo-app .credit-card.ccx .ccx-chip.emv-chip { filter: drop-shadow(0 .3cqw .6cqw rgba(0, 0, 0, .22)); }
+@media (prefers-reduced-motion: reduce) { .emv-chip .chip-shine { animation: none; display: none; } }
+
+/* Card text and logos take on the card's own colour so they blend with every style.
+   Light ink is white warmed by the card colour; dark ink is near-black tinted the same way. */
+.movo-app .credit-card.ccx.ink-light .ccx-face { color: color-mix(in srgb, #fff 90%, var(--card-tint, #888)); }
+.movo-app .credit-card.ccx.ink-dark .ccx-face { color: color-mix(in srgb, #12141a 80%, var(--card-tint, #888)); }
+.movo-app .credit-card.ccx .ccx-number, .movo-app .credit-card.ccx .ccx-type { opacity: .82; }
+/* Logo: 150% of the previous size. Favicons sit on a soft tile tinted with the card colour; multiply blending lets
+   white favicon backgrounds take that tint instead of showing as a white square. */
+.movo-app .credit-card.ccx .ccx-logo { flex: none; display: grid; place-items: center; width: 14.4cqw; height: 14.4cqw; border-radius: 26%; overflow: hidden; isolation: isolate; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-logo { width: 18.6cqw; height: 18.6cqw; }
+.movo-app .credit-card.ccx .ccx-logo:has(img) { background: color-mix(in srgb, #fff 84%, var(--card-tint, #888)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 .4cqw 1.2cqw rgba(0, 0, 0, .18); }
+.movo-app .credit-card.ccx.ink-dark .ccx-logo:has(img) { background: color-mix(in srgb, #fff 55%, var(--card-tint, #888)); }
+.movo-app.movo-app .credit-card.ccx .ccx-logo img { width: 78%; height: 78%; padding: 0; background: none; border-radius: 18%; object-fit: contain; mix-blend-mode: multiply; }
+.movo-app.movo-app .credit-card.ccx .ccx-logo > i { display: grid; place-items: center; width: 100%; height: 100%; border-radius: inherit; font-style: normal; font-weight: 700; font-size: 7.4cqw; background: color-mix(in srgb, currentColor 16%, transparent); box-shadow: inset 0 0 0 .35cqw color-mix(in srgb, currentColor 22%, transparent); color: inherit; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait .ccx-logo > i { font-size: 9.6cqw; }
+.movo-app .credit-card.ccx .ccx-brand { gap: 3cqw; }
+.movo-app .credit-card.ccx .ccx-chiprow { margin-top: 3.2cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chiprow { margin-top: 12cqw; }
+@container (max-width: 200px) { .orientation-landscape .ccx-logo { width: 12cqw; height: 12cqw; } }
+
+/* Round buttons are perfect circles everywhere (no stretched ovals from flex or padding). */
+.movo-app :is(.round-button, .icon-button) { aspect-ratio: 1 / 1; flex-shrink: 0; padding: 0; }
+.movo-app.movo-app .chip-bar > .round-button, .movo-app.movo-app .wallet-chip-bar > .round-button { flex: 0 0 40px; width: 40px; height: 40px; min-width: 40px; min-height: 40px; max-width: 40px; border-radius: 50%; }
+.movo-app.movo-app .chip-bar > .chip-row > button[data-chip] { height: 40px; min-height: 40px; }
+.movo-app.movo-app .wallet-fx-option { background: color-mix(in srgb, var(--text) 6%, var(--card-solid)); }
+.movo-app.movo-app .wallet-fx-option.selected { background: color-mix(in srgb, var(--accent) 16%, var(--card-solid)); }
+
+/* Card corners follow the ISO/IEC 7810 ID-1 card: 3.18 mm (0.125 in) corner on an 85.60 × 53.98 mm card,
+   i.e. 3.71% of the width by 5.89% of the height (swapped in portrait). Same in previews and the wallet. */
+.movo-app.movo-app .credit-card.ccx, .movo-app.movo-app .credit-card.ccx::before { border-radius: 3.71% / 5.89%; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait, .movo-app.movo-app .credit-card.ccx.orientation-portrait::before { border-radius: 5.89% / 3.71%; }
+
+/* Add account: bank picker, compact network row and chip row. */
+.movo-app .acct-bank-pick, .movo-app .acct-add-bank { position: relative; width: 100%; text-align: left; }
+.movo-app .acct-bank-logo { flex: 0 0 36px; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-tile, 30%); overflow: hidden; background: color-mix(in srgb, var(--accent) 12%, var(--card-solid)); color: var(--accent); }
+.movo-app .acct-bank-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.movo-app .acct-network-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.movo-app .acct-net { display: grid; justify-items: center; align-content: center; gap: 4px; height: 60px; padding: 0; border: 0; border-radius: 14px; background: var(--field); color: var(--muted); box-shadow: none !important; }
+.movo-app .acct-net.selected { background: color-mix(in srgb, var(--accent) 16%, var(--card-solid)); color: var(--text); box-shadow: inset 0 0 0 1.5px var(--accent) !important; }
+.movo-app .acct-net small { font-size: 10.5px; font-weight: 600; }
+.movo-app .acct-net-mark { position: relative; display: grid; place-items: center; width: 38px; height: 20px; font-size: 11px; font-weight: 900; font-style: italic; letter-spacing: -.02em; color: var(--text); }
+.movo-app .net-visa .acct-net-mark { color: #1a1f71; }
+.movo-app.theme-dark .net-visa .acct-net-mark, .theme-dark .movo-app .net-visa .acct-net-mark { color: #fff; }
+.movo-app .net-mastercard .acct-net-mark i { position: absolute; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #eb001b; }
+.movo-app .net-mastercard .acct-net-mark i:first-child { left: 6px; } .movo-app .net-mastercard .acct-net-mark i:last-child { right: 6px; background: #f79e1b; opacity: .92; }
+.movo-app .net-amex .acct-net-mark { border-radius: 4px; background: #2e77bc; color: #fff; font-style: normal; font-size: 9px; }
+.movo-app .net-discover .acct-net-mark { font-style: normal; font-size: 0; }
+.movo-app .net-discover .acct-net-mark b { font-size: 12px; } .movo-app .net-discover .acct-net-mark i { position: absolute; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #f58220; }
+.movo-app .chip-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.movo-app .chip-picks > button { display: grid; justify-items: center; gap: 6px; padding: 10px 6px; min-height: 0; }
+.movo-app .chip-picks .emv-chip { width: 40px; }
+.movo-app .scan-type { margin-bottom: 10px; }
+.movo-app .acct-field > .acct-bank-logo { flex: 0 0 36px; width: 36px; height: 36px; }
+
+/* ---------- Add / edit transaction: solid, readable, accent-led, fits one screen ---------- */
+.movo-app.movo-app .tx-sheet { --tone: var(--accent); --tone-bg: rgba(var(--accent-rgb), .14); background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.movo-app .tx-sheet { --tx-field: color-mix(in srgb, var(--text) 5%, var(--card-solid)); }
+.movo-app.movo-app .tx-sheet :is(.tx-note, .tx-chips button, .tx-meta label, .tx-clock, .acct-pick, .tx-pad .k) { background: var(--tx-field); backdrop-filter: none; -webkit-backdrop-filter: none; border: 0; box-shadow: none; }
+.movo-app.movo-app .tx-sheet .tx-pad { background: none; backdrop-filter: none; border: 0; padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-bottom { background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.movo-app .tx-sheet .tx-bottom::before { background: linear-gradient(to bottom, transparent, var(--bg)); }
+.movo-app.movo-app .tx-sheet .tx-seg { background: var(--tx-field); border: 0; }
+.movo-app.movo-app .tx-sheet .tx-seg button.selected { background: var(--accent); color: var(--on-accent, #fff); box-shadow: 0 2px 8px rgba(var(--accent-rgb), .3); }
+/* Amount: symbol and figures centred together. */
+.movo-app.movo-app .tx-sheet .tx-amount { justify-content: center; align-items: baseline; gap: 6px; min-height: 76px; padding: 6px 0 2px; }
+.movo-app.movo-app .tx-sheet .tx-currency { font-size: 26px; font-weight: 600; color: var(--muted); }
+.movo-app.movo-app .tx-sheet .tx-figures { flex: 0 1 auto; align-items: center; text-align: center; min-width: 0; }
+.movo-app.movo-app .tx-sheet .tx-value { font-size: 46px; letter-spacing: -1.4px; }
+.movo-app.movo-app .tx-sheet .tx-value.empty { opacity: .45; }
+.movo-app .tx-sheet .tx-note { min-height: 50px; border-radius: 16px; }
+/* Account pickers (one, or From / To side by side). */
+.movo-app .tx-accounts { display: grid; gap: 8px; margin: 10px 0 2px; }
+.movo-app .tx-accounts.two { grid-template-columns: 1fr 1fr; }
+.movo-app .acct-pick { position: relative; display: flex; align-items: center; gap: 10px; min-height: 58px; padding: 8px 12px; border-radius: 16px; background: var(--tx-field, var(--field)); color: var(--text); cursor: pointer; }
+.movo-app .acct-pick select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.movo-app .acct-pick-logo { flex: 0 0 34px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-tile, 30%); overflow: hidden; background: rgba(var(--accent-rgb), .14); color: var(--accent); }
+.movo-app .acct-pick-logo img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.movo-app .acct-pick-text { flex: 1; display: grid; min-width: 0; line-height: 1.2; }
+.movo-app .acct-pick-text small { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.movo-app .acct-pick-text strong { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .acct-pick-text em { font-style: normal; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.movo-app .acct-pick.is-empty strong { color: var(--accent); }
+.movo-app .acct-pick-chevron { flex: none; color: var(--muted); }
+.movo-app .acct-pick:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--accent-rgb), .55); }
+/* Categories and keypad pick up the accent. */
+.movo-app.movo-app .tx-sheet .tx-chips button.selected { background: rgba(var(--accent-rgb), .16); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--text); }
+.movo-app .tx-sheet .tx-cats-head button { color: var(--accent); }
+.movo-app.movo-app .tx-sheet .tx-pad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 10px; }
+.movo-app.movo-app .tx-sheet .tx-pad .k { height: 48px; min-height: 48px; border-radius: 14px; font-size: 21px; font-weight: 500; color: var(--text); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.op { background: rgba(var(--accent-rgb), .14); color: var(--accent); font-size: 22px; }
+.movo-app.movo-app .tx-sheet .tx-pad .k.eq { background: var(--accent); color: var(--on-accent, #fff); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.clear { background: color-mix(in srgb, var(--red) 14%, var(--card-solid)); color: var(--red); }
+.movo-app .tx-sheet .tx-meta { margin-top: 8px; }
+.movo-app .tx-sheet .tx-meta label, .movo-app .tx-sheet .tx-clock { min-height: 54px; border-radius: 16px; }
+.movo-app.movo-app .tx-sheet .tx-bottom { display: block; padding-top: 10px; }
+.movo-app.movo-app .tx-sheet .tx-save { width: 100%; height: 52px; min-height: 52px; border-radius: 16px; background: var(--accent); color: var(--on-accent, #fff); font-weight: 650; }
+.movo-app.movo-app .tx-sheet .tx-save:disabled { background: rgba(var(--accent-rgb), .22); color: color-mix(in srgb, var(--text) 45%, transparent); }
+@media (max-height: 760px) { .movo-app.movo-app .tx-sheet .tx-pad .k { height: 42px; min-height: 42px; } .movo-app.movo-app .tx-sheet .tx-amount { min-height: 60px; } }
+/* Fit: compact rhythm so Expense (with categories) fits a 6.1"+ phone without scrolling; no focus ring on the note. */
+.movo-app.movo-app .tx-sheet .tx-pad .k { height: 44px; min-height: 44px; }
+.movo-app.movo-app .tx-sheet .tx-pad { gap: 6px; margin-top: 8px; }
+.movo-app.movo-app .tx-sheet .tx-pad-toggle { display: none; }
+.movo-app.movo-app .tx-sheet .tx-amount { min-height: 62px; padding: 2px 0 0; }
+.movo-app.movo-app .tx-sheet .tx-value { font-size: 42px; }
+.movo-app.movo-app .tx-sheet .tx-note { min-height: 46px; }
+.movo-app.movo-app .tx-sheet .tx-note input, .movo-app.movo-app .tx-sheet .tx-note input:focus { outline: none; box-shadow: none; border: 0; }
+.movo-app .tx-sheet .tx-note:focus-within { box-shadow: inset 0 0 0 1.5px rgba(var(--accent-rgb), .45); }
+.movo-app .acct-pick { min-height: 52px; padding: 6px 12px; }
+.movo-app .tx-accounts { margin: 8px 0 0; }
+.movo-app.movo-app .tx-sheet .tx-cats { margin-top: 8px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head { margin-bottom: 6px; }
+.movo-app.movo-app .tx-sheet .tx-chips button { min-height: 40px; height: 40px; }
+.movo-app.movo-app .tx-sheet .tx-meta label, .movo-app.movo-app .tx-sheet .tx-clock { min-height: 48px; padding-top: 6px; padding-bottom: 6px; }
+.movo-app.movo-app .tx-sheet .tx-save { height: 50px; min-height: 50px; }
+/* Fit within ~740 px of visible height (iPhone Safari with toolbars). */
+.movo-app.movo-app .tx-sheet .tx-form { display: flex; flex-direction: column; gap: 8px; }
+.movo-app.movo-app .tx-sheet :is(.tx-accounts, .tx-cats, .tx-meta, .tx-pad, .tx-amount, .tx-note) { margin-top: 0; margin-bottom: 0; }
+.movo-app.movo-app .tx-sheet .tx-amount { min-height: 56px; height: 56px; padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-value { font-size: 40px; line-height: 1; }
+.movo-app.movo-app .tx-sheet .tx-cats-head { margin-bottom: 4px; min-height: 22px; }
+.movo-app.movo-app .tx-sheet .tx-bottom { padding-top: 6px; }
+@media (max-height: 820px) { .movo-app.movo-app .tx-sheet .tx-pad .k { height: 40px; min-height: 40px; font-size: 20px; } }
+.movo-app.movo-app .tx-sheet .tx-cats { padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-chips { padding-top: 2px; padding-bottom: 2px; }
+.movo-app.movo-app .tx-sheet .tx-meta label, .movo-app.movo-app .tx-sheet .tx-clock { min-height: 44px; padding-top: 4px; padding-bottom: 4px; }
+.movo-app.movo-app .tx-sheet { padding-top: 6px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head { height: 22px; min-height: 22px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head button { min-height: 22px; height: 22px; padding: 0; }
+.movo-app.movo-app .tx-sheet .tx-bottom { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.op, .movo-app .tx-sheet .tx-cats-head button, .movo-app .acct-pick.is-empty strong { color: var(--accent-ink, var(--accent)); }
+.movo-app.movo-app .tx-sheet .tx-pad .k.op { background: rgba(var(--accent-rgb), .2); }
+
+/* ---------- Automatic logging sheet: adaptive (stacks on narrow phones, three-up modes when there is room) ---------- */
+.movo-app .autolog-sheet { --al-field: color-mix(in srgb, var(--text) 5%, var(--card-solid)); }
+.movo-app .autolog-sheet .al-card { padding: var(--box-pad, 16px); margin: 0 0 12px; border-radius: var(--r-card, 22px); }
+.movo-app .al-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 650; line-height: 1.25; }
+.movo-app .al-chip.tone-green { background: color-mix(in srgb, var(--green) 16%, transparent); color: var(--green); }
+.movo-app .al-chip.tone-blue { background: rgba(var(--accent-rgb), .14); color: var(--accent-ink, var(--accent)); }
+.movo-app .al-chip.tone-red { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); }
+.movo-app .al-chip.tone-gray { background: var(--al-field); color: var(--muted); }
+.movo-app .al-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.movo-app .al-row-text { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.movo-app .al-row-text strong { font-size: 15px; font-weight: 600; }
+.movo-app .al-row-text small, .movo-app .al-hint { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.movo-app .al-default { display: grid; gap: 6px; margin: 0 0 12px; }
+.movo-app .al-default .acct-pick { background: var(--al-field); }
+.movo-app .al-hint { display: block; padding: 0 4px; }
+.movo-app .al-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 12px; }
+.movo-app .al-mode { display: grid; justify-items: start; align-content: start; gap: 4px; min-height: 92px; padding: 12px; border: 0; border-radius: 18px; background: var(--al-field); color: var(--text); text-align: left; box-shadow: none !important; transition: background-color .2s ease-out, box-shadow .2s ease-out; }
+.movo-app .al-mode strong { font-size: 13.5px; font-weight: 650; }
+.movo-app .al-mode small { font-size: 11.5px; line-height: 1.3; color: var(--muted); }
+.movo-app .al-mode-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--r-tile, 30%); background: rgba(var(--accent-rgb), .14); color: var(--accent-ink, var(--accent)); }
+.movo-app .al-mode.selected { background: color-mix(in srgb, var(--accent) 14%, var(--card-solid)); box-shadow: inset 0 0 0 1.5px var(--accent) !important; }
+.movo-app .al-mode.selected .al-mode-icon { background: var(--accent); color: var(--on-accent, #fff); }
+.movo-app .al-recipe-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.movo-app .al-name { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--accent-ink, var(--accent)); }
+.movo-app .al-steps { display: grid; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; counter-reset: al; }
+.movo-app .al-steps li { position: relative; padding: 10px 12px 10px 40px; border-radius: 14px; background: var(--al-field); font-size: 13px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; counter-increment: al; }
+.movo-app .al-steps li::before { content: counter(al); position: absolute; left: 10px; top: 10px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(var(--accent-rgb), .16); color: var(--accent-ink, var(--accent)); font-size: 11px; font-weight: 700; }
+.movo-app .al-steps li.al-trigger { counter-increment: none; padding-left: 12px; background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
+.movo-app .al-steps li.al-trigger::before { content: none; }
+.movo-app .autolog-sheet .al-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 8px; }
+.movo-app .autolog-sheet .al-actions > button { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; height: 48px; min-height: 48px; padding: 0 12px; border-radius: 16px; font-size: 14px; white-space: nowrap; }
+.movo-app .autolog-sheet .al-actions .secondary-button { background: var(--al-field); border: 0; color: var(--text); }
+.movo-app .al-more { margin: 4px 0 8px; }
+.movo-app .al-more summary { padding: 10px 4px; font-weight: 600; color: var(--accent-ink, var(--accent)); cursor: pointer; }
+.movo-app .al-code { display: block; margin: 6px 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--al-field); font-size: 11.5px; line-height: 1.5; overflow-wrap: anywhere; white-space: normal; color: var(--muted); }
+@media (max-width: 370px) {
+  .movo-app .al-modes { grid-template-columns: 1fr; }
+  .movo-app .al-mode { grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; min-height: 0; }
+  .movo-app .al-mode-icon { grid-row: 1 / span 2; }
+  .movo-app .autolog-sheet .al-actions { grid-template-columns: 1fr; }
+}
+@media (min-width: 700px) { .movo-app .autolog-sheet .al-steps li { font-size: 13.5px; } }
+.movo-app .al-steps .al-action { display: block; font-size: 13.5px; font-weight: 650; color: var(--text); }
+.movo-app .al-steps .al-settings { display: grid; gap: 2px; margin-top: 4px; color: var(--muted); font-size: 12.5px; }
+.movo-app .al-steps .al-settings > span { overflow-wrap: anywhere; }
+
+/* ── Adaptive pass (2026-11-02): nothing is cut or pushed off-screen from 320px phones to desktop ──
+   Amounts in small boxes scale down with the box (container query + the figure's length from <Money>), so
+   "₱1,128,200" stays whole in a 3-up row on a 320px phone and keeps its full size wherever it fits. */
+.movo-app .stat-card, .movo-app .mini-card, .movo-app .donut-hole { container-type: inline-size; }
+.movo-app :is(.stat-card, .mini-card, .donut-hole) strong { overflow: visible; text-overflow: clip; }
+.movo-app :is(.stat-card, .mini-card, .donut-hole) strong .money { font-size: min(1em, calc(100cqi / (var(--len, 8) * .6))); white-space: nowrap; }
+@media (max-width: 360px) {
+  .movo-app .stat-grid { gap: 8px; }
+  .movo-app .stat-card { padding: 11px 9px 10px; }
+  .movo-app .stat-card .stat-head { gap: 5px; }
+  /* Add transaction: the type switch shares the row with the close and scan buttons. */
+  .movo-app .tx-sheet .tx-top { gap: 6px; }
+  .movo-app .tx-sheet .tx-seg { flex: 1 1 auto; min-width: 0; }
+  .movo-app .tx-sheet .tx-seg button { flex: 1 1 0; min-width: 0; padding: 0 6px; font-size: 12.5px; }
+}
+/* Very narrow summary tiles keep the whole label ("Expenses") rather than an icon and "Ex…". */
+@container (max-width: 96px) {
+  .movo-app .stat-card .stat-head .stat-icon { display: none; }
+}
+
+/* ── Card faces, larger identity (2026-11-02): bank logo and name 150%, amount 150% landscape / 120% portrait ──
+   Portrait cards stack the logo above the name so long bank names stay whole at the larger size. */
+.movo-app .credit-card.ccx .ccx-logo { width: 21.6cqw; height: 21.6cqw; }
+.movo-app.movo-app .credit-card.ccx .ccx-logo > i { font-size: 11.1cqw; }
+.movo-app .credit-card.ccx .ccx-name { font-size: 8.7cqw; line-height: 1.05; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.movo-app .credit-card.ccx .ccx-head { align-items: flex-start; }
+.movo-app .credit-card.ccx .ccx-brand { align-items: center; gap: 3.6cqw; }
+.movo-app .credit-card.ccx .ccx-type { flex: none; padding-top: 1cqw; }
+.movo-app .credit-card.ccx .ccx-chiprow { margin-top: 1.6cqw; }
+.movo-app .credit-card.ccx .ccx-balance { font-size: 8.7cqw; letter-spacing: -.03em; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-brand { flex-direction: column; align-items: flex-start; gap: 2.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-logo { width: 27.9cqw; height: 27.9cqw; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait .ccx-logo > i { font-size: 14.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-name { font-size: 11.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chiprow { margin-top: 5cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-balance { font-size: 10.1cqw; }
+/* Small thumbnails (pickers, grid tiles) keep the brand compact. */
+@container (max-width: 200px) {
+  .movo-app .credit-card.ccx.orientation-landscape .ccx-logo { width: 16cqw; height: 16cqw; }
+  .movo-app .credit-card.ccx.orientation-landscape .ccx-name { font-size: 7cqw; }
+}
+/* The amount never runs under the network mark: it keeps its size when it fits and shrinks for long figures. */
+.movo-app .credit-card.ccx .ccx-figures { flex: 1 1 auto; }
+.movo-app .credit-card.ccx .ccx-balance { font-size: min(8.7cqw, calc(60cqw / (var(--len, 9) * .6))); }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-balance { font-size: min(10.1cqw, calc(58cqw / (var(--len, 9) * .6))); }
+/* Network marks: compact lettering sized with the card. */
+.movo-app .credit-card.ccx .ccx-net { flex: none; }
+.movo-app .credit-card.ccx :is(.ccx-net.net-amex, .ccx-net.net-discover, .ccx-net.net-jcb, .ccx-net.net-unionpay, .ccx-net.net-other) { font-style: normal; font-weight: 800; letter-spacing: .02em; }
+.movo-app .credit-card.ccx .ccx-net.net-amex { padding: 1cqw 1.6cqw; border-radius: 1.2cqw; font-size: 4.6cqw; box-shadow: inset 0 0 0 .5cqw currentColor; }
+.movo-app .credit-card.ccx :is(.ccx-net.net-discover, .ccx-net.net-unionpay) { font-size: 4.4cqw; }
+.movo-app .credit-card.ccx .ccx-net.net-jcb { font-size: 6.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-visa { font-size: 9.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 17cqw; height: 10.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 10.6cqw; height: 10.6cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-amex { font-size: 5.6cqw; padding: 1.2cqw 2cqw; }
+.movo-app .credit-card.ccx.orientation-portrait :is(.ccx-net.net-discover, .ccx-net.net-unionpay) { font-size: 5.2cqw; }

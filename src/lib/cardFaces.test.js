@@ -24,7 +24,7 @@ test('type label follows card kind, then account type', () => {
 test('premium finishes resolve from their style id', () => {
   const { finishOf } = require('./cardFaces');
   expect(finishOf('finish:gold')).toMatchObject({ geo: true, sheen: true, chip: 'gold' });
-  expect(finishOf('finish:platinum').chip).toBe('silver');
+  expect(finishOf('finish:platinum').chip).toBe('platinum');
   expect(finishOf('finish:nope')).toBeNull();
   expect(finishOf('wp-w004')).toBeNull();
 });

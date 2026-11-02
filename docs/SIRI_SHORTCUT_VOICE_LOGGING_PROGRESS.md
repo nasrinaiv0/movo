@@ -109,11 +109,11 @@ Use a dedicated `siri_shortcut` source for Siri-originated transactions, distinc
 - [x] Identify MOVO's existing transaction schema and automation token/event tables.
 - [x] Confirm the server-side database logging RPC and its service-role-only execution grant.
 - [x] Identify existing PR #123 for automation source persistence/retry safety; reuse it rather than create a competing overlapping PR.
-- [ ] Merge PR #123 only after all required checks pass and the owner approves.
-- [ ] Inspect the current Shortcut endpoint/registration flow and align this upgrade with its actual request contract.
-- [ ] Implement natural-language parsing on the trusted server side with strict schema validation.
-- [ ] Add `siri_shortcut` to the source allowlist in a migration and update source labels/tests.
-- [ ] Add or update tests for parser, API, database isolation, idempotency, and retry behavior.
+- [x] PR #123 (`fix/automation-source-persistence-20261101`) is merged into `main`. Its source-aware insert still failed in production because `transactions_source_check` did not allow `applepay`/`googlepay`/`bank` (verified 2026-11-02 against the production constraint; reproduced locally).
+- [x] Inspect the current Shortcut endpoint/registration flow and align this upgrade with its actual request contract.
+- [x] Implement natural-language parsing on the trusted server side with strict validation (`api/_lib/voice.js`).
+- [x] Add `siri_shortcut` to the source allowlist (migration `20261102010000`) with tests; cross-source duplicate detection added to `log_automation_transaction_v2`.
+- [x] Add or update tests for parser, API, database isolation, idempotency, retry and cross-source duplicates.
 - [ ] Configure the iOS Shortcut to call the documented endpoint and speak only confirmed outcomes.
 - [ ] Apply/verify production migrations and test with the user's actual iPhone.
 - [ ] Update this document with PR, commit, CI, deployment, migration, and live-test results.
