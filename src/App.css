@@ -3734,3 +3734,143 @@ button.account-tile:active { transform: scale(.98); }
   font-size: 4.2cqw;
 }
 
+/* Card face layout — follow the supplied BPI reference card composition.
+   Order: logo + bank name / card type; chip + contactless; number + balance / network mark. */
+.movo-app .credit-card.ccx {
+  border-radius: 6.5cqw;
+}
+.movo-app .credit-card.ccx .ccx-face {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  padding: 8cqw 9cqw 8cqw 9cqw;
+  text-align: left;
+}
+.movo-app .credit-card.ccx.orientation-portrait {
+  border-radius: 6.5cqw;
+}
+.movo-app .credit-card.ccx.orientation-portrait .ccx-face {
+  padding: 10cqw 8cqw 9cqw 8cqw;
+}
+.movo-app .credit-card.ccx .ccx-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3cqw;
+}
+.movo-app .credit-card.ccx .ccx-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 2cqw;
+  min-width: 0;
+  padding-left: 6cqw;
+}
+.movo-app .credit-card.ccx.orientation-portrait .ccx-brand {
+  padding-left: 5cqw;
+}
+.movo-app .credit-card.ccx .ccx-brand img,
+.movo-app .credit-card.ccx .ccx-brand > i,
+.movo-app .credit-card.ccx .ccx-logo {
+  flex: none;
+  width: 7cqw;
+  height: 7cqw;
+  border-radius: 25%;
+}
+.movo-app .credit-card.ccx .ccx-brand img,
+.movo-app .credit-card.ccx .ccx-logo img {
+  padding: 0;
+  background: none;
+  object-fit: fill;
+  mix-blend-mode: normal;
+}
+.movo-app .credit-card.ccx .ccx-brand img {
+  width: 7cqw;
+  height: 7cqw;
+}
+.movo-app .credit-card.ccx .ccx-name {
+  min-width: 0;
+  font-size: 4.5cqw;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.movo-app .credit-card.ccx .ccx-type {
+  flex: none;
+  font-size: 4.2cqw;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.movo-app .credit-card.ccx .ccx-chiprow {
+  display: flex;
+  align-items: center;
+  gap: 5cqw;
+  margin-top: 5cqw;
+}
+.movo-app .credit-card.ccx .ccx-chip.emv-chip {
+  flex: none;
+  width: 12.2cqw;
+  height: auto;
+}
+.movo-app .credit-card.ccx .ccx-nfc {
+  flex: none;
+  width: 8cqw;
+  height: 6.8cqw;
+}
+.movo-app .credit-card.ccx .ccx-foot {
+  align-self: end;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 3cqw;
+  min-width: 0;
+}
+.movo-app .credit-card.ccx .ccx-figures {
+  display: grid;
+  justify-items: start;
+  gap: 1.6cqw;
+  min-width: 0;
+}
+.movo-app .credit-card.ccx .ccx-number {
+  font-size: 3.4cqw;
+  line-height: 1.1;
+  letter-spacing: .12em;
+  white-space: nowrap;
+}
+.movo-app .credit-card.ccx .ccx-balance {
+  font-size: 5.8cqw;
+  line-height: 1.1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.movo-app .credit-card.ccx .ccx-net.net-mastercard {
+  position: relative;
+  flex: none;
+  width: 18cqw;
+  height: 10cqw;
+}
+.movo-app .credit-card.ccx .ccx-net.net-mastercard i {
+  position: absolute;
+  top: 0;
+  width: 10cqw;
+  height: 10cqw;
+  border-radius: 50%;
+}
+.movo-app .credit-card.ccx .ccx-net.net-mastercard i:first-child { left: 0; }
+.movo-app .credit-card.ccx .ccx-net.net-mastercard i:last-child { right: 0; }
+
+/* Portrait values from the latest owner-approved dimensions table. */
+.movo-app .credit-card.ccx.orientation-portrait .ccx-name { font-size: 4.5cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-type { font-size: 6.2cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chiprow {
+  justify-content: center;
+  gap: 5cqw;
+  margin-top: 18cqw;
+  padding-left: 16cqw;
+}
+.movo-app .credit-card.ccx.orientation-portrait .ccx-chip.emv-chip { width: 24cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-nfc { width: 13cqw; height: 11cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-figures { gap: 2.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-number { font-size: 5.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-balance { font-size: 8.4cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard { width: 11cqw; height: 6.8cqw; }
+.movo-app .credit-card.ccx.orientation-portrait .ccx-net.net-mastercard i { width: 6.8cqw; height: 6.8cqw; }
+
