@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Money } from './ui';
+import Icon from './Icon';
 import { dayKey, getFormatLocale, smoothPath } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
@@ -45,6 +46,16 @@ export function buildFlow(txs, range, ref = new Date(), custom = {}, now = new D
   return buckets;
 }
 
+/* A compact date: the short formatted date is shown, and the native date input sits invisibly on top at 16px so
+   tapping opens the system picker without iOS zooming in. */
+function DateField({ label, value, min, max, onChange }) {
+  const shown = value ? fmt(`${value}T12:00:00`, { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+  return <label className="flow-date"><span className="flow-date-label">{label}</span>
+    <span className="flow-date-box"><b>{shown}</b><Icon name="calendar" size={14} />
+      <input type="date" aria-label={label} value={value} min={min} max={max} onClick={e => { try { e.currentTarget.showPicker?.(); } catch { /* picker opens natively */ } }} onChange={e => onChange(e.target.value)} />
+    </span></label>;
+}
+
 /** Money in and out over time, drawn as paired bars, two lines, or one net bar per period (`variant`). */
 export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
   const [range, setRange] = useState('day');
@@ -64,7 +75,10 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
     </div>
     <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}</button>)}</div>
-    {range === 'custom' && <div className="flow-custom"><label><span>{tr('From')}</span><input type="date" value={custom.from} max={custom.to || undefined} onChange={e => { setCustom({ ...custom, from: e.target.value }); setPick(-1); }} /></label><label><span>{tr('To')}</span><input type="date" value={custom.to} min={custom.from || undefined} onChange={e => { setCustom({ ...custom, to: e.target.value }); setPick(-1); }} /></label></div>}
+    {range === 'custom' && <div className="flow-custom">
+      <DateField label={tr('From')} value={custom.from} max={custom.to || undefined} onChange={v => { setCustom({ ...custom, from: v }); setPick(-1); }} />
+      <DateField label={tr('To')} value={custom.to} min={custom.from || undefined} onChange={v => { setCustom({ ...custom, to: v }); setPick(-1); }} />
+    </div>}
     <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
     <div className={`flow-plot is-${variant}`} role="list">
       {variant === 'lines' && data.length > 1 && <svg className="flow-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={line('income')} className="in-line" /><path d={line('expense')} className="out-line" /></svg>}
