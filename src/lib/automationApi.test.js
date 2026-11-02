@@ -157,6 +157,29 @@ describe('POST /api/log handler', () => {
     expect(calls[0].params).toMatchObject({ p_source: 'android_assistant', p_transaction_type: 'income', p_amount: 2000, p_account_id: 'acct-bpi', p_category: 'income' });
   });
 
+  test('a bank message is read on the server: type, amount, payee, date, reference and account', async () => {
+    const handler = load();
+    const res = await call(handler, { text: 'BPI: You have paid PHP 250.00 to MERALCO on 10-04-26 03:01 PM. Ref No. ABC12345.', app: 'BPI', source: 'bank' });
+    expect(res.statusCode).toBe(200);
+    expect(calls[0].name).toBe('log_automation_transaction_v2');
+    expect(calls[0].params).toMatchObject({ p_source: 'bank', p_transaction_type: 'expense', p_amount: 250, p_merchant: 'MERALCO', p_account_id: 'acct-bpi', p_external_reference: 'ABC12345', p_category: 'bills:electricity', p_occurred_at: '2026-10-04T07:01:00.000Z' });
+    expect(calls[0].params.p_note).toMatch(/You have paid PHP 250.00 to MERALCO/);
+  });
+
+  test('money sent to someone is stored as a transfer out of that account', async () => {
+    const handler = load();
+    await call(handler, { text: 'You have sent PHP 500.00 to MARIA S. via BPI on 10-03-26 1:05 PM. Ref No. 7788990011.', app: 'BPI' });
+    expect(calls[0].params).toMatchObject({ p_source: 'notification', p_transaction_type: 'expense', p_category: 'transfer', p_amount: 500, p_account_id: 'acct-bpi' });
+  });
+
+  test('one-time codes are ignored: nothing is logged and nothing is stored', async () => {
+    const handler = load();
+    const res = await call(handler, { text: 'Your OTP is 482913. Never share it.', app: 'GCash', source: 'notification' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ success: false, ignored: true, reason: 'not_a_transaction' });
+    expect(calls).toEqual([]);
+  });
+
   test('unclear speech is not logged and asks for clarification', async () => {
     const handler = load();
     const res = await call(handler, { text: 'I spent 50 on bread and 30 on milk', source: 'siri_shortcut', card: 'Cash' });

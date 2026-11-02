@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const MAX_BODY_BYTES = 8192;
 const KEY_RE = /^[a-f0-9]{32,128}$/i;
 const { parseVoice, guessCategory } = require('./_lib/voice');
+const { parseMessage } = require('./_lib/messageText');
 // Every channel that may post here; stored as transactions.source (see migration 20261102010000).
 const SOURCES = new Set(['applepay', 'googlepay', 'bank', 'notification', 'siri_shortcut', 'android_assistant']);
 const SOURCE_LABELS = { applepay: 'Apple Pay', googlepay: 'Google Pay', bank: 'bank notification', notification: 'notification', siri_shortcut: 'Siri', android_assistant: 'Android assistant' };
@@ -159,16 +160,28 @@ module.exports = async function handler(req, res) {
     const source = SOURCES.has(body.source) ? body.source : 'notification';
     review = { tokenHash, userId: registered.user_id, source, type: body.type === 'income' ? 'income' : 'expense', text: cleanText(body.text, 300), amount: amountValue(body.amount), merchant: cleanText(body.merchant, 160), card: cleanText(body.card || body.account, 100), reference: cleanText(body.reference, 120) };
     // Voice paths may send the spoken sentence instead of fields; it is parsed here, never trusted blindly.
-    let voice = null;
+    // Other channels may send a bank / e-wallet message (SMS, email, Android notification) as `text`.
+    let voice = null; let message = null;
     if (typeof body.text === 'string' && body.text.trim() && (body.amount === undefined || body.amount === null || body.amount === '')) {
-      voice = parseVoice(body.text);
-      if (!voice.ok) return fail(422, 'clarification_required', { reason: voice.reason });
+      if (VOICE_SOURCES.has(source)) {
+        voice = parseVoice(body.text);
+        if (!voice.ok) return fail(422, 'clarification_required', { reason: voice.reason });
+      } else {
+        message = parseMessage(body.text, { app: cleanText(body.app || body.sender, 60) });
+        if (!message.ok && message.reason === 'not_a_transaction') {
+          // One-time codes, log-in alerts and promos: nothing is logged and nothing is stored.
+          review = null;
+          return json(res, 200, { success: false, ignored: true, reason: 'not_a_transaction', message: 'Not a payment message, so MOVO ignored it.' });
+        }
+        if (!message.ok) return fail(422, 'clarification_required', { reason: message.reason, message: 'MOVO could not read an amount from that message.' });
+        voice = { ...message, accountHint: message.accountHint };
+      }
     }
     const amount = voice ? voice.amount : amountValue(body.amount);
     // Wallet sometimes reports a payment without a merchant name; keep the payment rather than dropping it.
     const merchant = voice ? cleanText(voice.merchant, 160) : (cleanText(body.merchant, 160) || (amountValue(body.amount) ? `${SOURCE_LABELS[source].replace(/^./, c => c.toUpperCase())} purchase` : ''));
     const card = cleanText(voice ? (body.card || body.account || voice.accountHint) : (body.card || body.account), 100);
-    const reference = cleanText(body.reference, 120);
+    const reference = cleanText(body.reference || (message && message.reference), 120);
     const type = (voice && voice.type) || (body.type === 'income' ? 'income' : 'expense');
     const requestedCurrency = typeof body.currency === 'string' && /^[A-Z]{3}$/.test(body.currency.trim().toUpperCase()) ? body.currency.trim().toUpperCase() : (voice && voice.currency) || '';
     Object.assign(review, { type, amount, merchant, card, currency: requestedCurrency });
@@ -183,8 +196,8 @@ module.exports = async function handler(req, res) {
     const account = accountFor(accounts || [], card) || (registered.default_account_id && (accounts || []).find(a => a.id === registered.default_account_id)) || null;
     if (!account) return fail(409, accounts?.length ? 'account_match_required' : 'account_required');
     const requestId = idempotencyKey({ source, amount, merchant, card, occurredAt, reference, type });
-    const note = [`Logged from ${SOURCE_LABELS[source]}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ').slice(0, 1000);
-    const category = cleanText(body.category, 40) || guessCategory(`${merchant} ${voice ? body.text : ''}`, type);
+    const note = [`Logged from ${SOURCE_LABELS[source]}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : '', message ? message.text : ''].filter(Boolean).join(' · ').slice(0, 1000);
+    const category = cleanText(body.category, 40) || (message && message.transfer ? 'transfer' : guessCategory(`${merchant} ${voice ? body.text : ''}`, type));
     stage = 'persist_transaction';
     // One shared, idempotent path for every channel: request retries, cross-source duplicates, RLS-equivalent
     // ownership checks and rate limits all live in log_automation_transaction_v2.
