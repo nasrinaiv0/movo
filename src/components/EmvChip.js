@@ -15,9 +15,8 @@ export const chipColors = (id) => CHIPS.find(c => c[0] === (LEGACY[id] || id)) |
 const MODULE = { x: 4.9, y: 2.9, w: 90.2, h: 70.2, r: 10.6 };
 
 /**
- * EMV chip set into the card: a carved recess (dark rim top-left, light rim bottom-right, a lip shadow) holding the
- * owner's chip image, with a faint sheen that drifts across now and then (CSS; off for reduced motion). No outline and
- * no outward shadow, so it reads as cut into the card.
+ * EMV chip: the owner's chip image with a soft shadow under its top edge and a faint sheen that drifts across now and
+ * then (CSS; off for reduced motion). No frame, outline or outward shadow.
  */
 export function EmvChip({ finish = 'gold', className = '' }) {
   const id = LEGACY[finish] || finish;
@@ -25,19 +24,16 @@ export function EmvChip({ finish = 'gold', className = '' }) {
   const { x, y, w, h, r } = MODULE;
   return <svg className={`emv-chip ${className}`.trim()} viewBox="0 0 100 76" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id={`${u}r`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#000" stopOpacity=".55" /><stop offset=".45" stopColor="#000" stopOpacity=".18" /><stop offset=".6" stopColor="#fff" stopOpacity=".12" /><stop offset="1" stopColor="#fff" stopOpacity=".6" /></linearGradient>
       <linearGradient id={`${u}g`} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity=".3" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
       <clipPath id={`${u}c`}><rect x={x} y={y} width={w} height={h} rx={r} /></clipPath>
       {id !== 'gold' && <filter id={`${u}f`}><feColorMatrix type="saturate" values="0" /><feComponentTransfer><feFuncR type="linear" slope={id === 'platinum' ? 1.12 : 1.02} intercept={id === 'platinum' ? .08 : .02} /><feFuncG type="linear" slope={id === 'platinum' ? 1.1 : 1.02} intercept={id === 'platinum' ? .08 : .02} /><feFuncB type="linear" slope={id === 'platinum' ? 1.16 : 1.08} intercept={id === 'platinum' ? .1 : .04} /></feComponentTransfer></filter>}
     </defs>
-    {/* the recess cut into the card */}
-    <rect x={x - 2.2} y={y - 2.1} width={w + 4.4} height={h + 4.2} rx={r + 2} fill="#000" fillOpacity=".22" />
-    <rect x={x - 2.2} y={y - 2.1} width={w + 4.4} height={h + 4.2} rx={r + 2} fill="none" stroke={`url(#${u}r)`} strokeWidth="1.6" />
     {/* the chip itself, seated slightly below the surface */}
     <g clipPath={`url(#${u}c)`}>
       <image href={chipImage} x={x} y={y} width={w} height={h} preserveAspectRatio="none" filter={id !== 'gold' ? `url(#${u}f)` : undefined} />
       <rect className="chip-shine" x="-60" y="-20" width="34" height="120" fill={`url(#${u}g)`} transform="rotate(20 50 38)" />
-      <rect x={x} y={y} width={w} height={h} rx={r} fill="none" stroke="#000" strokeOpacity=".3" strokeWidth="2.4" transform="translate(.5 .9)" />
+      {/* a soft shadow under the top edge, so the chip sits in the card without a visible frame */}
+      <rect x={x} y={y} width={w} height={h} rx={r} fill="none" stroke="#000" strokeOpacity=".16" strokeWidth="2" transform="translate(.4 .8)" />
     </g>
   </svg>;
 }
