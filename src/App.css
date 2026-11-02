@@ -3656,8 +3656,16 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .credit-card.ccx .ccx-logo {
   overflow: hidden;
 }
-.movo-app .credit-card.ccx .ccx-logo img,
 .movo-app .credit-card.ccx .ccx-brand img {
+  width: 7cqw;
+  height: 7cqw;
+  padding: 0;
+  background: none;
+  border-radius: 25%;
+  object-fit: fill;
+  mix-blend-mode: normal;
+}
+.movo-app .credit-card.ccx .ccx-logo img {
   width: 100%;
   height: 100%;
   padding: 0;
