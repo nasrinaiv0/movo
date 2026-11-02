@@ -40,8 +40,8 @@ export default function AutoLogSheet({ prefs, setPref, status, accounts = [], cl
     </section>
 
     {cloudMode && cloudAccounts.length > 0 && <section className="al-default">
-      <AccountPicker id="al-default-account" label={tr('Default account')} accounts={cloudAccounts} value={prefs.autoLogAccount || ''} placeholder={tr('Match by card name')} onChange={v => setPref('autoLogAccount', v)} />
-      <small className="al-hint">{tr('Used when a card name from Wallet does not match one of your accounts.')}</small>
+      <AccountPicker id="al-default-account" label={tr('Default account')} accounts={cloudAccounts} value={prefs.autoLogAccount || ''} placeholder={tr('Match by bank account')} onChange={v => setPref('autoLogAccount', v)} />
+      <small className="al-hint">{tr('Card payments log to the bank account of the same bank. This default is used when none matches.')}</small>
     </section>}
 
     <div className="al-modes" role="radiogroup" aria-label={tr('Choose automation style')}>

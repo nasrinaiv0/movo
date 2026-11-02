@@ -33,6 +33,23 @@ describe('background automation API input helpers', () => {
     expect(_test.accountFor(sameBank, 'BPI')).toBeNull();
   });
 
+  test('a card named after its bank logs to that bank account', () => {
+    // Account names follow the institution, so the BPI card and the BPI savings account are both "BPI".
+    const accounts = [
+      { id: 'bpi-card', name: 'BPI', institution_name: 'BPI', account_type: 'card' },
+      { id: 'bpi-bank', name: 'BPI', institution_name: 'BPI', account_type: 'bank' },
+      { id: 'gotyme-card', name: 'GoTyme Bank', institution_name: 'GoTyme Bank', account_type: 'card' },
+      { id: 'gotyme-bank', name: 'GoTyme Bank', institution_name: 'GoTyme Bank', account_type: 'bank' },
+      { id: 'gcash', name: 'GCash', institution_name: 'GCash', account_type: 'e_wallet' },
+    ];
+    expect(_test.accountFor(accounts, 'BPI Visa').id).toBe('bpi-bank');
+    expect(_test.accountFor(accounts, 'BPI').id).toBe('bpi-bank');
+    expect(_test.accountFor(accounts, 'GoTyme Debit').id).toBe('gotyme-bank');
+    expect(_test.accountFor(accounts, 'GCash').id).toBe('gcash');
+    // Two bank accounts at one bank are still ambiguous: nothing is guessed.
+    expect(_test.accountFor([...accounts, { id: 'bpi-bank-2', name: 'BPI', institution_name: 'BPI', account_type: 'bank' }], 'BPI Visa')).toBeNull();
+  });
+
   test('idempotency keys are stable for the same payment and differ across transactions', () => {
     const payment = { source: 'applepay', amount: 109, merchant: 'Gadc', card: 'BPI Visa', occurredAt: '2026-10-31T12:01:00.000Z', reference: '' };
     expect(_test.idempotencyKey(payment)).toBe(_test.idempotencyKey({ ...payment }));

@@ -47,21 +47,33 @@ function clients() {
   return { auth: createClient(url, anon, options), admin: createClient(url, service, options) };
 }
 function bearer(req) { const match = /^Bearer\s+(.+)$/i.exec(req.headers.authorization || ''); return match ? match[1].trim() : ''; }
+// Matches a Wallet card / spoken account name to one of the person's accounts. Names usually follow the bank
+// ("BPI" for both the BPI card and the BPI savings account), so when a name fits several accounts of one bank the
+// payment goes to that bank's bank account. Still ambiguous -> null (the device's default account, if any, is used).
 function accountFor(accounts, hint) {
   const normalized = cleanText(hint, 100).toLowerCase();
   if (!normalized) return accounts.length === 1 ? accounts[0] : null;
+  const pick = (list) => {
+    if (list.length === 1) return list[0];
+    if (!list.length) return undefined;
+    const banks = list.filter((a) => a.account_type === 'bank');
+    return banks.length === 1 ? banks[0] : null;
+  };
   const names = accounts.map((a) => ({ account: a, name: String(a.name || '').toLowerCase() }));
-  const exact = names.filter((x) => x.name === normalized);
-  if (exact.length === 1) return exact[0].account;
-  if (exact.length > 1) return null;
-  const partial = names.filter((x) => x.name && (normalized.includes(x.name) || x.name.includes(normalized)));
-  if (partial.length === 1) return partial[0].account;
-  if (partial.length > 1) return null;
-  const institution = accounts.filter((a) => {
+  const exact = pick(names.filter((x) => x.name === normalized).map((x) => x.account));
+  if (exact !== undefined) return exact;
+  const partial = pick(names.filter((x) => x.name && (normalized.includes(x.name) || x.name.includes(normalized))).map((x) => x.account));
+  if (partial !== undefined) return partial;
+  const institution = pick(accounts.filter((a) => {
     const value = String(a.institution_name || '').toLowerCase();
     return value && (normalized === value || normalized.includes(value) || value.includes(normalized));
-  });
-  return institution.length === 1 ? institution[0] : null;
+  }));
+  if (institution !== undefined) return institution;
+  // "GoTyme Debit" -> "GoTyme Bank": a distinctive word (not "bank", "card", "debit", a network…) names the bank.
+  const generic = new Set(['bank', 'card', 'debit', 'credit', 'visa', 'mastercard', 'account', 'wallet', 'savings', 'checking', 'prepaid', 'amex']);
+  const words = normalized.split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3 && !generic.has(w));
+  const byWord = pick(words.length ? accounts.filter((a) => `${a.name || ''} ${a.institution_name || ''}`.toLowerCase().split(/[^\p{L}\p{N}]+/u).some((w) => words.includes(w))) : []);
+  return byWord || null;
 }
 function idempotencyKey({ source, amount, merchant, card, occurredAt, reference, type = 'expense' }) {
   // Per device retry key. Cross-channel duplicates are matched separately in the database (log_automation_transaction_v2).
