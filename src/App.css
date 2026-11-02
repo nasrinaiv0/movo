@@ -4281,3 +4281,17 @@ button.account-tile:active { transform: scale(.98); }
 [dir="rtl"] .ram-stage { left: auto; right: -16px; }
 [dir="rtl"] .is-scrolled .ram-stage { left: auto; right: -28px; }
 @media (prefers-reduced-motion: reduce) { .ram-stage, .ram-bubble, .ram-poster, .ram-canvas, .ram-glow, .ram-mascot { transition: none; } }
+
+/* Add transaction: the subcategory picker is a compact chip right after "CATEGORY" (View all stays at the right).
+   The chip shows the chosen subcategory; the native select sits invisibly on top at 16px so iOS does not zoom. */
+.movo-app.movo-app .tx-sheet .tx-cats-head { height: 28px; min-height: 28px; gap: 8px; }
+.movo-app.movo-app .tx-sheet .tx-cats-head > button { margin-left: auto; }
+.movo-app.movo-app .tx-sheet .tx-sub { position: relative; flex: 0 1 auto; justify-content: flex-start; max-width: 60%; height: 26px; min-height: 26px; margin: 0; padding: 0 22px 0 10px; border-radius: 999px; background: var(--tx-field, var(--field)); text-transform: none; letter-spacing: 0; }
+.movo-app.movo-app .tx-sheet .tx-sub-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; line-height: 26px; color: var(--muted); }
+.movo-app.movo-app .tx-sheet .tx-sub.has-value .tx-sub-value { color: var(--accent-ink, var(--accent)); }
+.movo-app.movo-app .tx-sheet .tx-sub select { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; opacity: 0; font-size: 16px; cursor: pointer; }
+.movo-app.movo-app .tx-sheet .tx-sub::after { right: 9px; width: 5px; height: 5px; margin-top: -4px; border-color: var(--muted); }
+.movo-app.movo-app .tx-sheet .tx-sub.has-value::after { border-color: var(--accent-ink, var(--accent)); }
+.movo-app.movo-app .tx-sheet .tx-sub:focus-within { background: color-mix(in srgb, var(--accent) 10%, var(--tx-field, var(--field))); }
+.movo-app.movo-app .tx-sheet .tx-sub { background: color-mix(in srgb, var(--text) 7%, transparent); }
+.movo-app.movo-app .tx-sheet .tx-sub.has-value { background: color-mix(in srgb, var(--accent) 13%, transparent); }

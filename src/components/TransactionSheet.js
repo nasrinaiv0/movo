@@ -76,7 +76,8 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>
       <div className="tx-cats-head"><span>{tr('Category')}</span>
         {/* Subcategory: optional detail inside the chosen category, or "Needs review" when unsure. */}
-        <label className="tx-sub">
+        <label className={`tx-sub${current.sub ? ' has-value' : ''}`}>
+        <span className="tx-sub-value">{current.id === NEEDS_REVIEW ? tr('Needs review') : current.sub ? tr(current.subLabel) : tr('Subcategory')}</span>
         <select aria-label={tr('Subcategory')} value={current.custom ? '' : current.id === current.primary ? '' : current.id} onChange={e => { setCatTouched(true); setForm({ ...form, category: e.target.value || current.primary }); }}>
           <option value="">{tr('None')}</option>
           {subcategoriesFor(current.primary).map(g => <optgroup key={g.group} label={tr(g.label)}>{g.subs.map(([id, label]) => <option key={id} value={id}>{tr(label)}</option>)}</optgroup>)}
