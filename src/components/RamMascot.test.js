@@ -4,13 +4,12 @@ import RamMascot from './RamMascot';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
-test('renders the still ram with its mood, message and greeting (no WebGL in tests)', () => {
+test('renders the still ram with its mood and message (no WebGL in tests)', () => {
   const el = document.createElement('div'); const root = createRoot(el); const onChange = jest.fn();
-  act(() => root.render(<RamMascot mood="angry" message="Grr! Food is over its limit." greeting="Good evening, Friend" onChangeMascot={onChange} />));
+  act(() => root.render(<RamMascot mood="angry" message="Grr! Food is over its limit." onChangeMascot={onChange} />));
   expect(el.querySelector('.ram-mascot.mood-angry.is-still')).not.toBeNull();
   expect(el.querySelector('canvas')).toBeNull();
   expect(el.querySelector('.ram-stage').getAttribute('aria-label')).toBe('MOVO ram: upset. Grr! Food is over its limit.');
-  expect(el.querySelector('h1').textContent).toBe('Good evening, Friend');
   expect(el.querySelector('.ram-bubble.is-open')).not.toBeNull();
   act(() => el.querySelector('.ram-bubble-link').click());
   expect(onChange).toHaveBeenCalled();

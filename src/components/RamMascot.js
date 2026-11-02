@@ -12,7 +12,7 @@ const canRender3D = () => typeof window !== 'undefined' && process.env.NODE_ENV 
  * The Home ram. It reacts to this month's spending limits (`mood` from lib/mascotMood) and to taps.
  * three.js and the model load lazily, so Home renders instantly and the ram fades in when ready.
  */
-export default function RamMascot({ mood = 'cute', message = '', greeting = '', onChangeMascot }) {
+export default function RamMascot({ mood = 'cute', message = '', onChangeMascot }) {
   const host = useRef(null); const api = useRef(null); const timer = useRef(0);
   const [ready, setReady] = useState(false); const [failed, setFailed] = useState(false);
   const [bubble, setBubble] = useState(true);
@@ -53,8 +53,7 @@ export default function RamMascot({ mood = 'cute', message = '', greeting = '', 
       <img className="ram-poster" src={`${ASSETS}ram-poster.png`} alt="" aria-hidden="true" draggable="false" />
       <span className="ram-canvas" ref={host} aria-hidden="true" />
     </button>
-    <div className={`ram-bubble${bubble ? ' is-open' : ''}`} aria-live="polite">
-      {greeting && <h1 className="ram-greeting">{greeting}</h1>}
+    <div className={`ram-bubble${bubble ? ' is-open' : ''}`} aria-hidden={!bubble}>
       <p>{message}</p>
       {onChangeMascot && <button type="button" className="ram-bubble-link" tabIndex={bubble ? 0 : -1} onClick={onChangeMascot}>{tr('Change mascot')}</button>}
     </div>

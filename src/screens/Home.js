@@ -143,12 +143,11 @@ export default function Home({ c }) {
 
   return <>
     <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}`}>
-      {ramOn ? <RamMascot mood={ram.mood} message={ramMessage} greeting={`${tr(timeGreeting())}, ${user.firstName}`} onChangeMascot={() => setMascotSheet(true)} /> : <>
-        <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
+      {ramOn ? <RamMascot mood={ram.mood} message={ramMessage} onChangeMascot={() => setMascotSheet(true)} />
+        : <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
           {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}
-        </button>
-        <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{subline}</p></div>
-      </>}
+        </button>}
+      <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{ramOn ? ramMessage : subline}</p></div>
       <div className="header-actions">
         <div className="header-action-buttons">
           <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} />
