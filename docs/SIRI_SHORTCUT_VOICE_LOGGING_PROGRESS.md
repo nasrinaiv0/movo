@@ -128,3 +128,18 @@ The database tables and logging RPC demonstrate that the secure automation found
 ## Acceptance criteria
 
 A spoken request such as “I bought 3 pesos for banana” creates exactly one `expense` record for ₱3, on the correct user's selected/default account, categorized appropriately, with the Siri source and correct Manila-local occurrence time. The normal MOVO transaction list and totals reflect it, and Siri confirms only after successful persistence. Invalid or ambiguous requests do not silently create incorrect records.
+
+## Income and transfers by voice (2026-11-02)
+
+| Say | Logged as |
+|---|---|
+| "I received 2,000 pesos from work" / "I got 500 from mom" / "I received my salary of 20,000 to my BPI account" | Income (sender, or the kind of income: Salary, Bonus, Allowance…) |
+| "I transferred 500 from BPI to GCash" / "Moved 200 from my cash to Maya" / "Cash in 1000 from BPI to GCash" / "Inilipat ko ang 1,000 mula sa BPI papunta sa GCash" | **One transfer** (`transaction_type = 'transfer'`, from → to), the same shape as a transfer added in the app |
+
+- Both accounts must be named and must match two different accounts of the person; MOVO never guesses one. A missing,
+  unknown or identical account gets a spoken reply asking for the account names.
+- Transfers are written by `log_automation_transfer` (migration `20261103010000_automation_transfers.sql`, test
+  `supabase/tests/automation_transfers.test.sql`): service role only, active device key of that person, one lock per
+  person, retry-safe, shared rate limits, both accounts open and in the same currency, duplicates reported not inserted.
+- Until that migration is applied, Siri replies "Transfers from Siri are not switched on for MOVO yet" and nothing is
+  logged.
