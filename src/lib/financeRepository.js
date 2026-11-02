@@ -154,6 +154,21 @@ const validBudget = (category, limit) => {
   if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Budget limit must be greater than zero.');
   return { category: name, monthly_limit: Math.round(amount * 100) / 100 };
 };
+/* Phone automations that could not be logged (movo_automation_inbox): read and resolved by their owner only (RLS). */
+export async function listAutomationInbox() {
+  const { data, error } = await requireClient().from('movo_automation_inbox')
+    .select('id,source,reason,transaction_type,amount,currency,merchant,account_hint,spoken_text,external_reference,occurred_at,status,transaction_id,created_at')
+    .eq('status', 'failed').order('created_at', { ascending: false }).limit(100);
+  // Until migration 20261102020000 is applied the table does not exist: there is simply nothing to review.
+  if (error && /PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) return [];
+  return unwrap({ data, error });
+}
+export async function resolveAutomationInboxItem(id, { status, transactionId = null }) {
+  if (!['logged', 'dismissed'].includes(status)) throw new Error('Choose logged or dismissed.');
+  return unwrap(await requireClient().from('movo_automation_inbox')
+    .update({ status, transaction_id: status === 'logged' ? transactionId : null, resolved_at: new Date().toISOString() })
+    .eq('id', id).select('id,status').single());
+}
 export async function listBudgets() {
   return unwrap(await requireClient().from('budgets')
     .select('id,category,monthly_limit,currency,starts_on,is_active').eq('is_active', true).order('category', { ascending: true }));

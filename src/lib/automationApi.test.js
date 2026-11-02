@@ -143,7 +143,39 @@ describe('POST /api/log handler', () => {
     const handler = load();
     const res = await call(handler, { text: 'I spent 50 on bread and 30 on milk', source: 'siri_shortcut', card: 'Cash' });
     expect(res.statusCode).toBe(422);
-    expect(res.body).toMatchObject({ error: 'clarification_required', reason: 'multiple_amounts' });
+    expect(res.body).toMatchObject({ error: 'clarification_required', reason: 'multiple_amounts', savedForReview: true });
+    // Nothing is logged; the phrase is kept so the person can log it from the app.
+    expect(calls.map(c => c.name)).toEqual(['record_automation_failure']);
+    expect(calls[0].params).toMatchObject({ p_reason: 'clarification_required', p_source: 'siri_shortcut', p_spoken_text: 'I spent 50 on bread and 30 on milk', p_user_id: 'user-1', p_amount: null });
+  });
+
+  test('a payment with no matching account is kept for review in the app, with its details', async () => {
+    const handler = load();
+    const res = await call(handler, { amount: '250', merchant: 'Grab', card: 'Wallet Mastercard', source: 'applepay', occurredAt: '2026-11-01T04:00:00.000Z' });
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toMatchObject({ success: false, error: 'account_match_required', savedForReview: true });
+    expect(res.body.message).toMatch(/Saved in MOVO/);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].name).toBe('record_automation_failure');
+    expect(calls[0].params).toMatchObject({ p_reason: 'account_match_required', p_source: 'applepay', p_amount: 250, p_merchant: 'Grab', p_account_hint: 'Wallet Mastercard', p_occurred_at: '2026-11-01T04:00:00.000Z', p_transaction_type: 'expense' });
+    expect(calls[0].params.p_request_id).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  test('a rate-limited payment is kept for review; if saving fails the original error is still returned', async () => {
+    const handler = load();
+    rpcResult = { data: null, error: { message: 'rate_limited' } };
+    const res = await call(handler, { amount: 10, merchant: 'X', card: 'Cash', source: 'bank' });
+    expect(res.statusCode).toBe(429);
+    expect(calls.map(c => c.name)).toEqual(['log_automation_transaction_v2', 'record_automation_failure']);
+    expect(res.body).toMatchObject({ error: 'rate_limited', savedForReview: false });
+    expect(res.body.message).not.toMatch(/Saved in MOVO/);
+  });
+
+  test('an unregistered device key never stores anything', async () => {
+    const handler = load();
+    tokenRow = null;
+    const res = await call(handler, { amount: 10, merchant: 'X', card: 'Cash', source: 'applepay' });
+    expect(res.statusCode).toBe(401);
     expect(calls).toHaveLength(0);
   });
 
@@ -160,7 +192,7 @@ describe('POST /api/log handler', () => {
     const res = await call(handler, { amount: 10, merchant: 'X', source: 'applepay' });
     expect(res.statusCode).toBe(409);
     expect(res.body.error).toBe('account_match_required');
-    expect(calls).toHaveLength(0);
+    expect(calls.map(c => c.name)).toEqual(['record_automation_failure']); // kept for review, never guessed
   });
 
   test('unregistered or revoked device keys are rejected', async () => {

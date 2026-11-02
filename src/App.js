@@ -46,7 +46,8 @@ import { guessCategory } from './lib/ocr';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem } from './lib/financeRepository';
+import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
@@ -77,11 +78,13 @@ export function readableAccent(hex, dark) {
   for (let i = 0; i < 12 && (lum() + 0.05) / (0.0116 + 0.05) < 6; i += 1) [r, g, b] = [r, g, b].map(v => Math.round(v + (255 - v) * 0.18));
   return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
 }
+// When a record reached MOVO (created_at), falling back to when it happened for older local rows.
+const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || '') || 0;
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
-  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
+  biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
@@ -210,6 +213,7 @@ function App() {
   const [nFilter, setNFilter] = useState('All');
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
+  const [inbox, setInbox] = useState([]); // phone automations that could not be logged (cloud only)
   const [pendingLog, setPendingLog] = useState(null);
   const [automationStatus, setAutomationStatus] = useState('idle');
   const [toast, setToast] = useState('');
@@ -290,7 +294,8 @@ function App() {
     if (!user) return;
     setBusy(true); setError('');
     try {
-      const [a, t, postings, activities] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => [])]);
+      const [a, t, postings, activities, failed] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []), Promise.resolve().then(() => listAutomationInbox()).catch(() => [])]);
+      setInbox(failed || []);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
       listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
     } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
@@ -325,7 +330,7 @@ function App() {
       if (s?.user) refreshCloud(s.user); else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
-        setCloudAccounts([]);
+        setCloudAccounts([]); setInbox([]);
         setCloudPostings([]);
         setCloudActivities([]);
         setRawTxs(pending?.transactions || loadLocalTransactions());
@@ -887,6 +892,55 @@ function App() {
   }, []);
   const unlock = useCallback(() => setLocked(false), []);
 
+  /* ---------- "While you were away": what was logged since MOVO was last open, and automations that failed ---------- */
+  // Checked once the app is ready, and again when MOVO comes back after 2+ minutes in the background (cloud records
+  // are refreshed first). Only items that arrived while the person was away open the sheet.
+  const [logsCheck, setLogsCheck] = useState(null);
+  useEffect(() => { if (authReady) setLogsCheck({ since: 0 }); }, [authReady]);
+  useEffect(() => {
+    let awayAt = 0;
+    const onVis = () => {
+      if (document.hidden) { awayAt = Date.now(); return; }
+      const since = awayAt; awayAt = 0;
+      if (!since || Date.now() - since < 120000) return;
+      const check = () => setLogsCheck({ since });
+      if (cloudMode && session?.user) refreshCloud(session.user).then(check, check); else check();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [cloudMode, session, refreshCloud]);
+  useEffect(() => {
+    if (!logsCheck || locked) return;
+    setLogsCheck(null);
+    if (!prefs.logsSeenAt) { setPref('logsSeenAt', new Date().toISOString()); return; } // first run: start counting from now
+    if (!prefs.onboarded || sheet) return;
+    const since = Math.max(Date.parse(prefs.logsSeenAt) || 0, logsCheck.since || 0);
+    if (rawTxs.some(t => logStamp(t) > since) || inbox.some(i => Date.parse(i.created_at) > since)) setSheet({ name: 'recentLogs', since });
+  }, [logsCheck, locked, prefs.logsSeenAt, prefs.onboarded, sheet, rawTxs, inbox, setPref]);
+  const closeRecentLogs = () => { setPref('logsSeenAt', new Date().toISOString()); setSheet(null); };
+  const dismissInboxItem = async (item) => {
+    try { await resolveAutomationInboxItem(item.id, { status: 'dismissed' }); setInbox(cur => cur.filter(i => i.id !== item.id)); notify(tr('Dismissed.')); }
+    catch { notify(tr('Could not update this item. Please try again.')); }
+  };
+  const logInboxItem = async (item, { account_id, amount, merchant }) => {
+    const type = item.transaction_type === 'income' ? 'income' : 'expense';
+    const occurred_at = item.occurred_at || new Date().toISOString();
+    const account = formAccounts.find(a => a.id === account_id);
+    const dup = findDuplicate({ merchant, amount, type, date: occurred_at, account_id, ref: item.external_reference || '' }, rawTxs);
+    try {
+      let row = null;
+      if (!dup) {
+        row = await createAutomated({ merchant, amount, currency: item.currency || account?.currency || base, transaction_type: type, category: type === 'income' ? 'Income' : guessCategory(merchant), account_id, occurred_at,
+          note: tr('Logged from {source}', { source: tr(SOURCE_LABEL[item.source] || 'Notification') }), source: item.source, external_reference: item.external_reference || undefined });
+        markFresh(row.id); setRawTxs(cur => [row, ...cur]);
+      }
+      await resolveAutomationInboxItem(item.id, { status: 'logged', transactionId: (row || dup).id });
+      setInbox(cur => cur.filter(i => i.id !== item.id));
+      notify(dup ? `${dupText(dup)} ${tr('It was not added twice.')}` : tr('Logged {amount} at {merchant}.', { amount: money(amount, row.currency), merchant }));
+      if (row) celebrate();
+    } catch { notify(tr('Could not log this payment. Please try again.')); }
+  };
+
   /* Fade out the loading screen from index.html once the app is ready; keep it at least ~0.9s so it never flashes. */
   useEffect(() => {
     if (!authReady) return undefined;
@@ -1011,7 +1065,7 @@ function App() {
       const pending = pendingLocalDataRef.current;
       setSession(null);
       setCloudMode(false);
-      setCloudAccounts([]);
+      setCloudAccounts([]); setInbox([]);
       setCloudPostings([]);
       setCloudActivities([]);
       setRawTxs(pending?.transactions || loadLocalTransactions());
@@ -1054,6 +1108,7 @@ function App() {
   if (!authReady) return <div className={rootClass} style={rootStyle}><div className="loading-screen"><span className="brand-mark">m</span><p>{tr('Preparing your secure MOVO space…')}</p></div></div>;
   const detailTx = sheet?.name === 'tx' ? txs.find(t => t.id === sheet.id) : null;
   const formAccounts = accountsView.filter(a => !a.is_archived);
+  const rawIds = new Set(rawTxs.map(t => t.id));
   const accountChoice = sheet?.name === 'cardDetails' ? accountsView.find(a => a.id === sheet.id) || selectedCard : null;
 
   const screen = (() => {
@@ -1197,6 +1252,7 @@ function App() {
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
       {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
+      {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}

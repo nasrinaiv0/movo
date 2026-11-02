@@ -653,6 +653,28 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     expect(dialog.querySelector('[aria-label="Amount"]')?.textContent).toContain('109');
   });
 
+  test('opening MOVO shows what was logged while it was unused, then remembers it was seen', async () => {
+    act(() => root.unmount());
+    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, onboarded: true, logsSeenAt: '2026-10-29T02:00:00.000Z' }));
+    const txs = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]');
+    const account = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'))[0];
+    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{ id: 'away-1', merchant: 'Away Cafe', amount: 333, currency: 'PHP', transaction_type: 'expense', category: 'Food & drinks', account_id: account.id, occurred_at: '2026-10-29T02:30:00.000Z', created_at: '2026-10-29T02:30:00.000Z', source: 'applepay' }, ...txs]));
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    const dialog = () => container.querySelector('.recent-logs-sheet');
+    expect(dialog()).not.toBeNull();
+    expect(dialog().textContent).toContain('While you were away');
+    expect(dialog().textContent).toContain('Away Cafe');
+    expect(dialog().textContent).toContain('Apple Pay');
+    expect(dialog().textContent).not.toContain('Not logged'); // nothing failed on this device
+    act(() => Array.from(dialog().querySelectorAll('button')).find(b => b.textContent.trim() === 'Done').click());
+    expect(dialog()).toBeNull();
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(Date.parse(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).logsSeenAt)).toBeGreaterThan(Date.parse('2026-10-29T02:30:00.000Z'));
+  });
+
   test('trusted Apple Pay links log with their own source, and the bank alert for the same purchase is not added twice', async () => {
     const key = 'f'.repeat(32);
     act(() => root.unmount());

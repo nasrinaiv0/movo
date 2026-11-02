@@ -69,6 +69,28 @@ function idempotencyKey({ source, amount, merchant, card, occurredAt, reference,
   const stable = reference ? `${kind}${source}|ref:${reference.toLowerCase()}|${amount.toFixed(2)}|${merchant.toLowerCase()}|${card.toLowerCase()}` : kind + [source, amount.toFixed(2), merchant.toLowerCase(), card.toLowerCase(), String(Math.floor(Date.parse(occurredAt) / 60000))].join('|');
   return sha256(stable);
 }
+// Failures after the device key is verified are kept for the person to review in MOVO ("While you were away"), so a
+// payment is never silently lost. Recording is best-effort: if it fails, the original error is still returned.
+const REVIEW_REASONS = { account_match_required: 1, account_required: 1, account_invalid: 1, clarification_required: 1, invalid_transaction: 1, rate_limited: 1 };
+async function saveForReview(api, review, error) {
+  if (!review) return false;
+  const reason = REVIEW_REASONS[error] ? error : error === 'invalid_transaction_date' ? 'invalid_transaction' : 'server_error';
+  const minute = String(Math.floor(Date.now() / 60000));
+  const requestId = sha256(['review', review.source, review.type, review.amount || 0, (review.merchant || '').toLowerCase(), (review.card || '').toLowerCase(), review.text || '', review.reference || '', review.reference ? '' : minute].join('|'));
+  try {
+    const { data, error: rpcError } = await api.admin.rpc('record_automation_failure', {
+      p_token_hash: review.tokenHash, p_request_id: requestId, p_user_id: review.userId, p_source: review.source, p_reason: reason,
+      p_transaction_type: review.type, p_amount: review.amount || null, p_currency: review.currency || null, p_merchant: review.merchant || null,
+      p_account_hint: review.card || null, p_spoken_text: review.text || null, p_external_reference: review.reference || null,
+      p_occurred_at: review.occurredAt || new Date().toISOString(),
+    });
+    if (rpcError) { console.error('[movo-automation] review save failed', { message: String(rpcError.message || 'unknown').slice(0, 160) }); return false; }
+    return Boolean(data);
+  } catch (cause) {
+    console.error('[movo-automation] review save failed', { message: String(cause?.message || 'unknown').slice(0, 160) });
+    return false;
+  }
+}
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return json(res, 405, { error: 'method_not_allowed' }); }
   if (Number(req.headers['content-length'] || 0) > MAX_BODY_BYTES) return json(res, 413, { error: 'payload_too_large' });
@@ -76,6 +98,13 @@ module.exports = async function handler(req, res) {
   if (Buffer.byteLength(JSON.stringify(body), 'utf8') > MAX_BODY_BYTES) return json(res, 413, { error: 'payload_too_large' });
   const action = body.action || 'log', token = bearer(req), api = clients();
   let stage = 'request_received';
+  let review = null;
+  // An error reply that also keeps the attempt for review in the app once the device is known.
+  const fail = async (status, error, extra = {}) => {
+    const saved = await saveForReview(api, review, error);
+    const base = extra.message || ERROR_MESSAGES[error] || ERROR_MESSAGES.automation_request_failed;
+    return json(res, status, { error, ...extra, savedForReview: saved, message: saved ? `${base} Saved in MOVO so you can log it from the app.` : base });
+  };
   if (!api) { console.error('[movo-automation] request failed', { stage, reason: 'service_not_configured' }); return json(res, 503, { error: 'automation_service_unavailable' }); }
   try {
     if (action === 'register') {
@@ -116,11 +145,12 @@ module.exports = async function handler(req, res) {
     if (!registered?.active) return json(res, 401, { error: 'device_not_registered' });
     stage = 'validate_transaction';
     const source = SOURCES.has(body.source) ? body.source : 'notification';
+    review = { tokenHash, userId: registered.user_id, source, type: body.type === 'income' ? 'income' : 'expense', text: cleanText(body.text, 300), amount: amountValue(body.amount), merchant: cleanText(body.merchant, 160), card: cleanText(body.card || body.account, 100), reference: cleanText(body.reference, 120) };
     // Voice paths may send the spoken sentence instead of fields; it is parsed here, never trusted blindly.
     let voice = null;
     if (typeof body.text === 'string' && body.text.trim() && (body.amount === undefined || body.amount === null || body.amount === '')) {
       voice = parseVoice(body.text);
-      if (!voice.ok) return json(res, 422, { error: 'clarification_required', reason: voice.reason, message: 'Say one amount and what it was for, for example “I spent 150 pesos on lunch”.' });
+      if (!voice.ok) return fail(422, 'clarification_required', { reason: voice.reason });
     }
     const amount = voice ? voice.amount : amountValue(body.amount);
     // Wallet sometimes reports a payment without a merchant name; keep the payment rather than dropping it.
@@ -129,15 +159,17 @@ module.exports = async function handler(req, res) {
     const reference = cleanText(body.reference, 120);
     const type = (voice && voice.type) || (body.type === 'income' ? 'income' : 'expense');
     const requestedCurrency = typeof body.currency === 'string' && /^[A-Z]{3}$/.test(body.currency.trim().toUpperCase()) ? body.currency.trim().toUpperCase() : (voice && voice.currency) || '';
-    if (!amount || !merchant) return json(res, 400, { error: 'invalid_transaction' });
+    Object.assign(review, { type, amount, merchant, card, currency: requestedCurrency });
+    if (!amount || !merchant) return fail(400, 'invalid_transaction');
     const parsedDate = body.occurredAt ? Date.parse(body.occurredAt) : voice ? Date.parse(voice.occurredAt) : Date.now();
-    if (!Number.isFinite(parsedDate) || parsedDate < Date.now() - 366 * 86400000 || parsedDate > Date.now() + 86400000) return json(res, 400, { error: 'invalid_transaction_date' });
+    if (!Number.isFinite(parsedDate) || parsedDate < Date.now() - 366 * 86400000 || parsedDate > Date.now() + 86400000) return fail(400, 'invalid_transaction_date');
     const occurredAt = new Date(parsedDate).toISOString();
+    review.occurredAt = occurredAt;
     stage = 'match_account';
     const { data: accounts, error: accountsError } = await api.admin.from('financial_accounts').select('id,name,account_type,institution_name,currency,is_archived,display_order').eq('user_id', registered.user_id).eq('is_archived', false).order('display_order', { ascending: true });
     if (accountsError) throw accountsError;
     const account = accountFor(accounts || [], card) || (registered.default_account_id && (accounts || []).find(a => a.id === registered.default_account_id)) || null;
-    if (!account) return json(res, 409, { error: accounts?.length ? 'account_match_required' : 'account_required', message: accounts?.length ? ERROR_MESSAGES.account_match_required : ERROR_MESSAGES.account_required });
+    if (!account) return fail(409, accounts?.length ? 'account_match_required' : 'account_required');
     const requestId = idempotencyKey({ source, amount, merchant, card, occurredAt, reference, type });
     const note = [`Logged from ${SOURCE_LABELS[source]}`, card ? `Account hint: ${card}` : '', reference ? `Ref ${reference}` : ''].filter(Boolean).join(' · ').slice(0, 1000);
     const category = cleanText(body.category, 40) || guessCategory(`${merchant} ${voice ? body.text : ''}`, type);
@@ -152,10 +184,10 @@ module.exports = async function handler(req, res) {
     }
     if (rpcError) {
       const message = String(rpcError.message || '');
-      if (message.includes('rate_limited')) return json(res, 429, { error: 'rate_limited' });
-      if (message.includes('account_invalid')) return json(res, 409, { error: 'account_invalid' });
+      if (message.includes('rate_limited')) return fail(429, 'rate_limited');
+      if (message.includes('account_invalid')) return fail(409, 'account_invalid');
       if (message.includes('token_invalid')) return json(res, 401, { error: 'device_not_registered' });
-      if (message.includes('invalid_transaction') || message.includes('invalid_request')) return json(res, 400, { error: 'invalid_transaction' });
+      if (message.includes('invalid_transaction') || message.includes('invalid_request')) return fail(400, 'invalid_transaction');
       throw rpcError;
     }
     const { error: usageError } = await api.admin.from('movo_automation_tokens').update({ last_used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
@@ -166,7 +198,7 @@ module.exports = async function handler(req, res) {
     return json(res, 200, { success: true, duplicate: Boolean(result?.duplicate), matchedBy: result?.matched_by || null, transactionId: result?.transaction_id || null, type, amount, currency: requestedCurrency || account.currency || 'PHP', merchant, source, message: spoken });
   } catch (error) {
     console.error('[movo-automation] request failed', { stage, message: String(error?.message || 'unknown').slice(0, 200) });
-    return json(res, 500, { error: 'automation_request_failed' });
+    return fail(500, 'automation_request_failed');
   }
 };
 module.exports._test = { sha256, cleanText, amountValue, accountFor, idempotencyKey, SOURCES };
