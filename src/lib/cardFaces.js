@@ -65,7 +65,7 @@ export function cardTypeLabel(a = {}, face) {
  */
 export const FINISHES = {
   gold: F('#f6e3a6', '#b7862a', '#fff6d8', { c3: '#e4bf62', ink: 'dark', chip: 'gold', sheen: true, geo: true, name: 'Gold' }),
-  platinum: F('#f4f6f9', '#a7aeb9', '#ffffff', { c3: '#d9dee5', ink: 'dark', chip: 'silver', sheen: true, geo: true, name: 'Platinum' }),
+  platinum: F('#f4f6f9', '#a7aeb9', '#ffffff', { c3: '#d9dee5', ink: 'dark', chip: 'platinum', sheen: true, geo: true, name: 'Platinum' }),
   silver: F('#e3e6ea', '#7f8792', '#ffffff', { c3: '#bfc5cc', ink: 'dark', chip: 'silver', sheen: true, geo: true, name: 'Silver' }),
   gradient: F('#6d5bff', '#ffae5c', '#ffffff', { c3: '#ff5fa2', chip: 'gold', geo: true, name: 'Gradient' }),
 };

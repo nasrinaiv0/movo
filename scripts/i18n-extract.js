@@ -34,7 +34,7 @@ for (const f of files) {
       const inImport = stack.some(n => n.type === 'ImportDeclaration' || n.type === 'ExportAllDeclaration');
       const isKey = parent && parent.type === 'ObjectProperty' && parent.key === node;
       const attr = [...stack].reverse().find(n => n.type === 'JSXAttribute');
-      const badAttr = attr && /^(className|key|type|role|id|htmlFor|name|value|href|src|accept|style|rel|target|inputMode|autoComplete|pattern|d|viewBox)$/.test(attr.name.name);
+      const badAttr = attr && /^(className|key|type|role|id|htmlFor|name|value|href|src|accept|style|rel|target|inputMode|autoComplete|pattern|d|viewBox|transform|patternTransform|gradientTransform)$/.test(attr.name.name);
       const call = [...stack].reverse().find(n => n.type === 'CallExpression');
       const callee = call && (call.callee.name || call.callee.property?.name);
       const badCall = call && NON_UI_CALLS.test(callee || '') && !(['tr', 'rich'].includes(callee));
