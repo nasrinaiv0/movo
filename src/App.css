@@ -4126,3 +4126,28 @@ button.account-tile:active { transform: scale(.98); }
 
 /* The chip is carved into the card (recess drawn in the SVG): no outward drop shadow on any card. */
 .movo-app .credit-card .emv-chip, .movo-app .credit-card.ccx .ccx-chip.emv-chip, .movo-app .cc-chip.emv-chip { filter: none; }
+
+/* ── Portrait MOVO card — owner reference 2026-11-02 (measured as fractions of the card width) ──
+   Top row: MOVO mark + "MOVO / Financial Tracker" left, card type right. Chip lying flat, centred, about 28% of
+   the width down, contactless beside it. Large MOVO mark lower right, running off the right edge. Number + amount
+   bottom left, network bottom right. Applies to MOVO cards only; bank cards keep the vertical BPI layout. */
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-face { --chip-top: max(27.7cqw, 50px); }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-head { display: flex; flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 1.8cqw; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-brand { display: flex; flex: 1 1 auto; flex-direction: row; align-items: center; gap: 2cqw; min-width: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-movo-logo { width: clamp(20px, 13cqw, 52px); height: clamp(20px, 13cqw, 52px); }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-name { font-size: clamp(9px, 6.2cqw, 26px); }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-sub { font-size: clamp(6px, 3.5cqw, 15px); overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-titles { flex: 1 1 auto; min-width: 0; }
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-type {
+  position: static; transform: none; justify-self: auto; align-self: center; flex: none;
+  font-size: clamp(6.5px, 3.9cqw, 16px); opacity: 1;
+}
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-chip.emv-chip {
+  position: absolute; left: 50%; top: var(--chip-top); width: 19.5cqw; margin: 0; transform: translateX(-50%);
+}
+.movo-app.movo-app .credit-card.ccx.ccx.ccx-movo.orientation-portrait .ccx-nfc {
+  position: absolute; left: 64cqw; right: auto; top: var(--chip-top); margin-top: 3.6cqw; width: 8cqw; height: 8cqw; min-width: 12px; min-height: 12px; transform: none;
+}
+.movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-watermark { right: -9cqw; bottom: 23cqw; width: 78cqw; }
+.movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-art path[stroke-width="26"],
+.movo-app .credit-card.ccx.ccx-movo.orientation-portrait .ccx-art path[stroke-width="18"] { opacity: .14; }

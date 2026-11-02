@@ -149,7 +149,7 @@ const CardFaceArt = memo(function CardFaceArt({ face, orientation, seed }) {
 const MovoFaceArt = memo(function MovoFaceArt({ face, orientation }) {
   const raw = useId(); const u = `m${raw.replace(/[^a-z0-9]/gi, '')}`;
   const P = orientation === 'portrait'; const w = P ? 540 : 856; const h = P ? 856 : 540;
-  const curve = P ? `M0 ${h * .82} C ${w * .35} ${h * .62} ${w * .6} ${h * .42} ${w} ${h * .3}` : `M${w * .04} ${h * .98} C ${w * .32} ${h * .62} ${w * .62} ${h * .36} ${w} ${h * .27}`;
+  const curve = P ? `M0 ${h * .56} C ${w * .3} ${h * .4} ${w * .62} ${h * .36} ${w} ${h * .18}` : `M${w * .04} ${h * .98} C ${w * .32} ${h * .62} ${w * .62} ${h * .36} ${w} ${h * .27}`;
   let motif = null;
   if (face.motif === 'glow') {
     motif = <>
@@ -177,15 +177,18 @@ const MovoFaceArt = memo(function MovoFaceArt({ face, orientation }) {
       {dots}
     </>;
   } else if (face.motif === 'brushed') {
-    // brushed metal: fine rays fanning out from one point, like a spun finish
-    const cx = w * .78; const cy = h * .36; const rays = [];
+    // brushed metal: fine rays fanning out from one point (a spun finish), crossed by a band of fine light lines
+    const cx = P ? w * .9 : w * .78; const cy = P ? h * .1 : h * .36; const rays = [];
     for (let i = 0; i < 180; i += 1) {
       const a = (i / 180) * Math.PI * 2; const len = Math.hypot(w, h);
-      rays.push(<path key={i} d={`M${cx} ${cy} L${cx + Math.cos(a) * len} ${cy + Math.sin(a) * len}`} stroke={i % 3 ? '#ffffff' : '#7d8590'} strokeWidth={i % 3 ? 2.2 : 1.2} opacity={i % 3 ? .16 : .1} />);
+      rays.push(<path key={i} d={`M${cx} ${cy} L${cx + Math.cos(a) * len} ${cy + Math.sin(a) * len}`} stroke={i % 3 ? '#ffffff' : '#7d8590'} strokeWidth={i % 3 ? 2.2 : 1.2} opacity={i % 3 ? .14 : .08} />);
     }
+    const band = [];
+    for (let i = 0; i < 16; i += 1) band.push(<path key={i} d={curve} transform={`translate(0 ${i * (P ? 7 : 5)})`} stroke="#ffffff" strokeWidth="1.2" opacity={.18 + (i % 4) * .08} fill="none" />);
     motif = <>
       {rays}
-      <path d={`M0 ${h * .62} C ${w * .25} ${h * .5} ${w * .45} ${h * .78} ${w * .7} ${h * .5} S ${w} ${h * .44} ${w} ${h * .44} L${w} ${h * .56} C ${w * .75} ${h * .6} ${w * .5} ${h * .86} ${w * .25} ${h * .66} S 0 ${h * .74} 0 ${h * .74} Z`} fill="#fff" opacity=".45" />
+      <path d={curve} transform={`translate(0 ${P ? 50 : 36})`} stroke="#ffffff" strokeWidth={P ? 110 : 80} opacity=".22" fill="none" filter={`url(#${u}b)`} />
+      {band}
     </>;
   }
   return <svg className="ccx-art" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
