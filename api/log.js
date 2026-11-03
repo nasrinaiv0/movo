@@ -39,6 +39,10 @@ const ERROR_MESSAGES = {
 function json(res, status, body) {
   res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff');
   const out = body && body.error ? { ...body, success: false, message: body.message || ERROR_MESSAGES[body.error] || ERROR_MESSAGES.automation_request_failed } : body;
+  // `notice` is what a background automation should show: the reply for a new record or a problem. It is left out for
+  // a duplicate or an ignored non-payment (promos, OTPs), so a bank-notification shortcut needs one "has any value"
+  // check (a missing key never has a value in Shortcuts).
+  if (out && typeof out === 'object' && !out.ignored && !(out.success && out.duplicate) && out.message) out.notice = String(out.message);
   return res.status(status).json(out);
 }
 function sha256(value) { return crypto.createHash('sha256').update(String(value)).digest('hex'); }
