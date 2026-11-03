@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
 import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
@@ -18,6 +18,29 @@ const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
 const FORMATS = [['landscape', 'Landscape'], ['portrait', 'Portrait']];
+
+/*
+ * Card format preview: the card is laid out at the size it really has in the Wallet (340px landscape, 160px
+ * portrait) and scaled down to fit the option, so the logo, chip, type, amount and network sit exactly as they do
+ * on the applied card instead of collapsing at thumbnail size.
+ */
+const REAL_WIDTH = { landscape: 340, portrait: 160 };
+function ScaledCard({ orientation, children }) {
+  const box = useRef(null);
+  const [scale, setScale] = useState(0.4);
+  const real = REAL_WIDTH[orientation] || 340;
+  const ratio = orientation === 'portrait' ? 85.6 / 54 : 54 / 85.6;
+  useLayoutEffect(() => {
+    const el = box.current; if (!el) return undefined;
+    const fit = () => { const w = el.clientWidth; if (w) setScale(Math.min(1, w / real)); };
+    fit();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(fit); ro.observe(el); return () => ro.disconnect();
+  }, [real]);
+  return <span ref={box} className={`format-scaled is-${orientation}`} style={{ height: real * ratio * scale }}>
+    <span className="format-scaled-inner" style={{ width: real, transform: `scale(${scale})` }}>{children}</span>
+  </span>;
+}
 export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'portrait', fxLandscape: 'stack', fxPortrait: 'cylinder' };
 const sorters = { 'balance-desc': (a, b) => b.balance - a.balance, 'balance-asc': (a, b) => a.balance - b.balance, name: (a, b) => a.name.localeCompare(b.name), type: (a, b) => a.account_type.localeCompare(b.account_type) || a.name.localeCompare(b.name) };
 const mask = (a) => (a.mask ? `•••• ${a.mask}` : '');
@@ -138,7 +161,7 @@ export default function Wallet({ c }) {
       <div className="seg-control wallet-view-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={17} /><span>{tr(label)}</span></button>)}</div>
       <p className="mini-title wallet-format-title">{tr('Card format')}</p>
       <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
-        <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" /><span>{tr(label)}</span></button>)}</div>
+        <ScaledCard orientation={key}>{selectedCard ? cardVisual(selectedCard, key) : <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" />}</ScaledCard><span>{tr(label)}</span></button>)}</div>
       {[['fxLandscape', 'Landscape animation', LANDSCAPE_FX], ['fxPortrait', 'Portrait animation', PORTRAIT_FX]].map(([key, title, list]) => <React.Fragment key={key}>
         <p className="mini-title wallet-fx-title">{tr(title)}</p>
         <div className="wallet-fx-row" role="group" aria-label={tr(title)}>{list.map(([fx, label]) => <button type="button" key={fx} className={`wallet-fx-option fx-${fx}${wv[key] === fx ? ' selected' : ''}`} aria-pressed={wv[key] === fx} onClick={() => setWv({ [key]: fx })}><span className="fx-glyph" aria-hidden="true"><i /><i /><i /></span><span>{tr(label)}</span></button>)}</div>
