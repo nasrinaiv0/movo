@@ -51,6 +51,7 @@ export function shortcutRecipe(origin, key, mode = `interactive`) {
   }
   if (mode === `notifications` || mode === `notifications-automatic`) {
     const interactive = mode === `notifications`;
+    return {
     name: `MOVO Bank Notifications`,
     trigger: `Shortcuts → Automation → + → Notification → choose the app (GCash, Maya or your bank app) → Run Immediately → turn off Notify When Run → Next → New Blank Automation. Make one automation like this for each bank or e-wallet app.`,
     steps: [
