@@ -39,7 +39,10 @@ function FailedRow({ item, accounts, show, onLog, onDismiss }) {
       <span className="tx-main"><strong>{title}</strong><small>{tr(SOURCE_LABEL[item.source] || 'Notification')} · {tr(REASON[item.reason] || 'MOVO was unavailable')}</small></span>
       <span className="rl-failed-side">
         <b>{item.amount ? (show ? money(Number(item.amount), item.currency || undefined) : '••••') : '—'}</b>
-        {!open && <button type="button" className="rl-log-btn" onClick={() => setOpen(true)} aria-label={tr('Log {name}', { name: title })}>{tr('Log')}</button>}
+        {!open && <span className="rl-failed-btns">
+          <button type="button" className="rl-archive-btn" disabled={busy} onClick={() => run(() => onDismiss(item))} aria-label={tr('Archive {name}', { name: title })}>{tr('Archive')}</button>
+          <button type="button" className="rl-log-btn" onClick={() => setOpen(true)} aria-label={tr('Log {name}', { name: title })}>{tr('Log')}</button>
+        </span>}
       </span>
     </div>
     {open && <form className="rl-fix" onSubmit={(e) => { e.preventDefault(); if (valid && !busy) run(() => onLog(item, { account_id: account, amount: Math.round(value * 100) / 100, merchant: merchant.trim().slice(0, 160) })); }}>
@@ -49,7 +52,7 @@ function FailedRow({ item, accounts, show, onLog, onDismiss }) {
         <label><span>{tr('Description')}</span><input aria-label={tr('Description')} maxLength={160} value={merchant} onChange={e => setMerchant(e.target.value)} required /></label>
       </div>
       <div className="rl-fix-actions">
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => run(() => onDismiss(item))}>{tr('Dismiss')}</button>
+        <button type="button" className="secondary-button" disabled={busy} onClick={() => run(() => onDismiss(item))}>{tr('Archive')}</button>
         <button type="submit" className="primary-button" disabled={!valid || busy}>{busy ? tr('Saving…') : tr('Log')}</button>
       </div>
     </form>}
@@ -74,7 +77,7 @@ export default function RecentLogsSheet({ logs = [], failed = [], accounts = [],
       </button>)}
     </div>
     {shownFailed.length > 0 && <section className="rl-section" aria-label={tr('Not logged')}>
-      <h3 className="rl-head">{tr('Not logged')}<small>{tr('Choose an account to log these, or dismiss them.')}</small></h3>
+      <h3 className="rl-head">{tr('Not logged')}<small>{tr('Log them to an account, or archive them (kept 90 days).')}</small></h3>
       <ul className="rl-list">{shownFailed.map(item => <FailedRow key={item.id} item={item} accounts={accounts} show={show} onLog={onLog} onDismiss={onDismiss} />)}</ul>
     </section>}
     {shownLogs.length > 0 && <section className="rl-section" aria-label={tr('Logged')}>
