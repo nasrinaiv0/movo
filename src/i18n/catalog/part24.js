@@ -48,4 +48,5 @@ export default [
   ["Rounded", "Bilugan", "مستدير", "圆体", "Redondeada", "Arrotondato", "Abgerundet", "Arrondie", "Arredondada", "丸ゴシック", "둥근 글꼴", "गोलाकार"],
   ["Serif", "Serif", "مذيّل", "衬线", "Serif", "Graziato", "Serifen", "Avec empattements", "Serifada", "セリフ", "세리프", "सेरिफ़"],
   ["Readable", "Madaling basahin", "سهل القراءة", "易读", "Legible", "Leggibile", "Gut lesbar", "Lisible", "Legível", "読みやすい", "읽기 쉬운", "पढ़ने में आसान"],
+  ["Listening — pause briefly to transcribe", "Nakikinig — huminto sandali para ma-transcribe", "جارٍ الاستماع — توقّف قليلًا ليُكتب كلامك", "正在聆听 — 稍作停顿即可转写", "Escuchando — haz una pausa breve para transcribir", "In ascolto — fai una breve pausa per trascrivere", "Hört zu — kurz pausieren zum Transkribieren", "Écoute — marquez une courte pause pour transcrire", "Ouvindo — faça uma breve pausa para transcrever", "聞き取り中 — 少し間を置くと文字にします", "듣는 중 — 잠시 멈추면 받아 적습니다", "सुन रहा है — लिखने के लिए थोड़ा रुकें"],
 ];
