@@ -3,13 +3,13 @@ name: MOVO iOS build
 # Compiles the iOS app (Capacitor + MOVO's Swift plugin) for the simulator without signing, so native changes are
 # checked on every PR without a Mac. Signing, TestFlight and App Store uploads are a separate, later workflow.
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
       - "ios/**"
       - "capacitor.config.json"
       - "package.json"
-      - "src/**"
       - ".github/workflows/ios-build.yml"
   push:
     branches: [main]
