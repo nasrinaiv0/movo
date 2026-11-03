@@ -101,7 +101,9 @@ Also:
 - [ ] App-lock and biometric claims accurately reflect implemented security.
 - [ ] Server-side NasrinAI auth, consent, minimization, and redaction tests pass.
 - [ ] Dependency audit is captured; actionable vulnerabilities are fixed or documented with explicit risk acceptance.
-- [ ] Production CSP/headers are verified.
+- [ ] Production CSP/headers and route-specific CORS policies are verified.
+- [ ] Wildcard CORS is absent from authenticated/private APIs; any public-asset exception is isolated and documented.
+- [ ] CORS preflight, credential, missing/null/untrusted-origin, and error-response tests pass.
 - [ ] CI tests, typecheck, and build pass with recorded output.
 - [ ] Draft PR and documentation are complete; no merge/deploy performed.
 - [ ] Production-readiness decision is evidence-based.
@@ -205,6 +207,28 @@ Audit every table, view, materialized view, function, trigger, storage bucket, A
 - Test consent revocation, account deletion, record deletion, export, and cache clearing against actual data flows.
 - Reconcile published privacy disclosures with actual upstream AI processing and retention behavior.
 
+
+
+### P1 — Overly permissive CORS / Access-Control-Allow-Origin (new finding)
+**Status:** OPEN — NOT VERIFIED. A security scanner reports that MOVO's `Access-Control-Allow-Origin` policy is too permissive. The scanner warning alone does not establish which route, deployment layer, or response emits the header; trace it before changing configuration.
+
+**Threat scenario:** A wildcard or dynamically reflected origin on authenticated/private endpoints can permit hostile websites to read responses in browser contexts where the endpoint also permits credentials or exposes data through other browser-accessible mechanisms. CORS is not authentication and does not, by itself, prevent requests from being sent. The primary security boundary remains server-side authentication, authorization, and CSRF defenses.
+
+**Required investigation and remediation:**
+- Trace effective headers across `vercel.json`, API routes/functions, middleware, Supabase Edge Functions, reverse proxies/CDN rules, and any other response layer. Inspect both `OPTIONS` preflight and actual responses, including 4xx/5xx paths and redirects.
+- Identify every endpoint that emits `Access-Control-Allow-Origin`; classify it as public static asset, public API, authenticated/private API, or credentialed endpoint. Document the intended policy per route.
+- Remove `Access-Control-Allow-Origin: *` from authenticated, user-specific, financial, transaction, account, and NasrinAI endpoints. Never reflect an arbitrary request `Origin` value.
+- For browser-accessible APIs, allow only exact trusted origins (scheme + hostname + required port). Use a production allowlist; add localhost/dev origins only in non-production configuration. Reject lookalike suffixes, untrusted subdomains, malformed origins, and `Origin: null` unless a specific reviewed use case requires it.
+- Emit `Access-Control-Allow-Origin` only for an exact allowlist match. If the response varies by origin, emit `Vary: Origin`. Never pair wildcard origin with `Access-Control-Allow-Credentials: true`; credentialed requests require a specific allowed origin.
+- Minimize `Access-Control-Allow-Methods` and `Access-Control-Allow-Headers` to the route's actual needs. Handle preflight consistently and avoid advertising methods/headers that are not supported.
+- Decide explicitly how requests with no Origin are handled for native apps and server-to-server clients. Do not treat missing Origin as trusted browser traffic and do not weaken browser CORS to accommodate non-browser clients. Authenticate and authorize every request independently.
+- Wildcard CORS may be retained only for genuinely public, immutable static assets where cross-origin access is required; keep it separate from private APIs and document the rationale.
+- Preserve CSRF protections for cookie-authenticated state-changing endpoints. CORS must not be used as a substitute for CSRF tokens, SameSite cookie policy, session validation, or object-level authorization.
+- Add automated tests for allowed origin, disallowed origin, missing Origin, `null` Origin, hostile subdomain/suffix lookalikes, malformed Origin, credentialed requests, OPTIONS preflight, allowed methods/headers, redirects, and error responses. Verify that untrusted origins never receive permissive CORS headers.
+- Verify effective headers against deployed production and preview endpoints after release using non-sensitive test accounts. Capture sanitized request/response evidence and the tested URL, timestamp, and deployment revision.
+
+**Closure evidence:** affected routes/layers inventoried; exact allowlist documented; regression tests passing; production header checks captured; no wildcard or arbitrary reflection on private endpoints; authentication/authorization/CSRF independently verified. Until then, keep this finding OPEN and the overall production status NOT CLEARED.
+
 ### P1 — Dependency, CI/CD, and repository controls (expanded)
 - Run current full and production dependency audits from the committed lockfile; report exact package, severity, dependency path, patched version, and exploitability/context.
 - Review GitHub Actions permissions, third-party actions pinning, workflow triggers, pull-request secret exposure, artifact handling, and deployment credentials.
@@ -241,6 +265,13 @@ Run with dedicated synthetic accounts and non-production financial data. Record 
 | PT-22 | Inspect deployed CSP and security headers | Required policy present on app routes | P1 |
 | PT-23 | Bypass local app lock | Backend authorization still enforced; claims remain accurate | P1 |
 | PT-24 | Delete account and inspect retained copies | Behavior matches documented retention/deletion policy | P1 |
+| PT-25 | Send request from exact approved production origin | Only configured origin is allowed | P1 |
+| PT-26 | Send request from untrusted origin | No permissive CORS response; private data unreadable | P1 |
+| PT-27 | Send request with `Origin: null` or missing Origin | Matches documented policy; no accidental trust | P1 |
+| PT-28 | Send request from hostile lookalike subdomain/suffix | Rejected; no reflected origin | P1 |
+| PT-29 | Credentialed request with wildcard or untrusted origin | Never receives credentialed cross-origin access | P1 |
+| PT-30 | Inspect OPTIONS, redirect, and 4xx/5xx responses | CORS headers remain consistent with route policy | P1 |
+| PT-31 | Test CORS on transaction and NasrinAI endpoints | Exact allowlist; auth/authorization still enforced | P1 |
 
 A passing matrix improves assurance but does not prove the system is invulnerable. Include additional tests discovered during code review.
 
@@ -254,6 +285,7 @@ Do not mark MOVO cleared for production until:
 - [ ] Privileged credentials are absent from browser artifacts and exposed credentials have been rotated.
 - [ ] Device-key revocation, rotation, and abuse limits are verified.
 - [ ] CSP, XSS, CSRF/origin, rate-limit, and production-header checks are recorded.
+- [ ] CORS is exact-origin allowlisted on private APIs; PT-25 through PT-31 pass and live deployed headers are verified.
 - [ ] Dependency, secret, CI/CD, and branch-protection reviews are current.
 - [ ] Consent, deletion, retention, and log/cache behavior match actual implementation and published disclosures.
 - [ ] All unresolved P0 items remain visibly **BLOCKED / NOT CLEARED FOR PRODUCTION**.
