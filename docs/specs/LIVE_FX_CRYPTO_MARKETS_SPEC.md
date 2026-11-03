@@ -1,6 +1,6 @@
 # MOVO Live FX, Cryptocurrency & Markets — Implementation Specification
 
-Status: Partial implementation in PR #177. The FX converter, searchable currency selector, tracked pairs, refresh and provider freshness UI are implemented in this branch; historical FX charts, daily percentage changes and all cryptocurrency features remain pending.
+Status: Partial implementation in PR #177. The FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented in this branch. Tick-level pricing, daily market deltas and all cryptocurrency features remain pending.
 Owner request: 2026-11-04.
 
 ## Product outcome
@@ -74,7 +74,7 @@ PHP is the default display/base currency for users in the Philippines. Respect t
 ## Suggested implementation phases
 
 1. Provider/data layer: FX freshness metadata and reference-rate adapter are partially implemented; historical FX adapter and crypto market provider adapter, schema validation, cache/backoff hardening and tests remain.
-2. FX UI: converter, searchable currency selector, tracked pairs and refresh/stale indicators are implemented in PR #177; historical chart remains pending.
+2. FX UI: converter, searchable currency selector, tracked pairs, refresh/stale indicators and 1W/1M/3M/1Y historical charts are implemented in PR #177.
 3. Crypto UI: market list, search/sort, coin detail and supported history charts.
 4. Watchlist and alerts: local-first preferences, permission-aware notifications, tests.
 5. Portfolio: holdings CRUD, valuation, cost basis and accounting/net-worth integration with explicit separation from cash.
