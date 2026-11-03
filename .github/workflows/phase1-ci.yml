@@ -25,9 +25,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-      - name: Install locked dependencies
-        run: npm ci
+      - name: Install dependencies (repository does not commit a lockfile)
+        run: npm install
       - name: Audit production dependencies
         run: npm run audit:production
       - name: TypeScript typecheck
