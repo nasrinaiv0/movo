@@ -65,8 +65,8 @@ export default function ExchangeRates({ c }) {
 
   const historyPoints = history?.points || [];
   const historyValues = historyPoints.map(point => point.rate);
-  const historyMin = Math.min(...historyValues, 0);
-  const historyMax = Math.max(...historyValues, 0);
+  const historyMin = historyValues.length ? Math.min(...historyValues) : 0;
+  const historyMax = historyValues.length ? Math.max(...historyValues) : 0;
   const historySpan = historyMax - historyMin || 1;
   const historyPath = historyValues.map((value, index) => {
     const x = 8 + (index / Math.max(1, historyValues.length - 1)) * 304;
