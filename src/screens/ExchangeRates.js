@@ -27,11 +27,15 @@ export default function ExchangeRates({ c }) {
   useEffect(() => { setTo(base); }, [base]);
   useEffect(() => {
     let active = true;
-    c.refreshFx?.(false).catch(() => { if (active) setError(tr('Could not refresh exchange rates. Showing the last saved rates.')); });
-    const timer = window.setInterval(() => {
+    const checkRates = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       c.refreshFx?.(false).catch(() => { if (active) setError(tr('Could not refresh exchange rates. Showing the last saved rates.')); });
-    }, 6 * 60 * 60 * 1000);
-    return () => { active = false; window.clearInterval(timer); };
+    };
+    checkRates();
+    const onVisibility = () => { if (document.visibilityState === 'visible') checkRates(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    const timer = window.setInterval(checkRates, 6 * 60 * 60 * 1000);
+    return () => { active = false; document.removeEventListener('visibilitychange', onVisibility); window.clearInterval(timer); };
   }, [c.refreshFx]);
 
   const rate = rateBetween(from, to, fx.rates);
