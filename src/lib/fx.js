@@ -7,6 +7,9 @@ export const CURRENCIES = ['PHP', 'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'KRW', 'INR
 const FALLBACK = { USD: 1, PHP: 58, EUR: 0.92, GBP: 0.78, JPY: 150, CNY: 7.2, KRW: 1380, INR: 84, SGD: 1.34, HKD: 7.8, TWD: 32, AUD: 1.52, NZD: 1.66, CAD: 1.37, CHF: 0.88, SEK: 10.6, NOK: 10.8, DKK: 6.9, PLN: 3.95, TRY: 34, AED: 3.6725, SAR: 3.75, QAR: 3.64, KWD: 0.307, BHD: 0.376, OMR: 0.385, EGP: 48.5, MAD: 9.9, ILS: 3.7, MYR: 4.5, IDR: 15800, THB: 35, VND: 25000, PKR: 280, BDT: 118, MXN: 18.5, BRL: 5.5, ARS: 950, ZAR: 18, NGN: 1500 };
 const KEY = 'movo.fx.v1';
 const MAX_AGE = 6 * 3600 * 1000;
+let pendingRefresh = null;
+let failureCount = 0;
+let lastFailureAt = 0;
 
 export function loadRates() {
   try {
@@ -18,20 +21,32 @@ export function loadRates() {
 
 /** Fetches the provider's latest USD reference rates. force=true is for explicit user refresh. */
 export async function refreshRates(current, force = false) {
+  if (pendingRefresh) return pendingRefresh;
   if (!force && current?.live && Date.now() - Number(current.fetched || 0) < MAX_AGE) return null;
-  const res = await fetch('https://open.er-api.com/v6/latest/USD', { credentials: 'omit', referrerPolicy: 'no-referrer' });
-  if (!res.ok) throw new Error('rates_unavailable');
-  const body = await res.json();
-  if (body?.result !== 'success' || Number(body?.rates?.USD) !== 1 || !Number.isFinite(Number(body?.time_last_update_unix))) throw new Error('rates_invalid');
-  const rates = {};
-  CURRENCIES.forEach(code => {
-    const value = Number(body.rates[code]);
-    if (Number.isFinite(value) && value > 0) rates[code] = value;
-  });
-  if (!rates.PHP || !rates.EUR) throw new Error('rates_incomplete');
-  const next = { rates: { ...FALLBACK, ...rates }, at: Number(body.time_last_update_unix) * 1000, fetched: Date.now(), live: true, provider: 'ExchangeRate-API' };
-  try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* cache is optional */ }
-  return next;
+  const backoff = Math.min(30 * 60 * 1000, 15 * 1000 * (2 ** Math.min(failureCount, 7)));
+  if (!force && lastFailureAt && Date.now() - lastFailureAt < backoff) return null;
+  pendingRefresh = (async () => {
+    try {
+      const res = await fetch('https://open.er-api.com/v6/latest/USD', { credentials: 'omit', referrerPolicy: 'no-referrer' });
+      if (!res.ok) throw new Error('rates_unavailable');
+      const body = await res.json();
+      if (body?.result !== 'success' || Number(body?.rates?.USD) !== 1 || !Number.isFinite(Number(body?.time_last_update_unix))) throw new Error('rates_invalid');
+      const rates = {};
+      CURRENCIES.forEach(code => {
+        const value = Number(body.rates[code]);
+        if (Number.isFinite(value) && value > 0) rates[code] = value;
+      });
+      if (!rates.PHP || !rates.EUR) throw new Error('rates_incomplete');
+      const next = { rates: { ...FALLBACK, ...rates }, at: Number(body.time_last_update_unix) * 1000, fetched: Date.now(), live: true, provider: 'ExchangeRate-API' };
+      try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* cache is optional */ }
+      failureCount = 0; lastFailureAt = 0;
+      return next;
+    } catch (error) {
+      failureCount += 1; lastFailureAt = Date.now();
+      throw error;
+    } finally { pendingRefresh = null; }
+  })();
+  return pendingRefresh;
 }
 
 /** Converts between currencies through USD; unknown currencies remain unchanged rather than being guessed. */
