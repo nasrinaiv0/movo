@@ -43,3 +43,14 @@
 
 .movo-app .fx-currency-search { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 12px; border-radius: 12px; color: var(--muted); background: var(--surface); }
 .movo-app .fx-currency-search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 12px; }
+
+.movo-app .fx-history-card { margin-top: 20px; padding: 18px; display: grid; gap: 14px; }
+.movo-app .fx-history-card .fx-section-title { margin: 0; }
+.movo-app .fx-history-change { font-size: 13px; font-variant-numeric: tabular-nums; }
+.movo-app .fx-history-change.positive { color: #159b61; }
+.movo-app .fx-history-change.negative { color: #d65b63; }
+.movo-app .fx-history-chart { min-width: 0; width: 100%; overflow: hidden; }
+.movo-app .fx-history-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.movo-app .fx-history-range { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; }
+.movo-app .fx-history-range strong { color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.movo-app .fx-history-source { color: var(--muted); font-size: 10px; line-height: 1.45; }
