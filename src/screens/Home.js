@@ -7,6 +7,7 @@ import { UpcomingList } from './Subscriptions';
 import { toDay } from '../lib/subscriptions';
 import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
+import PlanningCard from '../components/PlanningCard';
 import RamMascot from '../components/RamMascot';
 import { mascotMood, moodMessage } from '../lib/mascotMood';
 import { dayKey, money, shown } from '../lib/format';
@@ -114,6 +115,7 @@ export default function Home({ c }) {
         {size !== 'S' && <Trend value={t.delta} />}
       </button>)}
     </section> },
+    { id: 'planning', label: tr('Financial planning'), node: ({ size }) => <PlanningCard c={c} size={size} /> },
     { id: 'flow', label: tr('Money flow'), styles: FLOW_STYLES, node: ({ style }) => <MoneyFlow txs={txs} refDate={homeRefDate || refDate} show={show} variant={style} /> },
     { id: 'budgets', label: tr('Budgets & plans'), node: ({ size }) => <BudgetsCard progress={budgetList} plans={plans} show={show} onOpen={c.openBudgets} size={size} /> },
     { id: 'subscriptions', label: tr('Upcoming renewals'), node: ({ size }) => <section aria-label={tr('Upcoming renewals')}>

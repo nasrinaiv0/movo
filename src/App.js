@@ -497,8 +497,10 @@ function App() {
   const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
 
   /* ---------- actions ---------- */
+  const [planTab, setPlanTab] = useState('overview');
   const go = useCallback((next, params = {}) => {
     if (params.filter) setTxFilter(params.filter);
+    if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     viewRef.current = next;
@@ -1123,7 +1125,7 @@ function App() {
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
-    budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
+    planTab, budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
     subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
