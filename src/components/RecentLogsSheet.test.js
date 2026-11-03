@@ -46,7 +46,7 @@ test('lists new logs by source, opens on what needs attention, and logs a failed
   await act(async () => { save().click(); });
   expect(onLog).toHaveBeenCalledWith(failed[0], { account_id: accounts[0].id, amount: 425.5, merchant: 'Starbucks' });
 
-  await act(async () => { [...el.querySelectorAll('button')].find(b => b.textContent === 'Dismiss').click(); });
+  await act(async () => { [...el.querySelectorAll('button')].find(b => b.textContent === 'Archive').click(); });
   expect(onDismiss).toHaveBeenCalledWith(failed[0]);
 
   act(() => [...el.querySelectorAll('[role="tab"]')].find(b => b.textContent.startsWith('Apple Pay')).click());
