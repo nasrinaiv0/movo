@@ -103,7 +103,7 @@ export default function Wallet({ c }) {
   return <>
     <RootHeader title={tr('Wallet')} action={{ icon: 'edit', label: tr('Sort and view options'), onClick: () => setSheet({ name: 'walletView' }) }} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <div className="chip-bar wallet-chip-bar">
-      <Chips equal label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(FILTER_LABEL[key] || key) }))} value={walletFilter} onChange={setWalletFilter} />
+      <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(FILTER_LABEL[key] || key) }))} value={walletFilter} onChange={setWalletFilter} />
       <button type="button" className="round-button accent" aria-label={tr('New account')} title={tr('New account')} onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
     </div>
 
