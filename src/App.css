@@ -4417,7 +4417,7 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-stack.has-peeks .card-stack-front { margin-top: calc(var(--peeks) * var(--peek-step) * 1% / 1.586); }
 .movo-app .card-stack-peek {
   transform: translateY(calc(var(--k) * var(--peek-step) * -1%)) scale(max(.7, calc(1 - var(--k) * .05)));
-  filter: blur(min(calc(var(--k) * 1.4px), 5px)) brightness(max(.6, calc(1 - var(--k) * .07)));
+  filter: blur(min(calc(var(--k) * .5px), 1.5px)) brightness(max(.6, calc(1 - var(--k) * .07)));
 }
 .movo-app .card-stack-peek .credit-card { box-shadow: 0 -6px 14px -10px rgba(12, 16, 24, .45), 0 1px 2px rgba(12, 16, 24, .08); }
 .movo-app .card-stack[data-fx="stack"] .card-stack-card { z-index: 1000; }
@@ -4477,3 +4477,8 @@ button.account-tile:active { transform: scale(.98); }
  * Chips keep their natural width, but short labels ("All") are never smaller than a comfortable pill; text is
  * centred and never wraps, so chips cannot overlap (the row scrolls if it runs out of room). */
 .movo-app .chip-bar > .chip-row > button[data-chip] { flex: 0 0 auto; min-width: 56px; justify-content: center; text-align: center; white-space: nowrap; }
+/* ---- Account preview tile at real card size (owner request 2026-11-03) ----
+ * Bank, e-wallet and cash previews (Add/Edit account, Account details) use the ISO/IEC 7810 ID-1 card ratio,
+ * 85.6 × 54 mm, the same as the card art, instead of the shorter 856/460 strip. Padding follows the card faces. */
+.movo-app .account-tile.at-preview { aspect-ratio: 85.6 / 54; height: auto; min-height: 0; padding: 15px 15px 15px 20px; }
+.movo-app .detail-card-view > .account-tile.at-preview { max-width: 340px; }
