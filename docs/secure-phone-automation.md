@@ -84,11 +84,16 @@ Nothing here has been verified on a physical iPhone or Android phone from this r
 
 **Fallback (any device, no server).** A link `https://<movo>/#log?src=applepay|googlepay|bank&k=<device key>&amount=…&merchant=…&card=…` opens MOVO, which logs it (key matches and “Log without asking” is on) or shows a Log / Skip prompt. The record keeps its channel as its source and is checked against existing records with `findDuplicate`.
 
-## Bank and e-wallet payment texts (SMS, email, Android notifications)
+## Bank and e-wallet notifications and payment texts
 
-iOS does not let Shortcuts read other apps' push notifications. Banks and e-wallets also send each payment as a text
-message or email, and Shortcuts can run on those. MOVO reads the message on the server (`api/_lib/messageText.js`).
+Shortcuts can run when a notification arrives from a chosen app (the **Notification** trigger), when a text message
+arrives, or when an email arrives. MOVO reads the text on the server (`api/_lib/messageText.js`).
 
+- **iPhone, bank app notifications (preferred):** Shortcuts → Automation → **Notification** → choose GCash, Maya or
+  the bank app → Run Immediately, then Text (Shortcut Input › Title + Body) and Get Contents of URL posting
+  `{ text, app: "<app name>", source: "notification" }` with the device key in the Authorization header. The reply is
+  shown only when `success` is true, so promo notifications stay silent. One automation per app. Recipe: MOVO →
+  Settings → Set Up Phone Automation → **Bank notifications**.
 - **iPhone:** Shortcuts → Automation → Message → *Message Contains: Ref* → Run Immediately, then Get Contents of URL
   posting `{ text: Shortcut Input › Content, app: Shortcut Input › Sender, source: "bank" }` with the device key in
   the Authorization header. The exact recipe is in MOVO → Settings → Set Up Phone Automation → **Bank texts**.
