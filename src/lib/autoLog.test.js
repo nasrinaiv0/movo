@@ -93,3 +93,27 @@ test('bank notifications recipe: Notification trigger, title and body sent as te
   expect(r.steps.join(' ')).toMatch(/Authorization: Bearer KEY123/);
   expect(prompt('https://movo.nasrinai.com', 'KEY123', 'notifications')).toMatch(/ignores one-time codes and promos/);
 });
+
+
+test('notification interactive and automatic recipes have distinct confirmation behavior', () => {
+  const { shortcutRecipe: recipe, shortcutPrompt: prompt } = require('./autoLog');
+  const interactive = recipe('https://movo.example', 'KEY123', 'notifications');
+  expect(interactive.steps.join(' ')).toMatch(/Choose from Menu/);
+  expect(interactive.steps.join(' ')).toMatch(/Under Skip: Stop This Shortcut/);
+  expect(interactive.steps.join(' ')).toMatch(/source = notification/);
+  const automatic = prompt('https://movo.example', 'KEY123', 'notifications-automatic');
+  expect(automatic).toContain('Do not add menus');
+  expect(automatic).not.toContain('Choose from Menu');
+  expect(automatic).toContain('success value');
+  expect(automatic).toContain('retain eligible failures for review');
+});
+
+test('Siri interactive recipe confirms before posting and Skip sends nothing', () => {
+  const { shortcutRecipe: recipe, shortcutPrompt: prompt } = require('./autoLog');
+  const r = recipe('https://movo.example', 'KEY123', 'voice-interactive');
+  expect(r.steps.join(' ')).toMatch(/Dictate Text/);
+  expect(r.steps.join(' ')).toMatch(/Choose from Menu/);
+  expect(r.steps.join(' ')).toMatch(/Under Skip: Stop This Shortcut/);
+  expect(r.steps.join(' ')).toMatch(/source = siri_shortcut/);
+  expect(prompt('https://movo.example', 'KEY123', 'voice-interactive')).toMatch(/never announce a save/);
+});
