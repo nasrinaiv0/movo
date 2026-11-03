@@ -37,7 +37,7 @@ export default function ExchangeRates({ c }) {
   const parsedAmount = amount.trim() === '' ? 0 : Number(amount);
   const validAmount = Number.isFinite(parsedAmount) && parsedAmount >= 0;
   const converted = validAmount && rate !== null ? parsedAmount * rate : null;
-  const tracked = Array.isArray(c.prefs?.fxPairs) && c.prefs.fxPairs.length ? c.prefs.fxPairs : DEFAULT_PAIRS;
+  const tracked = Array.isArray(c.prefs?.fxPairs) ? c.prefs.fxPairs : DEFAULT_PAIRS;
   const pairs = useMemo(() => tracked.filter((pair) => {
     const [a, b] = pair.split(':');
     return CURRENCIES.includes(a) && CURRENCIES.includes(b) && (!pairSearch || `${a} ${b} ${currencyName(a)} ${currencyName(b)}`.toLowerCase().includes(pairSearch.toLowerCase()));
@@ -72,8 +72,8 @@ export default function ExchangeRates({ c }) {
     <section className="card fx-converter" aria-label={tr('Currency converter')}>
       <div className="fx-section-heading"><span className="fx-kicker">{tr('CURRENCY CONVERTER')}</span><span className={`fx-status ${fx.live && !stale ? 'is-live' : 'is-stale'}`}><i />{liveLabel}</span></div>
       <label className="fx-field"><span>{tr('You send')}</span><div className="fx-input-row"><input aria-label={tr('Amount to convert')} inputMode="decimal" type="number" min="0" step="any" value={amount} onChange={e => setAmount(e.target.value)} /><select aria-label={tr('From currency')} value={from} onChange={e => setFrom(e.target.value)}>{CURRENCIES.map(code => <option key={code} value={code}>{code} · {currencyName(code)}</option>)}</select></div></label>
-      <div className="fx-swap-row"><span>{rate === null ? tr('Rate unavailable') : `1 ${from} = ${formatCurrency(rate, to)}`}</span><button type="button" className="fx-swap" onClick={swap} aria-label={tr('Swap currencies')}><Icon name="refresh" size={17} />{tr('Swap')}</button></div>
-      <label className="fx-field fx-result"><span>{tr('You receive')}</span><div className="fx-input-row"><output aria-live="polite">{converted === null ? '—' : formatCurrency(converted, to)}</output><select aria-label={tr('To currency')} value={to} onChange={e => setTo(e.target.value)}>{CURRENCIES.map(code => <option key={code} value={code}>{code} · {currencyName(code)}</option>)}</select></div></label>
+      <div className="fx-swap-row"><span>{rate === null ? tr('Rate unavailable') : `1 ${from} = ${formatCurrency(rate, to, c.lang?.locale || 'en-PH')}`}</span><button type="button" className="fx-swap" onClick={swap} aria-label={tr('Swap currencies')}><Icon name="refresh" size={17} />{tr('Swap')}</button></div>
+      <label className="fx-field fx-result"><span>{tr('You receive')}</span><div className="fx-input-row"><div className="fx-output" role="status" aria-live="polite">{converted === null ? '—' : formatCurrency(converted, to, c.lang?.locale || 'en-PH')}</div><select aria-label={tr('To currency')} value={to} onChange={e => setTo(e.target.value)}>{CURRENCIES.map(code => <option key={code} value={code}>{code} · {currencyName(code)}</option>)}</select></div></label>
       {!validAmount && <p className="fx-error" role="alert">{tr('Enter a valid amount of zero or more.')}</p>}
       <p className="fx-footnote">{tr('Reference rates are indicative and may differ from the rate offered by your bank, card network or money-transfer provider.')}</p>
     </section>
