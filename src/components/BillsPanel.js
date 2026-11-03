@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AccountOptions } from './AccountPicker';
+import Icon from './Icon';
+import { SectionTitle, Sheet } from './ui';
+import { formatDate } from '../lib/format';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { BILL_CATEGORIES, BILL_FREQUENCIES, amountDue, amountRemaining, billsSummary, occurrenceState, paymentKey } from '../lib/bills';
@@ -13,7 +16,7 @@ const newNonce = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.ra
 
 /* Bills & Payments: what is due, paid, late and next. Recording a payment records what the
  * person says happened; it never moves money. */
-export default function BillsPanel({ c, accounts, onChanged }) {
+export default function BillsPanel({ c, accounts, onChanged, adding = false, onAdding = () => {} }) {
   const base = c.base || 'PHP';
   const today = todayKey();
   const [bills, setBills] = useState([]);
@@ -57,18 +60,19 @@ export default function BillsPanel({ c, accounts, onChanged }) {
 
   return <>
     {error && <p className="app-alert" role="alert">{error}</p>}{notice && <p className="form-note" role="status">{notice}</p>}
-    <section className="stat-grid" aria-label={tr('Bills this month')}>
+    <section className="stat-grid two fp-bill-stats" aria-label={tr('Bills this month')}>
       <article className="card stat-card"><span>{tr('Due this month')}</span><strong>{money(summary.dueThisMonth, base)}</strong>{summary.estimatedThisMonth > 0 && <small>{tr('{amount} estimated', { amount: money(summary.estimatedThisMonth, base) })}</small>}</article>
       <article className="card stat-card"><span>{tr('Paid this month')}</span><strong>{money(summary.paidThisMonth, base)}</strong></article>
       <article className="card stat-card"><span>{tr('Remaining')}</span><strong>{money(summary.remaining, base)}</strong></article>
       <article className={`card stat-card${summary.overdueCount ? ' tint-red' : ''}`}><span>{tr('Overdue')}</span><strong>{money(summary.overdue, base)}</strong><small>{tr('{n} bills', { n: summary.overdueCount })}</small></article>
     </section>
 
+    <SectionTitle action={tr('Add')} onAction={() => onAdding(true)}>{tr('Upcoming and overdue')}</SectionTitle>
     <section className="card pad bills-list" aria-label={tr('Upcoming and overdue bills')}>
-      <h2>{tr('Upcoming and overdue')}</h2>
+      
       {!shown.length && <p className="empty">{tr('Nothing due in the next 45 days.')}</p>}
       {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); return <article className={`bill-row is-${state}`} key={o.id}>
-        <div className="detail-row"><span><strong>{bill?.name || tr('Bill')}</strong><small>{tr('Due {date}', { date: o.due_date })} · <em className={`bill-state is-${state}`}>{tr(STATE_LABEL[state])}</em>{o.is_estimate && o.actual_amount == null ? ` · ${tr('Estimate')}` : ''}</small></span><b>{money(amountRemaining(o), o.currency)}</b></div>
+        <div className="detail-row"><span><strong>{bill?.name || tr('Bill')}</strong><small>{tr('Due {date}', { date: formatDate(o.due_date) })} · <em className={`bill-state is-${state}`}>{tr(STATE_LABEL[state])}</em>{o.is_estimate && o.actual_amount == null ? ` · ${tr('Estimate')}` : ''}</small></span><b>{money(amountRemaining(o), o.currency)}</b></div>
         {Number(o.paid_amount) > 0 && <div className="progress-track" aria-label={tr('{paid} of {due} paid', { paid: money(Number(o.paid_amount), o.currency), due: money(amountDue(o), o.currency) })}><span style={{ width: `${Math.min(100, (Number(o.paid_amount) / amountDue(o)) * 100)}%` }} /></div>}
         {pay?.occ.id === o.id ? <form className="sheet-form bill-pay" onSubmit={e => { e.preventDefault(); submitPay('recorded'); }}>
           {pay.actual !== null && <label>{tr('Actual bill amount')}<input type="number" min="0.01" step="0.01" value={pay.actual} onChange={e => setPay({ ...pay, actual: e.target.value, amount: e.target.value || pay.amount })} placeholder={String(o.expected_amount)} /></label>}
@@ -82,8 +86,8 @@ export default function BillsPanel({ c, accounts, onChanged }) {
       </article>; })}
     </section>
 
-    <form className="card pad sheet-form" onSubmit={e => { e.preventDefault(); run(() => createBill({ ...form, currency: form.currency || base }, c.session?.user?.id), tr('Bill added.')).then(ok => { if (ok) setForm(blankBill(base)); }); }}>
-      <h2>{tr('Add a bill')}</h2>
+    {adding && <Sheet title={tr('Add a bill')} onClose={() => onAdding(false)} label={tr('Add a bill')}><form className="sheet-form" onSubmit={e => { e.preventDefault(); run(() => createBill({ ...form, currency: form.currency || base }, c.session?.user?.id), tr('Bill added.')).then(ok => { if (ok) { setForm(blankBill(base)); onAdding(false); } }); }}>
+      {error && <p className="app-alert" role="alert">{error}</p>}
       <label>{tr('Name')}<input required maxLength="120" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={tr('e.g. Electricity')} /></label>
       <label>{tr('Category')}<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{BILL_CATEGORIES.map(k => <option key={k} value={k}>{tr(k)}</option>)}</select></label>
       <label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></label>
@@ -92,11 +96,13 @@ export default function BillsPanel({ c, accounts, onChanged }) {
       <label>{tr('Next due date')}<input required type="date" value={form.first_due_date} onChange={e => setForm({ ...form, first_due_date: e.target.value })} /></label>
       <label>{tr('Usually paid from')}<select value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">{tr('Not set')}</option>{payAccounts(form.currency || base).map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
       <button className="primary-button" disabled={busy}>{tr('Save bill')}</button>
-    </form>
+    </form></Sheet>}
 
-    {bills.map(b => <article className="card pad detail-row" key={b.id}><span><strong>{b.name}</strong><small>{tr(b.category)} · {tr(BILL_FREQUENCIES.find(([k]) => k === b.frequency)?.[1] || 'Monthly')} · {money(Number(b.amount), b.currency)}{b.amount_type === 'variable' ? ` · ${tr('Estimate')}` : ''} · {tr(b.status === 'active' ? 'Active' : b.status === 'paused' ? 'Paused' : 'Cancelled')}</small></span>
-      {b.status !== 'cancelled' && <button type="button" className="secondary-button" disabled={busy} onClick={() => run(() => setBillStatus(b.id, b.status === 'active' ? 'paused' : 'active'), b.status === 'active' ? tr('Bill paused.') : tr('Bill resumed.'))}>{b.status === 'active' ? tr('Pause') : tr('Resume')}</button>}
-    </article>)}
-    {!bills.length && <p className="empty">{tr('Add rent, utilities, phone, insurance or any bill to see what is due and what is paid.')}</p>}
+    {bills.length > 0 && <><SectionTitle>{tr('Your bills')}</SectionTitle><div className="card list-card">{bills.map(b => <div className="fp-row" key={b.id}>
+      <span className="stat-icon tone-orange"><Icon name="receipt" size={17} strokeWidth={2} /></span>
+      <span className="fp-main"><strong>{b.name}</strong><small>{tr(b.category)} · {tr(BILL_FREQUENCIES.find(([k]) => k === b.frequency)?.[1] || 'Monthly')}{b.amount_type === 'variable' ? ` · ${tr('Estimate')}` : ''}</small></span>
+      <span className="fp-amount"><b>{money(Number(b.amount), b.currency)}</b>{b.status !== 'cancelled' ? <button type="button" className="link-button" disabled={busy} onClick={() => run(() => setBillStatus(b.id, b.status === 'active' ? 'paused' : 'active'), b.status === 'active' ? tr('Bill paused.') : tr('Bill resumed.'))}>{b.status === 'active' ? tr('Pause') : tr('Resume')}</button> : <em className="fp-status is-cancelled">{tr('Cancelled')}</em>}</span>
+    </div>)}</div></>}
+    {!bills.length && <button type="button" className="budget-empty" onClick={() => onAdding(true)}><Icon name="plus" size={20} /><span><strong>{tr('Add a bill')}</strong><small>{tr('Add rent, utilities, phone, insurance or any bill to see what is due and what is paid.')}</small></span></button>}
   </>;
 }
