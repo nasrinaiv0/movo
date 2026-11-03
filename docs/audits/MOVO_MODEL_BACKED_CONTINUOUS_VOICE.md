@@ -26,3 +26,12 @@ This change upgrades MOVO's NasrinAI chat voice mode to use the authenticated Na
 - Automated CI, browser permission behavior, mobile Safari/Chrome recording, live provider availability, end-to-end STT/TTS, interruption quality, and production behavior are still not verified.
 - Do not merge or deploy until CI passes and the voice path is smoke-tested with a non-sensitive test prompt.
 - Known area for QA: browser microphone echo cancellation and VAD thresholds vary by device. Barge-in uses a sustained louder-input threshold while TTS plays to reduce speaker-echo interruptions; tune it only from real-device evidence. Verify natural turn-taking on iOS Safari and Android Chrome.
+
+
+## Follow-up fix — visible dictation (2026-11-03)
+- Voice transcription results are now appended to the chat composer instead of being submitted automatically and immediately disappearing.
+- Users can review, edit, and explicitly send recognized text. Transcription segments completed while a chat request is busy are queued and appended after the request settles.
+- Reduced the normal speech-activity RMS threshold from 0.045 to 0.025 and the barge-in threshold from 0.095 to 0.07 to better accommodate quieter microphone input.
+- The listening placeholder now tells users to pause briefly to allow a segment to be transcribed.
+- This is segment-based transcription, not true streaming partial transcription: recognized words appear after the segment closes (typically after a short pause). True live partial results would require a supported streaming STT API or a browser speech-recognition path.
+- Verification still required: run the full MOVO test suite and smoke-test on physical iPhone Safari and Android Chrome with quiet speech, continuous speech, pauses, denied permissions, network failures, and TTS interruption. Do not claim production verification until these checks pass.
