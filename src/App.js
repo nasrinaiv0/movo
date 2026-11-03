@@ -1185,8 +1185,6 @@ function App() {
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
     planTab, budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
-    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
-    budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
     subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
