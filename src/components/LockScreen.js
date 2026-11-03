@@ -39,9 +39,9 @@ export default function LockScreen({ onUnlock, onForgot }) {
     <p className="lock-error" role="alert">{error}</p>
     <div className="lock-pad">
       {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => <button type="button" key={d} onClick={() => press(d)}>{d}</button>)}
-      {biometric ? <button type="button" className="lock-alt" onClick={tryBio} aria-label={tr('Unlock with Face ID or Touch ID')}><Icon name="face" size={24} /></button> : <span />}
+      {biometric ? <button type="button" className="lock-alt" onClick={tryBio} aria-label={tr('Unlock with Face ID or Touch ID')}><Icon name="face" size={34} strokeWidth={1.8} /></button> : <span />}
       <button type="button" onClick={() => press('0')}>0</button>
-      <button type="button" className="lock-alt" onClick={() => setPin(pin.slice(0, -1))} aria-label={tr('Delete')}><Icon name="backspace" size={22} /></button>
+      <button type="button" className="lock-alt" onClick={() => setPin(pin.slice(0, -1))} aria-label={tr('Delete')}><Icon name="backspace" size={34} strokeWidth={1.8} /></button>
     </div>
     <button type="button" className="link-button" onClick={onForgot}>{tr('Forgot passcode?')}</button>
   </div>;
