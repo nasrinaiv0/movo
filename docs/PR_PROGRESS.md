@@ -36,6 +36,15 @@ match production, and the SQL test suites passed there. A production read-back c
   - 13 unused indexes on new, nearly empty tables.
 - A hardening migration with tests is proposed; applying it needs the owner's approval.
 
+**Security audit (2026-11-03) → `fix/db-hardening`, migration `20261103020000_harden_trigger_execute_rls_initplan_fk_indexes`:**
+- Bug found while testing: `assert_movo_finance_child_ownership()` read `new.transaction_id` on `financial_loans` and
+  `financial_receivables`, which have no such column. Every loan or receivable insert/update failed (production has 0 of
+  each). The migration fixes this; ownership checks are unchanged.
+- Revokes EXECUTE on that trigger function from anon/authenticated (service_role keeps it, like
+  `assert_movo_bill_ownership`); rewrites the 34 policies to `(select auth.uid())`; indexes the 15 foreign keys.
+- `supabase/tests/security_hardening.test.sql` passes on a local Postgres 16 copy matching production (same policies,
+  same function source), fails without the migration, and the migration re-runs cleanly. **Not applied to production yet.**
+
 ## Recent merged implementation
 
 | PR | Result | Validation / notes |
