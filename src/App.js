@@ -53,6 +53,7 @@ import Archive from './screens/Archive';
 import { listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { creditInfo } from './lib/creditCard';
+import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, budgetProgress } from './components/Budgets';
@@ -89,7 +90,7 @@ export function readableAccent(hex, dark) {
 const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || '') || 0;
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
@@ -1217,6 +1218,16 @@ function App() {
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
   const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
   const accentHex = accentName === 'custom' ? prefs.customColor : (ACCENTS.find(([n]) => n === accentName)?.[1] || '#13b45f');
+  /* Text: size scales every font-size through --font-scale (see lib/fontPrefs.js); the style swaps the font stack. */
+  const fontScale = fontScaleOf(prefs.fontSize);
+  const fontStack = fontStyleOf(prefs.fontStyle).stack;
+  useEffect(() => {
+    if (fontScale !== 1) enableFontScaling();
+    loadFontStyle(prefs.fontStyle);
+    const root = document.documentElement.style;
+    root.setProperty('--font-scale', String(fontScale));
+    root.setProperty('--app-font', fontStack);
+  }, [fontScale, fontStack, prefs.fontStyle]);
   const rootStyle = { ...glassVars, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];

@@ -6,6 +6,7 @@ import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
+import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
 
 export const ACCENTS = [['green', '#13b45f'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#ef4444'], ['slate', '#334155']];
@@ -162,6 +163,7 @@ export default function Settings({ c }) {
     { title: tr('Appearance'), rows: [
       { icon: 'palette', title: tr('Theme'), sub: tr('Light, Dark or Custom'), onClick: () => go('Appearance') },
       { icon: 'drop', title: tr('Liquid Glass'), sub: tr('Choose how clear the glass looks'), onClick: () => go('Appearance') },
+      { icon: 'book', title: tr('Text size & font'), sub: `${tr(fontStyleOf(prefs.fontStyle).label)} · ${tr((FONT_SIZES.find(s => s.key === prefs.fontSize) || FONT_SIZES[1]).label)}`, onClick: () => go('Appearance') },
       { icon: 'pin', title: tr('Country or region'), sub: c.country ? countryName(c.country, c.lang?.locale) : tr('Not set'), onClick: () => c.openCountry?.() },
       { icon: 'globe', title: tr('Language'), sub: c.lang?.name || 'English', onClick: () => c.openLanguage?.() },
       { icon: 'coin', title: tr('Home Currency'), sub: `${c.base || 'PHP'} · totals, budgets and charts`, onClick: () => c.openCurrency?.() },
@@ -256,6 +258,28 @@ function SceneryPicker({ c }) {
   </section>;
 }
 
+/** Font style and text size. Sizes scale all text without changing the layout (see lib/fontPrefs.js). */
+export function TextSettings({ c }) {
+  const { prefs, setPref } = c;
+  const sizeIndex = Math.max(0, FONT_SIZES.findIndex(s => s.key === (prefs.fontSize || 'default')));
+  const size = FONT_SIZES[sizeIndex];
+  const style = prefs.fontStyle || 'default';
+  return <section className="card pad text-settings">
+    <div className="font-styles" role="radiogroup" aria-label={tr('Font style')}>
+      {FONT_STYLES.map(f => <button type="button" role="radio" aria-checked={style === f.key} key={f.key} className={`font-style${style === f.key ? ' selected' : ''}`} style={{ fontFamily: f.stack }} onClick={() => setPref('fontStyle', f.key)}>
+        <span className="font-style-aa" aria-hidden="true">Aa</span><small>{tr(f.label)}</small>
+      </button>)}
+    </div>
+    <label className="clarity"><span className="clarity-top"><b>{tr('Text size')}</b><em>{tr(size.label)} · {Math.round(size.scale * 100)}%</em></span>
+      <input type="range" min="0" max={FONT_SIZES.length - 1} step="1" value={sizeIndex} aria-label={tr('Text size')} aria-valuetext={tr(size.label)} onChange={e => setPref('fontSize', FONT_SIZES[Number(e.target.value)].key)} style={{ '--fill': `${(sizeIndex / (FONT_SIZES.length - 1)) * 100}%` }} />
+      <span className="clarity-ends"><small className="text-size-a small" aria-hidden="true">A</small><small className="text-size-a big" aria-hidden="true">A</small></span></label>
+    <div className="text-preview" style={{ fontFamily: fontStyleOf(style).stack }} aria-live="polite">
+      <strong>{tr('Groceries')}</strong><small>{tr('Today')} · BPI</small><b>−₱1,250.00</b>
+    </div>
+    {(prefs.fontSize !== 'default' || style !== 'default') && <button type="button" className="link-button" onClick={() => { setPref('fontSize', 'default'); setPref('fontStyle', 'default'); }}>{tr('Reset text')}</button>}
+  </section>;
+}
+
 export function Appearance({ c }) {
   const { prefs, setPref, go } = c;
   return <>
@@ -275,6 +299,8 @@ export function Appearance({ c }) {
     <SceneryPicker c={c} />
     <h2 className="group-title">{tr('Preview')}</h2>
     <div className="card pad"><NavPreview accentName={prefs.accent} /></div>
+    <h2 className="group-title">{tr('Text')}</h2>
+    <TextSettings c={c} />
     <h2 className="group-title">{tr('Display & Layout')}</h2>
     <section className="card menu-card">
       <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />

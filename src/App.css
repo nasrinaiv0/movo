@@ -8,7 +8,7 @@
   --green: #12a566; --green-bg: rgba(18,165,102,.12); --red: #e5484d; --red-bg: rgba(229,72,77,.1);
   --nav-bg: rgba(255,255,255,.92); --nav-active: #14161f; --nav-muted: #7d8294; --chip-bg: rgba(255,255,255,.8);
   --sheet-bg: #fff; --overlay: rgba(15,18,30,.4); --field: rgba(20,24,40,.045); --on-accent: #fff;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
 .accent-purple { --accent: #7c4dff; --accent-rgb: 124,77,255; --accent-2: #a56bff; }
 .accent-orange { --accent: #ff8a1f; --accent-rgb: 255,138,31; --accent-2: #ff5e62; }
@@ -4381,6 +4381,35 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app.movo-app .tx-sheet .tx-seg button { padding: 0 2px; font-size: 11px; letter-spacing: -.2px; }
 }
 
+/* ---- Text settings: font style + text size (2026-11-03) ----
+ * Sizes scale through --font-scale (lib/fontPrefs.js). Layout guards below keep larger text from overflowing:
+ * long words wrap instead of pushing the page wider, and flex rows let their text shrink. */
+.movo-app .text-settings { display: grid; gap: 4px; }
+.movo-app .font-styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(62px * var(--font-scale, 1)), 1fr)); gap: 8px; }
+.movo-app .font-style { display: grid; justify-items: center; gap: 4px; min-width: 0; padding: 10px 4px 8px; border: 0; border-radius: 14px; background: var(--field); color: var(--text); cursor: pointer; }
+.movo-app .font-style.selected { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-ink, var(--accent)); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.movo-app .font-style-aa { font-size: 22px; font-weight: 600; line-height: 1.1; }
+.movo-app .font-style small { font-size: 11px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .text-size-a.small { font-size: 12px; }
+.movo-app .text-size-a.big { font-size: 20px; font-weight: 600; }
+.movo-app .clarity-ends:has(.text-size-a) { align-items: flex-end; }
+.movo-app .text-preview { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; align-items: center; margin-top: 6px; padding: 12px 14px; border-radius: 14px; background: var(--field); }
+.movo-app .text-preview strong { font-size: 15px; font-weight: 600; }
+.movo-app .text-preview small { grid-row: 2; color: var(--muted); font-size: 12px; }
+.movo-app .text-preview b { grid-row: 1 / 3; grid-column: 2; font-size: 15px; font-variant-numeric: tabular-nums; }
+.movo-app .text-settings > .link-button { justify-self: start; margin-top: 6px; }
+.movo-app { overflow-wrap: break-word; }
+.movo-app :is(.tx-main, .menu-main, .sub-main, .fp-main, .note-main) { min-width: 0; }
+/* Larger text: the spending legend wraps under the ring when there is no room beside it, and quick actions
+ * keep four equal columns whose labels wrap instead of widening the row. */
+.movo-app.movo-app .spending-card { flex-wrap: wrap; justify-content: center; }
+.movo-app.movo-app .spending-card .legend { flex: 1 1 150px; min-width: 0; }
+.movo-app.movo-app .spending-card .legend li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app.movo-app .spending-card .legend li b { margin-left: auto; }
+.movo-app .quick-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.movo-app .qa-button { min-width: 0; }
+.movo-app .qa-button > span:not(.qa-icon) { max-width: 100%; overflow-wrap: anywhere; }
+.movo-app .flow-ranges button { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: 2px; }
 /* ---- Wallet card stack: all cards, a compact pile (2026-11-03) ----
  * Every other card sits behind the front one. Each step back shows a thin strip of its top edge (--peek-step % of a
  * card's height, set from CardDeck.js), is a little smaller, dimmer and more blurred, like the owner's reference.
