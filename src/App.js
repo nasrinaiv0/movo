@@ -1372,9 +1372,9 @@ function App() {
         </form>
       </Sheet>}
 
-      {accountChoice && <Sheet title={accountChoice.name} subtitle={accountTypes.find(t => t.value === accountChoice.account_type)?.label} onClose={() => setSheet(null)} label={tr('Account details')}>
+      {accountChoice && <Sheet title={tr('Account details')} onClose={() => setSheet(null)} label={tr('Account details')}>
         <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" />}</div>
-        <dl className="detail-list"><div><dt>{tr('Institution')}</dt><dd>{accountChoice.institution_name || tr('Personal account')}</dd></div><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
+        <dl className="detail-list"><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
           <div><dt>{tr('Credit limit')}</dt><dd>{shown(show, money(ci.limit, cur))}</dd></div>
           <div><dt>{tr('Used')}</dt><dd>{shown(show, money(ci.owed, cur))} · {ci.usedPercent}%</dd></div>
           <div><dt>{tr('Available credit')}</dt><dd>{shown(show, money(ci.available, cur))}</dd></div>

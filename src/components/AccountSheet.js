@@ -69,7 +69,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         <div className="seg-control two" role="group" aria-label={tr('Card kind')}>{[['debit', 'Debit'], ['credit', 'Credit']].map(([k, l]) => <button type="button" key={k} className={form.cardKind === k ? 'selected' : ''} aria-pressed={form.cardKind === k} onClick={() => set({ cardKind: k })}>{l}</button>)}</div>
         <label className="acct-label" htmlFor="acct-linked-bank">{debitCard ? tr('Linked bank account') : tr('Issuing bank')}</label>
         {bankAccounts.length ? <div className="acct-field select acct-bank-pick">
-          <span><strong>{linkedBank ? (linkedBank.institution_name || linkedBank.name) : tr('Choose a bank account')}</strong><small>{linkedBank ? (creditCard ? tr('Issuer only. Its balance is not used') : `${linkedBank.name} · ${linkedBank.currency || base}`) : debitCard ? tr('Shares this bank account’s balance') : tr('Optional')}</small></span>
+          <span><strong>{linkedBank ? (linkedBank.institution_name || linkedBank.name) : tr('Choose a bank account')}</strong><small>{linkedBank ? (creditCard ? tr('Issuer only. Its balance is not used') : `${tr('Bank account')} · ${linkedBank.currency || base}`) : debitCard ? tr('Shares this bank account’s balance') : tr('Optional')}</small></span>
           <span className="acct-bank-logo" aria-hidden="true"><BrandLogo src={linkedBank ? institutionLogoUrl(linkedBank.institution_name || linkedBank.name) : ''} size={64} fallback={linkedBank ? undefined : <Icon name="bank" size={18} />} /></span>
           <Icon name="down" size={16} />
           <select id="acct-linked-bank" aria-label={debitCard ? tr('Linked bank account') : tr('Issuing bank')} value={form.linkedBankId || ''} required={debitCard} onChange={e => {
@@ -79,7 +79,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
             set({ linkedBankId: e.target.value, institution_name: inst, name: inst, ...(selected?.currency ? { currency: selected.currency } : {}) });
           }}>
             <option value="">{tr('Choose a bank account')}</option>
-            {bankAccounts.map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name} · {account.name} ({account.currency || base})</option>)}
+            {bankAccounts.map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name}{account.mask ? ` •••• ${account.mask}` : ''} ({account.currency || base})</option>)}
             {onAddBank && <option value="__add">{tr('+ Add a bank account')}</option>}
           </select>
         </div> : <button type="button" className="acct-field acct-add-bank" onClick={() => onAddBank?.()}><span><strong>{tr('Add a bank account')}</strong><small>{debitCard ? tr('A debit card uses its bank account’s balance') : tr('Optional for credit cards')}</small></span><span className="acct-bank-logo"><Icon name="plus" size={18} /></span><Icon name="chevron" size={16} /></button>}
