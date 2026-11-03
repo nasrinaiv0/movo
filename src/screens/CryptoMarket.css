@@ -59,3 +59,15 @@
 .movo-app .crypto-error { display: flex; align-items: center; gap: 10px; padding: 15px; color: var(--muted); }
 .movo-app .crypto-error p { margin: 0; font-size: 12px; line-height: 1.5; }
 @media(max-width:360px){.movo-app .crypto-detail-hero,.movo-app .crypto-chart-card{padding:14px}.movo-app .crypto-stats{gap:10px}}
+
+.movo-app .crypto-alert-card { padding: 16px; }
+.movo-app .crypto-alert-note { margin: 8px 0 12px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.movo-app .crypto-alert-form { display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: 8px; }
+.movo-app .crypto-alert-form select, .movo-app .crypto-alert-form input { min-width: 0; width: 100%; min-height: 42px; border: 0; border-radius: 11px; padding: 0 10px; color: var(--text); background: var(--surface); font-size: 12px; }
+.movo-app .crypto-alert-form button { grid-column: 1/-1; min-height: 42px; border: 0; border-radius: 11px; color: white; background: var(--accent); font-size: 12px; font-weight: 750; }
+.movo-app .crypto-enable-notifications { margin-top: 9px; min-height: 38px; width: 100%; border: 0; border-radius: 10px; color: var(--accent); background: var(--accent-soft); font-size: 11px; font-weight: 750; }
+.movo-app .crypto-alert-row { display: flex; align-items: center; gap: 7px; padding: 11px 0; border-top: 1px solid var(--line); }
+.movo-app .crypto-alert-row > span { min-width: 0; flex: 1; display: grid; gap: 4px; }
+.movo-app .crypto-alert-row strong { font-size: 12px; }
+.movo-app .crypto-alert-row small { color: var(--muted); font-size: 10px; line-height: 1.4; }
+.movo-app .crypto-alert-row button { min-height: 34px; border: 0; border-radius: 9px; padding: 0 9px; color: var(--accent); background: var(--accent-soft); font-size: 10px; font-weight: 700; }
