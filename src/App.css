@@ -4478,6 +4478,16 @@ button.account-tile:active { transform: scale(.98); }
  * centred and never wraps, so chips cannot overlap (the row scrolls if it runs out of room). */
 .movo-app .chip-bar > .chip-row > button[data-chip] { flex: 0 0 auto; min-width: 44px; padding-inline: 11px; justify-content: center; text-align: center; white-space: nowrap; }
 .movo-app .chip-bar > .chip-row { gap: 6px; }
+/* ---- Card format preview matches the applied card (2026-11-03) ----
+ * The preview card is laid out at its real Wallet width and scaled down (Wallet.js ScaledCard). */
+.movo-app .format-scaled { position: relative; display: block; width: 100%; overflow: visible; }
+.movo-app .format-scaled-inner { position: absolute; top: 0; left: 0; display: block; transform-origin: 0 0; pointer-events: none; }
+.movo-app .format-scaled.is-portrait { width: 52%; margin: 0 auto; }
+.movo-app .format-scaled-inner > .credit-card { width: 100%; }
+.movo-app .wallet-format-pick > button { height: auto; min-height: 176px; }
+.movo-app .wallet-format-pick .format-scaled-inner > .credit-card,
+.movo-app .wallet-format-pick .format-scaled-inner > .credit-card.orientation-landscape,
+.movo-app .wallet-format-pick .format-scaled-inner > .credit-card.orientation-portrait { width: 100%; height: auto; max-width: none; max-height: none; align-self: auto; }
 /* ---- Account preview tile at real card size (owner request 2026-11-03) ----
  * Bank, e-wallet and cash previews (Add/Edit account, Account details) use the ISO/IEC 7810 ID-1 card ratio,
  * 85.6 × 54 mm, the same as the card art, instead of the shorter 856/460 strip. Padding follows the card faces. */
