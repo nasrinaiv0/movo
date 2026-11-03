@@ -500,9 +500,17 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Credit');
     setInputValue(container.querySelector('#acct-linked-bank'), 'demo-gotyme');
     act(() => container.querySelector('.acct-network-row button[aria-label="Mastercard"]').click());
+    // A credit card asks for its credit limit (and what is already owed) instead of a starting balance.
+    expect(container.querySelector('#acct-balance')).toBeNull();
+    setInputValue(container.querySelector('#acct-limit'), '50000');
+    setInputValue(container.querySelector('#acct-owed'), '1200');
     clickButton(container, 'Add account');
     const created = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(a => a.account_type === 'card' && a.name === 'GoTyme');
     expect(created).toBeTruthy();
+    expect(created.opening_balance).toBe(-1200); // owed, not taken from the issuing bank
+    const savedPrefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    expect(savedPrefs.accountStyles[created.id]).toMatchObject({ creditLimit: 50000, issuerBankId: 'demo-gotyme' });
+    expect((savedPrefs.cardBankLinks || {})[created.id]).toBeUndefined(); // the bank's balance is never shared
     // The chosen card network is kept and drawn on the card.
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).accountStyles[created.id].cardNetwork).toBe('mastercard');
     expect(container.querySelector('.ccx-net.net-mastercard')).not.toBeNull();

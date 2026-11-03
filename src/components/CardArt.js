@@ -8,6 +8,7 @@ import { t as tr } from '../lib/i18n';
 import { institutionLogoUrl } from '../lib/institutions';
 import { cardFaceFor, cardTypeLabel, finishOf, movoFaceFor } from '../lib/cardFaces';
 import { MovoMark } from './MovoLogo';
+import { creditInfo } from '../lib/creditCard';
 import { isStorageStickerId, storageStickerPath, resolvePremiumStickerUrl } from '../lib/premiumStickers';
 
 const build = (node, key) => {
@@ -258,7 +259,7 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
         <div className="ccx-figures">
           {showNumber && <span className="ccx-number">{`•••• •••• •••• ${a.mask || '••••'}`}</span>}
           {!showNumber && showBalance && <small className="ccx-caption">{credit ? tr('Available credit') : tr('Balance')}</small>}
-          {showBalance && <b className="ccx-balance" style={{ '--len': shown(show, money(a.balance, a.currency)).length }}>{shown(show, money(a.balance, a.currency))}</b>}
+          {showBalance && (() => { const ci = creditInfo(a); const amount = ci ? ci.available : a.balance; const text = shown(show, money(amount, a.currency)); return <b className="ccx-balance" style={{ '--len': text.length }} title={ci ? tr('Available credit') : undefined}>{text}</b>; })()}
         </div>
         {networkName && <span className={`ccx-net net-${NETWORK_KEY[network] || 'other'}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : NETWORK_MARK[network] || networkName}</span>}
       </div>
