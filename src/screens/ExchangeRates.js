@@ -16,7 +16,7 @@ export default function ExchangeRates({ c }) {
   const base = c.base || c.prefs?.currency || 'PHP';
   const fx = c.fx || { rates: { USD: 1 }, live: false, at: 0, fetched: 0 };
   const [amount, setAmount] = useState('1');
-  const [from, setFrom] = useState('USD');
+  const [from, setFrom] = useState(base === 'USD' ? 'PHP' : 'USD');
   const [to, setTo] = useState(base);
   const [pairSearch, setPairSearch] = useState('');
   const [currencySearch, setCurrencySearch] = useState('');
@@ -28,7 +28,7 @@ export default function ExchangeRates({ c }) {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
 
-  useEffect(() => { setTo(base); }, [base]);
+  useEffect(() => { setTo(base); setFrom(current => current === base ? (base === 'USD' ? 'PHP' : 'USD') : current); }, [base]);
   useEffect(() => {
     let active = true;
     const checkRates = () => {
@@ -54,6 +54,7 @@ export default function ExchangeRates({ c }) {
   }), [tracked, pairSearch]);
   useEffect(() => {
     let active = true;
+    if (from === to) { setHistory(null); setHistoryLoading(false); setHistoryError(tr('Choose two different currencies to view historical rates.')); return () => { active = false; }; }
     setHistoryLoading(true); setHistoryError('');
     fetchRateHistory(from, to, historyRange).then(result => {
       if (active) setHistory(result);
