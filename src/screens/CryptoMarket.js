@@ -67,6 +67,22 @@ export default function CryptoMarket({ c }) {
   }, [quote]);
 
   useEffect(() => {
+    let active = true;
+    const update = () => {
+      if (document.visibilityState === 'hidden') return;
+      loadCryptoMarkets(quote, { force: true }).then((result) => {
+        if (!active) return;
+        setCoins(result.coins);
+        setUpdatedAt(result.coins.reduce((latest, coin) => !latest || coin.updatedAt > latest ? coin.updatedAt : latest, ''));
+        setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
+      }).catch(() => { if (active) setError('Market refresh failed. Showing the last available prices.'); });
+    };
+    const timer = window.setInterval(update, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', update);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
+  }, [quote]);
+
+  useEffect(() => {
     if (!selected) { setHistory([]); return undefined; }
     let active = true;
     const controller = new AbortController();
