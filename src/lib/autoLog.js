@@ -31,26 +31,44 @@ export function shortcutRecipe(origin, key, mode = `interactive`) {
   const payment = post(`amount = Shortcut Input › Amount, merchant = Shortcut Input › Merchant, card = Shortcut Input › Card or Pass, source = applepay, occurredAt = Formatted Date`);
   const reply = `Get Dictionary Value — Get Value for Key message in Contents of URL.`;
   const trigger = `Shortcuts → Automation → + → Transaction → choose the Apple Pay cards to track → Run Immediately → turn off Notify When Run → Next → New Blank Automation.`;
-  if (mode === `voice`) return {
+  if (mode === `voice` || mode === `voice-interactive`) {
+    const interactive = mode === `voice-interactive`;
+    return {
     name: `Log to MOVO`,
     trigger: `Shortcuts → + (new shortcut) → rename it “Log to MOVO” (Siri runs it when you say “Hey Siri, Log to MOVO”).`,
     steps: [
       `Dictate Text — Language: the language you speak · Stop Listening: After Pause.`,
-      post(`text = Dictated Text, source = siri_shortcut`),
-      reply,
-      `Speak Text — Dictionary Value.`,
+      ...(interactive ? [
+        `Choose from Menu — Prompt: Review this dictated transaction before sending to MOVO? Show Dictated Text · Options: Log and Skip.`,
+        `Under Log: ${post(`text = Dictated Text, source = siri_shortcut`)}`,
+        `Under Log: ${reply}`,
+        `Under Log: Speak Text — Dictionary Value.`,
+        `Under Skip: Stop This Shortcut (no request is sent).`,
+        `End Menu.`,
+      ] : [post(`text = Dictated Text, source = siri_shortcut`), reply, `Speak Text — Dictionary Value.`]),
     ],
   };
-  if (mode === `notifications`) return {
+  }
+  if (mode === `notifications` || mode === `notifications-automatic`) {
+    const interactive = mode === `notifications`;
     name: `MOVO Bank Notifications`,
     trigger: `Shortcuts → Automation → + → Notification → choose the app (GCash, Maya or your bank app) → Run Immediately → turn off Notify When Run → Next → New Blank Automation. Make one automation like this for each bank or e-wallet app.`,
     steps: [
       `Text — Shortcut Input › Title, a new line, then Shortcut Input › Body (the notification that arrived).`,
-      post(`text = Text, app = the app's name as you chose it (for example GCash), source = notification`),
-      `Get Dictionary Value — Get Value for Key success in Contents of URL.`,
-      `If — Dictionary Value is true: Get Dictionary Value — Get Value for Key message in Contents of URL, then Show Notification — Title: MOVO · Body: Dictionary Value. End If.`,
+      ...(interactive ? [
+        `Choose from Menu — Prompt: Review this bank notification before sending it to MOVO? Show the original title and body · Options: Log and Skip.`,
+        `Under Log: ${post(`text = Text, app = selected app name, source = notification`)}`,
+        `Under Log: Get Dictionary Value — Get Value for Key success; show message only when true, otherwise show MOVO's failure message.`,
+        `Under Skip: Stop This Shortcut (no request is sent).`,
+        `End Menu.`,
+      ] : [
+        post(`text = Text, app = selected app name, source = notification`),
+        `Get Dictionary Value — Get Value for Key success in Contents of URL.`,
+        `If — Dictionary Value is true: Get Dictionary Value — Get Value for Key message in Contents of URL, then Show Notification — Title: MOVO · Body: Dictionary Value. End If.`,
+      ]),
     ],
   };
+  }
   if (mode === `messages`) return {
     name: `MOVO Bank Texts`,
     trigger: `Shortcuts → Automation → + → Message → Message Contains: Ref (bank and e-wallet payment texts include a reference number) → Run Immediately → turn off Notify When Run → Next → New Blank Automation. Optional: make a second automation with Email → Subject Contains: payment, and use Shortcut Input › Body instead of Content.`,
@@ -84,15 +102,18 @@ export function shortcutRecipe(origin, key, mode = `interactive`) {
 export const shortcutPrompt = (origin, key, mode = 'interactive') => {
   const r = shortcutRecipe(origin, key, mode);
   return [
-    mode === 'voice' ? `Create an iOS shortcut named “${r.name}”.` : `Create an iOS Shortcuts personal automation named “${r.name}” for MOVO transaction logging.`,
+    (mode === 'voice' || mode === 'voice-interactive') ? `Create an iOS shortcut named “${r.name}”.` : `Create an iOS Shortcuts personal automation named “${r.name}” for MOVO transaction logging.`,
     `Setup: ${r.trigger}`,
     'Add exactly these actions, in this order, and nothing else:',
     ...r.steps.map((step, i) => `${i + 1}. ${step}`),
     'Rules: use Get Contents of URL and never Open URLs, Safari or a web view. Put the device key only in the Authorization header, never in the URL. Use the field names exactly as written, in lowercase.',
-    mode === 'notifications' ? 'Send the notification title and body as they are: do not split them, add menus or ask for input. MOVO reads income, payments and transfers from them, ignores one-time codes and promos without storing them, and only a logged payment needs to be shown.' :
+    mode === 'notifications' ? 'Show the original notification title and body and require Log or Skip before sending. Skip sends no request. Send original text unchanged; server-side MOVO classification rejects OTPs, promotions and non-financial alerts.' :
+    mode === 'notifications-automatic' ? 'Run without menus. Send original notification text unchanged. Server-side MOVO classification rejects OTPs, promotions and non-financial alerts. Show success only after MOVO confirms persistence; retain eligible failures for review.' :
     mode === 'messages' ? 'Send the whole message text as it is: do not split it, add menus or ask for input. MOVO reads income, payments and transfers from it, and ignores one-time codes and promos without storing them.' :
-    mode === 'automatic' ? 'Do not add menus, Ask for Input, Choose from List, alerts or any action that needs a tap.' : mode === 'interactive' ? 'Only the Log and Skip menu may ask for a tap; under Skip, stop without sending anything.' : 'Do not add amount or merchant fields: MOVO reads them from the sentence and replies with a question when it is unclear. It understands expenses (“I spent 150 on lunch”), income (“I received 2,000 from work”) and transfers between your own accounts (“I transferred 500 from BPI to GCash”).',
-    'Always show or speak MOVO’s reply (the message value) as it is: never claim it was logged unless MOVO says so.',
+    (mode === 'automatic' || mode === 'notifications-automatic') ? 'Do not add menus, Ask for Input, Choose from List, alerts or any action that needs a tap.' : (mode === 'interactive' || mode === 'voice-interactive' || mode === 'notifications') ? 'Only the Log and Skip menu may ask for a tap; under Skip, stop without sending anything.' : 'Do not add amount or merchant fields: MOVO reads them from the sentence and replies with a question when it is unclear. It understands expenses (“I spent 150 on lunch”), income (“I received 2,000 from work”) and transfers between your own accounts (“I transferred 500 from BPI to GCash”).',
+    'Check the API success value before showing or speaking the reply. Never announce a save after a timeout, non-2xx response, missing success value or failed request.',
+    'Never send OTPs, verification codes, promotional messages, login alerts, balance-only notices or unrelated notifications to the financial ledger.',
+    'Do not invent missing merchant, amount, account, date or currency values. Ambiguous entries must be clarified or left for While You Were Away review.',
     'MOVO recognises the same purchase if a bank alert or another device also reports it, so it is never logged twice.',
   ].join('\n');
 };
