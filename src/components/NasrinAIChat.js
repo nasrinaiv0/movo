@@ -59,6 +59,13 @@ function LogCard({ items, removed, show, onUndo, onLogAnyway, onView }) {
   </div>;
 }
 
+/** Reads a recorded audio Blob. Blob.arrayBuffer is missing on older iOS Safari (before 14), so fall back to FileReader. */
+const blobBuffer = (blob) => (typeof blob.arrayBuffer === 'function' ? blob.arrayBuffer() : new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error);
+  reader.readAsArrayBuffer(blob);
+}));
+
 export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, shortcuts = [], show = true }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -401,7 +408,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token || session?.access_token;
       if (!token || !voiceRef.current) return;
-      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const bytes = new Uint8Array(await blobBuffer(blob));
       let binary = '';
       for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
       const response = await fetch(apiUrl('/api/nasrinai/chat'), {
