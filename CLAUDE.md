@@ -56,7 +56,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Quality and security over speed. Never weaken Supabase RLS, policies or grants; schema changes go in a new migration with tests.
 - Never commit, print or log secrets or real financial data. Server-only env: `SUPABASE_SERVICE_ROLE_KEY`, `NASRINAI_API_KEY`, `NASRINAI_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `MOVO_ALLOWED_ORIGINS`. Browser env: `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY` only.
 - NasrinAI chat sends only the user's message plus a limited user-scoped snapshot, after explicit consent.
-- Do not invent legal details (operator identity, retention, providers); the legal pages flag them as incomplete.
+- Legal pages are final (owner, 2026-11-03): the operator is "the MOVO service team" reachable at support@nasrinai.com. Do not invent a legal name, address, retention periods or providers; when behaviour changes, update the matching legal text and bump its effective date.
 
 ## Git and PR workflow
 - One branch per change (`feat/…`, `fix/…`, `ui/…`, `docs/…`); never force-push; never commit to `main` directly.
