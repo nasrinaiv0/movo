@@ -35,6 +35,7 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 
 ### Implemented frontend behavior
 - Responsive Home dashboard and five-item navigation.
+- Exchange Rates screen (Menu → Exchange rates): multi-currency converter, currency search, tracked FX pairs, manual refresh, cached reference-rate timestamps and stale/fallback status. FX requests send currency codes only; the upstream free feed is a reference-rate service, not a tick-by-tick executable quote.
 - Balance visibility toggle that masks balances and transaction amounts.
 - Income and expense totals are calculated from posted records; internal transfers affect account balances but never inflate income, expenses or net activity.
 - Account balances derive from opening balances plus routed ledger entries. The Savings tile sums eligible non-cash account balances (excluding credit cards and cards whose debit/credit kind is unknown); it is distinct from monthly net cash flow.
@@ -94,7 +95,7 @@ The iOS app wraps this same code with Capacitor (`ios/`, `capacitor.config.json`
 5. Re-run owner-isolation/RLS checks and test authentication, financial writes, consent, import/export, and deletion behavior in the actual production deployment. Test phone automations (Siri Shortcut, Apple Pay, Android voice) and NasrinAI voice chat on real devices; none has been device-tested.
 6. Add or complete end-to-end accessibility checks across supported mobile and desktop browsers.
 7. Implement supported bank integrations only through documented provider APIs and explicit consent; never collect or scrape banking credentials.
-8. Product work not built yet (see `docs/claude/FINANCIAL_PLANNING_HANDOFF.md`): Home cards for Net worth, Bills due, Debt and Owed to you; bill reminders; spending limits by account/merchant with a warning level; savings interest estimates; exchange-rate staleness, history and crypto; import of loans/receivables/bills; Android voice logging setup; profile photo crop and a cloud-sync off switch; paid Quick/Pro/Max/Ultra plans (needs pricing confirmation and a PayMongo/NasrinAI entitlement design).
+8. Product work not built yet (see `docs/claude/FINANCIAL_PLANNING_HANDOFF.md`): Home cards for Net worth, Bills due, Debt and Owed to you; bill reminders; spending limits by account/merchant with a warning level; savings interest estimates; FX historical charts; crypto market, watchlist, alerts and portfolio; import of loans/receivables/bills; Android voice logging setup; profile photo crop and a cloud-sync off switch; paid Quick/Pro/Max/Ultra plans (needs pricing confirmation and a PayMongo/NasrinAI entitlement design).
 
 ## Icons
 
