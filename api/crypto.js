@@ -1,7 +1,6 @@
 'use strict';
 
 const BASE = 'https://api-pro.coinpaprika.com/v1';
-const FREE_BASE = 'https://api.coinpaprika.com/v1';
 const ALLOWED_QUOTES = new Set(['PHP','USD','EUR','GBP','JPY','AUD','CAD','SGD','CHF','CNY','HKD','NZD','KRW','INR','BTC','ETH']);
 
 function safeQuote(value) {
@@ -47,7 +46,7 @@ function normalizeTicker(row, quote) {
     id: row.id, name: row.name.slice(0, 100), symbol: row.symbol.slice(0, 20).toUpperCase(),
     rank: Number.isInteger(row.rank) && row.rank > 0 ? row.rank : null,
     price, marketCap: number(q.market_cap), volume24h: number(q.volume_24h),
-    change24h: Number.isFinite(Number(q.percent_change_24h)) ? Number(q.percent_change_24h) : null,
+    change24h: q.percent_change_24h !== null && q.percent_change_24h !== undefined && Number.isFinite(Number(q.percent_change_24h)) ? Number(q.percent_change_24h) : null,
     circulatingSupply: number(row.circulating_supply), updatedAt: updated
   };
 }
