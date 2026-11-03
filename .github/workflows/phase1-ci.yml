@@ -6,25 +6,35 @@ on:
   push:
     branches: [main, "feat/**"]
 
+concurrency:
+  group: movo-phase1-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   verify:
+    name: Automated verification
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Install dependencies
-        run: npm install
-      - name: Audit production dependency tree
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Audit production dependencies
         run: npm run audit:production
-      - name: Run tests
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Translation catalogue coverage
+        run: npm test -- --runInBand src/lib/i18n.test.js
+      - name: Full regression suite
         run: npm test -- --runInBand
-      - name: Build production bundle
-        run: npm run build
+      - name: Production build
+        run: CI=true npx react-scripts build
