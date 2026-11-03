@@ -7,10 +7,10 @@
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
-| [#149 — Home 3D ram mascot](https://github.com/nasrinaiv0/movo/pull/149) | Home header ram whose mood (smile / cute / disappointed / angry) follows the month's budgets, income when there are none; lazy three.js chunk, assets in `public/mascot/`. | Open; owner asked to ship it. Local: 383 tests, typecheck and strict build green. | Squash-merge once `verify` and the Vercel preview are green, then confirm production. |
-| [#93 — Privacy and legal verification](https://github.com/nasrinaiv0/movo/pull/93) | Legal review draft (verification matrix, Philippines notes). | Open; must not merge until every legal/operational item has evidence and counsel review. | Owner supplies verified legal facts; counsel review. |
+| [#177 — FX converter and tracked currency pairs](https://github.com/nasrinaiv0/movo/pull/177) | FX reference-rate screen, converter, searchable tracked pairs, provider timestamps, stale/fallback status and refresh. | Open draft; implementation in progress. | Complete CI, accessibility and preview verification; crypto and historical FX remain out of scope for this phase. |
+| [#175 — Deep security audit implementation plan](https://github.com/nasrinaiv0/movo/pull/175) | Security remediation documentation and penetration-test plan. | Open draft. | Continue implementation under issue #143. |
 
-Checked against GitHub on 2026-11-02 20:00 UTC: #93 is the only open PR. #41 was closed without merging (its consent wording was superseded by later chat work).
+Checked against GitHub on 2026-11-04. This register is reconciled for the currently open work; historical entries below remain a summary of prior changes.
 
 ## Production database (checked 2026-11-02 20:00 UTC)
 
