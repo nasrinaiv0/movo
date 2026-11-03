@@ -14,7 +14,7 @@ import { appOrigin } from '../lib/platform';
  * included in what is copied.
  */
 const MODES = [
-  ['applepay', 'card', 'Apple Pay', 'Logs automatically or asks Log / Skip'],
+  ['applepay', 'card', 'Apple Pay', 'Logs every payment'],
   ['voice', 'mic', 'Siri voice', '“Hey Siri, Log to MOVO”'],
   ['notifications', 'bell', 'Bank notifications', 'GCash, Maya and bank apps'],
   ['messages', 'message', 'Bank texts', 'GCash, Maya and bank SMS'],
@@ -46,7 +46,7 @@ export default function AutoLogSheet({ prefs, setPref, status, accounts = [], cl
   return <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay payments, Siri voice entries and bank notifications straight into MOVO.')} onClose={onClose} label={tr('Automatic logging')} className="autolog-sheet">
     <section className="card al-card al-status">
       <div className={`al-chip ${tone}`} role="status" aria-live="polite"><Icon name={icon} size={14} strokeWidth={2.4} /> {tr(label)}</div>
-      <div className="al-row"><span className="al-row-text"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Valid transactions are logged automatically across supported sources.') : tr('MOVO asks you to confirm before logging across supported sources.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div>
+      <div className="al-row"><span className="al-row-text"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Payments are added instantly.') : tr('MOVO asks you to confirm each payment.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div>
     </section>
 
     {cloudMode && cloudAccounts.length > 0 && <section className="al-default">
