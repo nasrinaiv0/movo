@@ -23,6 +23,11 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
   const bankAccounts = accounts.filter(account => account.account_type === 'bank' && !account.is_archived);
   const debitCard = form.account_type === 'card' && form.cardKind !== 'credit';
+  const creditCard = form.account_type === 'card' && form.cardKind === 'credit';
+  const amountOf = (v) => evaluate(String(v || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
+  const creditLimit = amountOf(form.creditLimit);
+  const owedNow = String(form.owedNow || '').trim() ? amountOf(form.owedNow) : 0;
+  const creditValid = !creditCard || (Number.isFinite(creditLimit) && creditLimit > 0 && Number.isFinite(owedNow) && owedNow >= 0);
   const linkedBank = bankAccounts.find(account => account.id === form.linkedBankId);
   const [pad, setPad] = useState(false);
   const meta = typeMeta(form.account_type);
@@ -35,7 +40,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
 
   return <Sheet label={label} onClose={onClose} hideClose className="acct-sheet">{(close) => <form className="acct-form" onSubmit={onSave}>
     <div className="acct-head"><button type="button" className="tx-round" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="back" size={18} /></button><h2>{editing ? tr('Edit Account') : tr('Add Account')}</h2><span className="tx-round ghost" /></div>
-    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" />}</div>
+    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" />}</div>
 
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">{tr('Account type')}</label>
@@ -64,7 +69,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         <div className="seg-control two" role="group" aria-label={tr('Card kind')}>{[['debit', 'Debit'], ['credit', 'Credit']].map(([k, l]) => <button type="button" key={k} className={form.cardKind === k ? 'selected' : ''} aria-pressed={form.cardKind === k} onClick={() => set({ cardKind: k })}>{l}</button>)}</div>
         <label className="acct-label" htmlFor="acct-linked-bank">{debitCard ? tr('Linked bank account') : tr('Issuing bank')}</label>
         {bankAccounts.length ? <div className="acct-field select acct-bank-pick">
-          <span><strong>{linkedBank ? (linkedBank.institution_name || linkedBank.name) : tr('Choose a bank account')}</strong><small>{linkedBank ? `${tr('Bank account')} · ${linkedBank.currency || base}` : debitCard ? tr('Shares this bank account’s balance') : tr('Optional')}</small></span>
+          <span><strong>{linkedBank ? (linkedBank.institution_name || linkedBank.name) : tr('Choose a bank account')}</strong><small>{linkedBank ? (creditCard ? tr('Issuer only. Its balance is not used') : `${tr('Bank account')} · ${linkedBank.currency || base}`) : debitCard ? tr('Shares this bank account’s balance') : tr('Optional')}</small></span>
           <span className="acct-bank-logo" aria-hidden="true"><BrandLogo src={linkedBank ? institutionLogoUrl(linkedBank.institution_name || linkedBank.name) : ''} size={64} fallback={linkedBank ? undefined : <Icon name="bank" size={18} />} /></span>
           <Icon name="down" size={16} />
           <select id="acct-linked-bank" aria-label={debitCard ? tr('Linked bank account') : tr('Issuing bank')} value={form.linkedBankId || ''} required={debitCard} onChange={e => {
@@ -98,7 +103,14 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         <select id="acct-currency" aria-label={tr('Account currency')} value={currency[0]} onChange={e => set({ currency: e.target.value })} disabled={editing && cloudMode}>{CURRENCIES.map(c => <option key={c} value={c}>{c} · {currencyName(c, getFormatLocale())}</option>)}</select></div>
 
       </>}
-      {!debitCard && <>
+      {creditCard && <>
+      <label className="acct-label" htmlFor="acct-limit">{tr('Credit limit')}</label>
+      <div className="acct-input"><input id="acct-limit" inputMode="decimal" required value={form.creditLimit || ''} onChange={e => set({ creditLimit: e.target.value.replace(/[^\d.]/g, '') })} placeholder={tr('Credit limit (e.g. 50,000)')} /></div>
+      <label className="acct-label" htmlFor="acct-owed">{tr('Amount already owed')}</label>
+      <div className="acct-input"><input id="acct-owed" inputMode="decimal" value={form.owedNow || ''} onChange={e => set({ owedNow: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0.00" aria-describedby="acct-owed-hint" /></div>
+      <p className="acct-hint" id="acct-owed-hint">{tr('Optional. What you owe on this card today. Spending on a credit card is owed to the issuer; it is never taken from a bank account.')}</p>
+      </>}
+      {!debitCard && !creditCard && <>
       <label className="acct-label" htmlFor="acct-balance">{editing ? tr('Opening balance') : tr('Starting balance')}</label>
       <div className="acct-input with-action">
         <input id="acct-balance" inputMode="decimal" value={form.opening_balance} onChange={e => set({ opening_balance: e.target.value.replace(/[^\d.+\-−×÷*/]/g, '').replace(/\*/g, '×').replace(/\//g, '÷') })} placeholder={tr('Starting balance (e.g. 5,000)')} />
@@ -116,6 +128,6 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       {!cloudMode && <p className="acct-hint">{tr('Stored on this device only. Sign in to sync it to your MOVO account.')}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || !Number.isFinite(balance) || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
+    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || (!creditCard && !Number.isFinite(balance)) || !creditValid || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
   </form>}</Sheet>;
 }
