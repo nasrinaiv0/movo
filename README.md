@@ -35,7 +35,7 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 
 ### Implemented frontend behavior
 - Responsive Home dashboard and five-item navigation.
-- Exchange Rates screen (Menu → Exchange rates): multi-currency converter, currency search, tracked FX pairs, manual refresh, cached reference-rate timestamps and stale/fallback status. FX requests send currency codes only; the upstream free feed is a reference-rate service, not a tick-by-tick executable quote.
+- Exchange Rates screen (Menu → Exchange rates): multi-currency converter, searchable currency selector, tracked FX pairs, manual refresh, cached reference-rate timestamps, stale/fallback status and historical daily-rate charts (1W/1M/3M/1Y). FX requests send currency codes only; the upstream free feed is a reference-rate service, not a tick-by-tick executable quote.
 - Balance visibility toggle that masks balances and transaction amounts.
 - Income and expense totals are calculated from posted records; internal transfers affect account balances but never inflate income, expenses or net activity.
 - Account balances derive from opening balances plus routed ledger entries. The Savings tile sums eligible non-cash account balances (excluding credit cards and cards whose debit/credit kind is unknown); it is distinct from monthly net cash flow.
