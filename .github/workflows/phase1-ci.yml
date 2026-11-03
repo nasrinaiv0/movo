@@ -3,11 +3,9 @@ name: MOVO Phase 1 CI
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main, "feat/**"]
 
 concurrency:
-  group: movo-phase1-${{ github.workflow }}-${{ github.ref }}
+  group: movo-phase1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
