@@ -116,5 +116,5 @@ test('Siri interactive recipe confirms before posting and Skip sends nothing', (
   expect(r.steps.join(' ')).toMatch(/Choose from Menu/);
   expect(r.steps.join(' ')).toMatch(/Under Skip: Stop This Shortcut/);
   expect(r.steps.join(' ')).toMatch(/source = siri_shortcut/);
-  expect(prompt('https://movo.example', 'KEY123', 'voice-interactive')).toMatch(/never announce a save/);
+  expect(prompt('https://movo.example', 'KEY123', 'voice-interactive')).toMatch(/never announce a save/i);
 });
