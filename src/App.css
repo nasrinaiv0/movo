@@ -4473,6 +4473,11 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .fp-home-note { margin: 0; padding: 10px 16px 14px; box-shadow: inset 0 .25px 0 var(--line); }
 @media (max-width: 360px) { .movo-app .fp-home-split { display: none; } }
 
+/* ---- Filter chips: a minimum width (Wallet, Transactions) — 2026-11-03 ----
+ * Chips keep their natural width ("All" stays small so the row fits without scrolling), with a 44px minimum; text is
+ * centred and never wraps, so chips cannot overlap (the row scrolls if it runs out of room). */
+.movo-app .chip-bar > .chip-row > button[data-chip] { flex: 0 0 auto; min-width: 44px; padding-inline: 11px; justify-content: center; text-align: center; white-space: nowrap; }
+.movo-app .chip-bar > .chip-row { gap: 6px; }
 /* ---- Card format preview matches the applied card (2026-11-03) ----
  * The preview card is laid out at its real Wallet width and scaled down (Wallet.js ScaledCard). */
 .movo-app .format-scaled { position: relative; display: block; width: 100%; overflow: visible; }
@@ -4488,3 +4493,11 @@ button.account-tile:active { transform: scale(.98); }
  * 85.6 × 54 mm, the same as the card art, instead of the shorter 856/460 strip. Padding follows the card faces. */
 .movo-app .account-tile.at-preview { aspect-ratio: 85.6 / 54; height: auto; min-height: 0; padding: 15px 15px 15px 20px; }
 .movo-app .detail-card-view > .account-tile.at-preview { max-width: 340px; }
+@media (max-width: 430px) {
+  .movo-app .chip-bar > .chip-row { gap: 4px; }
+  .movo-app .chip-bar > .chip-row > button[data-chip] { min-width: 40px; padding-inline: 8px; }
+}
+@media (max-width: 380px) {
+  .movo-app .chip-bar > .chip-row { gap: 3px; }
+  .movo-app .chip-bar > .chip-row > button[data-chip] { min-width: 36px; padding-inline: 6px; }
+}
