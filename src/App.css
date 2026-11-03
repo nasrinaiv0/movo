@@ -4295,3 +4295,32 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .tx-sheet .tx-sub:focus-within { background: color-mix(in srgb, var(--accent) 10%, var(--tx-field, var(--field))); }
 .movo-app.movo-app .tx-sheet .tx-sub { background: color-mix(in srgb, var(--text) 7%, transparent); }
 .movo-app.movo-app .tx-sheet .tx-sub.has-value { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+
+/* =====================================================================
+   Archive (Menu → Archive) and the Archive / Log buttons for failed automations.
+   ===================================================================== */
+.movo-app .recent-logs-sheet .rl-failed-btns { display: inline-flex; align-items: center; gap: 6px; }
+.movo-app .recent-logs-sheet .rl-archive-btn { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); font-size: 12.5px; font-weight: 650; }
+.movo-app .recent-logs-sheet .rl-archive-btn:disabled { opacity: .5; }
+.movo-app .archive-intro { margin: 2px 2px 14px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.movo-app .archive-empty { display: grid; justify-items: center; gap: 6px; padding: 28px 18px; text-align: center; color: var(--muted); }
+.movo-app .archive-empty strong { color: var(--text); font-size: 15px; }
+.movo-app .archive-empty small { max-width: 32ch; font-size: 12.5px; line-height: 1.45; }
+.movo-app .archive-group { margin-bottom: 14px; }
+.movo-app .archive-head { display: flex; align-items: center; gap: 6px; margin: 0 4px 8px; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.movo-app .archive-head small { margin-left: auto; font-weight: 600; letter-spacing: 0; }
+.movo-app .archive-list { margin: 0; padding: 4px 0; list-style: none; }
+.movo-app .archive-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 14px; }
+.movo-app .archive-row + .archive-row { border-top: var(--hair, 1px) solid var(--line); }
+.movo-app .archive-main { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.movo-app .archive-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .archive-main strong { font-size: 14px; }
+.movo-app .archive-main small { color: var(--muted); font-size: 11.5px; }
+.movo-app .archive-main small span { white-space: nowrap; }
+.movo-app .archive-amount { flex: none; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.movo-app .archive-actions { display: inline-flex; flex: none; align-items: center; gap: 4px; }
+.movo-app .archive-restore { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-ink, var(--accent)); font-size: 12.5px; font-weight: 700; }
+.movo-app .archive-delete { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 50%; background: transparent; color: var(--red); }
+.movo-app .archive-restore:disabled, .movo-app .archive-delete:disabled { opacity: .5; }
+.movo-app .archive-empty-all { width: 100%; margin-top: 4px; color: var(--red); }
+@media (max-width: 360px) { .movo-app .archive-amount { display: none; } }
