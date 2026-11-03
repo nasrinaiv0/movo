@@ -243,4 +243,4 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Added interactive and hands-free bank notification recipe variants; interactive Siri confirmation variant; retained Apple Pay automatic/interactive recipes.
 - Added prompt safety requirements for server-confirmed success, non-financial notification filtering, no fabricated transaction details, and no POST on Skip.
 - Added regression tests for the new recipe variants and updated Siri progress documentation.
-- Pending: exact-head CI/typecheck/build, settings UI mode wiring review, actual iPhone trigger-variable validation and While You Were Away end-to-end test. No Supabase migration, production data change, deployment or merge performed.
+- Pending: exact-head CI/typecheck/build, review of the shared-preference wiring, actual iPhone trigger-variable validation and While You Were Away end-to-end test. No Supabase migration, production data change, deployment or merge performed.
