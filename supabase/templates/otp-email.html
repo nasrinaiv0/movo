@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<!-- Adaptive: light by default, dark in mail apps that are in dark mode (Apple Mail, iOS Mail, Outlook, Gmail apps). -->
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Your MOVO sign-in code</title>
+<style>
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  body { margin: 0; padding: 0; }
+  /* Narrow screens: tighter padding and a slightly smaller code so it never wraps. */
+  @media (max-width: 480px) {
+    .m-outer { padding: 20px 10px !important; }
+    .m-pad { padding-left: 20px !important; padding-right: 20px !important; }
+    .m-code { font-size: 28px !important; letter-spacing: 6px !important; }
+  }
+  /* Dark mode (Apple Mail, iOS Mail, Outlook apps, Gmail apps that honour it). */
+  @media (prefers-color-scheme: dark) {
+    .m-bg { background: #0f1115 !important; }
+    .m-card { background: #1a1d24 !important; border-color: #2a2e38 !important; }
+    .m-title, .m-strong { color: #f3f4f6 !important; }
+    .m-text { color: #a6abb8 !important; }
+    .m-muted { color: #8a8f9c !important; }
+    .m-codebox { background: #12372a !important; }
+    .m-code { color: #4fd49a !important; }
+    .m-rule { border-top-color: #2a2e38 !important; }
+    .m-link { color: #4fd49a !important; }
+  }
+  /* Outlook.com / Outlook web dark mode. */
+  [data-ogsc] .m-title, [data-ogsc] .m-strong { color: #f3f4f6 !important; }
+  [data-ogsc] .m-text { color: #a6abb8 !important; }
+  [data-ogsc] .m-code { color: #4fd49a !important; }
+  [data-ogsb] .m-bg { background: #0f1115 !important; }
+  [data-ogsb] .m-card { background: #1a1d24 !important; }
+  [data-ogsb] .m-codebox { background: #12372a !important; }
+</style>
+</head>
+<body class="m-bg" style="margin:0;padding:0;background:#f5f5f8;-webkit-text-size-adjust:100%;">
+  <!-- Preview text shown in the inbox list -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your MOVO code is {{ .Token }}. Enter it on the sign-in screen.</div>
+  <table role="presentation" class="m-bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f8;">
+    <tr>
+      <td align="center" class="m-outer" style="padding:32px 16px;">
+        <table role="presentation" class="m-card" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;width:100%;background:#ffffff;border-radius:24px;border:1px solid #ebecf0;">
+          <tr>
+            <!-- Transparent MOVO mark: no box or frame behind it in light or dark mode. -->
+            <td align="center" class="m-pad" style="padding:32px 28px 4px;">
+              <img src="https://movo.nasrinai.com/email-mark.png" width="64" height="64" alt="MOVO" style="display:block;width:64px;height:64px;border:0;outline:none;text-decoration:none;background:transparent;">
+            </td>
+          </tr>
+          <tr>
+            <td align="center" class="m-pad" style="padding:8px 28px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              <h1 class="m-title" style="margin:0;font-size:22px;line-height:1.3;font-weight:800;letter-spacing:-0.4px;color:#171923;">Your sign-in code</h1>
+              <p class="m-text" style="margin:8px 0 0;font-size:14px;line-height:1.55;color:#6b6f7b;">Enter this code on the MOVO sign-in screen to continue.</p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" class="m-pad" style="padding:22px 28px 6px;">
+              <table role="presentation" class="m-codebox" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#eafaf3;border-radius:16px;">
+                <tr>
+                  <td align="center" class="m-code" style="padding:18px 12px;font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:32px;line-height:1;font-weight:700;letter-spacing:8px;color:#08774e;">{{ .Token }}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" class="m-pad m-muted" style="padding:8px 28px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.55;color:#858997;">
+              The code works once and expires shortly.
+            </td>
+          </tr>
+          <tr>
+            <td class="m-pad" style="padding:24px 28px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="m-rule" style="border-top:1px solid #ebecf0;font-size:0;line-height:0;">&nbsp;</td></tr></table>
+            </td>
+          </tr>
+          <tr>
+            <td class="m-pad m-text" style="padding:16px 28px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.6;color:#6b6f7b;">
+              <p style="margin:0 0 10px;"><strong class="m-strong" style="color:#171923;">Didn't ask for this?</strong> Someone entered {{ .Email }} on MOVO. You can ignore this email; no one can sign in without the code.</p>
+              <p style="margin:0;">MOVO never asks for bank passwords, card PINs or CVVs. Only enter this code in the MOVO app or at <a class="m-link" href="https://movo.nasrinai.com" style="color:#08774e;text-decoration:none;">movo.nasrinai.com</a>, and never share it.</p>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;width:100%;">
+          <tr>
+            <td align="center" class="m-muted" style="padding:16px 12px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11.5px;line-height:1.5;color:#9a9eab;">
+              MOVO · Money Organizer &amp; Visual Outflow
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
