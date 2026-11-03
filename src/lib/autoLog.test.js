@@ -83,15 +83,16 @@ test('Siri voice prompt posts the dictated sentence with the Siri source and spe
   expect(shortcutPrompt('https://movo.example', 'k'.repeat(32), 'automatic')).toMatch(/Auto MOVO Transactions/);
 });
 
-test('bank notifications recipe: Notification trigger, title and body sent as text, reply shown only when logged', () => {
+test('bank notifications recipe: Notification trigger, title and body sent as text with Log / Skip', () => {
   const { shortcutRecipe: recipe, shortcutPrompt: prompt } = require('./autoLog');
   const r = recipe('https://movo.nasrinai.com', 'KEY123', 'notifications');
   expect(r.trigger).toMatch(/Automation → \+ → Notification → choose the app/);
   expect(r.steps.join(' ')).toMatch(/Shortcut Input › Title/);
   expect(r.steps.join(' ')).toMatch(/text = Text, app = .*source = notification/);
-  expect(r.steps.join(' ')).toMatch(/If — Dictionary Value is true/);
+  expect(r.steps.join(' ')).toMatch(/Choose from Menu/);
+  expect(r.steps.join(' ')).toMatch(/Under Skip: Stop This Shortcut/);
   expect(r.steps.join(' ')).toMatch(/Authorization: Bearer KEY123/);
-  expect(prompt('https://movo.nasrinai.com', 'KEY123', 'notifications')).toMatch(/ignores one-time codes and promos/);
+  expect(prompt('https://movo.nasrinai.com', 'KEY123', 'notifications')).toMatch(/rejects OTPs, promotions and non-financial alerts/);
 });
 
 
