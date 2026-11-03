@@ -7,7 +7,7 @@
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
-| [#177 — FX converter and tracked currency pairs](https://github.com/nasrinaiv0/movo/pull/177) | FX reference-rate screen, converter, searchable tracked pairs, provider timestamps, stale/fallback status and refresh. | Open draft; implementation in progress. | Complete CI, accessibility and preview verification; crypto and historical FX remain out of scope for this phase. |
+| [#177 — FX converter and tracked currency pairs](https://github.com/nasrinaiv0/movo/pull/177) | FX converter, searchable currency selector, tracked pairs, reference-rate refresh/freshness, and historical 1W/1M/3M/1Y chart. | Open draft; implementation in progress. | Complete CI, accessibility and preview verification; cryptocurrency remains out of scope for this phase. |
 | [#175 — Deep security audit implementation plan](https://github.com/nasrinaiv0/movo/pull/175) | Security remediation documentation and penetration-test plan. | Open draft. | Continue implementation under issue #143. |
 
 Checked against GitHub on 2026-11-04. This register is reconciled for the currently open work; historical entries below remain a summary of prior changes.
