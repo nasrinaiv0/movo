@@ -107,7 +107,8 @@ export async function fetchRateHistory(from, to, range = '1M', now = Date.now())
     const byDate = new Map();
     rows.forEach(row => {
       const rate = Number(row?.rate);
-      if (row?.base !== from || row?.quote !== to || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row?.date || '') || !Number.isFinite(rate) || rate <= 0) return;
+      const dateMs = Date.parse(`${row?.date}T00:00:00Z`);
+      if (row?.base !== from || row?.quote !== to || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row?.date || '') || !Number.isFinite(dateMs) || dateMs < Date.parse(`${start}T00:00:00Z`) || dateMs > Date.parse(`${end}T23:59:59Z`) || !Number.isFinite(rate) || rate <= 0) return;
       byDate.set(row.date, { date: row.date, rate });
     });
     const points = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
