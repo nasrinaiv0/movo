@@ -81,7 +81,7 @@ match production, and the SQL test suites passed there. A production read-back c
 
 These are not resolved by a green frontend CI run or a READY deployment:
 
-- **Legal readiness:** Formal operator/data-controller identity and address, actual retention periods, provider details, and jurisdiction-specific disclosures still need verification and legal review. The in-app pages explicitly warn users about the missing details; do not invent them.
+- **Legal:** Terms of Service and Privacy Policy published as final on 2026-11-03 by owner decision (effective 2026-11-03). The operator is identified as the MOVO service team with the support@nasrinai.com contact; no legal name or registered address is shown. The publication warning was removed.
 - **Email sign-in codes (2026-11-02):** Supabase Auth logs show every `/otp` request since 16:02 UTC failing with SMTP
   `535 "Authentication credentials invalid"`. The custom SMTP credentials in Authentication → Emails → SMTP Settings
   need correcting by the owner, so codes are not delivered until then. Google sign-in works. Apple fails with

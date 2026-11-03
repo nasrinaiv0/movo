@@ -87,7 +87,7 @@ The iOS app wraps this same code with Capacitor (`ios/`, `capacitor.config.json`
 
 ## Remaining production-readiness requirements
 
-1. Publish and review the operator/data-controller's formal legal identity, registered address where required, verified retention schedule, and actual provider disclosures. The in-app legal pages currently warn that these launch details remain incomplete; do not use MOVO with real or highly sensitive financial data until resolved.
+1. Legal: the Terms of Service and Privacy Policy were published as final on 2026-11-03 (owner decision). The operator is identified by the MOVO service team and the support@nasrinai.com contact; no legal name or registered address is shown. Update both pages and their effective dates when the product's data handling changes.
 2. Apply the four production migrations still pending (`20261030160000_user_preferences`, `20261101120000_bills_payments`, `20261102010000_automation_sources_and_cross_source_dedup`, `20261102020000_automation_inbox`; see `docs/PR_PROGRESS.md`). Configure Supabase Auth for passwordless sign-in: add `{{ .Token }}` to the Magic Link template, enable Apple, allow the production redirect URL. Leaked-password protection only matters for older password accounts.
 3. Review and remediate the dependency vulnerabilities reported by `npm audit` using targeted upgrades and regression tests; do not blindly force major upgrades.
 4. Resolve the NasrinAI upstream HTTP 401 and verify an authenticated production request without exposing credentials.
