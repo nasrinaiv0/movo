@@ -7,10 +7,10 @@
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
-| [#177 — FX converter and tracked currency pairs](https://github.com/nasrinaiv0/movo/pull/177) | FX converter, searchable currency selector, tracked pairs, reference-rate refresh/freshness, and historical 1W/1M/3M/1Y chart. | Open draft; implementation in progress. | Complete CI, accessibility and preview verification; cryptocurrency remains out of scope for this phase. |
+| [#177 — FX converter and crypto market](https://github.com/nasrinaiv0/movo/pull/177) | FX converter, tracked pairs and history; crypto market discovery, local watchlist, coin detail and provider-supported history. | Open draft; crypto market implementation added; validation pending. | Configure licensed CoinPaprika API Pro key as Vercel `COINPAPRIKA_API_KEY`; complete tests, typecheck, build and preview verification. Price alerts and portfolio lots remain pending. |
 | [#175 — Deep security audit implementation plan](https://github.com/nasrinaiv0/movo/pull/175) | Security remediation documentation and penetration-test plan. | Open draft. | Continue implementation under issue #143. |
 
-Checked against GitHub on 2026-11-04. This register is reconciled for the currently open work; historical entries below remain a summary of prior changes.
+2026-11-04 — PR #177: Added server-side CoinPaprika proxy with quote/coin-ID validation, bounded market requests, three-minute response caching, normalized timestamps and values; added crypto market search/sort, coin details, daily history and local watchlist. Provider key is server-only and requires a licence suitable for customer-facing redistribution. Automated verification has not yet run on this implementation SHA. Price alerts and portfolio holdings remain pending. iOS native build is not triggered for this web-only change.\n\nChecked against GitHub on 2026-11-04. This register is reconciled for the currently open work; historical entries below remain a summary of prior changes.
 
 ## Production database (checked 2026-11-02 20:00 UTC)
 
