@@ -4295,3 +4295,9 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .tx-sheet .tx-sub:focus-within { background: color-mix(in srgb, var(--accent) 10%, var(--tx-field, var(--field))); }
 .movo-app.movo-app .tx-sheet .tx-sub { background: color-mix(in srgb, var(--text) 7%, transparent); }
 .movo-app.movo-app .tx-sheet .tx-sub.has-value { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+
+/* ---- Subscription logos fill their frame (owner request 2026-11-03) ----
+ * Bundled logos and site icons cover the whole squircle, like an app icon; no white margin around them. */
+.movo-app .sub-icon.has-logo.fill, .movo-app .catalog-row .sub-icon.has-logo.fill { padding: 0; background: #fff; }
+.movo-app .sub-icon.has-logo.fill img, .movo-app .catalog-row .sub-icon.has-logo.fill img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: cover; image-rendering: auto; }
+.movo-app .sub-icon.has-logo.fill.vector img { object-fit: contain; }
