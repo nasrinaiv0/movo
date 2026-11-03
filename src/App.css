@@ -4185,13 +4185,9 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-pile-item.front { animation: wallet-rise .6s cubic-bezier(.22, .61, .36, 1) both; }
 .theme-dark .movo-app .card-pile .credit-card, .theme-dark.movo-app .card-pile .credit-card { box-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 26px -10px rgba(0, 0, 0, .6); }
 
-/* Card view, Stack transition: the next two cards sit behind the front one, their tops showing. */
-.movo-app .card-stack.has-peeks.peeks-1 .card-stack-front { margin-top: 13%; }
-.movo-app .card-stack.has-peeks.peeks-2 .card-stack-front { margin-top: 24%; }
+/* Card view, Stack transition: peeks behind the front card (sizes in the "Wallet card stack" block below). */
 .movo-app .card-stack[data-fx="stack"] .card-stack-card { position: relative; z-index: 2; }
 .movo-app .card-stack-peek { position: absolute; inset: 0 0 auto 0; z-index: 1; display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; transform-origin: 50% 0; transition: transform .45s cubic-bezier(.22, .61, .36, 1), filter .45s ease-out; animation: peek-in .45s cubic-bezier(.22, .61, .36, 1) both; }
-.movo-app .card-stack-peek.peek-1 { transform: translateY(-22%) scale(.94); filter: brightness(.92); }
-.movo-app .card-stack-peek.peek-2 { z-index: 0; transform: translateY(-41%) scale(.88); filter: brightness(.84); }
 @keyframes peek-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .card-pile-item.front, .movo-app .card-stack-peek { animation: none; transition: none; }
@@ -4385,6 +4381,17 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app.movo-app .tx-sheet .tx-seg button { padding: 0 2px; font-size: 11px; letter-spacing: -.2px; }
 }
 
+/* ---- Wallet card stack: all cards, a compact pile (2026-11-03) ----
+ * Every other card sits behind the front one. Each step back shows a thin strip of its top edge (--peek-step % of a
+ * card's height, set from CardDeck.js), is a little smaller, dimmer and more blurred, like the owner's reference.
+ * Card height is width / 1.586, and margin-top % is relative to width. */
+.movo-app .card-stack.has-peeks .card-stack-front { margin-top: calc(var(--peeks) * var(--peek-step) * 1% / 1.586); }
+.movo-app .card-stack-peek {
+  transform: translateY(calc(var(--k) * var(--peek-step) * -1%)) scale(max(.7, calc(1 - var(--k) * .05)));
+  filter: blur(min(calc(var(--k) * 1.4px), 5px)) brightness(max(.6, calc(1 - var(--k) * .07)));
+}
+.movo-app .card-stack-peek .credit-card { box-shadow: 0 -6px 14px -10px rgba(12, 16, 24, .45), 0 1px 2px rgba(12, 16, 24, .08); }
+.movo-app .card-stack[data-fx="stack"] .card-stack-card { z-index: 1000; }
 /* ---- Financial planning screen + Home planning card (2026-11-03) ---- */
 .movo-app .fp-hero { margin-bottom: 12px; }
 .movo-app .fp-hero .sub-hero-row b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

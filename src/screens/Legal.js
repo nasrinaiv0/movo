@@ -4,8 +4,8 @@ import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
 import { MovoMark } from '../components/MovoLogo';
 
-const TERMS_EFFECTIVE_DATE = '2026-10-29T12:00:00Z';
-const PRIVACY_EFFECTIVE_DATE = '2026-10-30T12:00:00Z';
+const TERMS_EFFECTIVE_DATE = '2026-11-03T12:00:00Z';
+const PRIVACY_EFFECTIVE_DATE = '2026-11-03T12:00:00Z';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label={tr('Legal documents')}>
@@ -31,10 +31,6 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
         </div>
       </header>
       <LegalNavigation c={c} current={current} />
-      <aside className="legal-readiness-notice" role="note" aria-label={tr('Important publication notice')}>
-        <strong>{tr('Important before using real financial data')}</strong>
-        <p>{tr('The service operator\'s formal legal identity and registered address have not yet been published, and the retention and provider disclosures still require final verification. Do not enter real or highly sensitive financial information until these launch disclosures are completed and reviewed.')}</p>
-      </aside>
       {children}
       <footer className="legal-contact">
         <h2>{tr('Questions or privacy requests?')}</h2>
@@ -48,8 +44,8 @@ export function TermsOfService({ c }) {
   return <LegalPage c={c} title={tr('Terms of Service')} current="TermsOfService" effectiveDate={TERMS_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>{tr('1. What MOVO does')}</h2>
-      <p>{tr('MOVO is a personal finance tracking tool that lets you record, organize, review, and export financial information you choose to provide. Some screens may contain sample or demonstration records. Unless a screen explicitly confirms otherwise, displayed balances and totals are calculations from the records available in MOVO and are not verified bank balances.')}</p>
-      <p>{tr('MOVO is not a bank, payment processor, credit provider, accounting firm, tax adviser, investment adviser, or emergency service. It does not automatically connect to your bank or read private Apple Pay history in this version.')}</p>
+      <p>{tr('MOVO is a personal finance tracking tool that lets you record, organize, review, and export financial information you choose to provide. Unless a screen explicitly confirms otherwise, displayed balances and totals are calculations from the records available in MOVO and are not verified bank balances.')}</p>
+      <p>{tr('MOVO is not a bank, payment processor, credit provider, accounting firm, tax adviser, investment adviser, or emergency service. It does not connect to your bank or move money. Optional phone automations that you set up yourself can send MOVO the details of a payment or bank notification so it can be recorded.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('2. Your account and responsibilities')}</h2>
@@ -63,7 +59,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('3. Local data, cloud accounts, and exports')}</h2>
-      <p>{tr('Local/demo mode stores manually entered financial records and accounts in this browser\'s local storage. They persist across page reloads in the same browser profile, but they are not synced to another device and can be removed by clearing browser data or using Clear All Data. Browser storage is not encrypted by MOVO itself. Keep a separate copy of important records.')}</p>
+      <p>{tr('Local mode stores manually entered financial records and accounts in this browser\'s local storage. They persist across page reloads in the same browser profile, but they are not synced to another device and can be removed by clearing browser data or using Clear All Data. Browser storage is not encrypted by MOVO itself. Keep a separate copy of important records.')}</p>
       <p>{tr('Custom card-sticker artwork is cropped in your browser and saved in browser storage on this device. MOVO does not send that artwork to its cloud database or sync it to another device. Clear All Data removes custom sticker artwork as well as local financial records.')}</p>
       <p>{tr('When cloud features are available and you sign in, records are stored in MOVO\'s configured cloud database and access is restricted by account-scoped authorization controls. Keep your own records where needed. CSV exports are generated from the records currently available to your session and may contain sensitive financial information; store and share them carefully.')}</p>
     </section>
@@ -91,7 +87,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('9. Suspension, deletion, and changes to these terms')}</h2>
-      <p>{tr('You may stop using MOVO at any time. You can sign out of a cloud account or clear local browser data, but clearing local data does not delete cloud records. To request deletion of cloud account data, contact the service team and complete any reasonable identity verification. Some records may need to be retained where lawfully required or to resolve security, fraud, or legal issues.')}</p>
+      <p>{tr('You may stop using MOVO at any time. You can permanently delete your cloud account and its records in Settings → Delete Account, or ask the service team to do it. Clearing local browser data does not delete cloud records. Some records may need to be retained where lawfully required or to resolve security, fraud, or legal issues.')}</p>
       <p>{tr('We may update these terms as the product changes. We will update the effective date above when the text changes. Continued use after an update is subject to applicable law and any consent or notice requirements that apply.')}</p>
     </section>
     <section className="legal-section">
@@ -101,7 +97,6 @@ export function TermsOfService({ c }) {
     <section className="legal-section">
       <h2>{tr('11. Contact')}</h2>
       <p>{rich('For questions about these terms, email {link}.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
-      <p>{tr('The formal legal name and registered address of the service operator are not displayed in this release. These details and jurisdiction-specific terms must be verified before production use with real financial data.')}</p>
     </section>
   </LegalPage>;
 }
@@ -110,15 +105,16 @@ export function PrivacyPolicy({ c }) {
   return <LegalPage c={c} title={tr('Privacy Policy')} current="PrivacyPolicy" effectiveDate={PRIVACY_EFFECTIVE_DATE}>
     <section className="legal-section">
       <h2>{tr('1. Who is responsible for your data')}</h2>
-      <p>{rich('The legal name and registered address of the MOVO data controller are not yet displayed in this release. This is an unresolved launch requirement, not an exemption from identifying the controller. Before production use with real financial data, the service operator must publish its formal identity and any required privacy contact details. For privacy questions or requests, contact {link}. This policy describes MOVO\'s current product behavior and should be read with applicable privacy laws, including the Philippines\' Data Privacy Act of 2012 where it applies.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
-      <p><strong>{tr('Important:')}</strong> {tr('Until the controller identity and required disclosures are published and reviewed, avoid entering real or highly sensitive financial information.')}</p>
+      <p>{rich('The MOVO service team operates MOVO and is responsible for the personal information described in this policy. For privacy questions or requests, contact {link}. This policy describes how MOVO handles information and should be read with applicable privacy laws, including the Philippines\' Data Privacy Act of 2012 where it applies.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('2. Information MOVO may handle')}</h2>
       <ul>
         <li><strong>{tr('Account information:')}</strong> {tr('email address and, if provided, display name and profile details returned by your sign-in provider.')}</li>
         <li><strong>{tr('Financial records:')}</strong> {tr('account labels and types, institution names, opening balances, transaction descriptions, amounts, dates, categories, notes, and other details you manually enter or import.')}</li>
-        <li><strong>{tr('Preferences and artwork:')}</strong> {tr('theme, accent color, display choices, notification read-state or settings, card-style selections, and custom card-sticker artwork saved in browser storage.')}</li>
+        <li><strong>{tr('Preferences and artwork:')}</strong> {tr('theme, accent color, display choices, notification read-state or settings, card-style selections, and custom card-sticker artwork saved in browser storage.')} {tr('When you are signed in, preferences (but not sticker artwork or scenery photos) are also saved to your account so they follow you across devices.')}</li>
+        <li><strong>{tr('Phone automations:')}</strong> {tr('payment and bank-notification details that shortcuts you set up send to MOVO (amount, merchant, card or account), and records of automations that could not be logged until you log or archive them.')}</li>
+        <li><strong>{tr('Voice chat:')}</strong> {tr('when you talk with NasrinAI, short audio clips are sent for transcription and spoken replies are generated; MOVO does not store the audio.')}</li>
         <li><strong>{tr('NasrinAI chat:')}</strong> {tr('your message, conversation identifier, assistant reply, and—only after you affirm the relevant consent—the limited financial context needed for the request.')}</li>
         <li><strong>{tr('Technical information:')}</strong> {tr('basic request and error metadata needed to operate and protect the service. MOVO\'s chat error logging is designed to avoid recording prompts, financial records, or secret values.')}</li>
       </ul>
@@ -126,7 +122,7 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('3. Local mode and cloud mode')}</h2>
-      <p>{tr('In local/demo mode, manually entered financial records and accounts are stored in this browser\'s local storage and persist across page reloads in the same browser profile. They are not synced to other devices and can be removed by clearing browser data or using Clear All Data. MOVO does not encrypt browser storage itself; anyone with access to your unlocked device or browser profile may be able to inspect locally stored information.')}</p>
+      <p>{tr('In local mode, manually entered financial records and accounts are stored in this browser\'s local storage and persist across page reloads in the same browser profile. They are not synced to other devices and can be removed by clearing browser data or using Clear All Data. MOVO does not encrypt browser storage itself; anyone with access to your unlocked device or browser profile may be able to inspect locally stored information.')}</p>
       <p>{tr('Custom card-sticker artwork is processed in your browser and saved locally on this device, including when you are signed in. It is not sent to MOVO\'s cloud database. You can remove individual stickers from Card Style or remove all local sticker artwork with Clear All Data. Browser storage can be unavailable or full; MOVO will show an error when it cannot confirm that a sticker was saved or removed.')}</p>
       <p>{tr('When you sign in and use cloud features, MOVO uses its configured authentication and database services. Database policies and server-side ownership checks are intended to restrict records to the authenticated account. Do not use cloud features on a shared device unless you can sign out and protect the device afterward.')}</p>
     </section>
@@ -144,17 +140,17 @@ export function PrivacyPolicy({ c }) {
     <section className="legal-section">
       <h2>{tr('5. When information is shared')}</h2>
       <p>{tr('MOVO uses service providers for hosting, authentication, and cloud storage, including Vercel and Supabase where configured. Those providers may process technical or account data to provide their services under their own terms and contractual arrangements.')}</p>
-      <p>{tr('When you affirm the NasrinAI consent and send a chat message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI. The end-to-end upstream context boundary has not yet been independently verified in the deployed integration; avoid sending real or highly sensitive financial details until that verification and the remaining provider disclosures are complete. NasrinAI and any providers it uses may process submitted content under their applicable policies. You can use MOVO without granting this chat-specific consent.')}</p>
+      <p>{tr('When you affirm the NasrinAI consent and send a chat message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI. NasrinAI and any providers it uses may process submitted content under their applicable policies. You can use MOVO without granting this chat-specific consent.')}</p>
       <p>{tr('Information may also be disclosed where required by law, to address security incidents, or to protect rights and safety. Service providers may process data in locations outside your country; the exact location can depend on provider configuration.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('6. Retention and deletion')}</h2>
-      <p>{tr('Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear All Data removes preferences, local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Local records are not included in cloud-account deletion requests. Cloud records and chat history may remain while your account is active and for as long as reasonably needed to provide the service, meet legal obligations, resolve disputes, or protect the service. A fixed automatic deletion schedule is not currently published.')}</p>
+      <p>{tr('Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear All Data removes preferences, local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Things you delete in MOVO stay in the Archive for 90 days so you can restore them, and are then deleted. Cloud records and chat history remain while your account is active. Deleting your account in Settings → Delete Account permanently removes your cloud records; it does not remove data stored in a browser, which you can clear with Clear All Data.')}</p>
       <p>{rich('To request access, correction, export, blocking, or deletion of cloud data, email {link} from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('7. Security')}</h2>
-      <p>{tr('MOVO uses authentication, server-side access checks, user-scoped database policies, HTTPS deployment, and secret separation as part of its security design. No internet service or storage method is risk-free, and local browser storage is not encrypted by MOVO itself. Keep your device secure, use a unique password, and report suspected unauthorized access promptly.')}</p>
+      <p>{tr('MOVO uses authentication, server-side access checks, user-scoped database policies, HTTPS deployment, and secret separation as part of its security design. No internet service or storage method is risk-free, and local browser storage is not encrypted by MOVO itself. Keep your device and the email or sign-in account you use for MOVO secure, and report suspected unauthorized access promptly.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('8. Your privacy rights')}</h2>

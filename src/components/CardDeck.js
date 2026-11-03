@@ -53,11 +53,13 @@ function CardStack({ cards, selectedId, onSelect, renderCard, effect }) {
     if (Math.abs(d) > 40) step(d < 0 ? 1 : -1);
   };
 
-  // Stack transition: the next cards wait behind the front one, their top edges showing like a real pile.
-  const peeks = effect === 'stack' ? [2, 1].filter(k => k < cards.length).map(k => cards[(index + k) % cards.length]) : [];
-  return <div className={`card-stack${peeks.length ? ` has-peeks peeks-${peeks.length}` : ''}`} data-fx={effect} style={{ '--dir': dir }} aria-label={tr('Your cards')}>
+  // Stack transition: every other card waits behind the front one, full size and sharp, with a thin strip of its
+  // top edge showing like a real pile. The strip narrows as cards are added so the whole pile stays compact.
+  const peeks = effect === 'stack' ? cards.slice(1).map((_, i) => cards[(index + cards.length - 1 - i) % cards.length]) : [];
+  const peekStep = peekStepFor(peeks.length);
+  return <div className={`card-stack${peeks.length ? ' has-peeks' : ''}`} data-fx={effect} style={{ '--dir': dir, '--peeks': peeks.length, '--peek-step': peekStep }} aria-label={tr('Your cards')}>
     <div className="card-stack-front" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {peeks.map((c, i) => <button type="button" key={c.id} className={`card-stack-peek peek-${peeks.length - i}`} onClick={() => onSelect(c.id)} aria-label={tr('Show {name} card', { name: c.name })} tabIndex={-1}>{renderCard(c)}</button>)}
+      {peeks.map((c, i) => <button type="button" key={c.id} className="card-stack-peek" style={{ '--k': peeks.length - i, zIndex: i + 1 }} onClick={() => onSelect(c.id)} aria-label={tr('Show {name} card', { name: c.name })} tabIndex={-1}>{renderCard(c)}</button>)}
       {leaving && <div className="card-stack-leaving" aria-hidden="true">{renderCard(leaving)}</div>}
       <div key={front.id} className={`card-stack-card${entering ? ' entering' : ''}`}>{renderCard(front)}</div>
     </div>
@@ -66,6 +68,9 @@ function CardStack({ cards, selectedId, onSelect, renderCard, effect }) {
     </div>}
   </div>;
 }
+
+/** How much of each back card shows, as a percentage of a card's height: 9% for a few cards, thinner for many. */
+export const peekStepFor = (n) => (n <= 0 ? 0 : Math.max(3, Math.min(9, 36 / n)));
 
 /**
  * A pile of cards (Wallet → My Cards): the first card in front, the next ones behind it with only their top edge

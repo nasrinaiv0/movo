@@ -199,8 +199,8 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   const cls = t.type === 'income' ? 'pos' : '';
   return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
     <span className="tx-logo">
-      {t.type === 'transfer' ? <Tile name={t.merchant} icon="transfer" tone="blue" /> : <BrandLogo src={merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />}
-      {t.type !== 'transfer' && (() => { const c = categoryOf(t.type === 'income' ? 'income' : t.categoryId || t.category); return <span className={`tx-cat-badge tone-${c.tone}`} title={tr(c.label)} aria-hidden="true"><Icon name={c.icon} size={11} strokeWidth={2.4} /></span>; })()}
+      <BrandLogo src={t.type === 'transfer' ? null : merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />
+      {(() => { const c = categoryOf(t.type === 'income' || t.type === 'transfer' ? t.type : t.categoryId || t.category); return <span className={`tx-cat-badge tone-${c.tone}`} title={tr(c.label)} aria-hidden="true"><Icon name={c.icon} size={11} strokeWidth={2.4} /></span>; })()}
     </span>
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
     <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
