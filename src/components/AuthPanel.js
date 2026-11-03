@@ -3,7 +3,7 @@ import { sendEmailCode, verifyEmailCode, signInWithApple, signInWithGoogle } fro
 import { supabaseConfigured } from '../lib/supabaseClient';
 import { MovoMark } from './MovoLogo';
 import './AuthPanel.css';
-import { t as tr } from '../lib/i18n';
+import { t as tr, rich } from '../lib/i18n';
 
 /*
  * Passwordless sign-in: Apple, Google, or a one-time code sent to the person's email (it creates the account the first
@@ -91,7 +91,11 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
 
     <label className="auth-legal">
       <input type="checkbox" aria-label={tr('Accept MOVO Terms of Service and Privacy Policy')} checked={legalAccepted} onChange={e => { setLegalAccepted(e.target.checked); if (e.target.checked) setError(''); }} />
-      <span>{tr('I agree to the Terms of Service and acknowledge the Privacy Policy.')} <span className="auth-legal-links"><button type="button" onClick={(e) => { e.preventDefault(); onOpenLegal?.('TermsOfService'); }}>{tr('Terms of Service')}</button> · <button type="button" onClick={(e) => { e.preventDefault(); onOpenLegal?.('PrivacyPolicy'); }}>{tr('Privacy Policy')}</button></span></span>
+      {/* The document names in the sentence are the links, so they are not repeated in a second row. */}
+      <span>{rich('I agree to the {terms} and acknowledge the {privacy}.', {
+        terms: <button type="button" className="auth-legal-link" onClick={(e) => { e.preventDefault(); onOpenLegal?.('TermsOfService'); }}>{tr('Terms of Service')}</button>,
+        privacy: <button type="button" className="auth-legal-link" onClick={(e) => { e.preventDefault(); onOpenLegal?.('PrivacyPolicy'); }}>{tr('Privacy Policy')}</button>,
+      })}</span>
     </label>
 
     <div className="auth-providers">

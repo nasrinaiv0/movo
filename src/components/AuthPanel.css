@@ -55,3 +55,6 @@
 /* The MOVO mark stands on its own: no frame, tile or shadow. */
 .auth-card .auth-logo { width: auto; height: auto; margin-bottom: 6px; border-radius: 0; background: none; box-shadow: none; }
 .auth-card .auth-logo .movo-mark { width: 56px; height: auto; }
+
+/* Terms / Privacy links inside the agreement sentence (no separate link row). */
+.auth-legal-link { display: inline; padding: 0; border: 0; background: none; color: var(--accent-ink, var(--accent, #10a866)); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
