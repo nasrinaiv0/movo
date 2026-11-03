@@ -143,3 +143,13 @@ A spoken request such as “I bought 3 pesos for banana” creates exactly one `
   person, retry-safe, shared rate limits, both accounts open and in the same currency, duplicates reported not inserted.
 - Until that migration is applied, Siri replies "Transfers from Siri are not switched on for MOVO yet" and nothing is
   logged.
+
+
+## Unified automation Shortcut prompt upgrade — 2026-11-03
+
+- Apple Pay retains its existing automatic and interactive recipes.
+- Bank notifications now have an interactive Log / Skip recipe (`notifications`) and a hands-free recipe (`notifications-automatic`). Skip sends no request.
+- Siri retains hands-free `voice` and adds `voice-interactive`, which confirms dictated text before POSTing.
+- All prompts require checking the API success value, reject OTP/promotion/login-alert/balance-only notices, and prohibit fabricating missing transaction details.
+- This is prompt-generation logic and regression coverage, not proof of iOS trigger-field compatibility. Settings UI mode wiring and actual iPhone execution must be verified before claiming a shared global preference is enforced.
+- Device acceptance: test trigger fields, authenticated POST, Log/Skip, offline/error behavior, retry/deduplication, and While You Were Away review. No production migration or deployment is included.

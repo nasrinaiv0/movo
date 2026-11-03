@@ -235,3 +235,12 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - **Changed:** migration `20261102010000_automation_sources_and_cross_source_dedup.sql` (wider source allowlist incl. `siri_shortcut`/`android_assistant`, event `source`/`outcome`, `log_automation_transaction_v2` with cross-source matching and per-user lock); `api/log.js` (v2, income, currency, category, Siri/Android `text` parsing via `api/_lib/voice.js`, safe error mapping, rollout fallback); client keeps real sources (`src/lib/transactionSources.js`, `financeRepository.js`, `App.js`); Siri voice prompt; 83 more institutions with curated favicon domains.
 - **Verified:** Jest 318/318; `tsc`; strict build; `supabase/tests/automation_dedup.test.sql` plus the existing SQL tests on a local Postgres 16 copy of all migrations (bug reproduced before the migration; mutation of the dedup rule makes the test fail).
 - **Not done:** migration not applied to production (needs owner confirmation); no physical iPhone/Android test; Android relies on third-party automation apps (no native app/App Actions).
+
+
+## Unified MOVO automation prompts — 2026-11-03
+
+- Branch: `feat/unified-automation-shortcut-prompts`.
+- Added interactive and hands-free bank notification recipe variants; interactive Siri confirmation variant; retained Apple Pay automatic/interactive recipes.
+- Added prompt safety requirements for server-confirmed success, non-financial notification filtering, no fabricated transaction details, and no POST on Skip.
+- Added regression tests for the new recipe variants and updated Siri progress documentation.
+- Pending: exact-head CI/typecheck/build, review of the shared-preference wiring, actual iPhone trigger-variable validation and While You Were Away end-to-end test. No Supabase migration, production data change, deployment or merge performed.
