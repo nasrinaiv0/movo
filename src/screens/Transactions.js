@@ -48,7 +48,7 @@ export default function Transactions({ c }) {
 
   return <>
     <RootHeader title={tr('Transactions')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
-    <div className="chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{sliders}</div>
+    <div className="chip-bar"><Chips equal label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{sliders}</div>
     {txFilter !== 'All' && dateRange}
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
 

@@ -52,7 +52,7 @@ export function Tile({ name, size = 44, icon, tone, radius }) {
   return <span className="tile mono" style={{ width: size, height: size, background, borderRadius: radius, fontSize: Math.round(size * 0.34) }}>{initials}</span>;
 }
 
-export function Chips({ items, value, onChange, trailing, label }) {
+export function Chips({ items, value, onChange, trailing, label, equal = false }) {
   const row = useRef(null);
   const [ind, setInd] = useState(null);
   const [ready, setReady] = useState(false);
@@ -60,16 +60,42 @@ export function Chips({ items, value, onChange, trailing, label }) {
   useLayoutEffect(() => {
     const rowEl = row.current;
     const measure = () => {
+      // The chips share the row evenly. If the longest label is too wide for its share, the labels shrink a little
+      // (never below 11px); only if that is still too wide do the chips keep the widest size and the row scrolls.
+      if (equal && rowEl) {
+        const chips = Array.from(rowEl.children).filter(el => el.hasAttribute('data-chip'));
+        rowEl.style.removeProperty('--chip-w'); rowEl.style.removeProperty('--chip-fs');
+        if (chips.length && rowEl.clientWidth > 0) { // nothing to measure when the row is not laid out (hidden, tests)
+          const cs = getComputedStyle(rowEl);
+          const gap = parseFloat(cs.columnGap || cs.gap) || 0;
+          const avail = rowEl.clientWidth - gap * (chips.length - 1);
+          const share = Math.floor(avail / chips.length);
+          const textWidth = (b) => { const r = document.createRange(); r.selectNodeContents(b); return typeof r.getBoundingClientRect === 'function' ? r.getBoundingClientRect().width : b.scrollWidth; };
+          const widestText = Math.max(...chips.map(textWidth));
+          const fs = parseFloat(getComputedStyle(chips[0]).fontSize) || 13;
+          const PAD = 16; const MIN_FS = 11 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale')) || 1); // respects the person's text size
+          let size = fs; let w = share;
+          if (widestText + PAD > share) {
+            size = Math.max(MIN_FS, Math.floor(fs * (share - PAD) / widestText * 10) / 10);
+            const needed = Math.ceil(widestText * size / fs + PAD);
+            if (needed > share) w = needed;
+          }
+          if (size < fs) rowEl.style.setProperty('--chip-fs', `${size}px`);
+          rowEl.style.setProperty('--chip-w', `${w}px`);
+          rowEl.classList.toggle('overflowing', w > share);
+        }
+      }
       const el = rowEl?.querySelector('button[data-chip][aria-pressed="true"]');
       if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
     };
     measure();
+    if (equal) document.fonts?.ready?.then(measure).catch(() => {}); // web fonts change label widths
     if (!rowEl || typeof ResizeObserver === 'undefined') return undefined;
     const ro = new ResizeObserver(measure); ro.observe(rowEl);
     return () => ro.disconnect();
-  }, [value, items.length]);
+  }, [value, items.length, equal]);
   useEffect(() => { const t = setTimeout(() => setReady(true), 60); return () => clearTimeout(t); }, []);
-  return <div className="chip-row" role="group" aria-label={label} ref={row}>
+  return <div className={`chip-row${equal ? ' equal' : ''}`} role="group" aria-label={label} ref={row}>
     {ind && <span className={`chip-ind${ready ? ' ready' : ''}`} aria-hidden="true" style={{ transform: `translateX(${ind.left}px)`, top: ind.top, width: ind.width, height: ind.height }} />}
     {items.map(item => {
       const key = typeof item === 'string' ? item : item.key; const text = typeof item === 'string' ? item : item.label;
