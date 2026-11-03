@@ -45,6 +45,8 @@ match production, and the SQL test suites passed there. A production read-back c
 - `supabase/tests/security_hardening.test.sql` passes on a local Postgres 16 copy matching production (same policies,
   same function source), fails without the migration, and the migration re-runs cleanly. **Not applied to production yet.**
 
+**Bank-app notification logging (`feat/notification-logging`, 2026-11-03):** Automatic logging now opens on **Bank notifications** (iOS 27 Notification trigger, one automation per app) and no longer offers the text-message recipe. `/api/log` replies carry `notice` (left out for duplicates and ignored promos/OTPs) so background shortcuts need one "has any value" check. The parser reads push wording ("You've paid", "card … was used for", "PHPx" without a space) and ignores offers and statements. Prompts were rewritten per mode; they can't be tested on an iPhone from CI.
+
 ## Recent merged implementation
 
 | PR | Result | Validation / notes |

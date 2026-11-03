@@ -152,6 +152,22 @@ describe('POST /api/log handler', () => {
     expect(res.body).toMatchObject({ success: true, duplicate: false, source });
   });
 
+  test('notice: shown for a new record or a problem, left out for duplicates and ignored notifications', async () => {
+    const handler = load();
+    const logged = await call(handler, { text: 'You have paid PHP 250.00 to MERALCO. Ref No. ABC12345.', app: 'BPI', source: 'notification' });
+    expect(logged.body.notice).toBe(logged.body.message);
+    expect(logged.body.notice).toMatch(/Logged/);
+    const ignored = await call(handler, { text: 'Your OTP is 482913. Never share it.', app: 'GCash', source: 'notification' });
+    expect(ignored.body).not.toHaveProperty('notice');
+    rpcResult = { data: { duplicate: true, matched_by: 'cross_source', transaction_id: 'tx-first' }, error: null };
+    const duplicate = await call(handler, { text: 'You have paid PHP 250.00 to MERALCO. Ref No. ABC12345.', app: 'BPI', source: 'notification' });
+    expect(duplicate.body).not.toHaveProperty('notice');
+    const unclear = await call(handler, { text: 'You have paid via GCash to Store X.', app: 'GCash', source: 'notification' });
+    expect(unclear.body.success).toBe(false);
+    expect(unclear.body.notice).toBe(unclear.body.message);
+    expect(unclear.body.notice).not.toBe('');
+  });
+
   test('unknown sources are stored as generic notifications, never trusted as given', async () => {
     const handler = load();
     await call(handler, { amount: 10, merchant: 'X', card: 'Cash', source: 'webhook' });

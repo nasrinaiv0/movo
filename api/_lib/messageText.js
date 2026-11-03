@@ -12,7 +12,8 @@
 // One-time codes, log-in alerts and promos are never transactions (and must never be stored).
 // Payment messages often end with "Never share your MPIN or OTP", so a code is only assumed when one is actually given.
 const ONE_TIME_CODE = /\b(?:otp|one[- ]time (?:pin|password|code)|verification code|authentication code|security code)\b[^.]{0,40}?\b\d{4,8}\b|\b\d{4,8}\b[^.]{0,30}\b(?:is your|as your) (?:otp|code|one[- ]time)/i;
-const NOT_A_PAYMENT = /\b(new (?:device )?log[- ]?in|logged in to|signed in to|promo code|voucher code|raffle|win up to|chance to win)\b/i;
+// Push notifications add offers ("Get ₱50 cashback when you pay bills") that name an amount but move no money.
+const NOT_A_PAYMENT = /\b(new (?:device )?log[- ]?in|logged in to|signed in to|promo code|voucher code|raffle|win up to|chance to win|limited[- ](?:time )?offer|get (?:up to )?(?:₱|php|p)\s?\d[\d,.]*\s+(?:cashback|off|discount|rebate)|when you (?:pay|shop|cash in|top up|buy|send)|statement is ready|minimum (?:amount )?due)\b/i;
 
 const INSTITUTIONS = [
   ['GCash', /\bg-?cash\b/i], ['Maya', /\b(pay)?maya\b/i], ['GoTyme Bank', /\bgo ?tyme\b/i], ['SeaBank', /\bsea ?bank\b/i],
@@ -24,10 +25,10 @@ const INSTITUTIONS = [
 ];
 
 // Order matters: income and transfers are recognised before the generic "paid / sent / purchase" expense words.
-const INCOME = /\b(you(?: have)? received|received (?:php|p|₱)|has sent you|sent you|credited to your|was credited|has been credited|deposit(?:ed)? to your|refund(?:ed)?|cashback|natanggap)\b/i;
+const INCOME = /\b(you(?:'ve| have)? received|received(?=\s?(?:php|p|₱)\s?\d)|has sent you|sent you|credited to your|was credited|has been credited|deposit(?:ed)? to your|refund(?:ed)?|cashback|natanggap)\b/i;
 const TRANSFER_IN = /\b(cash(?:ed)?[- ]?in|cash in from|top[- ]?up(?:ped)? (?:your|from)|transferred to your|fund transfer to your)\b/i;
-const TRANSFER_OUT = /\b(cash(?:ed)?[- ]?out|withdr[ae]w(?:al|n)?|transferred (?:php|p|₱|from your)|fund transfer from your|to your (?:own )?(?:bpi|bdo|gcash|maya|bank|savings|account)|(?:you(?: have)? )?sent (?:php|p|₱)|send money|instapay|pesonet|ipinadala)\b/i;
-const EXPENSE = /\b(you(?: have)? paid|paid|payment (?:of|to|for)|purchase(?:d)?|spent|debited|charged|bought|binayaran)\b/i;
+const TRANSFER_OUT = /\b(cash(?:ed)?[- ]?out|withdr[ae]w(?:al|n)?|transferred(?=\s(?:php|p|₱)\s?\d|\sfrom your)|fund transfer from your|to your (?:own )?(?:bpi|bdo|gcash|maya|bank|savings|account)|(?:you(?:'ve| have)? )?sent(?=\s(?:php|p|₱)\s?\d)|send money|instapay|pesonet|ipinadala)\b/i;
+const EXPENSE = /\b(you(?:'ve| have)? paid|paid|payment (?:of|to|for)|purchase(?:d)?|spent|debited|charged|bought|binayaran|was used (?:for|at|to pay)|transaction of)\b/i;
 
 const MONEY = /(?:₱|\bphp\.?|\bp(?=\s?\d))\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)|\b(\d{1,3}(?:,\d{3})+\.\d{2}|\d+\.\d{2})\s?(?:php|pesos?)\b/gi;
 const NOT_THE_AMOUNT = /(bal(?:ance)?|avail(?:able)?|limit|fee|charge of|points?)\W{0,3}(?:\w+\W{0,3}){0,3}$/i;
@@ -67,7 +68,7 @@ const clean = (s, max) => String(s || '').replace(/\s+/g, ' ').replace(/^[\s:,-]
  * @param {{ app?: string, now?: Date, offset?: string }} options app = the sender or app name (e.g. "GCash")
  */
 function parseMessage(input, { app = '', now = new Date(), offset = '+08:00' } = {}) {
-  const text = String(input || '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 600);
+  const text = String(input || '').replace(/[\u2018\u2019]/g, "'").replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 600);
   if (!text) return { ok: false, reason: 'empty' };
   if (ONE_TIME_CODE.test(text) || NOT_A_PAYMENT.test(text)) return { ok: false, reason: 'not_a_transaction' };
 
