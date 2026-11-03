@@ -4417,7 +4417,7 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-stack.has-peeks .card-stack-front { margin-top: calc(var(--peeks) * var(--peek-step) * 1% / 1.586); }
 .movo-app .card-stack-peek {
   transform: translateY(calc(var(--k) * var(--peek-step) * -1%)) scale(max(.7, calc(1 - var(--k) * .05)));
-  filter: blur(min(calc(var(--k) * 1.4px), 5px)) brightness(max(.6, calc(1 - var(--k) * .07)));
+  filter: blur(min(calc(var(--k) * .5px), 1.5px)) brightness(max(.6, calc(1 - var(--k) * .07)));
 }
 .movo-app .card-stack-peek .credit-card { box-shadow: 0 -6px 14px -10px rgba(12, 16, 24, .45), 0 1px 2px rgba(12, 16, 24, .08); }
 .movo-app .card-stack[data-fx="stack"] .card-stack-card { z-index: 1000; }
