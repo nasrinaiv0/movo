@@ -1,4 +1,4 @@
-import { convert, formatCurrency, isRateStale, rateBetween, refreshRates } from './fx';
+import { convert, formatCurrency, isRateStale, rateBetween, refreshRates, fetchRateHistory } from './fx';
 
 const rates = { USD: 1, PHP: 50, EUR: 0.5, JPY: 150 };
 
@@ -68,4 +68,33 @@ test('deduplicates simultaneous provider refresh requests', async () => {
 test('rejects malformed provider payloads', async () => {
   global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ result: 'success', rates: { USD: 1 } }) });
   await expect(refreshRates(null, true)).rejects.toThrow('rates_invalid');
+});
+
+test('loads and caches validated daily history observations', async () => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => [
+      { date: '2026-11-02', base: 'USD', quote: 'PHP', rate: 58.1 },
+      { date: '2026-11-03', base: 'USD', quote: 'PHP', rate: 58.2 },
+      { date: '2026-11-03', base: 'USD', quote: 'PHP', rate: 58.2 },
+      { date: '2026-11-03', base: 'EUR', quote: 'PHP', rate: 63.1 },
+      { date: '2026-11-04', base: 'USD', quote: 'PHP', rate: -1 },
+    ],
+  });
+  const result = await fetchRateHistory('USD', 'PHP', '1W', Date.parse('2026-11-04T00:00:00Z'));
+  expect(result.provider).toBe('Frankfurter');
+  expect(result.points).toEqual([
+    { date: '2026-11-02', rate: 58.1 },
+    { date: '2026-11-03', rate: 58.2 },
+  ]);
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+  const cached = await fetchRateHistory('USD', 'PHP', '1W', Date.parse('2026-11-04T00:00:00Z'));
+  expect(cached.points).toEqual(result.points);
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+});
+
+test('rejects invalid historical pairs and malformed responses', async () => {
+  await expect(fetchRateHistory('USD', 'USD', '1M')).rejects.toThrow('history_pair_invalid');
+  global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ error: 'bad' }) });
+  await expect(fetchRateHistory('USD', 'PHP', '1M')).rejects.toThrow('history_invalid');
 });
