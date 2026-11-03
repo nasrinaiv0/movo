@@ -56,10 +56,10 @@ function CardStack({ cards, selectedId, onSelect, renderCard, effect }) {
   // Stack transition: every other card waits behind the front one, full size and sharp, with a thin strip of its
   // top edge showing like a real pile. The strip narrows as cards are added so the whole pile stays compact.
   const peeks = effect === 'stack' ? cards.slice(1).map((_, i) => cards[(index + cards.length - 1 - i) % cards.length]) : [];
-  const peekStep = peekStepFor(peeks.length);
-  return <div className={`card-stack${peeks.length ? ' has-peeks' : ''}`} data-fx={effect} style={{ '--dir': dir, '--peeks': peeks.length, '--peek-step': peekStep }} aria-label={tr('Your cards')}>
+  const offsets = peekOffsets(peeks.length); // offsets[k-1]: how far card k sits above the front card, % of a card's height
+  return <div className={`card-stack${peeks.length ? ' has-peeks' : ''}`} data-fx={effect} style={{ '--dir': dir, '--peeks': peeks.length, '--peek-total': offsets[offsets.length - 1] || 0 }} aria-label={tr('Your cards')}>
     <div className="card-stack-front" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-      {peeks.map((c, i) => <button type="button" key={c.id} className="card-stack-peek" style={{ '--k': peeks.length - i, zIndex: i + 1 }} onClick={() => onSelect(c.id)} aria-label={tr('Show {name} card', { name: c.name })} tabIndex={-1}>{renderCard(c)}</button>)}
+      {peeks.map((c, i) => <button type="button" key={c.id} className="card-stack-peek" style={{ '--k': peeks.length - i, '--off': offsets[peeks.length - i - 1], zIndex: i + 1 }} onClick={() => onSelect(c.id)} aria-label={tr('Show {name} card', { name: c.name })} tabIndex={-1}>{renderCard(c)}</button>)}
       {leaving && <div className="card-stack-leaving" aria-hidden="true">{renderCard(leaving)}</div>}
       <div key={front.id} className={`card-stack-card${entering ? ' entering' : ''}`}>{renderCard(front)}</div>
     </div>
@@ -70,7 +70,18 @@ function CardStack({ cards, selectedId, onSelect, renderCard, effect }) {
 }
 
 /** How much of each back card shows, as a percentage of a card's height: 9% for a few cards, thinner for many. */
-export const peekStepFor = (n) => (n <= 0 ? 0 : Math.max(3, Math.min(9, 36 / n)));
+/**
+ * Perspective pile: the card right behind the front one shows the most of its top edge, and each card further back
+ * shows less (each strip is PEEK_RATIO of the one in front). Returns cumulative offsets, % of a card's height:
+ * offsets[k-1] is how far card k sits above the front card. The total stays under FIRST / (1 - PEEK_RATIO).
+ */
+export const PEEK_FIRST = 11;
+export const PEEK_RATIO = 0.72;
+export function peekOffsets(n) {
+  const out = []; let strip = PEEK_FIRST; let total = 0;
+  for (let k = 0; k < n; k += 1) { total += strip; out.push(Math.round(total * 100) / 100); strip *= PEEK_RATIO; }
+  return out;
+}
 
 /**
  * A pile of cards (Wallet → My Cards): the first card in front, the next ones behind it with only their top edge

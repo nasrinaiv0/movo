@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import CardDeck, { peekStepFor } from './CardDeck';
+import CardDeck, { PEEK_FIRST, PEEK_RATIO, peekOffsets } from './CardDeck';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 const cards = [{ id: 'a', name: 'BPI', balance: 38, currency: 'PHP' }, { id: 'b', name: 'GoTyme', balance: 500, currency: 'PHP' }, { id: 'c', name: 'Metrobank', balance: 1200, currency: 'PHP' }];
@@ -44,9 +44,12 @@ test('portrait shows every card on the cylinder and marks the chosen one', () =>
   act(() => root.unmount());
 });
 
-test('the pile shows every card and gets thinner strips as cards are added', () => {
-  expect(peekStepFor(0)).toBe(0);
-  expect(peekStepFor(2)).toBe(9);
-  expect(peekStepFor(6)).toBe(6);
-  expect(peekStepFor(20)).toBe(3);
+test('the pile shows every card, each further card showing a thinner strip of its top', () => {
+  expect(peekOffsets(0)).toEqual([]);
+  const off = peekOffsets(6);
+  const strips = off.map((o, i) => o - (off[i - 1] || 0));
+  expect(strips[0]).toBeCloseTo(PEEK_FIRST, 1);
+  for (let i = 1; i < strips.length; i += 1) expect(strips[i]).toBeLessThan(strips[i - 1]);
+  expect(strips[1] / strips[0]).toBeCloseTo(PEEK_RATIO, 1);
+  expect(peekOffsets(40).at(-1)).toBeLessThan(PEEK_FIRST / (1 - PEEK_RATIO) + 0.01); // stays compact with many cards
 });
