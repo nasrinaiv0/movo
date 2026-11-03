@@ -8,8 +8,8 @@ import { appOrigin } from '../lib/platform';
 
 /*
  * Automatic logging: registration status, the default account for unmatched card names, and the exact iPhone
- * Shortcuts recipe for the chosen setup (Apple Pay automatic, Apple Pay with Log / Skip, Siri voice, or bank and e-wallet
- * payment texts). The recipe on
+ * Shortcuts recipe for the chosen setup (Apple Pay automatic, Apple Pay with Log / Skip, Siri voice, bank and e-wallet
+ * app notifications, or payment texts). The recipe on
  * screen and the copied prompt come from the same source (lib/autoLog.js); the device key is masked on screen and only
  * included in what is copied.
  */
@@ -17,6 +17,7 @@ const MODES = [
   ['automatic', 'card', 'Apple Pay', 'Logs every payment'],
   ['interactive', 'check', 'Apple Pay', 'Asks Log or Skip'],
   ['voice', 'mic', 'Siri voice', '“Hey Siri, Log to MOVO”'],
+  ['notifications', 'bell', 'Bank notifications', 'GCash, Maya and bank apps'],
   ['messages', 'message', 'Bank texts', 'GCash, Maya and bank SMS'],
 ];
 const STATUS = {
@@ -36,7 +37,7 @@ export default function AutoLogSheet({ prefs, setPref, status, accounts = [], cl
   const [tone, icon, label] = STATUS[status] || STATUS['needs-signin'];
   const cloudAccounts = accounts.filter(a => /^[0-9a-f-]{36}$/i.test(String(a.id)));
 
-  return <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay payments, Siri voice entries and bank texts straight into MOVO.')} onClose={onClose} label={tr('Automatic logging')} className="autolog-sheet">
+  return <Sheet title={tr('Automatic logging')} subtitle={tr('Log Apple Pay payments, Siri voice entries and bank notifications straight into MOVO.')} onClose={onClose} label={tr('Automatic logging')} className="autolog-sheet">
     <section className="card al-card al-status">
       <div className={`al-chip ${tone}`} role="status" aria-live="polite"><Icon name={icon} size={14} strokeWidth={2.4} /> {tr(label)}</div>
       <div className="al-row"><span className="al-row-text"><strong>{tr('Log without asking')}</strong><small>{prefs.autoLog ? tr('Payments are added instantly.') : tr('MOVO asks you to confirm each payment.')}</small></span><Toggle checked={prefs.autoLog} onChange={v => setPref('autoLog', v)} label={tr('Log without asking')} /></div>

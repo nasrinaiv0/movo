@@ -4324,3 +4324,56 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .archive-restore:disabled, .movo-app .archive-delete:disabled { opacity: .5; }
 .movo-app .archive-empty-all { width: 100%; margin-top: 4px; color: var(--red); }
 @media (max-width: 360px) { .movo-app .archive-amount { display: none; } }
+   Responsive pass (2026-11-03): narrow phones and fold cover screens.
+   Measured at 280 (Galaxy Fold cover), 344 (Z Fold cover), 360, 375, 390,
+   430, 540 (Surface Duo), 690 (Z Fold open), 768/1024 (iPad), 1114 (Duo
+   spanned), 1280 and 1440. Wider layouts are unchanged.
+
+/* ≤390px: Home header keeps the greeting readable ("Friend", not "Fri…"). */
+@media (max-width: 390px) {
+  .movo-app.movo-app .home-header { gap: 6px; }
+  .movo-app.movo-app .home-header .hello { flex: 1 1 auto; min-width: 0; }
+  .movo-app.movo-app .home-header .hello h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .movo-app.movo-app .home-header .header-action-buttons { gap: 2px; }
+  .movo-app.movo-app .home-header .round-button { width: 36px; height: 36px; }
+}
+
+/* ≤320px (Galaxy Fold cover): tighter gutters, fluid amounts, chips scroll instead of squashing. */
+@media (max-width: 320px) {
+  .movo-app.movo-app .screen-header h1 { font-size: 21px; letter-spacing: -.5px; }
+  .movo-app.movo-app .screen-header.root .round-button,
+  .movo-app.movo-app .home-header .round-button { width: 32px; height: 32px; }
+  .movo-app.movo-app .screen-header.root .header-actions { gap: 0; }
+  .movo-app.movo-app .home-header .hello small { font-size: 10.5px; }
+  .movo-app.movo-app .home-header .hello h1 { font-size: 15px; }
+  .movo-app.movo-app .balance-amount { font-size: clamp(21px, 9vw, 31.5px); letter-spacing: -.8px; }
+  .movo-app.movo-app .balance-amount.md { font-size: clamp(19px, 8vw, 26px); }
+  .movo-app.movo-app .chip-bar > .chip-row > button,
+  .movo-app.movo-app .chip-bar > .chip-row > button[data-chip] { flex: none; padding: 0 9px; font-size: 12px; }
+  .movo-app.movo-app .flow-ranges button { font-size: 10.5px; padding: 0 2px; }
+  .movo-app.movo-app .tx-sheet .tx-seg button { padding: 0 4px; font-size: 11.5px; }
+  .movo-app.movo-app .tx-sheet .tx-sub { max-width: 46%; }
+}
+
+/* Chip rows scroll inside their bar on every width, so long filter lists never draw over the buttons beside them. */
+.movo-app.movo-app .chip-bar > .chip-row { flex: 1 1 auto; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.movo-app.movo-app .chip-bar > .chip-row::-webkit-scrollbar { display: none; }
+.movo-app.movo-app .chip-bar > .chip-row > button { flex: none; }
+/* Root screen titles shrink before they reach the header buttons. */
+.movo-app.movo-app .screen-header.root .title-block { min-width: 0; }
+.movo-app.movo-app .screen-header.root .title-block h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 320px) { .movo-app.movo-app .screen-header.root .title-block h1 { font-size: 19px; } }
+/* ≤340px: the spending legend wraps under the ring instead of running off the card. */
+@media (max-width: 340px) {
+  .movo-app.movo-app .spending-card { flex-wrap: wrap; justify-content: center; gap: 12px; }
+  .movo-app.movo-app .spending-card .legend { flex: 1 1 100%; min-width: 0; }
+  .movo-app.movo-app .spending-card .legend li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .movo-app.movo-app .spending-card .legend li b { margin-left: auto; }
+}
+/* ≤320px: Home keeps the greeting clear (search is still on Transactions and Menu); the type switch fits. */
+@media (max-width: 320px) {
+  .movo-app.movo-app .home-header .header-action-buttons > .round-button:first-child { display: none; }
+  .movo-app.movo-app .tx-sheet .tx-top { gap: 4px; }
+  .movo-app.movo-app .tx-sheet .tx-round { width: 34px; height: 34px; flex: none; }
+  .movo-app.movo-app .tx-sheet .tx-seg button { padding: 0 2px; font-size: 11px; letter-spacing: -.2px; }
+}

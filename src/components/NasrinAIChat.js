@@ -59,6 +59,13 @@ function LogCard({ items, removed, show, onUndo, onLogAnyway, onView }) {
   </div>;
 }
 
+/** Reads a recorded audio Blob. Blob.arrayBuffer is missing on older iOS Safari (before 14), so fall back to FileReader. */
+const blobBuffer = (blob) => (typeof blob.arrayBuffer === 'function' ? blob.arrayBuffer() : new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error);
+  reader.readAsArrayBuffer(blob);
+}));
+
 export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, shortcuts = [], show = true }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -121,10 +128,12 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   useEffect(() => { if (typeof endRef.current?.scrollIntoView === 'function') endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
 
+  // Transcribed voice is dictation first: keep it visible and editable in the composer.
+  // If a segment finishes while chat is busy, append it after the request settles instead of auto-sending it.
   useEffect(() => {
-    if (busy || !voiceRef.current || !pendingVoiceTextsRef.current.length) return;
-    const next = pendingVoiceTextsRef.current.shift();
-    if (next) sendRef.current?.(null, next);
+    if (busy || !pendingVoiceTextsRef.current.length) return;
+    const queued = pendingVoiceTextsRef.current.splice(0);
+    if (queued.length) setDraft((current) => [current.trim(), ...queued].filter(Boolean).join(' ').slice(0, MAX));
   }, [busy]);
 
   useEffect(() => {
@@ -271,7 +280,6 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
      authenticated MOVO proxy. Audio stays transient; no provider key reaches the browser. */
   const voiceRef = useRef(false);
   const spokenRef = useRef('');
-  const sendRef = useRef(null);
   const audioQueueRef = useRef([]);
   const audioPlayingRef = useRef(false);
   const currentAudioRef = useRef(null);
@@ -286,7 +294,6 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const lastVoiceAtRef = useRef(0);
   const transcribingRef = useRef(false);
   const transcriptionQueueRef = useRef(Promise.resolve());
-  sendRef.current = send;
   const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_#>`|]/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\s+/g, ' ').trim();
 
   // Speech playback goes through the AudioContext that was created and resumed inside the mic tap, so iOS/Safari
@@ -401,7 +408,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token || session?.access_token;
       if (!token || !voiceRef.current) return;
-      const bytes = new Uint8Array(await blob.arrayBuffer());
+      const bytes = new Uint8Array(await blobBuffer(blob));
       let binary = '';
       for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
       const response = await fetch(apiUrl('/api/nasrinai/chat'), {
@@ -418,8 +425,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         const echo = spoken && heard.length && heard.filter(word => spoken.includes(word)).length / heard.length >= 0.7;
         if (!echo) {
           stopPlayback();
+          // Do not auto-submit or immediately clear the recognized words. Showing them in
+          // the composer lets the user verify/correct dictation before sending financial data.
           if (busyRef.current) pendingVoiceTextsRef.current.push(text);
-          else sendRef.current?.(null, text);
+          else setDraft((current) => [current.trim(), text].filter(Boolean).join(' ').slice(0, MAX));
+          setError('');
         }
       }
     } catch {
@@ -470,14 +480,14 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         // A short burst during TTS may be speaker echo. Require sustained, louder
         // input before treating it as barge-in; then stop playback immediately.
         if (audioPlayingRef.current) {
-          loudFramesRef.current = rms > 0.095 ? loudFramesRef.current + 1 : 0;
+          loudFramesRef.current = rms > 0.07 ? loudFramesRef.current + 1 : 0;
           if (loudFramesRef.current >= 5) {
             stopPlayback();
             loudFramesRef.current = 0;
             heardSpeechRef.current = true;
             lastVoiceAtRef.current = now;
           }
-        } else if (rms > 0.045) {
+        } else if (rms > 0.025) {
           if (!heardSpeechRef.current) speechStartRef.current = now;
           heardSpeechRef.current = true; lastVoiceAtRef.current = now;
         }
@@ -608,7 +618,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         </div>}
         <label className="sr-only" htmlFor="movo-ai-prompt">{tr('Message NasrinAI')}</label>
         {/* Enter starts a new line; only the send button sends. */}
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening…') : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening — pause briefly to transcribe') : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
         <div className="movo-ai-composer-bar">
           <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
           <span className="movo-ai-composer-gap" />
