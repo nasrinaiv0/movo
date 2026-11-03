@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import CardDeck from './CardDeck';
+import CardDeck, { peekStepFor } from './CardDeck';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 const cards = [{ id: 'a', name: 'BPI', balance: 38, currency: 'PHP' }, { id: 'b', name: 'GoTyme', balance: 500, currency: 'PHP' }, { id: 'c', name: 'Metrobank', balance: 1200, currency: 'PHP' }];
@@ -17,8 +17,9 @@ test('landscape shows the chosen card in front, the next ones peeking behind, an
   const picked = [];
   const { el, root } = mount({ selectedId: 'b', onSelect: (id) => picked.push(id), orientation: 'landscape' });
   expect(el.querySelector('.card-stack-card').textContent).toBe('GoTyme');
-  // Stack transition: the next two cards wait behind, nearest last (peek-1 is right behind the front card).
-  expect(Array.from(el.querySelectorAll('.card-stack-peek')).map(p => [p.className.split(' ')[1], p.textContent])).toEqual([['peek-2', 'BPI'], ['peek-1', 'Metrobank']]);
+  // Stack transition: every other card waits behind, full size, nearest last (--k 1 is right behind the front card).
+  expect(Array.from(el.querySelectorAll('.card-stack-peek')).map(p => [p.style.getPropertyValue('--k'), p.textContent])).toEqual([['2', 'BPI'], ['1', 'Metrobank']]);
+  expect(el.querySelector('.card-stack').style.getPropertyValue('--peeks')).toBe('2');
   expect(el.querySelector('.card-stack-strip')).toBeNull();
   const dots = Array.from(el.querySelectorAll('.card-stack-dots button'));
   expect(dots).toHaveLength(3);
@@ -41,4 +42,11 @@ test('portrait shows every card on the cylinder and marks the chosen one', () =>
   expect(faces).toHaveLength(3);
   expect(faces[0].getAttribute('aria-current')).toBe('true');
   act(() => root.unmount());
+});
+
+test('the pile shows every card and gets thinner strips as cards are added', () => {
+  expect(peekStepFor(0)).toBe(0);
+  expect(peekStepFor(2)).toBe(9);
+  expect(peekStepFor(6)).toBe(6);
+  expect(peekStepFor(20)).toBe(3);
 });

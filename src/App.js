@@ -1146,14 +1146,23 @@ function App() {
     window.addEventListener('hashchange', handle);
     return () => window.removeEventListener('hashchange', handle);
   }, [authReady, session, cloudMode, prefs.autoLog, prefs.autoLogKey, autoLogFor, notify]);
-  /* NasrinAI's briefing opens once a day when the app starts (never over another sheet, and not in unit tests). */
-  const briefingShown = useRef(false);
+  /*
+   * NasrinAI's briefing opens once a day (not in unit tests). It never opens over another sheet: when
+   * "While you were away" (or anything else) is showing, it waits and opens once that is closed, e.g. after Done.
+   * It also waits for the unlock screen and for the launch check for new logs, so the logs come first.
+   */
+  const briefingShownDay = useRef('');
+  const briefingDue = authReady && !locked && !logsCheck && prefs.onboarded && prefs.briefing !== false && prefs.briefingDay !== todayKey
+    && briefingShownDay.current !== todayKey && process.env.NODE_ENV !== 'test';
   useEffect(() => {
-    if (!authReady || briefingShown.current || !prefs.onboarded || prefs.briefing === false || prefs.briefingDay === todayKey || process.env.NODE_ENV === 'test') return undefined;
-    briefingShown.current = true;
-    const timer = setTimeout(() => setSheet(cur => cur || { name: 'briefing' }), 700);
+    if (!briefingDue || sheet) return undefined;
+    const timer = setTimeout(() => setSheet(cur => {
+      if (cur) return cur; // something else opened first; try again when it closes
+      briefingShownDay.current = todayKey;
+      return { name: 'briefing' };
+    }), 700);
     return () => clearTimeout(timer);
-  }, [authReady, prefs.onboarded, prefs.briefing, prefs.briefingDay, todayKey]);
+  }, [briefingDue, sheet, todayKey]);
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
     setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id, source: e.src, ref: e.ref || '' }));
