@@ -1,6 +1,6 @@
 # MOVO Live FX, Cryptocurrency & Markets — Implementation Specification
 
-Status: Partial implementation in PR #177. The FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented in this branch. Tick-level pricing, daily market deltas and all cryptocurrency features remain pending.
+Status: Partial implementation in PR #177. FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented. Crypto market discovery, local watchlist, coin detail and provider-supported daily history are now implemented in this branch. Price alerts and manual portfolio lots/valuation remain pending.
 Owner request: 2026-11-04.
 
 ## Product outcome
@@ -60,7 +60,7 @@ PHP is the default display/base currency for users in the Philippines. Respect t
 - Crypto is an investment asset, not cash. Do not add crypto market value to available bank/cash balance or monthly income. Integrate it into a separately labelled investment/net-worth view only after accounting rules are defined and tested.
 - Do not implement exchange account connections, wallet private-key collection, custody, deposits, withdrawals, swaps, or trading in this scope.
 
-## Data providers and security
+## Crypto provider implementation notes\n\nThe first adapter uses CoinPaprika's server-side API Pro host. The API key is read only from `COINPAPRIKA_API_KEY` in the Vercel server environment and is never included in the client bundle. The keyless tier is limited to personal exploration and is not suitable for redistribution in MOVO; use a provider plan/licence that explicitly permits the intended customer-facing display. If the key is absent, the API returns a stable configuration error and the UI preserves the local watchlist without fabricating prices. The market endpoint is bounded to 100 assets, quote currencies are allow-listed, coin IDs are validated, and normalized numeric fields/timestamps are checked before reaching the client. Responses are cached for three minutes; source `last_updated` is displayed separately from fetch time. Historical requests are limited to 365 days and the actual returned observations are shown without synthetic interpolation.\n\n## Data providers and security
 
 - Use a provider adapter boundary for FX and crypto so vendors can be changed without rewriting screens.
 - Provider selection must be based on documented API capabilities, terms, rate limits, CORS behavior, availability, and licensing for icons/market data.
