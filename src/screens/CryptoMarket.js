@@ -3,6 +3,8 @@ import './CryptoMarket.css';
 import Icon from '../components/Icon';
 import { SubHeader } from '../components/ui';
 import { loadCryptoHistory, loadCryptoMarkets, sortCryptoCoins } from '../lib/crypto';
+import { evaluateCryptoAlerts } from '../lib/cryptoAlerts';
+import { enablePush, pushGranted, showSystemNotification } from '../lib/alerts';
 
 function money(value, quote) {
   if (!Number.isFinite(value)) return '—';
@@ -34,6 +36,10 @@ export default function CryptoMarket({ c }) {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState('');
   const [updatedAt, setUpdatedAt] = useState('');
+  const alerts = Array.isArray(c.prefs?.cryptoAlerts) ? c.prefs.cryptoAlerts : [];
+  const [alertDirection, setAlertDirection] = useState('above');
+  const [alertTarget, setAlertTarget] = useState('');
+  const [alertPermission, setAlertPermission] = useState(pushGranted());
 
   const refresh = async (force = false) => {
     if (force) setRefreshing(true);
@@ -94,6 +100,18 @@ export default function CryptoMarket({ c }) {
     return () => { active = false; controller.abort(); };
   }, [selected?.id, quote, range]);
 
+  useEffect(() => {
+    if (!coins.length || !alerts.length || !c.setPref) return;
+    const result = evaluateCryptoAlerts(alerts, coins);
+    if (result.changed) c.setPref('cryptoAlerts', result.alerts);
+    result.triggered.forEach((alert) => {
+      const title = `${alert.symbol} price alert`;
+      const body = `${alert.name} reached ${money(alert.price, alert.quote)} (${alert.direction} ${money(alert.target, alert.quote)}).`;
+      if (pushGranted()) showSystemNotification(title, body, `crypto-${alert.id}`);
+      else c.notify?.(`${title}: ${body} Open MOVO and enable notifications for device alerts.`);
+    });
+  }, [coins]);
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     const filtered = coins.filter((coin) => !q || coin.name.toLowerCase().includes(q) || coin.symbol.toLowerCase().includes(q));
@@ -101,6 +119,23 @@ export default function CryptoMarket({ c }) {
   }, [coins, search, sort]);
   const favoriteCoins = coins.filter((coin) => watchlist.includes(coin.id));
   const toggleWatch = (id) => c.setPref?.('cryptoWatchlist', watchlist.includes(id) ? watchlist.filter((x) => x !== id) : [...watchlist, id].slice(0, 100));
+
+  const addPriceAlert = () => {
+    const target = Number(alertTarget);
+    if (!selected || !Number.isFinite(target) || target <= 0) { c.notify?.('Enter a valid price greater than zero.'); return; }
+    const next = [...alerts, { id: `crypto-${selected.id}-${Date.now()}`, coinId: selected.id, name: selected.name, symbol: selected.symbol, direction: alertDirection, target, quote, enabled: true, lastObservedPrice: selected.price, lastTriggeredAt: null }].slice(-50);
+    c.setPref?.('cryptoAlerts', next);
+    setAlertTarget('');
+    c.notify?.(`Price alert saved for ${selected.symbol}.`);
+  };
+  const toggleAlert = (id) => c.setPref?.('cryptoAlerts', alerts.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
+  const deleteAlert = (id) => c.setPref?.('cryptoAlerts', alerts.filter(a => a.id !== id));
+  const requestAlertPermission = async () => {
+    const result = await enablePush();
+    const granted = result === 'granted';
+    setAlertPermission(granted);
+    c.notify?.(granted ? 'Device notifications enabled.' : result === 'unsupported' ? 'Notifications are not supported on this device.' : 'Notification permission was not granted. Alerts will only appear inside MOVO while it is open.');
+  };
 
   const values = history.map((p) => p.price);
   const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
@@ -122,6 +157,22 @@ export default function CryptoMarket({ c }) {
         </div>
         <button type="button" className="crypto-watch-button" onClick={() => toggleWatch(selected.id)}><Icon name={watchlist.includes(selected.id) ? 'star-filled' : 'star'} size={16} />{watchlist.includes(selected.id) ? 'Remove from watchlist' : 'Add to watchlist'}</button>
       </div>
+      <section className="card crypto-alert-card">
+        <div className="crypto-section-heading"><div><small>PRICE MONITOR</small><h2>Price alerts</h2></div><span>{alerts.filter(a => a.enabled).length} active</span></div>
+        <p className="crypto-alert-note">Alerts are checked while MOVO is open and market prices refresh. Device notifications require permission; background delivery is not guaranteed.</p>
+        <div className="crypto-alert-form">
+          <select value={alertDirection} onChange={e => setAlertDirection(e.target.value)} aria-label="Alert direction"><option value="above">Rises above</option><option value="below">Falls below</option></select>
+          <input type="number" min="0.00000001" step="any" value={alertTarget} onChange={e => setAlertTarget(e.target.value)} placeholder={`Target in ${quote}`} aria-label="Target price" />
+          <button type="button" onClick={addPriceAlert}>Add alert</button>
+        </div>
+        {!alertPermission && <button type="button" className="crypto-enable-notifications" onClick={requestAlertPermission}>Enable device notifications</button>}
+        {alerts.filter(a => a.coinId === selected.id).map(alert => <div className="crypto-alert-row" key={alert.id}>
+          <span><strong>{alert.direction === 'above' ? 'Above' : 'Below'} {money(alert.target, alert.quote)}</strong><small>{alert.enabled ? 'Active' : 'Paused'} · {alert.lastTriggeredAt ? `Last triggered ${stamp(alert.lastTriggeredAt)}` : 'Waiting for price crossing'}</small></span>
+          <button type="button" onClick={() => toggleAlert(alert.id)}>{alert.enabled ? 'Pause' : 'Enable'}</button>
+          <button type="button" onClick={() => deleteAlert(alert.id)} aria-label={`Delete alert for ${selected.symbol}`}>×</button>
+        </div>)}
+        {!alerts.some(a => a.coinId === selected.id) && <p className="crypto-empty">No price alerts for {selected.symbol} yet.</p>}
+      </section>
       <section className="card crypto-chart-card">
         <div className="crypto-section-heading"><div><small>PRICE HISTORY</small><h2>{selected.symbol} / {quote}</h2></div><strong>{money(values[values.length - 1] ?? selected.price, quote)}</strong></div>
         <div className="crypto-ranges">{[1, 7, 30, 90, 365].map((days) => <button type="button" key={days} className={range === days ? 'active' : ''} onClick={() => setRange(days)}>{days === 1 ? '24H' : days === 365 ? '1Y' : `${days}D`}</button>)}</div>
