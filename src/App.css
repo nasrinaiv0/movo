@@ -4296,6 +4296,11 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .tx-sheet .tx-sub { background: color-mix(in srgb, var(--text) 7%, transparent); }
 .movo-app.movo-app .tx-sheet .tx-sub.has-value { background: color-mix(in srgb, var(--accent) 13%, transparent); }
 
+/* ---- Subscription logos fill their frame (owner request 2026-11-03) ----
+ * Bundled logos and site icons cover the whole squircle, like an app icon; no white margin around them. */
+.movo-app .sub-icon.has-logo.fill, .movo-app .catalog-row .sub-icon.has-logo.fill { padding: 0; background: #fff; }
+.movo-app .sub-icon.has-logo.fill img, .movo-app .catalog-row .sub-icon.has-logo.fill img { width: 100%; height: 100%; max-width: none; max-height: none; object-fit: cover; image-rendering: auto; }
+.movo-app .sub-icon.has-logo.fill.vector img { object-fit: contain; }
 /* =====================================================================
    Archive (Menu → Archive) and the Archive / Log buttons for failed automations.
    ===================================================================== */
@@ -4379,3 +4384,55 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app.movo-app .tx-sheet .tx-round { width: 34px; height: 34px; flex: none; }
   .movo-app.movo-app .tx-sheet .tx-seg button { padding: 0 2px; font-size: 11px; letter-spacing: -.2px; }
 }
+
+/* ---- Financial planning screen + Home planning card (2026-11-03) ---- */
+.movo-app .fp-hero { margin-bottom: 12px; }
+.movo-app .fp-hero .sub-hero-row b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .fp-notice { margin: 4px 2px 8px; }
+.movo-app .fp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; padding: 12px 14px; border: 0; background: none; color: var(--text); text-align: start; font: inherit; cursor: pointer; box-shadow: inset 0 -.25px 0 var(--line); }
+.movo-app div.fp-row { cursor: default; }
+.movo-app .fp-row:last-child { box-shadow: none; }
+.movo-app .fp-row > .movo-icon:last-child { flex: none; color: var(--muted); }
+[dir="rtl"] .movo-app .fp-row > .movo-icon:last-child { transform: scaleX(-1); }
+.movo-app .fp-row .stat-icon, .movo-app .fp-goal-head .stat-icon { flex: none; width: 34px; height: 34px; }
+.movo-app .fp-main { display: grid; gap: 3px; flex: 1 1 auto; min-width: 0; }
+.movo-app .fp-main strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .fp-main small { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .fp-main .progress-track { margin-top: 4px; }
+.movo-app :is(.fp-main, .fp-home-tile) small.is-alert { color: var(--red); font-weight: 600; }
+.movo-app .fp-amount { display: grid; justify-items: end; gap: 3px; flex: none; max-width: 46%; text-align: end; }
+.movo-app .fp-amount b { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.movo-app .fp-amount small { color: var(--muted); font-size: 11px; }
+.movo-app .fp-amount .link-button { min-height: 28px; padding: 0; font-size: 12px; }
+.movo-app .fp-status { font-style: normal; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--field); color: var(--muted); }
+.movo-app .fp-status.is-active { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.movo-app .fp-glance { margin-bottom: 10px; }
+.movo-app .fp-goal { padding: 14px; margin-bottom: 10px; display: grid; gap: 8px; }
+.movo-app .fp-goal-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.movo-app .fp-goal .form-note { margin: 0; }
+.movo-app .fp-allocs { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.movo-app .fp-allocs li { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 6px 0; box-shadow: inset 0 .25px 0 var(--line); }
+.movo-app .fp-allocs li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.movo-app .fp-allocs .link-button { min-height: 28px; padding: 0 2px; font-size: 12px; }
+.movo-app .fp-bill-stats { margin: 10px 0 4px; }
+.movo-app .bills-list { margin-bottom: 10px; }
+.movo-app .chip-row + .app-alert, .movo-app .chip-row + .fp-notice { margin-top: 8px; }
+.movo-app .sheet-menu button .movo-icon { margin-inline-end: 10px; vertical-align: -3px; }
+
+.movo-app .fp-home { padding: 0; overflow: hidden; }
+.movo-app .fp-home-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; width: 100%; padding: 14px 16px; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.movo-app .fp-home-top > span:first-child { display: grid; gap: 2px; min-width: 0; }
+.movo-app .fp-home-top small { color: var(--muted); font-size: 11.5px; }
+.movo-app .fp-home-top strong { font-size: 22px; font-weight: 700; letter-spacing: -.5px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .fp-home-split { display: flex; gap: 14px; flex: none; text-align: end; }
+.movo-app .fp-home-split > span { display: grid; gap: 2px; }
+.movo-app .fp-home-split b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.movo-app .fp-home-grid { display: grid; grid-template-columns: 1fr 1fr; box-shadow: inset 0 .25px 0 var(--line); }
+.movo-app .fp-home-tile { display: grid; gap: 4px; min-width: 0; padding: 12px 14px; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; box-shadow: inset -.25px -.25px 0 var(--line); }
+.movo-app .fp-home-tile .stat-head { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); min-width: 0; }
+.movo-app .fp-home-tile .stat-head > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .fp-home-tile .stat-icon { width: 24px; height: 24px; flex: none; }
+.movo-app .fp-home-tile b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .fp-home-tile small { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .fp-home-note { margin: 0; padding: 10px 16px 14px; box-shadow: inset 0 .25px 0 var(--line); }
+@media (max-width: 360px) { .movo-app .fp-home-split { display: none; } }
