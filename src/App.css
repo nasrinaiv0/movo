@@ -4324,10 +4324,12 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .archive-restore:disabled, .movo-app .archive-delete:disabled { opacity: .5; }
 .movo-app .archive-empty-all { width: 100%; margin-top: 4px; color: var(--red); }
 @media (max-width: 360px) { .movo-app .archive-amount { display: none; } }
+/* =====================================================================
    Responsive pass (2026-11-03): narrow phones and fold cover screens.
    Measured at 280 (Galaxy Fold cover), 344 (Z Fold cover), 360, 375, 390,
    430, 540 (Surface Duo), 690 (Z Fold open), 768/1024 (iPad), 1114 (Duo
    spanned), 1280 and 1440. Wider layouts are unchanged.
+   ===================================================================== */
 
 /* ≤390px: Home header keeps the greeting readable ("Friend", not "Fri…"). */
 @media (max-width: 390px) {
