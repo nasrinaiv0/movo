@@ -47,7 +47,9 @@ import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, finishOAuth } from './lib/financeRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
+import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
+import Archive from './screens/Archive';
 import { listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
@@ -90,10 +92,10 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
 };
-const ROOT_FOR = { FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
-const DEPTH = { FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const ROOT_FOR = { Archive: 'Menu', FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const DEPTH = { Archive: 1, FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
@@ -709,10 +711,16 @@ function App() {
       setSheet(null); notify(tr('Account archived. Its transaction history was kept.'));
     } catch { notify(tr('Could not archive this account. Please try again.')); }
   };
+  /* Removing moves the item to the Archive for 90 days (Menu → Archive), where it can be restored. */
+  const archiveItem = useCallback((kind, item) => setPrefs(p => ({ ...p, archive: addToArchive(p.archive, archiveEntry(kind, item)) })), []);
   const removeTransaction = async (t) => {
-    if (!window.confirm('Delete this transaction? This cannot be undone.')) return;
-    try { if (cloudMode) await deleteTransaction(t.id); setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null); notify(tr('Transaction deleted.')); }
-    catch { notify(tr('Could not delete this transaction.')); }
+    const raw = rawTxs.find(x => x.id === t.id) || t;
+    try {
+      if (cloudMode) await deleteTransaction(t.id);
+      archiveItem('transaction', raw);
+      setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null);
+      notify(tr('Moved to Archive. You can restore it for 90 days.'));
+    } catch { notify(tr('Could not delete this transaction.')); }
   };
   const saveBudget = async ({ id, category: picked, monthly_limit }) => {
     // Budgets are kept per compact category id (custom text stays as written).
@@ -727,17 +735,19 @@ function App() {
     notify(tr('Budget saved.'));
   };
   const deleteBudget = async (id) => {
+    const row = (cloudMode ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
     if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); } else setPref('budgets', (prefs.budgets || []).filter(b => b.id !== id));
-    notify(tr('Budget removed.'));
+    if (row) archiveItem('budget', row);
+    notify(tr('Moved to Archive. You can restore it for 90 days.'));
   };
   const savePlan = (plan) => { const row = { ...plan, currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
-  const deletePlan = (id) => { setPref('plans', plans.filter(p => p.id !== id)); notify(tr('Plan removed.')); };
+  const deletePlan = (id) => { const row = (prefs.plans || []).find(p => p.id === id); setPref('plans', plans.filter(p => p.id !== id)); if (row) archiveItem('plan', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   const saveSubscription = (sub) => {
     const row = { ...sub, id: sub.id || window.crypto?.randomUUID?.() || `sub-${Date.now()}` };
     setPref('subscriptions', [...subscriptions.filter(x => x.id !== row.id), row]);
     notify(sub.id ? tr('Subscription updated.') : tr('{name} added to your subscriptions.', { name: row.name }));
   };
-  const deleteSubscription = (id) => { setPref('subscriptions', subscriptions.filter(x => x.id !== id)); notify(tr('Subscription removed.')); };
+  const deleteSubscription = (id) => { const row = subscriptions.find(x => x.id === id); setPref('subscriptions', subscriptions.filter(x => x.id !== id)); if (row) archiveItem('subscription', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   /* Opens the add-transaction sheet pre-filled with this renewal, converted to the home currency. */
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
@@ -959,8 +969,57 @@ function App() {
   }, [logsCheck, locked, prefs.logsSeenAt, prefs.onboarded, sheet, rawTxs, inbox, setPref]);
   const closeRecentLogs = () => { setPref('logsSeenAt', new Date().toISOString()); setSheet(null); };
   const dismissInboxItem = async (item) => {
-    try { await resolveAutomationInboxItem(item.id, { status: 'dismissed' }); setInbox(cur => cur.filter(i => i.id !== item.id)); notify(tr('Dismissed.')); }
+    try { await resolveAutomationInboxItem(item.id, { status: 'dismissed' }); setInbox(cur => cur.filter(i => i.id !== item.id)); notify(tr('Moved to Archive. You can restore it for 90 days.')); }
     catch { notify(tr('Could not update this item. Please try again.')); }
+  };
+  /* ---------- Archive (Menu → Archive): 90 days to restore, then gone ---------- */
+  const [archivedAutomations, setArchivedAutomations] = useState([]);
+  const loadArchivedAutomations = useCallback(async () => {
+    if (!cloudMode) { setArchivedAutomations([]); return; }
+    try { setArchivedAutomations(await listArchivedAutomations()); } catch { setArchivedAutomations([]); }
+  }, [cloudMode]);
+  // Expired entries are removed when MOVO opens (and archived automations older than 90 days on the server).
+  useEffect(() => {
+    if ((prefs.archive || []).length && purgeArchive(prefs.archive).length !== prefs.archive.length) setPrefs(p => ({ ...p, archive: purgeArchive(p.archive) }));
+  }, [prefs.archive]);
+  useEffect(() => { if (cloudMode) purgeArchivedAutomations().catch(() => {}); }, [cloudMode]);
+  const restoreArchived = async (entry) => {
+    const it = entry.item;
+    try {
+      if (entry.kind === 'automation') {
+        await resolveAutomationInboxItem(it.id, { status: 'failed' });
+        setArchivedAutomations(cur => cur.filter(a => a.id !== it.id)); setInbox(cur => [{ ...it, status: 'failed' }, ...cur.filter(i => i.id !== it.id)]);
+      } else if (entry.kind === 'transaction') {
+        const open = new Set(formAccounts.map(a => a.id));
+        if (!open.has(it.account_id) || (it.transfer_to_account_id && !open.has(it.transfer_to_account_id))) { notify(tr('Its account is no longer in your wallet. Add the account again, then restore.')); return; }
+        if (cloudMode && session?.user) {
+          const row = await createTransaction({ ...it, transaction_type: it.transaction_type || it.type }, session.user.id);
+          setRawTxs(cur => [row, ...cur]);
+        } else setRawTxs(cur => [it, ...cur.filter(x => x.id !== it.id)]);
+      } else if (entry.kind === 'budget') {
+        await saveBudget({ category: it.category, monthly_limit: it.monthly_limit });
+      } else if (entry.kind === 'plan') {
+        setPref('plans', [...(prefs.plans || []).filter(p => p.id !== it.id), it]);
+      } else if (entry.kind === 'subscription') {
+        setPref('subscriptions', [...subscriptions.filter(x => x.id !== it.id), it]);
+      }
+      if (entry.kind !== 'automation') setPrefs(p => ({ ...p, archive: removeFromArchive(p.archive, entry.id) }));
+      notify(tr('Restored.'));
+    } catch { notify(tr('Could not restore this item. Please try again.')); }
+  };
+  const deleteArchived = async (entry) => {
+    try {
+      if (entry.kind === 'automation') { await deleteAutomationInboxItem(entry.item.id); setArchivedAutomations(cur => cur.filter(a => a.id !== entry.item.id)); }
+      else setPrefs(p => ({ ...p, archive: removeFromArchive(p.archive, entry.id) }));
+      notify(tr('Deleted for good.'));
+    } catch { notify(tr('Could not delete this item. Please try again.')); }
+  };
+  const emptyArchive = async () => {
+    try {
+      await Promise.all(archivedAutomations.map(a => deleteAutomationInboxItem(a.id)));
+      setArchivedAutomations([]); setPrefs(p => ({ ...p, archive: [] }));
+      notify(tr('Archive emptied.'));
+    } catch { notify(tr('Could not delete this item. Please try again.')); }
   };
   const logInboxItem = async (item, { account_id, amount, merchant }) => {
     const type = item.transaction_type === 'income' ? 'income' : 'expense';
@@ -1125,7 +1184,7 @@ function App() {
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
     budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
-    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
+    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -1165,6 +1224,7 @@ function App() {
     switch (view) {
       case 'Wallet': return <Wallet c={c} />;
       case 'FinancialPlanning': return <FinancialPlanning c={c} />;
+      case 'Archive': return <Archive c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
       case 'Menu': return <Menu c={c} />;

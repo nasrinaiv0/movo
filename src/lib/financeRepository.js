@@ -178,10 +178,33 @@ export async function listAutomationInbox() {
   return unwrap({ data, error });
 }
 export async function resolveAutomationInboxItem(id, { status, transactionId = null }) {
-  if (!['logged', 'dismissed'].includes(status)) throw new Error('Choose logged or dismissed.');
+  if (!['logged', 'dismissed', 'failed'].includes(status)) throw new Error('Choose logged, dismissed or failed.');
+  if (status === 'failed') {
+    // Restore from the Archive: back to "Not logged".
+    return unwrap(await requireClient().from('movo_automation_inbox')
+      .update({ status: 'failed', transaction_id: null, resolved_at: null }).eq('id', id).select('id,status').single());
+  }
   return unwrap(await requireClient().from('movo_automation_inbox')
     .update({ status, transaction_id: status === 'logged' ? transactionId : null, resolved_at: new Date().toISOString() })
     .eq('id', id).select('id,status').single());
+}
+/** Failed automations the person archived ("dismissed"), newest first; the Archive keeps them 90 days. */
+export async function listArchivedAutomations() {
+  const { data, error } = await requireClient().from('movo_automation_inbox')
+    .select('id,source,reason,transaction_type,amount,currency,merchant,account_hint,spoken_text,external_reference,occurred_at,status,created_at,resolved_at')
+    .eq('status', 'dismissed').order('resolved_at', { ascending: false }).limit(200);
+  if (error && /PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) return [];
+  return unwrap({ data, error });
+}
+/** Deletes one archived automation for good (RLS: only the person's own rows). */
+export async function deleteAutomationInboxItem(id) {
+  return unwrap(await requireClient().from('movo_automation_inbox').delete().eq('id', id).eq('status', 'dismissed'));
+}
+/** Deletes archived automations older than 90 days. */
+export async function purgeArchivedAutomations(days = 90, now = new Date()) {
+  const cutoff = new Date(now.getTime() - days * 86400000).toISOString();
+  const { error } = await requireClient().from('movo_automation_inbox').delete().eq('status', 'dismissed').lt('resolved_at', cutoff);
+  if (error && !/PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) throw error;
 }
 export async function listBudgets() {
   return unwrap(await requireClient().from('budgets')
