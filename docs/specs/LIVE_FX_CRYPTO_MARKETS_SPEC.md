@@ -1,6 +1,6 @@
 # MOVO Live FX, Cryptocurrency & Markets — Implementation Specification
 
-Status: Partial implementation in PR #177. FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented. Crypto market discovery, local watchlist, coin detail and provider-supported daily history are now implemented in this branch. Price alerts and manual portfolio lots/valuation remain pending.
+Status: Partial implementation in PR #177. FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented. Crypto market discovery, local watchlist, coin detail and provider-supported daily history are now implemented in this branch. Price alerts are implemented as local preference rules with above/below threshold crossing, rearming, enable/pause/delete controls and foreground permission-aware notifications. Manual portfolio lots/valuation remain pending.
 Owner request: 2026-11-04.
 
 ## Product outcome
@@ -51,7 +51,7 @@ PHP is the default display/base currency for users in the Philippines. Respect t
 - Coin name/symbol, current quote, 24-hour change, market cap, volume, circulating supply, rank and provider timestamp when available.
 - Historical price chart for 24h, 7d, 30d, 90d, 1y (only supported windows; no synthetic points).
 - Show source attribution and clear delayed/cached status.
-- Price alerts: user-defined above/below thresholds, enabled/disabled state, and notification permission explanation. Do not claim alerts are delivered when background push infrastructure is not configured. Local notifications may be used only where supported and clearly described.
+- Price alerts: user-defined above/below thresholds, enabled/disabled state, threshold-crossing detection and rearming. Rules are stored locally in MOVO preferences. Alerts are evaluated while MOVO is open and the market screen refreshes. Device notifications use the existing web Notification API or Capacitor local notifications only after permission is granted. Background delivery is not guaranteed; explain that limitation in the UI.
 
 ### Watchlist and portfolio
 - Watchlist is separate from holdings. Users can add/remove assets and reorder them.
