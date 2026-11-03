@@ -40,3 +40,6 @@
   .movo-app .fx-input-row { padding-left: 9px; }
   .movo-app .fx-input-row select { min-width: 94px; max-width: 48%; font-size: 11px; }
 }
+
+.movo-app .fx-currency-search { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 12px; border-radius: 12px; color: var(--muted); background: var(--surface); }
+.movo-app .fx-currency-search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 12px; }
