@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import './CryptoMarket.css';
 import Icon from '../components/Icon';
 import { SubHeader } from '../components/ui';
 import { loadCryptoHistory, loadCryptoMarkets, sortCryptoCoins } from '../lib/crypto';
