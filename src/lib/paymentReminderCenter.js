@@ -7,7 +7,7 @@ const OFFSETS = [0, 1, 2, 3, 5, 7, 14, 30];
 export async function getReminderPreferences(userId) {
   if (!userId) return { enabled: true, reminder_days: [0, 1, 3], quiet_start: null, quiet_end: null, timezone: 'Asia/Manila', push_enabled: false };
   const row = unwrap(await db().from('payment_reminder_preferences').select('*').eq('user_id', userId).maybeSingle());
-  return row || { enabled: true, reminder_days: [0, 1, 3], quiet_start: null, quiet_end: null, timezone: 'Asia/Manila', push_enabled: false };
+  return row ? { ...row, quiet_start: row.quiet_start ? String(row.quiet_start).slice(0,5) : null, quiet_end: row.quiet_end ? String(row.quiet_end).slice(0,5) : null } : { enabled: true, reminder_days: [0, 1, 3], quiet_start: null, quiet_end: null, timezone: 'Asia/Manila', push_enabled: false };
 }
 
 export async function saveReminderPreferences(userId, input) {
@@ -16,6 +16,7 @@ export async function saveReminderPreferences(userId, input) {
   if (days.length > 8) throw new Error('Choose up to eight reminder intervals.');
   const validTime = value => value == null || value === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
   if (!validTime(input.quiet_start) || !validTime(input.quiet_end)) throw new Error('Enter valid quiet-hour times.');
+  if (!!input.quiet_start !== !!input.quiet_end) throw new Error('Set both quiet-hour start and end times, or leave both empty.');
   const timezone = String(input.timezone || 'Asia/Manila').slice(0,64);
   try { new Intl.DateTimeFormat('en-US', { timeZone: timezone }); } catch { throw new Error('Choose a valid timezone.'); }
   const row = {
