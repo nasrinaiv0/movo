@@ -103,7 +103,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
 
       {form.account_type === 'bank' && <div className="acct-qr-upload">
         <div className="acct-qr-upload-copy"><strong>{tr('Bank QR code')}</strong><small>{tr('Add your bank QR code to display it on the account card.')}</small></div>
-        <input id="acct-qr-file" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleQrUpload} />
+        <input id="acct-qr-file" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleQrUpload} disabled={qrUploading} />
         <label className="acct-qr-pick" htmlFor="acct-qr-file"><Icon name="upload" size={16} />{qrUploading ? tr('Processing…') : currentQrCode ? tr('Replace QR code') : tr('Upload QR code')}</label>
         {qrUploading && <p className="form-note" role="status">{tr('Processing QR image…')}</p>}{currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr('Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
         {qrError && <p className="form-error" role="alert">{qrError}</p>}
