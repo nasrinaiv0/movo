@@ -14,7 +14,7 @@ import BillsPanel from '../components/BillsPanel';
  * (assets, liabilities, net worth, money available). Records what the person says happened; it never moves money.
  */
 const TABS = [['overview', 'Overview'], ['cards', 'Credit cards'], ['bills', 'Bills'], ['loans', 'Loans & debts'], ['owed', 'Owed to you'], ['goals', 'Goals']];
-const blankLoan = (cur) => ({ name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', due_date: '', account_id: '', new_proceeds: false, notes: '' });
+const blankLoan = (cur) => ({ name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', inconsistent_interest: false, interest_months: '12', monthly_interest_rates: Array(12).fill(''), due_date: '', account_id: '', new_proceeds: false, notes: '' });
 const blankReceivable = (cur) => ({ name: '', counterparty: '', reason: '', opening_amount: '', currency: cur, due_date: '', account_id: '', new_lending: false, notes: '' });
 const blankGoal = (cur) => ({ name: '', target_amount: '', currency: cur, target_date: '', notes: '' });
 const LOAN_EVENTS = [['principal_payment', 'Principal repayment'], ['interest_payment', 'Interest payment'], ['fee', 'Fee'], ['principal_increase', 'Increase principal']];
@@ -188,7 +188,12 @@ export default function FinancialPlanning({ c }) {
         <label>{tr('Name')}<input required maxLength="120" value={form.name} onChange={e => set({ name: e.target.value })} /></label>
         <label>{tr('Lender / creditor')}<input maxLength="120" value={form.lender} onChange={e => set({ lender: e.target.value })} /></label>
         <label>{tr('Original principal')}<input required type="number" inputMode="decimal" min="0.01" step="0.01" value={form.principal_amount} onChange={e => set({ principal_amount: e.target.value })} /></label>
-        <label>{tr('Interest rate (% per year)')}<input type="number" inputMode="decimal" min="0" step="0.001" value={form.interest_rate} onChange={e => set({ interest_rate: e.target.value })} /></label>
+        <label className="legal-disclosure-check"><input type="checkbox" checked={!!form.inconsistent_interest} onChange={e => set({ inconsistent_interest: e.target.checked })} /><span>{tr('Interest changes each month')}</span></label>
+        {form.inconsistent_interest ? <>
+          <label>{tr('Number of months')}<input required type="number" inputMode="numeric" min="1" max="600" step="1" value={form.interest_months} onChange={e => { const count = Math.max(1, Math.min(600, Number(e.target.value) || 1)); set({ interest_months: e.target.value, monthly_interest_rates: Array.from({ length: count }, (_, i) => form.monthly_interest_rates?.[i] ?? '') }); }} /></label>
+          <p className="form-note">{tr('Enter the interest rate for each month of the loan.')}</p>
+          <div className="form-grid">{Array.from({ length: Math.max(1, Math.min(600, Number(form.interest_months) || 1)) }, (_, i) => <label key={i}>{tr('Month {number} interest (%)', { number: i + 1 })}<input required type="number" inputMode="decimal" min="0" max="100" step="0.001" value={form.monthly_interest_rates?.[i] ?? ''} onChange={e => set({ monthly_interest_rates: Array.from({ length: Math.max(1, Math.min(600, Number(form.interest_months) || 1)) }, (_, index) => index === i ? e.target.value : (form.monthly_interest_rates?.[index] ?? '')) })} /></label>)}</div>
+        </> : <label>{tr('Interest rate (% per year)')}<input type="number" inputMode="decimal" min="0" step="0.001" value={form.interest_rate} onChange={e => set({ interest_rate: e.target.value })} /></label>}
         <label>{tr('Due date')}<input type="date" value={form.due_date} onChange={e => set({ due_date: e.target.value })} /></label>
         <label className="legal-disclosure-check"><input type="checkbox" checked={form.new_proceeds} onChange={e => set({ new_proceeds: e.target.checked })} /><span>{tr('This is a new loan draw; add the proceeds to the account balance')}</span></label>
         <label>{tr('Payment account')}<select required={form.new_proceeds} value={form.account_id} onChange={e => set({ account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option><AccountOptions accounts={inCurrency(form.currency)} currency /></select></label>
