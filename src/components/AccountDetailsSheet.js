@@ -18,7 +18,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const [scheduleReady, setScheduleReady] = useState(false);
   const currency = account.currency || 'PHP';
   const qrCode = prefs.accountQrCodes?.[account.id] || '';
-  const cardNetwork = prefs.cardNetworks?.[account.id] || cardStyle.cardNetwork || account.cardNetwork || '';
+  const cardNetwork = prefs.cardNetworks?.[account.id] || account.cardNetwork || '';
   const cardStyleId = prefs.cardStyles?.[account.id] || '';
   const linkedCards = useMemo(() => accounts.filter(item => item.account_type === 'card' && item.id !== account.id && (
     prefs.cardBankLinks?.[item.id] === account.id ||
