@@ -244,3 +244,14 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Added prompt safety requirements for server-confirmed success, non-financial notification filtering, no fabricated transaction details, and no POST on Skip.
 - Added regression tests for the new recipe variants and updated Siri progress documentation.
 - Pending: exact-head CI/typecheck/build, review of the shared-preference wiring, actual iPhone trigger-variable validation and While You Were Away end-to-end test. No Supabase migration, production data change, deployment or merge performed.
+
+
+## Crypto portfolio implementation — 2026-11-04 Asia/Manila
+
+- Branch: `feat/live-fx-crypto-markets` (existing PR #177).
+- Added manual holding records with asset, quantity, quote currency, acquisition date and optional average acquisition price. Supports separate position records, edit and remove.
+- Added responsive portfolio view matching MOVO's existing card surfaces, accent tokens, rounded controls, muted labels, tab switcher and compact position rows. Portfolio summary shows total value, cost basis and unrealized P/L only when inputs and provider prices support a valid same-quote calculation.
+- Holdings are persisted under `cryptoHoldings` in MOVO preferences and merged by stable ID across local/signed-in preference copies. They are not written to cash accounts, transactions, income or expenses. No Supabase migration/RLS change is required for this preference-backed implementation.
+- Added validation/valuation helper and unit tests for invalid quantities/costs, quote mismatch, missing market prices, unknown cost basis and ID upsert.
+- No implicit FX conversion is performed. Portfolio values are reference estimates, not exchange execution quotes. Exchange/wallet integrations, fees, realized P/L and custody/trading remain out of scope.
+- Validation on the new head is pending GitHub Actions; live Vercel preview and device smoke testing are still required.
