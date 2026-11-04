@@ -35,6 +35,7 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 
 ### Implemented frontend behavior
 - Responsive Home dashboard and five-item navigation.
+- Exchange Rates screen (Menu → Exchange rates): multi-currency converter, searchable currency selector, tracked FX pairs, manual refresh, cached reference-rate timestamps, stale/fallback status and historical daily-rate charts (1W/1M/3M/1Y). FX requests send currency codes only; the upstream free feed is a reference-rate service, not a tick-by-tick executable quote.\n- Crypto market (Menu → Crypto market): provider-backed searchable market list, rank/price/24-hour change/market cap/volume, sort controls, local watchlist, coin detail and historical daily-price chart windows (24H/7D/30D/90D/1Y where the provider plan permits). Market data is delayed reference data, not trading quotes. Crypto watchlist and manual portfolio holdings stay in MOVO preferences. Portfolio supports quantity, acquisition date, optional average cost, market value and unrealized P/L when matching-quote provider prices are available; no implicit FX conversion is used. Crypto values never enter cash/income/expense totals.
 - Balance visibility toggle that masks balances and transaction amounts.
 - Income and expense totals are calculated from posted records; internal transfers affect account balances but never inflate income, expenses or net activity.
 - Account balances derive from opening balances plus routed ledger entries. The Savings tile sums eligible non-cash account balances (excluding credit cards and cards whose debit/credit kind is unknown); it is distinct from monthly net cash flow.
@@ -82,7 +83,7 @@ npm start
 
 Production builds run the test suite before building. GitHub Actions also runs the test suite and build on feature-branch pushes and pull requests targeting `main`.
 
-## iOS app
+### Crypto market provider setup\n\nCrypto market data is proxied through `GET /api/crypto`; the provider key is never sent to the browser. Configure `COINPAPRIKA_API_KEY` as a Vercel server-side environment variable and use a CoinPaprika plan/licence that permits displaying market data inside MOVO. The keyless CoinPaprika tier is for personal exploration and is not licensed for redistribution in a customer-facing product. Without a configured licensed key, the screen shows a clear unavailable state and preserves the local watchlist. Provider responses are cached for three minutes and retain the upstream `last_updated` timestamp.\n\nThe first crypto phase includes market discovery, local watchlist, coin details and provider-supported history. Price alerts and manual portfolio holdings/valuation are implemented locally; no exchange connections, custody, private keys, deposits, withdrawals or trading are supported.\n\n## iOS app
 The iOS app wraps this same code with Capacitor (`ios/`, `capacitor.config.json`, `src/lib/platform.js`); the website is unchanged. Builds run in the cloud, so no Mac is needed. See [docs/IOS_APP.md](docs/IOS_APP.md) for phases and prerequisites.
 
 ## Remaining production-readiness requirements
@@ -94,7 +95,7 @@ The iOS app wraps this same code with Capacitor (`ios/`, `capacitor.config.json`
 5. Re-run owner-isolation/RLS checks and test authentication, financial writes, consent, import/export, and deletion behavior in the actual production deployment. Test phone automations (Siri Shortcut, Apple Pay, Android voice) and NasrinAI voice chat on real devices; none has been device-tested.
 6. Add or complete end-to-end accessibility checks across supported mobile and desktop browsers.
 7. Implement supported bank integrations only through documented provider APIs and explicit consent; never collect or scrape banking credentials.
-8. Product work not built yet (see `docs/claude/FINANCIAL_PLANNING_HANDOFF.md`): Home cards for Net worth, Bills due, Debt and Owed to you; bill reminders; spending limits by account/merchant with a warning level; savings interest estimates; exchange-rate staleness, history and crypto; import of loans/receivables/bills; Android voice logging setup; profile photo crop and a cloud-sync off switch; paid Quick/Pro/Max/Ultra plans (needs pricing confirmation and a PayMongo/NasrinAI entitlement design).
+8. Product work not built yet (see `docs/claude/FINANCIAL_PLANNING_HANDOFF.md`): Home cards for Net worth, Bills due, Debt and Owed to you; bill reminders; spending limits by account/merchant with a warning level; savings interest estimates; FX historical charts; crypto market, watchlist, alerts and portfolio; import of loans/receivables/bills; Android voice logging setup; profile photo crop and a cloud-sync off switch; paid Quick/Pro/Max/Ultra plans (needs pricing confirmation and a PayMongo/NasrinAI entitlement design).
 
 ## Icons
 

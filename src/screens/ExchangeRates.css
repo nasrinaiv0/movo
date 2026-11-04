@@ -1,0 +1,56 @@
+/* Exchange-rate screen */
+.movo-app .fx-converter { padding: 20px; display: grid; gap: 15px; }
+.movo-app .fx-section-heading, .movo-app .fx-section-title, .movo-app .fx-input-row, .movo-app .fx-swap-row, .movo-app .fx-pair-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.movo-app .fx-kicker { display: block; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .11em; }
+.movo-app .fx-status { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 700; text-align: right; }
+.movo-app .fx-status i { width: 7px; height: 7px; border-radius: 50%; background: #d69b38; flex: 0 0 auto; }
+.movo-app .fx-status.is-live i { background: #19ad68; }
+.movo-app .fx-field { display: grid; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 650; }
+.movo-app .fx-input-row { background: var(--surface-2, var(--surface)); border-radius: 15px; padding: 7px 10px 7px 13px; }
+.movo-app .fx-input-row input, .movo-app .fx-input-row .fx-output { min-width: 0; width: 100%; color: var(--text); background: transparent; border: 0; outline: 0; font-size: clamp(20px, 5vw, 27px); font-weight: 750; font-variant-numeric: tabular-nums; }
+.movo-app .fx-input-row .fx-output { display: block; overflow-wrap: anywhere; }
+.movo-app .fx-input-row select { max-width: 46%; min-width: 108px; border: 0; border-radius: 10px; padding: 10px 5px; color: var(--text); background: var(--surface); font-size: 12px; font-weight: 750; }
+.movo-app .fx-swap-row { color: var(--muted); font-size: 12px; }
+.movo-app .fx-swap, .movo-app .fx-add-pair { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; border: 0; border-radius: 12px; padding: 0 12px; color: var(--accent); background: var(--accent-soft); font-size: 12px; font-weight: 750; }
+.movo-app .fx-result .fx-input-row { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.movo-app .fx-footnote, .movo-app .fx-provider-note p, .movo-app .fx-provider-note small { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.movo-app .fx-market-section { margin-top: 24px; }
+.movo-app .fx-section-title { margin: 0 2px 13px; }
+.movo-app .fx-section-title h2 { margin: 4px 0 0; font-size: 20px; letter-spacing: -.035em; }
+.movo-app .fx-search { display: flex; align-items: center; gap: 9px; padding: 0 13px; min-height: 46px; border-radius: 14px; background: var(--surface); color: var(--muted); }
+.movo-app .fx-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; }
+.movo-app .fx-pair-list { display: grid; gap: 9px; margin-top: 10px; }
+.movo-app .fx-pair-card { padding: 0 13px; display: flex; align-items: center; gap: 8px; }
+.movo-app .fx-pair-main { width: 100%; min-width: 0; border: 0; padding: 14px 0; background: transparent; color: var(--text); text-align: left; }
+.movo-app .fx-pair-codes, .movo-app .fx-pair-value { display: grid; gap: 3px; min-width: 0; }
+.movo-app .fx-pair-codes strong { font-size: 15px; letter-spacing: .01em; }
+.movo-app .fx-pair-codes strong i { color: var(--muted); font-style: normal; padding: 0 3px; }
+.movo-app .fx-pair-codes small, .movo-app .fx-pair-value small { color: var(--muted); font-size: 10px; }
+.movo-app .fx-pair-value { text-align: right; font-size: 14px; font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.movo-app .fx-remove-pair { width: 34px; height: 38px; flex: 0 0 auto; display: grid; place-items: center; border: 0; border-radius: 10px; color: var(--muted); background: transparent; }
+.movo-app .fx-empty { padding: 18px; text-align: center; color: var(--muted); font-size: 13px; }
+.movo-app .fx-provider-note { margin-top: 18px; padding: 15px; display: flex; align-items: flex-start; gap: 12px; }
+.movo-app .fx-provider-note strong { display: block; margin-bottom: 5px; font-size: 12px; }
+.movo-app .fx-provider-note small { display: block; margin-top: 5px; }
+.movo-app .fx-provider-icon { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 auto; border-radius: 12px; color: var(--accent); background: var(--accent-soft); }
+.movo-app .fx-error, .movo-app .fx-notice { margin: 12px 2px; color: var(--danger, #d44); font-size: 12px; }
+.movo-app .fx-notice { color: var(--accent); }
+@media (max-width: 360px) {
+  .movo-app .fx-converter { padding: 15px; }
+  .movo-app .fx-input-row { padding-left: 9px; }
+  .movo-app .fx-input-row select { min-width: 94px; max-width: 48%; font-size: 11px; }
+}
+
+.movo-app .fx-currency-search { display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 12px; border-radius: 12px; color: var(--muted); background: var(--surface); }
+.movo-app .fx-currency-search input { min-width: 0; width: 100%; border: 0; outline: 0; color: var(--text); background: transparent; font-size: 12px; }
+
+.movo-app .fx-history-card { margin-top: 20px; padding: 18px; display: grid; gap: 14px; }
+.movo-app .fx-history-card .fx-section-title { margin: 0; }
+.movo-app .fx-history-change { font-size: 13px; font-variant-numeric: tabular-nums; }
+.movo-app .fx-history-change.positive { color: #159b61; }
+.movo-app .fx-history-change.negative { color: #d65b63; }
+.movo-app .fx-history-chart { min-width: 0; width: 100%; overflow: hidden; }
+.movo-app .fx-history-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.movo-app .fx-history-range { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; }
+.movo-app .fx-history-range strong { color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+.movo-app .fx-history-source { color: var(--muted); font-size: 10px; line-height: 1.45; }
