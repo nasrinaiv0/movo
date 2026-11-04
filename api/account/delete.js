@@ -7,7 +7,7 @@ const { createClient } = require('@supabase/supabase-js');
  * Auth; the user id always comes from that verified token, never from the request body. The body must also carry
  * `{ "confirm": "DELETE" }` so a stray request cannot delete an account.
  *
- * What: transactions are deleted first (they reference accounts with ON DELETE RESTRICT), then the Auth user through
+ * What: private bank QR objects are removed first, then transactions (they reference accounts with ON DELETE RESTRICT), then the Auth user through
  * the Admin API, which also ends sessions and removes linked Google/Apple identities. Every other MOVO table
  * references auth.users ON DELETE CASCADE, so accounts, budgets, bills, plans, automations, the automation inbox,
  * preferences and NasrinAI chats go with it. The service-role key stays on the server.
@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
         for (let fileOffset = 0; ; fileOffset += 100) {
           const { data: files, error: filesError } = await qrBucket.list(`${userId}/${folder.name}`, { limit: 100, offset: fileOffset });
           if (filesError) throw filesError;
-          const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
+          const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
           for (let i = 0; i < paths.length; i += 100) {
             const { error } = await qrBucket.remove(paths.slice(i, i + 100));
             if (error) throw error;
