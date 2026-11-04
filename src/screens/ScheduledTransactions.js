@@ -131,7 +131,7 @@ export default function ScheduledTransactions({ c }) {
       <button onClick={()=>action(sheet.item,'cancel')}><Icon name="x"/>{tr('Cancel schedule')}</button>
     </div>{error&&<p className="app-alert">{error}</p>}</Sheet>}
     <SectionTitle>{tr('Recent reminder activity')}</SectionTitle>
-    <div className="card list-card">{reminderEvents.length?reminderEvents.slice(0,8).map(event=><article className="fp-row" key={event.id}>
+    <div className="card list-card">{reminderEvents.length?reminderEvents.filter(event=>event.channel==='in_app').slice(0,8).map(event=><article className="fp-row" key={event.id}>
       <span className="stat-icon tone-blue"><Icon name="bell" size={17}/></span>
       <span className="fp-main"><strong>{tr(event.source_type==='scheduled'?'Scheduled payment':event.source_type==='bill'?'Bill reminder':event.source_type==='subscription'?'Subscription renewal':event.source_type)}</strong><small>{dateLabel(event.occurrence_date)} · {event.reminder_offset===0?tr('Due date'):tr('{n} day(s) before',{n:event.reminder_offset})}</small></span>
       <span className="fp-amount"><small>{tr(event.status==='dismissed'?'Snoozed':event.status==='sent'?'Shown':event.status)}</small></span>
