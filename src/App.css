@@ -4851,3 +4851,28 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .fp-credit-card-stats b{font-size:12px}
  .movo-app .fp-credit-card-stats small{font-size:9.5px}
 }
+
+
+/* Compact issuer logo and credit card planning calculations. */
+.movo-app .fp-credit-card{padding:12px;gap:10px;}
+.movo-app .fp-credit-card .fp-goal-head{gap:9px;align-items:center;}
+.movo-app .fp-credit-card-logo{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;object-fit:contain;border-radius:11px;background:var(--field);padding:5px;box-sizing:border-box;}
+.movo-app .fp-credit-card .fp-amount{max-width:44%;}
+.movo-app .fp-credit-card .fp-amount b{font-size:14px;}
+.movo-app .fp-credit-card .fp-amount small{font-size:10px;line-height:1.2;white-space:normal;}
+.movo-app .fp-credit-card-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0;}
+.movo-app .fp-credit-card-metrics>div{display:grid;align-content:start;gap:4px;min-width:0;padding:9px 8px;border-radius:12px;background:var(--field);}
+.movo-app .fp-credit-card-metrics small{font-size:10px;line-height:1.2;color:var(--muted);}
+.movo-app .fp-credit-card-metrics b{font-size:12px;line-height:1.2;font-weight:700;letter-spacing:-.2px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+.movo-app .fp-credit-card-metrics span{font-size:9px;line-height:1.25;color:var(--muted);}
+.movo-app .fp-credit-utilization-track{height:5px;overflow:hidden;border-radius:99px;background:var(--line);}
+.movo-app .fp-credit-utilization-track span{display:block;height:100%;border-radius:inherit;background:var(--accent);}
+.movo-app .fp-credit-card .fp-credit-card-stats{padding:8px 0;}
+.movo-app .fp-credit-card .fp-credit-card-stats b{font-size:12px;}
+.movo-app .fp-credit-card-rate{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;}
+.movo-app .fp-credit-card-rate label{display:grid;grid-template-columns:auto 84px;align-items:center;gap:8px;min-width:0;color:var(--text);font-size:11px;font-weight:550;}
+.movo-app .fp-credit-card-rate input{width:84px;min-width:0;height:34px;box-sizing:border-box;padding:0 8px;border:1px solid var(--line);border-radius:9px;background:var(--field);color:var(--text);font:inherit;font-size:12px;}
+.movo-app .fp-credit-card-rate>small{flex:1;min-width:0;font-size:9px;line-height:1.3;color:var(--muted);}
+.movo-app .fp-credit-card .fp-allocs{gap:0;}
+.movo-app .fp-credit-card .fp-allocs li{padding:5px 0;font-size:11px;}
+@media(max-width:380px){.movo-app .fp-credit-card{padding:10px;gap:9px}.movo-app .fp-credit-card-metrics{gap:5px}.movo-app .fp-credit-card-metrics>div{padding:7px 6px}.movo-app .fp-credit-card-metrics b{font-size:11px}.movo-app .fp-credit-card-metrics small{font-size:9px}.movo-app .fp-credit-card-rate{align-items:flex-start;flex-direction:column;gap:5px}.movo-app .fp-credit-card-rate>small{font-size:9px}}
