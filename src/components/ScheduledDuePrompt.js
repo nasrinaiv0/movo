@@ -89,7 +89,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     setDestination(item?.transfer_to_account_id||'');
     const dueAmount=next?.kind==='bill'?amountRemaining(item):item?.amount||'';
     setAmount(String(dueAmount));
-    setSplits(next?.kind==='bill'?[{id:'split-1',account_id:billAccount||'',amount:String(dueAmount)}]:[]);
+    setSplits(next?.kind==='bill'?[{id:'split-1',key:paymentKey(item.id,nonce()),account_id:billAccount||'',amount:String(dueAmount)}]:[]);
     setError('');
     setAttemptNote('');
   },[]);
@@ -142,7 +142,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         for(const part of parts){
           const partAmount=Number(part.amount);
           if(partAmount>remaining+0.005)throw new Error(tr('A split cannot exceed the remaining bill balance.'));
-          await recordBillPayment({occurrence_id:item.id,amount:partAmount,method:'recorded',account_id:part.account_id,paid_at:`${today()}T12:00:00Z`,key:paymentKey(item.id,nonce())});
+          await recordBillPayment({occurrence_id:item.id,amount:partAmount,method:'recorded',account_id:part.account_id,paid_at:`${today()}T12:00:00Z`,key:part.key||paymentKey(item.id,nonce())});
           remaining=Math.max(0,remaining-partAmount);setAmount(String(remaining));
           pending=pending.filter(x=>x.id!==part.id);
           setSplits(pending);
@@ -193,7 +193,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
             <label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setSplits(current=>current.map(x=>x.id===part.id?{...x,amount:e.target.value}:x))}/></label>
             {splits.length>1&&<button type="button" className="link-button" onClick={()=>setSplits(current=>current.filter(x=>x.id!==part.id))}>{tr('Remove split')}</button>}
           </div>)}
-          <button type="button" className="secondary-button" onClick={()=>setSplits(current=>[...current,{id:nonce(),account_id:'',amount:''}])}>{tr('Add another account')}</button>
+          <button type="button" className="secondary-button" onClick={()=>setSplits(current=>[...current,{id:nonce(),key:paymentKey(item.id,nonce()),account_id:'',amount:''}])}>{tr('Add another account')}</button>
           <p className="form-note">{tr('Split total')}: {billCurrency} {splitTotal.toLocaleString()} · {tr('Partial payments are allowed.')}</p>
         </section>}
         {entry.kind!=='scheduled'&&entry.kind!=='bill'&&<label>{tr(entry.kind==='credit_card'?'Amount to record':'Amount paid')}<input required type="number" min="0.01" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></label>}
