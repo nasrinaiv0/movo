@@ -33,12 +33,14 @@ test('device automation keys never sync with account preferences', () => {
 });
 
 test('large local QR data URLs are excluded from cloud preferences while private object paths sync', () => {
-  const { accountQrCodes } = cloudSafePreferences({
+  const { accountQrCodes, accountQrPending } = cloudSafePreferences({
+    accountQrPending: { localBank: true },
     accountQrCodes: {
       localBank: 'data:image/png;base64,AAAA',
       cloudBank: '123e4567-e89b-42d3-a456-426614174000/123e4567-e89b-42d3-a456-426614174001/123e4567-e89b-42d3-a456-426614174002.png',
     },
   });
+  expect(accountQrPending).toBeUndefined();
   expect(accountQrCodes.localBank).toBeUndefined();
   expect(accountQrCodes.cloudBank).toContain('/123e4567-e89b-42d3-a456-426614174002.png');
 });
