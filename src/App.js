@@ -77,6 +77,7 @@ import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl } from './lib/platform';
+import { recordPaymentAttempt } from './lib/paymentAttempts';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -607,6 +608,7 @@ function App() {
       }
       if (!editingId && type === 'expense' && form.subscriptionPaymentId) {
         const paidSub = subscriptions.find(item => item.id === form.subscriptionPaymentId);
+        if (paidSub && cloudMode && session?.user?.id) await recordPaymentAttempt(session.user.id,{ source_type:'subscription', source_id:String(paidSub.id), due_date:paidSub.start, status:'paid', amount, currency:txCurrency, account_id:form.account_id, note:'Subscription renewal recorded' }).catch(()=>null);
         if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
           const nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
           if (nextDue) {
