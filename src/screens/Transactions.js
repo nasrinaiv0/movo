@@ -37,7 +37,7 @@ export default function Transactions({ c }) {
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const periodOptions = [{ value: 'all', label: 'All' }, ...months.map(value => ({
     value,
-    label: value === monthKey(refDate) ? 'Present' : monthLabel(value).replace(/\\s+\\d{4}$/, ''),
+    label: value === monthKey(refDate) ? 'Present' : monthLabel(value).replace(/\s+\d{4}$/, ''),
   }))];
   const selectedPeriod = month || monthKey(refDate);
   const periodFilter = <label className="tx-period-filter">
