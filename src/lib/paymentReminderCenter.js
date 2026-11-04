@@ -205,3 +205,13 @@ export function reminderEventAllowsDisplay(event, now = Date.now()) {
   const until=Date.parse(event.snoozed_until||'');
   return !Number.isFinite(until)||until<=now;
 }
+
+
+/** A skip or active snooze applies to the whole due occurrence, not just one reminder offset. */
+export function reminderOccurrenceAllowsDisplay(events = [], entry, offset = 0, now = Date.now()) {
+  const matches=(Array.isArray(events)?events:[]).filter(event=>event.channel==='in_app'&&event.source_type===entry?.kind&&event.source_id===String(entry?.item?.id)&&event.occurrence_date===entry?.date);
+  if(matches.some(event=>['dismissed','skipped','archived','deleted'].includes(String(event.status||'').toLowerCase())))return false;
+  if(matches.some(event=>{const until=Date.parse(event.snoozed_until||'');return Number.isFinite(until)&&until>now;}))return false;
+  const previous=matches.find(event=>Number(event.reminder_offset)===Number(offset));
+  return reminderEventAllowsDisplay(previous,now);
+}
