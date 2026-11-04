@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
 import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
@@ -47,7 +47,7 @@ export default function Transactions({ c }) {
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
     <label className="billing-cycle-filter" aria-label={tr('Filter by billing cycle')}>
-      <Icon name="filter" size={19} />
+      <Icon name="sliders" size={19} />
       <span>{cycleLabel}</span>
       <Icon name="down" size={15} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
