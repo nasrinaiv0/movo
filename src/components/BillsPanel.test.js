@@ -35,7 +35,7 @@ test('pay a variable bill: sets the actual amount, records once per attempt with
   await act(async () => button('Record payment').click());
   expect(repo.updateOccurrence).toHaveBeenCalledWith('o1', { actual_amount: 2800 });
   const [first, second] = repo.recordBillPayment.mock.calls.map(c => c[0]);
-  expect(first).toEqual(expect.objectContaining({ occurrence_id: 'o1', amount: '2800', method: 'recorded', account_id: 'acc1' }));
+  expect(first).toEqual(expect.objectContaining({ occurrence_id: 'o1', amount: 2800, method: 'recorded', account_id: 'acc1' }));
   expect(second.key).toBe(first.key);
   expect(onChanged).toHaveBeenCalledTimes(1);
   act(() => root.unmount()); app.remove();
