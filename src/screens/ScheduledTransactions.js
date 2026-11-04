@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-import { createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
+import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 
 const day = () => new Date().toLocaleDateString('en-CA');
 const blank = currency => ({ title:'', transaction_type:'expense', amount:'', currency, account_id:'', transfer_to_account_id:'', scheduled_for:day(), frequency:'once', category:'Other', notes:'' });
@@ -22,6 +22,7 @@ export default function ScheduledTransactions({ c }) {
   const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()),[items]);
   const save=async e=>{e.preventDefault();setBusy(true);setError('');try{await createScheduledTransaction(form,session?.user?.id);await reload();setSheet(null);setNotice(tr('Schedule saved.'));}catch(err){setError(err.message||tr('Could not save schedule.'));}finally{setBusy(false);}};
   const log=async(item,accountId,transferTo)=>{setBusy(true);setError('');try{await logScheduledTransaction(item,accountId,transferTo);await reload();setSheet(null);setNotice(tr('Transaction logged.'));notify?.(tr('Transaction logged.'));}catch(err){setError(err.message||tr('Could not log transaction.'));}finally{setBusy(false);}};
+  const cancel=async item=>{setBusy(true);setError('');try{await cancelScheduledTransaction(item.id);await reload();setNotice(tr('Schedule cancelled.'));}catch(err){setError(err.message||tr('Could not cancel schedule.'));}finally{setBusy(false);}};
   const cash=(amount,currency)=>shown(show,money(amount,currency));
   const openDue=item=>setSheet({kind:'due',item});
   return <>
@@ -32,7 +33,7 @@ export default function ScheduledTransactions({ c }) {
       {items.length?items.map(item=><article className="fp-row" key={item.id}>
         <span className={`stat-icon tone-${item.transaction_type==='transfer'?'blue':'orange'}`}><Icon name={item.transaction_type==='transfer'?'transfer':'calendar'} size={17}/></span>
         <span className="fp-main"><strong>{item.title}</strong><small>{dateLabel(item.scheduled_for)} · {tr(item.frequency==='once'?'One time':item.frequency==='weekly'?'Weekly':item.frequency==='monthly'?'Monthly':'Yearly')}</small><small>{accounts.find(a=>a.id===item.account_id)?.name||tr('Account not available')}{item.transaction_type==='transfer'? ` → ${accounts.find(a=>a.id===item.transfer_to_account_id)?.name||tr('Choose destination')}`:''}</small></span>
-        <span className="fp-amount"><b>{cash(item.amount,item.currency)}</b>{item.scheduled_for<=day()?<button type="button" className="link-button" onClick={()=>openDue(item)}>{tr('Log now')}</button>:<small>{tr('Scheduled')}</small>}</span>
+        <span className="fp-amount"><b>{cash(item.amount,item.currency)}</b>{item.scheduled_for<=day()?<button type="button" className="link-button" onClick={()=>openDue(item)}>{tr('Log now')}</button>:<small>{tr('Scheduled')}</small>}<button type="button" className="link-button" disabled={busy} onClick={()=>cancel(item)}>{tr('Cancel schedule')}</button></span>
       </article>):<p className="form-note">{tr('No scheduled payments or transfers yet.')}</p>}
     </div>
     {sheet?.kind==='create'&&<Sheet title={tr('Schedule payment or transfer')} subtitle={tr('Choose the account now. MOVO will ask you to confirm when it is due.')} onClose={()=>setSheet(null)} label={tr('Schedule transaction')}>
