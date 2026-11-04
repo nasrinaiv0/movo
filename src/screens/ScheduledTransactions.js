@@ -48,8 +48,8 @@ export default function ScheduledTransactions({ c }) {
     const styles=c.prefs?.accountStyles||{};
     rows.push(...accountsView.filter(x=>!x.is_archived&&x.account_type==='card'&&x.cardKind==='credit').map(card=>{
       const style=styles[card.id]||{};const owed=Math.max(0,-Number(card.balance||0));
-      return {id:card.id,kind:'credit_card',name:card.institution_name||card.name,date:style.paymentDueDate||'',amount:Number(style.minimumDue)||owed,currency:card.currency||base};
-    }).filter(x=>x.date&&x.amount>0));
+      return {id:card.id,kind:'credit_card',name:card.institution_name||card.name,date:style.paymentDueDate||'',amount:Number(style.minimumDue)||owed,owed,currency:card.currency||base};
+    }).filter(x=>x.date&&x.owed>0));
     setObligations(rows.filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)));
   },[session?.user?.id,c.subscriptions,c.prefs?.accountStyles,accountsView,base]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
