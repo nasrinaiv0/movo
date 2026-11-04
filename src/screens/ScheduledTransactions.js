@@ -22,7 +22,7 @@ export default function ScheduledTransactions({ c }) {
   const reload=useCallback(async()=>setItems(await listScheduledTransactions()),[]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
   useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));listReminderEvents(session?.user?.id,12).then(setReminderEvents).catch(()=>setReminderEvents([]));listPaymentAttempts(session?.user?.id,12).then(setPaymentAttempts).catch(()=>setPaymentAttempts([]));},[session?.user?.id]);
-  const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()),[items]);
+  const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()&&(!x.snoozed_until||x.snoozed_until<=new Date().toISOString())),[items]);
   const cash=(amount,currency)=>shown(show,money(amount,currency));
   const startCreate=()=>{setForm(blank(base));setError('');setSheet({kind:'create'});};
   const run=async fn=>{setBusy(true);setError('');try{await fn();await reload();setNotice(tr('Changes saved.'));}catch(e){setError(e.message||tr('Could not save changes.'));}finally{setBusy(false);}};
@@ -60,7 +60,7 @@ export default function ScheduledTransactions({ c }) {
         <label>{tr('Repeat')}<select value={form.frequency} onChange={e=>setForm({...form,frequency:e.target.value})}><option value="once">{tr('One time')}</option><option value="weekly">{tr('Weekly')}</option><option value="monthly">{tr('Monthly')}</option><option value="yearly">{tr('Yearly')}</option></select></label>
         {form.frequency!=='once'&&<label>{tr('End date (optional)')}<input type="date" min={form.scheduled_for} value={form.ends_on||''} onChange={e=>setForm({...form,ends_on:e.target.value})}/></label>}
         <label>{tr('Category')}<input maxLength="60" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/></label>
-        <label>{tr('Reminder intervals')}<select multiple value={(form.reminder_days||[]).map(String)} onChange={e=>setForm({...form,reminder_days:Array.from(e.target.selectedOptions).map(o=>Number(o.value))})}><option value="0">{tr('On due date')}</option><option value="1">{tr('1 day before')}</option><option value="2">{tr('2 days before')}</option><option value="3">{tr('3 days before')}</option><option value="7">{tr('7 days before')}</option><option value="14">{tr('14 days before')}</option></select></label>
+        <fieldset><legend>{tr('Reminder intervals')}</legend>{[{v:0,l:'On due date'},{v:1,l:'1 day before'},{v:2,l:'2 days before'},{v:3,l:'3 days before'},{v:5,l:'5 days before'},{v:7,l:'7 days before'},{v:14,l:'14 days before'},{v:30,l:'30 days before'}].map(x=><label key={x.v} className="toggle-row"><span>{tr(x.l)}</span><input type="checkbox" checked={(form.reminder_days||[]).includes(x.v)} onChange={e=>setForm({...form,reminder_days:e.target.checked?[...(form.reminder_days||[]),x.v]:(form.reminder_days||[]).filter(n=>n!==x.v)})}/></label>)}</fieldset>
         <button className="primary-button" disabled={busy}>{tr(sheet.kind==='edit'?'Save changes':'Save schedule')}</button>
       </form>
     </Sheet>}
