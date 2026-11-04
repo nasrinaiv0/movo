@@ -82,8 +82,8 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         </div>
         <section className="account-hub-section account-spending-section" aria-label={tr('Last 10 days spending')}>
           <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(spendingTotal, base || 'PHP'))}</strong></div>
-          <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(spendingTotal, currency) })}>
-            <Bars values={spendingHistory.map(day => day.total)} startLabel={tr('10 days ago')} endLabel={tr('Today')} />
+          <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(spendingTotal, base || 'PHP') })}>
+            <Bars values={spendingHistory.map(day => day.total)} startLabel={tr('9 days ago')} endLabel={tr('Today')} />
           </div>
         </section>
         <div className="account-hub-section">
