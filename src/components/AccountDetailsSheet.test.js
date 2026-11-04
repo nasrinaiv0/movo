@@ -15,7 +15,7 @@ jest.mock('./ui', () => {
 });
 jest.mock('./CardArt', () => {
   const React = require('react');
-  return { __esModule: true, default: ({ qrCode, onQrClick }) => React.createElement('div', { 'data-testid': 'card-art', 'data-qr': qrCode }, qrCode && React.createElement('button', { type: 'button', 'aria-label': 'Enlarge QR code', onClick: onQrClick }, 'QR')) };
+  return { __esModule: true, default: ({ a, qrCode, onQrClick }) => React.createElement('div', { 'data-testid': 'card-art', 'data-qr': qrCode, 'data-account-type': a?.account_type, 'data-account-name': a?.institution_name || a?.name }, qrCode && React.createElement('button', { type: 'button', 'aria-label': 'Enlarge QR code', onClick: onQrClick }, 'QR')) };
 });
 jest.mock('./AccountTile', () => {
   const React = require('react');
@@ -57,7 +57,10 @@ test('read-only account hub shows resolved QR artwork, supports Escape to close 
     await Promise.resolve();
   });
 
-  expect(el.querySelector('[data-testid="account-tile"]')?.getAttribute('data-qr')).toBe(qr);
+  expect(el.querySelector('[data-testid="card-art"]')?.getAttribute('data-qr')).toBe(qr);
+  expect(el.querySelector('[data-testid="card-art"]')?.getAttribute('data-account-type')).toBe('bank');
+  expect(el.querySelector('[data-testid="card-art"]')?.getAttribute('data-account-name')).toBe('BPI Savings');
+  expect(el.querySelector('[data-testid="account-tile"]')).toBeNull();
   expect(el.textContent).toContain('Add transaction');
   expect(el.textContent).not.toContain('Edit account');
   expect(el.textContent).not.toContain('Archive account');
