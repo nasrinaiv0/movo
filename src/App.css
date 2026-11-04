@@ -4542,3 +4542,10 @@ button.account-tile:active { transform: scale(.98); }
 /* Selected navigation icons always follow the user's chosen accent color. */
 .movo-app .bottom-nav .nav-item.nav-active:not(.nav-center) { color: var(--accent) !important; }
 .movo-app .side-nav .side-item.active .side-icon { color: var(--accent); }
+
+
+/* Remove the hard horizontal edge shadow from portrait payment cards.
+   Keep the card artwork, inset border and glossy face treatment unchanged. */
+.movo-app.movo-app .credit-card.ccx.orientation-portrait {
+  box-shadow: none !important;
+}
