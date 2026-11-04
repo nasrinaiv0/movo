@@ -176,3 +176,26 @@ test('bank-account goal allocations stay linked to the selected bank account', a
   }));
   act(() => root.unmount()); el.remove();
 });
+
+
+test('credit card planning fields stay grouped in a responsive card layout with readable stats', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const credit = { id: 'credit-ui', name: 'AUB Credit', institution_name: 'Asia United Bank (AUB)', mask: '2556', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -984 };
+  await act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, credit],
+    prefs: { accountStyles: { 'credit-ui': { minimumDue: '0', statementBalance: '984', billingDay: '5', paymentDueDate: '2026-11-05' } } },
+    toBase: value => value, go: jest.fn(),
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  const card = el.querySelector('.fp-credit-card');
+  expect(card).not.toBeNull();
+  expect(card.querySelector('.fp-credit-card-stats')).not.toBeNull();
+  expect(card.querySelectorAll('.fp-credit-card-stats > span')).toHaveLength(3);
+  expect(card.querySelectorAll('.fp-credit-card-fields')).toHaveLength(2);
+  expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(4);
+  expect(card.querySelector('.fp-credit-card-fields input[type="date"]')).not.toBeNull();
+  expect(card.querySelector('.fp-credit-card-fields input[type="number"][min="1"]')).not.toBeNull();
+  expect(card.querySelector('button').textContent).toContain('Record payment');
+  act(() => root.unmount()); el.remove();
+});
