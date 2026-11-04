@@ -43,6 +43,21 @@ export async function saveReminderPreferences(userId, input) {
   return unwrap(await db().from('payment_reminder_preferences').upsert(row).select().single());
 }
 
+export async function clearReminderSnooze(userId,event) {
+  if(!userId)throw new Error('Sign in to retry this payment reminder.');
+  if(!event?.source_type||!event?.source_id||!event?.occurrence_date)throw new Error('The reminder reference is incomplete.');
+  const base=()=>db().from('payment_reminder_events').delete().eq('user_id',userId)
+    .eq('source_type',event.source_type).eq('source_id',String(event.source_id))
+    .eq('occurrence_date',event.occurrence_date);
+  await Promise.all(['in_app','push'].map(channel=>unwrap(base().eq('channel',channel))));
+  return true;
+}
+export async function clearScheduleSnooze(id,userId) {
+  if(!id||!userId)throw new Error('Sign in to update this scheduled payment.');
+  return unwrap(await db().from('scheduled_transactions').update({snoozed_until:null,updated_at:new Date().toISOString()})
+    .eq('id',id).eq('user_id',userId).eq('status','scheduled').select('id').maybeSingle());
+}
+
 export async function updateSchedule(id, userId, changes) {
   if(!id||!userId)throw new Error('Sign in to update this schedule.');
   const allowed=['title','amount','currency','transaction_type','account_id','transfer_to_account_id','scheduled_for','frequency','category','notes','ends_on','reminder_days','timezone','reference_note'];
