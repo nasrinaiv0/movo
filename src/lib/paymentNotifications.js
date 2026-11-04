@@ -108,9 +108,18 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end,preferences.timezone);
       if(when<=today)when=moveOutOfQuietHours(new Date(today.getTime()+60000),preferences.quiet_start,preferences.quiet_end,preferences.timezone);
       if(when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
-      const previous=events.find(event=>event.channel==='push'&&event.source_type===type&&event.source_id===String(item.id)&&event.occurrence_date===date&&(Number(event.reminder_offset)===Number(offset)||(event.status==='dismissed'&&event.snoozed_until&&new Date(event.snoozed_until)>today)));
-      if(previous&&(previous.status==='sent'||(previous.status==='dismissed'&&previous.snoozed_until&&new Date(previous.snoozed_until)>today)))continue;
+      const matching=events.filter(event=>event.channel==='push'&&event.source_type===type&&event.source_id===String(item.id)&&event.occurrence_date===date);
+      const snoozed=matching.find(event=>event.status==='dismissed'&&event.snoozed_until&&new Date(event.snoozed_until)>today);
       const key=`${type}:${item.id}:${date}:${offset}`;
+      if(snoozed){
+        if(Number(snoozed.reminder_offset)===Number(offset)){
+          const snoozeAt=moveOutOfQuietHours(new Date(snoozed.snoozed_until),preferences.quiet_start,preferences.quiet_end,preferences.timezone);
+          if(snoozeAt.getTime()<=today.getTime()+MAX_DAYS*86400000)queue.push({id:stableId(key+':snooze'),title,body:`Reminder snoozed: ${body}`,schedule:{at:snoozeAt,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset,snoozed:true}});
+        }
+        continue;
+      }
+      const sent=matching.find(event=>event.status==='sent'&&Number(event.reminder_offset)===Number(offset));
+      if(sent)continue;
       queue.push({id:stableId(key),title,body,schedule:{at:when,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset}});
     }
   };
