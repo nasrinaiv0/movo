@@ -10,7 +10,7 @@ jest.mock('@capacitor/local-notifications', () => ({
 }));
 
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { inQuietHours, moveOutOfQuietHours, scheduledDates, syncPaymentNotifications } from './paymentNotifications';
+import { dateAtLocalTime, inQuietHours, moveOutOfQuietHours, scheduledDates, syncPaymentNotifications } from './paymentNotifications';
 
 const localDate = value => {
   const y=value.getFullYear(),m=String(value.getMonth()+1).padStart(2,'0'),d=String(value.getDate()).padStart(2,'0');
@@ -33,6 +33,11 @@ describe('payment notification scheduling', () => {
     expect(moved.getDate()).toBe(5);
     expect(moved.getHours()).toBe(7);
     expect(moved.getMinutes()).toBe(0);
+  });
+
+  test('converts scheduled clock times using the configured timezone', () => {
+    expect(dateAtLocalTime('2026-11-05','09:00','Asia/Manila').toISOString()).toBe('2026-11-05T01:00:00.000Z');
+    expect(dateAtLocalTime('2026-11-05','09:00','America/New_York').toISOString()).toBe('2026-11-05T14:00:00.000Z');
   });
 
   test('evaluates quiet hours in the saved timezone', () => {
