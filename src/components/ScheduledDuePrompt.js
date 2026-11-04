@@ -4,7 +4,7 @@ import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
-import { snoozeSchedule } from '../lib/paymentReminderCenter';
+import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation } from '../lib/paymentReminderCenter';
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const shift = (date, days) => { const value=new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate()+days); return value.toISOString().slice(0,10); };
@@ -20,22 +20,45 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = useCallback(async () => {
     const date=today();
-    let dueSchedules=[];
-    let dueBills=[];
-    if(session?.user?.id){
-      const [scheduled,bills,occurrences]=await Promise.all([
-        listScheduledTransactions(),
-        listBills(),
-        listOccurrences(shift(date,1),shift(date,-62)),
+    const userId=session?.user?.id;
+    let schedules=[], billsDue=[];
+    let preferences={enabled:true,reminder_days:[0,1,3],timezone:'Asia/Manila'};
+    let events=[];
+    if(userId){
+      const [scheduled,bills,occurrences,prefs,history]=await Promise.all([
+        listScheduledTransactions(), listBills(), listOccurrences(shift(date,31),shift(date,-62)),
+        getReminderPreferences(userId), listReminderEvents(userId,100),
       ]);
+      preferences=prefs||preferences; events=history||[];
       const billMap=new Map(bills.map(b=>[b.id,b]));
-      dueSchedules=scheduled.filter(row=>row.status==='scheduled'&&row.scheduled_for<=date&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString())).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
-      dueBills=occurrences.filter(o=>o.due_date<=date&&amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
+      schedules=scheduled.filter(row=>row.status==='scheduled'&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString()))
+        .map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
+      billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
         .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
     }
-    const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\d{4}-\d{2}-\d{2}$/.test(s.start||'')&&s.start<=date)
+    const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(s.start||''))
       .map(s=>({kind:'subscription',item:s,date:s.start}));
-    return [...dueSchedules,...dueBills,...dueSubs].sort((a,b)=>a.date.localeCompare(b.date));
+    const candidates=[...schedules,...billsDue,...subscriptionsDue];
+    if(preferences.enabled===false)return [];
+    const daysUntil=value=>Math.floor((new Date(`${value}T12:00:00Z`).getTime()-new Date(`${date}T12:00:00Z`).getTime())/86400000);
+    const eligible=candidates.filter(entry=>{
+      const offset=daysUntil(entry.date);
+      const itemDays=entry.item.reminder_days;
+      const allowed=Array.isArray(itemDays)?itemDays:(preferences.reminder_days||[0,1,3]);
+      if(offset>0&&!allowed.includes(offset))return false;
+      if(offset<0&&offset < -30)return false;
+      const type=entry.kind;
+      const sourceId=String(entry.kind==='bill'?entry.item.id:entry.item.id);
+      const previous=events.find(e=>e.source_type===type&&e.source_id===sourceId&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
+      return !previous || (previous.snoozed_until&&previous.snoozed_until<=new Date().toISOString());
+    }).sort((a,b)=>a.date.localeCompare(b.date));
+    if(userId&&eligible.length){
+      await Promise.all(eligible.map(entry=>recordReminderEvent(userId,{
+        source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,
+        reminder_offset:Math.max(0,daysUntil(entry.date)),status:'sent',
+      }).catch(()=>null)));
+    }
+    return eligible;
   },[session?.user?.id,subscriptions]);
   const setActive = useCallback(next => {
     setEntry(next||null);
@@ -53,7 +76,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
     return()=>{live=false;};
   },[loadDue,setActive]);
-  const close=async()=>{ if(entry?.kind==='scheduled'&&session?.user?.id){try{await snoozeSchedule(entry.item.id,session.user.id,new Date(Date.now()+86400000).toISOString());}catch{/* Keep the prompt dismissible while offline. */}} setActive(null); };
+  const close=async()=>{ if(session?.user?.id&&entry){const until=new Date(Date.now()+86400000).toISOString();try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);else await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:0},until);}catch{/* Keep the prompt dismissible while offline. */}} setActive(null); };
   const log=async event=>{
     event.preventDefault();if(!entry)return;
     if(entry.kind==='subscription'){onSubscriptionLog?.(entry.item);setActive(null);return;}
