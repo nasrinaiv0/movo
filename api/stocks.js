@@ -1,6 +1,6 @@
 const BASE = 'https://api.twelvedata.com';
 const QUOTES = new Set(['PHP','USD','EUR','GBP','JPY','AUD','CAD','SGD','CHF','HKD','CNY','INR','KRW','NZD','ZAR','BRL','MXN','SEK','NOK','DKK','PLN','TRY','THB','IDR','MYR']);
-function json(res,status,payload){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(payload));}
+function json(res,status,payload){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');if(!res.getHeader||!res.getHeader('Cache-Control'))res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(payload));}
 function safeSymbol(value){const s=String(value||'').trim().toUpperCase();return /^[A-Z0-9][A-Z0-9:._-]{0,24}$/.test(s)?s:null;}
 function safeQuote(value){const s=String(value||'USD').trim().toUpperCase();return QUOTES.has(s)?s:null;}
 function num(v){const n=Number(v);return Number.isFinite(n)?n:null;}
@@ -15,7 +15,6 @@ module.exports=async function handler(req,res){
  if(!key)return json(res,503,{error:'stocks_provider_not_configured',message:'Configure the licensed Twelve Data key as the server-only TWELVE_DATA_API_KEY environment variable.'});
  const action=String(req.query&&req.query.action||'search');
  const symbol=safeSymbol(req.query&&req.query.symbol);
- const quote=safeQuote(req.query&&req.query.quote);
  if(!['search','quote','history'].includes(action))return json(res,400,{error:'invalid_action'});
  if(action==='search'){
   const query=String(req.query&&req.query.query||'').trim().slice(0,80);
@@ -24,7 +23,6 @@ module.exports=async function handler(req,res){
   try{const upstream=await fetch(url.toString(),{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!upstream.ok)return json(res,502,{error:'stocks_provider_unavailable'});const data=await upstream.json();if(data.status==='error')return json(res,502,{error:'stocks_provider_error'});const results=(Array.isArray(data.data)?data.data:[]).slice(0,20).map(x=>({symbol:safeSymbol(x.symbol),name:String(x.instrument_name||''),exchange:String(x.exchange||''),mic_code:String(x.mic_code||''),country:String(x.country||''),currency:String(x.currency||''),type:String(x.instrument_type||'Stock')})).filter(x=>x.symbol&&x.name);res.setHeader('Cache-Control','public, s-maxage=300, stale-while-revalidate=600');return json(res,200,{results:results.map(x=>({...x,id:safeSymbol(x.symbol+':'+(x.exchange||''))||x.symbol})),provider:'Twelve Data',fetchedAt:new Date().toISOString()});}catch{return json(res,502,{error:'stocks_provider_unavailable'});}
  }
  if(!symbol)return json(res,400,{error:'invalid_symbol'});
- if(action==='quote'&&!quote)return json(res,400,{error:'invalid_quote_currency'});
  const url=new URL(action==='quote'?'/quote':'/time_series',BASE);url.searchParams.set('symbol',symbol);url.searchParams.set('apikey',key);
  if(action==='quote')url.searchParams.set('interval','1min');
  else{const outputsize=Math.max(2,Math.min(500,Number(req.query&&req.query.outputsize)||90));url.searchParams.set('interval','1day');url.searchParams.set('outputsize',String(outputsize));}
