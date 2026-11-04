@@ -20,7 +20,7 @@ export function sortList(list, sort) {
 const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
 
 export function billingCycleOptions(months = [], currentMonth) {
-  const monthNames = months.map(value => monthLabel(value).replace(/\\s+\\d{4}$/, ''));
+  const monthNames = months.map(value => monthLabel(value).replace(/\s+\d{4}$/, ''));
   const duplicateNames = new Set(monthNames.filter((name, index) => monthNames.indexOf(name) !== index));
   return [{ value: 'all', label: 'All' }, ...months.map((value, index) => ({
     value,
