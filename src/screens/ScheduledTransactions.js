@@ -7,20 +7,53 @@ import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTr
 import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
 import { requestPaymentNotificationPermission } from '../lib/paymentNotifications';
 import { listPaymentAttempts, recordPaymentAttempt } from '../lib/paymentAttempts';
+import { listBills, listOccurrences } from '../lib/billsRepository';
+import { amountRemaining, occurrenceState } from '../lib/bills';
+import { listLoans, listReceivables } from '../lib/obligationsRepository';
 
 const day = () => new Date().toLocaleDateString('en-CA');
+const shiftDate = (date,days) => { const value=new Date(date+'T12:00:00Z');value.setUTCDate(value.getUTCDate()+days);return value.toISOString().slice(0,10); };
 const blank = currency => ({ title:'', transaction_type:'expense', amount:'', currency, account_id:'', transfer_to_account_id:'', scheduled_for:day(), frequency:'once', category:'Other', notes:'', reminder_days:[0,1,3], timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Manila', ends_on:'' });
 const dateLabel = value => new Date(`${value}T12:00:00`).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
 export default function ScheduledTransactions({ c }) {
   const { accountsView=[], session, show, base='PHP', go, notify } = c;
   const accounts=accountsView.filter(a=>!a.is_archived && ['bank','e_wallet','cash'].includes(a.account_type));
-  const [items,setItems]=useState([]); const [sheet,setSheet]=useState(null); const [form,setForm]=useState(()=>blank(base));
+  const [items,setItems]=useState([]); const [obligations,setObligations]=useState([]); const [sheet,setSheet]=useState(null); const [form,setForm]=useState(()=>blank(base));
   const [busy,setBusy]=useState(false); const [error,setError]=useState(''); const [notice,setNotice]=useState('');
   const [month,setMonth]=useState(()=>new Date()); const [calendar,setCalendar]=useState(false);
   const [reminderPrefs,setReminderPrefs]=useState({enabled:true,reminder_days:[0,1,3],quiet_start:'',quiet_end:''});
   const [reminderEvents,setReminderEvents]=useState([]); const [paymentAttempts,setPaymentAttempts]=useState([]); const [attemptNote,setAttemptNote]=useState('');
   const reload=useCallback(async()=>setItems(await listScheduledTransactions()),[]);
+  const loadObligations=useCallback(async()=>{
+    const today=day();let rows=[];
+    if(session?.user?.id){
+      const [bills,occurrences,loans,receivables]=await Promise.all([
+        listBills(),listOccurrences(shiftDate(today,31),shiftDate(today,-365)),listLoans(),listReceivables(),
+      ]);
+      const billMap=new Map(bills.map(b=>[b.id,b]));
+      rows.push(...occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,today)!=='cancelled').map(o=>({
+        id:o.id,kind:'bill',name:billMap.get(o.bill_id)?.name||tr('Bill'),date:o.due_date,
+        amount:amountRemaining(o),currency:o.currency,
+      })));
+      rows.push(...loans.filter(x=>Number(x.outstanding_principal)>0&&x.due_date).map(x=>({
+        id:x.id,kind:'loan',name:x.name,date:x.due_date,amount:x.outstanding_principal,currency:x.currency,
+      })));
+      rows.push(...receivables.filter(x=>Number(x.outstanding_amount)>0&&x.due_date).map(x=>({
+        id:x.id,kind:'receivable',name:x.name,date:x.due_date,amount:x.outstanding_amount,currency:x.currency,
+      })));
+    }
+    rows.push(...(c.subscriptions||[]).filter(x=>x.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.start||'')).map(x=>({
+      id:x.id,kind:'subscription',name:x.name,date:x.start,amount:Number(x.amount)||0,currency:x.currency||base,
+    })));
+    const styles=c.prefs?.accountStyles||{};
+    rows.push(...accountsView.filter(x=>!x.is_archived&&x.account_type==='card'&&x.cardKind==='credit').map(card=>{
+      const style=styles[card.id]||{};const owed=Math.max(0,-Number(card.balance||0));
+      return {id:card.id,kind:'credit_card',name:card.institution_name||card.name,date:style.paymentDueDate||'',amount:Number(style.minimumDue)||owed,currency:card.currency||base};
+    }).filter(x=>x.date&&x.amount>0));
+    setObligations(rows.filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)));
+  },[session?.user?.id,c.subscriptions,c.prefs?.accountStyles,accountsView,base]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
+  useEffect(()=>{loadObligations().catch(e=>setError(e.message||tr('Could not load payment obligations.')));},[loadObligations]);
   useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));listReminderEvents(session?.user?.id,12).then(setReminderEvents).catch(()=>setReminderEvents([]));listPaymentAttempts(session?.user?.id,12).then(setPaymentAttempts).catch(()=>setPaymentAttempts([]));},[session?.user?.id]);
   const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()&&(!x.snoozed_until||x.snoozed_until<=new Date().toISOString())),[items]);
   const cash=(amount,currency)=>shown(show,money(amount,currency));
@@ -35,7 +68,7 @@ export default function ScheduledTransactions({ c }) {
   const monthKey=`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}-`;
   return <>
     <RootHeader title={tr('Scheduled')} onSearch={c.openSearch} onBell={()=>go('Notifications')} onSettings={()=>go('Settings')} unread={c.unread} action={{icon:'plus',label:tr('Schedule transaction'),onClick:startCreate}}/>
-    <section className="card total-card"><small>{tr('Due to log')}</small><div className="balance-amount">{due.length}</div><p className="form-note">{tr('Review and confirm each due item. MOVO never initiates a payment or transfer.')}</p></section>
+    <section className="card total-card"><small>{tr('Due to log')}</small><div className="balance-amount">{due.length+obligations.filter(x=>x.date<=day()).length}</div><p className="form-note">{tr('Review and confirm each due item. MOVO never initiates a payment or transfer.')}</p></section>
     <div className="chip-row"><button className={calendar?'chip selected':'chip'} onClick={()=>setCalendar(true)}>{tr('Calendar')}</button><button className={!calendar?'chip selected':'chip'} onClick={()=>setCalendar(false)}>{tr('List')}</button><button className="chip" onClick={()=>setSheet({kind:'reminders'})}>{tr('Reminder settings')}</button></div>
     {calendar&&<section className="card pad">
       <div className="detail-row"><button className="round-button flat" onClick={()=>setMonth(new Date(month.getFullYear(),month.getMonth()-1,1))} aria-label={tr('Previous month')}><Icon name="chevron-left"/></button><strong>{month.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</strong><button className="round-button flat" onClick={()=>setMonth(new Date(month.getFullYear(),month.getMonth()+1,1))} aria-label={tr('Next month')}><Icon name="chevron-right"/></button></div>
@@ -48,6 +81,12 @@ export default function ScheduledTransactions({ c }) {
       <span className="fp-main"><strong>{item.title}</strong><small>{dateLabel(item.scheduled_for)} · {tr(item.frequency==='once'?'One time':item.frequency==='weekly'?'Weekly':item.frequency==='monthly'?'Monthly':'Yearly')}</small><small>{item.status==='paused'?tr('Paused'):accounts.find(a=>a.id===item.account_id)?.name||tr('Account not available')}</small></span>
       <span className="fp-amount"><b>{cash(item.amount,item.currency)}</b><button type="button" className="link-button" onClick={()=>setSheet({kind:'actions',item})}>{tr('Manage')}</button></span>
     </article>):<p className="form-note">{tr('No scheduled payments or transfers yet.')}</p>}</div></>}
+    <SectionTitle>{tr('Upcoming & overdue obligations')}</SectionTitle>
+    <div className="card list-card">{obligations.length?obligations.slice(0,20).map(item=><button type="button" className="fp-row" key={item.kind+'-'+item.id} onClick={()=>go(item.kind==='subscription'?'Subscriptions':'FinancialPlanning')}>
+      <span className={'stat-icon tone-'+(item.date<day()?'red':item.kind==='subscription'?'purple':'orange')}><Icon name={item.kind==='subscription'?'refresh-cw':item.kind==='credit_card'?'credit-card':item.kind==='loan'?'landmark':item.kind==='receivable'?'hand-coins':'receipt'} size={17}/></span>
+      <span className="fp-main"><strong>{item.name}</strong><small>{tr(item.kind==='credit_card'?'Credit card':item.kind==='receivable'?'Owed to you':item.kind==='subscription'?'Subscription renewal':item.kind==='loan'?'Loan / debt':'Bill')} · {dateLabel(item.date)}</small></span>
+      <span className="fp-amount"><b>{cash(item.amount,item.currency)}</b><small>{tr(item.date<day()?'Overdue':item.date===day()?'Due today':'Upcoming')}</small></span>
+    </button>):<p className="form-note">{tr('No upcoming or overdue bills, loans, subscriptions or card payments.')}</p>}</div>
     {(sheet?.kind==='create'||sheet?.kind==='edit')&&<Sheet title={tr(sheet.kind==='edit'?'Edit schedule':'Schedule payment or transfer')} subtitle={tr('Choose the account now. MOVO will ask you to confirm when it is due.')} onClose={()=>setSheet(null)} label={tr('Schedule transaction')}>
       <form className="sheet-form" onSubmit={save}>
         {error&&<p className="app-alert" role="alert">{error}</p>}
