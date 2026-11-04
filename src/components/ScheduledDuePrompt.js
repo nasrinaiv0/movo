@@ -173,13 +173,13 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       else if(entry.kind==='receivable') await recordReceivableEvent({receivable_id:item.id,event_type:'collected',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Collection recorded from MOVO reminder'});
       else if(entry.kind==='credit_card') {
         await onCreditCardLog?.(item,Number(amount));
-        if(session?.user?.id) await recordReminderEvent(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,status:'dismissed'});
-        else {const key=reminderActionKey(entry);dismissedThisSession.current.add(key);const next={...localActions,[key]:{status:'logged',at:new Date().toISOString()}};window.localStorage.setItem('movo.localPaymentReminderActions.v1',JSON.stringify(next));setLocalActions(next);}
+        if(!session?.user?.id) {const key=reminderActionKey(entry);dismissedThisSession.current.add(key);const next={...localActions,[key]:{status:'logged',at:new Date().toISOString()}};window.localStorage.setItem('movo.localPaymentReminderActions.v1',JSON.stringify(next));setLocalActions(next);}
       }
       if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
         source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
         amount:Number(loggedAmount||amount||item.amount||0)||null,currency:billCurrency,account_id:loggedAccountId,note:attemptNoteForLog,
       }).catch(()=>null);
+      if(session?.user?.id) await recordReminderEvent(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,status:'dismissed'}).catch(()=>null);
       await onLogged?.();
       const queue=await loadDue();
       setActive(queue[0]||null);
