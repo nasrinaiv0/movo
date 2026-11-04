@@ -71,7 +71,7 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       const due=asDate(date); due.setDate(due.getDate()-Number(offset));
       const todayStart=new Date(today.getFullYear(),today.getMonth(),today.getDate());
       const dueStart=asDate(date);
-      if(dueStart<todayStart&&Number(offset)>0)continue;
+      if(dueStart<=todayStart&&Number(offset)>0)continue;
       if(dueStart<new Date(todayStart.getTime()-MAX_DAYS*86400000))continue;
       const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
       let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end);
