@@ -27,9 +27,25 @@ const stableId = value => {
   return ID_BASE + (hash>>>0)%1800000000;
 };
 const asDate = value => new Date(`${value}T12:00:00`);
-const dayString = value => {
-  const y=value.getFullYear(),m=String(value.getMonth()+1).padStart(2,'0'),d=String(value.getDate()).padStart(2,'0');
-  return `${y}-${m}-${d}`;
+const scheduledDates = item => {
+  const dates=[item.scheduled_for];
+  if(!['weekly','monthly','yearly'].includes(item.frequency))return dates;
+  let cursor=asDate(item.scheduled_for);
+  const originalDay=cursor.getDate();
+  for(let i=0;i<8;i++){
+    const next=new Date(cursor);
+    if(item.frequency==='weekly')next.setDate(next.getDate()+7);
+    if(item.frequency==='monthly'){
+      next.setDate(1);next.setMonth(next.getMonth()+1);
+      next.setDate(Math.min(originalDay,new Date(next.getFullYear(),next.getMonth()+1,0).getDate()));
+    }
+    if(item.frequency==='yearly')next.setFullYear(next.getFullYear()+1);
+    const date=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
+    if(item.ends_on&&date>item.ends_on)break;
+    if(next.getTime()>Date.now()+(MAX_DAYS+30)*86400000)break;
+    dates.push(date);cursor=next;
+  }
+  return dates;
 };
 
 export async function requestPaymentNotificationPermission() {
@@ -60,7 +76,7 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       queue.push({id:stableId(key),title,body,schedule:{at:when,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset}});
     }
   };
-  schedules.filter(x=>x.status==='scheduled').forEach(x=>add('scheduled',x,x.scheduled_for,x.reminder_days||offsets,'Payment reminder',`${x.title} is due ${x.scheduled_for}.`));
+  schedules.filter(x=>x.status==='scheduled').forEach(x=>scheduledDates(x).forEach(date=>add('scheduled',x,date,x.reminder_days||offsets,'Payment reminder',`${x.title} is due ${date}.`)));
   bills.forEach(x=>add('bill',x,x.due_date,offsets,'Bill reminder',`${x.title||x.name||'A bill'} is due ${x.due_date}.`));
   subscriptions.filter(x=>x.status==='active').forEach(x=>add('subscription',x,x.start,offsets,'Subscription renewal',`${x.name||'A subscription'} renews ${x.start}.`));
   const pending=(await LocalNotifications.getPending()).notifications.filter(n=>n.id>=ID_BASE&&n.id<ID_BASE+1800000000);
