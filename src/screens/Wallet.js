@@ -63,7 +63,7 @@ function SpendingBars({ days = [] }) {
   const values = days.slice(-10);
   const max = Math.max(0, ...values.map(day => Number(day.total) || 0));
   return <div className="wallet-spending-bars" aria-hidden="true">
-    <div className="wallet-spending-bars-title">{tr('Last 10 Days Spending')}</div>
+    <div className="wallet-spending-bars-title">{tr('Last 10 days spent')}</div>
     <div className="wallet-spending-bars-plot">
       {values.map((day, index) => {
         const amount = Math.max(0, Number(day.total) || 0);
