@@ -76,13 +76,14 @@ export default function Cashback({ c }) {
           <span className="fp-main"><strong>{account.institution_name || account.name}</strong><small>{tr(account.account_type === 'e_wallet' ? 'Digital wallet' : 'Bank account')}</small></span>
           <label className="legal-disclosure-check"><input type="checkbox" checked={!!rule.enabled} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, enabled: event.target.checked } })} /><span>{tr('Auto')}</span></label>
         </div>
-        <div className="form-grid">
-          <label>{tr('Cashback rate (%)')}<input type="number" min="0" max="100" step="0.01" value={rule.rate ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, rate: event.target.value } })} /></label>
-          <label>{tr('Maximum per transaction')}<input type="number" min="0" step="0.01" value={rule.cap ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, cap: event.target.value } })} /></label>
+        <div className="cashback-rule-fields">
+          <label className="cashback-field"><span>{tr('Cashback rate (%)')}</span><input className="cashback-input" type="number" inputMode="decimal" min="0" max="100" step="0.01" placeholder="e.g. 1.5" aria-label={tr('Cashback rate (%)')} value={rule.rate ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, rate: event.target.value } })} /></label>
+          <label className="cashback-field"><span>{tr('Maximum per transaction')}</span><input className="cashback-input" type="number" inputMode="decimal" min="0" step="0.01" placeholder={tr('No limit')} aria-label={tr('Maximum per transaction')} value={rule.cap ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, cap: event.target.value } })} /></label>
         </div>
-        <small className="form-note">{tr('Estimate only · based on logged purchases')}</small>
+        <small className="form-note cashback-hint">{tr('Estimate only · based on logged purchases')}</small>
       </article>;
     })}
+    </div>
 
     <SectionTitle>{tr('Estimated automatic cashback')}</SectionTitle>
     <div className="card list-card">
