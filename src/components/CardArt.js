@@ -260,7 +260,24 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
         <div className="ccx-figures">
           {showNumber && <span className="ccx-number">{`•••• •••• •••• ${a.mask || '••••'}`}</span>}
           {!showNumber && showBalance && <small className="ccx-caption">{credit ? tr('Available credit') : tr('Balance')}</small>}
-          {showBalance && (() => { const ci = creditInfo(a); const amount = ci ? ci.available : a.balance; const text = shown(show, money(amount, a.currency)); return <b className="ccx-balance" style={{ '--len': text.length }} title={ci ? tr('Available credit') : undefined}>{text}</b>; })()}
+          {showBalance && (() => {
+            const ci = creditInfo(a);
+            if (credit && ci) {
+              const spent = shown(show, money(ci.owed, a.currency));
+              const limit = shown(show, money(ci.limit, a.currency));
+              const utilization = ci.usedPercent;
+              const level = utilization >= 80 ? 'high' : utilization >= 50 ? 'medium' : 'low';
+              return <div className={`ccx-credit-usage usage-${level}`}>
+                <div className="ccx-credit-values"><span><small>{tr('Spent')}</small><b>{spent}</b></span><span className="ccx-credit-limit"><small>{tr('Limit')}</small><b>{limit}</b></span></div>
+                <div className="ccx-credit-track" role="progressbar" aria-label={tr('Credit utilization')} aria-valuemin="0" aria-valuemax="100" aria-valuenow={utilization} aria-valuetext={tr('{percent}% of credit limit used', { percent: utilization })}>
+                  <span className="ccx-credit-fill" style={{ width: `${utilization}%` }} />
+                </div>
+              </div>;
+            }
+            const amount = ci ? ci.available : a.balance;
+            const text = shown(show, money(amount, a.currency));
+            return <b className="ccx-balance" style={{ '--len': text.length }} title={ci ? tr('Available credit') : undefined}>{text}</b>;
+          })()}
         </div>
         {networkName && <span className={`ccx-net net-${NETWORK_KEY[network] || 'other'}`} role="img" aria-label={networkName}>{network === 'mastercard' ? <><i /><i /></> : NETWORK_MARK[network] || networkName}</span>}
       </div>

@@ -3142,6 +3142,24 @@ button.account-tile:active { transform: scale(.98); }
 .ccx-caption { font-size: 2.3cqw; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
 .ccx-holder { font-size: 2.6cqw; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ccx-balance { font-size: 5.8cqw; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ccx-credit-usage { display:grid; gap:1.7cqw; width:min(66cqw,100%); min-width:0; }
+.ccx-credit-values { display:flex; align-items:flex-end; gap:4cqw; min-width:0; }
+.ccx-credit-values span { display:grid; gap:.45cqw; min-width:0; }
+.ccx-credit-values small { font-size:2.35cqw; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:.76; }
+.ccx-credit-values b { font-size:4.25cqw; line-height:1.08; font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ccx-credit-limit b { font-size:3.55cqw; opacity:.9; }
+.ccx-credit-track { height:1.65cqw; min-height:4px; max-height:9px; width:100%; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+.ccx-credit-fill { display:block; height:100%; border-radius:inherit; background:#42c987; transition:width .25s ease,background-color .25s ease; }
+.usage-medium .ccx-credit-fill { background:#f5b942; }
+.usage-high .ccx-credit-fill { background:#ff626b; }
+.credit-card.ccx.ink-dark .ccx-credit-track { background:rgba(0,0,0,.14); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+.credit-card.ccx.orientation-portrait .ccx-credit-usage { width:min(76cqw,100%); gap:2.3cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-values { gap:3cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-values small { font-size:3.1cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-values b { font-size:5.4cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-limit b { font-size:4.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-track { height:2.2cqw; }
+
 .ccx-net { flex: none; display: inline-flex; align-items: center; font-size: 6.6cqw; font-weight: 900; font-style: italic; letter-spacing: -.03em; line-height: 1; }
 .ccx-net.net-mastercard { position: relative; width: 12.6cqw; height: 8cqw; }
 .ccx-net.net-mastercard i { position: absolute; top: 0; width: 8cqw; height: 8cqw; border-radius: 50%; background: #eb001b; }
