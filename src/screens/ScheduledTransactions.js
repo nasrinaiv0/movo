@@ -17,11 +17,9 @@ export default function ScheduledTransactions({ c }) {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
-  const [prompted,setPrompted]=useState(false);
   const reload=useCallback(async()=>setItems(await listScheduledTransactions()),[]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
   const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()),[items]);
-  useEffect(()=>{if(!prompted&&due.length){setSheet({kind:'due',item:due[0]});setPrompted(true);}},[due,prompted]);
   const save=async e=>{e.preventDefault();setBusy(true);setError('');try{await createScheduledTransaction(form,session?.user?.id);await reload();setSheet(null);setNotice(tr('Schedule saved.'));}catch(err){setError(err.message||tr('Could not save schedule.'));}finally{setBusy(false);}};
   const log=async(item,accountId,transferTo)=>{setBusy(true);setError('');try{await logScheduledTransaction(item,accountId,transferTo);await reload();setSheet(null);setNotice(tr('Transaction logged.'));notify?.(tr('Transaction logged.'));}catch(err){setError(err.message||tr('Could not log transaction.'));}finally{setBusy(false);}};
   const cash=(amount,currency)=>shown(show,money(amount,currency));
