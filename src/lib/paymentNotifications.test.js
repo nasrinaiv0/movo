@@ -35,6 +35,13 @@ describe('payment notification scheduling', () => {
     expect(moved.getMinutes()).toBe(0);
   });
 
+  test('evaluates quiet hours in the saved timezone', () => {
+    const instant=new Date('2026-11-04T14:30:00.000Z'); // 22:30 in Manila
+    expect(inQuietHours(instant,'22:00','07:00','Asia/Manila')).toBe(true);
+    const moved=moveOutOfQuietHours(instant,'22:00','07:00','Asia/Manila');
+    expect(moved.toISOString()).toBe('2026-11-04T23:00:00.000Z'); // 07:00 next day in Manila
+  });
+
   test('keeps monthly recurrence on the last valid day of shorter months', () => {
     const dates=scheduledDates({scheduled_for:'2026-01-31',frequency:'monthly'});
     expect(dates.slice(0,3)).toEqual(['2026-01-31','2026-02-28','2026-03-31']);
