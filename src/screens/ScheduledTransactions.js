@@ -4,7 +4,7 @@ import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
-import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule } from '../lib/paymentReminderCenter';
+import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences } from '../lib/paymentReminderCenter';
 
 const day = () => new Date().toLocaleDateString('en-CA');
 const blank = currency => ({ title:'', transaction_type:'expense', amount:'', currency, account_id:'', transfer_to_account_id:'', scheduled_for:day(), frequency:'once', category:'Other', notes:'', reminder_days:[0,1,3], timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Manila', ends_on:'' });
@@ -15,8 +15,10 @@ export default function ScheduledTransactions({ c }) {
   const [items,setItems]=useState([]); const [sheet,setSheet]=useState(null); const [form,setForm]=useState(()=>blank(base));
   const [busy,setBusy]=useState(false); const [error,setError]=useState(''); const [notice,setNotice]=useState('');
   const [month,setMonth]=useState(()=>new Date()); const [calendar,setCalendar]=useState(false);
+  const [reminderPrefs,setReminderPrefs]=useState({enabled:true,reminder_days:[0,1,3],quiet_start:'',quiet_end:''});
   const reload=useCallback(async()=>setItems(await listScheduledTransactions()),[]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
+  useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));},[session?.user?.id]);
   const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()),[items]);
   const cash=(amount,currency)=>shown(show,money(amount,currency));
   const startCreate=()=>{setForm(blank(base));setError('');setSheet({kind:'create'});};
@@ -31,7 +33,7 @@ export default function ScheduledTransactions({ c }) {
   return <>
     <RootHeader title={tr('Scheduled')} onSearch={c.openSearch} onBell={()=>go('Notifications')} onSettings={()=>go('Settings')} unread={c.unread} action={{icon:'plus',label:tr('Schedule transaction'),onClick:startCreate}}/>
     <section className="card total-card"><small>{tr('Due to log')}</small><div className="balance-amount">{due.length}</div><p className="form-note">{tr('Review and confirm each due item. MOVO never initiates a payment or transfer.')}</p></section>
-    <div className="chip-row"><button className={calendar?'chip selected':'chip'} onClick={()=>setCalendar(true)}>{tr('Calendar')}</button><button className={!calendar?'chip selected':'chip'} onClick={()=>setCalendar(false)}>{tr('List')}</button></div>
+    <div className="chip-row"><button className={calendar?'chip selected':'chip'} onClick={()=>setCalendar(true)}>{tr('Calendar')}</button><button className={!calendar?'chip selected':'chip'} onClick={()=>setCalendar(false)}>{tr('List')}</button><button className="chip" onClick={()=>setSheet({kind:'reminders'})}>{tr('Reminder settings')}</button></div>
     {calendar&&<section className="card pad">
       <div className="detail-row"><button className="round-button flat" onClick={()=>setMonth(new Date(month.getFullYear(),month.getMonth()-1,1))} aria-label={tr('Previous month')}><Icon name="chevron-left"/></button><strong>{month.toLocaleDateString(undefined,{month:'long',year:'numeric'})}</strong><button className="round-button flat" onClick={()=>setMonth(new Date(month.getFullYear(),month.getMonth()+1,1))} aria-label={tr('Next month')}><Icon name="chevron-right"/></button></div>
       <div className="schedule-calendar">{['M','T','W','T','F','S','S'].map((x,i)=><small key={i}>{x}</small>)}{Array.from({length:offset},(_,i)=><span key={'e'+i}/>)}{days.map(d=>{const date=monthKey+String(d).padStart(2,'0');const matches=items.filter(x=>x.scheduled_for===date);return <button type="button" key={date} className={matches.length?'has-schedule':''} onClick={()=>matches[0]&&setSheet({kind:'actions',item:matches[0]})}>{d}{matches.length>0&&<i/>}</button>;})}</div>
@@ -57,6 +59,16 @@ export default function ScheduledTransactions({ c }) {
         <label>{tr('Category')}<input maxLength="60" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/></label>
         <label>{tr('Reminder intervals')}<select multiple value={(form.reminder_days||[]).map(String)} onChange={e=>setForm({...form,reminder_days:Array.from(e.target.selectedOptions).map(o=>Number(o.value))})}><option value="0">{tr('On due date')}</option><option value="1">{tr('1 day before')}</option><option value="2">{tr('2 days before')}</option><option value="3">{tr('3 days before')}</option><option value="7">{tr('7 days before')}</option><option value="14">{tr('14 days before')}</option></select></label>
         <button className="primary-button" disabled={busy}>{tr(sheet.kind==='edit'?'Save changes':'Save schedule')}</button>
+      </form>
+    </Sheet>}
+    {sheet?.kind==='reminders'&&<Sheet title={tr('Reminder settings')} subtitle={tr('Choose when MOVO shows in-app payment reminders.')} onClose={()=>setSheet(null)} label={tr('Reminder settings')}>
+      <form className="sheet-form" onSubmit={async e=>{e.preventDefault();await run(async()=>{await saveReminderPreferences(session?.user?.id,reminderPrefs);setSheet(null);});}}>
+        <label className="toggle-row"><span>{tr('Payment reminders')}</span><input type="checkbox" checked={reminderPrefs.enabled!==false} onChange={e=>setReminderPrefs({...reminderPrefs,enabled:e.target.checked})}/></label>
+        <fieldset><legend>{tr('Remind me')}</legend>{[{v:0,l:'On due date'},{v:1,l:'1 day before'},{v:2,l:'2 days before'},{v:3,l:'3 days before'},{v:5,l:'5 days before'},{v:7,l:'7 days before'},{v:14,l:'14 days before'},{v:30,l:'30 days before'}].map(x=><label key={x.v} className="toggle-row"><span>{tr(x.l)}</span><input type="checkbox" checked={(reminderPrefs.reminder_days||[]).includes(x.v)} onChange={e=>setReminderPrefs({...reminderPrefs,reminder_days:e.target.checked?[...(reminderPrefs.reminder_days||[]),x.v]:(reminderPrefs.reminder_days||[]).filter(n=>n!==x.v)})}/></label>)}</fieldset>
+        <label>{tr('Quiet hours start')}<input type="time" value={reminderPrefs.quiet_start||''} onChange={e=>setReminderPrefs({...reminderPrefs,quiet_start:e.target.value||null})}/></label>
+        <label>{tr('Quiet hours end')}<input type="time" value={reminderPrefs.quiet_end||''} onChange={e=>setReminderPrefs({...reminderPrefs,quiet_end:e.target.value||null})}/></label>
+        <p className="form-note">{tr('Quiet hours are saved as preferences but do not delay prompts while MOVO is open.')}</p>
+        {error&&<p className="app-alert" role="alert">{error}</p>}<button className="primary-button" disabled={busy}>{tr('Save reminder settings')}</button>
       </form>
     </Sheet>}
     {sheet?.kind==='due'&&<DueSheet item={sheet.item} accounts={accounts} busy={busy} error={error} onClose={()=>setSheet(null)} onLog={log}/>}
