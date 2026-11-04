@@ -4666,3 +4666,22 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .fp-plan-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 0 2px; }
 .movo-app .fp-plan-list-head strong { color: var(--muted); font-size: 12px; font-weight: 650; }
 .movo-app .fp-plan-list-head .link-button { flex: none; min-height: 30px; padding: 0 2px; font-size: 12px; }
+
+/* Credit-card remaining-credit indicator. Compact, responsive and theme-aware. */
+.movo-app .remaining-credit-card { display:grid; gap:8px; padding:14px 16px; min-width:0; }
+.movo-app .remaining-credit-content { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:0; }
+.movo-app .remaining-credit-copy { display:grid; gap:4px; min-width:0; }
+.movo-app .remaining-credit-copy small { color:var(--muted); font-size:11px; font-weight:600; }
+.movo-app .remaining-credit-copy strong { color:var(--text); font-size:22px; line-height:1.2; font-weight:750; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.movo-app .remaining-credit-meter { display:flex; align-items:flex-end; flex:none; width:10px; height:62px; overflow:hidden; border-radius:8px; background:var(--field); }
+.movo-app .remaining-credit-meter > span { display:block; width:100%; min-height:0; border-radius:8px; background:var(--success,var(--accent)); transition:height .2s ease; }
+.movo-app .remaining-credit-card.is-warning .remaining-credit-meter > span { background:var(--warning,#d99a24); }
+.movo-app .remaining-credit-card.is-critical .remaining-credit-meter > span { background:var(--danger,#dc5555); }
+@media (max-width:360px) {
+ .movo-app .remaining-credit-card { padding:12px; }
+ .movo-app .remaining-credit-copy strong { font-size:19px; }
+ .movo-app .remaining-credit-meter { height:54px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .movo-app .remaining-credit-meter > span { transition:none; }
+}
