@@ -1,4 +1,4 @@
-import { creditInfo, isCreditCard } from './creditCard';
+import { creditInfo, isCreditCard, creditCardPaymentSummary } from './creditCard';
 
 const card = (balance, creditLimit) => ({ account_type: 'card', cardKind: 'credit', balance, creditLimit });
 
@@ -16,9 +16,13 @@ test('only credit cards with a limit have credit info', () => {
   expect(isCreditCard(card(0, 1))).toBe(true);
 });
 
-
 test('summarizes credit-card payments by distinct months', () => {
-  const { creditCardPaymentSummary } = require('./creditCard');
   const result = creditCardPaymentSummary([{ amount: 100, month: '2026-10', date: '2026-10-05' }, { amount: 50, month: '2026-10', date: '2026-10-20' }, { amount: 200, month: '2026-11', date: '2026-11-02' }, { amount: -5, month: '2026-11', date: '2026-11-03' }]);
   expect(result).toMatchObject({ totalPaid: 350, monthsPaid: 2 });
+});
+
+
+test('ignores malformed payment month and date values', () => {
+  const result = creditCardPaymentSummary([{ amount: 25, month: '2026-11', date: '2026-11-04' }, { amount: 90, month: '2026-13', date: '2026-11-05' }, { amount: 40, month: '2026-11', date: 'not-a-date' }]);
+  expect(result).toMatchObject({ totalPaid: 25, monthsPaid: 1, payments: [{ amount: 25 }] });
 });
