@@ -22,6 +22,34 @@ begin
   if exists (
     select 1 from pg_policies
     where schemaname = 'storage' and tablename = 'objects'
+      and policyname in (
+        'Users read their MOVO account QR images',
+        'Users upload their MOVO account QR images',
+        'Users delete their MOVO account QR images'
+      )
+      and (
+        roles <> array['authenticated']::name[]
+        or (cmd = 'SELECT' and (
+          coalesce(qual, '') not ilike '%movo-account-qrs%'
+          or coalesce(qual, '') not ilike '%auth.uid%'
+          or coalesce(qual, '') not ilike '%foldername%'
+        ))
+        or (cmd = 'INSERT' and (
+          coalesce(with_check, '') not ilike '%movo-account-qrs%'
+          or coalesce(with_check, '') not ilike '%auth.uid%'
+          or coalesce(with_check, '') not ilike '%foldername%'
+        ))
+        or (cmd = 'DELETE' and (
+          coalesce(qual, '') not ilike '%movo-account-qrs%'
+          or coalesce(qual, '') not ilike '%auth.uid%'
+          or coalesce(qual, '') not ilike '%foldername%'
+        ))
+      )
+  ) then raise exception 'QR policies must be authenticated and scoped to the owner UUID folder'; end if;
+
+  if exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects'
       and cmd in ('UPDATE', 'ALL')
       and (
         coalesce(qual, '') not ilike '%bucket_id%'
