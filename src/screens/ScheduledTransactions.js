@@ -78,8 +78,8 @@ export default function ScheduledTransactions({ c }) {
       <p className="form-note">{tr('Select a marked date to view a scheduled item or its financial section.')}</p>
     </section>}
     {!calendar&&<><SectionTitle action={tr('Schedule')} onAction={startCreate}>{tr('Upcoming & due')}</SectionTitle>
-    <div className="card list-card">{items.length?items.map(item=><article className="fp-row" key={item.id}>
-      <span className={`stat-icon tone-${item.transaction_type==='transfer'?'blue':'orange'}`}><Icon name={item.transaction_type==='transfer'?'transfer':'calendar'} size={17}/></span>
+    <div className="card list-card">{items.length?items.map(item=><article className="fp-row scheduled-obligation-row" key={item.id}>
+      <BrandLogo name={item.title} size={42} className="scheduled-brand-logo" fallback={<span className={`stat-icon tone-${item.transaction_type==='transfer'?'blue':'orange'}`}><Icon name={item.transaction_type==='transfer'?'transfer':'calendar'} size={17}/></span>} />
       <span className="fp-main"><strong>{item.title}</strong><small>{dateLabel(item.scheduled_for)} · {tr(item.frequency==='once'?'One time':item.frequency==='weekly'?'Weekly':item.frequency==='monthly'?'Monthly':'Yearly')}</small><small>{item.status==='paused'?tr('Paused'):accounts.find(a=>a.id===item.account_id)?.name||tr('Account not available')}</small></span>
       <span className="fp-amount"><b>{cash(item.amount,item.currency)}</b><button type="button" className="link-button" onClick={()=>setSheet({kind:'actions',item})}>{tr('Manage')}</button></span>
     </article>):<p className="form-note">{tr('No scheduled payments or transfers yet.')}</p>}</div></>}
