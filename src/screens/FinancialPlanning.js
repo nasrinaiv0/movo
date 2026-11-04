@@ -134,6 +134,7 @@ export default function FinancialPlanning({ c }) {
       {loans.length ? <div className="card list-card">{loans.map(l => { const principal = Number(l.principal_amount) || 0; const left = Number(l.outstanding_principal) || 0; return <button type="button" className="fp-row" key={l.id} onClick={() => open('event', { target: 'loan', item: l, event_type: 'principal_payment', amount: '', account_id: l.account_id && inCurrency(l.currency).some(a => a.id === l.account_id) ? l.account_id : (inCurrency(l.currency)[0]?.id || ''), note: '' })}>
         <span className="stat-icon tone-red"><Icon name="bank" size={17} strokeWidth={2} /></span>
         <span className="fp-main"><strong>{l.name}</strong><small>{l.lender || tr(l.obligation_type === 'debt' ? 'Other debt' : 'Loan')} · {due(l.due_date)}</small>
+          {Array.isArray(l.interest_schedule) && l.interest_schedule.length > 0 && <small title={l.interest_schedule.map(x => `M${x.month}: ${x.rate}%`).join(' · ')}>{tr('Monthly rates')}: {l.interest_schedule.slice(0, 3).map(x => `M${x.month} ${x.rate}%`).join(' · ')}{l.interest_schedule.length > 3 ? ` · +${l.interest_schedule.length - 3}` : ''}</small>}
           {principal > 0 && <span className="progress-track" aria-label={tr('{n}% paid', { n: Math.round(pct(principal - left, principal)) })}><span style={{ width: `${pct(principal - left, principal)}%` }} /></span>}</span>
         <span className="fp-amount"><b>{cash(left, l.currency)}</b>{statusChip(l.status)}</span>
       </button>; })}</div>
