@@ -22,7 +22,7 @@ import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
-import AccountTile, { styleFor } from './components/AccountTile';
+import AccountTile from './components/AccountTile';
 import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
 import { markFresh } from './lib/freshRecords';
@@ -62,7 +62,6 @@ import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './l
 import Archive from './screens/Archive';
 import { listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
-import { creditInfo } from './lib/creditCard';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
