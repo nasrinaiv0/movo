@@ -1,4 +1,4 @@
-import { uploadAccountQr, getAccountQrSignedUrl, removeAccountQr, isAccountQrDataUrl, ACCOUNT_QR_MAX_BYTES } from './accountQrStorage';
+import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl, ACCOUNT_QR_MAX_BYTES } from './accountQrStorage';
 import { supabase } from './supabaseClient';
 
 jest.mock('./supabaseClient', () => ({ supabase: { storage: { from: jest.fn() } } }));
@@ -66,4 +66,11 @@ test('bulk cleanup enumerates only account folders and removes only owned PNG ob
   expect(list).toHaveBeenNthCalledWith(1, owner, { limit: 100, offset: 0 });
   expect(list).toHaveBeenNthCalledWith(2, `${owner}/${account}`, { limit: 100, offset: 0 });
   expect(remove).toHaveBeenCalledWith([`${owner}/${account}/${file}`]);
+});
+
+test('signed QR cache rejects invalid user and account targets before network access', async () => {
+  const fetchSpy = jest.spyOn(global, 'fetch');
+  await expect(cacheSignedAccountQr('not-a-user', account, 'https://signed.example/qr')).rejects.toThrow('invalid_account_qr_cache_target');
+  expect(fetchSpy).not.toHaveBeenCalled();
+  fetchSpy.mockRestore();
 });
