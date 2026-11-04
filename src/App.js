@@ -39,7 +39,7 @@ import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screen
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { uploadAccountQr, getAccountQrSignedUrl, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
-import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr } from './lib/accountQrLocalStore';
+import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
@@ -872,6 +872,7 @@ function App() {
     setBusy(true); setError('');
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
+      await clearLocalAccountQr();
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
@@ -886,6 +887,7 @@ function App() {
     setBusy(true); setError('');
     try {
       await deleteMyAccount();
+      await clearLocalAccountQr();
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
