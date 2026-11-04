@@ -14,7 +14,7 @@ const shiftCalendarDate = (value,days) => {
   const shifted=new Date(Date.UTC(year,month-1,day+days));
   return dateString({year:shifted.getUTCFullYear(),month:shifted.getUTCMonth()+1,day:shifted.getUTCDate()});
 };
-const dateAtLocalTime = (dateValue,time,timeZone) => {
+export const dateAtLocalTime = (dateValue,time,timeZone) => {
   const dateParts=typeof dateValue==='string'?(()=>{const [year,month,day]=dateValue.split('-').map(Number);return {year,month,day};})():datePartsInZone(dateValue,timeZone);
   const [hour,minute]=String(time||'09:00').split(':').map(Number);
   const desired=Date.UTC(dateParts.year,dateParts.month-1,dateParts.day,hour||0,minute||0,0,0);
