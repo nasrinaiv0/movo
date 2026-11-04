@@ -269,3 +269,11 @@ These are not resolved by a green frontend CI run or a READY deployment:
 
 
 2026-11-04 — Crypto API routing fix: `src/lib/crypto.js` now uses the shared `apiUrl()` helper. This is important for the Capacitor iOS app, where a relative `/api/crypto` URL would resolve against the bundled `capacitor://localhost` origin rather than MOVO production. Commit `5583368`. The market still requires `COINPAPRIKA_API_KEY` configured in Vercel; verify the production endpoint and preview after that server-side setting is present.
+
+
+## Crypto market provider outage follow-up — 2026-11-04
+- Confirmed PR #179 is merged; native iOS market requests now route through the production MOVO API.
+- The production proxy intentionally returns HTTP 503 when `COINPAPRIKA_API_KEY` is absent. It uses CoinPaprika's paid REST host and does not silently fall back to the keyless personal-use endpoint.
+- Follow-up adds actionable, non-secret configuration guidance and regression coverage for missing credentials, paid-host selection, server-only Authorization handling, provider rate limits, and invalid actions.
+- **External release gate:** configure the licensed CoinPaprika credential as Vercel's server-only `COINPAPRIKA_API_KEY` for the MOVO production project and redeploy. Do not use the free personal-use endpoint for MOVO's commercial/customer-facing market display. No credential was added to source control.
+- Live production response and physical iOS verification remain pending; automated CI alone is not proof that the market feed is live.
