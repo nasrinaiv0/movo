@@ -5,7 +5,7 @@ const db = () => { if(!supabase) throw new Error('MOVO cloud storage is not conf
 
 export async function recordPaymentAttempt(userId, input) {
   if(!userId) throw new Error('Sign in to save payment attempt history.');
-  if(!['scheduled','bill','subscription','loan','credit_card'].includes(input?.source_type)) throw new Error('Choose a valid payment source.');
+  if(!['scheduled','bill','subscription','loan','credit_card','receivable'].includes(input?.source_type)) throw new Error('Choose a valid payment source.');
   if(!input.source_id || !/^\\d{4}-\\d{2}-\\d{2}$/.test(input.due_date||'')) throw new Error('The payment reference or due date is invalid.');
   if(!['failed','paid','cancelled'].includes(input.status)) throw new Error('Choose a valid payment status.');
   const amount=input.amount==null?null:Number(input.amount);
