@@ -27,6 +27,7 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [duePromptShown, setDuePromptShown] = useState(false);
 
   const reload = useCallback(async () => {
     const since = shift(today, -62);
@@ -53,6 +54,13 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
     setPay({ occ: o, amount: String(amountRemaining(o)), account_id: bill?.account_id && payAccounts(o.currency).some(a => a.id === bill.account_id) ? bill.account_id : (payAccounts(o.currency)[0]?.id || ''), paid_at: today, actual: o.is_estimate && o.actual_amount == null ? '' : null, nonce: newNonce() });
     setError(''); setNotice('');
   };
+  useEffect(() => {
+    if (duePromptShown || pay || !occurrences.length) return;
+    const dueNow = occurrences.filter(o => o.due_date <= today && amountRemaining(o) > 0 && occurrenceState(o, today) !== 'cancelled')
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+    if (dueNow) { setDuePromptShown(true); openPay(dueNow); }
+  }, [occurrences, duePromptShown, pay, today]);
+
   const submitPay = (method) => run(async () => {
     if (pay.actual) await updateOccurrence(pay.occ.id, { actual_amount: Number(pay.actual) });
     await recordBillPayment({ occurrence_id: pay.occ.id, amount: pay.amount, method, account_id: method === 'recorded' ? pay.account_id : null, paid_at: `${pay.paid_at}T12:00:00Z`, key: paymentKey(pay.occ.id, pay.nonce) });
@@ -74,18 +82,20 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
       {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); return <article className={`bill-row is-${state}`} key={o.id}>
         <div className="detail-row"><span><strong>{bill?.name || tr('Bill')}</strong><small>{tr('Due {date}', { date: formatDate(o.due_date) })} · <em className={`bill-state is-${state}`}>{tr(STATE_LABEL[state])}</em>{o.is_estimate && o.actual_amount == null ? ` · ${tr('Estimate')}` : ''}</small></span><b>{money(amountRemaining(o), o.currency)}</b></div>
         {Number(o.paid_amount) > 0 && <div className="progress-track" aria-label={tr('{paid} of {due} paid', { paid: money(Number(o.paid_amount), o.currency), due: money(amountDue(o), o.currency) })}><span style={{ width: `${Math.min(100, (Number(o.paid_amount) / amountDue(o)) * 100)}%` }} /></div>}
-        {pay?.occ.id === o.id ? <form className="sheet-form bill-pay" onSubmit={e => { e.preventDefault(); submitPay('recorded'); }}>
-          {pay.actual !== null && <label>{tr('Actual bill amount')}<input type="number" min="0.01" step="0.01" value={pay.actual} onChange={e => setPay({ ...pay, actual: e.target.value, amount: e.target.value || pay.amount })} placeholder={String(o.expected_amount)} /></label>}
-          <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value })} /></label>
-          <label>{tr('Paid from')}<select value={pay.account_id} onChange={e => setPay({ ...pay, account_id: e.target.value })}><option value="">{tr('Choose account')}</option><AccountOptions accounts={payAccounts(o.currency)} currency /></select></label>
-          <label>{tr('Date paid')}<input type="date" required value={pay.paid_at} max={today} onChange={e => setPay({ ...pay, paid_at: e.target.value })} /></label>
-          <p className="form-note">{tr('MOVO records what you paid; it does not send money to the biller.')}</p>
-          <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => submitPay('external')}>{tr('Paid elsewhere')}</button><button className="primary-button" disabled={busy || !pay.account_id}>{tr('Record payment')}</button></div>
-          <button type="button" className="link-button" onClick={() => setPay(null)}>{tr('Cancel')}</button>
-        </form> : <div className="bill-actions"><button type="button" className="primary-button" onClick={() => openPay(o)}>{tr('Pay')}</button>{!(Number(o.paid_amount) > 0) && <button type="button" className="link-button" disabled={busy} onClick={() => run(() => updateOccurrence(o.id, { cancel: true }), tr('This due date was skipped.'))}>{tr('Skip this one')}</button>}</div>}
+        <div className="bill-actions"><button type="button" className="primary-button" onClick={() => openPay(o)}>{tr('Log payment')}</button>{!(Number(o.paid_amount) > 0) && <button type="button" className="link-button" disabled={busy} onClick={() => run(() => updateOccurrence(o.id, { cancel: true }), tr('This due date was skipped.'))}>{tr('Skip this one')}</button>}</div>
       </article>; })}
     </section>
 
+    {pay && <Sheet title={tr('Bill payment due')} subtitle={billOf(pay.occ)?.name || tr('Bill')} onClose={() => setPay(null)} label={tr('Record bill payment')}>
+      <form className="sheet-form bill-pay" onSubmit={e => { e.preventDefault(); submitPay('recorded'); }}>
+        {pay.actual !== null && <label>{tr('Actual bill amount')}<input type="number" min="0.01" step="0.01" value={pay.actual} onChange={e => setPay({ ...pay, actual: e.target.value, amount: e.target.value || pay.amount })} placeholder={String(pay.occ.expected_amount)} /></label>}
+        <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value })} /></label>
+        <label>{tr('Paid from')}<select value={pay.account_id} onChange={e => setPay({ ...pay, account_id: e.target.value })}><option value="">{tr('Choose account')}</option><AccountOptions accounts={payAccounts(pay.occ.currency)} currency /></select></label>
+        <label>{tr('Date paid')}<input type="date" required value={pay.paid_at} max={today} onChange={e => setPay({ ...pay, paid_at: e.target.value })} /></label>
+        <p className="form-note">{tr('MOVO records what you paid; it does not send money to the biller.')}</p>
+        <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => submitPay('external')}>{tr('Paid elsewhere')}</button><button className="primary-button" disabled={busy || !pay.account_id}>{tr('Record payment')}</button></div>
+      </form>
+    </Sheet>}
     {adding && <Sheet title={tr('Add a bill')} onClose={() => onAdding(false)} label={tr('Add a bill')}><form className="sheet-form" onSubmit={e => { e.preventDefault(); run(() => createBill({ ...form, currency: form.currency || base }, c.session?.user?.id), tr('Bill added.')).then(ok => { if (ok) { setForm(blankBill(base)); onAdding(false); } }); }}>
       {error && <p className="app-alert" role="alert">{error}</p>}
       <label>{tr('Name')}<input required maxLength="120" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder={tr('e.g. Electricity')} /></label>
