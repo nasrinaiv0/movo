@@ -19,11 +19,13 @@ export function sortList(list, sort) {
 }
 const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
 
-export function billingCycleOptions(months, currentMonth) {
-  return [
-    { value: 'all', label: 'All' },
-    ...months.map(value => ({ value, label: value === currentMonth ? 'Present' : monthLabel(value) })),
-  ];
+export function billingCycleOptions(months = [], currentMonth) {
+  const monthNames = months.map(value => monthLabel(value).replace(/\\s+\\d{4}$/, ''));
+  const duplicateNames = new Set(monthNames.filter((name, index) => monthNames.indexOf(name) !== index));
+  return [{ value: 'all', label: 'All' }, ...months.map((value, index) => ({
+    value,
+    label: value === currentMonth ? 'Present' : duplicateNames.has(monthNames[index]) ? monthLabel(value) : monthNames[index],
+  }))];
 }
 
 export default function Transactions({ c }) {
@@ -46,9 +48,9 @@ export default function Transactions({ c }) {
   let remaining = limit;
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
-    <label className="billing-cycle-filter" aria-label={tr('Filter by billing cycle')}>
+    <label className="tx-period-filter" aria-label={tr('Filter by billing cycle')}>
       <Icon name="sliders" size={19} />
-      <span>{cycleLabel}</span>
+      <span className="tx-period-filter-value">{cycleLabel}</span>
       <Icon name="down" size={15} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
         <option value="all">{tr('All')}</option>
@@ -63,7 +65,7 @@ export default function Transactions({ c }) {
       { icon: 'sliders', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }) },
       { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense') },
     ]} />
-    <div className="chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
+    <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
 
     {txFilter === 'All' && <>
@@ -98,7 +100,7 @@ export default function Transactions({ c }) {
 
     {txFilter !== 'All' && <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />}
     {txFilter === 'All' ? <SectionTitle action={expanded ? tr('Show less') : tr('See All')} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
-      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? tr('All billing cycles') : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
+      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? tr('All billing cycles') : (!month || month === currentCycle) ? tr('Present') : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
 
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
