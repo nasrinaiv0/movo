@@ -70,7 +70,7 @@ export default function CryptoMarket({ c }) {
       setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
     } catch (e) {
       setError(e.message === 'crypto_provider_not_configured'
-        ? 'Crypto markets are not configured yet. Add the licensed CoinPaprika API key as the server-only COINPAPRIKA_API_KEY environment variable.'
+        ? 'Crypto markets are not configured yet. Add COINBEACON_API_KEY as a server-only Vercel environment variable.'
         : e.code === 'crypto_provider_payment_required' ? e.message
           : e.message === 'crypto_provider_rate_limited' ? 'Market data is temporarily rate-limited. Try again later.'
           : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
