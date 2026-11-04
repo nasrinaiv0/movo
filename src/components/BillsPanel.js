@@ -50,7 +50,7 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
 
   const openPay = (o) => {
     const bill = billOf(o);
-    setPay({ occ: o, amount: String(amountRemaining(o)), account_id: bill?.account_id && payAccounts(o.currency).some(a => a.id === bill.account_id) ? bill.account_id : '', paid_at: today, actual: o.is_estimate && o.actual_amount == null ? '' : null, split_enabled:false, splits:[{id:newNonce(),account_id:bill?.account_id&&payAccounts(o.currency).some(a=>a.id===bill.account_id)?bill.account_id:'',amount:String(amountRemaining(o))}], nonce: newNonce() });
+    const remaining=amountRemaining(o);const accountId=bill?.account_id&&payAccounts(o.currency).some(a=>a.id===bill.account_id)?bill.account_id:'';setPay({ occ:o, amount:String(remaining), remaining, account_id:accountId, paid_at:today, actual:o.is_estimate&&o.actual_amount==null?'':null, split_enabled:false, splits:[{id:newNonce(),key:paymentKey(o.id,newNonce()),account_id:accountId,amount:String(remaining)}], nonce:newNonce() });
     setError(''); setNotice('');
   };
   const submitPay = (method) => run(async () => {
@@ -59,14 +59,19 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
       await recordBillPayment({occurrence_id:pay.occ.id,amount:pay.amount,method,account_id:null,paid_at:`${pay.paid_at}T12:00:00Z`,key:paymentKey(pay.occ.id,pay.nonce)});
       return;
     }
-    const parts=pay.split_enabled?pay.splits:[{account_id:pay.account_id,amount:pay.amount}];
+    const parts=pay.split_enabled?pay.splits:[{account_id:pay.account_id,amount:pay.amount,key:paymentKey(pay.occ.id,pay.nonce)}];
     const valid=parts.filter(part=>Number(part.amount)>0);
     const total=valid.reduce((sum,part)=>sum+Number(part.amount),0);
-    const remaining=amountRemaining(pay.occ);
+    let remaining=Number(pay.remaining??amountRemaining(pay.occ));
     if(!valid.length||valid.some(part=>!part.account_id)||new Set(valid.map(part=>part.account_id)).size!==valid.length)throw new Error(tr('Choose a different account for each payment split.'));
     if(total>remaining+0.005)throw new Error(tr('The payment total cannot exceed the remaining bill balance.'));
+    let pending=[...valid];
     for(const part of valid){
-      await recordBillPayment({occurrence_id:pay.occ.id,amount:Number(part.amount),method:'recorded',account_id:part.account_id,paid_at:`${pay.paid_at}T12:00:00Z`,key:paymentKey(pay.occ.id,newNonce())});
+      const partAmount=Number(part.amount);
+      await recordBillPayment({occurrence_id:pay.occ.id,amount:partAmount,method:'recorded',account_id:part.account_id,paid_at:`${pay.paid_at}T12:00:00Z`,key:part.key||paymentKey(pay.occ.id,pay.nonce)});
+      remaining=Math.max(0,remaining-partAmount);
+      pending=pending.filter(row=>row.id!==part.id);
+      setPay(current=>current?{...current,remaining,amount:String(remaining),splits:pending}:current);
     }
   }, method === 'recorded' ? tr('Payment recorded.') : tr('Marked as paid elsewhere. No account was charged.')).then(ok => { if (ok) setPay(null); });
 
@@ -101,8 +106,8 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
             <label>{tr('Split amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,amount:e.target.value}:x)})}/></label>
             {pay.splits.length>1&&<button type="button" className="link-button" onClick={()=>setPay({...pay,splits:pay.splits.filter(x=>x.id!==part.id)})}>{tr('Remove split')}</button>}
           </div>)}
-          <button type="button" className="secondary-button" onClick={()=>setPay({...pay,splits:[...pay.splits,{id:newNonce(),account_id:'',amount:''}]})}>{tr('Add another account')}</button>
-          <p className="form-note">{tr('Split total')}: {money(pay.splits.reduce((sum,x)=>sum+(Number(x.amount)||0),0),pay.occ.currency)} · {tr('Remaining')}: {money(amountRemaining(pay.occ),pay.occ.currency)}</p>
+          <button type="button" className="secondary-button" onClick={()=>setPay({...pay,splits:[...pay.splits,{id:newNonce(),key:paymentKey(pay.occ.id,newNonce()),account_id:'',amount:''}]})}>{tr('Add another account')}</button>
+          <p className="form-note">{tr('Split total')}: {money(pay.splits.reduce((sum,x)=>sum+(Number(x.amount)||0),0),pay.occ.currency)} · {tr('Remaining')}: {money(pay.remaining??amountRemaining(pay.occ),pay.occ.currency)}</p>
         </section>}
         <label>{tr('Date paid')}<input type="date" required value={pay.paid_at} max={today} onChange={e => setPay({ ...pay, paid_at: e.target.value })} /></label>
         <p className="form-note">{tr('MOVO records what you paid; it does not send money to the biller.')}</p>
