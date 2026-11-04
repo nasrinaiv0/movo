@@ -116,7 +116,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const until=new Date(Date.now()+86400000).toISOString();
       if(entry.kind==='scheduled')await snoozeSchedule(item.id,session.user.id,until);
       const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));
-      await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:offset},until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:offset,channel:'push'},until);
+      await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:offset},until);
       const queue=await loadDue();setActive(queue[0]||null);
     }catch(err){setError(err.message||tr('Could not save the payment issue.'));}
     finally{setBusy(false);}
@@ -148,7 +148,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
           setSplits(pending);
         }
         loggedAmount=total;
-        if(total<startingBalance-0.005){const until=new Date(Date.now()+86400000).toISOString();await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0},until);await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,channel:'push'},until);}
+        if(total<startingBalance-0.005){const until=new Date(Date.now()+86400000).toISOString();await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0},until);}
       }
       else if(entry.kind==='loan') await recordLoanEvent({loan_id:item.id,event_type:'principal_payment',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Payment recorded from MOVO reminder'});
       else if(entry.kind==='receivable') await recordReceivableEvent({receivable_id:item.id,event_type:'collected',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Collection recorded from MOVO reminder'});
