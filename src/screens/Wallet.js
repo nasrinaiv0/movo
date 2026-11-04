@@ -8,6 +8,7 @@ import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
 import { money, shown } from '../lib/format';
 import { creditInfo } from '../lib/creditCard';
+import { walletAssetTotal, walletTypePercentage } from '../lib/walletTotals';
 import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets', 'Cash & Other'];
@@ -67,7 +68,8 @@ export default function Wallet({ c }) {
   const live = accountsView.filter(a => !a.is_archived);
   const sorted = [...live].sort(sorters[wv.sort] || sorters['balance-desc']);
   const list = walletFilter === 'All' ? sorted : sorted.filter(a => (typeOf[walletFilter] || []).includes(a.account_type));
-  const total = stats.balance || 1;
+  // Percentages compare account groups against liquid/deposit balances, not card limits or card liabilities.
+  const total = walletAssetTotal(live, c.toBase) || 1;
   const cards = accountsByType.card;
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
   const recent = txs.slice(0, 3);
@@ -81,7 +83,7 @@ export default function Wallet({ c }) {
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
-  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={prefs.accountQrCodes?.[a.id] || ''} />;
+  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={c.accountQrDisplay?.[a.id] || ''} />;
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
     : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
@@ -106,7 +108,7 @@ export default function Wallet({ c }) {
         return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label === 'Bank Accounts' ? 'Bank Accounts' : label)}>
           <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{tr(label)}</small></span>
           <strong className={sum < 0 ? 'neg' : ''}><Money value={sum} show={show} digits={0} /></strong>
-          {sum > 0 && total > 0 && <em className="pct">{Math.round((sum / total) * 100)}%</em>}{sum < 0 && <em className="pct owed">{tr('Owed')}</em>}
+          {sum > 0 && total > 0 && <em className="pct">{walletTypePercentage(sum, total)}%</em>}{sum < 0 && <em className="pct owed">{tr('Owed')}</em>}
         </button>;
       })}
     </section> },
