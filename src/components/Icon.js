@@ -53,7 +53,7 @@ const P = {
   coin: <><circle cx="12" cy="12" r="9" /><path d="M9.5 8.5h4a2 2 0 0 1 0 4h-4m0-4v8m0-4h4.5" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.7M12 17h.01" /></>,
   face: <><path d="M4 8.5V7a3 3 0 0 1 3-3h1.5M15.5 4H17a3 3 0 0 1 3 3v1.5M20 15.5V17a3 3 0 0 1-3 3h-1.5M8.5 20H7a3 3 0 0 1-3-3v-1.5" /><path d="M9 10v1M15 10v1M12 10v3h-1M9.5 15.5c1.4 1 3.6 1 5 0" /></>,
-  sliders: <><path d="M4 8h5M15 8h5M4 16h9M19 16h1" /><circle cx="12" cy="8" r="2.6" /><circle cx="16" cy="16" r="2.6" /></>,
+  sliders: <><path d="M3.5 5.2h17M3.5 12h17M3.5 18.8h17" /><circle cx="9" cy="5.2" r="2.4" /><circle cx="16" cy="12" r="2.4" /><circle cx="7" cy="18.8" r="2.4" /></>,
   chart: <><rect x="4.4" y="11" width="3.6" height="8.6" rx="1.5" /><rect x="10.2" y="4.4" width="3.6" height="15.2" rx="1.5" /><rect x="16" y="8" width="3.6" height="11.6" rx="1.5" /></>,
   cart: <><path d="M3 4.2h2.2a1 1 0 0 1 1 .8l1.6 8.6a1.8 1.8 0 0 0 1.8 1.5h7.2a1.8 1.8 0 0 0 1.8-1.4l1.2-5.3H7" /><circle cx="9.6" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" /></>,
   briefcase: <><rect x="3" y="7.5" width="18" height="12.5" rx="3.6" /><path d="M9 7.5V6.2A2.2 2.2 0 0 1 11.2 4h1.6A2.2 2.2 0 0 1 15 6.2v1.3M3 13h18" /></>,
