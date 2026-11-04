@@ -24,6 +24,7 @@ export const planningAccounts = (accounts = []) => accounts.filter(a => !a.is_ar
 
 export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
   const live = allocations.filter(a => a.status === 'allocated');
+  const activePlans = planGoalData(plans);
   const position = financialPosition({
     accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), liability_balance: a.account_type === 'card' && a.cardKind === 'credit' ? toBase(creditCardOutstanding(a), a.currency) : a.liability_balance, card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
     loans: loans.map(l => ({ ...l, outstanding_balance: toBase(Number(l.outstanding_principal) || 0, l.currency) })),
@@ -40,7 +41,6 @@ export function planningSummary({ accounts = [], loans = [], receivables = [], g
   const creditCardDebtTotal = creditCardDebts.reduce((sum, a) => sum + toBase(creditCardOutstanding(a), a.currency), 0);
   const activeReceivables = receivables.filter(r => r.status === 'active' && Number(r.outstanding_amount) > 0);
   const activeGoals = goals.filter(g => g.status === 'active');
-  const activePlans = planGoalData(plans);
   const goalTotals = activeGoals.reduce((s, g) => { const p = goalProgress(g, live); return { saved: s.saved + toBase(p.saved, g.currency), target: s.target + toBase(p.target, g.currency) }; }, { saved: 0, target: 0 });
   const planTotals = activePlans.reduce((s, p) => ({ saved: s.saved + toBase(p.saved, p.currency), target: s.target + toBase(p.target, p.currency) }), { saved: 0, target: 0 });
   const bills = billsSummary(occurrences, payments, today, toBase);
