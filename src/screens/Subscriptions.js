@@ -171,7 +171,7 @@ function CatalogSheet({ onPick, onClose, country }) {
   </Sheet>;
 }
 
-function SubForm({ draft, setDraft, base, onSave, onDelete, onLog, onClose }) {
+function SubForm({ draft, setDraft, base, accounts = [], onSave, onDelete, onLog, onClose }) {
   const [err, setErr] = useState('');
   const editing = !!draft.id;
   const save = (e) => {
@@ -193,6 +193,10 @@ function SubForm({ draft, setDraft, base, onSave, onDelete, onLog, onClose }) {
         <label>{tr('Next billing date')}<input type="date" value={draft.start} onChange={e => setDraft({ ...draft, start: e.target.value })} /></label>
         <label>{tr('Category')}<select value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}>{SUB_CATEGORIES.map(k => <option key={k} value={k}>{tr(k)}</option>)}</select></label>
       </div>
+      <label>{tr('Payment account')}<select value={draft.accountId || ''} onChange={e => setDraft({ ...draft, accountId: e.target.value })}>
+        <option value="">{tr('Not linked')}</option>
+        {accounts.filter(account => !account.is_archived && (['bank','e_wallet'].includes(account.account_type) || (account.account_type === 'card' && ['credit','debit'].includes(account.cardKind)))).map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name} · {tr(account.account_type === 'card' ? (account.cardKind === 'credit' ? 'Credit card' : 'Debit card') : account.account_type === 'e_wallet' ? 'E-wallet' : 'Bank account')}</option>)}
+      </select></label>
       {editing && <label>{tr('Status')}<select value={draft.status} onChange={e => setDraft({ ...draft, status: e.target.value })}>{[['active', 'Active'], ['paused', 'Paused'], ['cancelled', 'Cancelled']].map(([k, l]) => <option key={k} value={k}>{tr(l)}</option>)}</select></label>}
       {err && <p className="form-error" role="alert">{err}</p>}
       {editing && draft.status === 'active' && <button type="button" className="secondary-button wide-button" onClick={() => onLog(draft)}><Icon name="receipt" size={16} /> {tr('Log this payment as an expense')}</button>}
@@ -205,7 +209,7 @@ function SubForm({ draft, setDraft, base, onSave, onDelete, onLog, onClose }) {
 }
 
 export default function Subscriptions({ c }) {
-  const { show, go, base, toBase, monthStats } = c;
+  const { show, go, base, toBase, monthStats, accountsView = [] } = c;
   const subs = c.subscriptions || [];
   const [tab, setTab] = useState('upcoming');
   const [catalog, setCatalog] = useState(false);
@@ -217,7 +221,7 @@ export default function Subscriptions({ c }) {
     return s;
   }, [subs, toBase, today]); // keyed on the calendar day, not the render time
   const open = (s) => setDraft({ ...subs.find(x => x.id === s.id) });
-  const startNew = (pick) => { setCatalog(false); setDraft({ name: pick.name, category: pick.category, color: pick.color, amount: '', currency: base, cycle: 'monthly', start: today, status: 'active' }); };
+  const startNew = (pick) => { setCatalog(false); setDraft({ name: pick.name, category: pick.category, color: pick.color, amount: '', currency: base, cycle: 'monthly', start: today, status: 'active', accountId: '' }); };
   const paused = subs.filter(s => s.status !== 'active');
   return <>
     <SubHeader title={tr('Subscriptions')} onBack={() => go('Menu')} right={<button type="button" className="round-button accent" aria-label={tr('Add subscription')} onClick={() => setCatalog(true)}><Icon name="plus" size={20} /></button>} />
@@ -240,7 +244,7 @@ export default function Subscriptions({ c }) {
           : <Insights summary={summary} show={show} income={monthStats?.income || 0} />}
     {subs.length > 0 && <BrandNotice />}
     {catalog && <CatalogSheet country={c.country} onPick={startNew} onClose={() => setCatalog(false)} />}
-    {draft && <SubForm draft={draft} setDraft={setDraft} base={base}
+    {draft && <SubForm draft={draft} setDraft={setDraft} base={base} accounts={accountsView}
       onSave={(row) => { c.saveSubscription(row); setDraft(null); }}
       onDelete={(id) => { c.deleteSubscription(id); setDraft(null); }}
       onLog={(row) => { setDraft(null); c.logSubscription(row); }}
