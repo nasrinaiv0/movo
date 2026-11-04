@@ -18,9 +18,13 @@ export function sortList(list, sort) {
   return copy;
 }
 export function billingCycleOptions(months = [], currentMonth) {
-  return [{ value: 'all', label: 'All' }, ...months.map(value => ({
+  const monthNames = months.map(value => monthLabel(value).replace(/\s+\d{4}$/, ''));
+  const duplicateNames = new Set(monthNames.filter((name, index) => monthNames.indexOf(name) !== index));
+  return [{ value: 'all', label: 'All' }, ...months.map((value, index) => ({
     value,
-    label: value === currentMonth ? 'Present' : monthLabel(value).replace(/\s+\d{4}$/, ''),
+    label: value === currentMonth
+      ? 'Present'
+      : duplicateNames.has(monthNames[index]) ? monthLabel(value) : monthNames[index],
   }))];
 }
 const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
@@ -41,10 +45,7 @@ export default function Transactions({ c }) {
   const limit = txFilter === 'All' && !expanded ? 4 : Infinity;
   let remaining = limit;
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
-  const periodOptions = [{ value: 'all', label: 'All' }, ...months.map(value => ({
-    value,
-    label: value === monthKey(refDate) ? 'Present' : monthLabel(value).replace(/\s+\d{4}$/, ''),
-  }))];
+  const periodOptions = billingCycleOptions(months, monthKey(refDate));
   const selectedPeriod = month || monthKey(refDate);
   const periodFilter = <label className="tx-period-filter">
     <Icon name="sliders" size={21} />
