@@ -104,7 +104,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     let live=true;
     const refresh=()=>{if(entry)return;return loadDue().then(queue=>{if(live)setActive(queue[0]||null);})
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});};
-    const onVisible=()=>{if(document.visibilityState==='visible')refresh();};
+    const onVisible=()=>{if(document.visibilityState==='hidden'){dismissedThisSession.current.clear();return;}refresh();};
     refresh();
     window.addEventListener('movo:payment-reminders-updated',refresh);
     document.addEventListener('visibilitychange',onVisible);
