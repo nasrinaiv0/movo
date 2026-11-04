@@ -99,7 +99,7 @@ export function findLikelyDuplicate({ merchant, amount, date, accountId, transac
 
 export async function recordReminderEvent(userId, event) {
   if (!userId || !event?.source_type || !event?.source_id || !event?.occurrence_date) return null;
-  const allowed = ['scheduled','bill','subscription','loan','credit_card'];
+  const allowed = ['scheduled','bill','subscription','loan','credit_card','receivable'];
   if (!allowed.includes(event.source_type)) throw new Error('Unsupported reminder type.');
   const offset = Math.max(0, Math.min(30, Number(event.reminder_offset) || 0));
   const row = {
