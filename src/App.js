@@ -243,7 +243,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
-  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '' });
+  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_file: null });
   const [csvRows, setCsvRows] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [csvFileName, setCsvFileName] = useState('');
@@ -549,7 +549,7 @@ function App() {
     setForm({
       merchant: t.merchant || '', amount: String(t.origAmount ?? t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
       category: t.categoryId || t.category || 'other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
-      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '',
+      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '', payment_reference: t.payment_reference || '', receipt_note: t.receipt_note || '', receipt_path: t.receipt_path || '', receipt_file: null,
     });
     setSheet({ name: 'transaction', id: t.id });
   };
@@ -576,10 +576,22 @@ function App() {
     if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
     dupAck.current = '';
     setBusy(true);
+    let uploadedReceiptPath = '';
     try {
+      let receiptPath = form.receipt_path || null;
+      if (form.receipt_file) {
+        if (!cloudMode || !session?.user?.id || !supabase) throw new Error(tr('Sign in to attach a receipt securely to your MOVO account.'));
+        const file = form.receipt_file;
+        if (file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) throw new Error(tr('Use a JPG, PNG, WebP or PDF receipt smaller than 10 MB.'));
+        const extension = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'})[file.type];
+        uploadedReceiptPath = `${session.user.id}/${window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}.${extension}`;
+        const upload = await supabase.storage.from('movo-receipts').upload(uploadedReceiptPath,file,{contentType:file.type,upsert:false});
+        if (upload.error) throw upload.error;
+        receiptPath = uploadedReceiptPath;
+      }
       if (cloudMode) {
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
-        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
+        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath };
         const row = editingId ? await updateTransaction(editingId, payload) : auto.source ? await createAutomated({ ...payload, ...auto }) : await createTransaction(payload, session.user.id);
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
@@ -602,9 +614,12 @@ function App() {
           }
         }
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '' }); setSheet(null);
-    } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
-    finally { setBusy(false); }
+      if (cloudMode && editingId && form.receipt_path && receiptPath && form.receipt_path !== receiptPath) await supabase.storage.from('movo-receipts').remove([form.receipt_path]).catch(() => {});
+      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_file: null }); setSheet(null);
+    } catch (err) {
+      if (uploadedReceiptPath && supabase) await supabase.storage.from('movo-receipts').remove([uploadedReceiptPath]).catch(() => {});
+      setError(err?.message || (editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'));
+    } finally { setBusy(false); }
   };
   const handleCsvFile = (file) => {
     if (!file) return;
@@ -1415,7 +1430,8 @@ function App() {
       </Sheet>}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}{detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}{detailTx.receipt_note && <div><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}</dl>
+        {detailTx.receipt_path && <button type="button" className="secondary-button" onClick={async()=>{const popup=window.open('about:blank','_blank');try{const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}>{tr('View receipt')}</button>}
         {detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
       </Sheet>}
 
