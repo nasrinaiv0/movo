@@ -22,6 +22,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
   const institutionOptions = useMemo(() => searchInstitutions(institutionCountry, institutionQuery, form.account_type), [institutionCountry, institutionQuery, form.account_type]);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
   const bankAccounts = accounts.filter(account => account.account_type === 'bank' && !account.is_archived);
+  const ewalletAccounts = accounts.filter(account => account.account_type === 'e_wallet' && !account.is_archived);
   const debitCard = form.account_type === 'card' && form.cardKind !== 'credit';
   const creditCard = form.account_type === 'card' && form.cardKind === 'credit';
   const amountOf = (v) => evaluate(String(v || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
@@ -83,6 +84,17 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
             {onAddBank && <option value="__add">{tr('+ Add a bank account')}</option>}
           </select>
         </div> : <button type="button" className="acct-field acct-add-bank" onClick={() => onAddBank?.()}><span><strong>{tr('Add a bank account')}</strong><small>{debitCard ? tr('A debit card uses its bank account’s balance') : tr('Optional for credit cards')}</small></span><span className="acct-bank-logo"><Icon name="plus" size={18} /></span><Icon name="chevron" size={16} /></button>}
+        {ewalletAccounts.length > 0 && <>
+          <label className="acct-label" htmlFor="acct-linked-ewallet">{tr('Link to e-wallet (optional)')}</label>
+          <div className="acct-field select">
+            <span><strong>{ewalletAccounts.find(account => account.id === form.linkedEwalletId)?.institution_name || ewalletAccounts.find(account => account.id === form.linkedEwalletId)?.name || tr('No e-wallet linked')}</strong><small>{tr('For cards issued by or connected to an e-wallet')}</small></span>
+            <Icon name="down" size={16} />
+            <select id="acct-linked-ewallet" aria-label={tr('Link to e-wallet (optional)')} value={form.linkedEwalletId || ''} onChange={e => set({ linkedEwalletId: e.target.value })}>
+              <option value="">{tr('No e-wallet linked')}</option>
+              {ewalletAccounts.map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name}</option>)}
+            </select>
+          </div>
+        </>}
         <span className="acct-label">{tr('Card network')}</span>
         <div className="acct-network-row" role="group" aria-label={tr('Card network')}>
           {[['visa', 'Visa'], ['mastercard', 'Mastercard'], ['amex', 'Amex'], ['discover', 'Discover'], ['other', tr('Other')]].map(([value, name]) => <button type="button" key={value} className={`acct-net net-${value}${(form.cardNetwork || '') === value ? ' selected' : ''}`} aria-pressed={(form.cardNetwork || '') === value} aria-label={name} onClick={() => set({ cardNetwork: value })}>
