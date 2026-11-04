@@ -92,3 +92,32 @@ export function findLikelyDuplicate({ merchant, amount, date, accountId, transac
       String(t.date||t.occurred_at||'').slice(0,10)===day && (!accountId || t.account_id===accountId);
   }) || null;
 }
+
+export async function recordReminderEvent(userId, event) {
+  if (!userId || !event?.source_type || !event?.source_id || !event?.occurrence_date) return null;
+  const allowed = ['scheduled','bill','subscription','loan','credit_card'];
+  if (!allowed.includes(event.source_type)) throw new Error('Unsupported reminder type.');
+  const offset = Math.max(0, Math.min(30, Number(event.reminder_offset) || 0));
+  const row = {
+    user_id: userId, source_type: event.source_type, source_id: String(event.source_id),
+    occurrence_date: event.occurrence_date, reminder_offset: offset,
+    channel: 'in_app', status: event.status || 'queued',
+    ...(event.snoozed_until ? { snoozed_until: event.snoozed_until } : {}),
+    ...(event.status === 'sent' ? { sent_at: new Date().toISOString() } : {}),
+  };
+  return unwrap(await db().from('payment_reminder_events').upsert(row, {
+    onConflict: 'user_id,source_type,source_id,occurrence_date,reminder_offset,channel',
+  }).select().single());
+}
+
+export async function listReminderEvents(userId, limit = 50) {
+  if (!userId) return [];
+  return unwrap(await db().from('payment_reminder_events').select('*')
+    .eq('user_id', userId).order('created_at', { ascending: false }).limit(Math.max(1, Math.min(100, limit)))) || [];
+}
+
+export async function snoozeObligation(userId, event, until) {
+  const date = new Date(until);
+  if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) throw new Error('Choose a future reminder time.');
+  return recordReminderEvent(userId, { ...event, status: 'dismissed', snoozed_until: date.toISOString() });
+}
