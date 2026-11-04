@@ -1,4 +1,4 @@
-const { safeQuote, safeCoinId, normalizeTicker } = require('../../api/crypto.js');
+const { safeQuote, safeCoinId, normalizeTicker } = require('./cryptoMarket');
 
 test('accepts only supported quote currencies', () => {
   expect(safeQuote('php')).toBe('PHP');
