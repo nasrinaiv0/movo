@@ -69,3 +69,35 @@ test('plans created in Budgets & Plans are included with savings goals in the pl
   expect(s.plans).toEqual({ count: 1, saved: 10000, target: 50000 });
   expect(s.goals).toEqual({ count: 2, saved: 11000, target: 54000, percent: expect.closeTo(20.37037, 4) });
 });
+
+
+test('active subscription renewals are projected into Bills Due alongside manual bills', () => {
+  const { subscriptionBillData } = require('./financialPlanningIntegrations');
+  const { billsSummary } = require('./bills');
+  const projected = subscriptionBillData([
+    { id: 'netflix', name: 'Netflix', amount: 549, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'active' },
+    { id: 'paused', name: 'Paused', amount: 100, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'paused' },
+    { id: 'cancelled', name: 'Cancelled', amount: 100, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'cancelled' },
+  ], '2026-11-05', '2027-01-10');
+  expect(projected.bills).toHaveLength(1);
+  expect(projected.occurrences.map(row => row.due_date)).toEqual(['2026-11-10', '2026-12-10', '2027-01-10']);
+  const manual = { id: 'manual-occurrence', bill_id: 'manual', due_date: '2026-11-12', expected_amount: 1200, currency: 'PHP', status: 'scheduled' };
+  const summary = billsSummary([manual, ...projected.occurrences], [], '2026-11-05');
+  expect(summary.dueThisMonth).toBe(1749);
+  expect(summary.upcoming[0].id).toBe('subscription-netflix-2026-11-10');
+});
+
+test('overdue subscription renewals remain visible and recorded renewals count as paid', () => {
+  const { subscriptionBillData } = require('./financialPlanningIntegrations');
+  const { billsSummary } = require('./bills');
+  const overdue = subscriptionBillData([
+    { id: 'missed', name: 'Missed renewal', amount: 300, currency: 'PHP', cycle: 'monthly', start: '2026-10-10', status: 'active' },
+    { id: 'paused', name: 'Paused', amount: 100, currency: 'PHP', cycle: 'monthly', start: '2026-10-10', status: 'paused' },
+  ], '2026-11-05', '2027-01-05');
+  expect(overdue.occurrences).toHaveLength(1);
+  expect(billsSummary(overdue.occurrences, [], '2026-11-05').overdueCount).toBe(1);
+  const paid = subscriptionBillData([
+    { id: 'music', name: 'Music', amount: 199, currency: 'PHP', cycle: 'monthly', start: '2026-12-05', status: 'active', lastPaidAt: '2026-11-04T10:00:00.000Z', lastPaidAmount: 199, lastPaidCurrency: 'PHP' },
+  ], '2026-11-05', '2027-01-05');
+  expect(billsSummary(paid.occurrences, paid.payments, '2026-11-05').paidThisMonth).toBe(199);
+});
