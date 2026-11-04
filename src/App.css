@@ -4568,3 +4568,40 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .credit-card.ccx.orientation-portrait {
   box-shadow: none !important;
 }
+
+
+/* Cashback: compact, responsive provider rules and inputs. */
+.movo-app .cashback-total { align-items:flex-start; flex-direction:column; gap:5px; padding:14px 16px; }
+.movo-app .cashback-total .balance-amount { margin:2px 0 0; font-size:25px; }
+.movo-app .cashback-total .form-note { line-height:1.4; }
+.movo-app .cashback-intro { margin:-2px 2px 12px; max-width:38em; line-height:1.45; }
+.movo-app .cashback-rule-list { display:grid; gap:9px; }
+.movo-app .cashback-rule { min-width:0; padding:12px 13px; margin:0; gap:10px; border-radius:18px; }
+.movo-app .cashback-rule .fp-goal-head { gap:10px; }
+.movo-app .cashback-rule .fp-goal-head .stat-icon { width:36px; height:36px; border-radius:12px; }
+.movo-app .cashback-rule .fp-main strong { font-size:14px; }
+.movo-app .cashback-rule .fp-main small { font-size:11px; }
+.movo-app .cashback-rule .legal-disclosure-check { flex:none; display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:0 2px 0 8px; font-size:12px; font-weight:600; }
+.movo-app .cashback-rule .legal-disclosure-check input { width:17px; height:17px; margin:0; accent-color:var(--accent); }
+.movo-app .cashback-rule-fields { display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr); gap:10px; min-width:0; }
+.movo-app .cashback-field { display:grid; align-content:start; gap:5px; min-width:0; color:var(--muted); font-size:11px; line-height:1.25; font-weight:600; }
+.movo-app .cashback-input { display:block; width:100%; min-width:0; height:40px; padding:0 10px; border:1px solid var(--line); border-radius:11px; outline:none; background:var(--field); color:var(--text); font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; appearance:none; -webkit-appearance:none; }
+.movo-app .cashback-input::placeholder { color:var(--muted); opacity:.7; font-size:12px; font-weight:400; }
+.movo-app .cashback-input:focus { border-color:rgba(var(--accent-rgb),.55); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.1); }
+.movo-app .cashback-hint { font-size:10.5px; line-height:1.3; }
+.movo-app .cashback-rule .fp-goal-head, .movo-app .cashback-rule-fields, .movo-app .cashback-hint { max-width:100%; }
+.movo-app .cashback-rule .fp-goal-head > * { min-width:0; }
+.movo-app .cashback-rule .fp-main { overflow:hidden; }
+.movo-app .cashback-rule .legal-disclosure-check span { white-space:nowrap; }
+.movo-app .cashback-total + .section-title { margin-top:18px; }
+.movo-app .cashback-rule + .section-title { margin-top:18px; }
+@media (max-width:360px) {
+ .movo-app .cashback-rule { padding:11px; }
+ .movo-app .cashback-rule-fields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+ .movo-app .cashback-field { font-size:10.5px; }
+ .movo-app .cashback-input { height:38px; padding:0 8px; }
+ .movo-app .cashback-rule .fp-goal-head { gap:8px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .movo-app .cashback-input { transition:none; }
+}
