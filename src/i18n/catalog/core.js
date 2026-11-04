@@ -2722,5 +2722,19 @@ export default [
   ["Filter by billing cycle","I-filter ayon sa billing cycle","تصفية حسب دورة الفوترة","按账单周期筛选","Filtrar por ciclo de facturación","Filtra per ciclo di fatturazione","Nach Abrechnungszeitraum filtern","Filtrer par cycle de facturation","Filtrar por ciclo de cobrança","請求サイクルで絞り込む","결제 주기별 필터","बिलिंग चक्र के अनुसार फ़िल्टर करें"],
   ["Last 12 months","Huling 12 buwan","آخر 12 شهرًا","过去12个月","Últimos 12 meses","Ultimi 12 mesi","Letzte 12 Monate","12 derniers mois","Últimos 12 meses","過去12か月","지난 12개월","पिछले 12 महीने"],
   ["Present","Kasalukuyan","الحالي","当前","Actual","Corrente","Aktuell","Actuel","Atual","現在","현재","वर्तमान"],
-  ["Select billing cycle","Pumili ng billing cycle","اختر دورة الفوترة","选择账单周期","Seleccionar ciclo de facturación","Seleziona il ciclo di fatturazione","Abrechnungszeitraum auswählen","Sélectionner un cycle de facturation","Selecionar ciclo de cobrança","請求サイクルを選択","결제 주기 선택","बिलिंग चक्र चुनें"]
+  ["Select billing cycle","Pumili ng billing cycle","اختر دورة الفوترة","选择账单周期","Seleccionar ciclo de facturación","Seleziona il ciclo di fatturazione","Abrechnungszeitraum auswählen","Sélectionner un cycle de facturation","Selecionar ciclo de cobrança","請求サイクルを選択","결제 주기 선택","बिलिंग चक्र चुनें"],
+  [
+    "Last 10 days spent",
+    "Gastos sa nakaraang 10 araw",
+    "الإنفاق خلال آخر 10 أيام",
+    "过去10天的支出",
+    "Gastado en los últimos 10 días",
+    "Spesa negli ultimi 10 giorni",
+    "Ausgaben der letzten 10 Tage",
+    "Dépenses des 10 derniers jours",
+    "Gastos nos últimos 10 dias",
+    "過去10日間の支出",
+    "지난 10일 지출",
+    "पिछले 10 दिनों का खर्च"
+  ]
 ];
