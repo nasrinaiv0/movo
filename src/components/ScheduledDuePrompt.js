@@ -22,6 +22,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [error,setError]=useState('');
   const [attemptNote,setAttemptNote]=useState('');
   const [splits,setSplits]=useState([]);
+  const [localSnoozes,setLocalSnoozes]=useState({});
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = useCallback(async (markShown=true) => {
     const date=today();
@@ -53,6 +54,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const daysUntil=value=>Math.floor((new Date(value+'T12:00:00Z').getTime()-new Date(date+'T12:00:00Z').getTime())/86400000);
     const quietNow=inQuietHours(new Date(),preferences.quiet_start,preferences.quiet_end);
     const eligible=(preferences.enabled===false||quietNow?[]:candidates.filter(entry=>{
+      if((localSnoozes[entry.kind+':'+entry.item.id+':'+entry.date]||0)>Date.now())return false;
       const offset=daysUntil(entry.date);
       const allowed=Array.isArray(entry.item.reminder_days)?entry.item.reminder_days:(preferences.reminder_days||[0,1,3]);
       if(offset>0&&!allowed.includes(offset))return false;
@@ -72,7 +74,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),preferences,events:notificationEvents,
     }).catch(()=>null);
     return queue;
-  },[session?.user?.id,subscriptions,accountsView,cardStyles]);
+  },[session?.user?.id,subscriptions,accountsView,cardStyles,localSnoozes]);
   const setActive = useCallback(next => {
     setEntry(next||null);
     const item=next?.item;
@@ -97,7 +99,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const interval=window.setInterval(refresh,60000);
     return()=>{live=false;window.clearInterval(interval);window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
   },[loadDue,setActive,entry]);
-  const close=async()=>{ if(session?.user?.id&&entry){const until=new Date(Date.now()+86400000).toISOString();const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);}catch{/* Keep the prompt dismissible while offline. */}await loadDue(false).catch(()=>null);} setActive(null); };
+  const close=async()=>{ if(entry){const until=new Date(Date.now()+86400000).toISOString();const localKey=entry.kind+':'+entry.item.id+':'+entry.date;setLocalSnoozes(current=>({...current,[localKey]:Date.now()+86400000}));const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);}catch{/* Keep the prompt dismissible while offline. */}await loadDue(false).catch(()=>null);} setActive(null); };
   const markIssue=async()=>{
     if(!entry||!session?.user?.id)return;
     setBusy(true);setError('');
