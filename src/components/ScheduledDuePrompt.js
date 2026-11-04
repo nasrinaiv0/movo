@@ -111,6 +111,10 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         occurrence_id:entry.item.id,amount,method:'recorded',account_id:account,
         paid_at:`${today()}T12:00:00Z`,key:paymentKey(entry.item.id,nonce()),
       });
+      if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
+        source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
+        amount:Number(amount||item.amount||0)||null,currency:billCurrency,account_id:account||null,note:'Payment recorded in MOVO',
+      }).catch(()=>null);
       await onLogged?.();
       const queue=await loadDue();
       setActive(queue[0]||null);
