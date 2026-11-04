@@ -4,7 +4,7 @@ import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
-import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences } from '../lib/paymentReminderCenter';
+import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
 
 const day = () => new Date().toLocaleDateString('en-CA');
 const blank = currency => ({ title:'', transaction_type:'expense', amount:'', currency, account_id:'', transfer_to_account_id:'', scheduled_for:day(), frequency:'once', category:'Other', notes:'', reminder_days:[0,1,3], timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Manila', ends_on:'' });
@@ -16,9 +16,10 @@ export default function ScheduledTransactions({ c }) {
   const [busy,setBusy]=useState(false); const [error,setError]=useState(''); const [notice,setNotice]=useState('');
   const [month,setMonth]=useState(()=>new Date()); const [calendar,setCalendar]=useState(false);
   const [reminderPrefs,setReminderPrefs]=useState({enabled:true,reminder_days:[0,1,3],quiet_start:'',quiet_end:''});
+  const [reminderEvents,setReminderEvents]=useState([]);
   const reload=useCallback(async()=>setItems(await listScheduledTransactions()),[]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
-  useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));},[session?.user?.id]);
+  useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));listReminderEvents(session?.user?.id,12).then(setReminderEvents).catch(()=>setReminderEvents([]));},[session?.user?.id]);
   const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()),[items]);
   const cash=(amount,currency)=>shown(show,money(amount,currency));
   const startCreate=()=>{setForm(blank(base));setError('');setSheet({kind:'create'});};
@@ -80,6 +81,12 @@ export default function ScheduledTransactions({ c }) {
       <button onClick={()=>action(sheet.item,'snooze')}><Icon name="clock"/>{tr('Remind me tomorrow')}</button>
       <button onClick={()=>action(sheet.item,'cancel')}><Icon name="x"/>{tr('Cancel schedule')}</button>
     </div>{error&&<p className="app-alert">{error}</p>}</Sheet>}
+    <SectionTitle>{tr('Recent reminder activity')}</SectionTitle>
+    <div className="card list-card">{reminderEvents.length?reminderEvents.slice(0,8).map(event=><article className="fp-row" key={event.id}>
+      <span className="stat-icon tone-blue"><Icon name="bell" size={17}/></span>
+      <span className="fp-main"><strong>{tr(event.source_type==='scheduled'?'Scheduled payment':event.source_type==='bill'?'Bill reminder':event.source_type==='subscription'?'Subscription renewal':event.source_type)}</strong><small>{dateLabel(event.occurrence_date)} · {event.reminder_offset===0?tr('Due date'):tr('{n} day(s) before',{n:event.reminder_offset})}</small></span>
+      <span className="fp-amount"><small>{tr(event.status==='dismissed'?'Snoozed':event.status==='sent'?'Shown':event.status)}</small></span>
+    </article>):<p className="form-note">{tr('No reminder activity yet.')}</p>}</div>
     {notice&&<p className="form-note" role="status">{notice}</p>}
   </>;
 }
