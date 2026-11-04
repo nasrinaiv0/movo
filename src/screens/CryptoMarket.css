@@ -71,3 +71,59 @@
 .movo-app .crypto-alert-row strong { font-size: 12px; }
 .movo-app .crypto-alert-row small { color: var(--muted); font-size: 10px; line-height: 1.4; }
 .movo-app .crypto-alert-row button { min-height: 34px; border: 0; border-radius: 9px; padding: 0 9px; color: var(--accent); background: var(--accent-soft); font-size: 10px; font-weight: 700; }
+
+
+/* ---- Crypto portfolio: positions and performance ---- */
+.movo-app .crypto-view-switch { display:flex; gap:5px; padding:4px; margin: 4px 0 18px; border-radius:15px; background:var(--surface); }
+.movo-app .crypto-view-switch button { flex:1; min-height:40px; border:0; border-radius:11px; color:var(--muted); background:transparent; font-size:12px; font-weight:750; }
+.movo-app .crypto-view-switch button.active { color:var(--text); background:var(--card); box-shadow:var(--elev-1); }
+.movo-app .crypto-view-switch button span { display:inline-grid; place-items:center; min-width:19px; height:19px; margin-left:4px; border-radius:7px; color:var(--accent); background:var(--accent-soft); font-size:10px; }
+.movo-app .crypto-portfolio { display:grid; gap:14px; }
+.movo-app .crypto-portfolio-overview { position:relative; overflow:hidden; padding:19px; color:var(--text); background:linear-gradient(145deg,var(--card),var(--surface)); }
+.movo-app .crypto-portfolio-overview:after { content:""; position:absolute; width:180px; height:180px; right:-72px; top:-90px; border-radius:50%; background:var(--accent); opacity:.07; pointer-events:none; }
+.movo-app .crypto-portfolio-kicker { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.movo-app .crypto-portfolio-kicker>span:first-child,.movo-app .crypto-portfolio-heading small,.movo-app .crypto-holding-form-head small { color:var(--muted); font-size:9px; font-weight:850; letter-spacing:.13em; }
+.movo-app .crypto-portfolio-live { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:10px; }
+.movo-app .crypto-portfolio-live i { width:6px; height:6px; border-radius:50%; background:#19a66a; box-shadow:0 0 0 4px color-mix(in srgb,#19a66a 13%,transparent); }
+.movo-app .crypto-portfolio-label { display:block; margin-top:22px; color:var(--muted); font-size:11px; }
+.movo-app .crypto-portfolio-total { display:block; margin-top:4px; font-size:clamp(28px,8vw,39px); font-weight:800; letter-spacing:-.055em; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.movo-app .crypto-portfolio-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:19px; padding-top:15px; border-top:1px solid var(--line); }
+.movo-app .crypto-portfolio-metrics span { min-width:0; display:grid; gap:5px; }
+.movo-app .crypto-portfolio-metrics small { color:var(--muted); font-size:10px; }
+.movo-app .crypto-portfolio-metrics b { font-size:13px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.movo-app .crypto-portfolio-overview>p { margin:14px 0 0; color:var(--muted); font-size:10px; line-height:1.5; }
+.movo-app .crypto-portfolio-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:4px 2px 0; }
+.movo-app .crypto-portfolio-heading h2 { margin:4px 0 0; font-size:20px; letter-spacing:-.035em; }
+.movo-app .crypto-portfolio-heading h2 span { display:inline-grid; place-items:center; min-width:21px; height:21px; margin-left:4px; border-radius:8px; color:var(--muted); background:var(--surface); font-size:10px; vertical-align:middle; }
+.movo-app .crypto-portfolio-add,.movo-app .crypto-portfolio-empty>button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:40px; padding:0 13px; border:0; border-radius:12px; color:white; background:var(--accent); font-size:11px; font-weight:750; white-space:nowrap; }
+.movo-app .crypto-portfolio-add:disabled,.movo-app .crypto-portfolio-empty>button:disabled { opacity:.45; }
+.movo-app .crypto-holding-form { padding:15px; display:grid; gap:12px; }
+.movo-app .crypto-holding-form-head { display:flex; align-items:center; justify-content:space-between; }
+.movo-app .crypto-holding-form-head h3 { margin:4px 0 0; font-size:17px; }
+.movo-app .crypto-holding-form-head>button { width:36px; height:36px; border:0; border-radius:11px; color:var(--muted); background:var(--surface); font-size:21px; }
+.movo-app .crypto-holding-form label { min-width:0; display:grid; gap:6px; color:var(--muted); font-size:11px; font-weight:700; }
+.movo-app .crypto-holding-form label small { display:inline; font-size:9px; font-weight:500; }
+.movo-app .crypto-holding-form input,.movo-app .crypto-holding-form select { width:100%; min-width:0; min-height:46px; border:0; border-radius:12px; padding:0 12px; outline:0; color:var(--text); background:var(--surface); font-size:16px; }
+.movo-app .crypto-holding-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.movo-app .crypto-holding-hint { margin:0; color:var(--muted); font-size:10px; line-height:1.5; }
+.movo-app .crypto-holding-save { min-height:46px; border:0; border-radius:13px; color:white; background:var(--accent); font-size:12px; font-weight:800; }
+.movo-app .crypto-holding-list { display:grid; gap:9px; }
+.movo-app .crypto-holding-row { padding:0 13px 10px; overflow:hidden; }
+.movo-app .crypto-holding-main { width:100%; min-width:0; display:flex; align-items:center; gap:10px; padding:13px 0 10px; border:0; color:var(--text); background:transparent; text-align:left; }
+.movo-app .crypto-holding-mark { flex:0 0 39px; width:39px; height:39px; display:grid; place-items:center; border-radius:13px; color:var(--accent); background:var(--accent-soft); font-size:10px; font-weight:850; }
+.movo-app .crypto-holding-name,.movo-app .crypto-holding-value { min-width:0; display:grid; gap:4px; }
+.movo-app .crypto-holding-name { flex:1; }
+.movo-app .crypto-holding-name strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.movo-app .crypto-holding-name small,.movo-app .crypto-holding-value small { color:var(--muted); font-size:9px; }
+.movo-app .crypto-holding-value { text-align:right; }
+.movo-app .crypto-holding-value b { font-size:12px; font-variant-numeric:tabular-nums; }
+.movo-app .crypto-holding-actions { display:flex; justify-content:flex-end; gap:7px; }
+.movo-app .crypto-holding-actions button { min-height:32px; padding:0 10px; border:0; border-radius:9px; color:var(--accent); background:var(--accent-soft); font-size:10px; font-weight:750; }
+.movo-app .crypto-holding-actions button:last-child { color:var(--muted); background:var(--surface); }
+.movo-app .crypto-portfolio-empty { display:grid; justify-items:center; gap:9px; padding:26px 20px; text-align:center; }
+.movo-app .crypto-portfolio-empty-icon { width:52px; height:52px; display:grid; place-items:center; border-radius:17px; color:var(--accent); background:var(--accent-soft); }
+.movo-app .crypto-portfolio-empty h3 { margin:2px 0 0; font-size:16px; }
+.movo-app .crypto-portfolio-empty p { max-width:290px; margin:0; color:var(--muted); font-size:11px; line-height:1.6; }
+.movo-app .crypto-portfolio-empty>small,.movo-app .crypto-portfolio-disclaimer { color:var(--muted); font-size:10px; line-height:1.55; text-align:center; }
+.movo-app .crypto-portfolio-disclaimer { margin:0 8px 8px; }
+@media(max-width:360px){.movo-app .crypto-holding-fields{grid-template-columns:1fr}.movo-app .crypto-portfolio-overview{padding:16px}.movo-app .crypto-portfolio-heading h2{font-size:18px}}
