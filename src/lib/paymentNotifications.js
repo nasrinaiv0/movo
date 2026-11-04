@@ -85,7 +85,7 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       if(dueStart<new Date(todayStart.getTime()-MAX_DAYS*86400000))continue;
       const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
       let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end,preferences.timezone);
-      if(when<=today)when=moveOutOfQuietHours(new Date(today.getTime()+60000),preferences.quiet_start,preferences.quiet_end);
+      if(when<=today)when=moveOutOfQuietHours(new Date(today.getTime()+60000),preferences.quiet_start,preferences.quiet_end,preferences.timezone);
       if(when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
       const previous=events.find(event=>event.channel==='push'&&event.source_type===type&&event.source_id===String(item.id)&&event.occurrence_date===date&&(Number(event.reminder_offset)===Number(offset)||(event.status==='dismissed'&&event.snoozed_until&&new Date(event.snoozed_until)>today)));
       if(previous&&(previous.status==='sent'||(previous.status==='dismissed'&&previous.snoozed_until&&new Date(previous.snoozed_until)>today)))continue;
