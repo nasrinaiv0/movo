@@ -608,7 +608,7 @@ function App() {
       }
       if (!editingId && type === 'expense' && form.subscriptionPaymentId) {
         const paidSub = subscriptions.find(item => item.id === form.subscriptionPaymentId);
-        if (paidSub && cloudMode && session?.user?.id) await recordPaymentAttempt(session.user.id,{ source_type:'subscription', source_id:String(paidSub.id), due_date:paidSub.start, status:'paid', amount, currency:txCurrency, account_id:form.account_id, note:'Subscription renewal recorded' }).catch(()=>null);
+        if (paidSub && cloudMode && session?.user?.id) await recordPaymentAttempt(session.user.id,{ source_type:'subscription', source_id:String(paidSub.id), due_date:paidSub.start, status:'paid', amount:Number(paidSub.amount)||amount, currency:paidSub.currency||txCurrency, account_id:form.account_id, note:'Subscription renewal recorded' }).catch(()=>null);
         if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
           const nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
           if (nextDue) {
