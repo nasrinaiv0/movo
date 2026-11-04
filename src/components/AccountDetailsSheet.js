@@ -100,8 +100,6 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
           </div>
         </section>
         <div className="account-hub-section">
-          <h3>{tr('Recent account activity')}</h3>        </div>
-        <div className="account-hub-section">
           <h3>{tr('Recent account activity')}</h3>
           {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
           {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
