@@ -50,7 +50,10 @@ module.exports = async function handler(req, res) {
     const qrBucket = api.admin.storage.from('movo-account-qrs');
     for (let offset = 0; ; offset += 100) {
       const { data: folders, error: folderError } = await qrBucket.list(userId, { limit: 100, offset });
-      if (folderError) throw folderError;
+      if (folderError) {
+        if (String(folderError.statusCode || folderError.status || '') === '404' || /bucket not found/i.test(folderError.message || '')) break;
+        throw folderError;
+      }
       for (const folder of folders || []) {
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(folder.name)) continue;
         for (let fileOffset = 0; ; fileOffset += 100) {
