@@ -28,7 +28,11 @@ async function request(params, options = {}) {
     .then(async (response) => {
       let payload = {};
       try { payload = await response.json(); } catch { /* handled below */ }
-      if (!response.ok) throw new Error(typeof payload.error === 'string' ? payload.error : 'crypto_request_failed');
+      if (!response.ok) {
+        const error = new Error(typeof payload.message === 'string' ? payload.message : (typeof payload.error === 'string' ? payload.error : 'crypto_request_failed'));
+        error.code = typeof payload.error === 'string' ? payload.error : 'crypto_request_failed';
+        throw error;
+      }
       const result = { ...payload, cached: false };
       cache.set(key, { value: result, savedAt: Date.now() });
       return result;

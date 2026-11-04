@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
   if (!['markets', 'coin', 'history'].includes(action)) return json(res, 400, { error: 'invalid_action' });
 
   const key = process.env.COINPAPRIKA_API_KEY;
-  if (!key) return json(res, 503, { error: 'crypto_provider_not_configured' });
+  if (!key) return json(res, 503, { error: 'crypto_provider_not_configured', message: 'Configure the licensed CoinPaprika API key as the server-only Vercel environment variable COINPAPRIKA_API_KEY, then redeploy.' });
   const base = BASE;
   const headers = { Accept: 'application/json', Authorization: key };
   let path;
@@ -85,8 +85,14 @@ module.exports = async function handler(req, res) {
   try {
     const upstream = await fetch(base + path, { headers, signal: AbortSignal.timeout(12000) });
     if (!upstream.ok) {
-      const status = upstream.status === 429 ? 429 : upstream.status === 404 ? 404 : 502;
-      return json(res, status, { error: status === 429 ? 'crypto_provider_rate_limited' : status === 404 ? 'coin_not_found' : 'crypto_provider_unavailable' });
+      const status = upstream.status === 429 ? 429 : upstream.status === 404 ? 404 : upstream.status === 402 ? 502 : 502;
+      const error = upstream.status === 429 ? 'crypto_provider_rate_limited'
+        : upstream.status === 404 ? 'coin_not_found'
+          : upstream.status === 402 ? 'crypto_provider_payment_required' : 'crypto_provider_unavailable';
+      const message = upstream.status === 402
+        ? 'CoinPaprika rejected this request with HTTP 402. Check the provider account, API plan, billing status, and whether this endpoint is included.'
+        : undefined;
+      return json(res, status, { error, ...(message ? { message } : {}) });
     }
     const payload = await upstream.json();
     const cache = 'public, s-maxage=180, stale-while-revalidate=300';

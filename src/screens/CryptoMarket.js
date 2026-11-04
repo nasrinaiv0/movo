@@ -62,7 +62,8 @@ export default function CryptoMarket({ c }) {
     } catch (e) {
       setError(e.message === 'crypto_provider_not_configured'
         ? 'Crypto markets are not configured yet. Add the licensed CoinPaprika API key as the server-only COINPAPRIKA_API_KEY environment variable.'
-        : e.message === 'crypto_provider_rate_limited' ? 'Market data is temporarily rate-limited. Try again later.'
+        : e.code === 'crypto_provider_payment_required' ? e.message
+          : e.message === 'crypto_provider_rate_limited' ? 'Market data is temporarily rate-limited. Try again later.'
           : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
     } finally { setLoading(false); setRefreshing(false); }
   };
@@ -78,7 +79,8 @@ export default function CryptoMarket({ c }) {
     }).catch((e) => {
       if (active) setError(e.message === 'crypto_provider_not_configured'
         ? 'Crypto markets are not configured yet. Add the licensed CoinPaprika API key as the server-only COINPAPRIKA_API_KEY environment variable.'
-        : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
+        : e.code === 'crypto_provider_payment_required' ? e.message
+          : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; controller.abort(); };
   }, [quote]);
