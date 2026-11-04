@@ -27,7 +27,6 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [duePromptShown, setDuePromptShown] = useState(false);
 
   const reload = useCallback(async () => {
     const since = shift(today, -62);
@@ -54,13 +53,6 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
     setPay({ occ: o, amount: String(amountRemaining(o)), account_id: bill?.account_id && payAccounts(o.currency).some(a => a.id === bill.account_id) ? bill.account_id : '', paid_at: today, actual: o.is_estimate && o.actual_amount == null ? '' : null, nonce: newNonce() });
     setError(''); setNotice('');
   };
-  useEffect(() => {
-    if (duePromptShown || pay || !occurrences.length) return;
-    const dueNow = occurrences.filter(o => o.due_date <= today && amountRemaining(o) > 0 && occurrenceState(o, today) !== 'cancelled')
-      .sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
-    if (dueNow) { setDuePromptShown(true); openPay(dueNow); }
-  }, [occurrences, duePromptShown, pay, today]);
-
   const submitPay = (method) => run(async () => {
     if (pay.actual) await updateOccurrence(pay.occ.id, { actual_amount: Number(pay.actual) });
     await recordBillPayment({ occurrence_id: pay.occ.id, amount: pay.amount, method, account_id: method === 'recorded' ? pay.account_id : null, paid_at: `${pay.paid_at}T12:00:00Z`, key: paymentKey(pay.occ.id, pay.nonce) });
