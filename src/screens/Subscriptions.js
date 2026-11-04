@@ -6,6 +6,7 @@ import { CATALOG, CYCLES, SUB_CATEGORIES, catalogFor, summarize, renewalsBetween
 import { evaluate } from '../lib/calc';
 import { BRAND_LOGOS } from '../lib/brandLogos';
 import { t as tr } from '../lib/i18n';
+import BrandLogo from '../components/BrandLogo';
 
 const TABS = [['upcoming', 'Upcoming'], ['calendar', 'Calendar'], ['insights', 'Insights']];
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
@@ -46,13 +47,9 @@ export function SubIcon({ sub, size = 40 }) {
       <svg viewBox="0 0 24 24" width={Math.round(size * 0.62)} height={Math.round(size * 0.62)}><path d={mark.path} fill={isLight(color) ? '#111' : '#fff'} /></svg>
     </span>;
   }
-  if (known?.site && !faviconBroken) {
-    return <span className="sub-icon has-logo fill favicon-logo" style={{ width: size, height: size }} aria-hidden="true">
-      <img src={`https://${known.site}/favicon.ico`} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFaviconBroken(true)} />
-    </span>;
-  }
   const initials = String(sub.name || '?').replace(/[^A-Za-z0-9+ ]/g, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
-  return <span className="sub-icon" style={{ width: size, height: size, background: color, color: isLight(color) ? '#111' : '#fff', fontSize: Math.round(size * 0.36) }} aria-hidden="true">{initials}</span>;
+  const fallback = <span className="sub-icon" style={{ width: size, height: size, background: color, color: isLight(color) ? '#111' : '#fff', fontSize: Math.round(size * 0.36) }} aria-hidden="true">{initials}</span>;
+  return <BrandLogo name={sub.name} size={size} className="sub-icon has-logo fill" fallbackSrcs={known?.site ? [`https://${known.site}/favicon.ico`] : []} fallback={fallback} />;
 }
 
 /** Shown wherever brand marks appear. */
