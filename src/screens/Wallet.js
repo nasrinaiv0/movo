@@ -171,7 +171,7 @@ export default function Wallet({ c }) {
       {selectedCard?.cardKind !== 'credit' && <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
         <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>}
-      {selectedCard && <section className="account-hub-section account-spending-section wallet-selected-spending" aria-label={tr('Last 10 days spending')}>
+      {selectedCard && <section className="account-hub-section account-spending-section wallet-selected-spending" aria-label={tr('Last 10 Days Spending')}>
         <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(selectedCardSpent, c.base || 'PHP'))}</strong></div>
         <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(selectedCardSpent, c.base || 'PHP') })}>
           <Bars values={selectedCardSpending.map(day => day.total)} startLabel={tr('9 days ago')} endLabel={tr('Today')} />
