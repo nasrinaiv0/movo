@@ -32,7 +32,7 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
     <div className="header-actions">
       {action ? <IconButton icon={action.icon} label={action.label} onClick={action.onClick} /> : !hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
       {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
-      {onSettings && <IconButton icon="gear" label={tr('Settings')} onClick={onSettings} />}
+      {onSettings && <IconButton icon="gearSolid" label={tr('Settings')} onClick={onSettings} />}
     </div>
   </header>;
 }
