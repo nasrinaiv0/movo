@@ -4817,3 +4817,8 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .scheduled-obligation-row .fp-amount { max-width:43%; }
 }
 @media (prefers-reduced-motion:reduce) { .movo-app .scheduled-hero, .movo-app .scheduled-obligation-row { transition:none; } }
+
+
+/* Wallet header: replace the old settings/add pair with one clearly accented add action. */
+.movo-app .screen-header.root .round-button.wallet-header-add{width:44px;height:44px;min-width:44px;background:var(--accent);color:var(--on-accent);border:0;box-shadow:0 4px 12px rgba(var(--accent-rgb),.25)}
+.movo-app .screen-header.root .round-button.wallet-header-add .movo-icon{color:var(--on-accent)}
