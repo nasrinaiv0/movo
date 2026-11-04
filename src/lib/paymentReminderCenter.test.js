@@ -1,4 +1,4 @@
-import { isReminderActioned, reminderActionKey, reminderEventAllowsDisplay } from './paymentReminderCenter';
+import { isReminderActioned, reminderActionKey, reminderEventAllowsDisplay, reminderOccurrenceAllowsDisplay } from './paymentReminderCenter';
 
 describe('persistent reminder actions',()=>{
   const entry={kind:'bill',item:{id:'bill-1'},date:'2026-11-05'};
@@ -17,5 +17,12 @@ describe('persistent reminder actions',()=>{
     expect(reminderEventAllowsDisplay({status:'dismissed'})).toBe(false);
     expect(reminderEventAllowsDisplay({status:'snoozed',snoozed_until:'2099-01-01T00:00:00.000Z'})).toBe(false);
     expect(reminderEventAllowsDisplay({status:'snoozed',snoozed_until:'2000-01-01T00:00:00.000Z'})).toBe(true);
+  });
+  test('skip and snooze suppress every reminder offset for the same due occurrence',()=>{
+    const events=[{channel:'in_app',source_type:'bill',source_id:'bill-1',occurrence_date:'2026-11-05',reminder_offset:1,status:'dismissed'}];
+    expect(reminderOccurrenceAllowsDisplay(events,entry,0)).toBe(false);
+    const snoozed=[{...events[0],status:'snoozed',snoozed_until:'2099-01-01T00:00:00.000Z'}];
+    expect(reminderOccurrenceAllowsDisplay(snoozed,entry,0)).toBe(false);
+    expect(reminderOccurrenceAllowsDisplay([{...events[0],status:'sent'}],entry,0)).toBe(true);
   });
 });
