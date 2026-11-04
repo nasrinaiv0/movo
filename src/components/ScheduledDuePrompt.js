@@ -4,6 +4,7 @@ import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
+import { snoozeSchedule } from '../lib/paymentReminderCenter';
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const shift = (date, days) => { const value=new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate()+days); return value.toISOString().slice(0,10); };
@@ -52,7 +53,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
     return()=>{live=false;};
   },[loadDue,setActive]);
-  const close=()=>setActive(null);
+  const close=async()=>{ if(entry?.kind==='scheduled'&&session?.user?.id){try{await snoozeSchedule(entry.item.id,session.user.id,new Date(Date.now()+86400000).toISOString());}catch{/* Keep the prompt dismissible while offline. */}} setActive(null); };
   const log=async event=>{
     event.preventDefault();if(!entry)return;
     if(entry.kind==='subscription'){onSubscriptionLog?.(entry.item);setActive(null);return;}
@@ -73,6 +74,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const item=entry.item;
   const billCurrency=item.currency||entry.bill?.currency||'PHP';
   const choices=accounts.filter(a=>a.currency===billCurrency);
+  const suggested=choices.filter(a=>Number(a.balance||0)>=Number(amount||item.amount||0)).sort((a,b)=>Number(b.balance||0)-Number(a.balance||0))[0];
   const title=entry.kind==='scheduled'?'Scheduled transaction due':entry.kind==='bill'?'Bill payment due':'Subscription renewal due';
   const description=entry.kind==='bill'?(entry.bill?.name||tr('Bill')):item.title||item.name;
   return <Sheet title={tr(title)} subtitle={description} onClose={close} label={tr('Log due transaction')}>
@@ -85,6 +87,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       </>:<>
         <p className="form-note">{tr('Review and confirm to add this transaction to your records. MOVO will not move money.')}</p>
         <strong>{billCurrency} {Number(amount).toLocaleString()}</strong>
+        {!account&&suggested&&<p className="form-note">{tr('Suggested account')}: {suggested.institution_name||suggested.name}</p>}
+        {!account&&!suggested&&<p className="form-note">{tr('Check your account balance before confirming this transaction.')}</p>}
         <label>{tr('Account to use')}<select required value={account} onChange={e=>setAccount(e.target.value)}><option value="">{tr('Choose account')}</option>{choices.map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>
         {entry.kind==='scheduled'&&item.transaction_type==='transfer'&&<label>{tr('Destination account')}<select required value={destination} onChange={e=>setDestination(e.target.value)}><option value="">{tr('Choose destination')}</option>{choices.filter(a=>a.id!==account).map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>}
         {entry.kind==='bill'&&<label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></label>}
