@@ -990,8 +990,11 @@ function App() {
   const userId = cloudMode ? session?.user?.id || '' : '';
   useEffect(() => {
     const retry = () => setQrRetryTick(value => value + 1);
+    const onVisibility = () => { if (document.visibilityState === 'visible') retry(); };
     window.addEventListener('online', retry);
-    return () => window.removeEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { window.removeEventListener('online', retry); window.removeEventListener('focus', retry); document.removeEventListener('visibilitychange', onVisibility); };
   }, []);
   useEffect(() => {
     let live = true;
@@ -1065,7 +1068,7 @@ function App() {
       });
     });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, cloudAccounts]);
+  }, [userId, prefs.accountQrCodes, cloudAccounts, qrRetryTick]);
   useEffect(() => {
     const sync = prefsSync.current;
     if (!sync.ready || !sync.user) return undefined;
