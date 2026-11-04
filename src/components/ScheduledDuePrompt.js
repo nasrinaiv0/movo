@@ -25,58 +25,49 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const loadDue = useCallback(async () => {
     const date=today();
     const userId=session?.user?.id;
-    let schedules=[], billsDue=[], loansDue=[], receivablesDue=[], cardsDue=[];
+    let schedules=[], bills=[], occurrences=[], loans=[], receivables=[];
+    let schedulesDue=[], billsDue=[], loansDue=[], receivablesDue=[], cardsDue=[];
+    let billMap=new Map();
     let preferences={enabled:true,reminder_days:[0,1,3],timezone:'Asia/Manila'};
     let events=[];
     if(userId){
-      const [scheduled,bills,occurrences,prefs,history]=await Promise.all([
-        listScheduledTransactions(), listBills(), listOccurrences(shift(date,31),shift(date,-62)),
-        getReminderPreferences(userId), listReminderEvents(userId,100),
+      const result=await Promise.all([
+        listScheduledTransactions(),listBills(),listOccurrences(shift(date,31),shift(date,-365)),
+        getReminderPreferences(userId),listReminderEvents(userId,100),listLoans(),listReceivables(),
       ]);
-      preferences=prefs||preferences; events=history||[];
-      const billMap=new Map(bills.map(b=>[b.id,b]));
+      [schedules,bills,occurrences,preferences,events,loans,receivables]=result;
+      preferences=preferences||{enabled:true,reminder_days:[0,1,3],timezone:'Asia/Manila'};
+      events=events||[];billMap=new Map(bills.map(b=>[b.id,b]));
+      schedulesDue=schedules.filter(row=>row.status==='scheduled'&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString())).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
+      billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
       loansDue=loans.filter(x=>Number(x.outstanding_principal)>0&&x.due_date).map(x=>({kind:'loan',item:x,date:x.due_date}));
       receivablesDue=receivables.filter(x=>Number(x.outstanding_amount)>0&&x.due_date).map(x=>({kind:'receivable',item:x,date:x.due_date}));
       cardsDue=accountsView.filter(x=>!x.is_archived&&x.account_type==='card'&&x.cardKind==='credit').map(card=>{
         const style=cardStyles[card.id]||{};const owed=Math.max(0,-Number(card.balance||0));
         return {kind:'credit_card',item:{...card,title:card.institution_name||card.name,amount:Number(style.minimumDue)||owed,currency:card.currency||'PHP'},date:style.paymentDueDate||''};
       }).filter(x=>x.date&&Number(x.item.amount)>0);
-      schedules=scheduled.filter(row=>row.status==='scheduled'&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString()))
-        .map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
-      billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
-        .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
     }
-    const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^\d{4}-\d{2}-\d{2}$/.test(s.start||''))
-      .map(s=>({kind:'subscription',item:s,date:s.start}));
-    const candidates=[...schedules,...billsDue,...subscriptionsDue,...loansDue,...receivablesDue,...cardsDue];
-    if(preferences.enabled===false)return [];
-    const daysUntil=value=>Math.floor((new Date(`${value}T12:00:00Z`).getTime()-new Date(`${date}T12:00:00Z`).getTime())/86400000);
-    const eligible=candidates.filter(entry=>{
+    const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s.start||'')).map(s=>({kind:'subscription',item:s,date:s.start}));
+    const candidates=[...schedulesDue,...billsDue,...subscriptionsDue,...loansDue,...receivablesDue,...cardsDue];
+    const daysUntil=value=>Math.floor((new Date(value+'T12:00:00Z').getTime()-new Date(date+'T12:00:00Z').getTime())/86400000);
+    const eligible=(preferences.enabled===false?[]:candidates.filter(entry=>{
       const offset=daysUntil(entry.date);
-      const itemDays=entry.item.reminder_days;
-      const allowed=Array.isArray(itemDays)?itemDays:(preferences.reminder_days||[0,1,3]);
+      const allowed=Array.isArray(entry.item.reminder_days)?entry.item.reminder_days:(preferences.reminder_days||[0,1,3]);
       if(offset>0&&!allowed.includes(offset))return false;
       if(offset<0&&offset < -30)return false;
-      const type=entry.kind;
-      const sourceId=String(entry.kind==='bill'?entry.item.id:entry.item.id);
-      const previous=events.find(e=>e.source_type===type&&e.source_id===sourceId&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
-      return !previous || (previous.snoozed_until&&previous.snoozed_until<=new Date().toISOString());
-    }).sort((a,b)=>a.date.localeCompare(b.date));
+      const previous=events.find(e=>e.source_type===entry.kind&&e.source_id===String(entry.item.id)&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
+      return !previous||(previous.snoozed_until&&previous.snoozed_until<=new Date().toISOString());
+    })).sort((a,b)=>a.date.localeCompare(b.date));
     const queue=eligible.map(entry=>({...entry,reminderOffset:Math.max(0,daysUntil(entry.date))}));
     let notificationEvents=events;
     if(userId&&queue.length){
       const first=queue[0];
-      const saved=await recordReminderEvent(userId,{
-        source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,
-        reminder_offset:first.reminderOffset,status:'sent',
-      }).catch(()=>null);
+      const saved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,status:'sent'}).catch(()=>null);
       if(saved)notificationEvents=[...events.filter(e=>!(e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
     }
     if(userId) await syncPaymentNotifications({
-      schedules:scheduled,
-      bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
-      subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),
-      preferences,events:notificationEvents,
+      schedules,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
+      subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),preferences,events:notificationEvents,
     }).catch(()=>null);
     return queue;
   },[session?.user?.id,subscriptions,accountsView,cardStyles]);
