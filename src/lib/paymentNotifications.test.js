@@ -18,7 +18,14 @@ const localDate = value => {
 };
 
 describe('payment notification scheduling', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    LocalNotifications.checkPermissions.mockResolvedValue({ display:'granted' });
+    LocalNotifications.requestPermissions.mockResolvedValue({ display:'granted' });
+    LocalNotifications.getPending.mockResolvedValue({ notifications:[] });
+    LocalNotifications.cancel.mockResolvedValue({});
+    LocalNotifications.schedule.mockResolvedValue({});
+  });
 
   test('detects quiet hours that cross midnight', () => {
     expect(inQuietHours(new Date(2026,10,4,23,30),'22:00','07:00')).toBe(true);
