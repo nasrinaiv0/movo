@@ -9,7 +9,7 @@ import { allocateToGoal, createGoal, createLoan, createReceivable, recordLoanEve
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
 import { creditCardPlanningMetrics } from '../lib/creditCard';
-import { institutionLogoUrl } from '../lib/institutions';
+import { institutionLogoCandidates } from '../lib/institutions';
 import { convert } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
 import BillsPanel from '../components/BillsPanel';
@@ -122,9 +122,9 @@ export default function FinancialPlanning({ c }) {
         const today = new Date().toISOString().slice(0, 10);
         const overdue = dueDate && dueDate < today && metrics.outstandingAfterPayments > 0;
         const institution = card.institution_name || card.name;
-        const logoUrl = institutionLogoUrl(institution, { size: 64 });
+        const logoCandidates = institutionLogoCandidates(institution, { size: 64 });
         return <article className="card fp-goal fp-credit-card" key={card.id}>
-          <div className="fp-goal-head"><BrandLogo src={logoUrl} size={36} className="fp-credit-card-logo" fallback={<span className="stat-icon tone-red"><Icon name="credit-card" size={17} /></span>} /><span className="fp-main"><strong>{institution}</strong><small>{tr('•••• {last4}', { last4: card.mask || '----' })}</small></span><span className="fp-amount"><b>{cash(metrics.outstandingAfterPayments, card.currency)}</b><small>{tr('Outstanding after payments')}</small></span></div>
+          <div className="fp-goal-head"><BrandLogo src={logoCandidates[0]} fallbackSrcs={logoCandidates.slice(1)} size={36} className="fp-credit-card-logo" fallback={<span className="stat-icon tone-red"><Icon name="credit-card" size={17} /></span>} /><span className="fp-main"><strong>{institution}</strong><small>{tr('•••• {last4}', { last4: card.mask || '----' })}</small></span><span className="fp-amount"><b>{cash(metrics.outstandingAfterPayments, card.currency)}</b><small>{tr('Outstanding after payments')}</small></span></div>
           <div className="fp-credit-card-metrics">
             <div><small>{tr('Amount Spent')}</small><b>{cash(metrics.amountSpent, card.currency)}</b></div>
             <div><small>{tr('Amount After Interest')}</small><b>{cash(metrics.amountAfterInterest, card.currency)}</b><span>{tr('Includes estimated monthly interest')}</span></div>
