@@ -33,3 +33,25 @@ test('cash with no finish is a green MOVO card; a known bank keeps its own face 
   expect(bpi.el.querySelector('.ccx-name').textContent).toBe('BPI');
   act(() => bpi.root.unmount());
 });
+
+test('credit cards show spent, limit and a utilization bar instead of the balance amount', () => {
+  const a = { id: 'credit-1', name: 'AUB', institution_name: 'Asia United Bank', account_type: 'card', cardKind: 'credit', mask: '2556', balance: -522300, creditLimit: 800000, currency: 'PHP' };
+  const { el, root } = render(<CardArt a={a} show />);
+  expect(el.querySelector('.ccx-credit-usage')).not.toBeNull();
+  expect(el.querySelector('.ccx-credit-values').textContent).toContain('Spent');
+  expect(el.querySelector('.ccx-credit-values').textContent).toContain('Limit');
+  expect(el.querySelector('.ccx-credit-values').textContent).toContain('₱522,300.00');
+  expect(el.querySelector('.ccx-credit-values').textContent).toContain('₱800,000.00');
+  expect(el.querySelector('[role="progressbar"]').getAttribute('aria-valuenow')).toBe('65');
+  expect(el.querySelector('.ccx-credit-fill').style.width).toBe('65%');
+  expect(el.querySelector('.ccx-balance')).toBeNull();
+  act(() => root.unmount());
+});
+
+test('debit cards continue to show their balance without credit utilization', () => {
+  const a = { id: 'debit-1', name: 'AUB', institution_name: 'Asia United Bank', account_type: 'card', cardKind: 'debit', balance: 522300, currency: 'PHP' };
+  const { el, root } = render(<CardArt a={a} show />);
+  expect(el.querySelector('.ccx-credit-usage')).toBeNull();
+  expect(el.querySelector('.ccx-balance').textContent).toContain('522,300');
+  act(() => root.unmount());
+});
