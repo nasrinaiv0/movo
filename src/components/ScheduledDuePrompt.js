@@ -32,6 +32,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     let billMap=new Map();
     let preferences={enabled:true,reminder_days:[0,1,3],timezone:'Asia/Manila'};
     let events=[];
+    preferences=await getReminderPreferences(userId);
     if(userId){
       const result=await Promise.all([
         listScheduledTransactions(),listBills(),listOccurrences(shift(date,31),shift(date,-365)),
@@ -69,7 +70,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const saved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,status:'sent'}).catch(()=>null);
       if(saved)notificationEvents=[...events.filter(e=>!(e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
     }
-    if(userId) await syncPaymentNotifications({
+    await syncPaymentNotifications({
       schedules,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
       subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),preferences,events:notificationEvents,
     }).catch(()=>null);
