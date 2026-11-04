@@ -6,7 +6,7 @@
  */
 import { mergeStreak } from './streak';
 
-const MAPS = ['cardStyles', 'accountStyles', 'layouts', 'cardBankLinks'];
+const MAPS = ['cardStyles', 'accountStyles', 'layouts', 'cardBankLinks', 'accountQrCodes'];
 const ID_LISTS = ['budgets', 'plans', 'subscriptions', 'devices', 'archive', 'cryptoHoldings'];
 const STRING_LISTS = { readIds: 500, pushed: 200 };
 const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay'];
