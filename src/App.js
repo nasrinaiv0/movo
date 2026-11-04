@@ -1021,7 +1021,7 @@ function App() {
       }
     })).then(rows => { if (live) setAccountQrDisplay(Object.fromEntries(rows.filter(([, value]) => value))); });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick]);
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, stickerTick]);
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
