@@ -3,7 +3,7 @@ import { createTransaction } from './financeRepository';
 
 const client = () => { if (!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
-const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) && !Number.isNaN(Date.parse(value)) ? value : (() => { throw new Error('Choose a valid scheduled date.'); })();
+const validDate = value => { const date=String(value||''); const parsed=new Date(date+'T00:00:00Z'); if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)||Number.isNaN(parsed.getTime())||parsed.toISOString().slice(0,10)!==date)throw new Error('Choose a valid scheduled date.'); return date; };
 export function nextScheduledDate(date, frequency) {
   const current = new Date(`${date}T12:00:00Z`);
   if (frequency === 'weekly') current.setUTCDate(current.getUTCDate() + 7);
