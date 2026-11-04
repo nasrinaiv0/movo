@@ -18,15 +18,25 @@ export function creditInfo(a) {
 
 /** Summarize recorded payments by total and distinct calendar months. */
 export function creditCardPaymentSummary(payments = []) {
-  const valid = payments.filter(p => {
+  const seen = new Set();
+  const valid = (Array.isArray(payments) ? payments : []).filter(p => {
+    if (!p || typeof p !== 'object') return false;
     const month = String(p.month || '');
     const date = String(p.date || '');
-    if (!Number.isFinite(Number(p.amount)) || Number(p.amount) <= 0) return false;
+    const amount = Number(p.amount);
+    if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e16) return false;
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date.slice(0, 7) !== month) return false;
     const parsed = new Date(date + 'T00:00:00.000Z');
-    return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+    if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) return false;
+    if (p.id !== undefined && p.id !== null && String(p.id)) {
+      const id = String(p.id);
+      if (seen.has(id)) return false;
+      seen.add(id);
+    }
+    return true;
   });
-  return { totalPaid: Math.round(valid.reduce((sum, p) => sum + Number(p.amount), 0) * 100) / 100, monthsPaid: new Set(valid.map(p => p.month)).size, payments: valid.slice().sort((a, b) => b.date.localeCompare(a.date)) };
+  const totalPaid = Math.round((valid.reduce((sum, p) => sum + Number(p.amount), 0) + Number.EPSILON) * 100) / 100;
+  return { totalPaid, monthsPaid: new Set(valid.map(p => p.month)).size, payments: valid.slice().sort((a, b) => b.date.localeCompare(a.date)) };
 }
 
 
