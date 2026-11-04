@@ -783,7 +783,7 @@ function App() {
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
     setError('');
-    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: '', category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
