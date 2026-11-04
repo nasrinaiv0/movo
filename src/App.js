@@ -1323,7 +1323,7 @@ function App() {
         setSheet({ name: 'transaction', type });
       }} />}
 
-      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
+      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">

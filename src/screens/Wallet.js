@@ -80,7 +80,7 @@ export default function Wallet({ c }) {
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
-  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={prefs.accountQrCodes?.[a.id] || ''} />;
+  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} />;
   const renderAccounts = (items) => (wv.view === 'list'
     ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
     : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>

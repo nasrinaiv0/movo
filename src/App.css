@@ -4501,3 +4501,6 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .chip-bar > .chip-row { gap: 3px; }
   .movo-app .chip-bar > .chip-row > button[data-chip] { min-width: 36px; padding-inline: 6px; }
 }
+
+/* Uploaded bank/e-wallet QR placement: anchored inside the lower-right of account card faces. */
+.ccx-account-qr{position:absolute;z-index:5;right:12px;bottom:12px;width:48px;height:48px;padding:3px;border-radius:7px;background:#fff;box-shadow:0 2px 8px #0003;display:grid;place-items:center;overflow:hidden}.ccx-account-qr img{display:block;width:100%;height:100%;object-fit:contain}.account-tile{position:relative}.at-qr{position:absolute;right:10px;bottom:10px;width:42px;height:42px;padding:3px;border-radius:6px;background:#fff;box-shadow:0 2px 8px #0003;display:grid;place-items:center;overflow:hidden;z-index:3}.at-qr img{display:block;width:100%;height:100%;object-fit:contain}.at-bottom{padding-right:50px}
