@@ -3,7 +3,8 @@ import Icon from './Icon';
 import CardArt from './CardArt';
 import AccountTile, { styleFor } from './AccountTile';
 import { Sheet, TransactionRow, Bars } from './ui';
-import { money, shown, dayKey } from '../lib/format';
+import { money, shown } from '../lib/format';
+import { accountSpendingHistory } from '../lib/accountSpending';
 import { creditInfo } from '../lib/creditCard';
 import { estimateCashback } from '../lib/cashback';
 import { listScheduledTransactions } from '../lib/scheduledTransactions';
@@ -31,27 +32,13 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const relatedTransactions = useMemo(() => transactions.filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id), [transactions, account.id]);
   const recentTransactions = relatedTransactions.slice(0, 30);
   const expenses = relatedTransactions.filter(item => item.type === 'expense' || item.transaction_type === 'expense');
-  // Aggregate only debits posted from this account across the last 10 local calendar days.
-  // Incoming transfers and transactions merely transferred into this account are not spending.
-  const spendingHistory = useMemo(() => {
-    const dates = [];
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    for (let offset = 9; offset >= 0; offset -= 1) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - offset);
-      dates.push({ date, key: dayKey(date), total: 0 });
-    }
-    const byDay = new Map(dates.map(day => [day.key, day]));
-    transactions.forEach(item => {
-      if (item.account_id !== account.id || (item.type !== 'expense' && item.transaction_type !== 'expense')) return;
-      const timestamp = Date.parse(item.date || item.occurred_at || '');
-      if (!Number.isFinite(timestamp)) return;
-      const day = byDay.get(dayKey(timestamp));
-      if (day) day.total += Math.max(0, Number(item.amount) || 0);
-    });
-    return dates;
-  }, [transactions, account.id]);
+  const spendingHistory = useMemo(() => accountSpendingHistory({
+    account,
+    accounts,
+    prefs,
+    transactions,
+    days: 10,
+  }), [account, accounts, prefs.cardBankLinks, prefs.accountStyles, transactions]);
   const spendingTotal = spendingHistory.reduce((sum, day) => sum + day.total, 0);
   const recentSpend = expenses.filter(item => { const timestamp = Date.parse(item.date || item.occurred_at || ''); const age = Date.now() - timestamp; return Number.isFinite(timestamp) && age >= 0 && age <= 30 * 86400000; }).reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
   const info = creditInfo(account);
@@ -94,7 +81,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
           {row('Transactions', String(relatedTransactions.length))}
         </div>
         <section className="account-hub-section account-spending-section" aria-label={tr('Last 10 days spending')}>
-          <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(spendingTotal, currency))}</strong></div>
+          <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(spendingTotal, base || 'PHP'))}</strong></div>
           <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(spendingTotal, currency) })}>
             <Bars values={spendingHistory.map(day => day.total)} startLabel={tr('10 days ago')} endLabel={tr('Today')} />
           </div>
