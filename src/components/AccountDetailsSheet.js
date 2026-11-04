@@ -62,7 +62,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
           {row('Transactions', String(relatedTransactions.length))}
         </div>
         <div className="account-hub-section">
-          <h3>{tr('Recent activity')}</h3>
+          <h3>{tr('Recent account activity')}</h3>
           {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
           {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
         </div>
@@ -74,7 +74,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
       </div>}
       {tab === 'connected' && <>
         {account.account_type !== 'card' && <section className="account-hub-section"><h3>{tr('Cards connected to this account')}</h3>
-          {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('No number')}</small></button>)}
+          {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('Card number not added')}</small></button>)}
           {!linkedCards.length && <p className="empty">{tr('No cards connected to this account yet.')}</p>}
         </section>}
         <section className="account-hub-section"><h3>{tr('Automatic cashback')}</h3>
