@@ -6,7 +6,8 @@ const db = () => { if(!supabase) throw new Error('MOVO cloud storage is not conf
 export async function recordPaymentAttempt(userId, input) {
   if(!userId) throw new Error('Sign in to save payment attempt history.');
   if(!['scheduled','bill','subscription','loan','credit_card','receivable'].includes(input?.source_type)) throw new Error('Choose a valid payment source.');
-  if(!input.source_id || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(input.due_date||'')) throw new Error('The payment reference or due date is invalid.');
+  const dueDate=String(input.due_date||''); const parsedDate=new Date(dueDate+'T00:00:00Z');
+  if(!input.source_id || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dueDate) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0,10)!==dueDate) throw new Error('The payment reference or due date is invalid.');
   if(!['failed','paid','cancelled'].includes(input.status)) throw new Error('Choose a valid payment status.');
   const amount=input.amount==null?null:Number(input.amount);
   if(amount!==null&&(!Number.isFinite(amount)||amount<=0)) throw new Error('Enter a valid payment amount.');
@@ -14,7 +15,8 @@ export async function recordPaymentAttempt(userId, input) {
     const owned=unwrap(await db().from('financial_accounts').select('id').eq('id',input.account_id).eq('user_id',userId).maybeSingle());
     if(!owned)throw new Error('Choose an account belonging to your MOVO profile.');
   }
-  const currency=/^[A-Z]{3}$/.test(input.currency||'PHP')?(input.currency||'PHP'):'PHP';
+  const currency=String(input.currency||'PHP').toUpperCase();
+  if(!/^[A-Z]{3}$/.test(currency))throw new Error('Choose a valid payment currency.');
   return unwrap(await db().from('payment_attempts').insert({
     user_id:userId,source_type:input.source_type,source_id:String(input.source_id),
     due_date:input.due_date,status:input.status,amount,currency,
