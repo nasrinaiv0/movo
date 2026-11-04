@@ -37,3 +37,19 @@ test('reuses a fresh cached response', async () => {
   expect(global.fetch).toHaveBeenCalledTimes(1);
   expect(second.cached).toBe(true);
 });
+
+
+test('preserves safe server guidance when the crypto API returns an actionable error', async () => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: false,
+    status: 503,
+    json: async () => ({
+      error: 'crypto_provider_not_configured',
+      message: 'Configure the licensed CoinPaprika API key as the server-only Vercel environment variable COINPAPRIKA_API_KEY, then redeploy.'
+    })
+  });
+  await expect(loadCryptoMarkets('PHP')).rejects.toMatchObject({
+    code: 'crypto_provider_not_configured',
+    message: 'Configure the licensed CoinPaprika API key as the server-only Vercel environment variable COINPAPRIKA_API_KEY, then redeploy.'
+  });
+});
