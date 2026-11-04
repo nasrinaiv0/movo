@@ -210,8 +210,8 @@ export default function CryptoMarket({ c }) {
         <div className="crypto-ranges">{[1, 7, 30, 90, 365].map((days) => <button type="button" key={days} className={range === days ? 'active' : ''} onClick={() => setRange(days)}>{days === 1 ? '24H' : days === 365 ? '1Y' : `${days}D`}</button>)}</div>
         {historyLoading ? <p className="crypto-empty">Loading historical prices…</p> : history.length > 1
           ? <svg className="crypto-chart" viewBox="0 0 320 104" role="img" aria-label={`${selected.name} historical price chart`}><path d={path} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          : <p className="crypto-empty">Historical prices are not available for this period on the configured provider plan.</p>}
-        <small className="crypto-source">Historical daily price observations · CoinPaprika</small>
+          : <p className="crypto-empty">Historical prices are not available for this period.</p>}
+        <small className="crypto-source">Historical daily price observations · CoinBeacon / Binance</small>
       </section>
     </section> : <>
       <div className="crypto-view-switch" role="tablist" aria-label="Crypto sections"><button type="button" role="tab" aria-selected={marketView === 'market'} className={marketView === 'market' ? 'active' : ''} onClick={() => setMarketView('market')}>Market</button><button type="button" role="tab" aria-selected={marketView === 'portfolio'} className={marketView === 'portfolio' ? 'active' : ''} onClick={() => setMarketView('portfolio')}>Portfolio <span>{holdings.length}</span></button></div>
@@ -262,7 +262,7 @@ export default function CryptoMarket({ c }) {
         </div>}
         {error && coins.length > 0 && <p className="crypto-warning" role="status">{error}</p>}
       </section>
-      <section className="crypto-provider-note card"><strong>Market data by CoinPaprika</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and plan limits. MOVO does not trade or custody cryptocurrency.</p><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
+      <section className="crypto-provider-note card"><strong>Market data by CoinBeacon · Binance fallback</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and free API limits. MOVO does not trade or custody cryptocurrency.</p><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
       </>}
     </>}
   </>;
