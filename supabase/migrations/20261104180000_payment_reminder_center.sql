@@ -51,6 +51,7 @@ create table if not exists public.payment_reminder_events (
   created_at timestamptz not null default now(),
   unique(user_id,source_type,source_id,occurrence_date,reminder_offset,channel)
 );
+alter table public.payment_reminder_events add column if not exists snoozed_until timestamptz;
 alter table public.payment_reminder_events enable row level security;
 drop policy if exists "Users read their payment reminder events" on public.payment_reminder_events;
 create policy "Users read their payment reminder events" on public.payment_reminder_events
