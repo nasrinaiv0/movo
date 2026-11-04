@@ -1350,6 +1350,7 @@ function App() {
 
   const c = {
     refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
+    accountQrDisplay,
     fx,
     refreshFx,
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
