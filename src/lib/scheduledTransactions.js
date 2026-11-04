@@ -20,7 +20,7 @@ export function nextScheduledDate(date, frequency) {
 const validAmount = value => { const n=Number(value); if(!Number.isFinite(n)||n<=0||n>=1e16) throw new Error('Enter an amount greater than zero.'); return Math.round(n*100)/100; };
 
 export async function listScheduledTransactions() {
-  return unwrap(await client().from('scheduled_transactions').select('*').eq('status','scheduled').order('scheduled_for').limit(500));
+  return unwrap(await client().from('scheduled_transactions').select('*').in('status',['scheduled','paused']).order('scheduled_for').limit(500));
 }
 export async function createScheduledTransaction(input, userId) {
   if (!userId) throw new Error('Sign in to schedule payments and transfers.');
@@ -40,7 +40,7 @@ export async function createScheduledTransaction(input, userId) {
     currency,
     account_id:input.account_id,transfer_to_account_id:type==='transfer'?input.transfer_to_account_id:null,
     scheduled_for:validDate(input.scheduled_for),frequency,status:'scheduled',
-    category:String(input.category||'Other').slice(0,60),notes:String(input.notes||'').slice(0,500)||null,
+    category:String(input.category||'Other').slice(0,60),notes:String(input.notes||'').slice(0,500)||null,\n    ends_on:input.ends_on||null,reminder_days:Array.isArray(input.reminder_days)?input.reminder_days:[0,1,3],timezone:String(input.timezone||'Asia/Manila').slice(0,64),
   }).select().single());
 }
 export async function logScheduledTransaction(item, accountId = item.account_id, transferTo = item.transfer_to_account_id) {
@@ -66,7 +66,7 @@ export async function logScheduledTransaction(item, accountId = item.account_id,
   const nextDate = nextScheduledDate(occurrence,item.frequency);\n  const recurring=item.frequency!=='once';
   const updated=await client().from('scheduled_transactions').update({
     scheduled_for:recurring?nextDate:occurrence,
-    status:recurring?'scheduled':'completed',last_logged_at:new Date().toISOString(),last_transaction_id:transaction.id,
+    status:recurring?'scheduled':'completed',last_logged_at:new Date().toISOString(),last_transaction_id:transaction.id,snoozed_until:null,updated_at:new Date().toISOString(),
   }).eq('id',item.id).eq('status','scheduled').select().single();
   if(updated.error) throw updated.error;
   return transaction;
