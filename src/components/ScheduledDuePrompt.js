@@ -45,9 +45,9 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       preferences=preferences||{enabled:true,reminder_days:[0,1,3],timezone:'Asia/Manila'};
       events=events||[];billMap=new Map(bills.map(b=>[b.id,b]));
       schedulesDue=schedules.filter(row=>row.status==='scheduled'&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString())).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
-      billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
-      loansDue=loans.filter(x=>Number(x.outstanding_principal)>0&&x.due_date).map(x=>({kind:'loan',item:x,date:x.due_date}));
-      receivablesDue=receivables.filter(x=>Number(x.outstanding_amount)>0&&x.due_date).map(x=>({kind:'receivable',item:x,date:x.due_date}));
+      billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled'&&!billMap.get(o.bill_id)?.is_archived).map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
+      loansDue=loans.filter(x=>!x.is_archived&&Number(x.outstanding_principal)>0&&x.due_date).map(x=>({kind:'loan',item:x,date:x.due_date}));
+      receivablesDue=receivables.filter(x=>!x.is_archived&&Number(x.outstanding_amount)>0&&x.due_date).map(x=>({kind:'receivable',item:x,date:x.due_date}));
     }
       cardsDue=accountsView.filter(x=>!x.is_archived&&x.account_type==='card'&&x.cardKind==='credit').map(card=>{
         const style=cardStyles[card.id]||{};const paid=creditCardPaymentSummary(cardPayments[card.id]||[]).totalPaid;
