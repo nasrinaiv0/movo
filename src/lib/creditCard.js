@@ -31,14 +31,28 @@ export function creditCardPaymentSummary(payments = []) {
 
 
 /* Credit-card planning figures: card-routed spend, estimated monthly APR interest and post-payment balance. */
-export function creditCardPlanningMetrics({ card, transactions = [], payments = [], annualInterestRate = 0, convertAmount = amount => amount } = {}) {
+export function creditCardPlanningMetrics({ card, transactions = [], payments = [], annualInterestRate = 0, statementBalance, convertAmount = amount => amount } = {}) {
   const round = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
   const rate = Number(annualInterestRate); const apr = Number.isFinite(rate) && rate >= 0 && rate <= 100 ? rate : 0;
   const currency = card?.currency || 'PHP';
+  const seenTransactions = new Set();
+  const excludedStatuses = new Set(['deleted', 'reversed', 'void', 'voided', 'cancelled', 'canceled', 'archived', 'refunded']);
   const amountSpent = round((Array.isArray(transactions) ? transactions : []).reduce((sum, item) => {
-    if (item?.account_id !== card?.id || (item?.transaction_type || item?.type) !== 'expense') return sum;
-    const raw = Number(item.origAmount ?? item.amount); if (!Number.isFinite(raw) || raw <= 0) return sum;
-    const converted = Number(convertAmount(raw, item.origCurrency || item.currency || currency, currency));
+    if (!item || String(item.account_id) !== String(card?.id) || (item.transaction_type || item.type) !== 'expense') return sum;
+    const status = String(item.status || item.transaction_status || '').toLowerCase();
+    if (excludedStatuses.has(status) || item.is_deleted || item.deleted_at || item.deletedAt
+      || item.is_reversed || item.reversed_at || item.reversedAt || item.is_voided || item.voided_at || item.voidedAt
+      || item.is_archived || item.archived_at) return sum;
+    if (item.id !== undefined && item.id !== null && String(item.id)) {
+      const id = String(item.id);
+      if (seenTransactions.has(id)) return sum;
+      seenTransactions.add(id);
+    }
+    const raw = Number(item.origAmount ?? item.amount);
+    if (!Number.isFinite(raw) || raw <= 0 || raw >= 1e16) return sum;
+    let converted;
+    try { converted = Number(convertAmount(raw, item.origCurrency || item.currency || currency, currency)); }
+    catch (_) { return sum; }
     return Number.isFinite(converted) && converted > 0 ? sum + converted : sum;
   }, 0));
   const limitValue = Number(card?.creditLimit); const limit = Number.isFinite(limitValue) && limitValue > 0 ? round(limitValue) : 0;
@@ -47,7 +61,9 @@ export function creditCardPlanningMetrics({ card, transactions = [], payments = 
     ? (Number.isFinite(balanceValue) && balanceValue >= 0 ? round(balanceValue) : 0)
     : (Number.isFinite(balanceValue) ? round(Math.max(0, -balanceValue)) : 0);
   const summary = creditCardPaymentSummary(payments);
-  const estimatedMonthlyInterest = round(outstanding * apr / 1200);
+  const statementValue = statementBalance === undefined || statementBalance === null || String(statementBalance).trim() === '' ? NaN : Number(statementBalance);
+  const interestPrincipal = Number.isFinite(statementValue) && statementValue > 0 ? statementValue : outstanding;
+  const estimatedMonthlyInterest = round(interestPrincipal * apr / 1200);
   const amountAfterInterest = round(outstanding + estimatedMonthlyInterest);
   const outstandingAfterPayments = round(Math.max(0, amountAfterInterest - summary.totalPaid));
   const spentLimitPercent = limit > 0 ? round(amountSpent / limit * 100) : null;
