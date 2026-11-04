@@ -51,7 +51,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     loadDue().then(queue=>{if(live&&queue.length)setActive(queue[0]);})
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
     return()=>{live=false;};
-  },[session?.user?.id]);
+  },[session?.user?.id,subscriptions]);
   const close=()=>setActive(null);
   const log=async event=>{
     event.preventDefault();if(!entry)return;
