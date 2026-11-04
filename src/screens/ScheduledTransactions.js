@@ -138,7 +138,7 @@ export default function ScheduledTransactions({ c }) {
     </article>):<p className="form-note">{tr('No reminder activity yet.')}</p>}</div>
     {paymentAttempts.length>0&&<><SectionTitle>{tr('Payment attempts')}</SectionTitle><div className="card list-card">{paymentAttempts.slice(0,8).map(attempt=><article className="fp-row" key={attempt.id}>
       <span className="stat-icon tone-red"><Icon name="alert-circle" size={17}/></span><span className="fp-main"><strong>{tr(attempt.status==='failed'?'Payment issue recorded':attempt.status)}</strong><small>{dateLabel(attempt.due_date)} · {attempt.note||tr('No note added')}</small></span><span className="fp-amount"><small>{attempt.currency} {Number(attempt.amount||0).toLocaleString()}</small></span>
-    </article>)}</div></>}</>
+    </article>)}</div></>}
     {notice&&<p className="form-note" role="status">{notice}</p>}
   </>;
 }
