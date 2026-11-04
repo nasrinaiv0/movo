@@ -21,7 +21,6 @@ const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(
 
 export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
-  const [cycleOpen, setCycleOpen] = useState(false);
   const currentCycle = monthKey(refDate);
   const selectedCycle = month === 'all' ? 'all' : (month || currentCycle);
   const cycleLabel = selectedCycle === 'all' ? tr('All billing cycles') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
@@ -65,7 +64,7 @@ export default function Transactions({ c }) {
         <div><div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
           {isCurrent && <Trend value={deltas.spent} chip />}</div>
-        <Bars values={monthStats.bars} startLabel={(month === 'all' ? tr('All') : monthLabel(month)).split(' ')[0]} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
+        <Bars values={monthStats.bars} startLabel={(month === 'all' ? tr('All') : monthLabel(month)).split(' ')[0]} endLabel={month === 'all' ? tr('Last 12 months') : `${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
       </section>
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
