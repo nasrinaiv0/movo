@@ -722,15 +722,16 @@ function App() {
       const previous = next[id] || '';
       let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
       if (value && isAccountQrDataUrl(value)) {
+        const qrDataUrl = value;
         const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
         let localCached = false;
-        try { await saveLocalAccountQr(cacheKey, value); localCached = true; } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
+        try { await saveLocalAccountQr(cacheKey, qrDataUrl); localCached = true; } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
         if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
         if (cloudMode && session?.user?.id) {
           try {
-            const path = await uploadAccountQr(session.user.id, id, value);
+            const path = await uploadAccountQr(session.user.id, id, qrDataUrl);
             value = path;
-            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: value })); /* IndexedDB cache remains available offline */ }
+            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: qrDataUrl })); /* IndexedDB cache remains available offline */ }
           } catch {
             value = previous || (localCached ? `localqr:${cacheKey}` : '');
             if (localCached) {
