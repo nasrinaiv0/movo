@@ -1,4 +1,4 @@
-import { creditInfo, isCreditCard, creditCardPaymentSummary } from './creditCard';
+import { creditInfo, isCreditCard, creditCardPaymentSummary, creditCardPlanningMetrics } from './creditCard';
 
 const card = (balance, creditLimit) => ({ account_type: 'card', cardKind: 'credit', balance, creditLimit });
 
@@ -27,8 +27,6 @@ test('ignores malformed payment month and date values', () => {
   expect(result).toMatchObject({ totalPaid: 25, monthsPaid: 1, payments: [{ amount: 25 }] });
 });
 
-
-import { creditCardPlanningMetrics } from './creditCard';
 describe('creditCardPlanningMetrics', () => {
   const card = { id: 'cc-1', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -10000, creditLimit: 50000 };
   test('calculates spend, monthly APR estimate, utilization and outstanding after payments', () => {
@@ -48,4 +46,4 @@ describe('creditCardPlanningMetrics', () => {
     const metrics = creditCardPlanningMetrics({ card: { ...card, balance: -100 }, payments: [{ amount: 500, month: '2026-11', date: '2026-11-05' }] });
     expect(metrics.outstandingAfterPayments).toBe(0);
   });
-}
+});
