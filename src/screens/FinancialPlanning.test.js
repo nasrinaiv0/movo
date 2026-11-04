@@ -199,3 +199,21 @@ test('credit card planning fields stay grouped in a responsive card layout with 
   expect(card.querySelector('button').textContent).toContain('Record payment');
   act(() => root.unmount()); el.remove();
 });
+
+
+test('credit card planning shows institution favicon and calculated spend, interest, utilization and post-payment balance', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
+  const card = { id: 'aub-card', name: 'AUB', institution_name: 'Asia United Bank (AUB)', mask: '2556', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -10000, creditLimit: 50000 };
+  await act(async () => root.render(<FinancialPlanning c={{ cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, card],
+    txs: [{ id: 'tx-1', account_id: 'aub-card', type: 'expense', amount: 6000, origAmount: 6000, origCurrency: 'PHP' }], fx: { rates: { USD: 1, PHP: 58 } },
+    prefs: { accountStyles: { 'aub-card': { annualInterestRate: '24' } }, creditCardPayments: { 'aub-card': [{ id: 'p-1', amount: 2000, month: '2026-11', date: '2026-11-05' }] } },
+    toBase: value => value, go: jest.fn(),
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  const cardEl = el.querySelector('.fp-credit-card');
+  expect(cardEl.querySelector('.fp-credit-card-logo').getAttribute('src')).toContain('domain=aub.com.ph');
+  expect(cardEl.textContent).toContain('Amount Spent'); expect(cardEl.textContent).toContain('6,000.00');
+  expect(cardEl.textContent).toContain('Amount After Interest'); expect(cardEl.textContent).toContain('10,200.00');
+  expect(cardEl.textContent).toContain('12.0%'); expect(cardEl.textContent).toContain('8,200.00');
+  act(() => root.unmount()); el.remove();
+});
