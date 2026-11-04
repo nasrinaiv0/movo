@@ -10,7 +10,7 @@ const png = 'data:image/png;base64,iVBORw0KGgo=';
 
 beforeEach(() => {
   jest.clearAllMocks();
-  global.crypto.randomUUID = jest.fn(() => '123e4567-e89b-42d3-a456-426614174002');
+  Object.defineProperty(global.crypto, 'randomUUID', { configurable: true, value: jest.fn(() => '123e4567-e89b-42d3-a456-426614174002') });
 });
 
 test('recognizes only normalized PNG data URLs', () => {
