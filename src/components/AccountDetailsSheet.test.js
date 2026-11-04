@@ -106,7 +106,7 @@ test('account overview charts 10 local days of account expenses only', async () 
   expect(values).toHaveLength(10);
   expect(values.slice(-2)).toEqual([75, 125]);
   expect(values.reduce((sum, value) => sum + value, 0)).toBe(200);
-  expect(chart.getAttribute('data-start')).toBe('10 days ago');
+  expect(chart.getAttribute('data-start')).toBe('9 days ago');
   expect(chart.getAttribute('data-end')).toBe('Today');
   act(() => root.unmount());
   el.remove();
