@@ -285,7 +285,7 @@ export default function FinancialPlanning({ c }) {
           ...plans.flatMap(item => (Array.isArray(item.fundingAllocations) ? item.fundingAllocations : []).filter(allocation => allocation.status !== 'released' && allocation.account_id === account.id)),
         ].reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
         if (amount + alreadyReserved > Math.max(0, Number(account.balance) || 0) + 0.000001) { setError(tr('Allocation exceeds the unreserved account balance.')); return; }
-        const allocation = { id: window.crypto?.randomUUID?.() || `plan-allocation-${Date.now()}`, account_id: account.id, account_type: account.account_type, amount: rawAmount, currency: rawPlan?.currency || form.currency, status: 'allocated', created_at: new Date().toISOString(), note: String(form.note || '').trim().slice(0, 500) };
+        const allocation = { id: window.crypto?.randomUUID?.() || `plan-allocation-${Date.now()}`, account_id: account.id, account_type: account.account_type, amount, currency: account.currency || form.currency, status: 'allocated', created_at: new Date().toISOString(), note: String(form.note || '').trim().slice(0, 500) };
         const nextPlans = rawPlans.map(item => String(item.id) === String(form.plan_id)
           ? { ...item, saved, fundingAllocations: [...(Array.isArray(item.fundingAllocations) ? item.fundingAllocations : []), allocation] }
           : item);
