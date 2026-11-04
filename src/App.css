@@ -4502,8 +4502,43 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .chip-bar > .chip-row > button[data-chip] { min-width: 36px; padding-inline: 6px; }
 }
 
-/* Uploaded bank/e-wallet QR placement: anchored inside the lower-right of account card faces. */
-.ccx-account-qr{position:absolute;z-index:5;right:12px;bottom:12px;width:48px;height:48px;padding:3px;border-radius:7px;background:#fff;box-shadow:0 2px 8px #0003;display:grid;place-items:center;overflow:hidden}.ccx-account-qr img{display:block;width:100%;height:100%;object-fit:contain}.account-tile{position:relative}.at-qr{position:absolute;right:10px;bottom:10px;width:42px;height:42px;padding:3px;border-radius:6px;background:#fff;box-shadow:0 2px 8px #0003;display:grid;place-items:center;overflow:hidden;z-index:3}.at-qr img{display:block;width:100%;height:100%;object-fit:contain}.at-bottom{padding-right:50px}
+/* Bank/e-wallet QR sits in the lower-left card corner; balance shifts right to keep both readable. */
+.ccx-account-qr{position:absolute;z-index:5;left:12px;right:auto;bottom:12px;width:48px;height:48px;padding:3px;border-radius:7px;background:#fff;box-shadow:0 2px 8px #0003;display:grid;place-items:center;overflow:hidden}.ccx-account-qr img{display:block;width:100%;height:100%;object-fit:contain}.account-tile{position:relative}.at-qr{position:absolute;left:10px;right:auto;bottom:10px;width:42px;height:42px;padding:3px;border-radius:6px;background:#fff;box-shadow:0 2px 8px #0003;display:grid;place-items:center;overflow:hidden;z-index:3}.at-qr img{display:block;width:100%;height:100%;object-fit:contain}.at-bottom{padding-right:0}.account-tile:has(.at-qr) .at-bottom{align-self:flex-end;padding-left:52px;text-align:right}
+.acct-qr-upload{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px 0 2px;border-top:var(--hair) solid var(--line)}.acct-qr-upload-copy{display:grid;gap:3px;min-width:0}.acct-qr-upload-copy strong{font-size:13px;color:var(--text)}.acct-qr-upload-copy small{font-size:11px;color:var(--muted);line-height:1.35}.acct-qr-pick{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 12px;border-radius:12px;background:var(--accent-soft, color-mix(in srgb,var(--accent) 12%,transparent));color:var(--accent-ink,var(--accent));font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}.acct-qr-selected{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--field)}.acct-qr-selected img{width:64px;height:64px;object-fit:contain;border-radius:7px;background:#fff}.acct-qr-selected .link-button{margin-left:auto}.acct-qr-upload .form-error{grid-column:1/-1;margin:0}
 
 /* Payment calendar: compact, adaptive and touch-friendly. */
 .schedule-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px;text-align:center}.schedule-calendar>small{color:var(--muted);font-size:11px;padding:5px 0}.schedule-calendar>button{position:relative;min-height:38px;border:0;border-radius:10px;background:var(--surface-2,rgba(127,127,127,.08));color:inherit;font:inherit;font-size:13px}.schedule-calendar>button.has-schedule{font-weight:700;background:var(--accent-soft,rgba(80,130,220,.14))}.schedule-calendar>button i{position:absolute;bottom:5px;left:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:var(--accent,#4f8fe8)}.schedule-calendar>span{min-height:38px}
+
+
+/* Portrait wallet cards: give every card its own soft lift and restrained glossy reflection.
+   Do not cast an artificial top-edge shadow onto the card behind it; that creates the harsh
+   horizontal "line" seen where portrait cards overlap. */
+.movo-app .card-pile .credit-card.ccx.orientation-portrait,
+.movo-app .card-stack .credit-card.ccx.orientation-portrait {
+  box-shadow: 0 2px 5px rgba(12, 16, 24, .10), 0 12px 24px -13px rgba(12, 16, 24, .34), 0 26px 42px -28px rgba(12, 16, 24, .30);
+}
+.movo-app .card-pile-item + .card-pile-item .credit-card.ccx.orientation-portrait,
+.movo-app .card-stack-peek .credit-card.ccx.orientation-portrait {
+  box-shadow: 0 2px 5px rgba(12, 16, 24, .10), 0 12px 24px -13px rgba(12, 16, 24, .34), 0 26px 42px -28px rgba(12, 16, 24, .30);
+}
+.movo-app .credit-card.ccx.orientation-portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(145deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.055) 17%, transparent 39%, transparent 76%, rgba(255,255,255,.045) 100%);
+  opacity: .72;
+}
+.theme-dark .movo-app .card-pile .credit-card.ccx.orientation-portrait,
+.theme-dark.movo-app .card-pile .credit-card.ccx.orientation-portrait,
+.theme-dark .movo-app .card-stack .credit-card.ccx.orientation-portrait,
+.theme-dark.movo-app .card-stack .credit-card.ccx.orientation-portrait {
+  box-shadow: 0 2px 5px rgba(0,0,0,.28), 0 14px 28px -12px rgba(0,0,0,.62), 0 28px 44px -28px rgba(0,0,0,.48);
+}
+
+
+/* Selected navigation icons always follow the user's chosen accent color. */
+.movo-app .bottom-nav .nav-item.nav-active:not(.nav-center) { color: var(--accent) !important; }
+.movo-app .side-nav .side-item.active .side-icon { color: var(--accent); }

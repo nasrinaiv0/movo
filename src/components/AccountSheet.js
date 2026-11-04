@@ -31,6 +31,38 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
   const creditValid = !creditCard || (Number.isFinite(creditLimit) && creditLimit > 0 && Number.isFinite(owedNow) && owedNow >= 0);
   const linkedBank = bankAccounts.find(account => account.id === form.linkedBankId);
   const [pad, setPad] = useState(false);
+  const [qrError, setQrError] = useState('');
+  const currentQrCode = form.qrCode !== undefined ? form.qrCode : (qrCode || '');
+  const handleQrUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) { setQrError(tr('Choose a PNG, JPG or WebP image.')); return; }
+    if (file.size > 8 * 1024 * 1024) { setQrError(tr('QR image must be 8 MB or smaller.')); return; }
+    setQrError('');
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        try {
+          const scale = Math.min(1, 640 / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const context = canvas.getContext('2d');
+          if (!context) throw new Error('canvas');
+          context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL('image/png');
+          if (dataUrl.length > 1_200_000) throw new Error('large');
+          set({ qrCode: dataUrl });
+        } catch { setQrError(tr('Could not process this QR image. Try a smaller or clearer image.')); }
+        finally { URL.revokeObjectURL(objectUrl); }
+      };
+      image.onerror = () => { URL.revokeObjectURL(objectUrl); setQrError(tr('Could not read this image. Please choose another file.')); };
+      image.src = objectUrl;
+    } catch { setQrError(tr('Could not read this image. Please choose another file.')); }
+  };
   const meta = typeMeta(form.account_type);
   const color = form.color || meta.color; const icon = form.icon || meta.icon;
   const balance = evaluate(String(form.opening_balance || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
@@ -41,7 +73,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
 
   return <Sheet label={label} onClose={onClose} hideClose className="acct-sheet">{(close) => <form className="acct-form" onSubmit={onSave}>
     <div className="acct-head"><button type="button" className="tx-round" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="back" size={18} /></button><h2>{editing ? tr('Edit Account') : tr('Add Account')}</h2><span className="tx-round ghost" /></div>
-    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), account_type: form.account_type, mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show qrCode={qrCode} /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" qrCode={qrCode} />}</div>
+    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), account_type: form.account_type, mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show qrCode={currentQrCode} /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" qrCode={currentQrCode} />}</div>
 
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">{tr('Account type')}</label>
@@ -63,6 +95,14 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
         </div>}
         <button type="button" className="acct-manual-toggle" onClick={() => { setManualInstitution(v => !v); setInstitutionQuery(''); if (!manualInstitution) set({ institution_name: form.institution_name || '' }); }} aria-pressed={manualInstitution}>{manualInstitution ? tr('Choose from institution list') : tr('Not listed? Enter institution manually')}</button>
         {manualInstitution && <input className="acct-input" maxLength="100" value={form.institution_name} onChange={e => set({ institution_name: e.target.value, name: e.target.value })} placeholder={tr('Enter bank or provider name')} aria-label={tr('Manual institution name')} />}
+      </div>}
+
+      {form.account_type === 'bank' && <div className="acct-qr-upload">
+        <div className="acct-qr-upload-copy"><strong>{tr('Bank QR code')}</strong><small>{tr('Add your bank QR code to display it on the account card.')}</small></div>
+        <input id="acct-qr-file" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleQrUpload} />
+        <label className="acct-qr-pick" htmlFor="acct-qr-file"><Icon name="upload" size={16} />{currentQrCode ? tr('Replace QR code') : tr('Upload QR code')}</label>
+        {currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr('Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
+        {qrError && <p className="form-error" role="alert">{qrError}</p>}
       </div>}
 
       {form.account_type === 'card' && <>

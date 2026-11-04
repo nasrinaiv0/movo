@@ -539,6 +539,7 @@ function App() {
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
       currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
       chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit', cardNetwork: prefs.accountStyles?.[account.id]?.cardNetwork || account.cardNetwork || '',
+      qrCode: prefs.accountQrCodes?.[account.id] || '',
       linkedBankId: prefs.accountStyles?.[account.id]?.cardKind === 'credit' ? (prefs.accountStyles?.[account.id]?.issuerBankId || '') : (prefs.cardBankLinks?.[account.id] || ''),
       creditLimit: prefs.accountStyles?.[account.id]?.creditLimit ? String(prefs.accountStyles[account.id].creditLimit) : '',
       owedNow: Number(account.opening_balance) < 0 ? String(-Number(account.opening_balance)) : '',
@@ -706,6 +707,7 @@ function App() {
     const openingBalance = accountForm.account_type === 'card' && !isCredit ? 0 : isCredit ? -owedNow : evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : base;
     const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind, cardNetwork } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind, cardNetwork: cardNetwork && cardNetwork !== 'other' ? cardNetwork : '' } : {}), ...(isCredit ? { creditLimit: Math.round(creditLimit * 100) / 100, issuerBankId: accountForm.linkedBankId || '' } : {}) } }); };
+    const saveQrCode = (id) => { const next = { ...(prefs.accountQrCodes || {}) }; if (accountForm.account_type === 'bank' && accountForm.qrCode) next[id] = accountForm.qrCode; else delete next[id]; setPref('accountQrCodes', next); };
     if (!name) { setError(tr('Enter an account name.')); return; }
     if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError(tr('Enter exactly 4 digits for the last 4 numbers, or leave it empty.')); return; }
     if (isCredit && (!Number.isFinite(creditLimit) || creditLimit <= 0 || creditLimit >= 1e15)) { setError(tr('Enter the card’s credit limit.')); return; }
@@ -721,12 +723,12 @@ function App() {
       if (cloudMode && session?.user) {
         if (editingId) {
           const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
-          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId);
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId); saveQrCode(editingId);
           const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[editingId] = linkedBankId; else delete nextLinks[editingId]; setPref('cardBankLinks', nextLinks);
           notify(tr('Account updated in your MOVO account.'));
         } else {
           const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
-          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id);
+          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id); saveQrCode(a.id);
           if (linkedBankId) setPref('cardBankLinks', { ...(prefs.cardBankLinks || {}), [a.id]: linkedBankId });
           notify(tr('Account added to your signed-in MOVO account.'));
         }
@@ -741,7 +743,7 @@ function App() {
           currency, opening_balance: Math.round(openingBalance * 100) / 100,
           balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
-        saveStyle(a.id);
+        saveStyle(a.id); saveQrCode(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[a.id] = linkedBankId; else delete nextLinks[a.id]; setPref('cardBankLinks', nextLinks);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
