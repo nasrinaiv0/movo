@@ -29,7 +29,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         listOccurrences(shift(date,1),shift(date,-62)),
       ]);
       const billMap=new Map(bills.map(b=>[b.id,b]));
-      dueSchedules=scheduled.filter(row=>row.scheduled_for<=date).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
+      dueSchedules=scheduled.filter(row=>row.status==='scheduled'&&row.scheduled_for<=date&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString())).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
       dueBills=occurrences.filter(o=>o.due_date<=date&&amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
         .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
     }
