@@ -717,7 +717,8 @@ function App() {
       let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
       if (value && isAccountQrDataUrl(value)) {
         const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
-        try { await saveLocalAccountQr(cacheKey, value); } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
+        let localCached = false;
+        try { await saveLocalAccountQr(cacheKey, value); localCached = true; } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
         setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
         if (cloudMode && session?.user?.id) {
           try {
@@ -726,13 +727,15 @@ function App() {
             try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { /* IndexedDB cache remains available offline */ }
           } catch {
             value = previous && !isAccountQrDataUrl(previous) && !previous.startsWith('localqr:') ? previous : '';
-            setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
-            notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+            if (localCached) {
+              setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
+              notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+            } else notify(tr('QR upload failed and offline storage is unavailable. Please retry while connected.'));
           }
           if (value && !isAccountQrDataUrl(value) && !value.startsWith('localqr:')) {
             const pending = { ...(prefs.accountQrPending || {}) }; delete pending[id]; setPref('accountQrPending', pending);
           }
-        } else value = `localqr:${cacheKey}`;
+        } else value = localCached ? `localqr:${cacheKey}` : accountForm.qrCode;
       }
       if (value) next[id] = value; else delete next[id];
       setPref('accountQrCodes', next);
