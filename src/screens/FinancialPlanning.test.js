@@ -127,6 +127,30 @@ test('plan allocation cannot exceed remaining target or unreserved account balan
   act(() => root.unmount()); el.remove();
 });
 
+test('plan funding respects the account balance after existing goal and plan reservations', async () => {
+  const plan = { id: 'plan-trip', name: 'Japan Trip', target: 5000, saved: 1000, currency: 'PHP', fundingAllocations: [
+    { id: 'prior', account_id: 'bank', account_type: 'bank', amount: 9000, currency: 'PHP', status: 'allocated' },
+  ] };
+  const setPref = jest.fn();
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true,
+    accountsView: [{ id: 'bank', name: 'BPI Savings', account_type: 'bank', currency: 'PHP', balance: 10000 }],
+    plans: [plan], prefs: { plans: [plan] }, setPref,
+    toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } },
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Goals & Plans')).click());
+  await act(async () => Array.from(el.querySelectorAll('.fp-goal button')).find(button => button.textContent.includes('Allocate funds')).click());
+  const dialog = document.querySelector('[role="dialog"]');
+  const amount = dialog.querySelector('input[type="number"]');
+  act(() => { Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(amount, '2000'); amount.dispatchEvent(new Event('input', { bubbles: true })); });
+  await act(async () => dialog.querySelector('button.primary-button').click());
+  expect(setPref).not.toHaveBeenCalled();
+  expect(dialog.textContent).toContain('Allocation exceeds the unreserved account balance.');
+  act(() => root.unmount()); el.remove();
+});
+
 test('bank-account goal allocations stay linked to the selected bank account', async () => {
   const goal = { id: 'goal-bank', name: 'Emergency fund', target_amount: 10000, currency: 'PHP', status: 'active' };
   obligations.listGoals.mockResolvedValue([goal]);
