@@ -47,8 +47,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       receivablesDue=receivables.filter(x=>Number(x.outstanding_amount)>0&&x.due_date).map(x=>({kind:'receivable',item:x,date:x.due_date}));
       cardsDue=accountsView.filter(x=>!x.is_archived&&x.account_type==='card'&&x.cardKind==='credit').map(card=>{
         const style=cardStyles[card.id]||{};const owed=Math.max(0,-Number(card.balance||0));
-        return {kind:'credit_card',item:{...card,title:card.institution_name||card.name,amount:Number(style.minimumDue)||owed,currency:card.currency||'PHP'},date:style.paymentDueDate||''};
-      }).filter(x=>x.date&&Number(x.item.amount)>0);
+        return {kind:'credit_card',item:{...card,title:card.institution_name||card.name,amount:Number(style.minimumDue)||owed,owed,currency:card.currency||'PHP'},date:style.paymentDueDate||''};
+      }).filter(x=>x.date&&Number(x.item.owed)>0);
     }
     const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s.start||'')).map(s=>({kind:'subscription',item:s,date:s.start}));
     const candidates=[...schedulesDue,...billsDue,...subscriptionsDue,...loansDue,...receivablesDue,...cardsDue];
