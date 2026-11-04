@@ -54,3 +54,16 @@ test('deletes only the exact validated owned object path', async () => {
   expect(remove).toHaveBeenCalledWith([`${owner}/${account}/${file}`]);
   expect(ACCOUNT_QR_MAX_BYTES).toBe(1258291);
 });
+
+test('bulk cleanup enumerates only account folders and removes only owned PNG objects', async () => {
+  const list = jest.fn()
+    .mockResolvedValueOnce({ data: [{ name: account, id: null }], error: null })
+    .mockResolvedValueOnce({ data: [{ name: file, id: 'object-1' }, { name: 'notes.txt', id: 'object-2' }], error: null });
+  const remove = jest.fn().mockResolvedValue({ error: null });
+  supabase.storage.from.mockReturnValue({ list, remove });
+  const { removeAllAccountQr } = require('./accountQrStorage');
+  await expect(removeAllAccountQr(owner)).resolves.toBe(1);
+  expect(list).toHaveBeenNthCalledWith(1, owner, { limit: 100, offset: 0 });
+  expect(list).toHaveBeenNthCalledWith(2, `${owner}/${account}`, { limit: 100, offset: 0 });
+  expect(remove).toHaveBeenCalledWith([`${owner}/${account}/${file}`]);
+});
