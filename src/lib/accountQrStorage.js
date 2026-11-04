@@ -54,6 +54,32 @@ export async function removeAccountQr(userId, path) {
   if (error) throw error;
 }
 
+export async function removeAllAccountQr(userId) {
+  if (!safeId(userId)) throw new Error('invalid_account_qr_owner');
+  const storage = requireStorage();
+  const removals = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data: folders, error } = await storage.list(userId, { limit: 100, offset });
+    if (error) throw error;
+    for (const folder of folders || []) {
+      if (!safeId(folder.name)) continue;
+      for (let fileOffset = 0; ; fileOffset += 100) {
+        const { data: files, error: fileError } = await storage.list(`${userId}/${folder.name}`, { limit: 100, offset: fileOffset });
+        if (fileError) throw fileError;
+        const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
+        if (paths.length) removals.push(...paths);
+        if (!files || files.length < 100) break;
+      }
+    }
+    if (!folders || folders.length < 100) break;
+  }
+  for (let i = 0; i < removals.length; i += 100) {
+    const { error } = await storage.remove(removals.slice(i, i + 100));
+    if (error) throw error;
+  }
+  return removals.length;
+}
+
 export function isAccountQrDataUrl(value) {
   return typeof value === 'string' && DATA_URL.test(value);
 }
