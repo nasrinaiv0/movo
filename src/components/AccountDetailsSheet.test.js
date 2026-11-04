@@ -10,8 +10,13 @@ jest.mock('./ui', () => {
   return {
     Sheet: ({ children }) => React.createElement('div', { 'data-testid': 'sheet' }, children),
     TransactionRow: () => null,
-    Bars: ({ values, startLabel, endLabel }) => React.createElement('div', { 'data-testid': 'spending-bars', 'data-values': values.join(','), 'data-start': startLabel, 'data-end': endLabel }),
+    Money: () => null,
+
   };
+});
+jest.mock('./MoneyFlow', () => {
+  const React = require('react');
+  return { __esModule: true, default: ({ txs, variant }) => React.createElement('div', { 'data-testid': 'account-money-flow', 'data-transaction-ids': txs.map(item => item.id).join(','), 'data-variant': variant }) };
 });
 jest.mock('./CardArt', () => {
   const React = require('react');
@@ -78,18 +83,15 @@ test('read-only account hub shows resolved QR artwork, supports Escape to close 
 });
 
 
-test('account overview charts 10 local days of account expenses only', async () => {
+test('account overview shows Money Flow scoped to the selected account', async () => {
   const el = document.createElement('div');
   document.body.appendChild(el);
   const root = createRoot(el);
-  const date = daysAgo => { const value = new Date(); value.setDate(value.getDate() - daysAgo); return value.toISOString(); };
   const transactions = [
-    { id: 'expense-today', account_id: 'cash-1', type: 'expense', amount: 125, date: date(0) },
-    { id: 'expense-yesterday', account_id: 'cash-1', type: 'expense', amount: 75, date: date(1) },
-    { id: 'expense-old', account_id: 'cash-1', type: 'expense', amount: 900, date: date(12) },
-    { id: 'income', account_id: 'cash-1', type: 'income', amount: 500, date: date(0) },
-    { id: 'transfer-in', account_id: 'other-account', transfer_to_account_id: 'cash-1', type: 'expense', amount: 300, date: date(0) },
-    { id: 'other-account-expense', account_id: 'other-account', type: 'expense', amount: 800, date: date(0) },
+    { id: 'cash-expense', account_id: 'cash-1', type: 'expense', amount: 125, date: new Date().toISOString() },
+    { id: 'cash-income', account_id: 'cash-1', type: 'income', amount: 500, date: new Date().toISOString() },
+    { id: 'transfer-to-cash', account_id: 'other-account', transfer_to_account_id: 'cash-1', type: 'transfer', amount: 300, date: new Date().toISOString() },
+    { id: 'other-account-expense', account_id: 'other-account', type: 'expense', amount: 800, date: new Date().toISOString() },
   ];
   await act(async () => {
     root.render(<AccountDetailsSheet
@@ -103,14 +105,11 @@ test('account overview charts 10 local days of account expenses only', async () 
     />);
     await Promise.resolve();
   });
-  const chart = el.querySelector('[data-testid="spending-bars"]');
-  expect(chart).not.toBeNull();
-  const values = chart.getAttribute('data-values').split(',').map(Number);
-  expect(values).toHaveLength(10);
-  expect(values.slice(-2)).toEqual([75, 125]);
-  expect(values.reduce((sum, value) => sum + value, 0)).toBe(200);
-  expect(chart.getAttribute('data-start')).toBe('9 days ago');
-  expect(chart.getAttribute('data-end')).toBe('Today');
+  expect(el.querySelector('[aria-label="Last 10 Days Spending"]')).toBeNull();
+  const flow = el.querySelector('[data-testid="account-money-flow"]');
+  expect(flow).not.toBeNull();
+  expect(flow.getAttribute('data-variant')).toBe('bars');
+  expect(flow.getAttribute('data-transaction-ids').split(',')).toEqual(['cash-expense', 'cash-income', 'transfer-to-cash']);
   act(() => root.unmount());
   el.remove();
 });
