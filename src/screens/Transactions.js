@@ -20,7 +20,7 @@ export function sortList(list, sort) {
 export function billingCycleOptions(months = [], currentMonth) {
   return [{ value: 'all', label: 'All' }, ...months.map(value => ({
     value,
-    label: value === currentMonth ? 'Present' : monthLabel(value).replace(/\\s+\\d{4}$/, ''),
+    label: value === currentMonth ? 'Present' : monthLabel(value).replace(/\s+\d{4}$/, ''),
   }))];
 }
 const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
