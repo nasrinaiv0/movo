@@ -4,7 +4,6 @@ import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
-import { summarize as summarizeSubscriptions } from '../lib/subscriptions';
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const shift = (date, days) => { const value=new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate()+days); return value.toISOString().slice(0,10); };
@@ -30,9 +29,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const dueSchedules=scheduled.filter(row=>row.scheduled_for<=date).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
     const dueBills=occurrences.filter(o=>o.due_date<=date&&amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
       .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
-    const summary=summarizeSubscriptions(subscriptions,new Date(`${date}T12:00:00`),value=>value);
-    const dueSubs=(summary.upcoming||[]).filter(s=>s.status==='active'&&s.next<=date)
-      .map(s=>({kind:'subscription',item:s,date:s.next}));
+    const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(s.start||'')&&s.start<=date)
+      .map(s=>({kind:'subscription',item:s,date:s.start}));
     return [...dueSchedules,...dueBills,...dueSubs].sort((a,b)=>a.date.localeCompare(b.date));
   };
   const setActive = next => {
