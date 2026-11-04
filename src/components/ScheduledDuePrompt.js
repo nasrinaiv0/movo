@@ -18,17 +18,20 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [error,setError]=useState('');
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = async () => {
-    if(!session?.user?.id)return [];
     const date=today();
-    const [scheduled,bills,occurrences]=await Promise.all([
-      listScheduledTransactions(),
-      listBills(),
-      listOccurrences(shift(date,1),shift(date,-62)),
-    ]);
-    const billMap=new Map(bills.map(b=>[b.id,b]));
-    const dueSchedules=scheduled.filter(row=>row.scheduled_for<=date).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
-    const dueBills=occurrences.filter(o=>o.due_date<=date&&amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
-      .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
+    let dueSchedules=[];
+    let dueBills=[];
+    if(session?.user?.id){
+      const [scheduled,bills,occurrences]=await Promise.all([
+        listScheduledTransactions(),
+        listBills(),
+        listOccurrences(shift(date,1),shift(date,-62)),
+      ]);
+      const billMap=new Map(bills.map(b=>[b.id,b]));
+      dueSchedules=scheduled.filter(row=>row.scheduled_for<=date).map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
+      dueBills=occurrences.filter(o=>o.due_date<=date&&amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
+        .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
+    }
     const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(s.start||'')&&s.start<=date)
       .map(s=>({kind:'subscription',item:s,date:s.start}));
     return [...dueSchedules,...dueBills,...dueSubs].sort((a,b)=>a.date.localeCompare(b.date));
@@ -45,7 +48,6 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   };
   useEffect(() => {
     let live=true;
-    if(!session?.user?.id){setActive(null);return()=>{live=false;};}
     loadDue().then(queue=>{if(live&&queue.length)setActive(queue[0]);})
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
     return()=>{live=false;};
