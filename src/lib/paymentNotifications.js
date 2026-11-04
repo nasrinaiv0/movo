@@ -55,7 +55,7 @@ export async function requestPaymentNotificationPermission() {
   return { supported:true, granted:permission.display==='granted' };
 }
 
-export async function syncPaymentNotifications({ schedules=[], bills=[], subscriptions=[], preferences={} }={}) {
+export async function syncPaymentNotifications({ schedules=[], bills=[], subscriptions=[], loans=[], receivables=[], cards=[], preferences={} }={}) {
   if (!Capacitor.isNativePlatform()) return { supported:false, scheduled:0 };
   if (preferences.enabled===false || preferences.push_enabled!==true) {
     await LocalNotifications.cancel({notifications:(await LocalNotifications.getPending()).notifications.filter(n=>n.id>=ID_BASE&&n.id<ID_BASE+1800000000)});
@@ -79,6 +79,9 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
   schedules.filter(x=>x.status==='scheduled').forEach(x=>scheduledDates(x).forEach(date=>add('scheduled',x,date,x.reminder_days||offsets,'Payment reminder',`${x.title} is due ${date}.`)));
   bills.forEach(x=>add('bill',x,x.due_date,offsets,'Bill reminder',`${x.title||x.name||'A bill'} is due ${x.due_date}.`));
   subscriptions.filter(x=>x.status==='active').forEach(x=>add('subscription',x,x.start,offsets,'Subscription renewal',`${x.name||'A subscription'} renews ${x.start}.`));
+  loans.filter(x=>Number(x.outstanding_principal)>0).forEach(x=>add('loan',x,x.due_date,offsets,'Loan payment due',`${x.name||'A loan'} is due ${x.due_date}.`));
+  receivables.filter(x=>Number(x.outstanding_amount)>0).forEach(x=>add('receivable',x,x.due_date,offsets,'Money owed to you',`${x.name||'A receivable'} is due ${x.due_date}.`));
+  cards.filter(x=>Number(x.amount)>0).forEach(x=>add('credit_card',x,x.due_date,offsets,'Credit card payment due',`${x.name||'A credit card'} payment is due ${x.due_date}.`));
   const pending=(await LocalNotifications.getPending()).notifications.filter(n=>n.id>=ID_BASE&&n.id<ID_BASE+1800000000);
   if(pending.length) await LocalNotifications.cancel({notifications:pending});
   queue.sort((a,b)=>a.schedule.at.getTime()-b.schedule.at.getTime());
