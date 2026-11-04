@@ -183,3 +183,16 @@ export async function snoozeObligation(userId, event, until) {
   ]);
   return {in_app:inApp,push};
 }
+
+
+/** Stable key for one due occurrence, shared by local and cloud reminder actions. */
+export function reminderActionKey(entry) {
+  if(!entry?.kind||!entry?.item?.id||!entry?.date)return '';
+  return `${entry.kind}:${entry.item.id}:${entry.date}`;
+}
+
+/** A local action permanently resolves only the matching occurrence; later cycles remain eligible. */
+export function isReminderActioned(entry, actions = {}) {
+  const key=reminderActionKey(entry);
+  return Boolean(key && actions && Object.prototype.hasOwnProperty.call(actions,key));
+}
