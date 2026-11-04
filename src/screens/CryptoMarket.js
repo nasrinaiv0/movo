@@ -262,7 +262,7 @@ export default function CryptoMarket({ c }) {
         </div>}
         {error && coins.length > 0 && <p className="crypto-warning" role="status">{error}</p>}
       </section>
-      <section className="crypto-provider-note card"><strong>Market data by CoinBeacon · Binance fallback</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and free API limits. MOVO does not trade or custody cryptocurrency.</p><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
+      <section className="crypto-provider-note card"><strong>Market data by CoinBeacon · Binance fallback</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and free API limits. MOVO does not trade or custody cryptocurrency.</p><small>Market-cap rankings and coin details by CoinMarketCap.</small><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
       </>}
     </>}
   </>;
