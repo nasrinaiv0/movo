@@ -81,8 +81,10 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
   subscriptions.filter(x=>x.status==='active').forEach(x=>add('subscription',x,x.start,offsets,'Subscription renewal',`${x.name||'A subscription'} renews ${x.start}.`));
   const pending=(await LocalNotifications.getPending()).notifications.filter(n=>n.id>=ID_BASE&&n.id<ID_BASE+1800000000);
   if(pending.length) await LocalNotifications.cancel({notifications:pending});
-  if(queue.length) await LocalNotifications.schedule({notifications:queue});
-  return {supported:true,scheduled:queue.length};
+  queue.sort((a,b)=>a.schedule.at.getTime()-b.schedule.at.getTime());
+  const selected=queue.slice(0,60);
+  if(selected.length) await LocalNotifications.schedule({notifications:selected});
+  return {supported:true,scheduled:selected.length,limited:queue.length>selected.length};
 }
 
 export async function cancelPaymentNotifications() {
