@@ -1,4 +1,4 @@
-import { isReminderActioned, reminderActionKey } from './paymentReminderCenter';
+import { isReminderActioned, reminderActionKey, reminderEventAllowsDisplay } from './paymentReminderCenter';
 
 describe('persistent reminder actions',()=>{
   const entry={kind:'bill',item:{id:'bill-1'},date:'2026-11-05'};
