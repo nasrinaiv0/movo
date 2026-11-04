@@ -85,15 +85,15 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   },[]);
   useEffect(() => {
     let live=true;
-    const refresh=()=>loadDue().then(queue=>{if(live)setActive(queue[0]||null);})
-      .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
+    const refresh=()=>{if(entry)return;return loadDue().then(queue=>{if(live)setActive(queue[0]||null);})
+      .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});};
     const onVisible=()=>{if(document.visibilityState==='visible')refresh();};
     refresh();
     window.addEventListener('movo:payment-reminders-updated',refresh);
     document.addEventListener('visibilitychange',onVisible);
     const interval=window.setInterval(refresh,60000);
     return()=>{live=false;window.clearInterval(interval);window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
-  },[loadDue,setActive]);
+  },[loadDue,setActive,entry]);
   const close=async()=>{ if(session?.user?.id&&entry){const until=new Date(Date.now()+86400000).toISOString();const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);}catch{/* Keep the prompt dismissible while offline. */}await loadDue().catch(()=>null);} setActive(null); };
   const markIssue=async()=>{
     if(!entry||!session?.user?.id)return;
