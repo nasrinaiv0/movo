@@ -7,6 +7,7 @@ describe('POST /api/account/delete', () => {
         ? {
           from: (table) => ({ delete: () => ({ eq: (col, val) => { calls.push(['delete', table, col, val]); return Promise.resolve({ error: txError }); } }) }),
           auth: { admin: { deleteUser: async (id) => { calls.push(['deleteUser', id]); return { error: userError }; } } },
+          storage: { from: () => ({ list: async () => ({ data: [], error: null }), remove: async () => ({ error: null }) }) },
         }
         : { auth: { getUser: async (token) => { calls.push(['getUser', token]); return authUser ? { data: { user: authUser }, error: null } : { data: { user: null }, error: { message: 'bad jwt' } }; } } }),
     }));
