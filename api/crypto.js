@@ -17,7 +17,11 @@ function number(value) {
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
-function signedNumber(value) {\n  if (value === null || value === undefined || typeof value === 'boolean') return null;\n  const n = Number(value);\n  return Number.isFinite(n) ? n : null;\n}\nfunction slug(value) {
+function signedNumber(value) {
+  if (value === null || value === undefined || typeof value === 'boolean') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}\nfunction slug(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 }
 function originAllowed(req) {
