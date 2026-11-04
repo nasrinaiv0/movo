@@ -725,14 +725,14 @@ function App() {
         const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
         let localCached = false;
         try { await saveLocalAccountQr(cacheKey, value); localCached = true; } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
-        setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
+        if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
         if (cloudMode && session?.user?.id) {
           try {
             const path = await uploadAccountQr(session.user.id, id, value);
             value = path;
-            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { /* IndexedDB cache remains available offline */ }
+            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: value })); /* IndexedDB cache remains available offline */ }
           } catch {
-            value = previous && !isAccountQrDataUrl(previous) && !previous.startsWith('localqr:') ? previous : '';
+            value = previous || (localCached ? `localqr:${cacheKey}` : '');
             if (localCached) {
               setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
               notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
@@ -1070,7 +1070,7 @@ function App() {
         return [id, dataUrl, path, previous];
       } catch { qrMigrationRef.current.delete(`${userId}:${id}`); return [id, null, null, null]; }
     })).then(rows => {
-      if (!live) return;
+      if (!live) { pending.forEach(([id]) => qrMigrationRef.current.delete(`${userId}:${id}`)); return; }
       const migrated = rows.filter(([, , path]) => path);
       if (!migrated.length) return;
       setPrefs(cur => {
