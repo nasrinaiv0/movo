@@ -4660,3 +4660,9 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .scheduled-hero-count { grid-template-columns:auto auto; justify-content:start; gap:12px; }
   .movo-app .scheduled-hero-count strong { font-size:28px; }
 }
+
+/* Financial Planning: keep automatically linked plans aligned with the existing compact goal cards. */
+.movo-app .fp-plan-list { display: grid; gap: 8px; margin: 0 0 12px; min-width: 0; }
+.movo-app .fp-plan-list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 0 2px; }
+.movo-app .fp-plan-list-head strong { color: var(--muted); font-size: 12px; font-weight: 650; }
+.movo-app .fp-plan-list-head .link-button { flex: none; min-height: 30px; padding: 0 2px; font-size: 12px; }

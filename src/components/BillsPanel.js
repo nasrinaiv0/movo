@@ -7,6 +7,7 @@ import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { BILL_CATEGORIES, BILL_FREQUENCIES, amountDue, amountRemaining, billsSummary, occurrenceState, paymentKey } from '../lib/bills';
 import { createBill, listBillPayments, listBills, listOccurrences, recordBillPayment, setBillStatus, updateOccurrence } from '../lib/billsRepository';
+import { subscriptionBillData } from '../lib/financialPlanningIntegrations';
 
 const todayKey = () => new Date().toLocaleDateString('en-CA');
 const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -16,7 +17,7 @@ const newNonce = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.ra
 
 /* Bills & Payments: what is due, paid, late and next. Recording a payment records what the
  * person says happened; it never moves money. */
-export default function BillsPanel({ c, accounts, onChanged, adding = false, onAdding = () => {} }) {
+export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubscription, onChanged, adding = false, onAdding = () => {} }) {
   const base = c.base || 'PHP';
   const today = todayKey();
   const [bills, setBills] = useState([]);
@@ -43,8 +44,12 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
   };
 
   const toBase = c.toBase || ((v) => v);
-  const summary = useMemo(() => billsSummary(occurrences, payments, today, toBase), [occurrences, payments, today, toBase]);
-  const billOf = (o) => bills.find(b => b.id === o.bill_id);
+  const subscriptionData = useMemo(() => subscriptionBillData(subscriptions, today, shift(today, 45)), [subscriptions, today]);
+  const allOccurrences = useMemo(() => [...occurrences, ...subscriptionData.occurrences], [occurrences, subscriptionData]);
+  const allPayments = useMemo(() => [...payments, ...subscriptionData.payments], [payments, subscriptionData]);
+  const allBills = useMemo(() => [...bills, ...subscriptionData.bills], [bills, subscriptionData]);
+  const summary = useMemo(() => billsSummary(allOccurrences, allPayments, today, toBase), [allOccurrences, allPayments, today, toBase]);
+  const billOf = (o) => allBills.find(b => b.id === o.bill_id);
   const payAccounts = (currency) => accounts.filter(a => a.currency === currency);
   const shown = summary.upcoming.filter(o => o.due_date <= shift(today, 45));
 
@@ -88,10 +93,10 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
     <section className="card pad bills-list" aria-label={tr('Upcoming and overdue bills')}>
       
       {!shown.length && <p className="empty">{tr('Nothing due in the next 45 days.')}</p>}
-      {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); return <article className={`bill-row is-${state}`} key={o.id}>
-        <div className="detail-row"><span><strong>{bill?.name || tr('Bill')}</strong><small>{tr('Due {date}', { date: formatDate(o.due_date) })} · <em className={`bill-state is-${state}`}>{tr(STATE_LABEL[state])}</em>{o.is_estimate && o.actual_amount == null ? ` · ${tr('Estimate')}` : ''}</small></span><b>{money(amountRemaining(o), o.currency)}</b></div>
+      {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); const subscription = o.source === 'subscription' ? subscriptions.find(item => item.id === o.subscription_id) : null; return <article className={`bill-row is-${state}`} key={o.id}>
+        <div className="detail-row"><span><strong>{bill?.name || tr('Bill')}</strong><small>{tr('Due {date}', { date: formatDate(o.due_date) })} · {o.source === 'subscription' ? tr('Subscription') : tr(bill?.category || 'Bill')} · <em className={`bill-state is-${state}`}>{tr(STATE_LABEL[state])}</em>{o.is_estimate && o.actual_amount == null ? ` · ${tr('Estimate')}` : ''}</small></span><b>{money(amountRemaining(o), o.currency)}</b></div>
         {Number(o.paid_amount) > 0 && <div className="progress-track" aria-label={tr('{paid} of {due} paid', { paid: money(Number(o.paid_amount), o.currency), due: money(amountDue(o), o.currency) })}><span style={{ width: `${Math.min(100, (Number(o.paid_amount) / amountDue(o)) * 100)}%` }} /></div>}
-        <div className="bill-actions"><button type="button" className="primary-button" onClick={() => openPay(o)}>{tr('Log payment')}</button>{!(Number(o.paid_amount) > 0) && <button type="button" className="link-button" disabled={busy} onClick={() => run(() => updateOccurrence(o.id, { cancel: true }), tr('This due date was skipped.'))}>{tr('Skip this one')}</button>}</div>
+        <div className="bill-actions"><button type="button" className="primary-button" disabled={o.source === 'subscription' && !subscription} onClick={() => subscription ? onLogSubscription?.(subscription) : openPay(o)}>{tr('Log payment')}</button>{o.source !== 'subscription' && !(Number(o.paid_amount) > 0) && <button type="button" className="link-button" disabled={busy} onClick={() => run(() => updateOccurrence(o.id, { cancel: true }), tr('This due date was skipped.'))}>{tr('Skip this one')}</button>}</div>
       </article>; })}
     </section>
 
