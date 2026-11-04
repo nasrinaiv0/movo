@@ -4758,14 +4758,15 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .wallet-balance-spending-card>.movo-icon{color:var(--text)}
 @media(max-width:390px){.movo-app .wallet-balance-spending-card{grid-template-columns:minmax(0,.88fr) 1px minmax(0,1.12fr) 16px;gap:9px;padding:14px 12px}.movo-app .wallet-balance-spending-copy strong{font-size:17px;letter-spacing:-.55px}.movo-app .wallet-spending-bars-plot{gap:3px}.movo-app .wallet-spending-bar-column{grid-template-rows:64px 13px}.movo-app .wallet-spending-bar-track{height:64px;border-radius:5px}.movo-app .wallet-spending-bar-date{font-size:8px}.movo-app .wallet-balance-spending-divider{height:62px}}
 @media(prefers-reduced-motion:reduce){.movo-app .wallet-spending-bar-fill{transition:none}}
-/* Fixed-width billing-cycle selector; transaction type chips remain scrollable. */
-.movo-app .tx-chip-bar{min-width:0}
-.movo-app .tx-chip-bar>.chip-row{flex:1 1 0;width:0;min-width:0}
-.movo-app .tx-period-filter{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 218px;width:218px;min-width:218px;max-width:218px;height:62px;padding:0 14px;margin:0 18px 0 0;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);box-shadow:var(--shadow-sm);overflow:hidden}
+/* Compact billing-cycle filter: all transaction chips and the cycle selector stay on one row. */
+.movo-app .tx-chip-bar{display:flex;align-items:center;gap:6px;min-width:0;overflow:visible}
+.movo-app .tx-chip-bar>.chip-row{display:flex;flex:1 1 auto;width:auto;min-width:0;gap:4px;overflow:hidden;margin:0 0 0 -18px;padding:2px 0 2px 18px;-webkit-mask-image:none;mask-image:none}
+.movo-app .tx-chip-bar>.chip-row>button[data-chip]{flex:1 1 0;min-width:0;padding:9px 4px;font-size:clamp(10px,2.8vw,12px);white-space:nowrap;text-align:center}
+.movo-app .tx-period-filter{position:relative;display:flex;flex:0 0 62px;align-items:center;justify-content:center;gap:4px;width:62px;min-width:62px;max-width:62px;height:42px;padding:0 8px;margin:0 18px 0 0;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);box-shadow:var(--shadow-sm);overflow:hidden}
+.movo-app .tx-period-filter-value{flex:0 1 auto;min-width:0;overflow:hidden;color:var(--text);font-size:12px;font-weight:650;white-space:nowrap;text-overflow:ellipsis}
 .movo-app .tx-period-filter>.movo-icon{flex:none}
-.movo-app .tx-period-filter-value{flex:1;min-width:0;overflow:hidden;color:var(--text);font-size:15px;font-weight:650;white-space:nowrap;text-overflow:ellipsis}
 .movo-app .tx-period-filter select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;appearance:none;-webkit-appearance:none}
-@media(max-width:390px){.movo-app .tx-period-filter{flex-basis:184px;width:184px;min-width:184px;max-width:184px;height:56px;gap:8px;padding:0 11px;margin-right:14px}.movo-app .tx-period-filter-value{font-size:13px}}
+@media(max-width:390px){.movo-app .tx-chip-bar{gap:5px}.movo-app .tx-chip-bar>.chip-row{gap:3px}.movo-app .tx-chip-bar>.chip-row>button[data-chip]{padding:8px 3px;font-size:11px}.movo-app .tx-period-filter{flex-basis:56px;width:56px;min-width:56px;max-width:56px;height:40px;padding:0 6px;margin-right:14px}.movo-app .tx-period-filter-value{font-size:11px}}
 .movo-app .wallet-chip-bar>.wallet-add-button{background:var(--accent);color:var(--on-accent);border-color:transparent;box-shadow:0 5px 16px rgba(var(--accent-rgb),.22)}
 .movo-app .wallet-chip-bar>.wallet-add-button .movo-icon{color:var(--on-accent)}
 .movo-app .action-strip button:nth-child(2) .movo-icon{color:var(--accent)}
