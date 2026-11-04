@@ -38,6 +38,7 @@ import { summarize as summarizeSubscriptions, billingDate } from './lib/subscrip
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
+import { uploadAccountQr, getAccountQrSignedUrl, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
@@ -213,6 +214,7 @@ function App() {
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
+  const [accountQrDisplay, setAccountQrDisplay] = useState({});
   const [fx, setFx] = useState(loadRates);
   const [cloudAccounts, setCloudAccounts] = useState([]);
   const [cloudPostings, setCloudPostings] = useState([]);
@@ -707,7 +709,29 @@ function App() {
     const openingBalance = accountForm.account_type === 'card' && !isCredit ? 0 : isCredit ? -owedNow : evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : base;
     const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind, cardNetwork } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind, cardNetwork: cardNetwork && cardNetwork !== 'other' ? cardNetwork : '' } : {}), ...(isCredit ? { creditLimit: Math.round(creditLimit * 100) / 100, issuerBankId: accountForm.linkedBankId || '' } : {}) } }); };
-    const saveQrCode = (id) => { const next = { ...(prefs.accountQrCodes || {}) }; if (accountForm.account_type === 'bank' && accountForm.qrCode) next[id] = accountForm.qrCode; else delete next[id]; setPref('accountQrCodes', next); };
+    const saveQrCode = async (id) => {
+      const next = { ...(prefs.accountQrCodes || {}) };
+      const previous = next[id] || '';
+      let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
+      if (value && isAccountQrDataUrl(value) && cloudMode && session?.user?.id) {
+        try {
+          try { localStorage.setItem(`movo.accountQrCache.${session.user.id}.${id}`, value); } catch { /* local fallback is best-effort */ }
+          const path = await uploadAccountQr(session.user.id, id, value);
+          value = path;
+          try { setAccountQrDisplay(cur => ({ ...cur, [id]: await getAccountQrSignedUrl(session.user.id, path) })); } catch { /* cached image remains available offline */ }
+        } catch {
+          // Keep the normalized image locally; the sign-in migration retries cloud upload later.
+          notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+        }
+      }
+      if (value) next[id] = value; else delete next[id];
+      setPref('accountQrCodes', next);
+      if (previous && previous !== value && !isAccountQrDataUrl(previous) && cloudMode && session?.user?.id) {
+        removeAccountQr(session.user.id, previous).catch(() => { /* private orphan cleanup is retried by account cleanup */ });
+      }
+      if (isAccountQrDataUrl(value)) setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
+      else if (!value) setAccountQrDisplay(cur => { const copy = { ...cur }; delete copy[id]; return copy; });
+    };
     if (!name) { setError(tr('Enter an account name.')); return; }
     if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError(tr('Enter exactly 4 digits for the last 4 numbers, or leave it empty.')); return; }
     if (isCredit && (!Number.isFinite(creditLimit) || creditLimit <= 0 || creditLimit >= 1e15)) { setError(tr('Enter the card’s credit limit.')); return; }
@@ -723,12 +747,12 @@ function App() {
       if (cloudMode && session?.user) {
         if (editingId) {
           const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
-          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId); saveQrCode(editingId);
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId); await saveQrCode(editingId);
           const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[editingId] = linkedBankId; else delete nextLinks[editingId]; setPref('cardBankLinks', nextLinks);
           notify(tr('Account updated in your MOVO account.'));
         } else {
           const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
-          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id); saveQrCode(a.id);
+          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id); await saveQrCode(a.id);
           if (linkedBankId) setPref('cardBankLinks', { ...(prefs.cardBankLinks || {}), [a.id]: linkedBankId });
           notify(tr('Account added to your signed-in MOVO account.'));
         }
@@ -743,7 +767,7 @@ function App() {
           currency, opening_balance: Math.round(openingBalance * 100) / 100,
           balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
-        saveStyle(a.id); saveQrCode(a.id);
+        saveStyle(a.id); await saveQrCode(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[a.id] = linkedBankId; else delete nextLinks[a.id]; setPref('cardBankLinks', nextLinks);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
@@ -939,9 +963,24 @@ function App() {
      result is saved back; after that every change is saved back, debounced. If the cloud table
      is unavailable MOVO keeps working with this device's preferences only. */
   const prefsSync = useRef({ user: '', ready: false, timer: 0 });
+  const qrMigrationRef = useRef(new Set());
   const [stickerTick, setStickerTick] = useState(0);
   useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
   const userId = cloudMode ? session?.user?.id || '' : '';
+  useEffect(() => {
+    let live = true;
+    const entries = Object.entries(prefs.accountQrCodes || {});
+    Promise.all(entries.map(async ([accountId, value]) => {
+      if (isAccountQrDataUrl(value)) return [accountId, value];
+      if (!userId || typeof value !== 'string') return [accountId, ''];
+      try { return [accountId, await getAccountQrSignedUrl(userId, value)]; }
+      catch {
+        try { return [accountId, localStorage.getItem(`movo.accountQrCache.${userId}.${accountId}`) || '']; }
+        catch { return [accountId, '']; }
+      }
+    })).then(rows => { if (live) setAccountQrDisplay(Object.fromEntries(rows.filter(([, value]) => value))); });
+    return () => { live = false; };
+  }, [userId, prefs.accountQrCodes]);
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
@@ -958,6 +997,30 @@ function App() {
     }).catch(() => { /* table unavailable: stay device-only */ });
     return () => { live = false; };
   }, [userId]);
+  useEffect(() => {
+    if (!userId || !prefsSync.current.ready || !prefs.accountQrCodes) return;
+    const pending = Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value) && !qrMigrationRef.current.has(`${userId}:${id}`));
+    if (!pending.length) return;
+    let live = true;
+    pending.forEach(([id]) => qrMigrationRef.current.add(`${userId}:${id}`));
+    Promise.all(pending.map(async ([id, dataUrl]) => {
+      try {
+        const path = await uploadAccountQr(userId, id, dataUrl);
+        try { localStorage.setItem(`movo.accountQrCache.${userId}.${id}`, dataUrl); } catch { /* device cache is best-effort */ }
+        return [id, dataUrl, path];
+      } catch { qrMigrationRef.current.delete(`${userId}:${id}`); return [id, dataUrl, null]; }
+    })).then(rows => {
+      if (!live) return;
+      const migrated = rows.filter(([, , path]) => path);
+      if (!migrated.length) return;
+      setPrefs(cur => {
+        const next = { ...(cur.accountQrCodes || {}) };
+        migrated.forEach(([id, , path]) => { if (next[id] === rows.find(row => row[0] === id)?.[1]) next[id] = path; });
+        return { ...cur, accountQrCodes: next };
+      });
+    });
+    return () => { live = false; };
+  }, [userId, prefs.accountQrCodes]);
   useEffect(() => {
     const sync = prefsSync.current;
     if (!sync.ready || !sync.user) return undefined;
@@ -1373,7 +1436,7 @@ function App() {
         setSheet({ name: 'transaction', type });
       }} />}
 
-      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
+      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} qrCodeDisplay={accountQrDisplay[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">
@@ -1433,7 +1496,7 @@ function App() {
       </Sheet>}
 
       {accountChoice && <Sheet title={tr('Account details')} onClose={() => setSheet(null)} label={tr('Account details')}>
-        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} qrCode={prefs.accountQrCodes?.[accountChoice.id] || ''} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" qrCode={prefs.accountQrCodes?.[accountChoice.id] || ''} />}</div>
+        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} qrCode={accountQrDisplay[accountChoice.id] || ''} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" qrCode={prefs.accountQrCodes?.[accountChoice.id] || ''} />}</div>
         <dl className="detail-list"><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
           <div><dt>{tr('Credit limit')}</dt><dd>{shown(show, money(ci.limit, cur))}</dd></div>
           <div><dt>{tr('Used')}</dt><dd>{shown(show, money(ci.owed, cur))} · {ci.usedPercent}%</dd></div>
