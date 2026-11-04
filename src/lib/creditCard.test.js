@@ -26,3 +26,26 @@ test('ignores malformed payment month and date values', () => {
   const result = creditCardPaymentSummary([{ amount: 25, month: '2026-11', date: '2026-11-04' }, { amount: 90, month: '2026-13', date: '2026-11-05' }, { amount: 40, month: '2026-11', date: 'not-a-date' }]);
   expect(result).toMatchObject({ totalPaid: 25, monthsPaid: 1, payments: [{ amount: 25 }] });
 });
+
+
+import { creditCardPlanningMetrics } from './creditCard';
+describe('creditCardPlanningMetrics', () => {
+  const card = { id: 'cc-1', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -10000, creditLimit: 50000 };
+  test('calculates spend, monthly APR estimate, utilization and outstanding after payments', () => {
+    const metrics = creditCardPlanningMetrics({ card, annualInterestRate: 24, transactions: [
+      { account_id: 'cc-1', transaction_type: 'expense', amount: 4000, origAmount: 4000, origCurrency: 'PHP' },
+      { account_id: 'cc-1', type: 'expense', amount: 2000, origAmount: 2000, origCurrency: 'PHP' },
+      { account_id: 'bank-1', type: 'expense', amount: 9000, origCurrency: 'PHP' },
+      { account_id: 'cc-1', type: 'income', amount: 1000, origCurrency: 'PHP' },
+    ], payments: [{ amount: 2000, month: '2026-11', date: '2026-11-05' }] });
+    expect(metrics).toMatchObject({ amountSpent: 6000, estimatedMonthlyInterest: 200, amountAfterInterest: 10200, outstandingAfterPayments: 8200, totalPayments: 2000, limit: 50000, spentLimitPercent: 12 });
+  });
+  test('converts card expenses to card currency and safely handles invalid APR or missing limit', () => {
+    const metrics = creditCardPlanningMetrics({ card: { ...card, currency: 'USD', creditLimit: 0 }, annualInterestRate: 'bad', transactions: [{ account_id: 'cc-1', type: 'expense', origAmount: 100, origCurrency: 'PHP' }], convertAmount: (amount, from, to) => from === 'PHP' && to === 'USD' ? amount / 50 : amount });
+    expect(metrics).toMatchObject({ amountSpent: 2, estimatedMonthlyInterest: 0, spentLimitPercent: null, annualInterestRate: 0 });
+  });
+  test('clamps outstanding after payments at zero', () => {
+    const metrics = creditCardPlanningMetrics({ card: { ...card, balance: -100 }, payments: [{ amount: 500, month: '2026-11', date: '2026-11-05' }] });
+    expect(metrics.outstandingAfterPayments).toBe(0);
+  });
+}
