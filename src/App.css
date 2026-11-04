@@ -4827,3 +4827,9 @@ button.account-tile:active { transform: scale(.98); }
   }
   .movo-app .tx-period-filter-value { font-size:13px; }
 }
+
+
+/* Wallet primary add action: solid MOVO green with a white plus, matching the supplied icon reference. */
+.movo-app .wallet-chip-bar > .wallet-add-button { background:var(--accent); color:var(--on-accent); border-color:transparent; box-shadow:0 5px 16px rgba(var(--accent-rgb),.22); }
+.movo-app .wallet-chip-bar > .wallet-add-button .movo-icon { color:var(--on-accent); }
+.movo-app .action-strip button:nth-child(2) .movo-icon { color:var(--accent); }
