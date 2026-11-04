@@ -13,8 +13,9 @@ const positiveAmount = value => {
 /** The single liability rule used by both the Financial Planning screen and its summary. */
 export function creditCardOutstanding(card) {
   if (!card || card.account_type !== 'card' || card.cardKind !== 'credit') return 0;
+  const hasExplicitLiability = card.liability_balance !== undefined && card.liability_balance !== null;
   const explicit = Number(card.liability_balance);
-  if (Number.isFinite(explicit) && explicit > 0) return Math.round(explicit * 100) / 100;
+  if (hasExplicitLiability && Number.isFinite(explicit) && explicit >= 0) return Math.round(explicit * 100) / 100;
   const balance = Number(card.balance);
   return Number.isFinite(balance) ? Math.round(Math.max(0, -balance) * 100) / 100 : 0;
 }
