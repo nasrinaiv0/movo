@@ -7,6 +7,16 @@ import { evaluateCryptoAlerts } from '../lib/cryptoAlerts';
 import { summarizeCryptoHoldings, upsertCryptoHolding } from '../lib/cryptoPortfolio';
 import { enablePush, pushGranted, showSystemNotification } from '../lib/alerts';
 
+const CRYPTO_DOMAINS = { BTC:"bitcoin.org", ETH:"ethereum.org", BNB:"bnbchain.org", SOL:"solana.com", XRP:"xrpl.org", ADA:"cardano.org", DOGE:"dogecoin.com", TRX:"tron.network", TON:"ton.org", AVAX:"avax.network", DOT:"polkadot.com", LINK:"chain.link", BCH:"bitcoincash.org", LTC:"litecoin.org", XLM:"stellar.org", SHIB:"shibatoken.com", HBAR:"hedera.com", SUI:"sui.io", XMR:"getmonero.org", ETC:"ethereumclassic.org", NEAR:"near.org", APT:"aptosfoundation.org", UNI:"uniswap.org", AAVE:"aave.com", CRO:"crypto.com", OKB:"okx.com", ICP:"internetcomputer.org", FIL:"filecoin.io", ALGO:"algorand.com", VET:"vechain.org", ATOM:"cosmos.network", ARB:"arbitrum.io", OP:"optimism.io", MKR:"makerdao.com", INJ:"injective.com", PEPE:"pepe.vip" };
+function CryptoLogo({ coin, size = 38 }) {
+  const domain = CRYPTO_DOMAINS[coin.symbol] || (coin.symbol.toLowerCase() + ".org");
+  const [failed, setFailed] = useState(false);
+  return <span className="crypto-logo" style={{ width: size, height: size }} aria-hidden="true">
+    {!failed && <img src={"https://www.google.com/s2/favicons?domain=" + encodeURIComponent(domain) + "&sz=128"} alt="" loading="lazy" onError={() => setFailed(true)} />}
+    {failed && <b>{coin.symbol.slice(0, 3)}</b>}
+  </span>;
+}
+
 function money(value, quote) {
   if (!Number.isFinite(value)) return '—';
   try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: quote, notation: value >= 1000000 ? 'compact' : 'standard', maximumFractionDigits: value < 1 ? 8 : 2 }).format(value); }
@@ -61,7 +71,7 @@ export default function CryptoMarket({ c }) {
       setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
     } catch (e) {
       setError(e.message === 'crypto_provider_not_configured'
-        ? 'Crypto markets are not configured yet. Add the licensed CoinPaprika API key as the server-only COINPAPRIKA_API_KEY environment variable.'
+        ? 'Crypto markets are not configured yet. Add COINBEACON_API_KEY as a server-only Vercel environment variable.'
         : e.code === 'crypto_provider_payment_required' ? e.message
           : e.message === 'crypto_provider_rate_limited' ? 'Market data is temporarily rate-limited. Try again later.'
           : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
@@ -96,7 +106,7 @@ export default function CryptoMarket({ c }) {
         setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
       }).catch(() => { if (active) setError('Market refresh failed. Showing the last available prices.'); });
     };
-    const timer = window.setInterval(update, 5 * 60 * 1000);
+    const timer = window.setInterval(update, 3 * 60 * 1000);
     document.addEventListener('visibilitychange', update);
     return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
   }, [quote]);
@@ -130,7 +140,7 @@ export default function CryptoMarket({ c }) {
     const filtered = coins.filter((coin) => !q || coin.name.toLowerCase().includes(q) || coin.symbol.toLowerCase().includes(q));
     return sortCryptoCoins(filtered, sort);
   }, [coins, search, sort]);
-  const favoriteCoins = coins.filter((coin) => watchlist.includes(coin.id));
+  const favoriteCoins = watchlist.map((id) => coins.find((coin) => coin.id === id)).filter(Boolean);
   const toggleWatch = (id) => c.setPref?.('cryptoWatchlist', watchlist.includes(id) ? watchlist.filter((x) => x !== id) : [...watchlist, id].slice(0, 100));
 
   const addPriceAlert = () => {
@@ -178,7 +188,7 @@ export default function CryptoMarket({ c }) {
     {selected ? <section className="crypto-detail">
       <button type="button" className="crypto-back" onClick={() => setSelected(null)}><Icon name="chevron" size={15} /> Back to market</button>
       <div className="card crypto-detail-hero">
-        <div className="crypto-coin-identity"><span className="crypto-symbol">{selected.symbol.slice(0, 4)}</span><span><strong>{selected.name}</strong><small>{selected.symbol} · Rank #{selected.rank || '—'}</small></span></div>
+        <div className="crypto-coin-identity"><CryptoLogo coin={selected} size={46} /><span><strong>{selected.name}</strong><small>{selected.symbol} · Rank #{selected.rank || '—'}</small></span></div>
         <strong className="crypto-detail-price">{money(selected.price, quote)}</strong>
         <span className={`crypto-change ${selected.change24h >= 0 ? 'up' : 'down'}`}>{changeText(selected.change24h)} <small>24h</small></span>
         <div className="crypto-stats">
@@ -210,8 +220,8 @@ export default function CryptoMarket({ c }) {
         <div className="crypto-ranges">{[1, 7, 30, 90, 365].map((days) => <button type="button" key={days} className={range === days ? 'active' : ''} onClick={() => setRange(days)}>{days === 1 ? '24H' : days === 365 ? '1Y' : `${days}D`}</button>)}</div>
         {historyLoading ? <p className="crypto-empty">Loading historical prices…</p> : history.length > 1
           ? <svg className="crypto-chart" viewBox="0 0 320 104" role="img" aria-label={`${selected.name} historical price chart`}><path d={path} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-          : <p className="crypto-empty">Historical prices are not available for this period on the configured provider plan.</p>}
-        <small className="crypto-source">Historical daily price observations · CoinPaprika</small>
+          : <p className="crypto-empty">Historical prices are not available for this period.</p>}
+        <small className="crypto-source">Historical daily price observations · CoinBeacon / Binance</small>
       </section>
     </section> : <>
       <div className="crypto-view-switch" role="tablist" aria-label="Crypto sections"><button type="button" role="tab" aria-selected={marketView === 'market'} className={marketView === 'market' ? 'active' : ''} onClick={() => setMarketView('market')}>Market</button><button type="button" role="tab" aria-selected={marketView === 'portfolio'} className={marketView === 'portfolio' ? 'active' : ''} onClick={() => setMarketView('portfolio')}>Portfolio <span>{holdings.length}</span></button></div>
@@ -248,12 +258,20 @@ export default function CryptoMarket({ c }) {
       </section>
       <section className="crypto-market-section">
         <div className="crypto-section-heading"><div><small>MARKET DISCOVERY</small><h2>Top cryptocurrencies</h2></div><span>{updatedAt ? stamp(updatedAt) : '—'}</span></div>
+        {favoriteCoins.length > 0 && <section className="crypto-watchlist card">
+          <div className="crypto-section-heading"><div><small>YOUR TRACKED ASSETS</small><h2>Watchlist</h2></div><span className="crypto-live-label"><i /> Auto-refresh · 3 min</span></div>
+          <div className="crypto-watchlist-items">{favoriteCoins.map((coin) => <button type="button" className="crypto-watch-item" key={coin.id} onClick={() => setSelected(coin)}>
+            <CryptoLogo coin={coin} size={34} />
+            <span className="crypto-watch-meta"><strong>{coin.symbol}</strong><small>{money(coin.price, quote)}</small></span>
+            <span className={"crypto-watch-change " + (coin.change24h > 0 ? 'up' : coin.change24h < 0 ? 'down' : 'flat')}>{changeText(coin.change24h)}</span>
+          </button>)}</div>
+        </section>}
         <label className="crypto-search"><Icon name="search" size={17} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or symbol" aria-label="Search cryptocurrencies" /></label>
         <div className="crypto-sort" aria-label="Sort cryptocurrency market">{[['rank','Market cap'],['change','24h change'],['price','Price']].map(([key,label]) => <button type="button" key={key} className={sort === key ? 'active' : ''} onClick={() => setSort(key)}>{label}</button>)}</div>
         {loading ? <p className="crypto-empty">Loading crypto market…</p> : error && !coins.length ? <div className="card crypto-error" role="status"><Icon name="info" size={20} /><p>{error}</p></div> : <div className="crypto-list">
           {visible.map((coin) => <article className="card crypto-row" key={coin.id}>
             <button type="button" className="crypto-row-main" onClick={() => setSelected(coin)}>
-              <span className="crypto-rank">{coin.rank || '—'}</span><span className="crypto-coin-name"><strong>{coin.name}</strong><small>{coin.symbol}</small></span>
+              <span className="crypto-rank">{coin.rank || '—'}</span><CryptoLogo coin={coin} /><span className="crypto-coin-name"><strong>{coin.name}</strong><small>{coin.symbol}</small></span>
               <span className="crypto-price"><strong>{money(coin.price, quote)}</strong><small className={coin.change24h >= 0 ? 'up' : 'down'}>{changeText(coin.change24h)}</small></span>
             </button>
             <button type="button" className="crypto-star" onClick={() => toggleWatch(coin.id)} aria-label={watchlist.includes(coin.id) ? `Remove ${coin.name} from watchlist` : `Add ${coin.name} to watchlist`}><Icon name={watchlist.includes(coin.id) ? 'star-filled' : 'star'} size={17} /></button>
@@ -262,7 +280,7 @@ export default function CryptoMarket({ c }) {
         </div>}
         {error && coins.length > 0 && <p className="crypto-warning" role="status">{error}</p>}
       </section>
-      <section className="crypto-provider-note card"><strong>Market data by CoinPaprika</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and plan limits. MOVO does not trade or custody cryptocurrency.</p><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
+      <section className="crypto-provider-note card"><strong>Market data by CoinBeacon · Binance fallback</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and free API limits. MOVO does not trade or custody cryptocurrency.</p><small>Market-cap rankings and coin details by CoinMarketCap.</small><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
       </>}
     </>}
   </>;

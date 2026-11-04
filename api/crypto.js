@@ -1,7 +1,9 @@
 'use strict';
 
-const BASE = 'https://api-pro.coinpaprika.com/v1';
+const COINBEACON = 'https://api.coinbeacon.io';
+const BINANCE = 'https://data-api.binance.vision';
 const ALLOWED_QUOTES = new Set(['PHP','USD','EUR','GBP','JPY','AUD','CAD','SGD','CHF','CNY','HKD','NZD','KRW','INR','BTC','ETH']);
+const FIAT_QUOTES = new Set([...ALLOWED_QUOTES].filter((q) => !['BTC','ETH'].includes(q)));
 
 function safeQuote(value) {
   const quote = String(value || 'PHP').toUpperCase();
@@ -10,15 +12,18 @@ function safeQuote(value) {
 function safeCoinId(value) {
   return typeof value === 'string' && /^[a-z0-9]+-[a-z0-9-]{1,90}$/.test(value) ? value : null;
 }
-function safeDate(value) {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const d = new Date(value + 'T00:00:00Z');
-  return Number.isFinite(d.getTime()) && d.toISOString().slice(0, 10) === value ? value : null;
-}
 function number(value) {
   if (value === null || value === undefined || typeof value === 'boolean') return null;
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? n : null;
+}
+function signedNumber(value) {
+  if (value === null || value === undefined || typeof value === 'boolean') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+function slug(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 }
 function originAllowed(req) {
   const origin = req.headers.origin;
@@ -36,88 +41,148 @@ function json(res, status, body) {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   return res.end(JSON.stringify(body));
 }
-function normalizeTicker(row, quote) {
-  const q = row && row.quotes && row.quotes[quote];
-  const price = number(q && q.price);
-  const updated = typeof row.last_updated === 'string' && Number.isFinite(Date.parse(row.last_updated))
-    ? new Date(row.last_updated).toISOString() : null;
-  if (!row || !safeCoinId(row.id) || typeof row.name !== 'string' || typeof row.symbol !== 'string' || price === null || !updated) return null;
+async function providerFetch(url, headers = {}) {
+  const response = await fetch(url, { headers, signal: AbortSignal.timeout(12000) });
+  if (!response.ok) throw new Error('crypto_upstream_' + response.status);
+  return response.json();
+}
+async function quoteRate(quote, coins) {
+  if (quote === 'USD') return 1;
+  if (quote === 'BTC' || quote === 'ETH') {
+    const ticker = quote;
+    const row = coins.find((coin) => String(coin.symbol).toUpperCase() === ticker);
+    const usdPrice = number(row && row.price);
+    if (!usdPrice) throw new Error('crypto_quote_unavailable');
+    return 1 / usdPrice;
+  }
+  const rates = await providerFetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=' + encodeURIComponent(quote));
+  const rate = number(rates && rates.rates && rates.rates[quote]);
+  if (!rate) throw new Error('crypto_fx_unavailable');
+  return rate;
+}
+function normalizeCoin(row, quote, rate) {
+  const usdPrice = number(row.price);
+  const updated = typeof row.lastUpdated === 'string' && Number.isFinite(Date.parse(row.lastUpdated))
+    ? new Date(row.lastUpdated).toISOString()
+    : typeof row.last_updated === 'string' && Number.isFinite(Date.parse(row.last_updated))
+      ? new Date(row.last_updated).toISOString() : new Date().toISOString();
+  const base = String(row.base || row.symbol || '').toUpperCase();
+  const name = typeof row.name === 'string' ? row.name : base;
+  if (!/^[A-Z0-9]{1,20}$/.test(base) || !name || usdPrice === null) return null;
   return {
-    id: row.id, name: row.name.slice(0, 100), symbol: row.symbol.slice(0, 20).toUpperCase(),
+    id: base.toLowerCase() + '-' + (slug(name) || base.toLowerCase()),
+    base, name: name.slice(0, 100), symbol: base.slice(0, 20),
     rank: Number.isInteger(row.rank) && row.rank > 0 ? row.rank : null,
-    price, marketCap: number(q.market_cap), volume24h: number(q.volume_24h),
-    change24h: q.percent_change_24h !== null && q.percent_change_24h !== undefined && Number.isFinite(Number(q.percent_change_24h)) ? Number(q.percent_change_24h) : null,
-    circulatingSupply: number(row.circulating_supply), updatedAt: updated
+    price: usdPrice * rate,
+    marketCap: number(row.marketCap) === null ? null : number(row.marketCap) * rate,
+    volume24h: number(row.volume24h) === null ? null : number(row.volume24h) * rate,
+    change24h: signedNumber(row.percentChange24h),
+    circulatingSupply: number(row.circulatingSupply),
+    updatedAt: updated
   };
 }
-
+async function coinBeaconMarkets(key, quote) {
+  const payload = await providerFetch(COINBEACON + '/public/market-cap?limit=150', { 'X-API-Key': key, Accept: 'application/json' });
+  if (!Array.isArray(payload.coins)) throw new Error('invalid_provider_response');
+  const rate = await quoteRate(quote, payload.coins);
+  return payload.coins.map((row) => normalizeCoin(row, quote, rate)).filter(Boolean).slice(0, 100);
+}
+async function binanceMarkets(quote) {
+  const rows = await providerFetch(BINANCE + '/api/v3/ticker/24hr');
+  if (!Array.isArray(rows)) throw new Error('invalid_binance_response');
+  const selected = rows.filter((row) => typeof row.symbol === 'string' && row.symbol.endsWith('USDT') && row.symbol.length > 4)
+    .sort((a, b) => Number(b.quoteVolume || 0) - Number(a.quoteVolume || 0)).slice(0, 100);
+  let resolvedRate = 1;
+  if (quote === 'BTC' || quote === 'ETH') {
+    const reference = await providerFetch(BINANCE + '/api/v3/ticker/price?symbol=' + quote + 'USDT');
+    const referencePrice = number(reference && reference.price);
+    if (!referencePrice) throw new Error('crypto_quote_unavailable');
+    resolvedRate = 1 / referencePrice;
+  } else if (quote !== 'USD') {
+    const rates = await providerFetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=' + encodeURIComponent(quote));
+    resolvedRate = number(rates && rates.rates && rates.rates[quote]);
+    if (!resolvedRate) throw new Error('crypto_fx_unavailable');
+  }
+  return selected.map((row, index) => {
+    const symbol = row.symbol.slice(0, -4);
+    const price = number(row.lastPrice);
+    if (!/^[A-Z0-9]{1,20}$/.test(symbol) || price === null) return null;
+    return {
+      id: symbol.toLowerCase() + '-' + symbol.toLowerCase(), base: symbol, name: symbol, symbol,
+      rank: index + 1, price: price * resolvedRate, marketCap: null,
+      volume24h: number(row.quoteVolume) === null ? null : number(row.quoteVolume) * resolvedRate,
+      change24h: signedNumber(row.priceChangePercent), circulatingSupply: null,
+      updatedAt: new Date().toISOString()
+    };
+  }).filter(Boolean);
+}
 module.exports = async function handler(req, res) {
   res.setHeader('Vary', 'Origin');
   if (!originAllowed(req)) return json(res, 403, { error: 'origin_not_allowed' });
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return json(res, 405, { error: 'method_not_allowed' });
-  }
+  if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return json(res, 405, { error: 'method_not_allowed' }); }
   const quote = safeQuote(req.query && req.query.quote);
   if (!quote) return json(res, 400, { error: 'invalid_quote_currency' });
   const action = String(req.query && req.query.action || 'markets');
-  const coinId = safeCoinId(req.query && req.query.id);
-  if (action !== 'markets' && !coinId) return json(res, 400, { error: 'invalid_coin_id' });
+  const id = safeCoinId(req.query && req.query.id);
   if (!['markets', 'coin', 'history'].includes(action)) return json(res, 400, { error: 'invalid_action' });
-
-  const key = process.env.COINPAPRIKA_API_KEY;
-  if (!key) return json(res, 503, { error: 'crypto_provider_not_configured', message: 'Configure the licensed CoinPaprika API key as the server-only Vercel environment variable COINPAPRIKA_API_KEY, then redeploy.' });
-  const base = BASE;
-  const headers = { Accept: 'application/json', Authorization: key };
-  let path;
-  if (action === 'markets') {
-    const rawLimit = Number(req.query.limit || 100);
-    const limit = Number.isInteger(rawLimit) ? Math.max(1, Math.min(100, rawLimit)) : 100;
-    path = `/tickers?quotes=${quote}&limit=${limit}`;
-  } else if (action === 'coin') {
-    path = `/tickers/${coinId}?quotes=${quote}`;
-  } else {
-    const days = Math.max(1, Math.min(365, Number(req.query.days) || 7));
-    const start = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    path = `/tickers/${coinId}/historical?start=${start}&interval=1d&quote=${quote}`;
-  }
-
+  if (action !== 'markets' && !id) return json(res, 400, { error: 'invalid_coin_id' });
+  const key = process.env.COINBEACON_API_KEY;
+  if (!key) return json(res, 503, { error: 'crypto_provider_not_configured', message: 'Add COINBEACON_API_KEY as a server-only Vercel environment variable, then redeploy.' });
   try {
-    const upstream = await fetch(base + path, { headers, signal: AbortSignal.timeout(12000) });
-    if (!upstream.ok) {
-      const status = upstream.status === 429 ? 429 : upstream.status === 404 ? 404 : upstream.status === 402 ? 502 : 502;
-      const error = upstream.status === 429 ? 'crypto_provider_rate_limited'
-        : upstream.status === 404 ? 'coin_not_found'
-          : upstream.status === 402 ? 'crypto_provider_payment_required' : 'crypto_provider_unavailable';
-      const message = upstream.status === 402
-        ? 'CoinPaprika rejected this request with HTTP 402. Check the provider account, API plan, billing status, and whether this endpoint is included.'
-        : undefined;
-      return json(res, status, { error, ...(message ? { message } : {}) });
+    if (action === 'markets' || action === 'coin') {
+      let coins, provider = 'CoinBeacon';
+      try { coins = await coinBeaconMarkets(key, quote); }
+      catch (error) {
+        coins = await binanceMarkets(quote);
+        provider = 'Binance public market data';
+      }
+      if (action === 'coin') {
+        const base = id.split('-')[0].toUpperCase();
+        const coin = coins.find((row) => row.base === base || row.id === id);
+        if (!coin) return json(res, 404, { error: 'coin_not_found' });
+        res.setHeader('Cache-Control', 'public, s-maxage=120, stale-while-revalidate=300');
+        return json(res, 200, { coin, quote, provider, fetchedAt: new Date().toISOString(), delayed: true });
+      }
+      res.setHeader('Cache-Control', 'public, s-maxage=180, stale-while-revalidate=300');
+      return json(res, 200, { coins, quote, provider, fetchedAt: new Date().toISOString(), delayed: true });
     }
-    const payload = await upstream.json();
-    const cache = 'public, s-maxage=180, stale-while-revalidate=300';
-    res.setHeader('Cache-Control', cache);
-    if (action === 'markets') {
-      if (!Array.isArray(payload)) return json(res, 502, { error: 'invalid_provider_response' });
-      const coins = payload.slice(0, 1000).map((row) => normalizeTicker(row, quote)).filter(Boolean).slice(0, 100);
-      return json(res, 200, { coins, quote, provider: 'CoinPaprika', fetchedAt: new Date().toISOString(), delayed: true });
+    const base = id.split('-')[0].toUpperCase();
+    if (!/^[A-Z0-9]{1,20}$/.test(base)) return json(res, 400, { error: 'invalid_coin_id' });
+    const days = Math.max(1, Math.min(365, Number(req.query.days) || 7));
+    const limit = Math.min(1000, Math.max(1, days));
+    let bars, provider = 'CoinBeacon';
+    try {
+      const payload = await providerFetch(COINBEACON + '/public/ohlcv/binance/' + encodeURIComponent(base + 'USDT') + '/1d?limit=' + limit, { 'X-API-Key': key, Accept: 'application/json' });
+      bars = Array.isArray(payload.bars) ? payload.bars : [];
+    } catch (error) {
+      const payload = await providerFetch(BINANCE + '/api/v3/klines?symbol=' + encodeURIComponent(base + 'USDT') + '&interval=1d&limit=' + limit);
+      bars = Array.isArray(payload) ? payload.map((row) => ({ openTime: row[0], close: row[4] })) : [];
+      provider = 'Binance public market data';
     }
-    if (action === 'coin') {
-      const coin = normalizeTicker(payload, quote);
-      if (!coin) return json(res, 502, { error: 'invalid_provider_response' });
-      return json(res, 200, { coin, quote, provider: 'CoinPaprika', fetchedAt: new Date().toISOString(), delayed: true });
+    let rate = 1;
+    if (quote !== 'USD') {
+      if (quote === 'BTC' || quote === 'ETH') {
+        const reference = await binanceMarkets('USD');
+        const q = reference.find((row) => row.symbol === quote);
+        if (!q || !q.price) throw new Error('crypto_quote_unavailable');
+        rate = 1 / q.price;
+      } else {
+        const fx = await providerFetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=' + encodeURIComponent(quote));
+        rate = number(fx && fx.rates && fx.rates[quote]);
+        if (!rate) throw new Error('crypto_fx_unavailable');
+      }
     }
-    if (!Array.isArray(payload)) return json(res, 502, { error: 'invalid_provider_response' });
-    const points = payload.slice(0, 370).map((row) => ({
-      date: typeof row.timestamp === 'string' && Number.isFinite(Date.parse(row.timestamp)) ? new Date(row.timestamp).toISOString() : null,
-      price: number(row.price)
-    })).filter((row) => row.date && row.price !== null);
-    return json(res, 200, { points, quote, provider: 'CoinPaprika', fetchedAt: new Date().toISOString(), delayed: true });
-  } catch {
-    return json(res, 502, { error: 'crypto_provider_unavailable' });
+    const points = bars.map((bar) => ({
+      date: Number.isFinite(Number(bar.openTime)) ? new Date(Number(bar.openTime)).toISOString() : null,
+      price: number(bar.close) === null ? null : number(bar.close) * rate
+    })).filter((point) => point.date && point.price !== null);
+    res.setHeader('Cache-Control', 'public, s-maxage=900, stale-while-revalidate=1800');
+    return json(res, 200, { points, quote, provider, fetchedAt: new Date().toISOString(), delayed: true });
+  } catch (error) {
+    const message = error && error.message === 'crypto_fx_unavailable' ? 'The exchange rate for the selected display currency is temporarily unavailable.' : 'Crypto market data is temporarily unavailable.';
+    return json(res, 502, { error: 'crypto_provider_unavailable', message });
   }
 };
-
 module.exports.safeQuote = safeQuote;
 module.exports.safeCoinId = safeCoinId;
-module.exports.normalizeTicker = normalizeTicker;
+module.exports.normalizeCoin = normalizeCoin;

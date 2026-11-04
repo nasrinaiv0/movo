@@ -127,3 +127,23 @@
 .movo-app .crypto-portfolio-empty>small,.movo-app .crypto-portfolio-disclaimer { color:var(--muted); font-size:10px; line-height:1.55; text-align:center; }
 .movo-app .crypto-portfolio-disclaimer { margin:0 8px 8px; }
 @media(max-width:360px){.movo-app .crypto-holding-fields{grid-template-columns:1fr}.movo-app .crypto-portfolio-overview{padding:16px}.movo-app .crypto-portfolio-heading h2{font-size:18px}}
+
+/* Crypto project identity and tracked-asset watchlist */
+.movo-app .crypto-logo { flex:0 0 auto; display:inline-grid; place-items:center; overflow:hidden; border-radius:50%; background:var(--surface); border:1px solid var(--line); }
+.movo-app .crypto-logo img { width:72%; height:72%; object-fit:contain; }
+.movo-app .crypto-logo b { color:var(--muted); font-size:10px; font-weight:850; }
+.movo-app .crypto-coin-identity .crypto-logo { margin-right:2px; }
+.movo-app .crypto-row-main { gap:9px; }
+.movo-app .crypto-watchlist { padding:14px; margin-bottom:12px; }
+.movo-app .crypto-live-label { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:9px; white-space:nowrap; }
+.movo-app .crypto-live-label i { width:6px; height:6px; border-radius:50%; background:#16a36a; box-shadow:0 0 0 3px color-mix(in srgb,#16a36a 14%,transparent); }
+.movo-app .crypto-watchlist-items { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.movo-app .crypto-watch-item { min-width:0; display:flex; align-items:center; gap:8px; padding:9px; border:1px solid var(--line); border-radius:13px; color:var(--text); background:var(--surface); text-align:left; }
+.movo-app .crypto-watch-meta { min-width:0; flex:1; display:grid; gap:4px; }
+.movo-app .crypto-watch-meta strong { font-size:11px; font-weight:850; }
+.movo-app .crypto-watch-meta small { overflow:hidden; text-overflow:ellipsis; font-size:10px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.movo-app .crypto-watch-change { padding:5px 6px; border-radius:7px; font-size:9px; font-weight:850; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.movo-app .crypto-watch-change.up { color:#15945f; background:color-mix(in srgb,#16a36a 12%,transparent); }
+.movo-app .crypto-watch-change.down { color:#d84b58; background:color-mix(in srgb,#e05260 12%,transparent); }
+.movo-app .crypto-watch-change.flat { color:var(--muted); background:var(--card); }
+@media(max-width:350px){.movo-app .crypto-watchlist-items{grid-template-columns:1fr}}

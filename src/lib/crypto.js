@@ -74,4 +74,4 @@ export function sortCryptoCoins(coins, sort = 'rank') {
   return rows.sort(getters[sort] || getters.rank);
 }
 export function clearCryptoCache() { cache.clear(); inflight.clear(); }
-export const CRYPTO_PROVIDER = 'CoinPaprika';
+export const CRYPTO_PROVIDER = 'CoinBeacon';
