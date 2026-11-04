@@ -25,8 +25,8 @@ describe('billingCycleOptions', () => {
     expect(billingCycleOptions(['2026-11', '2026-10', '2026-09'], '2026-11')).toEqual([
       { value: 'all', label: 'All' },
       { value: '2026-11', label: 'Present' },
-      { value: '2026-10', label: 'October 2026' },
-      { value: '2026-09', label: 'September 2026' },
+      { value: '2026-10', label: 'Oct 2026' },
+      { value: '2026-09', label: 'Sep 2026' },
     ]);
   });
 
