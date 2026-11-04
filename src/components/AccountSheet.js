@@ -14,7 +14,7 @@ import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLog
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
-export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = '', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
+export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = '', qrCodeDisplay = '', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
   const [institutionCountry, setInstitutionCountry] = useState(INSTITUTION_COUNTRIES.includes(country) ? country : 'PH');
@@ -32,7 +32,8 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
   const linkedBank = bankAccounts.find(account => account.id === form.linkedBankId);
   const [pad, setPad] = useState(false);
   const [qrError, setQrError] = useState('');
-  const currentQrCode = form.qrCode !== undefined ? form.qrCode : (qrCode || '');
+  const [qrUploading, setQrUploading] = useState(false);
+  const currentQrCode = typeof form.qrCode === 'string' && form.qrCode.startsWith('data:image/png;base64,') ? form.qrCode : (qrCodeDisplay || (form.qrCode ? '' : qrCode) || '');
   const handleQrUpload = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -40,11 +41,13 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) { setQrError(tr('Choose a PNG, JPG or WebP image.')); return; }
     if (file.size > 8 * 1024 * 1024) { setQrError(tr('QR image must be 8 MB or smaller.')); return; }
     setQrError('');
+    setQrUploading(true);
     try {
       const objectUrl = URL.createObjectURL(file);
       const image = new Image();
       image.onload = () => {
         try {
+          if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth > 8192 || image.naturalHeight > 8192 || image.naturalWidth * image.naturalHeight > 16_000_000) throw new Error('dimensions');
           const scale = Math.min(1, 640 / Math.max(image.naturalWidth, image.naturalHeight));
           const canvas = document.createElement('canvas');
           canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -57,11 +60,11 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
           if (dataUrl.length > 1_200_000) throw new Error('large');
           set({ qrCode: dataUrl });
         } catch { setQrError(tr('Could not process this QR image. Try a smaller or clearer image.')); }
-        finally { URL.revokeObjectURL(objectUrl); }
+        finally { URL.revokeObjectURL(objectUrl); setQrUploading(false); }
       };
-      image.onerror = () => { URL.revokeObjectURL(objectUrl); setQrError(tr('Could not read this image. Please choose another file.')); };
+      image.onerror = () => { URL.revokeObjectURL(objectUrl); setQrError(tr('Could not read this image. Please choose another file.')); setQrUploading(false); };
       image.src = objectUrl;
-    } catch { setQrError(tr('Could not read this image. Please choose another file.')); }
+    } catch { setQrError(tr('Could not read this image. Please choose another file.')); setQrUploading(false); }
   };
   const meta = typeMeta(form.account_type);
   const color = form.color || meta.color; const icon = form.icon || meta.icon;
@@ -100,8 +103,8 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
       {form.account_type === 'bank' && <div className="acct-qr-upload">
         <div className="acct-qr-upload-copy"><strong>{tr('Bank QR code')}</strong><small>{tr('Add your bank QR code to display it on the account card.')}</small></div>
         <input id="acct-qr-file" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleQrUpload} />
-        <label className="acct-qr-pick" htmlFor="acct-qr-file"><Icon name="upload" size={16} />{currentQrCode ? tr('Replace QR code') : tr('Upload QR code')}</label>
-        {currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr('Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
+        <label className="acct-qr-pick" htmlFor="acct-qr-file"><Icon name="upload" size={16} />{qrUploading ? tr('Processing…') : currentQrCode ? tr('Replace QR code') : tr('Upload QR code')}</label>
+        {qrUploading && <p className="form-note" role="status">{tr('Processing QR image…')}</p>}{currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr('Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
         {qrError && <p className="form-error" role="alert">{qrError}</p>}
       </div>}
 
@@ -180,6 +183,6 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
       {!cloudMode && <p className="acct-hint">{tr('Stored on this device only. Sign in to sync it to your MOVO account.')}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || (!creditCard && !Number.isFinite(balance)) || !creditValid || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
+    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || qrUploading || (!creditCard && !Number.isFinite(balance)) || !creditValid || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
   </form>}</Sheet>;
 }
