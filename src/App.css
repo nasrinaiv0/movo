@@ -4807,7 +4807,7 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .tx-period-filter {
   position:relative; display:flex; align-items:center; justify-content:space-between; gap:10px;
   flex:0 0 218px; width:218px; min-width:218px; max-width:218px; height:62px;
-  padding:0 14px; margin:0 18px 14px 0; border:1px solid var(--line);
+  padding:0 14px; margin:0 18px 0 0; border:1px solid var(--line);
   border-radius:999px; background:var(--card); color:var(--text);
   box-shadow:var(--shadow-sm); overflow:hidden;
 }
