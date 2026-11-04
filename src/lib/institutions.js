@@ -1,4 +1,4 @@
-import { getInstitutionFaviconUrl } from './institutionFavicons';
+import { getInstitutionFaviconEntry, getInstitutionFaviconUrl } from './institutionFavicons';
 
 export const INSTITUTION_COUNTRIES = ['PH', 'US', 'GB', 'CA', 'AU', 'SG', 'IN', 'MY', 'NZ'];
 
@@ -138,24 +138,55 @@ export function searchInstitutions(countryCode, query = '', accountType = 'bank'
 }
 
 
-/** Logo for a curated institution, matched by its name or a known alias (e.g. "BDO", "PayMaya"); '' if none. */
-export function institutionLogoUrl(name, options = {}) {
-  const text = String(name || '').trim();
-  if (!text) return '';
-  const lower = text.toLowerCase();
-  const inst = INSTITUTIONS.find(i => i.name.toLowerCase() === lower || i.aliases.some(a => a.toLowerCase() === lower));
-  const candidates = [text, ...(inst ? [inst.name, ...inst.aliases] : [])];
-  for (const c of candidates) { const url = getInstitutionFaviconUrl(c, options); if (url) return url; }
-  return '';
+const normalizeInstitutionLabel = value => String(value || '')
+  .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim();
+
+/** Resolve a curated issuer when a saved account name includes a card tier or product suffix. */
+function findInstitutionForLogo(name) {
+  const normalized = normalizeInstitutionLabel(name);
+  if (!normalized) return null;
+  const exact = INSTITUTIONS.find(item => [item.name, ...item.aliases].some(value => normalizeInstitutionLabel(value) === normalized));
+  if (exact) return exact;
+  return INSTITUTIONS.find(item => [item.name, ...item.aliases].some(value => {
+    const alias = normalizeInstitutionLabel(value);
+    if (alias.length < 3) return false;
+    return normalized.startsWith(alias + ' ') || normalized.endsWith(' ' + alias) || normalized.includes(' ' + alias + ' ');
+  })) || null;
 }
 
-
-/** Return every curated Google favicon candidate so the logo component can try aliases on image failure. */
+/** Ordered, curated logo sources: Google favicon first, official favicon second. Unknown names never become domains. */
 export function institutionLogoCandidates(name, options = {}) {
   const text = String(name || '').trim();
   if (!text) return [];
-  const lower = text.toLowerCase();
-  const inst = INSTITUTIONS.find(i => i.name.toLowerCase() === lower || i.aliases.some(a => a.toLowerCase() === lower));
-  const candidates = [text, ...(inst ? [inst.name, ...inst.aliases] : [])];
-  return [...new Set(candidates.map(candidate => getInstitutionFaviconUrl(candidate, options)).filter(Boolean))];
+  const institution = findInstitutionForLogo(text);
+  const canonical = institution?.name || text;
+  const google = getInstitutionFaviconUrl(canonical, options) || getInstitutionFaviconUrl(text, options);
+  const entry = getInstitutionFaviconEntry(canonical) || getInstitutionFaviconEntry(text);
+  const official = entry?.domain ? `https://${entry.domain}/favicon.ico` : '';
+  return [google, official].filter((value, index, all) => Boolean(value) && all.indexOf(value) === index);
+}
+
+/** Logo for a curated institution, matched by canonical name, alias, or product-suffixed label; '' if unknown. */
+export function institutionLogoUrl(name, options = {}) {
+  return institutionLogoCandidates(name, options)[0] || '';
+}
+
+const CARD_NETWORK_DOMAINS = {
+  visa: 'visa.com',
+  mastercard: 'mastercard.com',
+  'american express': 'americanexpress.com',
+  amex: 'americanexpress.com',
+  discover: 'discover.com',
+  jcb: 'jcb-global.com',
+  unionpay: 'unionpayintl.com',
+};
+
+/** Network-brand fallback for cards whose issuer logo is unavailable. */
+export function cardNetworkLogoUrl(network, size = 64) {
+  const key = normalizeInstitutionLabel(network);
+  const domain = CARD_NETWORK_DOMAINS[key];
+  if (!domain) return '';
+  const safeSize = [16, 32, 48, 64, 128].includes(Number(size)) ? Number(size) : 64;
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${safeSize}`;
 }
