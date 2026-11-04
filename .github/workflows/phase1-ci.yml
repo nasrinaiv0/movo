@@ -2,7 +2,7 @@ name: MOVO Phase 1 CI
 
 on:
   pull_request:
-    branches: [main, feat/account-bank-qr-code]
+    branches: [main]
 
 concurrency:
   group: movo-phase1-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
