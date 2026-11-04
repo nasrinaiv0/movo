@@ -103,7 +103,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -724,14 +724,19 @@ function App() {
             value = path;
             try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { /* IndexedDB cache remains available offline */ }
           } catch {
-            value = `localqr:${cacheKey}`;
+            value = previous && !isAccountQrDataUrl(previous) && !previous.startsWith('localqr:') ? previous : '';
+            setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
             notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+          }
+          if (value && !isAccountQrDataUrl(value) && !value.startsWith('localqr:')) {
+            const pending = { ...(prefs.accountQrPending || {}) }; delete pending[id]; setPref('accountQrPending', pending);
           }
         } else value = `localqr:${cacheKey}`;
       }
       if (value) next[id] = value; else delete next[id];
       setPref('accountQrCodes', next);
       if (!value) {
+        const pending = { ...(prefs.accountQrPending || {}) }; delete pending[id]; setPref('accountQrPending', pending);
         if (cloudMode && session?.user?.id) removeLocalAccountQr(`${session.user.id}:${id}`).catch(() => {});
         removeLocalAccountQr(`local:${id}`).catch(() => {});
       }
@@ -985,6 +990,9 @@ function App() {
     const entries = Object.entries(prefs.accountQrCodes || {});
     Promise.all(entries.map(async ([accountId, value]) => {
       if (isAccountQrDataUrl(value)) return [accountId, value];
+      if (userId && prefs.accountQrPending?.[accountId]) {
+        try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; } catch { return [accountId, '']; }
+      }
       if (typeof value === 'string' && value.startsWith('localqr:')) {
         try { return [accountId, await getLocalAccountQr(value.slice(8)) || '']; } catch { return [accountId, '']; }
       }
@@ -996,7 +1004,7 @@ function App() {
       }
     })).then(rows => { if (live) setAccountQrDisplay(Object.fromEntries(rows.filter(([, value]) => value))); });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, cloudAccounts]);
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts]);
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
@@ -1016,6 +1024,7 @@ function App() {
   useEffect(() => {
     if (!userId || !prefsSync.current.ready || !prefs.accountQrCodes) return;
     const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
+    Object.keys(prefs.accountQrPending || {}).forEach(id => pendingMap.set(id, { cacheKey: `${userId}:${id}` }));
     Object.entries(prefs.accountQrCodes).forEach(([id, value]) => {
       if (typeof value === 'string' && value.startsWith('localqr:')) {
         const cacheKey = value.slice(8);
@@ -1043,7 +1052,8 @@ function App() {
       setPrefs(cur => {
         const next = { ...(cur.accountQrCodes || {}) };
         migrated.forEach(([id, dataUrl, path, previous]) => { if (next[id] === dataUrl || next[id] === previous || !next[id]) next[id] = path; });
-        return { ...cur, accountQrCodes: next };
+        const pending = { ...(cur.accountQrPending || {}) }; migrated.forEach(([id]) => { delete pending[id]; });
+        return { ...cur, accountQrCodes: next, accountQrPending: pending };
       });
     });
     return () => { live = false; };
