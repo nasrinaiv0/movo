@@ -245,7 +245,7 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
     {movo ? <><MovoFaceArt face={movo} orientation={orientation} /><span className="ccx-watermark" aria-hidden="true"><MovoMark size={240} tone="white" /></span></>
       : face && <CardFaceArt face={face} orientation={orientation} seed={a.id || a.name} />}
     {theme?.video && <span className="cc-live" aria-label={tr('Live wallpaper')}>{tr('LIVE')}</span>}
-    {qrCode && <button type="button" className="ccx-account-qr" aria-label={tr('Enlarge QR code')} onClick={event => { event.stopPropagation(); onQrClick?.(); }}><img src={qrCode} alt={tr('Account QR code')} /></button>}
+    {qrCode && (onQrClick ? <button type="button" className="ccx-account-qr" aria-label={tr('Enlarge QR code')} onClick={event => { event.stopPropagation(); onQrClick(); }}><img src={qrCode} alt={tr('Account QR code')} /></button> : <span className="ccx-account-qr" aria-label={tr('Account QR code')}><img src={qrCode} alt={tr('Account QR code')} /></span>)}
     <div className="ccx-face">
       <div className="ccx-head">
         {movo
