@@ -92,9 +92,17 @@ async function binanceMarkets(quote) {
   if (!Array.isArray(rows)) throw new Error('invalid_binance_response');
   const selected = rows.filter((row) => typeof row.symbol === 'string' && row.symbol.endsWith('USDT') && row.symbol.length > 4)
     .sort((a, b) => Number(b.quoteVolume || 0) - Number(a.quoteVolume || 0)).slice(0, 100);
-  const rate = quote === 'USD' ? 1 : quoteRate(quote, selected.map((row) => ({ symbol: row.symbol.replace(/USDT$/, ''), price: 1 }))).catch(() => null);
-  const resolvedRate = await rate;
-  if (!resolvedRate) throw new Error('crypto_fx_unavailable');
+  let resolvedRate = 1;
+  if (quote === 'BTC' || quote === 'ETH') {
+    const reference = await providerFetch(BINANCE + '/api/v3/ticker/price?symbol=' + quote + 'USDT');
+    const referencePrice = number(reference && reference.price);
+    if (!referencePrice) throw new Error('crypto_quote_unavailable');
+    resolvedRate = 1 / referencePrice;
+  } else if (quote !== 'USD') {
+    const rates = await providerFetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=' + encodeURIComponent(quote));
+    resolvedRate = number(rates && rates.rates && rates.rates[quote]);
+    if (!resolvedRate) throw new Error('crypto_fx_unavailable');
+  }
   return selected.map((row, index) => {
     const symbol = row.symbol.slice(0, -4);
     const price = number(row.lastPrice);
