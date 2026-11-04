@@ -42,6 +42,7 @@ import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from '.
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
+import GrocerySheet from './components/GrocerySheet';
 import AccountSheet from './components/AccountSheet';
 import ScannerSheet from './components/ScannerSheet';
 import AutoLogSheet from './components/AutoLogSheet';
@@ -523,6 +524,9 @@ function App() {
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
   const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '' })); setSheet({ name: 'transaction', type }); };
+  const openGrocery = () => { setError(''); setSheet({ name: 'grocery' }); };
+  const saveGroceryDraft = (draft) => { setPref('groceryDraft', draft); notify(tr('Grocery list saved as draft.')); };
+  const logGroceryExpense = ({ merchant, amount, accountId, note }) => { setForm(f => ({ ...f, merchant, amount:String(amount), transaction_type:'expense', category:'food:groceries', account_id:accountId, occurred_at:today(), time:'', note, source:'', ref:'' })); setPref('groceryDraft', null); setSheet({ name:'transaction', type:'expense' }); };
   /* "Add amount" on a card or account: a transfer into it from another account, or a manual top-up (income). */
   const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type: 'transfer' }); };
   const openEditAccount = (account) => {
@@ -1217,7 +1221,7 @@ function App() {
     refreshFx,
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
-    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
+    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
     sceneryPhoto, setSceneryPhoto,
@@ -1323,6 +1327,7 @@ function App() {
         <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
+      {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
         const type = f.type === 'income' ? 'income' : 'expense';
