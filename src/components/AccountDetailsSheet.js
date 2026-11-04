@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon';
 import CardArt from './CardArt';
-import AccountTile, { styleFor } from './AccountTile';
 import { Sheet, TransactionRow, Bars } from './ui';
 import { money, shown } from '../lib/format';
 import { accountSpendingHistory } from '../lib/accountSpending';
