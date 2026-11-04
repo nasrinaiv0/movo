@@ -33,7 +33,7 @@ export async function logScheduledTransaction(item, accountId = item.account_id,
   const transaction = await createTransaction({
     transaction_type:item.transaction_type,amount:item.amount,currency:item.currency,merchant:item.title,
     category:item.category||'Other',account_id:accountId,transfer_to_account_id:item.transaction_type==='transfer'?transferTo:null,
-    occurred_at:`${occurrence}T12:00:00`,source:'manual',external_reference:reference,
+    occurred_at:`${occurrence}T12:00:00Z`,source:'manual',external_reference:reference,schedule_id:item.id,
     note:item.notes||null,
   }, item.user_id);
   const next = new Date(`${occurrence}T12:00:00Z`);
