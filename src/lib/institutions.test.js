@@ -1,4 +1,4 @@
-import { INSTITUTIONS, searchInstitutions, institutionLogoUrl } from './institutions';
+import { INSTITUTIONS, searchInstitutions, institutionLogoUrl, institutionLogoCandidates, cardNetworkLogoUrl } from './institutions';
 
 describe('country-aware institution catalog', () => {
   test('returns Philippine banks for the Philippines and matches aliases', () => {
@@ -55,4 +55,17 @@ describe('expanded institution list', () => {
     expect(new URL(institutionLogoUrl('Asia United Bank (AUB)')).searchParams.get('domain')).toBe('aub.com.ph');
     expect(new URL(institutionLogoUrl('AUB')).searchParams.get('domain')).toBe('aub.com.ph');
   });
+});
+
+
+test('matches card issuer logos when the saved label includes a product or card suffix', () => {
+  expect(new URL(institutionLogoUrl('AUB Platinum Credit Card')).searchParams.get('domain')).toBe('aub.com.ph');
+  expect(new URL(institutionLogoUrl('Atome Card')).searchParams.get('domain')).toBe('atome.ph');
+  expect(institutionLogoCandidates('Asia United Bank (AUB) Credit').length).toBeGreaterThanOrEqual(1);
+});
+
+test('uses curated card-network logo fallbacks only for supported network names', () => {
+  expect(new URL(cardNetworkLogoUrl('Mastercard')).searchParams.get('domain')).toBe('mastercard.com');
+  expect(new URL(cardNetworkLogoUrl('American Express')).searchParams.get('domain')).toBe('americanexpress.com');
+  expect(cardNetworkLogoUrl('Unknown Network')).toBe('');
 });
