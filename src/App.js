@@ -39,6 +39,7 @@ import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screen
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { uploadAccountQr, getAccountQrSignedUrl, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
+import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr } from './lib/accountQrLocalStore';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
@@ -713,25 +714,28 @@ function App() {
       const next = { ...(prefs.accountQrCodes || {}) };
       const previous = next[id] || '';
       let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
-      if (value && isAccountQrDataUrl(value) && cloudMode && session?.user?.id) {
-        try {
-          try { localStorage.setItem(`movo.accountQrCache.${session.user.id}.${id}`, value); } catch { /* local fallback is best-effort */ }
-          const path = await uploadAccountQr(session.user.id, id, value);
-          value = path;
-          try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { /* cached image remains available offline */ }
-        } catch {
-          // Keep the normalized image locally; the sign-in migration retries cloud upload later.
-          try { localStorage.setItem(`movo.accountQrPending.${session.user.id}.${id}`, accountForm.qrCode); } catch { /* best-effort offline retry marker */ }
-          value = previous && !isAccountQrDataUrl(previous) ? previous : '';
-          notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
-        }
+      if (value && isAccountQrDataUrl(value)) {
+        const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
+        try { await saveLocalAccountQr(cacheKey, value); } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
+        setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
+        if (cloudMode && session?.user?.id) {
+          try {
+            const path = await uploadAccountQr(session.user.id, id, value);
+            value = path;
+            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { /* IndexedDB cache remains available offline */ }
+          } catch {
+            value = `localqr:${cacheKey}`;
+            notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+          }
+        } else value = `localqr:${cacheKey}`;
       }
       if (value) next[id] = value; else delete next[id];
       setPref('accountQrCodes', next);
-      if (cloudMode && session?.user?.id && !value) {
-        try { localStorage.removeItem(`movo.accountQrCache.${session.user.id}.${id}`); localStorage.removeItem(`movo.accountQrPending.${session.user.id}.${id}`); } catch { /* best-effort cache cleanup */ }
+      if (!value) {
+        if (cloudMode && session?.user?.id) removeLocalAccountQr(`${session.user.id}:${id}`).catch(() => {});
+        removeLocalAccountQr(`local:${id}`).catch(() => {});
       }
-      if (isAccountQrDataUrl(accountForm.qrCode) && value === previous) setAccountQrDisplay(cur => ({ ...cur, [id]: accountForm.qrCode }));
+      if (previous.startsWith('localqr:') && previous !== value) removeLocalAccountQr(previous.slice(8)).catch(() => {});
       if (previous && previous !== value && !isAccountQrDataUrl(previous) && cloudMode && session?.user?.id) {
         removeAccountQr(session.user.id, previous).catch(() => { /* private orphan cleanup is retried by account cleanup */ });
       }
@@ -978,15 +982,18 @@ function App() {
     const entries = Object.entries(prefs.accountQrCodes || {});
     Promise.all(entries.map(async ([accountId, value]) => {
       if (isAccountQrDataUrl(value)) return [accountId, value];
+      if (typeof value === 'string' && value.startsWith('localqr:')) {
+        try { return [accountId, await getLocalAccountQr(value.slice(8)) || '']; } catch { return [accountId, '']; }
+      }
       if (!userId || typeof value !== 'string') return [accountId, ''];
       try { return [accountId, await getAccountQrSignedUrl(userId, value)]; }
       catch {
-        try { return [accountId, localStorage.getItem(`movo.accountQrCache.${userId}.${accountId}`) || '']; }
+        try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; }
         catch { return [accountId, '']; }
       }
     })).then(rows => { if (live) setAccountQrDisplay(Object.fromEntries(rows.filter(([, value]) => value))); });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes]);
+  }, [userId, prefs.accountQrCodes, cloudAccounts]);
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
@@ -1006,14 +1013,13 @@ function App() {
   useEffect(() => {
     if (!userId || !prefsSync.current.ready || !prefs.accountQrCodes) return;
     const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
-    try {
-      Object.keys(localStorage).filter(key => key.startsWith(`movo.accountQrPending.${userId}.`)).forEach(key => {
-        const id = key.slice(`movo.accountQrPending.${userId}.`.length);
-        const value = localStorage.getItem(key);
-        if (id && value && isAccountQrDataUrl(value)) pendingMap.set(id, value);
-      });
-    } catch { /* device storage may be unavailable */ }
-    const pending = [...pendingMap.entries()].filter(([id]) => !qrMigrationRef.current.has(`${userId}:${id}`));
+    Object.entries(prefs.accountQrCodes).forEach(([id, value]) => {
+      if (typeof value === 'string' && value.startsWith('localqr:')) {
+        const cacheKey = value.slice(8);
+        if (cacheKey === `local:${id}` || cacheKey === `${userId}:${id}`) pendingMap.set(id, { cacheKey });
+      }
+    });
+    const pending = [...pendingMap.entries()].filter(([id]) => cloudAccounts.some(account => account.id === id) && !qrMigrationRef.current.has(`${userId}:${id}`));
     if (!pending.length) return;
     let live = true;
     pending.forEach(([id]) => qrMigrationRef.current.add(`${userId}:${id}`));
