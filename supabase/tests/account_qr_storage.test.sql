@@ -1,4 +1,4 @@
--- Run after 20261104150000_private_account_qr_storage.sql in a test project.
+-- Verify the private account QR bucket and owner-scoped policies after migration 20261104145120.
 do $$
 declare
   bucket storage.buckets%rowtype;
