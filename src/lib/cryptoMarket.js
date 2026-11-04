@@ -27,4 +27,4 @@ function normalizeTicker(row, quote) {
     circulatingSupply: number(row.circulating_supply), updatedAt: updated
   };
 }
-module.exports = { safeQuote, safeCoinId, normalizeTicker };
+module.exports = { safeQuote, safeCoinId, normalizeTicker, number };
