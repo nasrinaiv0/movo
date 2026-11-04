@@ -1577,6 +1577,8 @@ function App() {
         transactions={txs}
         prefs={prefs}
         subscriptions={subscriptions}
+        plans={plans}
+        cloudMode={cloudMode}
         show={show}
         holder={user?.name}
         base={base}
