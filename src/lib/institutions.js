@@ -148,3 +148,14 @@ export function institutionLogoUrl(name, options = {}) {
   for (const c of candidates) { const url = getInstitutionFaviconUrl(c, options); if (url) return url; }
   return '';
 }
+
+
+/** Return every curated Google favicon candidate so the logo component can try aliases on image failure. */
+export function institutionLogoCandidates(name, options = {}) {
+  const text = String(name || '').trim();
+  if (!text) return [];
+  const lower = text.toLowerCase();
+  const inst = INSTITUTIONS.find(i => i.name.toLowerCase() === lower || i.aliases.some(a => a.toLowerCase() === lower));
+  const candidates = [text, ...(inst ? [inst.name, ...inst.aliases] : [])];
+  return [...new Set(candidates.map(candidate => getInstitutionFaviconUrl(candidate, options)).filter(Boolean))];
+}
