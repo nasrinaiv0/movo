@@ -4711,6 +4711,7 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .account-spending-chart .bars-plot { height:78px; gap:5px; align-items:end; }
 .movo-app .account-spending-chart .bars-plot > span { flex:1 1 0; min-width:3px; max-width:18px; border-radius:5px 5px 2px 2px; background:var(--accent); opacity:.62; }
 .movo-app .account-spending-chart .bars-plot > span.hot { opacity:1; }
+.movo-app .account-spending-chart .bars-plot > span.empty { height:0 !important; opacity:0; }
 .movo-app .account-spending-chart .bars-axis { margin-top:5px; color:var(--muted); font-size:9px; }
 @media (max-width:360px) {
  .movo-app .account-spending-section { padding:11px 12px; }
