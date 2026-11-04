@@ -69,9 +69,14 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
     if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
     for(const offset of days){
       const due=asDate(date); due.setDate(due.getDate()-Number(offset));
+      const todayStart=new Date(today.getFullYear(),today.getMonth(),today.getDate());
+      const dueStart=asDate(date);
+      if(dueStart<todayStart&&Number(offset)>0)continue;
+      if(dueStart<new Date(todayStart.getTime()-MAX_DAYS*86400000))continue;
       const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
-      const when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end);
-      if(when<=today||when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
+      let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end);
+      if(when<=today)when=moveOutOfQuietHours(new Date(today.getTime()+60000),preferences.quiet_start,preferences.quiet_end);
+      if(when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
       const previous=events.find(event=>event.source_type===type&&event.source_id===String(item.id)&&event.occurrence_date===date&&Number(event.reminder_offset)===Number(offset));
       if(previous&&(previous.status==='sent'||(previous.status==='dismissed'&&previous.snoozed_until&&new Date(previous.snoozed_until)>today)))continue;
       const key=`${type}:${item.id}:${date}:${offset}`;
