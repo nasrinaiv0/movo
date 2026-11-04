@@ -23,7 +23,7 @@ describe('POST /api/account/delete', () => {
   beforeEach(() => { calls = []; authUser = { id: 'user-1' }; txError = null; userError = null; qrFiles = []; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
   afterEach(() => { jest.restoreAllMocks(); jest.dontMock('@supabase/supabase-js'); });
 
-  test('the verified person is deleted: transactions first, then the Auth user', async () => {
+  test('the verified person is deleted after QR cleanup and transaction cleanup', async () => {
     const res = await call(load());
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ deleted: true });
