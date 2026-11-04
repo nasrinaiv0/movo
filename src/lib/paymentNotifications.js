@@ -55,7 +55,7 @@ export async function requestPaymentNotificationPermission() {
   return { supported:true, granted:permission.display==='granted' };
 }
 
-export async function syncPaymentNotifications({ schedules=[], bills=[], subscriptions=[], loans=[], receivables=[], cards=[], preferences={} }={}) {
+export async function syncPaymentNotifications({ schedules=[], bills=[], subscriptions=[], loans=[], receivables=[], cards=[], preferences={}, events=[] }={}) {
   if (!Capacitor.isNativePlatform()) return { supported:false, scheduled:0 };
   if (preferences.enabled===false || preferences.push_enabled!==true) {
     await LocalNotifications.cancel({notifications:(await LocalNotifications.getPending()).notifications.filter(n=>n.id>=ID_BASE&&n.id<ID_BASE+1800000000)});
@@ -72,6 +72,8 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
       const when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end);
       if(when<=today||when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
+      const previous=events.find(event=>event.source_type===type&&event.source_id===String(item.id)&&event.occurrence_date===date&&Number(event.reminder_offset)===Number(offset));
+      if(previous&&(previous.status==='sent'||(previous.status==='dismissed'&&previous.snoozed_until&&new Date(previous.snoozed_until)>today)))continue;
       const key=`${type}:${item.id}:${date}:${offset}`;
       queue.push({id:stableId(key),title,body,schedule:{at:when,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset}});
     }
