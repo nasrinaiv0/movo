@@ -6,6 +6,7 @@ import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepos
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
 import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation } from '../lib/paymentReminderCenter';
 import { syncPaymentNotifications } from '../lib/paymentNotifications';
+import { recordPaymentAttempt } from '../lib/paymentAttempts';
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const shift = (date, days) => { const value=new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate()+days); return value.toISOString().slice(0,10); };
@@ -18,6 +19,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [amount,setAmount]=useState('');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
+  const [attemptNote,setAttemptNote]=useState('');
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = useCallback(async () => {
     const date=today();
@@ -71,6 +73,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     setDestination(item?.transfer_to_account_id||'');
     setAmount(String(next?.kind==='bill'?amountRemaining(item):item?.amount||''));
     setError('');
+    setAttemptNote('');
   },[]);
   useEffect(() => {
     let live=true;
@@ -83,6 +86,21 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     return()=>{live=false;window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
   },[loadDue,setActive]);
   const close=async()=>{ if(session?.user?.id&&entry){const until=new Date(Date.now()+86400000).toISOString();try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);else await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:0},until);}catch{/* Keep the prompt dismissible while offline. */}} setActive(null); };
+  const markIssue=async()=>{
+    if(!entry||!session?.user?.id)return;
+    setBusy(true);setError('');
+    try{
+      await recordPaymentAttempt(session.user.id,{
+        source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'failed',
+        amount:Number(amount||item.amount||0)||null,currency:billCurrency,account_id:account||null,note:attemptNote,
+      });
+      const until=new Date(Date.now()+86400000).toISOString();
+      if(entry.kind==='scheduled')await snoozeSchedule(item.id,session.user.id,until);
+      else await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:0},until);
+      const queue=await loadDue();setActive(queue[0]||null);
+    }catch(err){setError(err.message||tr('Could not save the payment issue.'));}
+    finally{setBusy(false);}
+  };
   const log=async event=>{
     event.preventDefault();if(!entry)return;
     if(entry.kind==='subscription'){onSubscriptionLog?.(entry.item);setActive(null);return;}
@@ -123,6 +141,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         {entry.kind==='bill'&&<label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></label>}
         <button className="primary-button" disabled={busy||!account||(entry.kind==='scheduled'&&item.transaction_type==='transfer'&&!destination)}>{tr('Confirm & log transaction')}</button>
       </>}
+      <label>{tr('Payment issue note')}<textarea rows="2" maxLength="500" value={attemptNote} onChange={e=>setAttemptNote(e.target.value)} placeholder={tr('Optional: declined, insufficient balance, service unavailable…')}/></label>
+      <button type="button" className="secondary-button" disabled={busy||!session?.user?.id} onClick={markIssue}>{tr('Record payment issue & retry tomorrow')}</button>
       <button type="button" className="link-button" onClick={close}>{tr('Remind me later')}</button>
     </form>
   </Sheet>;
