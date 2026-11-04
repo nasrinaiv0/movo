@@ -76,7 +76,7 @@ export default function Wallet({ c }) {
   const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
-  const groups = [['Bank Accounts', accountsByType.bank, 'bank'], ['Cash & Other', live.filter(a => typeOf['Cash & Other'].includes(a.account_type)), 'bank'], ['E-Wallets', accountsByType.e_wallet, 'wallet']];
+  const groups = [['Bank Accounts', live.filter(a => a.account_type === 'bank'), 'bank'], ['Cash & Other', live.filter(a => typeOf['Cash & Other'].includes(a.account_type)), 'bank'], ['E-Wallets', live.filter(a => a.account_type === 'e_wallet'), 'wallet']];
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); if (a.account_type === 'card') { setSheet(null); setWalletFilter('Cards'); return; } setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
