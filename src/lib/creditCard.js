@@ -23,7 +23,7 @@ export function creditCardPaymentSummary(payments = []) {
     const date = String(p.date || '');
     if (!Number.isFinite(Number(p.amount)) || Number(p.amount) <= 0) return false;
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date.slice(0, 7) !== month) return false;
-    const parsed = new Date(\`${date}T00:00:00.000Z\`);
+    const parsed = new Date(date + 'T00:00:00.000Z');
     return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
   });
   return { totalPaid: Math.round(valid.reduce((sum, p) => sum + Number(p.amount), 0) * 100) / 100, monthsPaid: new Set(valid.map(p => p.month)).size, payments: valid.slice().sort((a, b) => b.date.localeCompare(a.date)) };
