@@ -48,6 +48,7 @@ import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
 import GrocerySheet from './components/GrocerySheet';
 import AccountSheet from './components/AccountSheet';
+import AccountDetailsSheet from './components/AccountDetailsSheet';
 import ScannerSheet from './components/ScannerSheet';
 import AutoLogSheet from './components/AutoLogSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
@@ -865,8 +866,10 @@ function App() {
   };
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
+    const linkedAccountId = sub.accountId || sub.account_id || '';
+    const paymentAccount = accountsView.find(account => account.id === linkedAccountId && !account.is_archived && (['bank', 'e_wallet'].includes(account.account_type) || (account.account_type === 'card' && ['credit', 'debit'].includes(account.cardKind))));
     setError('');
-    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: '', category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: paymentAccount?.id || '', category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
@@ -1560,16 +1563,24 @@ function App() {
         </form>
       </Sheet>}
 
-      {accountChoice && <Sheet title={tr('Account details')} onClose={() => setSheet(null)} label={tr('Account details')}>
-        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} qrCode={accountQrDisplay[accountChoice.id] || ''} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" qrCode={accountQrDisplay[accountChoice.id] || ''} />}</div>
-        <dl className="detail-list"><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
-          <div><dt>{tr('Credit limit')}</dt><dd>{shown(show, money(ci.limit, cur))}</dd></div>
-          <div><dt>{tr('Used')}</dt><dd>{shown(show, money(ci.owed, cur))} · {ci.usedPercent}%</dd></div>
-          <div><dt>{tr('Available credit')}</dt><dd>{shown(show, money(ci.available, cur))}</dd></div>
-          {issuer && <div><dt>{tr('Issuing bank')}</dt><dd>{issuer.institution_name || issuer.name}</dd></div>}
-        </>; })() : <div><dt>{tr('Balance')}</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div>}</dl>
-        <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> {tr('Edit account')}</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> {tr('Archive account')}</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>{tr('Add transaction')}</button></div>
-      </Sheet>}
+      {accountChoice && <AccountDetailsSheet
+        account={accountChoice}
+        accounts={accountsView}
+        transactions={txs}
+        prefs={prefs}
+        subscriptions={subscriptions}
+        show={show}
+        holder={user?.name}
+        base={base}
+        qrCodeDisplay={accountQrDisplay[accountChoice.id] || ''}
+        canEdit={cloudMode || localAccounts.some(account => account.id === accountChoice.id)}
+        onClose={() => setSheet(null)}
+        onEdit={() => openEditAccount(accountChoice)}
+        onArchive={() => archiveAccount(accountChoice)}
+        onAddTransaction={() => openForm('expense', accountChoice.id)}
+        onOpenTransaction={item => setSheet({ name: 'tx', id: item.id })}
+        onOpenAccount={id => { setSelectedCardId(id); setSheet({ name: 'cardDetails', id }); }}
+      />}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
         <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}{detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}{detailTx.receipt_note && <div><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}</dl>
