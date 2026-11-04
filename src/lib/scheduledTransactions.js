@@ -17,6 +17,8 @@ export async function createScheduledTransaction(input, userId) {
   if (type === 'transfer' && (!input.transfer_to_account_id || input.transfer_to_account_id === input.account_id)) throw new Error('Choose a different destination account.');
   const title=String(input.title||'').trim();
   if(!title||title.length>160) throw new Error('Enter a description up to 160 characters.');
+  const owned = unwrap(await client().from('financial_accounts').select('id').eq('user_id',userId).in('id',[input.account_id,...(type==='transfer'?[input.transfer_to_account_id]:[])]));
+  if ((owned || []).length !== (type==='transfer' ? 2 : 1)) throw new Error('Choose accounts belonging to your MOVO profile.');
   const frequency=['once','weekly','monthly','yearly'].includes(input.frequency)?input.frequency:'once';
   return unwrap(await client().from('scheduled_transactions').insert({
     user_id:userId,title,transaction_type:type,amount:validAmount(input.amount),
@@ -30,12 +32,22 @@ export async function logScheduledTransaction(item, accountId = item.account_id,
   if (!item?.id) throw new Error('Scheduled transaction not found.');
   const occurrence = item.scheduled_for;
   const reference = `movo-schedule:${item.id}:${occurrence}`;
-  const transaction = await createTransaction({
-    transaction_type:item.transaction_type,amount:item.amount,currency:item.currency,merchant:item.title,
-    category:item.category||'Other',account_id:accountId,transfer_to_account_id:item.transaction_type==='transfer'?transferTo:null,
-    occurred_at:`${occurrence}T12:00:00Z`,source:'manual',external_reference:reference,schedule_id:item.id,
-    note:item.notes||null,
-  }, item.user_id);
+  let transaction = unwrap(await client().from('transactions').select('id').eq('schedule_id',item.id).eq('occurred_at',`${occurrence}T12:00:00+00:00`).maybeSingle());
+  if (!transaction) {
+    try {
+      transaction = await createTransaction({
+        transaction_type:item.transaction_type,amount:item.amount,currency:item.currency,merchant:item.title,
+        category:item.category||'Other',account_id:accountId,transfer_to_account_id:item.transaction_type==='transfer'?transferTo:null,
+        occurred_at:`${occurrence}T12:00:00Z`,source:'manual',external_reference:reference,schedule_id:item.id,
+        note:item.notes||null,
+      }, item.user_id);
+    } catch (error) {
+      // A concurrent tap may have won the unique schedule-occurrence index. Reuse that log.
+      const existing = unwrap(await client().from('transactions').select('id').eq('schedule_id',item.id).eq('occurred_at',`${occurrence}T12:00:00+00:00`).maybeSingle());
+      if (!existing) throw error;
+      transaction = existing;
+    }
+  }
   const next = new Date(`${occurrence}T12:00:00Z`);
   if(item.frequency==='weekly') next.setUTCDate(next.getUTCDate()+7);
   else if(item.frequency==='monthly') next.setUTCMonth(next.getUTCMonth()+1);
