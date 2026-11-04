@@ -21,12 +21,21 @@ describe('sortList', () => {
 });
 
 describe('billingCycleOptions', () => {
-  test('offers all cycles, labels the current month Present, and retains older months', () => {
+  test('offers All, marks the active month Present, and keeps historical labels compact', () => {
     expect(billingCycleOptions(['2026-11', '2026-10', '2026-09'], '2026-11')).toEqual([
       { value: 'all', label: 'All' },
       { value: '2026-11', label: 'Present' },
-      { value: '2026-10', label: 'Oct 2026' },
-      { value: '2026-09', label: 'Sep 2026' },
+      { value: '2026-10', label: 'Oct' },
+      { value: '2026-09', label: 'Sep' },
+    ]);
+  });
+
+  test('disambiguates repeated month names across years', () => {
+    expect(billingCycleOptions(['2026-11', '2025-11', '2025-09'], '2026-11')).toEqual([
+      { value: 'all', label: 'All' },
+      { value: '2026-11', label: 'Present' },
+      { value: '2025-11', label: 'Nov 2025' },
+      { value: '2025-09', label: 'Sep' },
     ]);
   });
 
