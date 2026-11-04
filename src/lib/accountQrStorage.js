@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { saveLocalAccountQr } from './accountQrLocalStore';
 
 export const ACCOUNT_QR_BUCKET = 'movo-account-qrs';
 export const ACCOUNT_QR_MAX_BYTES = 1_258_291;
@@ -45,6 +46,23 @@ export async function getAccountQrSignedUrl(userId, path, expiresIn = 3600) {
   if (error) throw error;
   if (!data?.signedUrl) throw new Error('account_qr_url_missing');
   return data.signedUrl;
+}
+
+export async function cacheSignedAccountQr(userId, accountId, signedUrl) {
+  if (!safeId(userId) || !safeId(accountId) || typeof signedUrl !== 'string') throw new Error('invalid_account_qr_cache_target');
+  const response = await fetch(signedUrl, { credentials: 'omit', cache: 'no-store' });
+  if (!response.ok) throw new Error('account_qr_cache_download_failed');
+  const blob = await response.blob();
+  if (blob.type !== 'image/png' || blob.size > ACCOUNT_QR_MAX_BYTES) throw new Error('invalid_account_qr_download');
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+    reader.onerror = () => reject(reader.error || new Error('account_qr_cache_read_failed'));
+    reader.readAsDataURL(blob);
+  });
+  if (!dataUrl) throw new Error('account_qr_cache_read_failed');
+  await saveLocalAccountQr(`${userId}:${accountId}`, dataUrl);
+  return true;
 }
 
 export async function removeAccountQr(userId, path) {
