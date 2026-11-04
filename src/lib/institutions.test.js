@@ -52,5 +52,7 @@ describe('expanded institution list', () => {
     expect(searchInstitutions('PH', 'shopee', 'bank')).toEqual([]);
     expect(searchInstitutions('MY', '', 'bank').length).toBeGreaterThanOrEqual(4);
     expect(new URL(institutionLogoUrl('EastWest Bank')).searchParams.get('domain')).toBe('eastwestbanker.com');
+    expect(new URL(institutionLogoUrl('Asia United Bank (AUB)')).searchParams.get('domain')).toBe('aub.com.ph');
+    expect(new URL(institutionLogoUrl('AUB')).searchParams.get('domain')).toBe('aub.com.ph');
   });
 });
