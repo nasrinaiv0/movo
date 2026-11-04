@@ -270,7 +270,8 @@ export default function FinancialPlanning({ c }) {
         const amount = Math.round(Number(form.amount) * 100) / 100;
         const rawPlans = Array.isArray(c.prefs?.plans) ? c.prefs.plans : [];
         const rawPlan = rawPlans.find(item => String(item.id) === String(form.plan_id));
-        const target = Number(rawPlan?.target ?? rawPlan?.target_amount ?? rawPlan?.amount ?? form.plan?.target) || 0;
+        if (!rawPlan) { setError(tr('Could not save. Please try again.')); return; }
+        const target = Number(rawPlan.target ?? rawPlan.target_amount ?? rawPlan.amount ?? form.plan?.target) || 0;
         const rawSaved = Number(rawPlan?.saved ?? rawPlan?.saved_amount ?? 0) || 0;
         const targetInView = Number(form.plan?.target) || target;
         const conversion = target > 0 && targetInView > 0 ? target / targetInView : 1;
