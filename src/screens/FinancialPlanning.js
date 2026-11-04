@@ -9,7 +9,7 @@ import { allocateToGoal, createGoal, createLoan, createReceivable, recordLoanEve
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
 import { creditCardPlanningMetrics } from '../lib/creditCard';
-import { institutionLogoCandidates } from '../lib/institutions';
+import { cardNetworkLogoUrl, institutionLogoCandidates } from '../lib/institutions';
 import { convert } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
 import BillsPanel from '../components/BillsPanel';
@@ -117,17 +117,23 @@ export default function FinancialPlanning({ c }) {
         const style = cardStyles[card.id] || {};
         const dueDate = style.paymentDueDate || '';
         const payments = cardPayments[card.id] || [];
-        const metrics = creditCardPlanningMetrics({ card, transactions: c.txs || [], payments, annualInterestRate: style.annualInterestRate, convertAmount: (amount, from, to) => convert(amount, from, to, c.fx?.rates) });
+        const metrics = creditCardPlanningMetrics({ card, transactions: c.txs || [], payments, annualInterestRate: style.annualInterestRate, statementBalance: style.statementBalance, convertAmount: (amount, from, to) => convert(amount, from, to, c.fx?.rates) });
         const paidMonths = metrics.monthsPaid;
         const today = new Date().toISOString().slice(0, 10);
         const overdue = dueDate && dueDate < today && metrics.outstandingAfterPayments > 0;
-        const institution = card.institution_name || card.name;
+        const issuerBank = card.issuerBankId
+          ? (c.accountsView || []).find(account => String(account.id) === String(card.issuerBankId))
+          : null;
+        const institution = card.institution_name || issuerBank?.institution_name || issuerBank?.name || card.name;
         const logoCandidates = institutionLogoCandidates(institution, { size: 64 });
+        const network = c.prefs?.cardNetworks?.[card.id] || card.cardNetwork || card.network || card.card_network || '';
+        const networkLogo = cardNetworkLogoUrl(network, 64);
+        const logoFallbacks = [...logoCandidates.slice(1), networkLogo].filter(Boolean);
         return <article className="card fp-goal fp-credit-card" key={card.id}>
-          <div className="fp-goal-head"><BrandLogo src={logoCandidates[0]} fallbackSrcs={logoCandidates.slice(1)} size={36} className="fp-credit-card-logo" fallback={<span className="stat-icon tone-red"><Icon name="credit-card" size={17} /></span>} /><span className="fp-main"><strong>{institution}</strong><small>{tr('•••• {last4}', { last4: card.mask || '----' })}</small></span><span className="fp-amount"><b>{cash(metrics.outstandingAfterPayments, card.currency)}</b><small>{tr('Outstanding after payments')}</small></span></div>
+          <div className="fp-goal-head"><BrandLogo src={logoCandidates[0]} name={institution} fallbackSrcs={logoFallbacks} size={36} className="fp-credit-card-logo" fallback={<span className="stat-icon tone-red"><Icon name="credit-card" size={17} /></span>} /><span className="fp-main"><strong>{institution}</strong><small>{tr('•••• {last4}', { last4: card.mask || '----' })}</small></span><span className="fp-amount"><b>{cash(metrics.outstandingAfterPayments, card.currency)}</b><small>{tr('Outstanding after payments')}{metrics.totalPayments > 0 ? ` · ${cash(metrics.totalPayments, card.currency)} ${tr('paid')}` : ''}</small></span></div>
           <div className="fp-credit-card-metrics">
             <div><small>{tr('Amount Spent')}</small><b>{cash(metrics.amountSpent, card.currency)}</b></div>
-            <div><small>{tr('Amount After Interest')}</small><b>{cash(metrics.amountAfterInterest, card.currency)}</b><span>{tr('Includes estimated monthly interest')}</span></div>
+            <div><small>{tr('Amount After Interest')}</small><b>{cash(metrics.amountAfterInterest, card.currency)}</b><span>+ {cash(metrics.estimatedMonthlyInterest, card.currency)} {tr('estimated interest')}</span></div>
             <div className="fp-credit-utilization"><small>{tr('Spent / Limit')}</small><b>{metrics.spentLimitPercent === null ? '—' : `${metrics.spentLimitPercent.toFixed(1)}%`}</b>{metrics.limit > 0 ? <><div className="fp-credit-utilization-track"><span style={{ width: `${Math.min(100, Math.max(0, metrics.spentLimitPercent))}%` }} /></div><span>{cash(metrics.amountSpent, card.currency)} / {cash(metrics.limit, card.currency)}</span></> : <span>{tr('Set a credit limit in Wallet')}</span>}</div>
           </div>
           <div className="fp-credit-card-stats"><span><b>{dueDate ? formatDate(dueDate) : '—'}</b><small>{tr('Payment due')}</small></span><span><b>{paidMonths}</b><small>{tr('Months paid')}</small></span><span><b>{metrics.paymentCount}</b><small>{tr('Payments logged')}</small></span></div>
