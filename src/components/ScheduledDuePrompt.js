@@ -172,7 +172,10 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       }
       else if(entry.kind==='loan') await recordLoanEvent({loan_id:item.id,event_type:'principal_payment',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Payment recorded from MOVO reminder'});
       else if(entry.kind==='receivable') await recordReceivableEvent({receivable_id:item.id,event_type:'collected',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Collection recorded from MOVO reminder'});
-      else if(entry.kind==='credit_card') await onCreditCardLog?.(item,Number(amount));
+      else if(entry.kind==='credit_card') {
+        await onCreditCardLog?.(item,Number(amount));
+        if(session?.user?.id) await recordReminderEvent(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,status:'dismissed'});
+      }
       if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
         source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
         amount:Number(loggedAmount||amount||item.amount||0)||null,currency:billCurrency,account_id:loggedAccountId,note:attemptNoteForLog,
