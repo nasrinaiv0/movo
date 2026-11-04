@@ -10,6 +10,7 @@ import Wallet from './screens/Wallet';
 import FinancialPlanning from './screens/FinancialPlanning';
 import Cashback from './screens/Cashback';
 import ScheduledTransactions from './screens/ScheduledTransactions';
+import ScheduledDuePrompt from './components/ScheduledDuePrompt';
 import ExchangeRates from './screens/ExchangeRates';
 import CryptoMarket from './screens/CryptoMarket';
 import StocksMarket from './screens/StocksMarket';
@@ -1303,6 +1304,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
+        <ScheduledDuePrompt session={session} accountsView={accountsView} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
