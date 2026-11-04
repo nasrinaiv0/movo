@@ -15,3 +15,10 @@ test('only credit cards with a limit have credit info', () => {
   expect(creditInfo({ account_type: 'bank', balance: 100 })).toBeNull();
   expect(isCreditCard(card(0, 1))).toBe(true);
 });
+
+
+test('summarizes credit-card payments by distinct months', () => {
+  const { creditCardPaymentSummary } = require('./creditCard');
+  const result = creditCardPaymentSummary([{ amount: 100, month: '2026-10', date: '2026-10-05' }, { amount: 50, month: '2026-10', date: '2026-10-20' }, { amount: 200, month: '2026-11', date: '2026-11-02' }, { amount: -5, month: '2026-11', date: '2026-11-03' }]);
+  expect(result).toMatchObject({ totalPaid: 350, monthsPaid: 2 });
+});
