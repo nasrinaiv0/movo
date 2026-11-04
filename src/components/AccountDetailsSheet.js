@@ -109,7 +109,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
           {row('Currency', currency)}
           {row('Number', account.mask ? `•••• ${account.mask}` : '—')}
           {linkedParent && row('Associated account', linkedParent.institution_name || linkedParent.name)}
-          {info && row('Credit utilization', `${info.usedPercent}%`)}
+          {info && row('Credit utilization percentage', `${info.usedPercent}%`)}
         </div>
       </>}
       <div className="account-hub-actions">
