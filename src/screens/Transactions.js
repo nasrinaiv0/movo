@@ -19,6 +19,13 @@ export function sortList(list, sort) {
 }
 const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
 
+export function billingCycleOptions(months, currentMonth) {
+  return [
+    { value: 'all', label: 'All' },
+    ...months.map(value => ({ value, label: value === currentMonth ? 'Present' : monthLabel(value) })),
+  ];
+}
+
 export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
   const currentCycle = monthKey(refDate);
@@ -45,7 +52,7 @@ export default function Transactions({ c }) {
       <Icon name="down" size={15} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
         <option value="all">{tr('All')}</option>
-        {months.map(m => <option key={m} value={m}>{m === currentCycle ? tr('Present') : monthLabel(m)}</option>)}
+        {billingCycleOptions(months, currentCycle).slice(1).map(option => <option key={option.value} value={option.value}>{tr(option.label)}</option>)}
       </select>
     </label>
   );
