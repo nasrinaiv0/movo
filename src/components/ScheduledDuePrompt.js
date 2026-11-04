@@ -11,18 +11,10 @@ export default function ScheduledDuePrompt({ session, accountsView = [], onLogge
   const [destination,setDestination]=useState('');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
-  const [dismissed,setDismissed]=useState(false);
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
-  const load=async()=>{
-    if(!session?.user?.id)return;
-    const rows=await listScheduledTransactions();
-    const due=rows.filter(row=>row.scheduled_for<=today()).sort((a,b)=>a.scheduled_for.localeCompare(b.scheduled_for));
-    const next=due.find(row=>!dismissed||row.id!==item?.id);
-    if(next){setItem(next);setAccount(next.account_id||'');setDestination(next.transfer_to_account_id||'');}
-  };
   useEffect(()=>{let live=true;if(session?.user?.id)listScheduledTransactions().then(rows=>{if(!live)return;const due=rows.filter(row=>row.scheduled_for<=today()).sort((a,b)=>a.scheduled_for.localeCompare(b.scheduled_for));if(due.length){setItem(due[0]);setAccount(due[0].account_id||'');setDestination(due[0].transfer_to_account_id||'');}}).catch(e=>{if(live)setError(e.message||tr('Could not load schedules.'));});return()=>{live=false;};return undefined;},[session?.user?.id]);
-  const close=()=>{setDismissed(true);setItem(null);};
-  const log=async e=>{e.preventDefault();if(!item)return;setBusy(true);setError('');try{await logScheduledTransaction(item,account,destination);setItem(null);setDismissed(false);await onLogged?.();const rows=await listScheduledTransactions();const due=rows.filter(row=>row.scheduled_for<=today()).sort((a,b)=>a.scheduled_for.localeCompare(b.scheduled_for));if(due.length){setItem(due[0]);setAccount(due[0].account_id||'');setDestination(due[0].transfer_to_account_id||'');}}catch(err){setError(err.message||tr('Could not log transaction.'));}finally{setBusy(false);}};
+  const close=()=>setItem(null);
+  const log=async e=>{e.preventDefault();if(!item)return;setBusy(true);setError('');try{await logScheduledTransaction(item,account,destination);setItem(null);await onLogged?.();const rows=await listScheduledTransactions();const due=rows.filter(row=>row.scheduled_for<=today()).sort((a,b)=>a.scheduled_for.localeCompare(b.scheduled_for));if(due.length){setItem(due[0]);setAccount(due[0].account_id||'');setDestination(due[0].transfer_to_account_id||'');}}catch(err){setError(err.message||tr('Could not log transaction.'));}finally{setBusy(false);}};
   if(!item)return null;
   const choices=accounts.filter(a=>a.currency===item.currency);
   return <Sheet title={tr('Scheduled transaction due')} subtitle={item.title} onClose={close} label={tr('Log scheduled transaction')}>
