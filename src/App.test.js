@@ -120,8 +120,8 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('GCash');
     clickButton(container, 'Cards');
     expect(container.textContent).toContain('Available Balance');
-    clickButton(container, 'Switch card');
-    expect(container.querySelector('[role="dialog"]').textContent).toContain('Your Cards');
+    expect(container.querySelector('.card-cylinder, .card-stack')).not.toBeNull();
+    expect(container.querySelector('.card-cylinder-face, .card-stack-peek, .card-stack-dots button')).not.toBeNull();
   });
 
   test('Add amount on a card offers Transfer and Manual, and the plus button adds accounts by type', () => {
@@ -471,12 +471,11 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });
 
-  test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
+  test('account sheets receive keyboard focus, trap Tab, and close on Escape', () => {
     nav(container, 'Wallet');
-    clickButton(container, 'Cards');
-    const trigger = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === 'Switch card' || item.textContent.trim() === 'Switch card');
+    const trigger = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === 'New account');
     expect(trigger).toBeTruthy();
-    act(() => { trigger.focus(); trigger.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    act(() => { trigger.focus(); trigger.click(); });
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
     expect(dialog.contains(document.activeElement)).toBe(true);
@@ -515,10 +514,10 @@ describe('MOVO finance frontend', () => {
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).accountStyles[created.id].cardNetwork).toBe('mastercard');
     expect(container.querySelector('.ccx-net.net-mastercard')).not.toBeNull();
     clickButton(container, 'Cards');
-    clickButton(container, 'Switch card');
-    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('GoTyme'));
-    expect(targetCard).toBeTruthy();
-    act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const goTymeCard = container.querySelector('button[aria-label="Show GoTyme card"]');
+    expect(goTymeCard).toBeTruthy();
+    act(() => goTymeCard.click());
+    expect(goTymeCard.getAttribute('aria-current')).toBe('true');
     clickButton(container, 'View Details');
     clickButton(container, 'Edit account');
     setInputValue(container.querySelector('#acct-linked-bank'), 'demo-rcbc');
@@ -529,10 +528,10 @@ describe('MOVO finance frontend', () => {
     act(() => root.render(<App />));
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    clickButton(container, 'Switch card');
-    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('RCBC'));
-    expect(updatedCard).toBeTruthy();
-    act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const rcbcCard = container.querySelector('button[aria-label="Show RCBC card"]');
+    expect(rcbcCard).toBeTruthy();
+    act(() => rcbcCard.click());
+    expect(rcbcCard.getAttribute('aria-current')).toBe('true');
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
     expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC').is_archived).toBe(true);
