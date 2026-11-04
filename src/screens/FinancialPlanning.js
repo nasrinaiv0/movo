@@ -176,12 +176,14 @@ export default function FinancialPlanning({ c }) {
           const target = Math.max(0, Number(plan.target) || 0);
           const saved = Math.max(0, Number(plan.saved) || 0);
           const progress = target > 0 ? Math.min(100, saved / target * 100) : 0;
+          const remaining = Math.max(0, target - saved);
           return <article className="card fp-goal" key={`plan-${plan.id}`}>
             <div className="fp-goal-head"><span className="stat-icon tone-blue"><Icon name="target" size={17} strokeWidth={2} /></span>
               <span className="fp-main"><strong>{plan.name}</strong><small>{tr('Plan')}: {cash(target, plan.currency)}{plan.due ? ` · ${formatDate(plan.due)}` : ''}</small></span>
               <span className="fp-amount"><b>{cash(saved, plan.currency)}</b><small>{Math.round(progress)}%</small></span></div>
             <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
-            <p className="form-note">{cash(Math.max(0, target - saved), plan.currency)} {tr('remaining')}</p>
+            <p className="form-note">{cash(remaining, plan.currency)} {tr('remaining')}</p>
+            {plan.status !== 'completed' && plan.status !== 'archived' && remaining > 0 && <button type="button" className="secondary-button wide-button" disabled={busy || !inCurrency(plan.currency).length} onClick={() => open('allocatePlan', { plan, plan_id: plan.id, currency: plan.currency, account_id: inCurrency(plan.currency)[0]?.id || '', amount: '', note: '' })}>{tr('Allocate funds')}</button>}
           </article>;
         })}
       </section>}
@@ -259,6 +261,47 @@ export default function FinancialPlanning({ c }) {
         <label>{tr('Target amount')}<input required type="number" inputMode="decimal" min="0.01" step="0.01" value={form.target_amount} onChange={e => set({ target_amount: e.target.value })} /></label>
         <label>{tr('Target date')}<input type="date" value={form.target_date} onChange={e => set({ target_date: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Create goal')}</button>
+      </form>
+    </Sheet>}
+
+    {sheet?.kind === 'allocatePlan' && <Sheet title={tr('Allocate funds to plan')} subtitle={form.plan?.name} onClose={() => setSheet(null)} label={tr('Allocate funds to plan')}>
+      <form className="sheet-form" onSubmit={e => {
+        e.preventDefault();
+        const amount = Math.round(Number(form.amount) * 100) / 100;
+        const rawPlans = Array.isArray(c.prefs?.plans) ? c.prefs.plans : [];
+        const rawPlan = rawPlans.find(item => String(item.id) === String(form.plan_id));
+        if (!rawPlan) { setError(tr('Could not save. Please try again.')); return; }
+        const target = Number(rawPlan.target ?? rawPlan.target_amount ?? rawPlan.amount ?? form.plan?.target) || 0;
+        const rawSaved = Number(rawPlan?.saved ?? rawPlan?.saved_amount ?? 0) || 0;
+        const targetInView = Number(form.plan?.target) || target;
+        const conversion = target > 0 && targetInView > 0 ? target / targetInView : 1;
+        const rawAmount = Math.round(amount * conversion * 100) / 100;
+        const saved = Math.round((rawSaved + rawAmount) * 100) / 100;
+        if (!Number.isFinite(amount) || amount <= 0) { setError(tr('Enter an amount greater than zero.')); return; }
+        if (amount > Math.max(0, Number(form.plan?.target) - Number(form.plan?.saved)) + 0.000001) { setError(tr('Allocation cannot exceed the remaining plan amount.')); return; }
+        const account = p.accounts.find(item => item.id === form.account_id && item.currency === form.currency && ['bank', 'e_wallet', 'cash'].includes(item.account_type));
+        if (!account) { setError(tr('Choose a valid account in the plan currency.')); return; }
+        const goalReserved = live
+          .filter(item => item.account_id === account.id)
+          .reduce((sum, item) => sum + (c.toBase ? c.toBase(Number(item.amount) || 0, item.currency || base) : (Number(item.amount) || 0)), 0);
+        // App-normalized plan allocations and account balances are already in the user's base currency.
+        const planReserved = plans
+          .flatMap(item => Array.isArray(item.fundingAllocations) ? item.fundingAllocations : [])
+          .filter(item => item.status !== 'released' && item.account_id === account.id)
+          .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        const alreadyReserved = goalReserved + planReserved;
+        if (amount + alreadyReserved > Math.max(0, Number(account.balance) || 0) + 0.000001) { setError(tr('Allocation exceeds the unreserved account balance.')); return; }
+        const allocation = { id: window.crypto?.randomUUID?.() || `plan-allocation-${Date.now()}`, account_id: account.id, account_type: account.account_type, amount, currency: account.currency || form.currency, status: 'allocated', created_at: new Date().toISOString(), note: String(form.note || '').trim().slice(0, 500) };
+        const nextPlans = rawPlans.map(item => String(item.id) === String(form.plan_id)
+          ? { ...item, saved, fundingAllocations: [...(Array.isArray(item.fundingAllocations) ? item.fundingAllocations : []), allocation] }
+          : item);
+        run(() => c.setPref('plans', nextPlans), 'Plan allocation recorded.');
+      }}>
+        {error && <p className="app-alert" role="alert">{error}</p>}
+        <label>{tr('Account to reserve from')}<select required value={form.account_id} onChange={e => set({ account_id: e.target.value })}><option value="">{tr('Choose account')}</option><AccountOptions accounts={inCurrency(form.currency)} currency /></select></label>
+        <label>{tr('Amount')}<input required type="number" inputMode="decimal" min="0.01" max={Math.max(0, Number(form.plan?.target) - Number(form.plan?.saved))} step="0.01" value={form.amount} onChange={e => set({ amount: e.target.value })} /></label>
+        <p className="form-note">{tr('This earmarks funds for the plan without moving money or changing the account balance.')}</p>
+        <button className="primary-button" disabled={busy || !form.account_id}>{tr('Allocate funds')}</button>
       </form>
     </Sheet>}
 
