@@ -53,12 +53,15 @@ module.exports = async function handler(req, res) {
       if (folderError) throw folderError;
       for (const folder of folders || []) {
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(folder.name)) continue;
-        const { data: files, error: filesError } = await qrBucket.list(`${userId}/${folder.name}`, { limit: 1000, offset: 0 });
-        if (filesError) throw filesError;
-        const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
-        for (let i = 0; i < paths.length; i += 100) {
-          const { error } = await qrBucket.remove(paths.slice(i, i + 100));
-          if (error) throw error;
+        for (let fileOffset = 0; ; fileOffset += 100) {
+          const { data: files, error: filesError } = await qrBucket.list(`${userId}/${folder.name}`, { limit: 100, offset: fileOffset });
+          if (filesError) throw filesError;
+          const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
+          for (let i = 0; i < paths.length; i += 100) {
+            const { error } = await qrBucket.remove(paths.slice(i, i + 100));
+            if (error) throw error;
+          }
+          if (!files || files.length < 100) break;
         }
       }
       if (!folders || folders.length < 100) break;
