@@ -799,6 +799,15 @@ function App() {
   };
   const deleteSubscription = (id) => { const row = subscriptions.find(x => x.id === id); setPref('subscriptions', subscriptions.filter(x => x.id !== id)); if (row) archiveItem('subscription', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   /* Opens the add-transaction sheet pre-filled with this renewal, converted to the home currency. */
+  const logCreditCardPayment = (card, amount) => {
+    const value=Number(amount);
+    if(!Number.isFinite(value)||value<=0) throw new Error(tr('Enter an amount greater than zero.'));
+    const date=today();
+    const current=prefs.creditCardPayments||{};
+    const payments=current[card.id]||[];
+    setPref('creditCardPayments',{...current,[card.id]:[...payments,{id:window.crypto?.randomUUID?.()||String(Date.now()),amount:Math.round(value*100)/100,date,month:date.slice(0,7)}].slice(-120)});
+    notify(tr('Card payment recorded.'));
+  };
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
     setError('');
@@ -1322,7 +1331,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
-        <ScheduledDuePrompt session={session} accountsView={accountsView} subscriptions={subscriptions} onSubscriptionLog={logSubscription} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
+        <ScheduledDuePrompt session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
