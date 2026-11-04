@@ -65,6 +65,18 @@ test('maps provider rate limits to a retryable response', async () => {
   expect(JSON.parse(res.body).error).toBe('crypto_provider_rate_limited');
 });
 
+test('returns actionable guidance when CoinPaprika responds with HTTP 402', async () => {
+  process.env.COINPAPRIKA_API_KEY = 'test-server-secret';
+  global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 402 });
+  const res = response();
+  await handler(request({ action: 'markets', quote: 'PHP' }), res);
+  expect(res.statusCode).toBe(502);
+  expect(JSON.parse(res.body)).toEqual({
+    error: 'crypto_provider_payment_required',
+    message: 'CoinPaprika rejected this request with HTTP 402. Check the provider account, API plan, billing status, and whether this endpoint is included.'
+  });
+});
+
 test('rejects invalid actions before contacting the provider', async () => {
   process.env.COINPAPRIKA_API_KEY = 'test-server-secret';
   global.fetch = jest.fn();
