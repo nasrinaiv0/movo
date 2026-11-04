@@ -718,7 +718,7 @@ function App() {
           try { localStorage.setItem(`movo.accountQrCache.${session.user.id}.${id}`, value); } catch { /* local fallback is best-effort */ }
           const path = await uploadAccountQr(session.user.id, id, value);
           value = path;
-          try { setAccountQrDisplay(cur => ({ ...cur, [id]: await getAccountQrSignedUrl(session.user.id, path) })); } catch { /* cached image remains available offline */ }
+          try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { /* cached image remains available offline */ }
         } catch {
           // Keep the normalized image locally; the sign-in migration retries cloud upload later.
           notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
@@ -1496,7 +1496,7 @@ function App() {
       </Sheet>}
 
       {accountChoice && <Sheet title={tr('Account details')} onClose={() => setSheet(null)} label={tr('Account details')}>
-        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} qrCode={accountQrDisplay[accountChoice.id] || ''} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" qrCode={prefs.accountQrCodes?.[accountChoice.id] || ''} />}</div>
+        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} qrCode={accountQrDisplay[accountChoice.id] || ''} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" qrCode={accountQrDisplay[accountChoice.id] || ''} />}</div>
         <dl className="detail-list"><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
           <div><dt>{tr('Credit limit')}</dt><dd>{shown(show, money(ci.limit, cur))}</dd></div>
           <div><dt>{tr('Used')}</dt><dd>{shown(show, money(ci.owed, cur))} · {ci.usedPercent}%</dd></div>
