@@ -4,6 +4,7 @@ import Icon from '../components/Icon';
 import { SubHeader } from '../components/ui';
 import { loadCryptoHistory, loadCryptoMarkets, sortCryptoCoins } from '../lib/crypto';
 import { evaluateCryptoAlerts } from '../lib/cryptoAlerts';
+import { summarizeCryptoHoldings, upsertCryptoHolding } from '../lib/cryptoPortfolio';
 import { enablePush, pushGranted, showSystemNotification } from '../lib/alerts';
 
 function money(value, quote) {
@@ -40,6 +41,14 @@ export default function CryptoMarket({ c }) {
   const [alertDirection, setAlertDirection] = useState('above');
   const [alertTarget, setAlertTarget] = useState('');
   const [alertPermission, setAlertPermission] = useState(pushGranted());
+  const [marketView, setMarketView] = useState('market');
+  const holdings = Array.isArray(c.prefs?.cryptoHoldings) ? c.prefs.cryptoHoldings : [];
+  const [holdingCoin, setHoldingCoin] = useState('');
+  const [holdingQuantity, setHoldingQuantity] = useState('');
+  const [holdingCost, setHoldingCost] = useState('');
+  const [holdingEditId, setHoldingEditId] = useState(null);
+  const [holdingFormOpen, setHoldingFormOpen] = useState(false);
+  const portfolio = useMemo(() => summarizeCryptoHoldings(holdings, coins, quote), [holdings, coins, quote]);
 
   const refresh = async (force = false) => {
     if (force) setRefreshing(true);
@@ -130,6 +139,24 @@ export default function CryptoMarket({ c }) {
   };
   const toggleAlert = (id) => c.setPref?.('cryptoAlerts', alerts.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
   const deleteAlert = (id) => c.setPref?.('cryptoAlerts', alerts.filter(a => a.id !== id));
+  const openHoldingForm = (row = null) => {
+    setHoldingEditId(row?.id || null); setHoldingCoin(row?.coinId || coins[0]?.id || '');
+    setHoldingQuantity(row ? String(row.quantity) : ''); setHoldingCost(row?.averageCost == null ? '' : String(row.averageCost));
+    setHoldingFormOpen(true);
+  };
+  const saveHolding = (event) => {
+    event.preventDefault();
+    const coin = coins.find(item => item.id === holdingCoin);
+    if (!coin) { c.notify?.('Select a cryptocurrency available in the current market.'); return; }
+    try {
+      const row = { id: holdingEditId || (window.crypto?.randomUUID?.() || 'holding-' + Date.now()), coinId: coin.id, name: coin.name, symbol: coin.symbol, quantity: Number(holdingQuantity), averageCost: holdingCost.trim() ? Number(holdingCost) : null, quote, acquiredAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      c.setPref?.('cryptoHoldings', upsertCryptoHolding(holdings, row));
+      setHoldingFormOpen(false); setHoldingEditId(null); setHoldingQuantity(''); setHoldingCost('');
+      c.notify?.(holdingEditId ? 'Holding updated.' : 'Holding added to your portfolio.');
+    } catch { c.notify?.('Check the quantity and average cost, then try again.'); }
+  };
+  const deleteHolding = (id) => { c.setPref?.('cryptoHoldings', holdings.filter(row => row.id !== id)); c.notify?.('Holding removed from portfolio.'); };
+
   const requestAlertPermission = async () => {
     const result = await enablePush();
     const granted = result === 'granted';
@@ -182,6 +209,29 @@ export default function CryptoMarket({ c }) {
         <small className="crypto-source">Historical daily price observations · CoinPaprika</small>
       </section>
     </section> : <>
+      <div className="crypto-view-switch" role="tablist" aria-label="Crypto sections"><button type="button" role="tab" aria-selected={marketView === 'market'} className={marketView === 'market' ? 'active' : ''} onClick={() => setMarketView('market')}>Market</button><button type="button" role="tab" aria-selected={marketView === 'portfolio'} className={marketView === 'portfolio' ? 'active' : ''} onClick={() => setMarketView('portfolio')}>Portfolio <span>{holdings.length}</span></button></div>
+      {marketView === 'portfolio' ? <section className="crypto-portfolio">
+        <section className="crypto-portfolio-overview card">
+          <div className="crypto-portfolio-kicker"><span>YOUR INVESTMENTS</span><span className="crypto-portfolio-live"><i /> Market-linked</span></div>
+          <small className="crypto-portfolio-label">Portfolio value · {quote}</small>
+          <strong className="crypto-portfolio-total">{portfolio.totalValue === null ? '—' : money(portfolio.totalValue, quote)}</strong>
+          <div className="crypto-portfolio-metrics"><span><small>Cost basis</small><b>{portfolio.totalCost === null ? '—' : money(portfolio.totalCost, quote)}</b></span><span><small>Unrealized P/L</small><b className={portfolio.profitLoss > 0 ? 'up' : portfolio.profitLoss < 0 ? 'down' : ''}>{portfolio.profitLoss === null ? '—' : (portfolio.profitLoss > 0 ? '+' : '') + money(portfolio.profitLoss, quote)}</b></span></div>
+          <p>Latest available market reference prices. These are not exchange execution quotes.</p>
+        </section>
+        <div className="crypto-portfolio-heading"><div><small>YOUR POSITIONS</small><h2>Holdings <span>{portfolio.totalCount}</span></h2></div><button type="button" className="crypto-portfolio-add" onClick={() => openHoldingForm()} disabled={!coins.length}><Icon name="plus" size={16} /> Add holding</button></div>
+        {holdingFormOpen && <form className="crypto-holding-form card" onSubmit={saveHolding}>
+          <div className="crypto-holding-form-head"><div><small>{holdingEditId ? 'EDIT POSITION' : 'NEW POSITION'}</small><h3>{holdingEditId ? 'Update holding' : 'Add a holding'}</h3></div><button type="button" aria-label="Close holding form" onClick={() => setHoldingFormOpen(false)}>×</button></div>
+          <label>Asset<select value={holdingCoin} onChange={e => setHoldingCoin(e.target.value)} required>{coins.map(coin => <option key={coin.id} value={coin.id}>{coin.name} ({coin.symbol})</option>)}</select></label>
+          <div className="crypto-holding-fields"><label>Quantity<input type="number" min="0.0000000001" step="any" inputMode="decimal" value={holdingQuantity} onChange={e => setHoldingQuantity(e.target.value)} placeholder="0.00" required /></label><label>Average buy price <small>({quote} per coin)</small><input type="number" min="0" step="any" inputMode="decimal" value={holdingCost} onChange={e => setHoldingCost(e.target.value)} placeholder="Optional" /></label></div>
+          <p className="crypto-holding-hint">Enter the quantity you own and average acquisition price in {quote}. Leave cost blank if unknown.</p>
+          <button type="submit" className="crypto-holding-save">{holdingEditId ? 'Save changes' : 'Add to portfolio'}</button>
+        </form>}
+        {portfolio.rows.length ? <div className="crypto-holding-list">{portfolio.rows.map(row => <article className="crypto-holding-row card" key={row.id}>
+          <button type="button" className="crypto-holding-main" onClick={() => { const coin = coins.find(item => item.id === row.coinId); if (coin) setSelected(coin); }}><span className="crypto-holding-mark">{row.symbol.slice(0,4)}</span><span className="crypto-holding-name"><strong>{row.name}</strong><small>{row.quantity.toLocaleString(undefined,{maximumFractionDigits:10})} {row.symbol} · {row.quote}</small></span><span className="crypto-holding-value"><b>{row.value === null ? '—' : money(row.value, quote)}</b><small className={row.profitLoss > 0 ? 'up' : row.profitLoss < 0 ? 'down' : ''}>{row.profitLoss === null ? 'Cost/pricing unavailable' : (row.profitLoss > 0 ? '+' : '') + money(row.profitLoss, quote)}</small></span></button>
+          <div className="crypto-holding-actions"><button type="button" onClick={() => openHoldingForm(row)}>Edit</button><button type="button" onClick={() => deleteHolding(row.id)}>Remove</button></div>
+        </article>)}</div> : <div className="crypto-portfolio-empty card"><span className="crypto-portfolio-empty-icon"><Icon name="chart" size={25} /></span><h3>Your portfolio starts here</h3><p>Add the crypto you already own. MOVO tracks market value and unrealized performance without mixing it into your cash balance.</p><button type="button" onClick={() => openHoldingForm()} disabled={!coins.length}>Add your first holding</button>{!coins.length && <small>Market prices must be available before adding a priced asset.</small>}</div>}
+        <p className="crypto-portfolio-disclaimer">Manual holdings only. Stored in MOVO preferences. Portfolio value is excluded from available cash, income and expense totals.</p>
+      </section> : <>
       <section className="card crypto-market-summary">
         <span><small>CRYPTO MARKET</small><strong>{coins.length ? `${coins.length} assets` : 'Market overview'}</strong></span>
         <span><small>QUOTE CURRENCY</small><strong>{quote}</strong></span>
@@ -208,6 +258,7 @@ export default function CryptoMarket({ c }) {
         {error && coins.length > 0 && <p className="crypto-warning" role="status">{error}</p>}
       </section>
       <section className="crypto-provider-note card"><strong>Market data by CoinPaprika</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and plan limits. MOVO does not trade or custody cryptocurrency.</p><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
+      </>}
     </>}
   </>;
 }
