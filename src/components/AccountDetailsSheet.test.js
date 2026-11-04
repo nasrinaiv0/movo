@@ -32,7 +32,7 @@ jest.mock('./AccountTile', () => {
 });
 jest.mock('../lib/cashback', () => ({ estimateCashback: () => [] }));
 jest.mock('../lib/scheduledTransactions', () => ({ listScheduledTransactions: () => Promise.resolve([]) }));
-jest.mock('../lib/obligationsRepository', () => ({ listGoals: () => Promise.resolve([]), listGoalAllocations: () => Promise.resolve([]) }));
+jest.mock('../lib/obligationsRepository', () => ({ listGoals: jest.fn(() => Promise.resolve([])), listGoalAllocations: jest.fn(() => Promise.resolve([])) }));
 
 test('read-only account hub shows resolved QR artwork, supports Escape to close zoom, and hides edit/archive actions', async () => {
   const el = document.createElement('div');
@@ -136,7 +136,6 @@ test('connected items show goal and plan allocations belonging to the selected a
     />);
     await Promise.resolve();
   });
-  await act(async () => el.querySelector('[role="tab"][aria-label]')?.click());
   const tabs = [...el.querySelectorAll('[role="tab"]')];
   await act(async () => tabs.find(tab => tab.textContent.includes('Connected'))?.click());
   expect(el.textContent).toContain('Allocated funds for goals and plans');
@@ -144,6 +143,41 @@ test('connected items show goal and plan allocations belonging to the selected a
   expect(el.textContent).toContain('₱2,500.00');
   expect(el.textContent).not.toContain('other-account-plan');
   expect(el.textContent).not.toContain('₱900.00');
+  act(() => root.unmount());
+  el.remove();
+});
+
+
+test('connected items load cloud goal allocations and include linked bank allocations for a debit card', async () => {
+  const repository = require('../lib/obligationsRepository');
+  repository.listGoals.mockResolvedValue([{ id: 'goal-1', name: 'Emergency fund' }]);
+  repository.listGoalAllocations.mockResolvedValue([
+    { id: 'goal-allocation', goal_id: 'goal-1', account_id: 'bank-1', amount: 1800, currency: 'PHP', status: 'allocated', created_at: '2026-11-02T00:00:00Z' },
+    { id: 'unrelated-allocation', goal_id: 'goal-1', account_id: 'cash-1', amount: 700, currency: 'PHP', status: 'allocated' },
+  ]);
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => {
+    root.render(<AccountDetailsSheet
+      account={{ id: 'debit-1', name: 'BPI Debit', account_type: 'card', cardKind: 'debit', linkedAccountId: 'bank-1', currency: 'PHP', balance: 0 }}
+      accounts={[{ id: 'bank-1', name: 'BPI Savings', account_type: 'bank', currency: 'PHP', balance: 5000 }]}
+      transactions={[]}
+      prefs={{}}
+      subscriptions={[]}
+      cloudMode
+      show
+      onClose={jest.fn()}
+    />);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  const tabs = [...el.querySelectorAll('[role="tab"]')];
+  await act(async () => tabs.find(tab => tab.textContent.includes('Connected'))?.click());
+  expect(el.textContent).toContain('Emergency fund');
+  expect(el.textContent).toContain('₱1,800.00');
+  expect(el.textContent).not.toContain('₱700.00');
+  expect(repository.listGoals).toHaveBeenCalled();
   act(() => root.unmount());
   el.remove();
 });
