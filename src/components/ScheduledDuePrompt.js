@@ -74,9 +74,13 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   },[]);
   useEffect(() => {
     let live=true;
-    loadDue().then(queue=>{if(live)setActive(queue[0]||null);})
+    const refresh=()=>loadDue().then(queue=>{if(live)setActive(queue[0]||null);})
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
-    return()=>{live=false;};
+    const onVisible=()=>{if(document.visibilityState==='visible')refresh();};
+    refresh();
+    window.addEventListener('movo:payment-reminders-updated',refresh);
+    document.addEventListener('visibilitychange',onVisible);
+    return()=>{live=false;window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
   },[loadDue,setActive]);
   const close=async()=>{ if(session?.user?.id&&entry){const until=new Date(Date.now()+86400000).toISOString();try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);else await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:0},until);}catch{/* Keep the prompt dismissible while offline. */}} setActive(null); };
   const log=async event=>{
