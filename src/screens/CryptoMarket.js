@@ -16,7 +16,8 @@ function CryptoLogo({ coin, size = 38 }) {
     {failed && <b>{coin.symbol.slice(0, 3)}</b>}
   </span>;
 }
-\nfunction money(value, quote) {
+
+function money(value, quote) {
   if (!Number.isFinite(value)) return '—';
   try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: quote, notation: value >= 1000000 ? 'compact' : 'standard', maximumFractionDigits: value < 1 ? 8 : 2 }).format(value); }
   catch { return `${quote} ${value.toLocaleString()}`; }
