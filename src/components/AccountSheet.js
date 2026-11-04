@@ -46,9 +46,9 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">{tr('Account type')}</label>
       <div className="acct-field select"><span><strong>{tr(meta.label)}</strong><small>{tr(meta.sub)}</small></span><span className="acct-field-icon" style={{ color }}><Icon name={meta.icon} size={18} /></span><Icon name="down" size={16} />
-        <select id="acct-type" aria-label={tr('Account type')} value={form.account_type} onChange={e => set({ account_type: e.target.value })}>{ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{tr(t.label)}</option>)}</select></div>
+        <select id="acct-type" aria-label={tr('Account type')} value={form.account_type} onChange={e => { const nextType = e.target.value; if (nextType === 'cash') { const previousInstitution = String(form.institution_name || ''); set({ account_type: nextType, institution_name: '', ...(form.name === previousInstitution ? { name: '' } : {}) }); } else set({ account_type: nextType }); }}>{ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{tr(t.label)}</option>)}</select></div>
 
-      {form.account_type !== 'card' && <div className="acct-institution">
+      {!['card', 'cash'].includes(form.account_type) && <div className="acct-institution">
         <label className="acct-label" htmlFor="acct-inst-search">{tr('Bank / institution')}</label>
         <label className="search-field acct-institution-search"><Icon name="search" size={17} /><input id="acct-inst-search" autoComplete="off" value={manualInstitution ? form.institution_name : institutionQuery} onChange={e => { setInstitutionQuery(e.target.value); if (manualInstitution) set({ institution_name: e.target.value, name: e.target.value }); }} placeholder={tr('Search banks and providers')} aria-label={tr('Search banks and providers')} /></label>
         <label className="acct-label" htmlFor="acct-inst-country">{tr('Institution country')}</label>
