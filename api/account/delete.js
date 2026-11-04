@@ -46,6 +46,24 @@ module.exports = async function handler(req, res) {
     const userId = data?.user?.id;
     if (error || !userId) return json(res, 401, { error: 'sign_in_required' });
 
+    stage = 'delete_account_qr_images';
+    const qrBucket = api.admin.storage.from('movo-account-qrs');
+    for (let offset = 0; ; offset += 100) {
+      const { data: folders, error: folderError } = await qrBucket.list(userId, { limit: 100, offset });
+      if (folderError) throw folderError;
+      for (const folder of folders || []) {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(folder.name)) continue;
+        const { data: files, error: filesError } = await qrBucket.list(`${userId}/${folder.name}`, { limit: 1000, offset: 0 });
+        if (filesError) throw filesError;
+        const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
+        for (let i = 0; i < paths.length; i += 100) {
+          const { error } = await qrBucket.remove(paths.slice(i, i + 100));
+          if (error) throw error;
+        }
+      }
+      if (!folders || folders.length < 100) break;
+    }
+
     stage = 'delete_transactions';
     const { error: txError } = await api.admin.from('transactions').delete().eq('user_id', userId);
     if (txError) throw txError;
