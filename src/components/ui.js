@@ -21,8 +21,8 @@ export function Toggle({ checked, onChange, label, disabled = false, reason, des
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} aria-describedby={describedBy || undefined} aria-disabled={disabled || undefined} disabled={disabled} title={disabled ? reason : undefined} className={`toggle${checked ? ' on' : ''}${disabled ? ' disabled' : ''}`} onClick={() => { if (disabled) return; onChange(!checked); }}><span /></button>;
 }
 
-export function IconButton({ icon, label, onClick, dot, size = 20 }) {
-  return <button type="button" className="round-button" aria-label={label} onClick={onClick}><Icon name={icon} size={size} />{dot && <i className="red-dot" />}</button>;
+export function IconButton({ icon, label, onClick, dot, size = 20, className = '' }) {
+  return <button type="button" className={`round-button ${className}`.trim()} aria-label={label} onClick={onClick}><Icon name={icon} size={size} />{dot && <i className="red-dot" />}</button>;
 }
 
 /** Large-title header used by the five root screens. */
@@ -30,7 +30,7 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
   return <header className="screen-header root">
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
-      {headerActions ? headerActions.map(item => <IconButton key={item.label} icon={item.icon} label={item.label} onClick={item.onClick} dot={item.dot} />) : <>
+      {headerActions ? headerActions.map(item => <IconButton key={item.label} icon={item.icon} label={item.label} onClick={item.onClick} dot={item.dot} className={item.className} />) : <>
         {action ? <IconButton icon={action.icon} label={action.label} onClick={action.onClick} /> : !hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
         {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
         {onSettings && <IconButton icon="gearSolid" label={tr('Settings')} onClick={onSettings} />}
