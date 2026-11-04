@@ -19,7 +19,7 @@ export async function saveReminderPreferences(userId, input) {
   if (!userId) {
     const days=[...new Set((input.reminder_days||[]).map(Number))].filter(n=>OFFSETS.includes(n)).sort((a,b)=>a-b);
     if(days.length>8)throw new Error('Choose up to eight reminder intervals.');
-    const validTime=value=>value==null||value===''||/^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+    const validTime=value=>value==null||value===''||/^([0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(value);
     if(!validTime(input.quiet_start)||!validTime(input.quiet_end)||!!input.quiet_start!==!!input.quiet_end)throw new Error('Enter a complete, valid quiet-hour range.');
     const timezone=String(input.timezone||'Asia/Manila').slice(0,64);
     try{new Intl.DateTimeFormat('en-US',{timeZone:timezone});}catch{throw new Error('Choose a valid timezone.');}
