@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Icon from './Icon';
 import CardArt from './CardArt';
-import { Sheet, TransactionRow, Bars } from './ui';
+import { Sheet, TransactionRow } from './ui';
+import MoneyFlow from './MoneyFlow';
 import { money, shown } from '../lib/format';
-import { accountSpendingHistory } from '../lib/accountSpending';
 import { creditInfo } from '../lib/creditCard';
 import { estimateCashback } from '../lib/cashback';
 import { listScheduledTransactions } from '../lib/scheduledTransactions';
@@ -31,14 +31,6 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const relatedTransactions = useMemo(() => transactions.filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id), [transactions, account.id]);
   const recentTransactions = relatedTransactions.slice(0, 30);
   const expenses = relatedTransactions.filter(item => item.type === 'expense' || item.transaction_type === 'expense');
-  const spendingHistory = useMemo(() => accountSpendingHistory({
-    account,
-    accounts,
-    prefs,
-    transactions,
-    days: 10,
-  }), [account, accounts, prefs.cardBankLinks, prefs.accountStyles, transactions]);
-  const spendingTotal = spendingHistory.reduce((sum, day) => sum + day.total, 0);
   const recentSpend = expenses.filter(item => { const timestamp = Date.parse(item.date || item.occurred_at || ''); const age = Date.now() - timestamp; return Number.isFinite(timestamp) && age >= 0 && age <= 30 * 86400000; }).reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
   const info = creditInfo(account);
   const rules = prefs.cashbackRules || {};
@@ -79,12 +71,9 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
           {row('Spent · Last 30 days', shown(show, money(recentSpend, base)))}
           {row('Transactions', String(relatedTransactions.length))}
         </div>
-        <section className="account-hub-section account-spending-section" aria-label={tr('Last 10 Days Spending')}>
-          <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(spendingTotal, base || 'PHP'))}</strong></div>
-          <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(spendingTotal, base || 'PHP') })}>
-            <Bars values={spendingHistory.map(day => day.total)} startLabel={tr('9 days ago')} endLabel={tr('Today')} />
-          </div>
-        </section>
+        <div className="account-money-flow">
+          <MoneyFlow txs={relatedTransactions} refDate={new Date()} show={show} variant="bars" />
+        </div>
         <div className="account-hub-section">
           <h3>{tr('Recent account activity')}</h3>
           {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
