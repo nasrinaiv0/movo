@@ -49,7 +49,7 @@ export default function Cashback({ c }) {
 
   return <>
     <RootHeader title={tr('Cashback')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
-    <section className="card total-card">
+    <section className="card total-card cashback-total">
       <small>{tr('Cashback tracked')}</small>
       {formatTotals(totals).length ? formatTotals(totals).map(([currency, amount]) => <div className="balance-amount" key={currency}>{cash(amount, currency)}</div>) : <div className="balance-amount">{cash(0, c.base || 'PHP')}</div>}
       <p className="form-note">{tr('Received and pending rewards you have manually recorded.')}</p>
@@ -66,10 +66,11 @@ export default function Cashback({ c }) {
     </div>
 
     <SectionTitle>{tr('Automatic cashback rules')}</SectionTitle>
-    <p className="form-note">{tr('Set a cashback rate for each bank or e-wallet. MOVO estimates rewards from matching expense transactions; confirm actual rewards with your provider.')}</p>
+    <p className="form-note cashback-intro">{tr('Set a cashback rate for each bank or e-wallet. MOVO estimates rewards from matching expense transactions; confirm actual rewards with your provider.')}</p>
+    <div className="cashback-rule-list">
     {wallets.map(account => {
       const rule = rules[account.id] || {};
-      return <article className="card fp-goal" key={account.id}>
+      return <article className="card fp-goal cashback-rule" key={account.id}>
         <div className="fp-goal-head">
           <span className="stat-icon tone-green"><Icon name={account.account_type === 'e_wallet' ? 'wallet' : 'bank'} size={17} /></span>
           <span className="fp-main"><strong>{account.institution_name || account.name}</strong><small>{tr(account.account_type === 'e_wallet' ? 'Digital wallet' : 'Bank account')}</small></span>
