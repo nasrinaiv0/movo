@@ -1,6 +1,6 @@
 # MOVO Live FX, Cryptocurrency & Markets — Implementation Specification
 
-Status: Partial implementation in PR #177. FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented. Crypto market discovery, local watchlist, coin detail and provider-supported daily history are now implemented in this branch. Price alerts are implemented as local preference rules with above/below threshold crossing, rearming, enable/pause/delete controls and foreground permission-aware notifications. Manual portfolio lots/valuation remain pending.
+Status: Partial implementation in PR #177. FX converter, searchable currency selector, tracked pairs, refresh/freshness UI and historical daily-rate charts are implemented. Crypto market discovery, local watchlist, coin detail and provider-supported daily history are now implemented in this branch. Price alerts are implemented as local preference rules with above/below threshold crossing, rearming, enable/pause/delete controls and foreground permission-aware notifications. Manual portfolio holdings, cost basis and market valuation are implemented as local-first preference records.
 Owner request: 2026-11-04.
 
 ## Product outcome
@@ -90,7 +90,7 @@ PHP is the default display/base currency for users in the Philippines. Respect t
 - Invalid, missing, negative, infinite or stale provider values are handled safely.
 - No private financial data is sent to market-data providers.
 - Watchlist/holding data is user-isolated in cloud mode and remains usable in local-only mode.
-- Crypto holdings do not inflate cash, income, or expense totals.
+- Crypto holdings do not inflate cash, income, or expense totals.\n- Portfolio records merge by stable ID between local and signed-in preference copies; invalid quantities/costs are rejected.
 - Tests cover conversion, stale rates, refresh/backoff, provider normalization, chart windows, portfolio valuation, cost basis, RLS (if persisted), and responsive/accessibility behavior.
 - npm test -- --runInBand, npm run typecheck, and CI=true npx react-scripts build pass on the exact PR head. Vercel preview must be smoke-tested. Cancelled/skipped checks are not passes.
 
