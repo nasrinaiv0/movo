@@ -42,7 +42,6 @@ export const scheduledDates = item => {
     if(item.frequency==='yearly')next.setFullYear(next.getFullYear()+1);
     const date=next.getFullYear()+'-'+String(next.getMonth()+1).padStart(2,'0')+'-'+String(next.getDate()).padStart(2,'0');
     if(item.ends_on&&date>item.ends_on)break;
-    if(next.getTime()>Date.now()+(MAX_DAYS+30)*86400000)break;
     dates.push(date);cursor=next;
   }
   return dates;
