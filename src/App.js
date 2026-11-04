@@ -613,7 +613,7 @@ function App() {
         if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
           const nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
           if (nextDue) {
-            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at } : item));
+            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at, lastPaidAmount: Number(paidSub.amount) || amount, lastPaidCurrency: paidSub.currency || txCurrency } : item));
             notify(tr('Subscription payment recorded. Next billing date updated.'));
           }
         }
