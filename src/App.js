@@ -1080,6 +1080,7 @@ function App() {
         const pending = { ...(cur.accountQrPending || {}) }; migrated.forEach(([id]) => { delete pending[id]; });
         return { ...cur, accountQrCodes: next, accountQrPending: pending };
       });
+      migrated.forEach(([id]) => qrMigrationRef.current.delete(`${userId}:${id}`));
     });
     return () => { live = false; };
   }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick]);
