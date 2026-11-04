@@ -28,7 +28,12 @@ export function planningSummary({ accounts = [], loans = [], receivables = [], g
     accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), liability_balance: a.account_type === 'card' && a.cardKind === 'credit' ? toBase(creditCardOutstanding(a), a.currency) : a.liability_balance, card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
     loans: loans.map(l => ({ ...l, outstanding_balance: toBase(Number(l.outstanding_principal) || 0, l.currency) })),
     receivables: receivables.map(r => ({ ...r, outstanding_balance: toBase(Number(r.outstanding_amount) || 0, r.currency) })),
-    goalAllocations: live.map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency) })),
+    goalAllocations: [
+      ...live.map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency) })),
+      ...activePlans.flatMap(plan => (Array.isArray(plan.fundingAllocations) ? plan.fundingAllocations : [])
+        .filter(a => a && a.status === 'allocated')
+        .map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency || plan.currency), currency: undefined }))),
+    ],
   });
   const activeLoans = loans.filter(l => l.status === 'active' && Number(l.outstanding_principal) > 0);
   const creditCardDebts = accounts.filter(a => creditCardOutstanding(a) > 0);
