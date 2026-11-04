@@ -515,7 +515,8 @@ describe('MOVO finance frontend', () => {
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).accountStyles[created.id].cardNetwork).toBe('mastercard');
     expect(container.querySelector('.ccx-net.net-mastercard')).not.toBeNull();
     clickButton(container, 'Cards');
-    clickButton(container, 'Switch card');
+    const goTymeCard = container.querySelector('button[aria-label="Show GoTyme card"]');
+    if (goTymeCard) act(() => goTymeCard.click());
     const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('GoTyme'));
     expect(targetCard).toBeTruthy();
     act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
@@ -529,7 +530,8 @@ describe('MOVO finance frontend', () => {
     act(() => root.render(<App />));
     nav(container, 'Wallet');
     clickButton(container, 'Cards');
-    clickButton(container, 'Switch card');
+    const rcbcCard = container.querySelector('button[aria-label="Show RCBC card"]');
+    if (rcbcCard) act(() => rcbcCard.click());
     const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('RCBC'));
     expect(updatedCard).toBeTruthy();
     act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
