@@ -3,10 +3,32 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 
 const ID_BASE = 410000;
 const MAX_DAYS = 30;
-const dateAtLocalTime = (date, time) => {
-  const [hour, minute] = String(time || '09:00').split(':').map(Number);
-  const value = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour || 0, minute || 0, 0, 0);
-  return value;
+const datePartsInZone = (date,timeZone) => {
+  if(!timeZone)return {year:date.getFullYear(),month:date.getMonth()+1,day:date.getDate()};
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+  return Object.fromEntries(parts.filter(x=>['year','month','day'].includes(x.type)).map(x=>[x.type,Number(x.value)]));
+};
+const dateString = ({year,month,day}) => `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+const shiftCalendarDate = (value,days) => {
+  const [year,month,day]=value.split('-').map(Number);
+  const shifted=new Date(Date.UTC(year,month-1,day+days));
+  return dateString({year:shifted.getUTCFullYear(),month:shifted.getUTCMonth()+1,day:shifted.getUTCDate()});
+};
+const dateAtLocalTime = (dateValue,time,timeZone) => {
+  const dateParts=typeof dateValue==='string'?(()=>{const [year,month,day]=dateValue.split('-').map(Number);return {year,month,day};})():datePartsInZone(dateValue,timeZone);
+  const [hour,minute]=String(time||'09:00').split(':').map(Number);
+  const desired=Date.UTC(dateParts.year,dateParts.month-1,dateParts.day,hour||0,minute||0,0,0);
+  if(!timeZone)return new Date(desired);
+  let guess=desired;
+  for(let i=0;i<4;i++){
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(guess));
+    const actual=Object.fromEntries(parts.filter(x=>['year','month','day','hour','minute','second'].includes(x.type)).map(x=>[x.type,Number(x.value)]));
+    const represented=Date.UTC(actual.year,actual.month-1,actual.day,actual.hour,actual.minute,actual.second);
+    const delta=desired-represented;
+    if(delta===0)break;
+    guess+=delta;
+  }
+  return new Date(guess);
 };
 export const inQuietHours = (date, start, end, timeZone) => {
   if (!start || !end) return false;
@@ -78,12 +100,11 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
   const add=(type,item,date,days,title,body)=>{
     if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
     for(const offset of days){
-      const due=asDate(date); due.setDate(due.getDate()-Number(offset));
-      const todayStart=new Date(today.getFullYear(),today.getMonth(),today.getDate());
-      const dueStart=asDate(date);
-      if(dueStart<=todayStart&&Number(offset)>0)continue;
-      if(dueStart<new Date(todayStart.getTime()-MAX_DAYS*86400000))continue;
-      const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
+      const dueDate=shiftCalendarDate(date,-Number(offset));
+      const todayDate=dateString(datePartsInZone(today,preferences.timezone));
+      if(dueDate<=todayDate&&Number(offset)>0)continue;
+      if(dueDate<shiftCalendarDate(todayDate,-MAX_DAYS))continue;
+      const fire=dateAtLocalTime(dueDate,preferences.reminder_time||'09:00',preferences.timezone);
       let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end,preferences.timezone);
       if(when<=today)when=moveOutOfQuietHours(new Date(today.getTime()+60000),preferences.quiet_start,preferences.quiet_end,preferences.timezone);
       if(when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
