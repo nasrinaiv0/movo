@@ -255,3 +255,12 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Added validation/valuation helper and unit tests for invalid quantities/costs, quote mismatch, missing market prices, unknown cost basis and ID upsert.
 - No implicit FX conversion is performed. Portfolio values are reference estimates, not exchange execution quotes. Exchange/wallet integrations, fees, realized P/L and custody/trading remain out of scope.
 - Validation on the new head is pending GitHub Actions; live Vercel preview and device smoke testing are still required.
+
+
+## Crypto portfolio implementation — 2026-11-04
+
+- Added manual crypto holding records with validated asset IDs, positive quantities, optional non-negative average acquisition price, quote currency, and stable IDs. Added edit/remove and portfolio valuation/unrealized P/L helpers with regression tests.
+- Added a Market / Portfolio switch, premium responsive overview and holdings cards, add/edit form, empty state, and explicit data/cash-separation disclosures. Portfolio values use only matching quote-currency market prices; missing or incompatible prices and unknown cost basis are shown as unavailable rather than estimated.
+- Added `cryptoHoldings` to preference defaults and ID-based preference merging so holdings persist across signed-in preference sync and local-only use. No Supabase migration or new financial-account/transaction rows are used; crypto remains outside cash, income, expense and net-worth accounting totals.
+- Exact-head CI [41745638862](https://github.com/nasrinaiv0/movo/actions/runs/41745638862) failed at translation catalogue coverage because the new accessible tab label “Crypto sections” was not in the English-first exclusion set. Production audit (0), typecheck passed; test/build stages were skipped by fail-fast. Added the missing label to `scripts/i18n-extract.js` in commit 8de5520. Re-run exact-head CI is pending.
+- Vercel preview remains unverified: the prior Vercel commit status was canceled by an ignored build step; do not treat this as a successful deployment. Keep PR #177 open and do not merge until exact-head CI and a real preview smoke test pass.
