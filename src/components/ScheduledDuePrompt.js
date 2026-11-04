@@ -60,7 +60,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const allowed=Array.isArray(entry.item.reminder_days)?entry.item.reminder_days:(preferences.reminder_days||[0,1,3]);
       if(offset>0&&!allowed.includes(offset))return false;
       if(offset<0&&offset < -30)return false;
-      const previous=events.find(e=>e.source_type===entry.kind&&e.source_id===String(entry.item.id)&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
+      const previous=events.find(e=>e.channel==='in_app'&&e.source_type===entry.kind&&e.source_id===String(entry.item.id)&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
       return !previous||(previous.snoozed_until&&previous.snoozed_until<=new Date().toISOString());
     })).sort((a,b)=>a.date.localeCompare(b.date));
     const queue=eligible.map(entry=>({...entry,reminderOffset:Math.max(0,daysUntil(entry.date))}));
@@ -69,6 +69,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const first=queue[0];
       const saved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,status:'sent'}).catch(()=>null);
       if(saved)notificationEvents=[...notificationEvents.filter(e=>!(e.channel==='in_app'&&e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
+      const pushSaved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,channel:'push',status:'sent'}).catch(()=>null);
+      if(pushSaved)notificationEvents=[...notificationEvents.filter(e=>!(e.channel==='push'&&e.source_type===pushSaved.source_type&&e.source_id===pushSaved.source_id&&e.occurrence_date===pushSaved.occurrence_date&&Number(e.reminder_offset)===Number(pushSaved.reminder_offset))),pushSaved];
     }
     await syncPaymentNotifications({
       schedules,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
@@ -100,7 +102,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const interval=window.setInterval(refresh,60000);
     return()=>{live=false;window.clearInterval(interval);window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
   },[loadDue,setActive,entry]);
-  const close=async()=>{ if(entry){const until=new Date(Date.now()+86400000).toISOString();const localKey=entry.kind+':'+entry.item.id+':'+entry.date;setLocalSnoozes(current=>{const next={...current,[localKey]:Date.now()+86400000};try{window.localStorage.setItem('movo.localPaymentSnoozes.v1',JSON.stringify(next));}catch{}return next;});const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));if(session?.user?.id){try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);await loadDue(false).catch(()=>null);}catch{/* Keep the prompt dismissible while offline. */}}} setActive(null); };
+  const close=async()=>{ if(entry){const until=new Date(Date.now()+86400000).toISOString();const localKey=entry.kind+':'+entry.item.id+':'+entry.date;setLocalSnoozes(current=>{const next={...current,[localKey]:Date.now()+86400000};try{window.localStorage.setItem('movo.localPaymentSnoozes.v1',JSON.stringify(next));}catch{}return next;});const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));if(session?.user?.id){try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset,channel:'push'},until);await loadDue(false).catch(()=>null);}catch{/* Keep the prompt dismissible while offline. */}}} setActive(null); };
   const markIssue=async()=>{
     if(!entry||!session?.user?.id)return;
     setBusy(true);setError('');
@@ -112,7 +114,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const until=new Date(Date.now()+86400000).toISOString();
       if(entry.kind==='scheduled')await snoozeSchedule(item.id,session.user.id,until);
       const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));
-      await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:offset},until);
+      await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:offset},until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:offset,channel:'push'},until);
       const queue=await loadDue();setActive(queue[0]||null);
     }catch(err){setError(err.message||tr('Could not save the payment issue.'));}
     finally{setBusy(false);}
@@ -144,7 +146,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
           setSplits(pending);
         }
         loggedAmount=total;
-        if(total<startingBalance-0.005)await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0},new Date(Date.now()+86400000).toISOString());
+        if(total<startingBalance-0.005){const until=new Date(Date.now()+86400000).toISOString();await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0},until);await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,channel:'push'},until);}
       }
       else if(entry.kind==='loan') await recordLoanEvent({loan_id:item.id,event_type:'principal_payment',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Payment recorded from MOVO reminder'});
       else if(entry.kind==='receivable') await recordReceivableEvent({receivable_id:item.id,event_type:'collected',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Collection recorded from MOVO reminder'});
