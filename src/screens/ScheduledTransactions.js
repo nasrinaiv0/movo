@@ -6,6 +6,7 @@ import { t as tr } from '../lib/i18n';
 import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
 import { requestPaymentNotificationPermission } from '../lib/paymentNotifications';
+import { listPaymentAttempts, recordPaymentAttempt } from '../lib/paymentAttempts';
 
 const day = () => new Date().toLocaleDateString('en-CA');
 const blank = currency => ({ title:'', transaction_type:'expense', amount:'', currency, account_id:'', transfer_to_account_id:'', scheduled_for:day(), frequency:'once', category:'Other', notes:'', reminder_days:[0,1,3], timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Manila', ends_on:'' });
@@ -17,10 +18,10 @@ export default function ScheduledTransactions({ c }) {
   const [busy,setBusy]=useState(false); const [error,setError]=useState(''); const [notice,setNotice]=useState('');
   const [month,setMonth]=useState(()=>new Date()); const [calendar,setCalendar]=useState(false);
   const [reminderPrefs,setReminderPrefs]=useState({enabled:true,reminder_days:[0,1,3],quiet_start:'',quiet_end:''});
-  const [reminderEvents,setReminderEvents]=useState([]);
+  const [reminderEvents,setReminderEvents]=useState([]); const [paymentAttempts,setPaymentAttempts]=useState([]); const [attemptNote,setAttemptNote]=useState('');
   const reload=useCallback(async()=>setItems(await listScheduledTransactions()),[]);
   useEffect(()=>{reload().catch(e=>setError(e.message||tr('Could not load schedules.')));},[reload]);
-  useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));listReminderEvents(session?.user?.id,12).then(setReminderEvents).catch(()=>setReminderEvents([]));},[session?.user?.id]);
+  useEffect(()=>{getReminderPreferences(session?.user?.id).then(setReminderPrefs).catch(e=>setError(e.message||tr('Could not load reminder settings.')));listReminderEvents(session?.user?.id,12).then(setReminderEvents).catch(()=>setReminderEvents([]));listPaymentAttempts(session?.user?.id,12).then(setPaymentAttempts).catch(()=>setPaymentAttempts([]));},[session?.user?.id]);
   const due=useMemo(()=>items.filter(x=>x.status==='scheduled'&&x.scheduled_for<=day()),[items]);
   const cash=(amount,currency)=>shown(show,money(amount,currency));
   const startCreate=()=>{setForm(blank(base));setError('');setSheet({kind:'create'});};
@@ -74,12 +75,19 @@ export default function ScheduledTransactions({ c }) {
         {error&&<p className="app-alert" role="alert">{error}</p>}<button className="primary-button" disabled={busy}>{tr('Save reminder settings')}</button>
       </form>
     </Sheet>}
+    {sheet?.kind==='failure'&&<Sheet title={tr('Record payment issue')} subtitle={tr('Record an unsuccessful attempt. MOVO will not retry or send money automatically. You can retry manually after resolving the issue.')} onClose={()=>setSheet(null)} label={tr('Record payment issue')}>
+      <form className="sheet-form" onSubmit={async e=>{e.preventDefault();await run(async()=>{await recordPaymentAttempt(session?.user?.id,{source_type:'scheduled',source_id:sheet.item.id,due_date:sheet.item.scheduled_for,status:'failed',amount:sheet.item.amount,currency:sheet.item.currency,account_id:sheet.item.account_id,note:attemptNote});setPaymentAttempts(await listPaymentAttempts(session?.user?.id,12));setSheet(null);});}}>
+        <label>{tr('What happened?')}<textarea maxLength="500" rows="3" value={attemptNote} onChange={e=>setAttemptNote(e.target.value)} placeholder={tr('Optional note, e.g. insufficient balance or card declined')}/></label>
+        {error&&<p className="app-alert" role="alert">{error}</p>}<button className="primary-button" disabled={busy}>{tr('Save payment issue')}</button>
+      </form>
+    </Sheet>}
     {sheet?.kind==='due'&&<DueSheet item={sheet.item} accounts={accounts} busy={busy} error={error} onClose={()=>setSheet(null)} onLog={log}/>}
     {sheet?.kind==='actions'&&<Sheet title={sheet.item.title} subtitle={dateLabel(sheet.item.scheduled_for)} onClose={()=>setSheet(null)} label={tr('Manage schedule')}><div className="sheet-menu">
       {sheet.item.status==='scheduled'&&sheet.item.scheduled_for<=day()&&<button onClick={()=>setSheet({kind:'due',item:sheet.item})}><Icon name="check-circle"/>{tr('Log now')}</button>}
       <button onClick={()=>edit(sheet.item)}><Icon name="edit"/>{tr('Edit schedule')}</button>
       <button onClick={()=>action(sheet.item,sheet.item.status==='paused'?'resume':'pause')}><Icon name="pause"/>{tr(sheet.item.status==='paused'?'Resume schedule':'Pause schedule')}</button>
       {sheet.item.status==='scheduled'&&<button onClick={()=>action(sheet.item,'skip')}><Icon name="skip-forward"/>{tr('Skip this occurrence')}</button>}
+      <button onClick={()=>{setAttemptNote('');setSheet({kind:'failure',item:sheet.item});}}><Icon name="alert-circle"/>{tr('Record payment issue')}</button>
       <button onClick={()=>action(sheet.item,'snooze')}><Icon name="clock"/>{tr('Remind me tomorrow')}</button>
       <button onClick={()=>action(sheet.item,'cancel')}><Icon name="x"/>{tr('Cancel schedule')}</button>
     </div>{error&&<p className="app-alert">{error}</p>}</Sheet>}
@@ -89,6 +97,9 @@ export default function ScheduledTransactions({ c }) {
       <span className="fp-main"><strong>{tr(event.source_type==='scheduled'?'Scheduled payment':event.source_type==='bill'?'Bill reminder':event.source_type==='subscription'?'Subscription renewal':event.source_type)}</strong><small>{dateLabel(event.occurrence_date)} · {event.reminder_offset===0?tr('Due date'):tr('{n} day(s) before',{n:event.reminder_offset})}</small></span>
       <span className="fp-amount"><small>{tr(event.status==='dismissed'?'Snoozed':event.status==='sent'?'Shown':event.status)}</small></span>
     </article>):<p className="form-note">{tr('No reminder activity yet.')}</p>}</div>
+    {paymentAttempts.length>0&&<><SectionTitle>{tr('Payment attempts')}</SectionTitle><div className="card list-card">{paymentAttempts.slice(0,8).map(attempt=><article className="fp-row" key={attempt.id}>
+      <span className="stat-icon tone-red"><Icon name="alert-circle" size={17}/></span><span className="fp-main"><strong>{tr(attempt.status==='failed'?'Payment issue recorded':attempt.status)}</strong><small>{dateLabel(attempt.due_date)} · {attempt.note||tr('No note added')}</small></span><span className="fp-amount"><small>{attempt.currency} {Number(attempt.amount||0).toLocaleString()}</small></span>
+    </article>)}</div></>}</>
     {notice&&<p className="form-note" role="status">{notice}</p>}
   </>;
 }
