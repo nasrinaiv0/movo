@@ -17,7 +17,7 @@ function number(value) {
   const n = Number(value);
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
-function slug(value) {
+function signedNumber(value) {\n  if (value === null || value === undefined || typeof value === 'boolean') return null;\n  const n = Number(value);\n  return Number.isFinite(n) ? n : null;\n}\nfunction slug(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 }
 function originAllowed(req) {
@@ -71,7 +71,7 @@ function normalizeCoin(row, quote, rate) {
     price: usdPrice * rate,
     marketCap: number(row.marketCap) === null ? null : number(row.marketCap) * rate,
     volume24h: number(row.volume24h) === null ? null : number(row.volume24h) * rate,
-    change24h: number(row.percentChange24h),
+    change24h: signedNumber(row.percentChange24h),
     circulatingSupply: number(row.circulatingSupply),
     updatedAt: updated
   };
@@ -98,7 +98,7 @@ async function binanceMarkets(quote) {
       id: symbol.toLowerCase() + '-' + symbol.toLowerCase(), base: symbol, name: symbol, symbol,
       rank: index + 1, price: price * resolvedRate, marketCap: null,
       volume24h: number(row.quoteVolume) === null ? null : number(row.quoteVolume) * resolvedRate,
-      change24h: number(row.priceChangePercent), circulatingSupply: null,
+      change24h: signedNumber(row.priceChangePercent), circulatingSupply: null,
       updatedAt: new Date().toISOString()
     };
   }).filter(Boolean);
