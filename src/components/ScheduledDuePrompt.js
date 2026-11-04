@@ -33,7 +33,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       dueBills=occurrences.filter(o=>o.due_date<=date&&amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
         .map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
     }
-    const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(s.start||'')&&s.start<=date)
+    const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\d{4}-\d{2}-\d{2}$/.test(s.start||'')&&s.start<=date)
       .map(s=>({kind:'subscription',item:s,date:s.start}));
     return [...dueSchedules,...dueBills,...dueSubs].sort((a,b)=>a.date.localeCompare(b.date));
   },[session?.user?.id,subscriptions]);
