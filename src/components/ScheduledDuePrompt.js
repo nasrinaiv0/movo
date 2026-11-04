@@ -5,6 +5,7 @@ import { listScheduledTransactions, logScheduledTransaction } from '../lib/sched
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
 import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation } from '../lib/paymentReminderCenter';
+import { syncPaymentNotifications } from '../lib/paymentNotifications';
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const shift = (date, days) => { const value=new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate()+days); return value.toISOString().slice(0,10); };
@@ -31,6 +32,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       ]);
       preferences=prefs||preferences; events=history||[];
       const billMap=new Map(bills.map(b=>[b.id,b]));
+      await syncPaymentNotifications({schedules:scheduled,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),subscriptions,preferences}).catch(()=>null);
       schedules=scheduled.filter(row=>row.status==='scheduled'&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString()))
         .map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
       billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
