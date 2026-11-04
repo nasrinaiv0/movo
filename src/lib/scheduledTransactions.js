@@ -20,7 +20,7 @@ export function nextScheduledDate(date, frequency) {
 const validAmount = value => { const n=Number(value); if(!Number.isFinite(n)||n<=0||n>=1e16) throw new Error('Enter an amount greater than zero.'); return Math.round(n*100)/100; };
 
 export async function listScheduledTransactions() {
-  return unwrap(await client().from('scheduled_transactions').select('*').in('status',['scheduled','due']).order('scheduled_for').limit(500));
+  return unwrap(await client().from('scheduled_transactions').select('*').eq('status','scheduled').order('scheduled_for').limit(500));
 }
 export async function createScheduledTransaction(input, userId) {
   if (!userId) throw new Error('Sign in to schedule payments and transfers.');
