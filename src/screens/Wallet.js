@@ -1,12 +1,12 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
 import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
 import CardStyleSheet from '../components/CardStyleSheet';
-import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
+import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Bars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
-import { money, shown } from '../lib/format';
+import { money, shown, dayKey } from '../lib/format';
 import { creditInfo } from '../lib/creditCard';
 import { walletAssetTotal, walletTypePercentage } from '../lib/walletTotals';
 import { t as tr } from '../lib/i18n';
@@ -72,6 +72,27 @@ export default function Wallet({ c }) {
   const total = walletAssetTotal(live, c.toBase) || 1;
   const cards = accountsByType.card;
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
+  const selectedCardSpending = useMemo(() => {
+    if (!selectedCard) return [];
+    const dates = [];
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    for (let offset = 9; offset >= 0; offset -= 1) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - offset);
+      dates.push({ key: dayKey(date), total: 0 });
+    }
+    const byDay = new Map(dates.map(day => [day.key, day]));
+    txs.forEach(transaction => {
+      if (transaction.account_id !== selectedCard.id || (transaction.type !== 'expense' && transaction.transaction_type !== 'expense')) return;
+      const timestamp = Date.parse(transaction.date || transaction.occurred_at || '');
+      if (!Number.isFinite(timestamp)) return;
+      const day = byDay.get(dayKey(timestamp));
+      if (day) day.total += Math.max(0, Number(transaction.amount) || 0);
+    });
+    return dates;
+  }, [selectedCard, txs]);
+  const selectedCardSpent = selectedCardSpending.reduce((sum, day) => sum + day.total, 0);
   const recent = txs.slice(0, 3);
   const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
   const displayModeOf = (a) => prefs.cardDisplayModes?.[a?.id] || 'details';
@@ -162,6 +183,12 @@ export default function Wallet({ c }) {
       {selectedCard?.cardKind !== 'credit' && <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
         <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>}
+      {selectedCard && <section className="account-hub-section account-spending-section wallet-selected-spending" aria-label={tr('Last 10 days spending')}>
+        <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(selectedCardSpent, selectedCard.currency))}</strong></div>
+        <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(selectedCardSpent, selectedCard.currency) })}>
+          <Bars values={selectedCardSpending.map(day => day.total)} startLabel={tr('10 days ago')} endLabel={tr('Today')} />
+        </div>
+      </section>}
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
     </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
