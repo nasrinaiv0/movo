@@ -4605,3 +4605,39 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion:reduce) {
  .movo-app .cashback-input { transition:none; }
 }
+
+
+/* Account Financial Hub */
+.movo-app .account-hub-sheet { padding-bottom:calc(24px + env(safe-area-inset-bottom)); }
+.movo-app .account-hub-hero { display:grid; place-items:center; margin:0 0 14px; min-width:0; }
+.movo-app .account-hub-hero > :is(.credit-card,.account-tile) { width:100%; max-width:420px; }
+.movo-app .account-hub-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; padding:3px; margin:0 0 14px; border:1px solid var(--line); border-radius:14px; background:var(--field); }
+.movo-app .account-hub-tabs button { min-width:0; min-height:38px; padding:0 5px; border:0; border-radius:10px; background:transparent; color:var(--muted); font-size:11px; font-weight:650; white-space:nowrap; }
+.movo-app .account-hub-tabs button.active { background:var(--card-solid); color:var(--text); box-shadow:var(--shadow-sm); }
+.movo-app .account-hub-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:0 0 14px; }
+.movo-app .account-hub-metric { display:grid; gap:5px; min-width:0; padding:11px 12px; border:1px solid var(--line); border-radius:13px; background:var(--card); }
+.movo-app .account-hub-metric span { color:var(--muted); font-size:10px; line-height:1.3; }
+.movo-app .account-hub-metric strong { min-width:0; overflow-wrap:anywhere; color:var(--text); font-size:14px; line-height:1.25; font-weight:720; font-variant-numeric:tabular-nums; }
+.movo-app .account-hub-section { display:grid; gap:9px; min-width:0; margin:14px 0; }
+.movo-app .account-hub-section h3 { margin:0; color:var(--text); font-size:14px; font-weight:720; }
+.movo-app .account-hub-linked,.movo-app .account-hub-simple-row { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-width:0; padding:11px 12px; border:1px solid var(--line); border-radius:13px; background:var(--card); color:var(--text); text-align:left; }
+.movo-app .account-hub-linked > span { display:flex; align-items:center; gap:9px; min-width:0; }
+.movo-app .account-hub-linked b,.movo-app .account-hub-simple-row > span { min-width:0; overflow-wrap:anywhere; font-size:12px; font-weight:650; }
+.movo-app .account-hub-linked small,.movo-app .account-hub-simple-row small { display:block; margin-top:3px; color:var(--muted); font-size:10px; font-weight:450; }
+.movo-app .account-hub-simple-row b { flex:none; font-size:12px; font-variant-numeric:tabular-nums; }
+.movo-app .account-hub-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:16px; }
+.movo-app .account-hub-actions > button { min-width:0; min-height:42px; padding:9px 10px; border-radius:13px; font-size:12px; }
+.movo-app .account-hub-actions > .primary-button { grid-column:1/-1; }
+.movo-app .account-qr-lightbox { position:fixed; z-index:120; inset:0; display:grid; place-content:center; justify-items:center; gap:16px; padding:24px; background:rgba(10,13,20,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+.movo-app .account-qr-lightbox img { display:block; width:min(78vw,420px); max-height:72vh; aspect-ratio:1; object-fit:contain; padding:12px; border-radius:16px; background:#fff; image-rendering:auto; }
+.movo-app .account-qr-lightbox p { margin:0; color:#fff; font-size:13px; font-weight:600; }
+.movo-app .account-qr-close { position:absolute; top:max(18px,env(safe-area-inset-top)); right:18px; display:grid; place-items:center; width:42px; height:42px; border:0; border-radius:50%; background:rgba(255,255,255,.16); color:#fff; }
+.movo-app .ccx-account-qr,.movo-app .at-qr { cursor:zoom-in; }
+.movo-app .ccx-account-qr:focus-visible,.movo-app .at-qr:focus-visible,.movo-app .account-hub-tabs button:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+@media (max-width:360px) {
+ .movo-app .account-hub-tabs button { font-size:10px; }
+ .movo-app .account-hub-metrics { gap:6px; }
+ .movo-app .account-hub-metric { padding:9px 10px; }
+ .movo-app .account-hub-metric strong { font-size:12px; }
+ .movo-app .account-hub-actions { gap:6px; }
+}
