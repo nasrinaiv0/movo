@@ -1376,6 +1376,7 @@ function App() {
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">
           <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />{tr('Add transaction')}</button>
+          <button type="button" onClick={() => setSheet({ name: 'grocery' })}><Icon name="shopping-basket" size={20} />{tr('Add grocery items')}</button>
           <button type="button" onClick={() => setSheet({ name: 'scanner' })}><Icon name="scan" size={20} />{tr('Scan receipt')}</button>
           <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />{tr('Add account')}</button>
           <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />{tr('Import CSV')}</button>
