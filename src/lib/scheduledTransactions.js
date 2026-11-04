@@ -63,7 +63,8 @@ export async function logScheduledTransaction(item, accountId = item.account_id,
       transaction = existing;
     }
   }
-  const nextDate = nextScheduledDate(occurrence,item.frequency);\n  const recurring=item.frequency!=='once';
+  const nextDate = nextScheduledDate(occurrence,item.frequency);
+  const recurring=item.frequency!=='once' && (!item.ends_on || nextDate<=item.ends_on);
   const updated=await client().from('scheduled_transactions').update({
     scheduled_for:recurring?nextDate:occurrence,
     status:recurring?'scheduled':'completed',last_logged_at:new Date().toISOString(),last_transaction_id:transaction.id,snoozed_until:null,updated_at:new Date().toISOString(),
