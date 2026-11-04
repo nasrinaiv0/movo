@@ -21,7 +21,8 @@ function signedNumber(value) {
   if (value === null || value === undefined || typeof value === 'boolean') return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
-}\nfunction slug(value) {
+}
+function slug(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
 }
 function originAllowed(req) {
