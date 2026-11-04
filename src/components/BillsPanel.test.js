@@ -70,3 +70,20 @@ test('subscription renewals appear in Bills Due and route payment logging throug
   expect(onLogSubscription).toHaveBeenCalledWith(subscription);
   act(() => root.unmount()); app.remove();
 });
+
+
+test('subscription renewals appear in Bills Due and use the existing subscription payment flow', async () => {
+  const app = document.createElement('div'); document.body.appendChild(app);
+  const root = createRoot(app); const onLogSubscription = jest.fn();
+  const subscription = { id: 'sub1', name: 'Netflix', amount: 549, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'active' };
+  await act(async () => root.render(
+    <BillsPanel c={{ base: 'PHP', session: { user: { id: 'u' } } }} accounts={[]} subscriptions={[subscription]} onLogSubscription={onLogSubscription} />
+  ));
+  expect(app.textContent).toContain('Netflix');
+  expect(app.textContent).toContain('Subscription');
+  const log = Array.from(app.querySelectorAll('button')).find(button => button.textContent === 'Log payment');
+  expect(log).toBeTruthy();
+  await act(async () => log.click());
+  expect(onLogSubscription).toHaveBeenCalledWith(subscription);
+  act(() => root.unmount()); app.remove();
+});
