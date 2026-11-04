@@ -168,8 +168,8 @@ export default function Wallet({ c }) {
           {!info && <p className="form-note">{tr('Credit limit')}: —</p>}
         </section>;
       })()}
-      {selectedCard?.cardKind !== 'credit' && <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
-        <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
+      {selectedCard && <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
+        <span><small>{selectedCard.cardKind === 'credit' ? tr('Remaining credit') : tr('Available Balance')}</small><strong>{shown(show, money(selectedCard.cardKind === 'credit' ? (creditInfo(selectedCard)?.available ?? 0) : selectedCard.balance, selectedCard.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>}
       {selectedCard && <section className="account-hub-section account-spending-section wallet-selected-spending" aria-label={tr('Last 10 Days Spending')}>
         <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(selectedCardSpent, c.base || 'PHP'))}</strong></div>
