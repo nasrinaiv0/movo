@@ -4742,7 +4742,34 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .account-hub-actions { gap:6px; }
 }
 
- 
+/* Selected-card balance + ten-day spending chart. */
+.movo-app .wallet-balance-spending-card{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1.12fr) 20px;align-items:center;gap:14px;width:100%;min-width:0;padding:16px;color:var(--text);text-align:left}
+.movo-app .wallet-balance-spending-copy{display:grid;gap:5px;min-width:0}
+.movo-app .wallet-balance-spending-copy small{color:var(--muted);font-size:12px;line-height:1.25;font-weight:550}
+.movo-app .wallet-balance-spending-copy strong{display:block;min-width:0;color:var(--text);font-size:clamp(17px,4.5vw,23px);line-height:1.2;font-weight:760;letter-spacing:-.45px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.movo-app .wallet-balance-spending-divider{display:block;width:1px;height:70px;background:var(--line)}
+.movo-app .wallet-spending-bars{display:grid;gap:8px;min-width:0}
+.movo-app .wallet-spending-bars-title{overflow:hidden;color:var(--muted);font-size:11px;line-height:1.2;font-weight:550;white-space:nowrap;text-overflow:ellipsis}
+.movo-app .wallet-spending-bars-plot{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));align-items:end;gap:4px;min-width:0}
+.movo-app .wallet-spending-bar-column{display:grid;grid-template-rows:74px 14px;justify-items:center;gap:5px;min-width:0}
+.movo-app .wallet-spending-bar-track{display:flex;align-items:flex-end;width:100%;height:74px;overflow:hidden;border-radius:6px;background:var(--field)}
+.movo-app .wallet-spending-bar-fill{display:block;width:100%;min-height:0;border-radius:6px;background:var(--success,#299b63);transition:height .22s ease}
+.movo-app .wallet-spending-bar-date{color:var(--muted);font-size:9px;line-height:14px;font-variant-numeric:tabular-nums}
+.movo-app .wallet-balance-spending-card>.movo-icon{color:var(--text)}
+@media(max-width:390px){.movo-app .wallet-balance-spending-card{grid-template-columns:minmax(0,.88fr) 1px minmax(0,1.12fr) 16px;gap:9px;padding:14px 12px}.movo-app .wallet-balance-spending-copy strong{font-size:17px;letter-spacing:-.55px}.movo-app .wallet-spending-bars-plot{gap:3px}.movo-app .wallet-spending-bar-column{grid-template-rows:64px 13px}.movo-app .wallet-spending-bar-track{height:64px;border-radius:5px}.movo-app .wallet-spending-bar-date{font-size:8px}.movo-app .wallet-balance-spending-divider{height:62px}}
+@media(prefers-reduced-motion:reduce){.movo-app .wallet-spending-bar-fill{transition:none}}
+/* Fixed-width billing-cycle selector; transaction type chips remain scrollable. */
+.movo-app .tx-chip-bar{min-width:0}
+.movo-app .tx-chip-bar>.chip-row{flex:1 1 0;width:0;min-width:0}
+.movo-app .tx-period-filter{position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 218px;width:218px;min-width:218px;max-width:218px;height:62px;padding:0 14px;margin:0 18px 0 0;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--text);box-shadow:var(--shadow-sm);overflow:hidden}
+.movo-app .tx-period-filter>.movo-icon{flex:none}
+.movo-app .tx-period-filter-value{flex:1;min-width:0;overflow:hidden;color:var(--text);font-size:15px;font-weight:650;white-space:nowrap;text-overflow:ellipsis}
+.movo-app .tx-period-filter select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;appearance:none;-webkit-appearance:none}
+@media(max-width:390px){.movo-app .tx-period-filter{flex-basis:184px;width:184px;min-width:184px;max-width:184px;height:56px;gap:8px;padding:0 11px;margin-right:14px}.movo-app .tx-period-filter-value{font-size:13px}}
+.movo-app .wallet-chip-bar>.wallet-add-button{background:var(--accent);color:var(--on-accent);border-color:transparent;box-shadow:0 5px 16px rgba(var(--accent-rgb),.22)}
+.movo-app .wallet-chip-bar>.wallet-add-button .movo-icon{color:var(--on-accent)}
+.movo-app .action-strip button:nth-child(2) .movo-icon{color:var(--accent)}
+
 /* Scheduled screen: adaptive layout, accessible contrast and provider logos. */
 .movo-app .scheduled-hero { grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr); background:var(--card-solid); color:var(--text); border:1px solid var(--line); padding:clamp(13px,3.8vw,18px); }
 .movo-app .scheduled-hero-count { grid-template-columns:minmax(0,1fr) auto; gap:clamp(6px,2vw,12px); }
