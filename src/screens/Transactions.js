@@ -62,7 +62,7 @@ export default function Transactions({ c }) {
     <RootHeader title={tr('Transactions')} headerActions={[
       { icon: 'search', label: tr('Search'), onClick: c.openSearch },
       { icon: 'transactionFilter', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }) },
-      { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense') },
+      { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense'), className: 'accent' },
     ]} />
     <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
