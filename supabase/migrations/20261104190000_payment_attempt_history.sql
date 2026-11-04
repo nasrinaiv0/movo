@@ -2,7 +2,7 @@
 create table if not exists public.payment_attempts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  source_type text not null check (source_type in ('scheduled','bill','subscription','loan','credit_card')),
+  source_type text not null check (source_type in ('scheduled','bill','subscription','loan','credit_card','receivable')),
   source_id text not null,
   due_date date not null,
   attempted_at timestamptz not null default now(),
