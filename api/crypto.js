@@ -1,24 +1,13 @@
 'use strict';
 
-const BASE = 'https://api-pro.coinpaprika.com/v1';
-const ALLOWED_QUOTES = new Set(['PHP','USD','EUR','GBP','JPY','AUD','CAD','SGD','CHF','CNY','HKD','NZD','KRW','INR','BTC','ETH']);
+const { safeQuote, safeCoinId, normalizeTicker } = require('../src/lib/cryptoMarket');
 
-function safeQuote(value) {
-  const quote = String(value || 'PHP').toUpperCase();
-  return ALLOWED_QUOTES.has(quote) ? quote : null;
-}
-function safeCoinId(value) {
-  return typeof value === 'string' && /^[a-z0-9]+-[a-z0-9-]{1,90}$/.test(value) ? value : null;
-}
+const BASE = 'https://api-pro.coinpaprika.com/v1';
+
 function safeDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const d = new Date(value + 'T00:00:00Z');
   return Number.isFinite(d.getTime()) && d.toISOString().slice(0, 10) === value ? value : null;
-}
-function number(value) {
-  if (value === null || value === undefined || typeof value === 'boolean') return null;
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 function originAllowed(req) {
   const origin = req.headers.origin;
@@ -36,21 +25,6 @@ function json(res, status, body) {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   return res.end(JSON.stringify(body));
 }
-function normalizeTicker(row, quote) {
-  const q = row && row.quotes && row.quotes[quote];
-  const price = number(q && q.price);
-  const updated = typeof row.last_updated === 'string' && Number.isFinite(Date.parse(row.last_updated))
-    ? new Date(row.last_updated).toISOString() : null;
-  if (!row || !safeCoinId(row.id) || typeof row.name !== 'string' || typeof row.symbol !== 'string' || price === null || !updated) return null;
-  return {
-    id: row.id, name: row.name.slice(0, 100), symbol: row.symbol.slice(0, 20).toUpperCase(),
-    rank: Number.isInteger(row.rank) && row.rank > 0 ? row.rank : null,
-    price, marketCap: number(q.market_cap), volume24h: number(q.volume_24h),
-    change24h: q.percent_change_24h !== null && q.percent_change_24h !== undefined && Number.isFinite(Number(q.percent_change_24h)) ? Number(q.percent_change_24h) : null,
-    circulatingSupply: number(row.circulating_supply), updatedAt: updated
-  };
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader('Vary', 'Origin');
   if (!originAllowed(req)) return json(res, 403, { error: 'origin_not_allowed' });
@@ -118,6 +92,3 @@ module.exports = async function handler(req, res) {
   }
 };
 
-module.exports.safeQuote = safeQuote;
-module.exports.safeCoinId = safeCoinId;
-module.exports.normalizeTicker = normalizeTicker;
