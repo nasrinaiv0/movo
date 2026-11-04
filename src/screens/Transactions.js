@@ -32,7 +32,7 @@ export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
   const currentCycle = monthKey(refDate);
   const selectedCycle = month === 'all' ? 'all' : (month || currentCycle);
-  const cycleLabel = selectedCycle === 'all' ? tr('All billing cycles') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
+  const cycleLabel = selectedCycle === 'all' ? tr('All') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
   /* Month-over-month indicators describe the current month only; older months show their totals alone. */
   const isCurrent = month === monthKey(refDate);
   const sorts = SORTS[txFilter];
@@ -49,9 +49,8 @@ export default function Transactions({ c }) {
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
     <label className="tx-period-filter" aria-label={tr('Filter by billing cycle')}>
-      <Icon name="sliders" size={19} />
       <span className="tx-period-filter-value">{cycleLabel}</span>
-      <Icon name="down" size={15} />
+      <Icon name="down" size={14} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
         <option value="all">{tr('All')}</option>
         {billingCycleOptions(months, currentCycle).slice(1).map(option => <option key={option.value} value={option.value}>{tr(option.label)}</option>)}
