@@ -4,7 +4,7 @@ import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
-import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation, reminderActionKey, isReminderActioned, reminderEventAllowsDisplay } from '../lib/paymentReminderCenter';
+import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation, reminderActionKey, isReminderActioned, reminderOccurrenceAllowsDisplay } from '../lib/paymentReminderCenter';
 import { creditCardPaymentSummary } from '../lib/creditCard';
 import { syncPaymentNotifications, inQuietHours, canSchedulePaymentNotifications } from '../lib/paymentNotifications';
 import { recordPaymentAttempt } from '../lib/paymentAttempts';
@@ -67,8 +67,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const allowed=Array.isArray(entry.item.reminder_days)?entry.item.reminder_days:(preferences.reminder_days||[0,1,3]);
       if(offset>0&&!allowed.includes(offset))return false;
       if(offset<0&&offset < -30)return false;
-      const previous=events.find(e=>e.channel==='in_app'&&e.source_type===entry.kind&&e.source_id===String(entry.item.id)&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
-      return reminderEventAllowsDisplay(previous);
+      return reminderOccurrenceAllowsDisplay(events,entry,Math.max(0,offset));
     })).sort((a,b)=>a.date.localeCompare(b.date));
     const queue=eligible.map(entry=>({...entry,reminderOffset:Math.max(0,daysUntil(entry.date))}));
     let notificationEvents=[...events,...Object.entries(localSnoozes).map(([key,until])=>{const [source_type,source_id,occurrence_date]=key.split(':');return {source_type,source_id,occurrence_date,reminder_offset:Math.max(0,daysUntil(occurrence_date)),channel:'push',status:'dismissed',snoozed_until:new Date(until).toISOString()};})];
