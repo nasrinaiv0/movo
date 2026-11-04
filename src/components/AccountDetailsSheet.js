@@ -60,9 +60,9 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [qrOpen]);
   const fmt = (value) => shown(show, money(value, currency));
-  const visual = account.account_type === 'card'
-    ? <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.walletView?.cardFormat === 'portrait' ? 'portrait' : 'landscape'} displayMode={prefs.cardDisplayModes?.[account.id] || 'details'} visibleFields={{ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[account.id] || {}) }} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
-    : <AccountTile a={account} show={show} style={styleFor(account, prefs.accountStyles || {})} size="preview" qrCode={qrCode} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />;
+  // Use the same institution-aware card artwork as Wallet for every account type.
+  // AccountTile's solid accent swatch made bank/e-wallet detail previews lose their real brand styling.
+  const visual = <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.walletView?.cardFormat === 'portrait' ? 'portrait' : 'landscape'} displayMode={prefs.cardDisplayModes?.[account.id] || 'details'} visibleFields={{ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[account.id] || {}) }} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
   const row = (label, value) => <div className="account-hub-metric" key={label}><span>{tr(label)}</span><strong>{value}</strong></div>;
   const cashRule = rules[account.id] || {};
   const cashbackTotal = [...autoCashback, ...manualCashback].reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
