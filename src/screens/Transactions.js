@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
-import { money, shown, monthRange, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
+import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { activityNetAmount } from '../lib/financeCalculations';
 
@@ -37,7 +37,7 @@ export default function Transactions({ c }) {
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const periodOptions = [{ value: 'all', label: 'All' }, ...months.map(value => ({
     value,
-    label: value === monthKey(new Date()) ? 'Present' : monthLabel(value).replace(/\\s+\\d{4}$/, ''),
+    label: value === monthKey(refDate) ? 'Present' : monthLabel(value).replace(/\\s+\\d{4}$/, ''),
   }))];
   const selectedPeriod = month || monthKey(refDate);
   const periodFilter = <label className="tx-period-filter">
@@ -59,7 +59,7 @@ export default function Transactions({ c }) {
         <div><div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
           {isCurrent && <Trend value={deltas.spent} chip />}</div>
-        <Bars values={monthStats.bars} startLabel={(month === 'all' ? tr('All') : monthLabel(month).split(' ')[0])} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
+        <Bars values={monthStats.bars} startLabel={(month === 'all' ? tr('All') : monthLabel(month).split(' ')[0])} endLabel={month === 'all' ? 'All' : `${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
       </section>
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
@@ -86,7 +86,7 @@ export default function Transactions({ c }) {
 
     {txFilter !== 'All' && <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />}
     {txFilter === 'All' ? <SectionTitle action={expanded ? tr('Show less') : tr('See All')} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
-      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? 'All' : month === monthKey(new Date()) ? 'Present' : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
+      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? 'All' : month === monthKey(refDate) ? 'Present' : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
 
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
