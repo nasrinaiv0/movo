@@ -31,7 +31,7 @@ import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMe
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification, pushGranted } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
-import { summarize as summarizeSubscriptions } from './lib/subscriptions';
+import { summarize as summarizeSubscriptions, billingDate } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
@@ -585,7 +585,17 @@ function App() {
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
         if (!editingId) celebrate();
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '' }); setSheet(null);
+      if (!editingId && type === 'expense' && form.subscriptionPaymentId) {
+        const paidSub = subscriptions.find(item => item.id === form.subscriptionPaymentId);
+        if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
+          const nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
+          if (nextDue) {
+            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at } : item));
+            notify(tr('Subscription payment recorded. Next billing date updated.'));
+          }
+        }
+      }
+      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '' }); setSheet(null);
     } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
     finally { setBusy(false); }
   };
@@ -767,7 +777,7 @@ function App() {
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
     setError('');
-    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), category: 'Subscriptions', occurred_at: today(), time: '', note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
