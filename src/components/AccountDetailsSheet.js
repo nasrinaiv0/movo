@@ -9,7 +9,7 @@ import { estimateCashback } from '../lib/cashback';
 import { listScheduledTransactions } from '../lib/scheduledTransactions';
 import { t as tr } from '../lib/i18n';
 
-const TABS = [['overview', 'Overview'], ['activity', 'Transactions'], ['connected', 'Connected'], ['more', 'More']];
+const TABS = [['overview', 'Account overview'], ['activity', 'Transactions'], ['connected', 'Connected items'], ['more', 'More']];
 
 export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], show = true, holder, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
   const [tab, setTab] = useState('overview');
@@ -51,31 +51,31 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   return <>
     <Sheet title={tr('Account details')} onClose={onClose} label={tr('Account details')} className="account-hub-sheet">
       <div className="account-hub-hero">{visual}</div>
-      <div className="account-hub-tabs" role="tablist" aria-label={tr('Account information')}>
+      <div className="account-hub-tabs" role="tablist" aria-label={tr('Account sections')}>
         {TABS.map(([key, label]) => <button type="button" role="tab" key={key} aria-selected={tab === key} className={tab === key ? 'active' : ''} onClick={() => setTab(key)}>{tr(label)}</button>)}
       </div>
       {tab === 'overview' && <>
         <div className="account-hub-metrics">
-          {info ? <>{row('Credit limit', fmt(info.limit))}{row('Spent / used', fmt(info.owed))}{row('Remaining credit', fmt(info.available))}</>
-            : row('Remaining balance', fmt(account.balance))}
+          {info ? <>{row('Credit limit', fmt(info.limit))}{row('Spent or used credit', fmt(info.owed))}{row('Remaining credit', fmt(info.available))}</>
+            : row('Current account balance', fmt(account.balance))}
           {row('Spent · Last 30 days', fmt(expenses.filter(item => Date.now() - new Date(item.date).getTime() <= 30 * 86400000).reduce((sum,item)=>sum+(Number(item.origAmount ?? item.amount)||0),0)))}
           {row('Transactions', String(relatedTransactions.length))}
         </div>
         <div className="account-hub-section">
           <h3>{tr('Recent activity')}</h3>
           {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
-          {!recentTransactions.length && <p className="empty">{tr('No transactions for this account yet.')}</p>}
+          {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
         </div>
       </>}
       {tab === 'activity' && <div className="account-hub-section">
-        <h3>{tr('All account transactions')}</h3>
+        <h3>{tr('Account transaction history')}</h3>
         {recentTransactions.map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
         {!recentTransactions.length && <p className="empty">{tr('No transactions for this account yet.')}</p>}
       </div>}
       {tab === 'connected' && <>
-        {account.account_type !== 'card' && <section className="account-hub-section"><h3>{tr('Connected cards')}</h3>
+        {account.account_type !== 'card' && <section className="account-hub-section"><h3>{tr('Cards connected to this account')}</h3>
           {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('No number')}</small></button>)}
-          {!linkedCards.length && <p className="empty">{tr('No cards are linked to this account yet.')}</p>}
+          {!linkedCards.length && <p className="empty">{tr('No cards connected to this account yet.')}</p>}
         </section>}
         <section className="account-hub-section"><h3>{tr('Automatic cashback')}</h3>
           {cashRule.enabled ? <>{row('Cashback rate', `${cashRule.rate || 0}%`)}{row('Maximum per transaction', cashRule.cap ? fmt(cashRule.cap) : tr('No limit'))}</> : <p className="empty">{tr('Automatic cashback is not enabled for this account.')}</p>}
@@ -84,21 +84,21 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         </section>
         <section className="account-hub-section"><h3>{tr('Scheduled payments')}</h3>
           {scheduled.map(item => <div className="account-hub-simple-row" key={item.id}><span>{item.title}<small>{item.scheduled_for} · {tr(item.status)}</small></span><b>{fmt(item.amount)}</b></div>)}
-          {scheduleReady && !scheduled.length && <p className="empty">{tr('No scheduled payments linked to this account.')}</p>}
-          {!scheduleReady && <p className="form-note">{tr('Loading scheduled payments…')}</p>}
+          {scheduleReady && !scheduled.length && <p className="empty">{tr('No scheduled payments are connected to this account.')}</p>}
+          {!scheduleReady && <p className="form-note">{tr('Retrieving scheduled payments…')}</p>}
         </section>
         <section className="account-hub-section"><h3>{tr('Subscriptions')}</h3>
-          {subscriptionRows.map(item => <div className="account-hub-simple-row" key={item.id}><span>{item.name}<small>{item.next || item.start || tr('Renewal date not set')}</small></span><b>{fmt(item.amount)}</b></div>)}
-          {!subscriptionRows.length && <p className="empty">{tr('No subscriptions are linked to this account.')}</p>}
+          {subscriptionRows.map(item => <div className="account-hub-simple-row" key={item.id}><span>{item.name}<small>{item.next || item.start || tr('Renewal date unavailable')}</small></span><b>{fmt(item.amount)}</b></div>)}
+          {!subscriptionRows.length && <p className="empty">{tr('No subscriptions are assigned to this account.')}</p>}
         </section>
       </>}
       {tab === 'more' && <>
         <div className="detail-list">
-          {row('Account name', account.institution_name || account.name)}
+          {row('Account display name', account.institution_name || account.name)}
           {row('Account type', tr(account.account_type === 'e_wallet' ? 'E-wallet' : account.account_type === 'card' ? (account.cardKind === 'credit' ? 'Credit card' : 'Debit card') : 'Bank account'))}
           {row('Currency', currency)}
           {row('Number', account.mask ? `•••• ${account.mask}` : '—')}
-          {linkedParent && row('Linked account', linkedParent.institution_name || linkedParent.name)}
+          {linkedParent && row('Associated account', linkedParent.institution_name || linkedParent.name)}
           {info && row('Credit utilization', `${info.usedPercent}%`)}
         </div>
       </>}
@@ -108,10 +108,10 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         <button type="button" className="primary-button" onClick={onAddTransaction}><Icon name="plus" size={16}/>{tr('Add transaction')}</button>
       </div>
     </Sheet>
-    {qrOpen && qrCode && <div className="account-qr-lightbox" role="dialog" aria-modal="true" aria-label={tr('Enlarged QR code')} onClick={() => setQrOpen(false)}>
-      <button type="button" className="account-qr-close" aria-label={tr('Close QR code')} onClick={() => setQrOpen(false)}><Icon name="close" size={22}/></button>
-      <img src={qrCode} alt={tr('Enlarged account QR code')} onClick={event => event.stopPropagation()} />
-      <p>{tr('Scan this QR code')}</p>
+    {qrOpen && qrCode && <div className="account-qr-lightbox" role="dialog" aria-modal="true" aria-label={tr('QR code enlarged')} onClick={() => setQrOpen(false)}>
+      <button type="button" className="account-qr-close" aria-label={tr('Close enlarged QR code')} onClick={() => setQrOpen(false)}><Icon name="close" size={22}/></button>
+      <img src={qrCode} alt={tr('Account QR code enlarged')} onClick={event => event.stopPropagation()} />
+      <p>{tr('Scan this account QR code')}</p>
     </div>}
   </>;
 }
