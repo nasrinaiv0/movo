@@ -67,7 +67,8 @@ test('plans created in Budgets & Plans are included with savings goals in the pl
     today,
   });
   expect(s.plans).toEqual({ count: 1, saved: 10000, target: 50000 });
-  expect(s.goals).toEqual({ count: 2, saved: 11000, target: 54000, percent: expect.closeTo(20.37037, 4) });
+  expect(s.goals).toMatchObject({ count: 2, saved: 11000, target: 54000 });
+  expect(s.goals.percent).toBeCloseTo(20.37037, 4);
 });
 
 
