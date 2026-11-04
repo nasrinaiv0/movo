@@ -4799,3 +4799,31 @@ button.account-tile:active { transform: scale(.98); }
 @media (prefers-reduced-motion:reduce) {
   .movo-app .wallet-spending-bar-fill { transition:none; }
 }
+
+
+/* Transactions billing-cycle selector stays fixed while transaction-type chips scroll. */
+.movo-app .tx-chip-bar { min-width:0; }
+.movo-app .tx-chip-bar > .chip-row { flex:1 1 0; width:0; min-width:0; }
+.movo-app .tx-period-filter {
+  position:relative; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex:0 0 218px; width:218px; min-width:218px; max-width:218px; height:62px;
+  padding:0 14px; margin:0 18px 14px 0; border:1px solid var(--line);
+  border-radius:999px; background:var(--card); color:var(--text);
+  box-shadow:var(--shadow-sm); overflow:hidden;
+}
+.movo-app .tx-period-filter > .movo-icon { flex:none; }
+.movo-app .tx-period-filter-value {
+  flex:1; min-width:0; overflow:hidden; color:var(--text); font-size:15px;
+  font-weight:650; white-space:nowrap; text-overflow:ellipsis;
+}
+.movo-app .tx-period-filter select {
+  position:absolute; inset:0; width:100%; height:100%; opacity:0;
+  cursor:pointer; appearance:none; -webkit-appearance:none;
+}
+@media (max-width:390px) {
+  .movo-app .tx-period-filter {
+    flex-basis:184px; width:184px; min-width:184px; max-width:184px;
+    height:56px; gap:8px; padding:0 11px; margin-right:14px;
+  }
+  .movo-app .tx-period-filter-value { font-size:13px; }
+}
