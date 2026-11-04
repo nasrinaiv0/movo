@@ -769,12 +769,12 @@ function App() {
       if (cloudMode && session?.user) {
         if (editingId) {
           const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
-          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId); await saveQrCode(editingId);
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(editingId); else saveQrCode(editingId);
           const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[editingId] = linkedBankId; else delete nextLinks[editingId]; setPref('cardBankLinks', nextLinks);
           notify(tr('Account updated in your MOVO account.'));
         } else {
           const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
-          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id); await saveQrCode(a.id);
+          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(a.id); else saveQrCode(a.id);
           if (linkedBankId) setPref('cardBankLinks', { ...(prefs.cardBankLinks || {}), [a.id]: linkedBankId });
           notify(tr('Account added to your signed-in MOVO account.'));
         }
@@ -789,7 +789,7 @@ function App() {
           currency, opening_balance: Math.round(openingBalance * 100) / 100,
           balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
-        saveStyle(a.id); await saveQrCode(a.id);
+        saveStyle(a.id); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(a.id); else saveQrCode(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[a.id] = linkedBankId; else delete nextLinks[a.id]; setPref('cardBankLinks', nextLinks);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
@@ -876,10 +876,11 @@ function App() {
     setBusy(true); setError('');
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
-      await clearLocalAccountQr();
+      const qrCleanup = clearLocalAccountQr().catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
+      await qrCleanup;
       notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
     finally { setBusy(false); }
