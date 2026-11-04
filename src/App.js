@@ -34,7 +34,7 @@ import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMe
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification, pushGranted } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
-import { summarize as summarizeSubscriptions, billingDate } from './lib/subscriptions';
+import { summarize as summarizeSubscriptions, billingDate, subscriptionPaymentAccountId } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
@@ -865,10 +865,9 @@ function App() {
   };
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
-    const linkedAccountId = sub.accountId || sub.account_id || '';
-    const paymentAccount = accountsView.find(account => account.id === linkedAccountId && !account.is_archived && (['bank', 'e_wallet'].includes(account.account_type) || (account.account_type === 'card' && ['credit', 'debit'].includes(account.cardKind))));
+    const paymentAccountId = subscriptionPaymentAccountId(sub, accountsView);
     setError('');
-    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: paymentAccount?.id || '', category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: paymentAccountId, category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
