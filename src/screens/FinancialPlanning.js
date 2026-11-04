@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
+import BrandLogo from '../components/BrandLogo';
 import { AccountOptions } from '../components/AccountPicker';
 import { Chips, Money, SectionTitle, Sheet, SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
@@ -7,6 +8,9 @@ import { t as tr } from '../lib/i18n';
 import { allocateToGoal, createGoal, createLoan, createReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation } from '../lib/obligationsRepository';
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
+import { creditCardPlanningMetrics } from '../lib/creditCard';
+import { institutionLogoUrl } from '../lib/institutions';
+import { convert } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
 import BillsPanel from '../components/BillsPanel';
 
@@ -111,21 +115,29 @@ export default function FinancialPlanning({ c }) {
       <SectionTitle>{tr('Credit cards')}</SectionTitle>
       {!creditCards.length ? <div className="budget-empty"><Icon name="credit-card" size={20} /><span><strong>{tr('No credit cards added yet.')}</strong><small>{tr('Add a credit card in Wallet to track its balance, due date and payments.')}</small></span></div> : creditCards.map(card => {
         const style = cardStyles[card.id] || {};
-        const owed = creditCardOutstanding(card);
         const dueDate = style.paymentDueDate || '';
         const payments = cardPayments[card.id] || [];
-        const paidMonths = new Set(payments.map(x => x.month)).size;
+        const metrics = creditCardPlanningMetrics({ card, transactions: c.txs || [], payments, annualInterestRate: style.annualInterestRate, convertAmount: (amount, from, to) => convert(amount, from, to, c.fx?.rates) });
+        const paidMonths = metrics.monthsPaid;
         const today = new Date().toISOString().slice(0, 10);
-        const overdue = dueDate && dueDate < today && owed > 0;
+        const overdue = dueDate && dueDate < today && metrics.outstandingAfterPayments > 0;
+        const institution = card.institution_name || card.name;
+        const logoUrl = institutionLogoUrl(institution, { size: 64 });
         return <article className="card fp-goal fp-credit-card" key={card.id}>
-          <div className="fp-goal-head"><span className="stat-icon tone-red"><Icon name="credit-card" size={17} /></span><span className="fp-main"><strong>{card.institution_name || card.name}</strong><small>{tr('•••• {last4}', { last4: card.mask || '----' })}</small></span><span className="fp-amount"><b>{cash(owed, card.currency)}</b><small>{tr('Outstanding')}</small></span></div>
-          <div className="fp-credit-card-stats"><span><b>{dueDate ? formatDate(dueDate) : '—'}</b><small>{tr('Payment due')}</small></span><span><b>{paidMonths}</b><small>{tr('Months paid')}</small></span><span><b>{payments.length}</b><small>{tr('Payments logged')}</small></span></div>
+          <div className="fp-goal-head"><BrandLogo src={logoUrl} size={36} className="fp-credit-card-logo" fallback={<span className="stat-icon tone-red"><Icon name="credit-card" size={17} /></span>} /><span className="fp-main"><strong>{institution}</strong><small>{tr('•••• {last4}', { last4: card.mask || '----' })}</small></span><span className="fp-amount"><b>{cash(metrics.outstandingAfterPayments, card.currency)}</b><small>{tr('Outstanding after payments')}</small></span></div>
+          <div className="fp-credit-card-metrics">
+            <div><small>{tr('Amount Spent')}</small><b>{cash(metrics.amountSpent, card.currency)}</b></div>
+            <div><small>{tr('Amount After Interest')}</small><b>{cash(metrics.amountAfterInterest, card.currency)}</b><span>{tr('Includes estimated monthly interest')}</span></div>
+            <div className="fp-credit-utilization"><small>{tr('Spent / Limit')}</small><b>{metrics.spentLimitPercent === null ? '—' : `${metrics.spentLimitPercent.toFixed(1)}%`}</b>{metrics.limit > 0 ? <><div className="fp-credit-utilization-track"><span style={{ width: `${Math.min(100, Math.max(0, metrics.spentLimitPercent))}%` }} /></div><span>{cash(metrics.amountSpent, card.currency)} / {cash(metrics.limit, card.currency)}</span></> : <span>{tr('Set a credit limit in Wallet')}</span>}</div>
+          </div>
+          <div className="fp-credit-card-stats"><span><b>{dueDate ? formatDate(dueDate) : '—'}</b><small>{tr('Payment due')}</small></span><span><b>{paidMonths}</b><small>{tr('Months paid')}</small></span><span><b>{metrics.paymentCount}</b><small>{tr('Payments logged')}</small></span></div>
           {overdue && <p className="app-alert">{tr('Payment may be overdue. Confirm the latest statement.')}</p>}
           <div className="form-grid fp-credit-card-fields"><label>{tr('Payment due date')}<input type="date" value={dueDate} onChange={e => saveCardStyle(card.id, { paymentDueDate: e.target.value })} /></label><label>{tr('Minimum due')}<input type="number" min="0" step="0.01" value={style.minimumDue ?? ''} placeholder="0.00" onChange={e => saveCardStyle(card.id, { minimumDue: e.target.value })} /></label></div>
-          <div className="form-grid fp-credit-card-fields"><label>{tr('Statement balance')}<input type="number" min="0" step="0.01" value={style.statementBalance ?? ''} placeholder={String(owed)} onChange={e => saveCardStyle(card.id, { statementBalance: e.target.value })} /></label><label>{tr('Billing day')}<input type="number" min="1" max="31" value={style.billingDay ?? ''} placeholder="—" onChange={e => saveCardStyle(card.id, { billingDay: e.target.value })} /></label></div>
-          <button type="button" className="secondary-button wide-button" onClick={() => setCardDraft({ id: card.id, name: card.institution_name || card.name, amount: '', date: today, month: today.slice(0,7) })}>{tr('Record payment')}</button>
-          {payments.length > 0 && <ul className="fp-allocs">{payments.slice(-6).reverse().map((payment,i) => <li key={payment.id || i}><span>{payment.month} · {payment.date}</span><b>{cash(payment.amount, card.currency)}</b></li>)}</ul>}
-          <p className="form-note">{tr('Payment logs track the months and amounts you report. They do not change your card balance or create a bank transaction.')}</p>
+          <div className="form-grid fp-credit-card-fields"><label>{tr('Statement balance')}<input type="number" min="0" step="0.01" value={style.statementBalance ?? ''} placeholder={String(metrics.outstandingAfterPayments)} onChange={e => saveCardStyle(card.id, { statementBalance: e.target.value })} /></label><label>{tr('Billing day')}<input type="number" min="1" max="31" value={style.billingDay ?? ''} placeholder="—" onChange={e => saveCardStyle(card.id, { billingDay: e.target.value })} /></label></div>
+          <div className="fp-credit-card-rate"><label>{tr('Annual interest rate (%)')}<input type="number" min="0" max="100" step="0.01" value={style.annualInterestRate ?? ''} placeholder="e.g. 24" onChange={e => saveCardStyle(card.id, { annualInterestRate: e.target.value })} /></label><small>{tr('Estimated monthly interest = outstanding × APR ÷ 12. Actual issuer interest may differ.')}</small></div>
+          <button type="button" className="secondary-button wide-button" onClick={() => setCardDraft({ id: card.id, name: institution, amount: '', date: today, month: today.slice(0,7) })}>{tr('Record payment')}</button>
+          {metrics.paymentCount > 0 && <ul className="fp-allocs">{payments.slice(-6).reverse().map((payment,i) => <li key={payment.id || i}><span>{payment.month} · {payment.date}</span><b>{cash(payment.amount, card.currency)}</b></li>)}</ul>}
+          <p className="form-note">{tr('Recorded payments reduce the displayed outstanding estimate. They do not create a bank transaction or edit the card ledger balance.')}</p>
         </article>;
       })}
     </>}
