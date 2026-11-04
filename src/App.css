@@ -3142,6 +3142,24 @@ button.account-tile:active { transform: scale(.98); }
 .ccx-caption { font-size: 2.3cqw; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
 .ccx-holder { font-size: 2.6cqw; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ccx-balance { font-size: 5.8cqw; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ccx-credit-usage { display:grid; gap:1.7cqw; width:min(66cqw,100%); min-width:0; }
+.ccx-credit-values { display:flex; align-items:flex-end; gap:4cqw; min-width:0; }
+.ccx-credit-values span { display:grid; gap:.45cqw; min-width:0; }
+.ccx-credit-values small { font-size:2.35cqw; font-weight:700; letter-spacing:.07em; text-transform:uppercase; opacity:.76; }
+.ccx-credit-values b { font-size:4.25cqw; line-height:1.08; font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ccx-credit-limit b { font-size:3.55cqw; opacity:.9; }
+.ccx-credit-track { height:1.65cqw; min-height:4px; max-height:9px; width:100%; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.12); }
+.ccx-credit-fill { display:block; height:100%; border-radius:inherit; background:#42c987; transition:width .25s ease,background-color .25s ease; }
+.usage-medium .ccx-credit-fill { background:#f5b942; }
+.usage-high .ccx-credit-fill { background:#ff626b; }
+.credit-card.ccx.ink-dark .ccx-credit-track { background:rgba(0,0,0,.14); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+.credit-card.ccx.orientation-portrait .ccx-credit-usage { width:min(76cqw,100%); gap:2.3cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-values { gap:3cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-values small { font-size:3.1cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-values b { font-size:5.4cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-limit b { font-size:4.6cqw; }
+.credit-card.ccx.orientation-portrait .ccx-credit-track { height:2.2cqw; }
+
 .ccx-net { flex: none; display: inline-flex; align-items: center; font-size: 6.6cqw; font-weight: 900; font-style: italic; letter-spacing: -.03em; line-height: 1; }
 .ccx-net.net-mastercard { position: relative; width: 12.6cqw; height: 8cqw; }
 .ccx-net.net-mastercard i { position: absolute; top: 0; width: 8cqw; height: 8cqw; border-radius: 50%; background: #eb001b; }
@@ -4551,6 +4569,42 @@ button.account-tile:active { transform: scale(.98); }
   box-shadow: none !important;
 }
 
+
+/* Cashback: compact, responsive provider rules and inputs. */
+.movo-app .cashback-total { align-items:flex-start; flex-direction:column; gap:5px; padding:14px 16px; }
+.movo-app .cashback-total .balance-amount { margin:2px 0 0; font-size:25px; }
+.movo-app .cashback-total .form-note { line-height:1.4; }
+.movo-app .cashback-intro { margin:-2px 2px 12px; max-width:38em; line-height:1.45; }
+.movo-app .cashback-rule-list { display:grid; gap:9px; }
+.movo-app .cashback-rule { min-width:0; padding:12px 13px; margin:0; gap:10px; border-radius:18px; }
+.movo-app .cashback-rule .fp-goal-head { gap:10px; }
+.movo-app .cashback-rule .fp-goal-head .stat-icon { width:36px; height:36px; border-radius:12px; }
+.movo-app .cashback-rule .fp-main strong { font-size:14px; }
+.movo-app .cashback-rule .fp-main small { font-size:11px; }
+.movo-app .cashback-rule .legal-disclosure-check { flex:none; display:inline-flex; align-items:center; gap:6px; min-height:34px; padding:0 2px 0 8px; font-size:12px; font-weight:600; }
+.movo-app .cashback-rule .legal-disclosure-check input { width:17px; height:17px; margin:0; accent-color:var(--accent); }
+.movo-app .cashback-rule-fields { display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr); gap:10px; min-width:0; }
+.movo-app .cashback-field { display:grid; align-content:start; gap:5px; min-width:0; color:var(--muted); font-size:11px; line-height:1.25; font-weight:600; }
+.movo-app .cashback-input { display:block; width:100%; min-width:0; height:40px; padding:0 10px; border:1px solid var(--line); border-radius:11px; outline:none; background:var(--field); color:var(--text); font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; appearance:none; -webkit-appearance:none; }
+.movo-app .cashback-input::placeholder { color:var(--muted); opacity:.7; font-size:12px; font-weight:400; }
+.movo-app .cashback-input:focus { border-color:rgba(var(--accent-rgb),.55); box-shadow:0 0 0 3px rgba(var(--accent-rgb),.1); }
+.movo-app .cashback-hint { font-size:10.5px; line-height:1.3; }
+.movo-app .cashback-rule .fp-goal-head, .movo-app .cashback-rule-fields, .movo-app .cashback-hint { max-width:100%; }
+.movo-app .cashback-rule .fp-goal-head > * { min-width:0; }
+.movo-app .cashback-rule .fp-main { overflow:hidden; }
+.movo-app .cashback-rule .legal-disclosure-check span { white-space:nowrap; }
+.movo-app .cashback-total + .section-title { margin-top:18px; }
+.movo-app .cashback-rule + .section-title { margin-top:18px; }
+@media (max-width:360px) {
+ .movo-app .cashback-rule { padding:11px; }
+ .movo-app .cashback-rule-fields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+ .movo-app .cashback-field { font-size:10.5px; }
+ .movo-app .cashback-input { height:38px; padding:0 8px; }
+ .movo-app .cashback-rule .fp-goal-head { gap:8px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .movo-app .cashback-input { transition:none; }
+}
 
 /* Scheduled screen: compact summary, clear segmented view switcher and fluid rows. */
 .movo-app .scheduled-hero {
