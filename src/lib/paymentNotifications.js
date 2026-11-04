@@ -8,17 +8,23 @@ const dateAtLocalTime = (date, time) => {
   const value = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour || 0, minute || 0, 0, 0);
   return value;
 };
-export const inQuietHours = (date, start, end) => {
+export const inQuietHours = (date, start, end, timeZone) => {
   if (!start || !end) return false;
-  const toMinutes = value => { const [h,m] = value.split(':').map(Number); return h*60+m; };
-  const now = date.getHours()*60+date.getMinutes(), a=toMinutes(start), b=toMinutes(end);
-  return a===b ? false : a<b ? now>=a&&now<b : now>=a||now<b;
+  let hour=date.getHours(),minute=date.getMinutes();
+  if(timeZone){
+    try{
+      const parts=new Intl.DateTimeFormat('en-US',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(date);
+      hour=Number(parts.find(x=>x.type==='hour')?.value??hour);
+      minute=Number(parts.find(x=>x.type==='minute')?.value??minute);
+    }catch{/* Fall back to the device timezone if the saved timezone is invalid. */}
+  }
+  const toMinutes=value=>{const [h,m]=value.split(':').map(Number);return h*60+m;};
+  const now=hour*60+minute,a=toMinutes(start),b=toMinutes(end);
+  return a===b?false:a<b?now>=a&&now<b:now>=a||now<b;
 };
-export const moveOutOfQuietHours = (date, start, end) => {
-  if (!inQuietHours(date,start,end)) return date;
-  const [h,m]=String(end).split(':').map(Number);
-  const next=new Date(date); next.setHours(h,m,0,0);
-  if (next<=date) next.setDate(next.getDate()+1);
+export const moveOutOfQuietHours = (date,start,end,timeZone) => {
+  let next=new Date(date);
+  for(let i=0;i<24*60&&inQuietHours(next,start,end,timeZone);i++)next=new Date(next.getTime()+60000);
   return next;
 };
 const stableId = value => {
@@ -78,7 +84,7 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       if(dueStart<=todayStart&&Number(offset)>0)continue;
       if(dueStart<new Date(todayStart.getTime()-MAX_DAYS*86400000))continue;
       const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
-      let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end);
+      let when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end,preferences.timezone);
       if(when<=today)when=moveOutOfQuietHours(new Date(today.getTime()+60000),preferences.quiet_start,preferences.quiet_end);
       if(when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
       const previous=events.find(event=>event.channel==='push'&&event.source_type===type&&event.source_id===String(item.id)&&event.occurrence_date===date&&(Number(event.reminder_offset)===Number(offset)||(event.status==='dismissed'&&event.snoozed_until&&new Date(event.snoozed_until)>today)));
