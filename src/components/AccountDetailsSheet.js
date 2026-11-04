@@ -11,13 +11,14 @@ import { t as tr } from '../lib/i18n';
 
 const TABS = [['overview', 'Account overview'], ['activity', 'Transactions'], ['connected', 'Connected items'], ['more', 'More']];
 
-export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], show = true, holder, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
+export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], show = true, holder, base = 'PHP', qrCodeDisplay = '', canEdit = true, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
   const [tab, setTab] = useState('overview');
   const [qrOpen, setQrOpen] = useState(false);
   const [scheduled, setScheduled] = useState([]);
   const [scheduleReady, setScheduleReady] = useState(false);
   const currency = account.currency || 'PHP';
-  const qrCode = prefs.accountQrCodes?.[account.id] || '';
+  const storedQr = prefs.accountQrCodes?.[account.id] || '';
+  const qrCode = qrCodeDisplay || (typeof storedQr === 'string' && storedQr.startsWith('data:image/png;base64,') ? storedQr : '');
   const cardNetwork = prefs.cardNetworks?.[account.id] || account.cardNetwork || '';
   const cardStyleId = prefs.cardStyles?.[account.id] || '';
   const linkedCards = useMemo(() => accounts.filter(item => item.account_type === 'card' && item.id !== account.id && (
@@ -30,6 +31,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const relatedTransactions = useMemo(() => transactions.filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id), [transactions, account.id]);
   const recentTransactions = relatedTransactions.slice(0, 30);
   const expenses = relatedTransactions.filter(item => item.type === 'expense' || item.transaction_type === 'expense');
+  const recentSpend = expenses.filter(item => { const timestamp = Date.parse(item.date || item.occurred_at || ''); const age = Date.now() - timestamp; return Number.isFinite(timestamp) && age >= 0 && age <= 30 * 86400000; }).reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
   const info = creditInfo(account);
   const rules = prefs.cashbackRules || {};
   const autoCashback = useMemo(() => estimateCashback(transactions, accounts, rules).filter(item => item.accountId === account.id), [transactions, accounts, rules, account.id]);
@@ -37,9 +39,17 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const subscriptionRows = subscriptions.filter(item => [item.accountId, item.account_id, item.paymentAccountId, item.payment_account_id].includes(account.id));
   useEffect(() => {
     let active = true;
+    setScheduleReady(false);
+    setScheduled([]);
     listScheduledTransactions().then(rows => { if (active) setScheduled((rows || []).filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id)); }).catch(() => { if (active) setScheduled([]); }).finally(() => { if (active) setScheduleReady(true); });
     return () => { active = false; };
   }, [account.id]);
+  useEffect(() => {
+    if (!qrOpen) return undefined;
+    const onKeyDown = event => { if (event.key === 'Escape') setQrOpen(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [qrOpen]);
   const fmt = (value) => shown(show, money(value, currency));
   const visual = account.account_type === 'card'
     ? <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.walletView?.cardFormat === 'portrait' ? 'portrait' : 'landscape'} displayMode={prefs.cardDisplayModes?.[account.id] || 'details'} visibleFields={{ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[account.id] || {}) }} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
@@ -58,7 +68,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         <div className="account-hub-metrics">
           {info ? <>{row('Credit limit', fmt(info.limit))}{row('Spent or used credit', fmt(info.owed))}{row('Remaining credit', fmt(info.available))}</>
             : row('Current account balance', fmt(account.balance))}
-          {row('Spent · Last 30 days', fmt(expenses.filter(item => Date.now() - new Date(item.date).getTime() <= 30 * 86400000).reduce((sum,item)=>sum+(Number(item.origAmount ?? item.amount)||0),0)))}
+          {row('Spent · Last 30 days', shown(show, money(recentSpend, base)))}
           {row('Transactions', String(relatedTransactions.length))}
         </div>
         <div className="account-hub-section">
@@ -103,8 +113,10 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         </div>
       </>}
       <div className="account-hub-actions">
-        <button type="button" className="secondary-button" onClick={onEdit}><Icon name="edit" size={16}/>{tr('Edit account')}</button>
-        <button type="button" className="danger-button" onClick={onArchive}><Icon name="archive" size={16}/>{tr('Archive account')}</button>
+        {canEdit && <>
+          <button type="button" className="secondary-button" onClick={onEdit}><Icon name="edit" size={16}/>{tr('Edit account')}</button>
+          <button type="button" className="danger-button" onClick={onArchive}><Icon name="archive" size={16}/>{tr('Archive account')}</button>
+        </>}
         <button type="button" className="primary-button" onClick={onAddTransaction}><Icon name="plus" size={16}/>{tr('Add transaction')}</button>
       </div>
     </Sheet>
