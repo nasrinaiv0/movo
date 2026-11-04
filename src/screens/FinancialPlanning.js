@@ -281,10 +281,15 @@ export default function FinancialPlanning({ c }) {
         if (amount > Math.max(0, Number(form.plan?.target) - Number(form.plan?.saved)) + 0.000001) { setError(tr('Allocation cannot exceed the remaining plan amount.')); return; }
         const account = p.accounts.find(item => item.id === form.account_id && item.currency === form.currency && ['bank', 'e_wallet', 'cash'].includes(item.account_type));
         if (!account) { setError(tr('Choose a valid account in the plan currency.')); return; }
-        const alreadyReserved = [
-          ...live.filter(item => item.account_id === account.id),
-          ...plans.flatMap(item => (Array.isArray(item.fundingAllocations) ? item.fundingAllocations : []).filter(allocation => allocation.status !== 'released' && allocation.account_id === account.id)),
-        ].reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        const goalReserved = live
+          .filter(item => item.account_id === account.id)
+          .reduce((sum, item) => sum + (c.toBase ? c.toBase(Number(item.amount) || 0, item.currency || base) : (Number(item.amount) || 0)), 0);
+        // App-normalized plan allocations and account balances are already in the user's base currency.
+        const planReserved = plans
+          .flatMap(item => Array.isArray(item.fundingAllocations) ? item.fundingAllocations : [])
+          .filter(item => item.status !== 'released' && item.account_id === account.id)
+          .reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+        const alreadyReserved = goalReserved + planReserved;
         if (amount + alreadyReserved > Math.max(0, Number(account.balance) || 0) + 0.000001) { setError(tr('Allocation exceeds the unreserved account balance.')); return; }
         const allocation = { id: window.crypto?.randomUUID?.() || `plan-allocation-${Date.now()}`, account_id: account.id, account_type: account.account_type, amount, currency: account.currency || form.currency, status: 'allocated', created_at: new Date().toISOString(), note: String(form.note || '').trim().slice(0, 500) };
         const nextPlans = rawPlans.map(item => String(item.id) === String(form.plan_id)
