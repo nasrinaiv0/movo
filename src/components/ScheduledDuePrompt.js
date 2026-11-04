@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Sheet } from './ui';
 import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
-import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation } from '../lib/paymentReminderCenter';
+import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation, reminderActionKey, isReminderActioned } from '../lib/paymentReminderCenter';
 import { syncPaymentNotifications, inQuietHours, canSchedulePaymentNotifications } from '../lib/paymentNotifications';
 import { recordPaymentAttempt } from '../lib/paymentAttempts';
 import { listLoans, listReceivables, recordLoanEvent, recordReceivableEvent } from '../lib/obligationsRepository';
@@ -23,6 +23,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [attemptNote,setAttemptNote]=useState('');
   const [splits,setSplits]=useState([]);
   const [localSnoozes,setLocalSnoozes]=useState(()=>{try{return JSON.parse(window.localStorage.getItem('movo.localPaymentSnoozes.v1')||'{}');}catch{return {};}});
+  const [localActions,setLocalActions]=useState(()=>{try{return JSON.parse(window.localStorage.getItem('movo.localPaymentReminderActions.v1')||'{}');}catch{return {};}});
+  const dismissedThisSession=useRef(new Set());
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = useCallback(async (markShown=true) => {
     const date=today();
@@ -50,12 +52,14 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         return {kind:'credit_card',item:{...card,title:card.institution_name||card.name,amount:Number(style.minimumDue)||owed,owed,currency:card.currency||'PHP'},date:style.paymentDueDate||''};
       }).filter(x=>x.date&&Number(x.item.owed)>0);
     }
-    const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s.start||'')).map(s=>({kind:'subscription',item:s,date:s.start}));
+    const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s.next||s.next_date||s.start||'')).map(s=>({kind:'subscription',item:s,date:s.next||s.next_date||s.start}));
     const candidates=[...schedulesDue,...billsDue,...subscriptionsDue,...loansDue,...receivablesDue,...cardsDue];
     const daysUntil=value=>Math.floor((new Date(value+'T12:00:00Z').getTime()-new Date(date+'T12:00:00Z').getTime())/86400000);
     const quietNow=inQuietHours(new Date(),preferences.quiet_start,preferences.quiet_end,preferences.timezone);
     const eligible=(preferences.enabled===false||quietNow?[]:candidates.filter(entry=>{
-      if((localSnoozes[entry.kind+':'+entry.item.id+':'+entry.date]||0)>Date.now())return false;
+      const actionKey=reminderActionKey(entry);
+      if(isReminderActioned(entry,localActions)||dismissedThisSession.current.has(actionKey))return false;
+      if((localSnoozes[actionKey]||0)>Date.now())return false;
       const offset=daysUntil(entry.date);
       const allowed=Array.isArray(entry.item.reminder_days)?entry.item.reminder_days:(preferences.reminder_days||[0,1,3]);
       if(offset>0&&!allowed.includes(offset))return false;
@@ -79,7 +83,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),preferences,events:notificationEvents,
     }).catch(()=>null);
     return queue;
-  },[session?.user?.id,subscriptions,accountsView,cardStyles,localSnoozes]);
+  },[session?.user?.id,subscriptions,accountsView,cardStyles,localSnoozes,localActions]);
   const setActive = useCallback(next => {
     setEntry(next||null);
     const item=next?.item;
@@ -104,7 +108,20 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const interval=window.setInterval(refresh,60000);
     return()=>{live=false;window.clearInterval(interval);window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
   },[loadDue,setActive,entry]);
-  const close=async()=>{ if(entry){const until=new Date(Date.now()+86400000).toISOString();const localKey=entry.kind+':'+entry.item.id+':'+entry.date;setLocalSnoozes(current=>{const next={...current,[localKey]:Date.now()+86400000};try{window.localStorage.setItem('movo.localPaymentSnoozes.v1',JSON.stringify(next));}catch{}return next;});const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));if(session?.user?.id){try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset,channel:'push'},until);await loadDue(false).catch(()=>null);}catch{/* Keep the prompt dismissible while offline. */}}} setActive(null); };
+  const close=()=>{if(entry)dismissedThisSession.current.add(reminderActionKey(entry));setActive(null);};
+  const skip=async()=>{
+    if(!entry)return;
+    const current=entry;const key=reminderActionKey(current);
+    const offset=Math.max(0,Math.floor((new Date(`${current.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));
+    setBusy(true);setError('');
+    try{
+      if(session?.user?.id)await recordReminderEvent(session.user.id,{source_type:current.kind,source_id:String(current.item.id),occurrence_date:current.date,reminder_offset:offset,status:'dismissed'});
+      else{const next={...localActions,[key]:{status:'skipped',at:new Date().toISOString()}};window.localStorage.setItem('movo.localPaymentReminderActions.v1',JSON.stringify(next));setLocalActions(next);}
+      dismissedThisSession.current.add(key);
+      const queue=await loadDue();setActive(queue[0]||null);
+    }catch(err){setError(err.message||tr('Could not skip this reminder. Please try again.'));}
+    finally{setBusy(false);}
+  };
   const markIssue=async()=>{
     if(!entry||!session?.user?.id)return;
     setBusy(true);setError('');
@@ -123,7 +140,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   };
   const log=async event=>{
     event.preventDefault();if(!entry)return;
-    if(entry.kind==='subscription'){onSubscriptionLog?.(entry.item);setActive(null);return;}
+    if(entry.kind==='subscription'){dismissedThisSession.current.add(reminderActionKey(entry));onSubscriptionLog?.(entry.item);setActive(null);return;}
     setBusy(true);setError('');
     let loggedAmount=Number(amount||item.amount||0);
     let loggedAccountId=account||null;
@@ -171,7 +188,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const suggested=choices.filter(a=>Number(a.balance||0)>=Number(amount||item.amount||0)).sort((a,b)=>Number(b.balance||0)-Number(a.balance||0))[0];
   const title=entry.kind==='scheduled'?'Scheduled transaction due':entry.kind==='bill'?'Bill payment due':entry.kind==='subscription'?'Subscription renewal due':entry.kind==='loan'?'Loan payment due':entry.kind==='receivable'?'Collection due':'Credit card payment due';
   const description=entry.kind==='bill'?(entry.bill?.name||tr('Bill')):item.title||item.name;
-  return <Sheet title={tr(title)} subtitle={description} onClose={close} label={tr('Log due transaction')}>
+  return <Sheet title={tr(title)} subtitle={description} onClose={close} label={tr('Log due transaction')} className="scheduled-due-prompt" center>
     <form className="sheet-form" onSubmit={log}>
       {error&&<p className="app-alert" role="alert">{error}</p>}
       {entry.kind==='subscription'?<>
@@ -201,6 +218,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       </>}
       <label>{tr('Payment issue note')}<textarea rows="2" maxLength="500" value={attemptNote} onChange={e=>setAttemptNote(e.target.value)} placeholder={tr('Optional: declined, insufficient balance, service unavailable…')}/></label>
       <button type="button" className="secondary-button" disabled={busy||!session?.user?.id} onClick={markIssue}>{tr('Record payment issue & retry tomorrow')}</button>
+      <button type="button" className="secondary-button" disabled={busy} onClick={skip}>{tr('Skip this reminder')}</button>
       <button type="button" className="link-button" onClick={close}>{tr('Remind me later')}</button>
     </form>
   </Sheet>;
