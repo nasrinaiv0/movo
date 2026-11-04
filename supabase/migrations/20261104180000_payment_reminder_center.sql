@@ -40,7 +40,7 @@ create policy "Users manage their payment reminder preferences" on public.paymen
 create table if not exists public.payment_reminder_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  source_type text not null check (source_type in ('scheduled','bill','subscription','loan','credit_card')),
+  source_type text not null check (source_type in ('scheduled','bill','subscription','loan','credit_card','receivable')),
   source_id text not null,
   occurrence_date date not null,
   reminder_offset integer not null default 0,
