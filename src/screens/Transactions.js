@@ -43,7 +43,6 @@ export default function Transactions({ c }) {
   );
   const sliders = <span className="chip-tools">
     <button type="button" className="round-button flat" aria-label={tr('Quick actions')} title={tr('Quick actions')} onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>
-    <button type="button" className="round-button flat" aria-label={tr('Grocery list')} title={tr('Grocery list')} onClick={c.openGrocery}><Icon name="shopping-basket" size={19} /></button>
     <button type="button" className="round-button accent" aria-label={tr('Add transaction')} title={tr('Add transaction')} onClick={() => c.openForm('expense')}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
   </span>;
 
