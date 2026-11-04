@@ -216,6 +216,7 @@ function App() {
   const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
   const [accountQrDisplay, setAccountQrDisplay] = useState({});
+  const [qrRetryTick, setQrRetryTick] = useState(0);
   const [fx, setFx] = useState(loadRates);
   const [cloudAccounts, setCloudAccounts] = useState([]);
   const [cloudPostings, setCloudPostings] = useState([]);
@@ -988,6 +989,11 @@ function App() {
   useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
   const userId = cloudMode ? session?.user?.id || '' : '';
   useEffect(() => {
+    const retry = () => setQrRetryTick(value => value + 1);
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, []);
+  useEffect(() => {
     let live = true;
     const entries = Object.entries(prefs.accountQrCodes || {});
     Promise.all(entries.map(async ([accountId, value]) => {
@@ -1006,7 +1012,7 @@ function App() {
       }
     })).then(rows => { if (live) setAccountQrDisplay(Object.fromEntries(rows.filter(([, value]) => value))); });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts]);
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick]);
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
