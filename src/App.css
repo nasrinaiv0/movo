@@ -4606,6 +4606,60 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .cashback-input { transition:none; }
 }
 
+/* Scheduled screen: compact summary, clear segmented view switcher and fluid rows. */
+.movo-app .scheduled-hero {
+  display:grid;
+  grid-template-columns:minmax(104px,.42fr) minmax(0,1fr);
+  align-items:center;
+  gap:14px;
+  min-width:0;
+  min-height:0;
+  padding:16px 18px;
+  margin:4px 0 14px;
+  border:0;
+  border-radius:20px;
+  background:var(--accent);
+  color:var(--on-accent,#fff);
+  box-shadow:var(--shadow-sm);
+}
+.movo-app .scheduled-hero-count { display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px; min-width:0; }
+.movo-app .scheduled-hero-count span { font-size:12px; line-height:1.25; font-weight:600; opacity:.88; }
+.movo-app .scheduled-hero-count strong { font-size:34px; line-height:1; letter-spacing:-1px; font-weight:750; font-variant-numeric:tabular-nums; }
+.movo-app .scheduled-hero p { min-width:0; margin:0; font-size:12px; line-height:1.45; opacity:.92; }
+.movo-app .scheduled-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; min-width:0; margin:0 0 18px; }
+.movo-app .scheduled-tabs { display:inline-grid; grid-template-columns:repeat(2,minmax(72px,1fr)); gap:3px; padding:3px; min-width:0; border:1px solid var(--line); border-radius:14px; background:var(--field); }
+.movo-app .scheduled-tabs button { min-height:36px; padding:0 14px; border:0; border-radius:11px; background:transparent; color:var(--muted); font-size:12px; font-weight:600; white-space:nowrap; }
+.movo-app .scheduled-tabs button.is-active { background:var(--card-solid); color:var(--text); box-shadow:var(--shadow-sm); }
+.movo-app .scheduled-reminder-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; min-width:0; padding:0 12px; border:1px solid var(--line); border-radius:13px; background:var(--card); color:var(--text); font-size:12px; font-weight:600; box-shadow:var(--shadow-sm); }
+.movo-app .scheduled-reminder-button span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.movo-app .scheduled-toolbar + .section-title { margin-top:0; }
+.movo-app .schedule-calendar { gap:4px; }
+.movo-app .schedule-calendar > button { min-width:0; min-height:40px; border-radius:11px; }
+.movo-app .schedule-calendar > button:focus-visible,
+.movo-app .scheduled-tabs button:focus-visible,
+.movo-app .scheduled-reminder-button:focus-visible { outline:3px solid rgba(var(--accent-rgb),.35); outline-offset:2px; }
+.movo-app .scheduled-hero + .scheduled-toolbar { margin-top:2px; }
+.movo-app .scheduled-toolbar + .card { margin-bottom:12px; }
+.movo-app .scheduled-toolbar ~ .section-title { margin-top:18px; }
+.movo-app .scheduled-toolbar ~ .list-card { overflow:hidden; }
+.movo-app .scheduled-toolbar ~ .list-card .fp-row { gap:10px; padding:11px 12px; }
+.movo-app .scheduled-toolbar ~ .list-card .fp-amount { max-width:40%; }
+@media (max-width:380px) {
+  .movo-app .scheduled-hero { grid-template-columns:minmax(88px,.38fr) minmax(0,1fr); gap:10px; padding:14px; border-radius:17px; }
+  .movo-app .scheduled-hero-count { grid-template-columns:1fr; gap:3px; }
+  .movo-app .scheduled-hero-count strong { font-size:30px; }
+  .movo-app .scheduled-hero p { font-size:11px; }
+  .movo-app .scheduled-toolbar { gap:7px; }
+  .movo-app .scheduled-tabs { grid-template-columns:repeat(2,minmax(58px,1fr)); }
+  .movo-app .scheduled-tabs button { padding-inline:10px; }
+  .movo-app .scheduled-reminder-button { width:40px; padding:0; flex:none; }
+  .movo-app .scheduled-reminder-button span { display:none; }
+}
+@media (max-width:320px) {
+  .movo-app .scheduled-hero { grid-template-columns:1fr; gap:8px; }
+  .movo-app .scheduled-hero-count { grid-template-columns:auto auto; justify-content:start; gap:12px; }
+  .movo-app .scheduled-hero-count strong { font-size:28px; }
+}
 
 /* Financial Planning: keep automatically linked plans aligned with the existing compact goal cards. */
 .movo-app .fp-plan-list { display: grid; gap: 8px; margin: 0 0 12px; min-width: 0; }
