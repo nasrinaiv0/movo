@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
 import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
 import CardStyleSheet from '../components/CardStyleSheet';
-import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Bars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
+import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
 import { money, shown } from '../lib/format';
@@ -80,7 +80,6 @@ export default function Wallet({ c }) {
     transactions: txs,
     days: 10,
   }), [selectedCard, accountsView, prefs.cardBankLinks, prefs.accountStyles, txs]);
-  const selectedCardSpent = selectedCardSpending.reduce((sum, day) => sum + day.total, 0);
   const recent = txs.slice(0, 3);
   const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
   const displayModeOf = (a) => prefs.cardDisplayModes?.[a?.id] || 'details';
@@ -159,24 +158,21 @@ export default function Wallet({ c }) {
             <span className="remaining-credit-copy">
               <small>{tr('Remaining credit')}</small>
               <strong>{info ? shown(show, money(info.available, selectedCard.currency)) : '—'}</strong>
-              {info && <small>{Math.round(remainingPercent)}%</small>}
+              {info && <small>{Math.round(remainingPercent)}% {tr('available')}</small>}
             </span>
-            {info && <div className="remaining-credit-meter" role="progressbar" aria-label={tr('Remaining credit')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(remainingPercent)}>
-              <span style={{ height: `${remainingPercent}%` }} />
-            </div>}
+            <span className="remaining-credit-sparkline" role="img" aria-label={tr('Recent card activity trend')}>
+              <Sparkline values={selectedCardSpending.map(day => day.total)} width={112} height={44} />
+            </span>
           </div>
           {!info && <p className="form-note">{tr('Credit limit')}: —</p>}
         </section>;
       })()}
-      {selectedCard && <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
-        <span><small>{selectedCard.cardKind === 'credit' ? tr('Remaining credit') : tr('Available Balance')}</small><strong>{shown(show, money(selectedCard.cardKind === 'credit' ? (creditInfo(selectedCard)?.available ?? 0) : selectedCard.balance, selectedCard.currency))}</strong></span><Icon name="chevron" size={18} />
+      {selectedCard?.cardKind !== 'credit' && selectedCard && <button type="button" className="card balance-row balance-summary-card" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
+        <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard.balance, selectedCard.currency))}</strong></span>
+        <span className="remaining-credit-sparkline" role="img" aria-label={tr('Recent account activity trend')}>
+          <Sparkline values={selectedCardSpending.map(day => day.total)} width={112} height={44} />
+        </span>
       </button>}
-      {selectedCard && <section className="account-hub-section account-spending-section wallet-selected-spending" aria-label={tr('Last 10 Days Spending')}>
-        <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(selectedCardSpent, c.base || 'PHP'))}</strong></div>
-        <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(selectedCardSpent, c.base || 'PHP') })}>
-          <Bars values={selectedCardSpending.map(day => day.total)} startLabel={tr('9 days ago')} endLabel={tr('Today')} />
-        </div>
-      </section>}
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
     </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
