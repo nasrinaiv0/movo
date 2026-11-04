@@ -71,7 +71,7 @@ export async function createAccount(account, userId) {
 }
 export async function listTransactions({ from, to, accountId } = {}) {
   let query = requireClient().from('transactions')
-    .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at')
+    .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,payment_reference,receipt_note,receipt_path')
     .order('occurred_at', { ascending: false }).limit(1000);
   if (from) query = query.gte('occurred_at', from);
   if (to) query = query.lt('occurred_at', to);
@@ -101,6 +101,9 @@ export async function createTransaction(transaction, userId) {
     occurred_at: occurredAt,
     source: TRANSACTION_SOURCES.includes(transaction.source) ? transaction.source : 'manual',
     external_reference: typeof transaction.external_reference === 'string' ? transaction.external_reference.slice(0, 200) || null : null,
+    payment_reference: typeof transaction.payment_reference === 'string' ? transaction.payment_reference.trim().slice(0, 120) || null : null,
+    receipt_note: typeof transaction.receipt_note === 'string' ? transaction.receipt_note.trim().slice(0, 500) || null : null,
+    receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
   }).select().single());
 }
 export async function deleteTransaction(transactionId) {
@@ -131,6 +134,9 @@ export async function updateTransaction(transactionId, transaction) {
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
     category: typeof transaction.category === 'string' ? transaction.category.trim().slice(0, 60) || 'Other' : 'Other',
     note: typeof transaction.note === 'string' ? transaction.note.trim().slice(0, 1000) || null : null,
+    payment_reference: typeof transaction.payment_reference === 'string' ? transaction.payment_reference.trim().slice(0, 120) || null : null,
+    receipt_note: typeof transaction.receipt_note === 'string' ? transaction.receipt_note.trim().slice(0, 500) || null : null,
+    receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
     occurred_at: occurredAt,
   }).eq('id', transactionId).select().single());
 }
