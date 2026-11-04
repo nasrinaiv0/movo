@@ -1,6 +1,6 @@
 'use strict';
 
-const { safeQuote, safeCoinId, normalizeTicker } = require('../src/lib/cryptoMarket');
+const { safeQuote, safeCoinId, normalizeTicker, number } = require('../src/lib/cryptoMarket');
 
 const BASE = 'https://api-pro.coinpaprika.com/v1';
 
