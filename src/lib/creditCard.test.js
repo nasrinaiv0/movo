@@ -47,3 +47,32 @@ describe('creditCardPlanningMetrics', () => {
     expect(metrics.outstandingAfterPayments).toBe(0);
   });
 });
+
+
+test('excludes deleted, reversed and duplicate card transactions and applies each logged payment once', () => {
+  const metrics = creditCardPlanningMetrics({
+    card: { id: 'cc-1', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -10000, creditLimit: 50000 },
+    annualInterestRate: 24,
+    statementBalance: 12000,
+    transactions: [
+      { id: 'purchase-1', account_id: 'cc-1', type: 'expense', amount: 4000, currency: 'PHP' },
+      { id: 'purchase-1', account_id: 'cc-1', type: 'expense', amount: 4000, currency: 'PHP' },
+      { id: 'reversed-1', account_id: 'cc-1', type: 'expense', status: 'reversed', amount: 3000, currency: 'PHP' },
+      { id: 'deleted-1', account_id: 'cc-1', type: 'expense', deleted_at: '2026-11-05T00:00:00Z', amount: 2000, currency: 'PHP' },
+      { id: 'bank-1', account_id: 'bank-1', type: 'expense', amount: 5000, currency: 'PHP' },
+    ],
+    payments: [
+      { id: 'payment-1', amount: 2000, month: '2026-11', date: '2026-11-05' },
+      { id: 'payment-1', amount: 2000, month: '2026-11', date: '2026-11-05' },
+    ],
+  });
+  expect(metrics).toMatchObject({
+    amountSpent: 4000,
+    estimatedMonthlyInterest: 240,
+    amountAfterInterest: 10240,
+    totalPayments: 2000,
+    paymentCount: 1,
+    outstandingAfterPayments: 8240,
+    spentLimitPercent: 8,
+  });
+});
