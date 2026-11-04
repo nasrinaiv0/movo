@@ -5,23 +5,25 @@ import AccountDetailsSheet from './AccountDetailsSheet';
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
 jest.mock('./Icon', () => ({ __esModule: true, default: () => null }));
-jest.mock('./ui', () => ({
-  Sheet: ({ children }) => <div data-testid="sheet">{children}</div>,
-  TransactionRow: () => null,
-}));
-jest.mock('./CardArt', () => ({
-  __esModule: true,
-  default: ({ qrCode, onQrClick }) => <div data-testid="card-art" data-qr={qrCode}>
-    {qrCode && <button type="button" aria-label="Enlarge QR code" onClick={onQrClick}>QR</button>}
-  </div>,
-}));
-jest.mock('./AccountTile', () => ({
-  __esModule: true,
-  default: ({ qrCode, onQrClick }) => <div data-testid="account-tile" data-qr={qrCode}>
-    {qrCode && <button type="button" aria-label="Enlarge QR code" onClick={onQrClick}>QR</button>}
-  </div>,
-  styleFor: () => ({}),
-}));
+jest.mock('./ui', () => {
+  const React = require('react');
+  return {
+    Sheet: ({ children }) => React.createElement('div', { 'data-testid': 'sheet' }, children),
+    TransactionRow: () => null,
+  };
+});
+jest.mock('./CardArt', () => {
+  const React = require('react');
+  return { __esModule: true, default: ({ qrCode, onQrClick }) => React.createElement('div', { 'data-testid': 'card-art', 'data-qr': qrCode }, qrCode && React.createElement('button', { type: 'button', 'aria-label': 'Enlarge QR code', onClick: onQrClick }, 'QR')) };
+});
+jest.mock('./AccountTile', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: ({ qrCode, onQrClick }) => React.createElement('div', { 'data-testid': 'account-tile', 'data-qr': qrCode }, qrCode && React.createElement('button', { type: 'button', 'aria-label': 'Enlarge QR code', onClick: onQrClick }, 'QR')),
+    styleFor: () => ({}),
+  };
+});
 jest.mock('../lib/cashback', () => ({ estimateCashback: () => [] }));
 jest.mock('../lib/scheduledTransactions', () => ({ listScheduledTransactions: () => Promise.resolve([]) }));
 
