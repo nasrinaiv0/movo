@@ -33,7 +33,8 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
   const [pad, setPad] = useState(false);
   const [qrError, setQrError] = useState('');
   const [qrUploading, setQrUploading] = useState(false);
-  const currentQrCode = typeof form.qrCode === 'string' && form.qrCode.startsWith('data:image/png;base64,') ? form.qrCode : (qrCodeDisplay || (form.qrCode ? '' : qrCode) || '');
+  const storedQrValue = form.qrCode !== undefined ? form.qrCode : qrCode;
+  const currentQrCode = typeof storedQrValue === 'string' && storedQrValue.startsWith('data:image/png;base64,') ? storedQrValue : (storedQrValue ? qrCodeDisplay : '');
   const handleQrUpload = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
