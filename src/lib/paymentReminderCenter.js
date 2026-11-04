@@ -196,3 +196,12 @@ export function isReminderActioned(entry, actions = {}) {
   const key=reminderActionKey(entry);
   return Boolean(key && actions && Object.prototype.hasOwnProperty.call(actions,key));
 }
+
+
+/** Sent reminders are shown again on the next app open; only explicit dismissals or active snoozes suppress them. */
+export function reminderEventAllowsDisplay(event, now = Date.now()) {
+  if(!event)return true;
+  if(['dismissed','skipped','archived','deleted'].includes(String(event.status||'').toLowerCase()))return false;
+  const until=Date.parse(event.snoozed_until||'');
+  return !Number.isFinite(until)||until<=now;
+}
