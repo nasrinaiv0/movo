@@ -112,7 +112,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
           {info && row('Credit utilization percentage', `${info.usedPercent}%`)}
         </div>
       </>}
-      <div className="account-hub-actions">
+      <div className={`account-hub-actions ${canEdit ? '' : 'is-readonly'}`}>
         {canEdit && <>
           <button type="button" className="secondary-button" onClick={onEdit}><Icon name="edit" size={16}/>{tr('Edit account')}</button>
           <button type="button" className="danger-button" onClick={onArchive}><Icon name="archive" size={16}/>{tr('Archive account')}</button>
