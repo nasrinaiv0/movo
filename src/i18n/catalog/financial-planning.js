@@ -336,7 +336,7 @@ export default [
   ["e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice", "e.g. Rice"],
   ["e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage", "e.g. SM Advantage"],
   ["item", "item", "item", "item", "item", "item", "item", "item", "item", "item", "item", "item"],
-  ["remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining"],,
+  ["remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining", "remaining"],
   ["Goals & Plans","Mga Layunin at Plano","الأهداف والخطط","目标与计划","Objetivos y planes","Obiettivi e piani","Ziele und Pläne","Objectifs et plans","Metas e planos","目標と計画","목표 및 계획","लक्ष्य और योजनाएँ"],
   ["No goals or plans yet.","Wala pang mga layunin o plano.","لا توجد أهداف أو خطط بعد.","暂无目标或计划。","Aún no hay objetivos ni planes.","Non ci sono ancora obiettivi o piani.","Noch keine Ziele oder Pläne.","Aucun objectif ni plan pour le moment.","Ainda não há metas ou planos.","目標や計画はまだありません。","아직 목표나 계획이 없습니다.","अभी तक कोई लक्ष्य या योजना नहीं है।"],
   ["Credit card balances","Mga balanse ng credit card","أرصدة بطاقات الائتمان","信用卡余额","Saldos de tarjetas de crédito","Saldi delle carte di credito","Kreditkartensalden","Soldes des cartes de crédit","Saldos dos cartões de crédito","クレジットカード残高","신용카드 잔액","क्रेडिट कार्ड शेष"],
