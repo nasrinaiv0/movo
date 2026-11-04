@@ -4738,3 +4738,19 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .account-hub-metric strong { font-size:12px; }
  .movo-app .account-hub-actions { gap:6px; }
 }
+
+
+/* Wallet selected-card balance trend: compact chart aligned to the right of the balance. */
+.movo-app .remaining-credit-sparkline {
+  display:flex; align-items:center; justify-content:flex-end; flex:0 0 112px;
+  width:112px; max-width:36%; min-width:76px; height:44px; overflow:hidden; color:var(--accent);
+}
+.movo-app .remaining-credit-sparkline svg { display:block; width:100%; height:100%; overflow:visible; }
+.movo-app .remaining-credit-content { gap:12px; }
+.movo-app .remaining-credit-copy { flex:1 1 auto; }
+.movo-app .balance-summary-card { gap:12px; }
+.movo-app .balance-summary-card > span:first-child { flex:1 1 auto; min-width:0; }
+.movo-app .balance-summary-card .remaining-credit-sparkline { margin-left:auto; }
+@media (max-width:360px) {
+  .movo-app .remaining-credit-sparkline { flex-basis:88px; width:88px; min-width:68px; }
+}
