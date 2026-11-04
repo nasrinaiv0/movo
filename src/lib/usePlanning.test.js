@@ -38,3 +38,66 @@ test('loans, money owed to you, goals and bills are summarised in the home curre
   expect(s.position.assets).toBe(11500);
   expect(s.position.availableMoney).toBe(9000);
 });
+
+
+test('credit-card purchases are included in Loans & debts without duplicating card assets', () => {
+  const toBase = (value, currency) => currency === 'USD' ? value * 50 : value;
+  const s = planningSummary({
+    accounts: [
+      { id: 'bank', account_type: 'bank', currency: 'PHP', balance: 25000 },
+      { id: 'credit', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -12500 },
+    ],
+    toBase,
+    today,
+  });
+  expect(s.loans).toEqual({ count: 1, total: 12500 });
+  expect(s.creditCards).toEqual({ count: 1, total: 12500 });
+  expect(s.position.assets).toBe(25000);
+  expect(s.position.liabilities).toBe(12500);
+  expect(s.position.netWorth).toBe(12500);
+});
+
+test('plans created in Budgets & Plans are included with savings goals in the planning summary', () => {
+  const toBase = (value, currency) => currency === 'USD' ? value * 50 : value;
+  const s = planningSummary({
+    goals: [{ id: 'g1', status: 'active', target_amount: 4000, currency: 'PHP' }],
+    allocations: [{ id: 'a1', goal_id: 'g1', status: 'allocated', amount: 1000, currency: 'PHP' }],
+    plans: [{ id: 'p1', name: 'Emergency fund', target: 1000, saved: 200, currency: 'USD' }],
+    toBase,
+    today,
+  });
+  expect(s.plans).toEqual({ count: 1, saved: 10000, target: 50000 });
+  expect(s.goals).toEqual({ count: 2, saved: 11000, target: 54000, percent: expect.closeTo(20.37037, 4) });
+});
+
+
+test('active subscription renewals are projected into Bills Due alongside manual bills', () => {
+  const { subscriptionBillData } = require('./financialPlanningIntegrations');
+  const { billsSummary } = require('./bills');
+  const projected = subscriptionBillData([
+    { id: 'netflix', name: 'Netflix', amount: 549, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'active' },
+    { id: 'paused', name: 'Paused', amount: 100, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'paused' },
+    { id: 'cancelled', name: 'Cancelled', amount: 100, currency: 'PHP', cycle: 'monthly', start: '2026-11-10', status: 'cancelled' },
+  ], '2026-11-05', '2027-01-10');
+  expect(projected.bills).toHaveLength(1);
+  expect(projected.occurrences.map(row => row.due_date)).toEqual(['2026-11-10', '2026-12-10', '2027-01-10']);
+  const manual = { id: 'manual-occurrence', bill_id: 'manual', due_date: '2026-11-12', expected_amount: 1200, currency: 'PHP', status: 'scheduled' };
+  const summary = billsSummary([manual, ...projected.occurrences], [], '2026-11-05');
+  expect(summary.dueThisMonth).toBe(1749);
+  expect(summary.upcoming[0].id).toBe('subscription-netflix-2026-11-10');
+});
+
+test('overdue subscription renewals remain visible and recorded renewals count as paid', () => {
+  const { subscriptionBillData } = require('./financialPlanningIntegrations');
+  const { billsSummary } = require('./bills');
+  const overdue = subscriptionBillData([
+    { id: 'missed', name: 'Missed renewal', amount: 300, currency: 'PHP', cycle: 'monthly', start: '2026-10-10', status: 'active' },
+    { id: 'paused', name: 'Paused', amount: 100, currency: 'PHP', cycle: 'monthly', start: '2026-10-10', status: 'paused' },
+  ], '2026-11-05', '2027-01-05');
+  expect(overdue.occurrences).toHaveLength(1);
+  expect(billsSummary(overdue.occurrences, [], '2026-11-05').overdueCount).toBe(1);
+  const paid = subscriptionBillData([
+    { id: 'music', name: 'Music', amount: 199, currency: 'PHP', cycle: 'monthly', start: '2026-12-05', status: 'active', lastPaidAt: '2026-11-04T10:00:00.000Z', lastPaidAmount: 199, lastPaidCurrency: 'PHP' },
+  ], '2026-11-05', '2027-01-05');
+  expect(billsSummary(paid.occurrences, paid.payments, '2026-11-05').paidThisMonth).toBe(199);
+});

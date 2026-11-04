@@ -611,9 +611,15 @@ function App() {
         const paidSub = subscriptions.find(item => item.id === form.subscriptionPaymentId);
         if (paidSub && cloudMode && session?.user?.id) await recordPaymentAttempt(session.user.id,{ source_type:'subscription', source_id:String(paidSub.id), due_date:paidSub.start, status:'paid', amount:Number(paidSub.amount)||amount, currency:paidSub.currency||txCurrency, account_id:form.account_id, note:'Subscription renewal recorded' }).catch(()=>null);
         if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
-          const nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
+          let nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
+          const paidOn = String(occurred_at || today()).slice(0, 10);
+          let advanceGuard = 0;
+          while (nextDue && nextDue <= paidOn && advanceGuard < 400) {
+            nextDue = billingDate(nextDue, paidSub.cycle, 1);
+            advanceGuard += 1;
+          }
           if (nextDue) {
-            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at } : item));
+            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at, lastPaidAmount: Number(paidSub.amount) || amount, lastPaidCurrency: paidSub.currency || txCurrency } : item));
             notify(tr('Subscription payment recorded. Next billing date updated.'));
           }
         }

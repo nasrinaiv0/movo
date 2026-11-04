@@ -53,3 +53,25 @@ test('signed out: shows the position from accounts and a sign-in prompt, without
   expect(obligations.listLoans).not.toHaveBeenCalled();
   act(() => root.unmount()); el.remove();
 });
+
+test('credit card purchases appear in Loans & debts and saved plans appear in Goals & Plans', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const c = {
+    cloudMode: true, base: 'PHP', show: true,
+    accountsView: [
+      ...accounts,
+      { id: 'credit-1', name: 'GoTyme Credit', institution_name: 'GoTyme', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -12500, creditLimit: 50000 },
+    ],
+    plans: [{ id: 'plan-1', name: 'Emergency fund', target: 20000, saved: 5000, currency: 'PHP' }],
+    toBase: value => value, go: jest.fn(), openBudgets: jest.fn(),
+  };
+  await act(async () => root.render(<FinancialPlanning c={c} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Loans & debts')).click());
+  expect(el.textContent).toContain('GoTyme');
+  expect(el.textContent).toContain('12,500');
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Goals & Plans')).click());
+  expect(el.textContent).toContain('Emergency fund');
+  expect(el.textContent).toContain('20,000');
+  act(() => root.unmount()); el.remove();
+});

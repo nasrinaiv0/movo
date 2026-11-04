@@ -13,7 +13,7 @@ import BillsPanel from '../components/BillsPanel';
  * Financial planning: bills, loans and debts, money owed to you, and savings goals, with the overall position
  * (assets, liabilities, net worth, money available). Records what the person says happened; it never moves money.
  */
-const TABS = [['overview', 'Overview'], ['cards', 'Credit cards'], ['bills', 'Bills'], ['loans', 'Loans & debts'], ['owed', 'Owed to you'], ['goals', 'Goals']];
+const TABS = [['overview', 'Overview'], ['cards', 'Credit cards'], ['bills', 'Bills'], ['loans', 'Loans & debts'], ['owed', 'Owed to you'], ['goals', 'Goals & Plans']];
 const blankLoan = (cur) => ({ name: '', obligation_type: 'loan', lender: '', principal_amount: '', currency: cur, interest_rate: '0', inconsistent_interest: false, interest_months: '12', monthly_interest_rates: Array(12).fill(''), due_date: '', account_id: '', new_proceeds: false, notes: '' });
 const blankReceivable = (cur) => ({ name: '', counterparty: '', reason: '', opening_amount: '', currency: cur, due_date: '', account_id: '', new_lending: false, notes: '' });
 const blankGoal = (cur) => ({ name: '', target_amount: '', currency: cur, target_date: '', notes: '' });
@@ -73,13 +73,15 @@ export default function FinancialPlanning({ c }) {
   </>;
 
   const loans = p.loans; const receivables = p.receivables; const goals = p.goals;
+  const plans = (c.plans || []).filter(plan => plan && plan.id && plan.name);
+  const creditCardDebts = p.accounts.filter(a => a.account_type === 'card' && a.cardKind === 'credit' && Number(a.balance) < 0);
   const live = p.allocations.filter(a => a.status === 'allocated');
   const bills = summary.bills;
   const glance = [
     { key: 'bills', icon: 'receipt', tone: 'orange', title: 'Bills', sub: bills.overdueCount ? tr('{n} overdue', { n: bills.overdueCount }) : bills.next ? tr('Next due {date}', { date: formatDate(bills.next.due_date) }) : tr('Nothing due in the next 45 days.'), amount: bills.dueThisMonth, note: tr('Due this month'), alert: bills.overdueCount > 0 },
     { key: 'loans', icon: 'bank', tone: 'red', title: 'Loans & debts', sub: summary.loans.count ? tr('{n} active', { n: summary.loans.count }) : tr('No loans or debts recorded yet.'), amount: summary.loans.total, note: tr('Outstanding') },
     { key: 'owed', icon: 'user', tone: 'green', title: 'Owed to you', sub: summary.receivables.count ? tr('{n} active', { n: summary.receivables.count }) : tr('No one currently owes you money in MOVO.'), amount: summary.receivables.total, note: tr('To collect') },
-    { key: 'goals', icon: 'target', tone: 'blue', title: 'Goals', sub: summary.goals.count ? tr('{n}% saved', { n: Math.round(summary.goals.percent) }) : tr('No savings goals yet.'), amount: summary.goals.saved, note: tr('Saved') },
+    { key: 'goals', icon: 'target', tone: 'blue', title: 'Goals & Plans', sub: summary.goals.count ? tr('{n}% saved', { n: Math.round(summary.goals.percent) }) : tr('No goals or plans yet.'), amount: summary.goals.saved, note: tr('Saved') },
   ];
 
   const statusChip = (s) => <em className={`fp-status is-${s}`}>{tr(STATUS[s] || s)}</em>;
@@ -127,18 +129,31 @@ export default function FinancialPlanning({ c }) {
       })}
     </>}
 
-    {tab === 'bills' && <BillsPanel c={c} accounts={(c.accountsView || []).filter(a => !a.is_archived)} onChanged={async () => { await p.reload(); if (c.refreshFinance) await c.refreshFinance(); }} adding={sheet?.kind === 'bill'} onAdding={(v) => setSheet(v ? { kind: 'bill' } : null)} />}
+    {tab === 'bills' && <BillsPanel c={c} accounts={(c.accountsView || []).filter(a => !a.is_archived)} subscriptions={c.subscriptions || []} onLogSubscription={c.logSubscription} onChanged={async () => { await p.reload(); if (c.refreshFinance) await c.refreshFinance(); }} adding={sheet?.kind === 'bill'} onAdding={(v) => setSheet(v ? { kind: 'bill' } : null)} />}
 
     {tab === 'loans' && <>
       <SectionTitle action={tr('Add')} onAction={() => open('loan', blankLoan(base))}>{tr('Loans & debts')}</SectionTitle>
-      {loans.length ? <div className="card list-card">{loans.map(l => { const principal = Number(l.principal_amount) || 0; const left = Number(l.outstanding_principal) || 0; return <button type="button" className="fp-row" key={l.id} onClick={() => open('event', { target: 'loan', item: l, event_type: 'principal_payment', amount: '', account_id: l.account_id && inCurrency(l.currency).some(a => a.id === l.account_id) ? l.account_id : (inCurrency(l.currency)[0]?.id || ''), note: '' })}>
+      {creditCardDebts.length > 0 && <>
+        <SectionTitle>{tr('Credit card balances')}</SectionTitle>
+        <div className="card list-card">{creditCardDebts.map(card => {
+          const owed = Math.max(0, -Number(card.balance));
+          const limit = Number(card.creditLimit) || 0;
+          return <button type="button" className="fp-row" key={card.id} onClick={() => pick('cards')}>
+            <span className="stat-icon tone-red"><Icon name="credit-card" size={17} strokeWidth={2} /></span>
+            <span className="fp-main"><strong>{card.institution_name || card.name}</strong><small>{tr('Credit card spending is added automatically from recorded transactions.')}{limit > 0 ? ` · ${tr('Available credit')}: ${cash(Math.max(0, limit - owed), card.currency)}` : ''}</small></span>
+            <span className="fp-amount"><b>{cash(owed, card.currency)}</b><small>{tr('Outstanding')}</small></span>
+            <Icon name="chevron" size={15} />
+          </button>;
+        })}</div>
+      </>}
+      {loans.length > 0 ? <div className="card list-card">{loans.map(l => { const principal = Number(l.principal_amount) || 0; const left = Number(l.outstanding_principal) || 0; return <button type="button" className="fp-row" key={l.id} onClick={() => open('event', { target: 'loan', item: l, event_type: 'principal_payment', amount: '', account_id: l.account_id && inCurrency(l.currency).some(a => a.id === l.account_id) ? l.account_id : (inCurrency(l.currency)[0]?.id || ''), note: '' })}>
         <span className="stat-icon tone-red"><Icon name="bank" size={17} strokeWidth={2} /></span>
         <span className="fp-main"><strong>{l.name}</strong><small>{l.lender || tr(l.obligation_type === 'debt' ? 'Other debt' : 'Loan')} · {due(l.due_date)}</small>
           {Array.isArray(l.interest_schedule) && l.interest_schedule.length > 0 && <small title={l.interest_schedule.map(x => `M${x.month}: ${x.rate}%`).join(' · ')}>{tr('Monthly rates')}: {l.interest_schedule.slice(0, 3).map(x => `M${x.month} ${x.rate}%`).join(' · ')}{l.interest_schedule.length > 3 ? ` · +${l.interest_schedule.length - 3}` : ''}</small>}
           {principal > 0 && <span className="progress-track" aria-label={tr('{n}% paid', { n: Math.round(pct(principal - left, principal)) })}><span style={{ width: `${pct(principal - left, principal)}%` }} /></span>}</span>
         <span className="fp-amount"><b>{cash(left, l.currency)}</b>{statusChip(l.status)}</span>
       </button>; })}</div>
-        : <button type="button" className="budget-empty" onClick={() => open('loan', blankLoan(base))}><Icon name="plus" size={20} /><span><strong>{tr('Add a loan or debt')}</strong><small>{tr('No loans or debts recorded yet.')}</small></span></button>}
+        : !creditCardDebts.length && <button type="button" className="budget-empty" onClick={() => open('loan', blankLoan(base))}><Icon name="plus" size={20} /><span><strong>{tr('Add a loan or debt')}</strong><small>{tr('No loans or debts recorded yet.')}</small></span></button>}
     </>}
 
     {tab === 'owed' && <>
@@ -153,17 +168,36 @@ export default function FinancialPlanning({ c }) {
     </>}
 
     {tab === 'goals' && <>
-      <SectionTitle action={tr('Add')} onAction={() => open('goal', blankGoal(base))}>{tr('Goals')}</SectionTitle>
-      {goals.length ? goals.map(g => { const prog = goalProgress(g, live); const mine = live.filter(a => a.goal_id === g.id); return <article className="card fp-goal" key={g.id}>
-        <div className="fp-goal-head"><span className="stat-icon tone-blue"><Icon name="target" size={17} strokeWidth={2} /></span>
-          <span className="fp-main"><strong>{g.name}</strong><small>{tr('Target')}: {cash(g.target_amount, g.currency)}{g.target_date ? ` · ${formatDate(g.target_date)}` : ''}</small></span>
-          <span className="fp-amount"><b>{cash(prog.saved, g.currency)}</b><small>{Math.round(prog.percent)}%</small></span></div>
-        <div className="progress-track"><span style={{ width: `${prog.percent}%` }} /></div>
-        <p className="form-note">{cash(prog.remaining, g.currency)} {tr('remaining')}</p>
-        {mine.length > 0 && <ul className="fp-allocs">{mine.map(a => <li key={a.id}><span>{p.accounts.find(ac => ac.id === a.account_id)?.name || tr('Account')}</span><b>{cash(a.amount, a.currency)}</b><button type="button" className="link-button" disabled={busy} onClick={() => run(() => releaseGoalAllocation(a.id), 'Goal allocation released.')}>{tr('Release')}</button></li>)}</ul>}
-        {g.status === 'active' && <button type="button" className="secondary-button" onClick={() => open('allocate', { goal_id: g.id, goal: g, account_id: inCurrency(g.currency)[0]?.id || '', amount: '', currency: g.currency, note: '' })}>{tr('Allocate funds')}</button>}
-      </article>; })
-        : <button type="button" className="budget-empty" onClick={() => open('goal', blankGoal(base))}><Icon name="plus" size={20} /><span><strong>{tr('Create a savings goal')}</strong><small>{tr('Create a goal, then allocate money already in an account. This does not add to your balance.')}</small></span></button>}
+      <SectionTitle action={tr('Add')} onAction={() => open('goal', blankGoal(base))}>{tr('Goals & Plans')}</SectionTitle>
+      {plans.length > 0 && <section className="fp-plan-list">
+        <div className="fp-plan-list-head"><strong>{tr('Your plans')}</strong><button type="button" className="link-button" onClick={() => c.openBudgets?.('plans')}>{tr('Manage plans')}</button></div>
+        {plans.map(plan => {
+          const target = Math.max(0, Number(plan.target) || 0);
+          const saved = Math.max(0, Number(plan.saved) || 0);
+          const progress = target > 0 ? Math.min(100, saved / target * 100) : 0;
+          return <article className="card fp-goal" key={`plan-${plan.id}`}>
+            <div className="fp-goal-head"><span className="stat-icon tone-blue"><Icon name="target" size={17} strokeWidth={2} /></span>
+              <span className="fp-main"><strong>{plan.name}</strong><small>{tr('Plan')}: {cash(target, plan.currency)}{plan.due ? ` · ${formatDate(plan.due)}` : ''}</small></span>
+              <span className="fp-amount"><b>{cash(saved, plan.currency)}</b><small>{Math.round(progress)}%</small></span></div>
+            <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
+            <p className="form-note">{cash(Math.max(0, target - saved), plan.currency)} {tr('remaining')}</p>
+          </article>;
+        })}
+      </section>}
+      {goals.length > 0 && <>
+        <SectionTitle>{tr('Savings goals')}</SectionTitle>
+        {goals.map(g => { const prog = goalProgress(g, live); const mine = live.filter(a => a.goal_id === g.id); return <article className="card fp-goal" key={g.id}>
+          <div className="fp-goal-head"><span className="stat-icon tone-blue"><Icon name="target" size={17} strokeWidth={2} /></span>
+            <span className="fp-main"><strong>{g.name}</strong><small>{tr('Target')}: {cash(g.target_amount, g.currency)}{g.target_date ? ` · ${formatDate(g.target_date)}` : ''}</small></span>
+            <span className="fp-amount"><b>{cash(prog.saved, g.currency)}</b><small>{Math.round(prog.percent)}%</small></span></div>
+          <div className="progress-track"><span style={{ width: `${prog.percent}%` }} /></div>
+          <p className="form-note">{cash(prog.remaining, g.currency)} {tr('remaining')}</p>
+          {mine.length > 0 && <ul className="fp-allocs">{mine.map(a => <li key={a.id}><span>{p.accounts.find(ac => ac.id === a.account_id)?.name || tr('Account')}</span><b>{cash(a.amount, a.currency)}</b><button type="button" className="link-button" disabled={busy} onClick={() => run(() => releaseGoalAllocation(a.id), 'Goal allocation released.')}>{tr('Release')}</button></li>)}</ul>}
+          {g.status === 'active' && <button type="button" className="secondary-button" onClick={() => open('allocate', { goal_id: g.id, goal: g, account_id: inCurrency(g.currency)[0]?.id || '', amount: '', currency: g.currency, note: '' })}>{tr('Allocate funds')}</button>}
+        </article>; })}
+      </>}
+      {plans.length === 0 && goals.length === 0 && <button type="button" className="budget-empty" onClick={() => open('goal', blankGoal(base))}><Icon name="plus" size={20} /><span><strong>{tr('Create a savings goal')}</strong><small>{tr('Create a savings goal or add a plan to see everything together here.')}</small></span></button>}
+      <button type="button" className="secondary-button wide-button" onClick={() => c.openBudgets?.('plans')}>{tr('Add plan')}</button>
     </>}
 
     {cardDraft && <Sheet title={tr('Record card payment')} subtitle={cardDraft.name} onClose={() => setCardDraft(null)} label={tr('Record card payment')}>
@@ -179,6 +213,7 @@ export default function FinancialPlanning({ c }) {
         <button type="button" onClick={() => { setTab('loans'); open('loan', blankLoan(base)); }}><Icon name="bank" size={18} />{tr('Add a loan or debt')}</button>
         <button type="button" onClick={() => { setTab('owed'); open('receivable', blankReceivable(base)); }}><Icon name="user" size={18} />{tr('Record money owed to you')}</button>
         <button type="button" onClick={() => { setTab('goals'); open('goal', blankGoal(base)); }}><Icon name="target" size={18} />{tr('Create a savings goal')}</button>
+        <button type="button" onClick={() => { setSheet(null); c.openBudgets?.('plans'); }}><Icon name="target" size={18} />{tr('Add plan')}</button>
       </div>
     </Sheet>}
 
