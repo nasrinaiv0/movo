@@ -6,6 +6,7 @@ import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { allocateToGoal, createGoal, createLoan, createReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation } from '../lib/obligationsRepository';
 import { goalProgress } from '../lib/accounting';
+import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
 import usePlanning from '../lib/usePlanning';
 import BillsPanel from '../components/BillsPanel';
 
@@ -73,8 +74,8 @@ export default function FinancialPlanning({ c }) {
   </>;
 
   const loans = p.loans; const receivables = p.receivables; const goals = p.goals;
-  const plans = (c.plans || []).filter(plan => plan && plan.id && plan.name);
-  const creditCardDebts = p.accounts.filter(a => a.account_type === 'card' && a.cardKind === 'credit' && Number(a.balance) < 0);
+  const plans = p.plans;
+  const creditCardDebts = p.accounts.filter(a => creditCardOutstanding(a) > 0);
   const live = p.allocations.filter(a => a.status === 'allocated');
   const bills = summary.bills;
   const glance = [
@@ -110,7 +111,7 @@ export default function FinancialPlanning({ c }) {
       <SectionTitle>{tr('Credit cards')}</SectionTitle>
       {!creditCards.length ? <div className="budget-empty"><Icon name="credit-card" size={20} /><span><strong>{tr('No credit cards added yet.')}</strong><small>{tr('Add a credit card in Wallet to track its balance, due date and payments.')}</small></span></div> : creditCards.map(card => {
         const style = cardStyles[card.id] || {};
-        const owed = Math.max(0, -(Number(card.balance) || 0));
+        const owed = creditCardOutstanding(card);
         const dueDate = style.paymentDueDate || '';
         const payments = cardPayments[card.id] || [];
         const paidMonths = new Set(payments.map(x => x.month)).size;
@@ -136,7 +137,7 @@ export default function FinancialPlanning({ c }) {
       {creditCardDebts.length > 0 && <>
         <SectionTitle>{tr('Credit card balances')}</SectionTitle>
         <div className="card list-card">{creditCardDebts.map(card => {
-          const owed = Math.max(0, -Number(card.balance));
+          const owed = creditCardOutstanding(card);
           const limit = Number(card.creditLimit) || 0;
           return <button type="button" className="fp-row" key={card.id} onClick={() => pick('cards')}>
             <span className="stat-icon tone-red"><Icon name="credit-card" size={17} strokeWidth={2} /></span>

@@ -3,7 +3,7 @@ import { financialPosition, goalProgress } from './accounting';
 import { billsSummary } from './bills';
 import { listBillPayments, listOccurrences } from './billsRepository';
 import { listGoalAllocations, listGoals, listLoans, listReceivables } from './obligationsRepository';
-import { subscriptionBillData } from './financialPlanningIntegrations';
+import { creditCardOutstanding, planGoalData, subscriptionBillData } from './financialPlanningIntegrations';
 
 /*
  * Financial planning data shared by the Financial planning screen and the Home summary card:
@@ -25,19 +25,19 @@ export const planningAccounts = (accounts = []) => accounts.filter(a => !a.is_ar
 export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
   const live = allocations.filter(a => a.status === 'allocated');
   const position = financialPosition({
-    accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
+    accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), liability_balance: a.account_type === 'card' && a.cardKind === 'credit' ? toBase(creditCardOutstanding(a), a.currency) : a.liability_balance, card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
     loans: loans.map(l => ({ ...l, outstanding_balance: toBase(Number(l.outstanding_principal) || 0, l.currency) })),
     receivables: receivables.map(r => ({ ...r, outstanding_balance: toBase(Number(r.outstanding_amount) || 0, r.currency) })),
     goalAllocations: live.map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency) })),
   });
   const activeLoans = loans.filter(l => l.status === 'active' && Number(l.outstanding_principal) > 0);
-  const creditCardDebts = accounts.filter(a => a.account_type === 'card' && a.cardKind === 'credit' && Number(a.balance) < 0);
-  const creditCardDebtTotal = creditCardDebts.reduce((sum, a) => sum + toBase(Math.max(0, -Number(a.balance)), a.currency), 0);
+  const creditCardDebts = accounts.filter(a => creditCardOutstanding(a) > 0);
+  const creditCardDebtTotal = creditCardDebts.reduce((sum, a) => sum + toBase(creditCardOutstanding(a), a.currency), 0);
   const activeReceivables = receivables.filter(r => r.status === 'active' && Number(r.outstanding_amount) > 0);
   const activeGoals = goals.filter(g => g.status === 'active');
-  const activePlans = plans.filter(p => p && p.id && p.name);
+  const activePlans = planGoalData(plans);
   const goalTotals = activeGoals.reduce((s, g) => { const p = goalProgress(g, live); return { saved: s.saved + toBase(p.saved, g.currency), target: s.target + toBase(p.target, g.currency) }; }, { saved: 0, target: 0 });
-  const planTotals = activePlans.reduce((s, p) => ({ saved: s.saved + toBase(Number(p.saved) || 0, p.currency), target: s.target + toBase(Number(p.target) || 0, p.currency) }), { saved: 0, target: 0 });
+  const planTotals = activePlans.reduce((s, p) => ({ saved: s.saved + toBase(p.saved, p.currency), target: s.target + toBase(p.target, p.currency) }), { saved: 0, target: 0 });
   const bills = billsSummary(occurrences, payments, today, toBase);
   return {
     position,
@@ -80,6 +80,7 @@ export default function usePlanning(c) {
     occurrences: [...data.occurrences, ...subscriptionData.occurrences],
     payments: [...data.payments, ...subscriptionData.payments],
   }), [data.occurrences, data.payments, subscriptionData]);
-  const summary = useMemo(() => planningSummary({ ...data, ...integrations, plans: c.plans || [], accounts, toBase: toBase || ((v) => v), today }), [data, integrations, c.plans, accounts, toBase, today]);
-  return { ...data, accounts, subscriptionData, summary, loaded, error, reload, cloud };
+  const plans = useMemo(() => planGoalData(c.plans || []), [c.plans]);
+  const summary = useMemo(() => planningSummary({ ...data, ...integrations, plans, accounts, toBase: toBase || ((v) => v), today }), [data, integrations, plans, accounts, toBase, today]);
+  return { ...data, accounts, plans, subscriptionData, summary, loaded, error, reload, cloud };
 }

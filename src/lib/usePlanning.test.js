@@ -102,3 +102,19 @@ test('overdue subscription renewals remain visible and recorded renewals count a
   ], '2026-11-05', '2027-01-05');
   expect(billsSummary(paid.occurrences, paid.payments, '2026-11-05').paidThisMonth).toBe(199);
 });
+
+test('explicit credit-card liabilities and normalized plans remain consistent in financial summaries', () => {
+  const summary = planningSummary({
+    accounts: [{ id: 'credit', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: 0, liability_balance: 1750 }],
+    plans: [
+      { id: 'p1', name: 'Trip', amount: 12000, saved_amount: 3000, target_date: '2027-02-01', currency: 'PHP' },
+      { id: 'p2', name: 'Archived', target: 5000, saved: 500, status: 'archived', currency: 'PHP' },
+    ],
+    toBase: value => value,
+    today,
+  });
+  expect(summary.loans).toEqual({ count: 1, total: 1750 });
+  expect(summary.position.liabilities).toBe(1750);
+  expect(summary.plans).toEqual({ count: 1, saved: 3000, target: 12000 });
+  expect(summary.goals).toMatchObject({ count: 1, saved: 3000, target: 12000, percent: 25 });
+});

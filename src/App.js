@@ -470,7 +470,7 @@ function App() {
   const subscriptions = useMemo(() => (Array.isArray(prefs.subscriptions) ? prefs.subscriptions.filter(s => s && typeof s === 'object' && typeof s.name === 'string' && s.id) : []), [prefs.subscriptions]);
   const todayKey = dayKey(new Date());
   const subSummary = useMemo(() => summarizeSubscriptions(subscriptions, new Date(`${todayKey}T12:00:00`), toBase), [subscriptions, toBase, todayKey]);
-  const plans = useMemo(() => (prefs.plans || []).map(p => ({ ...p, target: toBase(p.target, p.currency || 'PHP'), saved: toBase(p.saved, p.currency || 'PHP'), currency: base })), [prefs.plans, toBase, base]);
+  const plans = useMemo(() => (prefs.plans || []).map(p => { const currency = p.currency || 'PHP'; const target = p.target ?? p.target_amount ?? p.amount; const saved = p.saved ?? p.saved_amount ?? 0; return { ...p, target: toBase(Number(target) || 0, currency), saved: toBase(Number(saved) || 0, currency), due: p.due || p.due_date || p.target_date || p.date || '', currency: base }; }), [prefs.plans, toBase, base]);
   const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
@@ -845,7 +845,7 @@ function App() {
     if (row) archiveItem('budget', row);
     notify(tr('Moved to Archive. You can restore it for 90 days.'));
   };
-  const savePlan = (plan) => { const row = { ...plan, currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
+  const savePlan = (plan) => { const target = Number(plan.target ?? plan.target_amount ?? plan.amount); const saved = Number(plan.saved ?? plan.saved_amount ?? 0); const row = { ...plan, target: Number.isFinite(target) && target > 0 ? target : 0, saved: Number.isFinite(saved) && saved > 0 ? saved : 0, due: plan.due || plan.due_date || plan.target_date || plan.date || '', currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
   const deletePlan = (id) => { const row = (prefs.plans || []).find(p => p.id === id); setPref('plans', plans.filter(p => p.id !== id)); if (row) archiveItem('plan', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   const saveSubscription = (sub) => {
     const row = { ...sub, id: sub.id || window.crypto?.randomUUID?.() || `sub-${Date.now()}` };
