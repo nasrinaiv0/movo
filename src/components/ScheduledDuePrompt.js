@@ -35,7 +35,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(s.start||'')&&s.start<=date)
       .map(s=>({kind:'subscription',item:s,date:s.start}));
     return [...dueSchedules,...dueBills,...dueSubs].sort((a,b)=>a.date.localeCompare(b.date));
-  },[loadDue,setActive]);
+  },[session?.user?.id,subscriptions]);
   const setActive = useCallback(next => {
     setEntry(next||null);
     const item=next?.item;
@@ -51,7 +51,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     loadDue().then(queue=>{if(live&&queue.length)setActive(queue[0]);})
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
     return()=>{live=false;};
-  },[session?.user?.id,subscriptions]);
+  },[loadDue,setActive]);
   const close=()=>setActive(null);
   const log=async event=>{
     event.preventDefault();if(!entry)return;
