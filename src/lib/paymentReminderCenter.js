@@ -121,7 +121,7 @@ export async function recordReminderEvent(userId, event) {
   const row = {
     user_id: userId, source_type: event.source_type, source_id: String(event.source_id),
     occurrence_date: event.occurrence_date, reminder_offset: offset,
-    channel: 'in_app', status: event.status || 'queued',
+    channel: event.channel || 'in_app', status: event.status || 'queued',
     snoozed_until: event.snoozed_until || null,
     ...(event.status === 'sent' ? { sent_at: new Date().toISOString() } : {}),
   };
@@ -139,5 +139,10 @@ export async function listReminderEvents(userId, limit = 50) {
 export async function snoozeObligation(userId, event, until) {
   const date = new Date(until);
   if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) throw new Error('Choose a future reminder time.');
-  return recordReminderEvent(userId, { ...event, status: 'dismissed', snoozed_until: date.toISOString() });
+  const snooze={ ...event, status:'dismissed', snoozed_until:date.toISOString() };
+  const [inApp,push]=await Promise.all([
+    recordReminderEvent(userId,{...snooze,channel:'in_app'}),
+    recordReminderEvent(userId,{...snooze,channel:'push'}),
+  ]);
+  return {in_app:inApp,push};
 }
