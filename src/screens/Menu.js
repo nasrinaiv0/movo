@@ -16,6 +16,7 @@ export default function Menu({ c }) {
 
     { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
     { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals with a target date'), onClick: () => c.openBudgets('plans') },
+    { icon: 'gift', tone: 'green', title: 'Cashback', sub: tr('Track bank and e-wallet rewards automatically or manually'), onClick: () => go('Cashback') },
     { icon: 'bank', tone: 'blue', title: 'Financial planning', sub: tr('Bills, loans, debts and money owed to you'), onClick: () => go('FinancialPlanning') },
     { icon: 'globe', tone: 'teal', title: 'Exchange rates', sub: tr('Convert currencies and track reference rates'), onClick: () => go('ExchangeRates') },
     { icon: 'chart', tone: 'green', title: 'Crypto market', sub: tr('Explore cryptocurrency prices and watchlist'), onClick: () => go('CryptoMarket') },
