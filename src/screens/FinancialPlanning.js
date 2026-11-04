@@ -73,7 +73,7 @@ export default function FinancialPlanning({ c }) {
   </>;
 
   const loans = p.loans; const receivables = p.receivables; const goals = p.goals;
-  const plans = c.plans || [];
+  const plans = (c.plans || []).filter(plan => plan && plan.id && plan.name);
   const creditCardDebts = p.accounts.filter(a => a.account_type === 'card' && a.cardKind === 'credit' && Number(a.balance) < 0);
   const live = p.allocations.filter(a => a.status === 'allocated');
   const bills = summary.bills;
