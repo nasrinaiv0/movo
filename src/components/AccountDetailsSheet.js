@@ -70,15 +70,15 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
       {tab === 'activity' && <div className="account-hub-section">
         <h3>{tr('Account transaction history')}</h3>
         {recentTransactions.map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
-        {!recentTransactions.length && <p className="empty">{tr('No transactions for this account yet.')}</p>}
+        {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
       </div>}
       {tab === 'connected' && <>
         {account.account_type !== 'card' && <section className="account-hub-section"><h3>{tr('Cards connected to this account')}</h3>
           {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('Card number not added')}</small></button>)}
           {!linkedCards.length && <p className="empty">{tr('No cards connected to this account yet.')}</p>}
         </section>}
-        <section className="account-hub-section"><h3>{tr('Automatic cashback')}</h3>
-          {cashRule.enabled ? <>{row('Cashback rate', `${cashRule.rate || 0}%`)}{row('Maximum per transaction', cashRule.cap ? fmt(cashRule.cap) : tr('No limit'))}</> : <p className="empty">{tr('Automatic cashback is not enabled for this account.')}</p>}
+        <section className="account-hub-section"><h3>{tr('Automatic cashback settings')}</h3>
+          {cashRule.enabled ? <>{row('Cashback rate', `${cashRule.rate || 0}%`)}{row('Maximum per transaction', cashRule.cap ? fmt(cashRule.cap) : tr('No limit'))}</> : <p className="empty">{tr('No automatic cashback rule is active for this account.')}</p>}
           {row('Cashback tracked', fmt(cashbackTotal))}
           {manualCashback.map(item => <div className="account-hub-simple-row" key={item.id}><span>{item.source || tr('Cashback')} · {item.date}</span><b>{fmt(item.amount)}</b></div>)}
         </section>
