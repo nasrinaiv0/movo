@@ -51,7 +51,7 @@ export default function BillsPanel({ c, accounts, onChanged, adding = false, onA
 
   const openPay = (o) => {
     const bill = billOf(o);
-    setPay({ occ: o, amount: String(amountRemaining(o)), account_id: bill?.account_id && payAccounts(o.currency).some(a => a.id === bill.account_id) ? bill.account_id : (payAccounts(o.currency)[0]?.id || ''), paid_at: today, actual: o.is_estimate && o.actual_amount == null ? '' : null, nonce: newNonce() });
+    setPay({ occ: o, amount: String(amountRemaining(o)), account_id: bill?.account_id && payAccounts(o.currency).some(a => a.id === bill.account_id) ? bill.account_id : '', paid_at: today, actual: o.is_estimate && o.actual_amount == null ? '' : null, nonce: newNonce() });
     setError(''); setNotice('');
   };
   useEffect(() => {
