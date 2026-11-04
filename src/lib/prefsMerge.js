@@ -20,7 +20,7 @@ export function cloudSafePreferences(prefs) {
   delete safe.autoLogKey;
   // Device-only data URLs are never sent to the 256 KB preferences row; cloud entries are storage paths.
   if (safe.accountQrCodes && typeof safe.accountQrCodes === 'object') {
-    safe.accountQrCodes = Object.fromEntries(Object.entries(safe.accountQrCodes).filter(([, value]) => typeof value === 'string' && !value.startsWith('data:')));
+    safe.accountQrCodes = Object.fromEntries(Object.entries(safe.accountQrCodes).filter(([, value]) => typeof value === 'string' && !value.startsWith('data:') && !value.startsWith('localqr:')));
   }
   return safe;
 }
