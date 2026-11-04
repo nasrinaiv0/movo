@@ -35,13 +35,20 @@ export async function createScheduledTransaction(input, userId) {
   const currency = /^[A-Z]{3}$/.test(input.currency || '') ? input.currency : 'PHP';
   if (owned.some(account => account.currency !== currency)) throw new Error('The selected accounts must use the scheduled transaction currency.');
   const frequency=['once','weekly','monthly','yearly'].includes(input.frequency)?input.frequency:'once';
+  const scheduledFor=validDate(input.scheduled_for);
+  const endsOn=input.ends_on||null;
+  if(endsOn&&(validDate(endsOn)>endsOn||endsOn<scheduledFor))throw new Error('The end date must be on or after the first scheduled date.');
+  const reminderDays=[...new Set((Array.isArray(input.reminder_days)?input.reminder_days:[0,1,3]).map(Number))].filter(n=>[0,1,2,3,5,7,14,30].includes(n)).sort((a,b)=>a-b);
+  if(reminderDays.length>8)throw new Error('Choose up to eight reminder intervals.');
+  const timezone=String(input.timezone||'Asia/Manila').slice(0,64);
+  try{new Intl.DateTimeFormat('en-US',{timeZone:timezone});}catch{throw new Error('Choose a valid timezone.');}
   return unwrap(await client().from('scheduled_transactions').insert({
     user_id:userId,title,transaction_type:type,amount:validAmount(input.amount),
     currency,
     account_id:input.account_id,transfer_to_account_id:type==='transfer'?input.transfer_to_account_id:null,
-    scheduled_for:validDate(input.scheduled_for),frequency,status:'scheduled',
+    scheduled_for:scheduledFor,frequency,status:'scheduled',
     category:String(input.category||'Other').slice(0,60),notes:String(input.notes||'').slice(0,500)||null,
-    ends_on:input.ends_on||null,reminder_days:Array.isArray(input.reminder_days)?input.reminder_days:[0,1,3],timezone:String(input.timezone||'Asia/Manila').slice(0,64),
+    ends_on:endsOn,reminder_days:reminderDays,timezone,
   }).select().single());
 }
 export async function logScheduledTransaction(item, accountId = item.account_id, transferTo = item.transfer_to_account_id) {
