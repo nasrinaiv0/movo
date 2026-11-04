@@ -1,4 +1,6 @@
-const API = '/api/crypto';
+import { apiUrl } from './platform';
+
+const API = apiUrl('/api/crypto');
 const CACHE_TTL = 3 * 60 * 1000;
 const cache = new Map();
 const inflight = new Map();
