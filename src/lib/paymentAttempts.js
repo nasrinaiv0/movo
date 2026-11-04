@@ -10,6 +10,10 @@ export async function recordPaymentAttempt(userId, input) {
   if(!['failed','paid','cancelled'].includes(input.status)) throw new Error('Choose a valid payment status.');
   const amount=input.amount==null?null:Number(input.amount);
   if(amount!==null&&(!Number.isFinite(amount)||amount<=0)) throw new Error('Enter a valid payment amount.');
+  if(input.account_id){
+    const owned=unwrap(await db().from('financial_accounts').select('id').eq('id',input.account_id).eq('user_id',userId).maybeSingle());
+    if(!owned)throw new Error('Choose an account belonging to your MOVO profile.');
+  }
   const currency=/^[A-Z]{3}$/.test(input.currency||'PHP')?(input.currency||'PHP'):'PHP';
   return unwrap(await db().from('payment_attempts').insert({
     user_id:userId,source_type:input.source_type,source_id:String(input.source_id),
