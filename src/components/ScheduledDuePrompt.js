@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Sheet } from './ui';
 import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
@@ -17,7 +17,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
-  const loadDue = async () => {
+  const loadDue = useCallback(async () => {
     const date=today();
     let dueSchedules=[];
     let dueBills=[];
@@ -35,8 +35,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const dueSubs=subscriptions.filter(s=>s.status==='active'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(s.start||'')&&s.start<=date)
       .map(s=>({kind:'subscription',item:s,date:s.start}));
     return [...dueSchedules,...dueBills,...dueSubs].sort((a,b)=>a.date.localeCompare(b.date));
-  };
-  const setActive = next => {
+  },[loadDue,setActive]);
+  const setActive = useCallback(next => {
     setEntry(next||null);
     const item=next?.item;
     const billAccount=next?.kind==='bill'?next.bill?.account_id:'';
@@ -45,7 +45,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     setDestination(item?.transfer_to_account_id||'');
     setAmount(String(next?.kind==='bill'?amountRemaining(item):item?.amount||''));
     setError('');
-  };
+  },[]);
   useEffect(() => {
     let live=true;
     loadDue().then(queue=>{if(live&&queue.length)setActive(queue[0]);})
