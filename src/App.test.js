@@ -120,8 +120,8 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('GCash');
     clickButton(container, 'Cards');
     expect(container.textContent).toContain('Available Balance');
-    clickButton(container, 'Switch card');
-    expect(container.querySelector('[role="dialog"]').textContent).toContain('Your Cards');
+    expect(container.querySelector('.card-cylinder, .card-stack')).not.toBeNull();
+    expect(container.querySelector('.card-cylinder-face, .card-stack-peek, .card-stack-dots button')).not.toBeNull();
   });
 
   test('Add amount on a card offers Transfer and Manual, and the plus button adds accounts by type', () => {
@@ -471,12 +471,11 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });
 
-  test('sheets receive keyboard focus, trap Tab, and close on Escape', () => {
+  test('account sheets receive keyboard focus, trap Tab, and close on Escape', () => {
     nav(container, 'Wallet');
-    clickButton(container, 'Cards');
-    const trigger = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === 'Switch card' || item.textContent.trim() === 'Switch card');
+    const trigger = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === 'New account');
     expect(trigger).toBeTruthy();
-    act(() => { trigger.focus(); trigger.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    act(() => { trigger.focus(); trigger.click(); });
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
     expect(dialog.contains(document.activeElement)).toBe(true);
