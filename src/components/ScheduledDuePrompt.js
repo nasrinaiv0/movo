@@ -41,7 +41,6 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         const style=cardStyles[card.id]||{};const owed=Math.max(0,-Number(card.balance||0));
         return {kind:'credit_card',item:{...card,title:card.institution_name||card.name,amount:Number(style.minimumDue)||owed,currency:card.currency||'PHP'},date:style.paymentDueDate||''};
       }).filter(x=>x.date&&Number(x.item.amount)>0);
-      await syncPaymentNotifications({schedules:scheduled,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),preferences}).catch(()=>null);
       schedules=scheduled.filter(row=>row.status==='scheduled'&&(!row.snoozed_until||row.snoozed_until<=new Date().toISOString()))
         .map(row=>({kind:'scheduled',item:row,date:row.scheduled_for}));
       billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled')
@@ -63,13 +62,23 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const previous=events.find(e=>e.source_type===type&&e.source_id===sourceId&&e.occurrence_date===entry.date&&Number(e.reminder_offset)===Math.max(0,offset));
       return !previous || (previous.snoozed_until&&previous.snoozed_until<=new Date().toISOString());
     }).sort((a,b)=>a.date.localeCompare(b.date));
-    if(userId&&eligible.length){
-      await Promise.all(eligible.map(entry=>recordReminderEvent(userId,{
-        source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,
-        reminder_offset:Math.max(0,daysUntil(entry.date)),status:'sent',
-      }).catch(()=>null)));
+    const queue=eligible.map(entry=>({...entry,reminderOffset:Math.max(0,daysUntil(entry.date))}));
+    let notificationEvents=events;
+    if(userId&&queue.length){
+      const first=queue[0];
+      const saved=await recordReminderEvent(userId,{
+        source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,
+        reminder_offset:first.reminderOffset,status:'sent',
+      }).catch(()=>null);
+      if(saved)notificationEvents=[...events.filter(e=>!(e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
     }
-    return eligible;
+    if(userId) await syncPaymentNotifications({
+      schedules:scheduled,
+      bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
+      subscriptions,loans,receivables,cards:cardsDue.map(x=>({...x.item,due_date:x.date})),
+      preferences,events:notificationEvents,
+    }).catch(()=>null);
+    return queue;
   },[session?.user?.id,subscriptions,accountsView,cardStyles]);
   const setActive = useCallback(next => {
     setEntry(next||null);
