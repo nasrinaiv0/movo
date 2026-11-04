@@ -1,0 +1,31 @@
+import { supabase } from './supabaseClient';
+
+const unwrap = ({data,error}) => { if(error) throw error; return data; };
+const db = () => { if(!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
+
+export async function recordPaymentAttempt(userId, input) {
+  if(!userId) throw new Error('Sign in to save payment attempt history.');
+  if(!['scheduled','bill','subscription','loan','credit_card','receivable'].includes(input?.source_type)) throw new Error('Choose a valid payment source.');
+  const dueDate=String(input.due_date||''); const parsedDate=new Date(dueDate+'T00:00:00Z');
+  if(!input.source_id || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dueDate) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0,10)!==dueDate) throw new Error('The payment reference or due date is invalid.');
+  if(!['failed','paid','cancelled'].includes(input.status)) throw new Error('Choose a valid payment status.');
+  const amount=input.amount==null?null:Number(input.amount);
+  if(amount!==null&&(!Number.isFinite(amount)||amount<=0)) throw new Error('Enter a valid payment amount.');
+  if(input.account_id){
+    const owned=unwrap(await db().from('financial_accounts').select('id').eq('id',input.account_id).eq('user_id',userId).maybeSingle());
+    if(!owned)throw new Error('Choose an account belonging to your MOVO profile.');
+  }
+  const currency=String(input.currency||'PHP').toUpperCase();
+  if(!/^[A-Z]{3}$/.test(currency))throw new Error('Choose a valid payment currency.');
+  return unwrap(await db().from('payment_attempts').insert({
+    user_id:userId,source_type:input.source_type,source_id:String(input.source_id),
+    due_date:input.due_date,status:input.status,amount,currency,
+    account_id:input.account_id||null,note:String(input.note||'').trim().slice(0,500)||null,
+  }).select().single());
+}
+
+export async function listPaymentAttempts(userId, limit=50) {
+  if(!userId) return [];
+  return unwrap(await db().from('payment_attempts').select('*').eq('user_id',userId)
+    .order('created_at',{ascending:false}).limit(Math.max(1,Math.min(100,limit))))||[];
+}

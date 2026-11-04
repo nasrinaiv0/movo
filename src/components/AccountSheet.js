@@ -14,7 +14,7 @@ import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLog
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
-export default function AccountSheet({ base = 'PHP', country = 'PH', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
+export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = '', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
   const [institutionCountry, setInstitutionCountry] = useState(INSTITUTION_COUNTRIES.includes(country) ? country : 'PH');
@@ -22,6 +22,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
   const institutionOptions = useMemo(() => searchInstitutions(institutionCountry, institutionQuery, form.account_type), [institutionCountry, institutionQuery, form.account_type]);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
   const bankAccounts = accounts.filter(account => account.account_type === 'bank' && !account.is_archived);
+  const ewalletAccounts = accounts.filter(account => account.account_type === 'e_wallet' && !account.is_archived);
   const debitCard = form.account_type === 'card' && form.cardKind !== 'credit';
   const creditCard = form.account_type === 'card' && form.cardKind === 'credit';
   const amountOf = (v) => evaluate(String(v || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
@@ -40,7 +41,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
 
   return <Sheet label={label} onClose={onClose} hideClose className="acct-sheet">{(close) => <form className="acct-form" onSubmit={onSave}>
     <div className="acct-head"><button type="button" className="tx-round" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="back" size={18} /></button><h2>{editing ? tr('Edit Account') : tr('Add Account')}</h2><span className="tx-round ghost" /></div>
-    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" />}</div>
+    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), account_type: form.account_type, mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show qrCode={qrCode} /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" qrCode={qrCode} />}</div>
 
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">{tr('Account type')}</label>
@@ -83,6 +84,17 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
             {onAddBank && <option value="__add">{tr('+ Add a bank account')}</option>}
           </select>
         </div> : <button type="button" className="acct-field acct-add-bank" onClick={() => onAddBank?.()}><span><strong>{tr('Add a bank account')}</strong><small>{debitCard ? tr('A debit card uses its bank account’s balance') : tr('Optional for credit cards')}</small></span><span className="acct-bank-logo"><Icon name="plus" size={18} /></span><Icon name="chevron" size={16} /></button>}
+        {ewalletAccounts.length > 0 && <>
+          <label className="acct-label" htmlFor="acct-linked-ewallet">{tr('Link to e-wallet (optional)')}</label>
+          <div className="acct-field select">
+            <span><strong>{ewalletAccounts.find(account => account.id === form.linkedEwalletId)?.institution_name || ewalletAccounts.find(account => account.id === form.linkedEwalletId)?.name || tr('No e-wallet linked')}</strong><small>{tr('For cards issued by or connected to an e-wallet')}</small></span>
+            <Icon name="down" size={16} />
+            <select id="acct-linked-ewallet" aria-label={tr('Link to e-wallet (optional)')} value={form.linkedEwalletId || ''} onChange={e => set({ linkedEwalletId: e.target.value })}>
+              <option value="">{tr('No e-wallet linked')}</option>
+              {ewalletAccounts.map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name}</option>)}
+            </select>
+          </div>
+        </>}
         <span className="acct-label">{tr('Card network')}</span>
         <div className="acct-network-row" role="group" aria-label={tr('Card network')}>
           {[['visa', 'Visa'], ['mastercard', 'Mastercard'], ['amex', 'Amex'], ['discover', 'Discover'], ['other', tr('Other')]].map(([value, name]) => <button type="button" key={value} className={`acct-net net-${value}${(form.cardNetwork || '') === value ? ' selected' : ''}`} aria-pressed={(form.cardNetwork || '') === value} aria-label={name} onClick={() => set({ cardNetwork: value })}>

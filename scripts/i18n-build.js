@@ -22,7 +22,12 @@ function build({ write = true } = {}) {
   const dicts = Object.fromEntries(CODES.map(c => [c, {}]));
   const holes = (s) => (s.match(/\{\w+\}/g) || []).sort().join(',');
   for (const { file, row } of rows) {
+    if (!Array.isArray(row) || row.length !== CODES.length + 1) {
+      problems.push(`${file}: row ${rows.indexOf(rows.find(item => item.file === file && item.row === row)) + 1} must be an array with ${CODES.length + 1} entries`);
+      continue;
+    }
     const [en, ...tr] = row;
+    if (typeof en !== 'string' || !en.trim()) { problems.push(`${file}: row has an empty English key`); continue; }
     if (seen.has(en)) problems.push(`${file}: duplicate key "${en}" (also in ${seen.get(en)})`);
     seen.set(en, file);
     CODES.forEach((c, i) => {

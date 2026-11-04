@@ -31,7 +31,7 @@ export const typeMeta = (type) => ACCOUNT_TYPES.find(t => t.value === type) || A
 export const styleFor = (a, styles = {}) => ({ color: styles[a.id]?.color || typeMeta(a.account_type).color, icon: styles[a.id]?.icon || typeMeta(a.account_type).icon });
 
 /** Solid account card: icon, name, type and balance. Used for list tiles, grid tiles and the add-account preview. */
-export default function AccountTile({ a, show = true, style, size = 'tile', onClick, label }) {
+export default function AccountTile({ a, show = true, style, size = 'tile', onClick, label, qrCode = '' }) {
   const s = style || styleFor(a);
   const institutionSite = institutionDomain(a.institution_name);
   const network = /mastercard/i.test(String(a.brand || '') + ' ' + String(a.name || '')) ? 'mastercard.com' : /visa/i.test(String(a.brand || '') + ' ' + String(a.name || '')) ? 'visa.com' : null;
@@ -41,6 +41,7 @@ export default function AccountTile({ a, show = true, style, size = 'tile', onCl
       <span className="at-name">{/* One title: the institution (chosen or typed), else the account name. Never both. */ String(a.institution_name || '').trim() || a.name || tr('Account preview')}{a.mask && <small className="at-mask">•••• {a.mask}</small>}</span>
       {size !== 'grid' && <span className="at-type">{a.account_type === 'card' && a.cardKind ? (a.cardKind === 'credit' ? tr('Credit') : tr('Debit')) : tr(typeMeta(a.account_type).label)}</span>}
     </span>
+    {qrCode && ['bank', 'e_wallet'].includes(a.account_type) && <span className="at-qr" aria-label={tr('Account QR code')}><img src={qrCode} alt={tr('Account QR code')} /></span>}
     <span className="at-bottom">
       <small>{size === 'grid' ? tr(typeMeta(a.account_type).label) : tr('Balance')}</small>
       <b>{shown(show, money(a.balance || 0, a.currency || 'PHP'))}</b>

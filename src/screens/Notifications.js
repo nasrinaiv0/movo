@@ -4,6 +4,7 @@ import { RootHeader, SubHeader, Chips, Tile } from '../components/ui';
 import { money, shown, timeLabel, longDate, chipLabel, chipTone, dayKey, relativeDay } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { BriefingNote } from '../components/Briefing';
+import BrandLogo from '../components/BrandLogo';
 
 const FILTERS = [{ key: 'All', label: 'All' }, { key: 'Unread', label: 'Unread', dot: true }, { key: 'Transactions', label: 'Transactions' }, { key: 'Account', label: 'Account' }, { key: 'System', label: 'System' }];
 
@@ -35,7 +36,7 @@ export default function Notifications({ c }) {
     {groups.map((g, i) => <section key={g.label}>
       <div className="section-title"><h2>{g.label}</h2>{i === 0 && <button type="button" className="link-button" onClick={markAllRead}>{tr('Mark all as read')}</button>}</div>
       <div className="card list-card">{g.items.map(n => <button type="button" key={n.id} className="note-row" onClick={() => openNotification(n)}>
-        <span className="note-icon">{n.txId ? <Tile name={c.txs.find(t => t.id === n.txId)?.merchant || ''} size={46} icon={n.icon} tone={n.tone} radius={14} /> : <Tile size={46} icon={n.icon} tone={n.tone} radius={14} />}{!readIds.includes(n.id) && <i className="red-dot" aria-label={tr('Unread')} />}</span>
+        <span className="note-icon">{n.txId ? <BrandLogo name={c.txs.find(t => t.id === n.txId)?.merchant || ''} size={46} className="tile tile-logo" fallback={<Tile name={c.txs.find(t => t.id === n.txId)?.merchant || ''} size={46} icon={n.icon} tone={n.tone} radius={14} />} /> : <Tile size={46} icon={n.icon} tone={n.tone} radius={14} />}{!readIds.includes(n.id) && <i className="red-dot" aria-label={tr('Unread')} />}</span>
         <span className="note-main"><span className="note-top"><strong>{tr(n.title)}</strong><small>{dayKey(n.at) === dayKey(refDate) ? timeLabel(n.at) : longDate(n.at).replace(/, \d{4}/, '')}</small></span><small>{show ? noteBody(n) : noteBody(n).replace(/[^\s\d]{0,4}\d[\d,.]*/g, '••••••')}</small></span>
         <Icon name="chevron" size={16} />
       </button>)}</div>
@@ -55,7 +56,7 @@ export function NotificationDetail({ c }) {
       <h2>{t ? (t.type === 'income' ? tr('Income Recorded') : t.type === 'transfer' ? tr('Transfer Recorded') : tr('Expense Recorded')) : tr(n.title)}</h2>
       <p>{t ? (show ? noteBody(n) : noteBody(n).replace(/[^\s\d]{0,4}\d[\d,.]*/g, '••••••')) : noteBody(n)}</p><small>{longDate(n.at)} · {timeLabel(n.at)}</small></section>
     {t && <section className="card detail-card">
-      <div className="detail-row"><Tile name={t.merchant} size={42} radius={13} /><span><small>{tr('Merchant')}</small><strong>{t.merchant}</strong></span></div>
+      <div className="detail-row"><BrandLogo name={t.merchant} size={42} className="tile tile-logo" fallback={<Tile name={t.merchant} size={42} radius={13} />} /><span><small>{tr('Merchant')}</small><strong>{t.merchant}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="coin" size={22} /></span><span><small>{tr('Amount')}</small><strong>{shown(show, money(t.amount, t.currency))}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="calendar" size={22} /></span><span><small>{tr('Date & Time')}</small><strong>{longDate(t.date)}, {timeLabel(t.date)}</strong></span></div>
       <div className="detail-row"><span className="menu-icon bare"><Icon name="card" size={22} /></span><span><small>{tr('Account')}</small><strong>{account ? `${account.name}${account.mask ? ` •••• ${account.mask}` : ''}` : t.accountName}</strong></span></div>
