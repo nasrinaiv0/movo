@@ -123,7 +123,7 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
       queue.push({id:stableId(key),title,body,schedule:{at:when,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset}});
     }
   };
-  schedules.filter(x=>x.status==='scheduled'&&(!x.snoozed_until||new Date(x.snoozed_until)<=today)).forEach(x=>scheduledDates(x).forEach(date=>add('scheduled',x,date,x.reminder_days||offsets,'Payment reminder',`${x.title} is due ${date}.`)));
+  schedules.filter(x=>x.status==='scheduled').forEach(x=>scheduledDates(x).forEach(date=>add('scheduled',x,date,x.reminder_days||offsets,'Payment reminder',`${x.title} is due ${date}.`)));
   bills.forEach(x=>add('bill',x,x.due_date,offsets,'Bill reminder',`${x.title||x.name||'A bill'} is due ${x.due_date}.`));
   subscriptions.filter(x=>x.status==='active').forEach(x=>add('subscription',x,x.start,offsets,'Subscription renewal',`${x.name||'A subscription'} renews ${x.start}.`));
   loans.filter(x=>Number(x.outstanding_principal)>0).forEach(x=>add('loan',x,x.due_date,offsets,'Loan payment due',`${x.name||'A loan'} is due ${x.due_date}.`));
