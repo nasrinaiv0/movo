@@ -64,6 +64,20 @@ describe('payment notification scheduling', () => {
     expect(LocalNotifications.schedule.mock.calls[0][0].notifications[0].title).toBe('Payment reminder');
   });
 
+  test('schedules a native reminder at the end of a snooze window', async () => {
+    const due=new Date();due.setDate(due.getDate()+4);
+    const snoozedUntil=new Date(Date.now()+60*60*1000);
+    const result=await syncPaymentNotifications({
+      schedules:[{id:'schedule-1',status:'scheduled',frequency:'once',scheduled_for:localDate(due),reminder_days:[2],title:'Internet bill'}],
+      events:[{channel:'push',source_type:'scheduled',source_id:'schedule-1',occurrence_date:localDate(due),reminder_offset:2,status:'dismissed',snoozed_until:snoozedUntil.toISOString()}],
+      preferences:{enabled:true,push_enabled:true,reminder_days:[0,1,3]},
+    });
+    expect(result.scheduled).toBe(1);
+    const notification=LocalNotifications.schedule.mock.calls[0][0].notifications[0];
+    expect(notification.extra.snoozed).toBe(true);
+    expect(notification.schedule.at.getTime()).toBe(snoozedUntil.getTime());
+  });
+
   test('cancels MOVO reminders when the user disables them', async () => {
     LocalNotifications.getPending.mockResolvedValue({notifications:[{id:410001},{id:7}]});
     const result=await syncPaymentNotifications({preferences:{enabled:false,push_enabled:true}});
