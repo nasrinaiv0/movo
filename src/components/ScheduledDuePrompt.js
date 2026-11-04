@@ -48,13 +48,13 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       billsDue=occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({kind:'bill',item:o,bill:billMap.get(o.bill_id),date:o.due_date}));
       loansDue=loans.filter(x=>Number(x.outstanding_principal)>0&&x.due_date).map(x=>({kind:'loan',item:x,date:x.due_date}));
       receivablesDue=receivables.filter(x=>Number(x.outstanding_amount)>0&&x.due_date).map(x=>({kind:'receivable',item:x,date:x.due_date}));
+    }
       cardsDue=accountsView.filter(x=>!x.is_archived&&x.account_type==='card'&&x.cardKind==='credit').map(card=>{
         const style=cardStyles[card.id]||{};const paid=creditCardPaymentSummary(cardPayments[card.id]||[]).totalPaid;
         const owed=Math.max(0,-Number(card.balance||0)-paid);
         const minimum=Math.min(owed,Math.max(0,Number(style.minimumDue)||owed));
         return {kind:'credit_card',item:{...card,title:card.institution_name||card.name,amount:minimum,owed,currency:card.currency||'PHP'},date:style.paymentDueDate||''};
       }).filter(x=>x.date&&Number(x.item.owed)>0);
-    }
     const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s.next||s.next_date||s.start||'')).map(s=>({kind:'subscription',item:s,date:s.next||s.next_date||s.start}));
     const candidates=[...schedulesDue,...billsDue,...subscriptionsDue,...loansDue,...receivablesDue,...cardsDue];
     const daysUntil=value=>Math.floor((new Date(value+'T12:00:00Z').getTime()-new Date(date+'T12:00:00Z').getTime())/86400000);
@@ -175,6 +175,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       else if(entry.kind==='credit_card') {
         await onCreditCardLog?.(item,Number(amount));
         if(session?.user?.id) await recordReminderEvent(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,status:'dismissed'});
+        else {const key=reminderActionKey(entry);const next={...localActions,[key]:{status:'logged',at:new Date().toISOString()}};window.localStorage.setItem('movo.localPaymentReminderActions.v1',JSON.stringify(next));setLocalActions(next);}
       }
       if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
         source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
