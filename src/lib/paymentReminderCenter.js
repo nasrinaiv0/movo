@@ -4,14 +4,29 @@ const db = () => { if (!supabase) throw new Error('MOVO cloud storage is not con
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
 const OFFSETS = [0, 1, 2, 3, 5, 7, 14, 30];
 
+const LOCAL_PREF_KEY = 'movo.paymentReminderPreferences.v1';
+const defaultPreferences = () => ({ enabled:true, reminder_days:[0,1,3], quiet_start:null, quiet_end:null, timezone:'Asia/Manila', push_enabled:false });
+const readLocalPreferences = () => {
+  try { return { ...defaultPreferences(), ...(JSON.parse(window.localStorage.getItem(LOCAL_PREF_KEY)||'{}')) }; }
+  catch { return defaultPreferences(); }
+};
 export async function getReminderPreferences(userId) {
-  if (!userId) return { enabled: true, reminder_days: [0, 1, 3], quiet_start: null, quiet_end: null, timezone: 'Asia/Manila', push_enabled: false };
+  if (!userId) return readLocalPreferences();
   const row = unwrap(await db().from('payment_reminder_preferences').select('*').eq('user_id', userId).maybeSingle());
-  return row ? { ...row, quiet_start: row.quiet_start ? String(row.quiet_start).slice(0,5) : null, quiet_end: row.quiet_end ? String(row.quiet_end).slice(0,5) : null } : { enabled: true, reminder_days: [0, 1, 3], quiet_start: null, quiet_end: null, timezone: 'Asia/Manila', push_enabled: false };
+  return row ? { ...row, quiet_start: row.quiet_start ? String(row.quiet_start).slice(0,5) : null, quiet_end: row.quiet_end ? String(row.quiet_end).slice(0,5) : null } : defaultPreferences();
 }
-
 export async function saveReminderPreferences(userId, input) {
-  if (!userId) throw new Error('Sign in to sync reminder preferences.');
+  if (!userId) {
+    const days=[...new Set((input.reminder_days||[]).map(Number))].filter(n=>OFFSETS.includes(n)).sort((a,b)=>a-b);
+    if(days.length>8)throw new Error('Choose up to eight reminder intervals.');
+    const validTime=value=>value==null||value===''||/^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+    if(!validTime(input.quiet_start)||!validTime(input.quiet_end)||!!input.quiet_start!==!!input.quiet_end)throw new Error('Enter a complete, valid quiet-hour range.');
+    const timezone=String(input.timezone||'Asia/Manila').slice(0,64);
+    try{new Intl.DateTimeFormat('en-US',{timeZone:timezone});}catch{throw new Error('Choose a valid timezone.');}
+    const row={...defaultPreferences(),...input,reminder_days:days,timezone,enabled:input.enabled!==false,push_enabled:input.push_enabled===true};
+    try{window.localStorage.setItem(LOCAL_PREF_KEY,JSON.stringify(row));}catch{throw new Error('Could not save reminder preferences on this device.');}
+    return row;
+  }
   const days = [...new Set((input.reminder_days || []).map(Number))].filter(n => OFFSETS.includes(n)).sort((a,b) => a-b);
   if (days.length > 8) throw new Error('Choose up to eight reminder intervals.');
   const validTime = value => value == null || value === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
