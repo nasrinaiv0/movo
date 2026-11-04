@@ -32,7 +32,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
   const linkedBank = bankAccounts.find(account => account.id === form.linkedBankId);
   const [pad, setPad] = useState(false);
   const [qrError, setQrError] = useState('');
-  const currentQrCode = form.qrCode || qrCode || '';
+  const currentQrCode = form.qrCode !== undefined ? form.qrCode : (qrCode || '');
   const handleQrUpload = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
