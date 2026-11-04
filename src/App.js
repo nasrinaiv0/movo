@@ -525,12 +525,12 @@ function App() {
   }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
-  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_file: null })); setSheet({ name: 'transaction', type }); };
+  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null })); setSheet({ name: 'transaction', type }); };
   const openGrocery = () => { setError(''); setSheet({ name: 'grocery' }); };
   const saveGroceryDraft = (draft) => { setPref('groceryDraft', draft); notify(tr('Grocery list saved as draft.')); };
-  const logGroceryExpense = ({ merchant, amount, accountId, note }) => { setForm(f => ({ ...f, merchant, amount:String(amount), transaction_type:'expense', category:'food:groceries', account_id:accountId, occurred_at:today(), time:'', note, source:'', ref:'', payment_reference:'', receipt_note:'', receipt_path:'', receipt_file:null })); setPref('groceryDraft', null); setSheet({ name:'transaction', type:'expense' }); };
+  const logGroceryExpense = ({ merchant, amount, accountId, note }) => { setForm(f => ({ ...f, merchant, amount:String(amount), transaction_type:'expense', category:'food:groceries', account_id:accountId, occurred_at:today(), time:'', note, source:'', ref:'', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null })); setPref('groceryDraft', null); setSheet({ name:'transaction', type:'expense' }); };
   /* "Add amount" on a card or account: a transfer into it from another account, or a manual top-up (income). */
-  const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_file:null })); setSheet({ name: 'transaction', type: 'transfer' }); };
+  const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null })); setSheet({ name: 'transaction', type: 'transfer' }); };
   const openEditAccount = (account) => {
     setError('');
     setAccountForm({
@@ -800,7 +800,7 @@ function App() {
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
     setError('');
-    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: '', category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: '', category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
@@ -1356,7 +1356,7 @@ function App() {
         const acct = (f.last4 && live.find(a => a.mask === f.last4)) || (bank && live.find(a => [a.institution_name, a.name].some(n => String(n || '').toLowerCase() === bank)));
         const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type, ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs);
         setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : '');
-        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', ...(acct ? { account_id: acct.id } : {}) }));
+        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, ...(acct ? { account_id: acct.id } : {}) }));
         setSheet({ name: 'transaction', type });
       }} />}
 
