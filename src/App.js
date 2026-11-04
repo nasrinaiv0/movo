@@ -887,7 +887,7 @@ function App() {
     setBusy(true); setError('');
     try {
       await deleteMyAccount();
-      await clearLocalAccountQr();
+      await clearLocalAccountQr().catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
