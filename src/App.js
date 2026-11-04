@@ -1383,7 +1383,7 @@ function App() {
       </Sheet>}
 
       {accountChoice && <Sheet title={tr('Account details')} onClose={() => setSheet(null)} label={tr('Account details')}>
-        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" />}</div>
+        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} qrCode={prefs.accountQrCodes?.[accountChoice.id] || ''} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" qrCode={prefs.accountQrCodes?.[accountChoice.id] || ''} />}</div>
         <dl className="detail-list"><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
           <div><dt>{tr('Credit limit')}</dt><dd>{shown(show, money(ci.limit, cur))}</dd></div>
           <div><dt>{tr('Used')}</dt><dd>{shown(show, money(ci.owed, cur))} · {ci.usedPercent}%</dd></div>
