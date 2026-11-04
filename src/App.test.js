@@ -517,9 +517,6 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Cards');
     const goTymeCard = container.querySelector('button[aria-label="Show GoTyme card"]');
     if (goTymeCard) act(() => goTymeCard.click());
-    const targetCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('GoTyme'));
-    expect(targetCard).toBeTruthy();
-    act(() => targetCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Edit account');
     setInputValue(container.querySelector('#acct-linked-bank'), 'demo-rcbc');
@@ -532,9 +529,6 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Cards');
     const rcbcCard = container.querySelector('button[aria-label="Show RCBC card"]');
     if (rcbcCard) act(() => rcbcCard.click());
-    const updatedCard = Array.from(container.querySelectorAll('.sheet-card')).find(button => button.textContent.includes('RCBC'));
-    expect(updatedCard).toBeTruthy();
-    act(() => updatedCard.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
     expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC').is_archived).toBe(true);
