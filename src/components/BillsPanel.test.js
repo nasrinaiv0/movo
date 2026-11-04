@@ -25,7 +25,7 @@ test('pay a variable bill: sets the actual amount, records once per attempt with
   expect(app.textContent).toContain('Electricity');
   expect(app.textContent).toContain('Due today');
   const button = (label) => Array.from(app.querySelectorAll('button')).find(b => b.textContent === label);
-  await act(async () => button('Pay').click());
+  await act(async () => button('Log payment').click());
   const select = app.querySelector('.bill-pay select');
   expect(Array.from(select.options).map(o => o.value)).toEqual(['', 'acc1']); // only same-currency accounts
   const actual = app.querySelector('.bill-pay input[type="number"]');
@@ -46,7 +46,7 @@ test('paid elsewhere reconciles without an account', async () => {
   const root = createRoot(app);
   repo.recordBillPayment.mockResolvedValue({ id: 'p2' });
   await act(async () => root.render(<BillsPanel c={{ base: 'PHP' }} accounts={[{ id: 'acc1', name: 'BPI', currency: 'PHP' }]} />));
-  await act(async () => Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Pay').click());
+  await act(async () => Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Log payment').click());
   await act(async () => Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Paid elsewhere').click());
   expect(repo.recordBillPayment).toHaveBeenLastCalledWith(expect.objectContaining({ method: 'external', account_id: null }));
   expect(app.textContent).toContain('No account was charged');
