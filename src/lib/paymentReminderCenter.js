@@ -14,10 +14,14 @@ export async function saveReminderPreferences(userId, input) {
   if (!userId) throw new Error('Sign in to sync reminder preferences.');
   const days = [...new Set((input.reminder_days || []).map(Number))].filter(n => OFFSETS.includes(n)).sort((a,b) => a-b);
   if (days.length > 8) throw new Error('Choose up to eight reminder intervals.');
+  const validTime = value => value == null || value === '' || /^([01]\\d|2[0-3]):[0-5]\\d$/.test(value);
+  if (!validTime(input.quiet_start) || !validTime(input.quiet_end)) throw new Error('Enter valid quiet-hour times.');
+  const timezone = String(input.timezone || 'Asia/Manila').slice(0,64);
+  try { new Intl.DateTimeFormat('en-US', { timeZone: timezone }); } catch { throw new Error('Choose a valid timezone.'); }
   const row = {
     user_id: userId, enabled: input.enabled !== false, reminder_days: days,
     quiet_start: input.quiet_start || null, quiet_end: input.quiet_end || null,
-    timezone: String(input.timezone || 'Asia/Manila').slice(0,64),
+    timezone,
     push_enabled: input.push_enabled === true, updated_at: new Date().toISOString(),
   };
   return unwrap(await db().from('payment_reminder_preferences').upsert(row).select().single());
