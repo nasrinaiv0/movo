@@ -46,6 +46,8 @@ export default function CryptoMarket({ c }) {
   const [holdingCoin, setHoldingCoin] = useState('');
   const [holdingQuantity, setHoldingQuantity] = useState('');
   const [holdingCost, setHoldingCost] = useState('');
+  const [holdingQuote, setHoldingQuote] = useState(quote);
+  const [holdingAcquiredAt, setHoldingAcquiredAt] = useState(new Date().toISOString().slice(0, 10));
   const [holdingEditId, setHoldingEditId] = useState(null);
   const [holdingFormOpen, setHoldingFormOpen] = useState(false);
   const portfolio = useMemo(() => summarizeCryptoHoldings(holdings, coins, quote), [holdings, coins, quote]);
@@ -142,6 +144,7 @@ export default function CryptoMarket({ c }) {
   const openHoldingForm = (row = null) => {
     setHoldingEditId(row?.id || null); setHoldingCoin(row?.coinId || coins[0]?.id || '');
     setHoldingQuantity(row ? String(row.quantity) : ''); setHoldingCost(row?.averageCost == null ? '' : String(row.averageCost));
+    setHoldingQuote(row?.quote || quote); setHoldingAcquiredAt(row?.acquiredAt ? row.acquiredAt.slice(0, 10) : new Date().toISOString().slice(0, 10));
     setHoldingFormOpen(true);
   };
   const saveHolding = (event) => {
@@ -149,9 +152,9 @@ export default function CryptoMarket({ c }) {
     const coin = coins.find(item => item.id === holdingCoin);
     if (!coin) { c.notify?.('Select a cryptocurrency available in the current market.'); return; }
     try {
-      const row = { id: holdingEditId || (window.crypto?.randomUUID?.() || 'holding-' + Date.now()), coinId: coin.id, name: coin.name, symbol: coin.symbol, quantity: Number(holdingQuantity), averageCost: holdingCost.trim() ? Number(holdingCost) : null, quote, acquiredAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      const row = { id: holdingEditId || (window.crypto?.randomUUID?.() || 'holding-' + Date.now()), coinId: coin.id, name: coin.name, symbol: coin.symbol, quantity: Number(holdingQuantity), averageCost: holdingCost.trim() ? Number(holdingCost) : null, quote: holdingQuote, acquiredAt: holdingAcquiredAt ? new Date(holdingAcquiredAt + 'T12:00:00').toISOString() : null, updatedAt: new Date().toISOString() };
       c.setPref?.('cryptoHoldings', upsertCryptoHolding(holdings, row));
-      setHoldingFormOpen(false); setHoldingEditId(null); setHoldingQuantity(''); setHoldingCost('');
+      setHoldingFormOpen(false); setHoldingEditId(null); setHoldingQuantity(''); setHoldingCost(''); setHoldingQuote(quote);
       c.notify?.(holdingEditId ? 'Holding updated.' : 'Holding added to your portfolio.');
     } catch { c.notify?.('Check the quantity and average cost, then try again.'); }
   };
@@ -222,8 +225,8 @@ export default function CryptoMarket({ c }) {
         {holdingFormOpen && <form className="crypto-holding-form card" onSubmit={saveHolding}>
           <div className="crypto-holding-form-head"><div><small>{holdingEditId ? 'EDIT POSITION' : 'NEW POSITION'}</small><h3>{holdingEditId ? 'Update holding' : 'Add a holding'}</h3></div><button type="button" aria-label="Close holding form" onClick={() => setHoldingFormOpen(false)}>×</button></div>
           <label>Asset<select value={holdingCoin} onChange={e => setHoldingCoin(e.target.value)} required>{coins.map(coin => <option key={coin.id} value={coin.id}>{coin.name} ({coin.symbol})</option>)}</select></label>
-          <div className="crypto-holding-fields"><label>Quantity<input type="number" min="0.0000000001" step="any" inputMode="decimal" value={holdingQuantity} onChange={e => setHoldingQuantity(e.target.value)} placeholder="0.00" required /></label><label>Average buy price <small>({quote} per coin)</small><input type="number" min="0" step="any" inputMode="decimal" value={holdingCost} onChange={e => setHoldingCost(e.target.value)} placeholder="Optional" /></label></div>
-          <p className="crypto-holding-hint">Enter the quantity you own and average acquisition price in {quote}. Leave cost blank if unknown.</p>
+          <div className="crypto-holding-fields"><label>Quantity<input type="number" min="0.0000000001" step="any" inputMode="decimal" value={holdingQuantity} onChange={e => setHoldingQuantity(e.target.value)} placeholder="0.00" required /></label><label>Average buy price <small>({holdingQuote} per coin)</small><input type="number" min="0" step="any" inputMode="decimal" value={holdingCost} onChange={e => setHoldingCost(e.target.value)} placeholder="Optional" /></label></div>
+          <label>Acquisition date<input type="date" value={holdingAcquiredAt} onChange={e => setHoldingAcquiredAt(e.target.value)} /></label><p className="crypto-holding-hint">Enter your average acquisition price in {holdingQuote}. Holdings keep their original quote currency; MOVO will not convert cost basis without a verified FX rate.</p>
           <button type="submit" className="crypto-holding-save">{holdingEditId ? 'Save changes' : 'Add to portfolio'}</button>
         </form>}
         {portfolio.rows.length ? <div className="crypto-holding-list">{portfolio.rows.map(row => <article className="crypto-holding-row card" key={row.id}>
