@@ -8,13 +8,13 @@ const dateAtLocalTime = (date, time) => {
   const value = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour || 0, minute || 0, 0, 0);
   return value;
 };
-const inQuietHours = (date, start, end) => {
+export const inQuietHours = (date, start, end) => {
   if (!start || !end) return false;
   const toMinutes = value => { const [h,m] = value.split(':').map(Number); return h*60+m; };
   const now = date.getHours()*60+date.getMinutes(), a=toMinutes(start), b=toMinutes(end);
   return a===b ? false : a<b ? now>=a&&now<b : now>=a||now<b;
 };
-const moveOutOfQuietHours = (date, start, end) => {
+export const moveOutOfQuietHours = (date, start, end) => {
   if (!inQuietHours(date,start,end)) return date;
   const [h,m]=String(end).split(':').map(Number);
   const next=new Date(date); next.setHours(h,m,0,0);
@@ -27,7 +27,7 @@ const stableId = value => {
   return ID_BASE + (hash>>>0)%1800000000;
 };
 const asDate = value => new Date(`${value}T12:00:00`);
-const scheduledDates = item => {
+export const scheduledDates = item => {
   const dates=[item.scheduled_for];
   if(!['weekly','monthly','yearly'].includes(item.frequency))return dates;
   let cursor=asDate(item.scheduled_for);
