@@ -10,7 +10,8 @@ const requireStorage = () => {
   return supabase.storage.from(ACCOUNT_QR_BUCKET);
 };
 const assertOwnedPath = (userId, path) => {
-  if (!safeId(userId) || typeof path !== 'string' || !path.startsWith(`${userId}/`) || path.split('/').length !== 3 || !safeId(path.split('/')[1]) || !/^[0-9a-f-]{36}\.png$/i.test(path.split('/')[2])) {
+  const fileName = typeof path === 'string' ? path.split('/')[2] : '';
+  if (!safeId(userId) || typeof path !== 'string' || !path.startsWith(`${userId}/`) || path.split('/').length !== 3 || !safeId(path.split('/')[1]) || !/\.png$/i.test(fileName) || !safeId(fileName.slice(0, -4))) {
     throw new Error('invalid_account_qr_path');
   }
   return path;
@@ -87,7 +88,7 @@ export async function removeAllAccountQr(userId) {
       for (let fileOffset = 0; ; fileOffset += 100) {
         const { data: files, error: fileError } = await storage.list(`${userId}/${folder.name}`, { limit: 100, offset: fileOffset });
         if (fileError) throw fileError;
-        const paths = (files || []).filter(file => file.id && /^[0-9a-f-]{36}\.png$/i.test(file.name)).map(file => `${userId}/${folder.name}/${file.name}`);
+        const paths = (files || []).filter(file => file.id && /\.png$/i.test(file.name) && safeId(file.name.slice(0, -4))).map(file => `${userId}/${folder.name}/${file.name}`);
         if (paths.length) removals.push(...paths);
         if (!files || files.length < 100) break;
       }
