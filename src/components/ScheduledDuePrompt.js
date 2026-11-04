@@ -175,7 +175,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       else if(entry.kind==='credit_card') {
         await onCreditCardLog?.(item,Number(amount));
         if(session?.user?.id) await recordReminderEvent(session.user.id,{source_type:entry.kind,source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0,status:'dismissed'});
-        else {const key=reminderActionKey(entry);const next={...localActions,[key]:{status:'logged',at:new Date().toISOString()}};window.localStorage.setItem('movo.localPaymentReminderActions.v1',JSON.stringify(next));setLocalActions(next);}
+        else {const key=reminderActionKey(entry);dismissedThisSession.current.add(key);const next={...localActions,[key]:{status:'logged',at:new Date().toISOString()}};window.localStorage.setItem('movo.localPaymentReminderActions.v1',JSON.stringify(next));setLocalActions(next);}
       }
       if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
         source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
