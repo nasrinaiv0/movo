@@ -731,7 +731,7 @@ function App() {
           try {
             const path = await uploadAccountQr(session.user.id, id, qrDataUrl);
             value = path;
-            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: qrDataUrl })); /* IndexedDB cache remains available offline */ }
+            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { setAccountQrDisplay(cur => ({ ...cur, [id]: qrDataUrl })); /* IndexedDB cache remains available offline */ }
           } catch {
             value = previous || (localCached ? `localqr:${cacheKey}` : '');
             if (localCached) {
