@@ -32,6 +32,7 @@ jest.mock('./AccountTile', () => {
 });
 jest.mock('../lib/cashback', () => ({ estimateCashback: () => [] }));
 jest.mock('../lib/scheduledTransactions', () => ({ listScheduledTransactions: () => Promise.resolve([]) }));
+jest.mock('../lib/obligationsRepository', () => ({ listGoals: () => Promise.resolve([]), listGoalAllocations: () => Promise.resolve([]) }));
 
 test('read-only account hub shows resolved QR artwork, supports Escape to close zoom, and hides edit/archive actions', async () => {
   const el = document.createElement('div');
@@ -110,6 +111,39 @@ test('account overview shows Money Flow scoped to the selected account', async (
   expect(flow).not.toBeNull();
   expect(flow.getAttribute('data-variant')).toBe('bars');
   expect(flow.getAttribute('data-transaction-ids').split(',')).toEqual(['cash-expense', 'cash-income', 'transfer-to-cash']);
+  act(() => root.unmount());
+  el.remove();
+});
+
+
+test('connected items show goal and plan allocations belonging to the selected account', async () => {
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => {
+    root.render(<AccountDetailsSheet
+      account={{ id: 'bank-1', name: 'BPI Savings', account_type: 'bank', currency: 'PHP', balance: 12000 }}
+      accounts={[]}
+      transactions={[]}
+      prefs={{}}
+      subscriptions={[]}
+      plans={[{ id: 'trip', name: 'Japan trip', currency: 'PHP', fundingAllocations: [
+        { id: 'plan-allocation', account_id: 'bank-1', amount: 2500, currency: 'PHP', status: 'allocated', created_at: '2026-11-01T00:00:00Z' },
+        { id: 'other-account-plan', account_id: 'cash-1', amount: 900, currency: 'PHP', status: 'allocated' },
+      ] }]}
+      show
+      onClose={jest.fn()}
+    />);
+    await Promise.resolve();
+  });
+  await act(async () => el.querySelector('[role="tab"][aria-label]')?.click());
+  const tabs = [...el.querySelectorAll('[role="tab"]')];
+  await act(async () => tabs.find(tab => tab.textContent.includes('Connected'))?.click());
+  expect(el.textContent).toContain('Allocated funds for goals and plans');
+  expect(el.textContent).toContain('Japan trip');
+  expect(el.textContent).toContain('₱2,500.00');
+  expect(el.textContent).not.toContain('other-account-plan');
+  expect(el.textContent).not.toContain('₱900.00');
   act(() => root.unmount());
   el.remove();
 });
