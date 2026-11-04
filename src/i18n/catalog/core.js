@@ -2717,5 +2717,10 @@ export default [
     "名前 A–Z",
     "이름 A–Z",
     "नाम A–Z"
-  ]
+  ],
+  ["All billing cycles","Lahat ng billing cycle","كل دورات الفوترة","所有账单周期","Todos los ciclos de facturación","Tutti i cicli di fatturazione","Alle Abrechnungszeiträume","Tous les cycles de facturation","Todos os ciclos de cobrança","すべての請求サイクル","모든 결제 주기","सभी बिलिंग चक्र"],
+  ["Filter by billing cycle","I-filter ayon sa billing cycle","تصفية حسب دورة الفوترة","按账单周期筛选","Filtrar por ciclo de facturación","Filtra per ciclo di fatturazione","Nach Abrechnungszeitraum filtern","Filtrer par cycle de facturation","Filtrar por ciclo de cobrança","請求サイクルで絞り込む","결제 주기별 필터","बिलिंग चक्र के अनुसार फ़िल्टर करें"],
+  ["Last 12 months","Huling 12 buwan","آخر 12 شهرًا","过去12个月","Últimos 12 meses","Ultimi 12 mesi","Letzte 12 Monate","12 derniers mois","Últimos 12 meses","過去12か月","지난 12개월","पिछले 12 महीने"],
+  ["Present","Kasalukuyan","الحالي","当前","Actual","Corrente","Aktuell","Actuel","Atual","現在","현재","वर्तमान"],
+  ["Select billing cycle","Pumili ng billing cycle","اختر دورة الفوترة","选择账单周期","Seleccionar ciclo de facturación","Seleziona il ciclo di fatturazione","Abrechnungszeitraum auswählen","Sélectionner un cycle de facturation","Selecionar ciclo de cobrança","請求サイクルを選択","결제 주기 선택","बिलिंग चक्र चुनें"]
 ];
