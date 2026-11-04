@@ -66,3 +66,15 @@ export async function clearLocalAccountQr() {
     tx.onabort = () => reject(tx.error || new Error('account_qr_cache_clear_aborted'));
   });
 }
+
+export async function clearLocalAccountQr() {
+  if (typeof indexedDB === 'undefined') return;
+  const db = await openDatabase();
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).clear();
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error || new Error('account_qr_cache_clear_failed'));
+    tx.onabort = () => reject(tx.error || new Error('account_qr_cache_clear_aborted'));
+  });
+}
