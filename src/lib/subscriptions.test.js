@@ -1,6 +1,25 @@
-import { billingDate, nextRenewal, renewalsBetween, monthlyCost, summarize, dayDiff } from './subscriptions';
+import { billingDate, nextRenewal, renewalsBetween, monthlyCost, summarize, dayDiff, subscriptionPaymentAccountId } from './subscriptions';
 
 const sub = (over = {}) => ({ id: 's', name: 'Netflix', category: 'Entertainment', amount: 549, currency: 'PHP', cycle: 'monthly', start: '2026-01-31', status: 'active', ...over });
+
+test('subscription payment account routing accepts active bank, e-wallet and payment cards only', () => {
+  const accounts = [
+    { id: 'bank-1', account_type: 'bank' },
+    { id: 'wallet-1', account_type: 'e_wallet' },
+    { id: 'credit-1', account_type: 'card', cardKind: 'credit' },
+    { id: 'debit-1', account_type: 'card', cardKind: 'debit' },
+    { id: 'member-1', account_type: 'card', cardKind: 'membership' },
+    { id: 'archived-1', account_type: 'bank', is_archived: true },
+  ];
+  expect(subscriptionPaymentAccountId({ accountId: 'bank-1' }, accounts)).toBe('bank-1');
+  expect(subscriptionPaymentAccountId({ accountId: 'wallet-1' }, accounts)).toBe('wallet-1');
+  expect(subscriptionPaymentAccountId({ account_id: 'credit-1' }, accounts)).toBe('credit-1');
+  expect(subscriptionPaymentAccountId({ accountId: 'debit-1' }, accounts)).toBe('debit-1');
+  expect(subscriptionPaymentAccountId({ accountId: 'member-1' }, accounts)).toBe('');
+  expect(subscriptionPaymentAccountId({ accountId: 'archived-1' }, accounts)).toBe('');
+  expect(subscriptionPaymentAccountId({ accountId: 'deleted-1' }, accounts)).toBe('');
+  expect(subscriptionPaymentAccountId({}, accounts)).toBe('');
+});
 
 test('monthly plans keep their day, clamping to short months', () => {
   expect([0, 1, 2, 3].map(n => billingDate('2026-01-31', 'monthly', n))).toEqual(['2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30']);
