@@ -46,6 +46,7 @@ create table if not exists public.payment_reminder_events (
   reminder_offset integer not null default 0,
   channel text not null default 'in_app' check (channel in ('in_app','push','email')),
   status text not null default 'queued' check (status in ('queued','sent','failed','dismissed')),
+  snoozed_until timestamptz,
   sent_at timestamptz,
   created_at timestamptz not null default now(),
   unique(user_id,source_type,source_id,occurrence_date,reminder_offset,channel)
@@ -54,6 +55,9 @@ alter table public.payment_reminder_events enable row level security;
 drop policy if exists "Users read their payment reminder events" on public.payment_reminder_events;
 create policy "Users read their payment reminder events" on public.payment_reminder_events
   for select to authenticated using (auth.uid()=user_id);
+drop policy if exists "Users manage their payment reminder events" on public.payment_reminder_events;
+create policy "Users manage their payment reminder events" on public.payment_reminder_events
+  for all to authenticated using (auth.uid()=user_id) with check (auth.uid()=user_id);
 create index if not exists payment_reminder_events_user_idx on public.payment_reminder_events(user_id,created_at desc);
 
 -- Optional reference fields make receipts and provider references searchable without storing card credentials.
