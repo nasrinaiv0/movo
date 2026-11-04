@@ -5,7 +5,7 @@ import { listScheduledTransactions, logScheduledTransaction } from '../lib/sched
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
 import { amountRemaining, occurrenceState, paymentKey } from '../lib/bills';
 import { snoozeSchedule, getReminderPreferences, listReminderEvents, recordReminderEvent, snoozeObligation } from '../lib/paymentReminderCenter';
-import { syncPaymentNotifications, inQuietHours } from '../lib/paymentNotifications';
+import { syncPaymentNotifications, inQuietHours, canSchedulePaymentNotifications } from '../lib/paymentNotifications';
 import { recordPaymentAttempt } from '../lib/paymentAttempts';
 import { listLoans, listReceivables, recordLoanEvent, recordReceivableEvent } from '../lib/obligationsRepository';
 
@@ -69,8 +69,10 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       const first=queue[0];
       const saved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,status:'sent'}).catch(()=>null);
       if(saved)notificationEvents=[...notificationEvents.filter(e=>!(e.channel==='in_app'&&e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
-      const pushSaved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,channel:'push',status:'sent'}).catch(()=>null);
-      if(pushSaved)notificationEvents=[...notificationEvents.filter(e=>!(e.channel==='push'&&e.source_type===pushSaved.source_type&&e.source_id===pushSaved.source_id&&e.occurrence_date===pushSaved.occurrence_date&&Number(e.reminder_offset)===Number(pushSaved.reminder_offset))),pushSaved];
+      if(preferences.push_enabled===true&&await canSchedulePaymentNotifications()){
+        const pushSaved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,channel:'push',status:'sent'}).catch(()=>null);
+        if(pushSaved)notificationEvents=[...notificationEvents.filter(e=>!(e.channel==='push'&&e.source_type===pushSaved.source_type&&e.source_id===pushSaved.source_id&&e.occurrence_date===pushSaved.occurrence_date&&Number(e.reminder_offset)===Number(pushSaved.reminder_offset))),pushSaved];
+      }
     }
     await syncPaymentNotifications({
       schedules,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
