@@ -6,7 +6,8 @@ import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Bars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
-import { money, shown, dayKey } from '../lib/format';
+import { money, shown } from '../lib/format';
+import { accountSpendingHistory } from '../lib/accountSpending';
 import { creditInfo } from '../lib/creditCard';
 import { walletAssetTotal, walletTypePercentage } from '../lib/walletTotals';
 import { t as tr } from '../lib/i18n';
@@ -72,26 +73,13 @@ export default function Wallet({ c }) {
   const total = walletAssetTotal(live, c.toBase) || 1;
   const cards = accountsByType.card;
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
-  const selectedCardSpending = useMemo(() => {
-    if (!selectedCard) return [];
-    const dates = [];
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    for (let offset = 9; offset >= 0; offset -= 1) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - offset);
-      dates.push({ key: dayKey(date), total: 0 });
-    }
-    const byDay = new Map(dates.map(day => [day.key, day]));
-    txs.forEach(transaction => {
-      if (transaction.account_id !== selectedCard.id || (transaction.type !== 'expense' && transaction.transaction_type !== 'expense')) return;
-      const timestamp = Date.parse(transaction.date || transaction.occurred_at || '');
-      if (!Number.isFinite(timestamp)) return;
-      const day = byDay.get(dayKey(timestamp));
-      if (day) day.total += Math.max(0, Number(transaction.amount) || 0);
-    });
-    return dates;
-  }, [selectedCard, txs]);
+  const selectedCardSpending = useMemo(() => accountSpendingHistory({
+    account: selectedCard,
+    accounts: accountsView,
+    prefs,
+    transactions: txs,
+    days: 10,
+  }), [selectedCard, accountsView, prefs.cardBankLinks, prefs.accountStyles, txs]);
   const selectedCardSpent = selectedCardSpending.reduce((sum, day) => sum + day.total, 0);
   const recent = txs.slice(0, 3);
   const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
@@ -184,8 +172,8 @@ export default function Wallet({ c }) {
         <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
       </button>}
       {selectedCard && <section className="account-hub-section account-spending-section wallet-selected-spending" aria-label={tr('Last 10 days spending')}>
-        <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(selectedCardSpent, selectedCard.currency))}</strong></div>
-        <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(selectedCardSpent, selectedCard.currency) })}>
+        <div className="account-spending-heading"><h3>{tr('Last 10 Days Spending')}</h3><strong>{shown(show, money(selectedCardSpent, c.base || 'PHP'))}</strong></div>
+        <div className="account-spending-chart" role="img" aria-label={tr('Spending over the last 10 days: {amount}', { amount: money(selectedCardSpent, c.base || 'PHP') })}>
           <Bars values={selectedCardSpending.map(day => day.total)} startLabel={tr('10 days ago')} endLabel={tr('Today')} />
         </div>
       </section>}
