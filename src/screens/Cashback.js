@@ -78,7 +78,7 @@ export default function Cashback({ c }) {
         </div>
         <div className="cashback-rule-fields">
           <label className="cashback-field"><span>{tr('Cashback rate (%)')}</span><input className="cashback-input" type="number" inputMode="decimal" min="0" max="100" step="0.01" placeholder="e.g. 1.5" aria-label={tr('Cashback rate (%)')} value={rule.rate ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, rate: event.target.value } })} /></label>
-          <label className="cashback-field"><span>{tr('Maximum per transaction')}</span><input className="cashback-input" type="number" inputMode="decimal" min="0" step="0.01" placeholder={tr('No limit')} aria-label={tr('Maximum per transaction')} value={rule.cap ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, cap: event.target.value } })} /></label>
+          <label className="cashback-field"><span>{tr('Maximum per transaction')}</span><input className="cashback-input" type="number" inputMode="decimal" min="0" step="0.01" placeholder="" aria-label={tr('Maximum per transaction')} value={rule.cap ?? ''} onChange={event => saveRules({ ...rules, [account.id]: { ...rule, cap: event.target.value } })} /></label>
         </div>
         <small className="form-note cashback-hint">{tr('Estimate only · based on logged purchases')}</small>
       </article>;
