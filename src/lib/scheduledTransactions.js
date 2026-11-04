@@ -40,7 +40,8 @@ export async function createScheduledTransaction(input, userId) {
     currency,
     account_id:input.account_id,transfer_to_account_id:type==='transfer'?input.transfer_to_account_id:null,
     scheduled_for:validDate(input.scheduled_for),frequency,status:'scheduled',
-    category:String(input.category||'Other').slice(0,60),notes:String(input.notes||'').slice(0,500)||null,\n    ends_on:input.ends_on||null,reminder_days:Array.isArray(input.reminder_days)?input.reminder_days:[0,1,3],timezone:String(input.timezone||'Asia/Manila').slice(0,64),
+    category:String(input.category||'Other').slice(0,60),notes:String(input.notes||'').slice(0,500)||null,
+    ends_on:input.ends_on||null,reminder_days:Array.isArray(input.reminder_days)?input.reminder_days:[0,1,3],timezone:String(input.timezone||'Asia/Manila').slice(0,64),
   }).select().single());
 }
 export async function logScheduledTransaction(item, accountId = item.account_id, transferTo = item.transfer_to_account_id) {
