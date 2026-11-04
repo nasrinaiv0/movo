@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
-import { money, shown, monthRange, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
+import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { activityNetAmount } from '../lib/financeCalculations';
 
