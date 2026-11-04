@@ -4,7 +4,7 @@ import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
-import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
+import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, snoozeObligation, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
 import { requestPaymentNotificationPermission } from '../lib/paymentNotifications';
 import { listPaymentAttempts, recordPaymentAttempt } from '../lib/paymentAttempts';
 import { listBills, listOccurrences } from '../lib/billsRepository';
@@ -61,7 +61,7 @@ export default function ScheduledTransactions({ c }) {
   const run=async fn=>{setBusy(true);setError('');try{await fn();await reload();setNotice(tr('Changes saved.'));}catch(e){setError(e.message||tr('Could not save changes.'));}finally{setBusy(false);}};
   const save=async e=>{e.preventDefault();await run(async()=>{if(sheet?.kind==='edit')await updateSchedule(sheet.item.id,session?.user?.id,form);else await createScheduledTransaction(form,session?.user?.id);setSheet(null);});};
   const log=async(item,accountId,transferTo,amount=item.amount,title=item.title)=>run(async()=>{await logScheduledTransaction({...item,amount,title},accountId,transferTo);setSheet(null);notify?.(tr('Transaction logged.'));});
-  const action=async(item,kind)=>run(async()=>{if(kind==='pause'||kind==='resume'||kind==='cancel')await setScheduleState(item.id,session?.user?.id,kind);if(kind==='skip')await skipScheduleOccurrence(item,session?.user?.id);if(kind==='snooze')await snoozeSchedule(item.id,session?.user?.id,new Date(Date.now()+24*60*60*1000).toISOString());setSheet(null);});
+  const action=async(item,kind)=>run(async()=>{if(kind==='pause'||kind==='resume'||kind==='cancel')await setScheduleState(item.id,session?.user?.id,kind);if(kind==='skip')await skipScheduleOccurrence(item,session?.user?.id);if(kind==='snooze'){const until=new Date(Date.now()+24*60*60*1000).toISOString();await snoozeSchedule(item.id,session?.user?.id,until);if(session?.user?.id)await snoozeObligation(session.user.id,{source_type:'scheduled',source_id:String(item.id),occurrence_date:item.scheduled_for,reminder_offset:0},until);window.dispatchEvent(new Event('movo:payment-reminders-updated'));}setSheet(null);});
   const edit=item=>{setForm({...item,amount:String(item.amount),reminder_days:item.reminder_days||[0,1,3],ends_on:item.ends_on||''});setError('');setSheet({kind:'edit',item});};
   const monthStart=new Date(month.getFullYear(),month.getMonth(),1); const offset=(monthStart.getDay()+6)%7;
   const days=Array.from({length:new Date(month.getFullYear(),month.getMonth()+1,0).getDate()},(_,i)=>i+1);
