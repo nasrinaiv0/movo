@@ -5,6 +5,7 @@ import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
+import { requestPaymentNotificationPermission } from '../lib/paymentNotifications';
 
 const day = () => new Date().toLocaleDateString('en-CA');
 const blank = currency => ({ title:'', transaction_type:'expense', amount:'', currency, account_id:'', transfer_to_account_id:'', scheduled_for:day(), frequency:'once', category:'Other', notes:'', reminder_days:[0,1,3], timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Manila', ends_on:'' });
@@ -65,6 +66,7 @@ export default function ScheduledTransactions({ c }) {
     {sheet?.kind==='reminders'&&<Sheet title={tr('Reminder settings')} subtitle={tr('Choose when MOVO shows in-app payment reminders.')} onClose={()=>setSheet(null)} label={tr('Reminder settings')}>
       <form className="sheet-form" onSubmit={async e=>{e.preventDefault();await run(async()=>{await saveReminderPreferences(session?.user?.id,reminderPrefs);setSheet(null);});}}>
         <label className="toggle-row"><span>{tr('Payment reminders')}</span><input type="checkbox" checked={reminderPrefs.enabled!==false} onChange={e=>setReminderPrefs({...reminderPrefs,enabled:e.target.checked})}/></label>
+        <label className="toggle-row"><span>{tr('Device notifications')}<small>{tr('Schedule local reminders on this device, including when MOVO is closed.')}</small></span><input type="checkbox" checked={reminderPrefs.push_enabled===true} onChange={async e=>{if(e.target.checked){const permission=await requestPaymentNotificationPermission();if(!permission.granted){setError(tr(permission.supported?'Allow notifications in iPhone Settings to enable reminders.':'Device notifications require the MOVO iOS app.'));return;}}setReminderPrefs({...reminderPrefs,push_enabled:e.target.checked});}}/></label>
         <fieldset><legend>{tr('Remind me')}</legend>{[{v:0,l:'On due date'},{v:1,l:'1 day before'},{v:2,l:'2 days before'},{v:3,l:'3 days before'},{v:5,l:'5 days before'},{v:7,l:'7 days before'},{v:14,l:'14 days before'},{v:30,l:'30 days before'}].map(x=><label key={x.v} className="toggle-row"><span>{tr(x.l)}</span><input type="checkbox" checked={(reminderPrefs.reminder_days||[]).includes(x.v)} onChange={e=>setReminderPrefs({...reminderPrefs,reminder_days:e.target.checked?[...(reminderPrefs.reminder_days||[]),x.v]:(reminderPrefs.reminder_days||[]).filter(n=>n!==x.v)})}/></label>)}</fieldset>
         <label>{tr('Quiet hours start')}<input type="time" value={reminderPrefs.quiet_start||''} onChange={e=>setReminderPrefs({...reminderPrefs,quiet_start:e.target.value||null})}/></label>
         <label>{tr('Quiet hours end')}<input type="time" value={reminderPrefs.quiet_end||''} onChange={e=>setReminderPrefs({...reminderPrefs,quiet_end:e.target.value||null})}/></label>
