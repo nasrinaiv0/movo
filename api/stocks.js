@@ -7,7 +7,7 @@ function num(v){const n=Number(v);return Number.isFinite(n)?n:null;}
 function normalizeQuote(row,symbol){
  const price=num(row.close||row.price); if(price===null)return null;
  const change=num(row.percent_change); const prev=num(row.previous_close);
- return {symbol:safeSymbol(row.symbol||symbol),name:typeof row.name==='string'?row.name:'',exchange:typeof row.exchange==='string'?row.exchange:'',currency:typeof row.currency==='string'?row.currency:'',price,changePercent:change,previousClose:prev,open:num(row.open),high:num(row.high),low:num(row.low),volume:num(row.volume),timestamp:typeof row.datetime==='string'?row.datetime:null};
+ return {symbol:safeSymbol(symbol)||safeSymbol(row.symbol),name:typeof row.name==='string'?row.name:'',exchange:typeof row.exchange==='string'?row.exchange:'',currency:typeof row.currency==='string'?row.currency:'',price,changePercent:change,previousClose:prev,open:num(row.open),high:num(row.high),low:num(row.low),volume:num(row.volume),timestamp:typeof row.datetime==='string'?row.datetime:null};
 }
 module.exports=async function handler(req,res){
  if(req.method!=='GET'){res.setHeader('Allow','GET');return json(res,405,{error:'method_not_allowed'});}
@@ -21,7 +21,7 @@ module.exports=async function handler(req,res){
   const query=String(req.query&&req.query.query||'').trim().slice(0,80);
   if(query.length<1)return json(res,400,{error:'invalid_search_query'});
   const url=new URL('/symbol_search',BASE);url.searchParams.set('symbol',query);url.searchParams.set('apikey',key);
-  try{const upstream=await fetch(url.toString(),{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!upstream.ok)return json(res,502,{error:'stocks_provider_unavailable'});const data=await upstream.json();if(data.status==='error')return json(res,502,{error:'stocks_provider_error'});const results=(Array.isArray(data.data)?data.data:[]).slice(0,20).map(x=>({symbol:safeSymbol(x.symbol),name:String(x.instrument_name||''),exchange:String(x.exchange||''),mic_code:String(x.mic_code||''),country:String(x.country||''),currency:String(x.currency||''),type:String(x.instrument_type||'Stock')})).filter(x=>x.symbol&&x.name);res.setHeader('Cache-Control','public, s-maxage=300, stale-while-revalidate=600');return json(res,200,{results,provider:'Twelve Data',fetchedAt:new Date().toISOString()});}catch{return json(res,502,{error:'stocks_provider_unavailable'});}
+  try{const upstream=await fetch(url.toString(),{headers:{Accept:'application/json'},signal:AbortSignal.timeout(10000)});if(!upstream.ok)return json(res,502,{error:'stocks_provider_unavailable'});const data=await upstream.json();if(data.status==='error')return json(res,502,{error:'stocks_provider_error'});const results=(Array.isArray(data.data)?data.data:[]).slice(0,20).map(x=>({symbol:safeSymbol(x.symbol),name:String(x.instrument_name||''),exchange:String(x.exchange||''),mic_code:String(x.mic_code||''),country:String(x.country||''),currency:String(x.currency||''),type:String(x.instrument_type||'Stock')})).filter(x=>x.symbol&&x.name);res.setHeader('Cache-Control','public, s-maxage=300, stale-while-revalidate=600');return json(res,200,{results:results.map(x=>({...x,id:safeSymbol(x.symbol+':'+(x.exchange||''))||x.symbol})),provider:'Twelve Data',fetchedAt:new Date().toISOString()});}catch{return json(res,502,{error:'stocks_provider_unavailable'});}
  }
  if(!symbol)return json(res,400,{error:'invalid_symbol'});
  if(action==='quote'&&!quote)return json(res,400,{error:'invalid_quote_currency'});
