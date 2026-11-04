@@ -3,7 +3,7 @@ import Icon from './Icon';
 import CardArt from './CardArt';
 import AccountTile, { styleFor } from './AccountTile';
 import { Sheet, TransactionRow } from './ui';
-import { money, shown, longDate } from '../lib/format';
+import { money, shown } from '../lib/format';
 import { creditInfo } from '../lib/creditCard';
 import { estimateCashback } from '../lib/cashback';
 import { listScheduledTransactions } from '../lib/scheduledTransactions';
@@ -18,7 +18,6 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const [scheduleReady, setScheduleReady] = useState(false);
   const currency = account.currency || 'PHP';
   const qrCode = prefs.accountQrCodes?.[account.id] || '';
-  const cardStyle = prefs.accountStyles?.[account.id] || {};
   const cardNetwork = prefs.cardNetworks?.[account.id] || cardStyle.cardNetwork || account.cardNetwork || '';
   const cardStyleId = prefs.cardStyles?.[account.id] || '';
   const linkedCards = useMemo(() => accounts.filter(item => item.account_type === 'card' && item.id !== account.id && (
@@ -31,7 +30,6 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const relatedTransactions = useMemo(() => transactions.filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id), [transactions, account.id]);
   const recentTransactions = relatedTransactions.slice(0, 30);
   const expenses = relatedTransactions.filter(item => item.type === 'expense' || item.transaction_type === 'expense');
-  const spent = expenses.reduce((sum, item) => sum + (Number(item.origAmount ?? item.amount) || 0), 0);
   const info = creditInfo(account);
   const rules = prefs.cashbackRules || {};
   const autoCashback = useMemo(() => estimateCashback(transactions, accounts, rules).filter(item => item.accountId === account.id), [transactions, accounts, rules, account.id]);
@@ -44,7 +42,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   }, [account.id]);
   const fmt = (value) => shown(show, money(value, currency));
   const visual = account.account_type === 'card'
-    ? <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.cardFormat || 'landscape'} displayMode={prefs.cardDisplayModes?.[account.id] || 'details'} visibleFields={{ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[account.id] || {}) }} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
+    ? <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.walletView?.cardFormat === 'portrait' ? 'portrait' : 'landscape'} displayMode={prefs.cardDisplayModes?.[account.id] || 'details'} visibleFields={{ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[account.id] || {}) }} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
     : <AccountTile a={account} show={show} style={styleFor(account, prefs.accountStyles || {})} size="preview" qrCode={qrCode} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />;
   const row = (label, value) => <div className="account-hub-metric" key={label}><span>{tr(label)}</span><strong>{value}</strong></div>;
   const cashRule = rules[account.id] || {};
