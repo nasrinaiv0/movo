@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { Sheet } from './ui';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { groceryLineTotal, groceryTotal } from '../lib/grocery';
 import './GrocerySheet.css';
 
 const makeItem = () => ({ id: window.crypto?.randomUUID?.() || `grocery-${Date.now()}-${Math.random().toString(36).slice(2)}`, name: '', price: '', quantity: '1' });
@@ -13,7 +14,7 @@ export default function GrocerySheet({ currency = 'PHP', accounts = [], draft, o
   const [listName,setListName] = useState(draft?.name || 'Grocery shopping');
   const [error,setError] = useState('');
   const validItems = items.filter(x => x.name.trim() && Number(x.price) > 0 && Number(x.quantity) > 0);
-  const total = useMemo(() => validItems.reduce((sum,x) => sum + Number(x.price) * Number(x.quantity),0),[validItems]);
+  const total = useMemo(() => groceryTotal(validItems),[validItems]);
   const update = (id,patch) => setItems(current => current.map(x => x.id === id ? {...x,...patch} : x));
   const saveDraft = () => { onSaveDraft({ name:listName, items, accountId, updatedAt:new Date().toISOString() }); onClose(); };
   const log = () => {
@@ -25,7 +26,7 @@ export default function GrocerySheet({ currency = 'PHP', accounts = [], draft, o
   return <Sheet label={tr('Grocery list')} onClose={onClose} className="grocery-sheet"><div className="grocery-head"><div><span className="grocery-eyebrow">{tr('QUICK EXPENSE')}</span><h2>{tr('Add grocery items')}</h2><p>{tr('Keep adding items. MOVO calculates the running total.')}</p></div><div className="grocery-total"><small>{tr('Running total')}</small><strong>{money(total,currency)}</strong></div></div>
     <label className="grocery-list-name">{tr('List name')}<input value={listName} onChange={e=>setListName(e.target.value)} maxLength={80}/></label>
     <div className="grocery-column-head"><span>{tr('Item')}</span><span>{tr('Price')}</span><span>{tr('Qty')}</span><span>{tr('Total')}</span><span/></div>
-    <div className="grocery-items">{items.map((item,index)=>{const line=Number(item.price)>0&&Number(item.quantity)>0?Number(item.price)*Number(item.quantity):0;return <div className="grocery-item" key={item.id}><label className="grocery-name"><span>{tr('Item {number}',{number:index+1})}</span><input placeholder={tr('e.g. Rice')} value={item.name} onChange={e=>update(item.id,{name:e.target.value})}/></label><label><span>{tr('Price')}</span><input aria-label={tr('Price for item {number}',{number:index+1})} type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" value={item.price} onChange={e=>update(item.id,{price:e.target.value})}/></label><label><span>{tr('Qty')}</span><input aria-label={tr('Quantity for item {number}',{number:index+1})} type="number" min="0.01" step="any" inputMode="decimal" value={item.quantity} onChange={e=>update(item.id,{quantity:e.target.value})}/></label><strong className="grocery-line-total">{money(line,currency)}</strong><button type="button" className="grocery-remove" aria-label={tr('Remove {item}',{item:item.name||tr('item')})} onClick={()=>setItems(current=>current.filter(x=>x.id!==item.id))}><Icon name="trash-2" size={16}/></button></div>})}</div>
+    <div className="grocery-items">{items.map((item,index)=>{const line=groceryLineTotal(item.price,item.quantity);return <div className="grocery-item" key={item.id}><label className="grocery-name"><span>{tr('Item {number}',{number:index+1})}</span><input placeholder={tr('e.g. Rice')} value={item.name} onChange={e=>update(item.id,{name:e.target.value})}/></label><label><span>{tr('Price')}</span><input aria-label={tr('Price for item {number}',{number:index+1})} type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" value={item.price} onChange={e=>update(item.id,{price:e.target.value})}/></label><label><span>{tr('Qty')}</span><input aria-label={tr('Quantity for item {number}',{number:index+1})} type="number" min="0.01" step="any" inputMode="decimal" value={item.quantity} onChange={e=>update(item.id,{quantity:e.target.value})}/></label><strong className="grocery-line-total">{money(line,currency)}</strong><button type="button" className="grocery-remove" aria-label={tr('Remove {item}',{item:item.name||tr('item')})} onClick={()=>setItems(current=>current.filter(x=>x.id!==item.id))}><Icon name="trash-2" size={16}/></button></div>})}</div>
     <button type="button" className="grocery-add" onClick={()=>setItems(current=>[...current,makeItem()])}><Icon name="plus" size={17}/>{tr('Add another item')}</button>
     <label className="grocery-account">{tr('Paid with')}<select value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">{tr('Choose account')}</option>{accounts.filter(a=>!a.is_archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
     {error&&<p className="grocery-error" role="alert">{tr(error)}</p>}
