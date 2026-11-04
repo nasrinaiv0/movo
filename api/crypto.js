@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
   if (!['markets', 'coin', 'history'].includes(action)) return json(res, 400, { error: 'invalid_action' });
 
   const key = process.env.COINPAPRIKA_API_KEY;
-  if (!key) return json(res, 503, { error: 'crypto_provider_not_configured' });
+  if (!key) return json(res, 503, { error: 'crypto_provider_not_configured', message: 'Configure the licensed CoinPaprika API key as the server-only Vercel environment variable COINPAPRIKA_API_KEY, then redeploy.' });
   const base = BASE;
   const headers = { Accept: 'application/json', Authorization: key };
   let path;
