@@ -72,11 +72,11 @@ Nothing here has been verified on a physical iPhone or Android phone from this r
 
 **Prerequisites:** apply migration `20261102010000_automation_sources_and_cross_source_dedup.sql`, deploy the API, sign in to MOVO with cloud storage, open Settings → Automatic logging and wait for “registered”.
 
-**iPhone — Apple Pay (“Auto MOVO Transactions”).** Shortcuts → Automation → + → Transaction → choose cards → Run Immediately. Use the in-app *Auto log* (silent, then a notification) or *Require validation* (Log / Skip menu) prompt with “Describe a shortcut”, or build it manually: Get Contents of URL → `POST /api/log`, JSON `{ amount, merchant, card, source: "applepay", occurredAt }`, header `Authorization: Bearer <device key>`.
+**iPhone — Apple Pay (“MOVO Apple Pay”).** Shortcuts → Automation → + → Transaction → choose cards → Run Immediately. Use the in-app *Auto log* (silent, then a notification) or *Require validation* (Log / Skip menu) prompt with “Describe a shortcut”, or build it manually: Get Contents of URL → `POST /api/log`, JSON `{ amount, merchant, card, source: "applepay", occurredAt }`, header `Authorization: Bearer <device key>`.
 
 **iPhone — Siri voice (“Log to MOVO”).** Use the in-app *Siri voice* prompt, or manually: Dictate Text → Get Contents of URL (`POST /api/log`, JSON `{ "text": <Dictated Text>, "source": "siri_shortcut" }`) → Get Dictionary Value `message` → Speak Text. Say “Hey Siri, Log to MOVO”, then “I spent 150 pesos on lunch”.
 
-**iPhone — bank notifications.** iOS does not offer a general “notification received” trigger for third-party apps. Where a bank sends SMS, a Message automation (sender + “contains”) can pass the message to Get Contents of URL with `source: "bank"`; otherwise log from the bank alert manually or by voice.
+**iPhone — bank and e-wallet notifications (iOS 27+, the default setup).** See the next section. On older iOS there is no trigger for another app's notifications; use Apple Pay or Siri voice there.
 
 **Android — Google Pay / bank notifications.** Android has no built-in way to run HTTP requests on notifications; use an automation app the person trusts (for example MacroDroid or Tasker). Trigger: *Notification received* from Google Wallet (`source: "googlepay"`) or the bank app/SMS (`source: "bank"`). Extract the amount and merchant from the notification text with the app's text tools, then *HTTP request* → `POST https://<movo>/api/log`, JSON body, header `Authorization: Bearer <device key>`. For a Log / Skip flow add the app's dialog/“Option dialog” action before the request. If a bank alert repeats an Apple Pay/Google Pay purchase, MOVO stores it once.
 
@@ -84,23 +84,29 @@ Nothing here has been verified on a physical iPhone or Android phone from this r
 
 **Fallback (any device, no server).** A link `https://<movo>/#log?src=applepay|googlepay|bank&k=<device key>&amount=…&merchant=…&card=…` opens MOVO, which logs it (key matches and “Log without asking” is on) or shows a Log / Skip prompt. The record keeps its channel as its source and is checked against existing records with `findDuplicate`.
 
-## Bank and e-wallet notifications and payment texts
+## Bank and e-wallet app notifications
 
-Shortcuts can run when a notification arrives from a chosen app (the **Notification** trigger), when a text message
-arrives, or when an email arrives. MOVO reads the text on the server (`api/_lib/messageText.js`).
+MOVO logs from the notifications GCash, Maya and bank apps show on the phone, not from text messages. iOS 27 added a
+Shortcuts **Notification** trigger that runs when a chosen app posts a notification. MOVO reads the text on the server
+(`api/_lib/messageText.js`).
 
-- **iPhone, bank app notifications (preferred):** Shortcuts → Automation → **Notification** → choose GCash, Maya or
-  the bank app → Run Immediately, then Text (Shortcut Input › Title + Body) and Get Contents of URL posting
-  `{ text, app: "<app name>", source: "notification" }` with the device key in the Authorization header. The reply is
-  shown only when `success` is true, so promo notifications stay silent. One automation per app. Recipe: MOVO →
-  Settings → Set Up Phone Automation → **Bank notifications**.
-- **iPhone:** Shortcuts → Automation → Message → *Message Contains: Ref* → Run Immediately, then Get Contents of URL
-  posting `{ text: Shortcut Input › Content, app: Shortcut Input › Sender, source: "bank" }` with the device key in
-  the Authorization header. The exact recipe is in MOVO → Settings → Set Up Phone Automation → **Bank texts**.
-  An Email automation works the same way with `Shortcut Input › Body`.
+- **iPhone (iOS 27 or later):** Shortcuts → Automation → + → **Notification** → App: GCash (or Maya, or the bank app),
+  leave the Title and Message filters empty → Run Immediately → turn off Notify When Run → New Blank Automation. Actions:
+  1. **Text:** Shortcut Input › Title, Subtitle and Body (some iPhones call Body “Message”), one per line.
+  2. **Get Contents of URL:** `POST /api/log`, header `Authorization: Bearer <device key>`, JSON
+     `{ "text": <Text>, "app": "GCash", "source": "notification" }`.
+  3. **Get Dictionary Value** `notice`.
+  4. **If** it has any value, **Show Notification** with it.
+
+  Make one automation per app, with that app's name in `app`. `notice` is present for a new record or a problem, and
+  left out for duplicates and ignored notifications (OTPs, promos, log-in alerts), so the shortcut is silent for those.
+  MOVO → Settings → Automatic logging → **Bank notifications** shows the same steps and copies them as a prompt for
+  *Describe a shortcut*. With “Log without asking” off, a Log / Skip menu shows the notification first.
 - **Android:** a notification-listener automation (for example MacroDroid or Tasker: trigger *Notification Received*
   for GCash, Maya or the bank app; action *HTTP Request* POST to `/api/log`) sending
-  `{ "text": "<notification text>", "app": "<app name>", "source": "notification" }` and the same Authorization header.
+  `{ "text": "<notification title and text>", "app": "<app name>", "source": "notification" }` and the same
+  Authorization header.
+- The server still accepts `source: "bank"` text from older setups, but MOVO no longer offers a text-message recipe.
 
 What the server reads:
 
@@ -111,6 +117,9 @@ What the server reads:
 | "You have sent PHP 500.00 to MARIA S. …" | Transfer out (category Transfer) |
 | "You have successfully cashed in PHP 2,000.00 from BPI …" | Transfer in (category Transfer) |
 | "Your account ending 1234 was debited PHP 1,250.00 … at SM SUPERMARKET" | Expense · SM SUPERMARKET · account hint "BDO 1234" |
+| "Payment successful · You've paid ₱150.00 to Jollibee" (push) | Expense · Jollibee |
+| "Your BDO card ending 1234 was used for PHP 2,500.00 at SM STORE" (push) | Expense · SM STORE · account hint "BDO 1234" |
+| "Get ₱50 cashback when you pay bills today" (promo) | Ignored, not stored |
 
 - The amount is the transaction amount, never a balance, limit or fee. Dates without a zone are Philippine time
   (MM-DD-YY, as GCash and Maya write them). Phone numbers are removed from names.

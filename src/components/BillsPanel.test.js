@@ -25,7 +25,7 @@ test('pay a variable bill: sets the actual amount, records once per attempt with
   expect(app.textContent).toContain('Electricity');
   expect(app.textContent).toContain('Due today');
   const button = (label) => Array.from(app.querySelectorAll('button')).find(b => b.textContent === label);
-  await act(async () => button('Pay').click());
+  await act(async () => button('Log payment').click());
   const select = app.querySelector('.bill-pay select');
   expect(Array.from(select.options).map(o => o.value)).toEqual(['', 'acc1']); // only same-currency accounts
   const actual = app.querySelector('.bill-pay input[type="number"]');
@@ -35,7 +35,7 @@ test('pay a variable bill: sets the actual amount, records once per attempt with
   await act(async () => button('Record payment').click());
   expect(repo.updateOccurrence).toHaveBeenCalledWith('o1', { actual_amount: 2800 });
   const [first, second] = repo.recordBillPayment.mock.calls.map(c => c[0]);
-  expect(first).toEqual(expect.objectContaining({ occurrence_id: 'o1', amount: '2800', method: 'recorded', account_id: 'acc1' }));
+  expect(first).toEqual(expect.objectContaining({ occurrence_id: 'o1', amount: 2800, method: 'recorded', account_id: 'acc1' }));
   expect(second.key).toBe(first.key);
   expect(onChanged).toHaveBeenCalledTimes(1);
   act(() => root.unmount()); app.remove();
@@ -46,9 +46,29 @@ test('paid elsewhere reconciles without an account', async () => {
   const root = createRoot(app);
   repo.recordBillPayment.mockResolvedValue({ id: 'p2' });
   await act(async () => root.render(<BillsPanel c={{ base: 'PHP' }} accounts={[{ id: 'acc1', name: 'BPI', currency: 'PHP' }]} />));
-  await act(async () => Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Pay').click());
+  await act(async () => Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Log payment').click());
   await act(async () => Array.from(app.querySelectorAll('button')).find(b => b.textContent === 'Paid elsewhere').click());
   expect(repo.recordBillPayment).toHaveBeenLastCalledWith(expect.objectContaining({ method: 'external', account_id: null }));
   expect(app.textContent).toContain('No account was charged');
   act(() => root.unmount()); app.remove();
 });
+
+test('subscription renewals appear in Bills Due and route payment logging through the existing subscription flow', async () => {
+  const app = document.createElement('div'); document.body.appendChild(app);
+  const root = createRoot(app); const onLogSubscription = jest.fn();
+  const start = new Date().toLocaleDateString('en-CA');
+  const subscription = { id: 'sub-1', name: 'Music Plus', amount: 299, currency: 'PHP', cycle: 'monthly', start, status: 'active' };
+  await act(async () => root.render(<BillsPanel
+    c={{ base: 'PHP', toBase: value => value }}
+    accounts={[]}
+    subscriptions={[subscription]}
+    onLogSubscription={onLogSubscription}
+  />));
+  expect(app.textContent).toContain('Music Plus');
+  expect(app.textContent).toContain('Subscription');
+  await act(async () => Array.from(app.querySelectorAll('.bill-row')).find(row => row.textContent.includes('Music Plus')).querySelector('button.primary-button').click());
+  expect(onLogSubscription).toHaveBeenCalledWith(subscription);
+  act(() => root.unmount()); app.remove();
+});
+
+

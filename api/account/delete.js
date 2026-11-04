@@ -7,7 +7,7 @@ const { createClient } = require('@supabase/supabase-js');
  * Auth; the user id always comes from that verified token, never from the request body. The body must also carry
  * `{ "confirm": "DELETE" }` so a stray request cannot delete an account.
  *
- * What: transactions are deleted first (they reference accounts with ON DELETE RESTRICT), then the Auth user through
+ * What: private bank QR objects are removed first, then transactions (they reference accounts with ON DELETE RESTRICT), then the Auth user through
  * the Admin API, which also ends sessions and removes linked Google/Apple identities. Every other MOVO table
  * references auth.users ON DELETE CASCADE, so accounts, budgets, bills, plans, automations, the automation inbox,
  * preferences and NasrinAI chats go with it. The service-role key stays on the server.
@@ -45,6 +45,30 @@ module.exports = async function handler(req, res) {
     const { data, error } = await api.auth.auth.getUser(token);
     const userId = data?.user?.id;
     if (error || !userId) return json(res, 401, { error: 'sign_in_required' });
+
+    stage = 'delete_account_qr_images';
+    const qrBucket = api.admin.storage.from('movo-account-qrs');
+    for (let offset = 0; ; offset += 100) {
+      const { data: folders, error: folderError } = await qrBucket.list(userId, { limit: 100, offset });
+      if (folderError) {
+        if (String(folderError.statusCode || folderError.status || '') === '404' || /bucket not found/i.test(folderError.message || '')) break;
+        throw folderError;
+      }
+      for (const folder of folders || []) {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(folder.name)) continue;
+        for (let fileOffset = 0; ; fileOffset += 100) {
+          const { data: files, error: filesError } = await qrBucket.list(`${userId}/${folder.name}`, { limit: 100, offset: fileOffset });
+          if (filesError) throw filesError;
+          const paths = (files || []).filter(file => file.id && /\.png$/i.test(file.name) && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(file.name.slice(0, -4))).map(file => `${userId}/${folder.name}/${file.name}`);
+          for (let i = 0; i < paths.length; i += 100) {
+            const { error } = await qrBucket.remove(paths.slice(i, i + 100));
+            if (error) throw error;
+          }
+          if (!files || files.length < 100) break;
+        }
+      }
+      if (!folders || folders.length < 100) break;
+    }
 
     stage = 'delete_transactions';
     const { error: txError } = await api.admin.from('transactions').delete().eq('user_id', userId);

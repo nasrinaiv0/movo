@@ -4,6 +4,16 @@
  * that started on the 31st renews on the last day of shorter months and returns to the 31st afterwards.
  */
 export const CYCLES = [['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['yearly', 'Yearly']];
+export function subscriptionPaymentAccountId(subscription, accounts = []) {
+  const requestedId = subscription?.accountId || subscription?.account_id || '';
+  if (!requestedId || !Array.isArray(accounts)) return '';
+  const account = accounts.find(item => item && item.id === requestedId && !item.is_archived && (
+    ['bank', 'e_wallet'].includes(item.account_type)
+    || (item.account_type === 'card' && ['credit', 'debit'].includes(item.cardKind))
+  ));
+  return account?.id || '';
+}
+
 export const SUB_CATEGORIES = ['Social media & messaging', 'Entertainment', 'Music', 'AI Tools', 'Developer', 'Productivity', 'Design', 'Cloud storage', 'Gaming', 'Security & VPN', 'Education', 'Health', 'Food & delivery', 'Restaurants & cafés', 'Laundry & cleaning', 'Transport & mobility', 'Utilities & bills', 'Insurance', 'Pets', 'Travel', 'Shopping', 'Phone & internet', 'News', 'Other'];
 
 /*

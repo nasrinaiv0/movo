@@ -17,3 +17,15 @@ test('shows the MOVO mark when there is no logo or it cannot be fetched, unless 
   expect(el.textContent).toBe('custom');
   act(() => root.unmount());
 });
+
+
+test('tries curated favicon fallbacks in order before showing the fallback', () => {
+  const el = document.createElement('div'); const root = createRoot(el);
+  act(() => root.render(<BrandLogo src="https://www.google.com/s2/favicons?domain=example.com" fallbackSrcs={["https://example.com/favicon.ico"]} size={32} />));
+  expect(el.querySelector('img').getAttribute('src')).toContain('google.com/s2/favicons');
+  act(() => el.querySelector('img').dispatchEvent(new Event('error')));
+  expect(el.querySelector('img').getAttribute('src')).toBe('https://example.com/favicon.ico');
+  act(() => el.querySelector('img').dispatchEvent(new Event('error')));
+  expect(el.querySelector('.brand-fallback')).not.toBeNull();
+  act(() => root.unmount());
+});

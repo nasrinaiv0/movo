@@ -1,4 +1,4 @@
-import { sortList } from './Transactions';
+import { billingCycleOptions, sortList } from './Transactions';
 
 describe('sortList', () => {
   test('sorts transfer rows by source and destination account names, not merchant text', () => {
@@ -17,5 +17,29 @@ describe('sortList', () => {
       { merchant: 'Alpha', accountName: 'Wallet', transferToAccountName: 'GCash' },
     ];
     expect(sortList(rows, 'Merchant').map(row => row.merchant)).toEqual(['Alpha', 'Zebra']);
+  });
+});
+
+describe('billingCycleOptions', () => {
+  test('offers All, marks the active month Present, and keeps historical labels compact', () => {
+    expect(billingCycleOptions(['2026-11', '2026-10', '2026-09'], '2026-11')).toEqual([
+      { value: 'all', label: 'All' },
+      { value: '2026-11', label: 'Present' },
+      { value: '2026-10', label: 'Oct' },
+      { value: '2026-09', label: 'Sep' },
+    ]);
+  });
+
+  test('disambiguates repeated month names across years', () => {
+    expect(billingCycleOptions(['2026-11', '2025-11', '2025-09'], '2026-11')).toEqual([
+      { value: 'all', label: 'All' },
+      { value: '2026-11', label: 'Present' },
+      { value: '2025-11', label: 'Nov 2025' },
+      { value: '2025-09', label: 'Sep' },
+    ]);
+  });
+
+  test('keeps the All option available when there is no transaction history', () => {
+    expect(billingCycleOptions([], '2026-11')).toEqual([{ value: 'all', label: 'All' }]);
   });
 });

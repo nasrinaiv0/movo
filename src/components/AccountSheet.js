@@ -10,11 +10,12 @@ import { Sheet, Toggle } from './ui';
 import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLogoUrl } from '../lib/institutions';
+import { extractQrImage } from '../lib/qrImageProcessing';
 
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
-export default function AccountSheet({ base = 'PHP', country = 'PH', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
+export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = '', qrCodeDisplay = '', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
   const [institutionCountry, setInstitutionCountry] = useState(INSTITUTION_COUNTRIES.includes(country) ? country : 'PH');
@@ -22,6 +23,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
   const institutionOptions = useMemo(() => searchInstitutions(institutionCountry, institutionQuery, form.account_type), [institutionCountry, institutionQuery, form.account_type]);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
   const bankAccounts = accounts.filter(account => account.account_type === 'bank' && !account.is_archived);
+  const ewalletAccounts = accounts.filter(account => account.account_type === 'e_wallet' && !account.is_archived);
   const debitCard = form.account_type === 'card' && form.cardKind !== 'credit';
   const creditCard = form.account_type === 'card' && form.cardKind === 'credit';
   const amountOf = (v) => evaluate(String(v || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
@@ -30,6 +32,34 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
   const creditValid = !creditCard || (Number.isFinite(creditLimit) && creditLimit > 0 && Number.isFinite(owedNow) && owedNow >= 0);
   const linkedBank = bankAccounts.find(account => account.id === form.linkedBankId);
   const [pad, setPad] = useState(false);
+  const [qrError, setQrError] = useState('');
+  const [qrUploading, setQrUploading] = useState(false);
+  const storedQrValue = form.qrCode !== undefined ? form.qrCode : qrCode;
+  const currentQrCode = typeof storedQrValue === 'string' && storedQrValue.startsWith('data:image/png;base64,') ? storedQrValue : (storedQrValue ? qrCodeDisplay : '');
+  const handleQrUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) { setQrError(tr('Choose a PNG, JPG or WebP image.')); return; }
+    if (file.size > 8 * 1024 * 1024) { setQrError(tr('QR image must be 8 MB or smaller.')); return; }
+    setQrError('');
+    setQrUploading(true);
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        try {
+          if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth > 8192 || image.naturalHeight > 8192 || image.naturalWidth * image.naturalHeight > 16_000_000) throw new Error('dimensions');
+          const dataUrl = extractQrImage(image);
+          if (dataUrl.length > 1_200_000) throw new Error('large');
+          set({ qrCode: dataUrl });
+        } catch (error) { setQrError(tr(error?.message === 'qr_not_detected' ? 'Could not find a QR code in this photo. Try a clearer, closer image.' : 'Could not process this QR image. Try a smaller or clearer image.')); }
+        finally { URL.revokeObjectURL(objectUrl); setQrUploading(false); }
+      };
+      image.onerror = () => { URL.revokeObjectURL(objectUrl); setQrError(tr('Could not read this image. Please choose another file.')); setQrUploading(false); };
+      image.src = objectUrl;
+    } catch { setQrError(tr('Could not read this image. Please choose another file.')); setQrUploading(false); }
+  };
   const meta = typeMeta(form.account_type);
   const color = form.color || meta.color; const icon = form.icon || meta.icon;
   const balance = evaluate(String(form.opening_balance || '').replace(/[^\d.+−×÷]/g, '').replace(/-/g, '−'));
@@ -40,14 +70,14 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
 
   return <Sheet label={label} onClose={onClose} hideClose className="acct-sheet">{(close) => <form className="acct-form" onSubmit={onSave}>
     <div className="acct-head"><button type="button" className="tx-round" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="back" size={18} /></button><h2>{editing ? tr('Edit Account') : tr('Add Account')}</h2><span className="tx-round ghost" /></div>
-    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" />}</div>
+    <div className="acct-preview">{form.account_type === 'card' ? <CardArt a={{ id: 'preview', name: form.institution_name || form.name.trim() || tr('Your card'), institution_name: form.institution_name || form.name.trim() || tr('Your card'), account_type: form.account_type, mask: form.mask || '0000', balance: debitCard && linkedBank ? Number(linkedBank.balance || 0) : creditCard ? (creditValid ? creditLimit - owedNow : 0) : (Number.isFinite(balance) ? balance : 0), currency: currency[0], brand: form.cardNetwork || 'blue', chip: form.chip, contactless: form.contactless, cardKind: form.cardKind }} show qrCode={currentQrCode} /> : <AccountTile a={{ name: form.institution_name || form.name.trim() || tr(meta.label), account_type: form.account_type, institution_name: form.institution_name, cardKind: form.cardKind, brand: form.brand, mask: hasNumber ? form.mask : '', balance: Number.isFinite(balance) ? balance : 0, currency: currency[0] }} style={{ color, icon }} size="preview" qrCode={currentQrCode} />}</div>
 
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">{tr('Account type')}</label>
       <div className="acct-field select"><span><strong>{tr(meta.label)}</strong><small>{tr(meta.sub)}</small></span><span className="acct-field-icon" style={{ color }}><Icon name={meta.icon} size={18} /></span><Icon name="down" size={16} />
-        <select id="acct-type" aria-label={tr('Account type')} value={form.account_type} onChange={e => set({ account_type: e.target.value })}>{ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{tr(t.label)}</option>)}</select></div>
+        <select id="acct-type" aria-label={tr('Account type')} value={form.account_type} onChange={e => { const nextType = e.target.value; if (nextType === 'cash') { const previousInstitution = String(form.institution_name || ''); set({ account_type: nextType, institution_name: '', ...(form.name === previousInstitution ? { name: '' } : {}) }); } else set({ account_type: nextType }); }}>{ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{tr(t.label)}</option>)}</select></div>
 
-      {form.account_type !== 'card' && <div className="acct-institution">
+      {!['card', 'cash'].includes(form.account_type) && <div className="acct-institution">
         <label className="acct-label" htmlFor="acct-inst-search">{tr('Bank / institution')}</label>
         <label className="search-field acct-institution-search"><Icon name="search" size={17} /><input id="acct-inst-search" autoComplete="off" value={manualInstitution ? form.institution_name : institutionQuery} onChange={e => { setInstitutionQuery(e.target.value); if (manualInstitution) set({ institution_name: e.target.value, name: e.target.value }); }} placeholder={tr('Search banks and providers')} aria-label={tr('Search banks and providers')} /></label>
         <label className="acct-label" htmlFor="acct-inst-country">{tr('Institution country')}</label>
@@ -62,6 +92,14 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
         </div>}
         <button type="button" className="acct-manual-toggle" onClick={() => { setManualInstitution(v => !v); setInstitutionQuery(''); if (!manualInstitution) set({ institution_name: form.institution_name || '' }); }} aria-pressed={manualInstitution}>{manualInstitution ? tr('Choose from institution list') : tr('Not listed? Enter institution manually')}</button>
         {manualInstitution && <input className="acct-input" maxLength="100" value={form.institution_name} onChange={e => set({ institution_name: e.target.value, name: e.target.value })} placeholder={tr('Enter bank or provider name')} aria-label={tr('Manual institution name')} />}
+      </div>}
+
+      {form.account_type === 'bank' && <div className="acct-qr-upload">
+        <div className="acct-qr-upload-copy"><strong>{tr('Bank QR code')}</strong><small>{tr('Add your bank QR code to display it on the account card.')}</small></div>
+        <input id="acct-qr-file" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleQrUpload} disabled={qrUploading} />
+        <label className="acct-qr-pick" htmlFor="acct-qr-file"><Icon name="upload" size={16} />{qrUploading ? tr('Processing…') : currentQrCode ? tr('Replace QR code') : tr('Upload QR code')}</label>
+        {qrUploading && <p className="form-note" role="status">{tr('Processing QR image…')}</p>}{currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr('Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
+        {qrError && <p className="form-error" role="alert">{qrError}</p>}
       </div>}
 
       {form.account_type === 'card' && <>
@@ -83,6 +121,17 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
             {onAddBank && <option value="__add">{tr('+ Add a bank account')}</option>}
           </select>
         </div> : <button type="button" className="acct-field acct-add-bank" onClick={() => onAddBank?.()}><span><strong>{tr('Add a bank account')}</strong><small>{debitCard ? tr('A debit card uses its bank account’s balance') : tr('Optional for credit cards')}</small></span><span className="acct-bank-logo"><Icon name="plus" size={18} /></span><Icon name="chevron" size={16} /></button>}
+        {ewalletAccounts.length > 0 && <>
+          <label className="acct-label" htmlFor="acct-linked-ewallet">{tr('Link to e-wallet (optional)')}</label>
+          <div className="acct-field select">
+            <span><strong>{ewalletAccounts.find(account => account.id === form.linkedEwalletId)?.institution_name || ewalletAccounts.find(account => account.id === form.linkedEwalletId)?.name || tr('No e-wallet linked')}</strong><small>{tr('For cards issued by or connected to an e-wallet')}</small></span>
+            <Icon name="down" size={16} />
+            <select id="acct-linked-ewallet" aria-label={tr('Link to e-wallet (optional)')} value={form.linkedEwalletId || ''} onChange={e => set({ linkedEwalletId: e.target.value })}>
+              <option value="">{tr('No e-wallet linked')}</option>
+              {ewalletAccounts.map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name}</option>)}
+            </select>
+          </div>
+        </>}
         <span className="acct-label">{tr('Card network')}</span>
         <div className="acct-network-row" role="group" aria-label={tr('Card network')}>
           {[['visa', 'Visa'], ['mastercard', 'Mastercard'], ['amex', 'Amex'], ['discover', 'Discover'], ['other', tr('Other')]].map(([value, name]) => <button type="button" key={value} className={`acct-net net-${value}${(form.cardNetwork || '') === value ? ' selected' : ''}`} aria-pressed={(form.cardNetwork || '') === value} aria-label={name} onClick={() => set({ cardNetwork: value })}>
@@ -128,6 +177,6 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', form, setFo
       {!cloudMode && <p className="acct-hint">{tr('Stored on this device only. Sign in to sync it to your MOVO account.')}</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
     </div>
-    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || (!creditCard && !Number.isFinite(balance)) || !creditValid || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
+    <div className="tx-bottom"><button type="submit" className="primary-button acct-save" disabled={busy || qrUploading || (!creditCard && !Number.isFinite(balance)) || !creditValid || (debitCard && !bankAccounts.some(account => account.id === form.linkedBankId))}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr('Add account')}</button></div>
   </form>}</Sheet>;
 }

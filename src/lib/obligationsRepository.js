@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { buildMonthlyInterestSchedule } from './loanInterest';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured.');
@@ -48,13 +49,14 @@ export async function createLoan(input, userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const principal = validAmount(input?.principal_amount, 'Principal');
   const newProceeds = input?.new_proceeds === true;
+  const interestSchedule = buildMonthlyInterestSchedule(input?.inconsistent_interest, input?.interest_months, input?.monthly_interest_rates);
   if (newProceeds && !input?.account_id) throw new Error('Choose the account receiving the loan proceeds.');
   const client = requireClient();
   const loan = unwrap(await client.from('financial_loans').insert({
     user_id: userId, name: validName(input?.name), obligation_type: input?.obligation_type === 'debt' ? 'debt' : 'loan',
     opening_principal: newProceeds ? 0 : principal, lender: typeof input?.lender === 'string' ? input.lender.trim().slice(0, 120) || null : null,
     currency: validCurrency(input?.currency), principal_amount: principal, outstanding_principal: newProceeds ? 0 : principal,
-    interest_rate: Math.max(0, Number(input?.interest_rate) || 0), due_date: validDate(input?.due_date),
+    interest_rate: interestSchedule.length ? 0 : Math.max(0, Number(input?.interest_rate) || 0), interest_schedule: interestSchedule, due_date: validDate(input?.due_date),
     account_id: input?.account_id || null, notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
   }).select().single());
   if (!newProceeds) return loan;

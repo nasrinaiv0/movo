@@ -3,6 +3,7 @@ import { financialPosition, goalProgress } from './accounting';
 import { billsSummary } from './bills';
 import { listBillPayments, listOccurrences } from './billsRepository';
 import { listGoalAllocations, listGoals, listLoans, listReceivables } from './obligationsRepository';
+import { creditCardOutstanding, planGoalData, subscriptionBillData } from './financialPlanningIntegrations';
 
 /*
  * Financial planning data shared by the Financial planning screen and the Home summary card:
@@ -21,24 +22,35 @@ const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate
 export const planningAccounts = (accounts = []) => accounts.filter(a => !a.is_archived && (a.account_type !== 'card'
   || (a.cardKind === 'debit' && !a.linkedAccountId) || a.cardKind === 'credit'));
 
-export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], allocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
+export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
   const live = allocations.filter(a => a.status === 'allocated');
+  const activePlans = planGoalData(plans);
   const position = financialPosition({
-    accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
+    accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), liability_balance: a.account_type === 'card' && a.cardKind === 'credit' ? toBase(creditCardOutstanding(a), a.currency) : a.liability_balance, card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
     loans: loans.map(l => ({ ...l, outstanding_balance: toBase(Number(l.outstanding_principal) || 0, l.currency) })),
     receivables: receivables.map(r => ({ ...r, outstanding_balance: toBase(Number(r.outstanding_amount) || 0, r.currency) })),
-    goalAllocations: live.map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency) })),
+    goalAllocations: [
+      ...live.map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency) })),
+      ...activePlans.flatMap(plan => (Array.isArray(plan.fundingAllocations) ? plan.fundingAllocations : [])
+        .filter(a => a && a.status === 'allocated')
+        .map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency || plan.currency), currency: undefined }))),
+    ],
   });
   const activeLoans = loans.filter(l => l.status === 'active' && Number(l.outstanding_principal) > 0);
+  const creditCardDebts = accounts.filter(a => creditCardOutstanding(a) > 0);
+  const creditCardDebtTotal = creditCardDebts.reduce((sum, a) => sum + toBase(creditCardOutstanding(a), a.currency), 0);
   const activeReceivables = receivables.filter(r => r.status === 'active' && Number(r.outstanding_amount) > 0);
   const activeGoals = goals.filter(g => g.status === 'active');
   const goalTotals = activeGoals.reduce((s, g) => { const p = goalProgress(g, live); return { saved: s.saved + toBase(p.saved, g.currency), target: s.target + toBase(p.target, g.currency) }; }, { saved: 0, target: 0 });
+  const planTotals = activePlans.reduce((s, p) => ({ saved: s.saved + toBase(p.saved, p.currency), target: s.target + toBase(p.target, p.currency) }), { saved: 0, target: 0 });
   const bills = billsSummary(occurrences, payments, today, toBase);
   return {
     position,
-    loans: { count: activeLoans.length, total: activeLoans.reduce((s, l) => s + toBase(Number(l.outstanding_principal) || 0, l.currency), 0) },
+    loans: { count: activeLoans.length + creditCardDebts.length, total: activeLoans.reduce((s, l) => s + toBase(Number(l.outstanding_principal) || 0, l.currency), 0) + creditCardDebtTotal },
+    creditCards: { count: creditCardDebts.length, total: creditCardDebtTotal },
     receivables: { count: activeReceivables.length, total: activeReceivables.reduce((s, r) => s + toBase(Number(r.outstanding_amount) || 0, r.currency), 0) },
-    goals: { count: activeGoals.length, saved: goalTotals.saved, target: goalTotals.target, percent: goalTotals.target > 0 ? Math.min(100, (goalTotals.saved / goalTotals.target) * 100) : 0 },
+    goals: { count: activeGoals.length + activePlans.length, saved: goalTotals.saved + planTotals.saved, target: goalTotals.target + planTotals.target, percent: goalTotals.target + planTotals.target > 0 ? Math.min(100, ((goalTotals.saved + planTotals.saved) / (goalTotals.target + planTotals.target)) * 100) : 0 },
+    plans: { count: activePlans.length, saved: planTotals.saved, target: planTotals.target },
     bills: { ...bills, next: bills.upcoming[0] || null },
   };
 }
@@ -67,6 +79,13 @@ export default function usePlanning(c) {
 
   const accounts = useMemo(() => planningAccounts(c.accountsView || []), [c.accountsView]);
   const toBase = c.toBase;
-  const summary = useMemo(() => planningSummary({ ...data, accounts, toBase: toBase || ((v) => v) }), [data, accounts, toBase]);
-  return { ...data, accounts, summary, loaded, error, reload, cloud };
+  const today = todayKey();
+  const subscriptionData = useMemo(() => subscriptionBillData(c.subscriptions || [], today, shift(today, 62)), [c.subscriptions, today]);
+  const integrations = useMemo(() => ({
+    occurrences: [...data.occurrences, ...subscriptionData.occurrences],
+    payments: [...data.payments, ...subscriptionData.payments],
+  }), [data.occurrences, data.payments, subscriptionData]);
+  const plans = useMemo(() => planGoalData(c.plans || []), [c.plans]);
+  const summary = useMemo(() => planningSummary({ ...data, ...integrations, plans, accounts, toBase: toBase || ((v) => v), today }), [data, integrations, plans, accounts, toBase, today]);
+  return { ...data, accounts, plans, subscriptionData, summary, loaded, error, reload, cloud };
 }

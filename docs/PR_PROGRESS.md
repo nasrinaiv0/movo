@@ -7,10 +7,10 @@
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
-| [#149 — Home 3D ram mascot](https://github.com/nasrinaiv0/movo/pull/149) | Home header ram whose mood (smile / cute / disappointed / angry) follows the month's budgets, income when there are none; lazy three.js chunk, assets in `public/mascot/`. | Open; owner asked to ship it. Local: 383 tests, typecheck and strict build green. | Squash-merge once `verify` and the Vercel preview are green, then confirm production. |
-| [#93 — Privacy and legal verification](https://github.com/nasrinaiv0/movo/pull/93) | Legal review draft (verification matrix, Philippines notes). | Open; must not merge until every legal/operational item has evidence and counsel review. | Owner supplies verified legal facts; counsel review. |
+| [#177 — FX converter and crypto market](https://github.com/nasrinaiv0/movo/pull/177) | FX converter, tracked pairs and history; crypto market discovery, local watchlist, coin detail and provider-supported history. | Open draft; crypto market implementation added; validation pending. | Configure licensed CoinPaprika API Pro key as Vercel `COINPAPRIKA_API_KEY`; complete tests, typecheck, build and preview verification. Price alerts are implemented locally with above/below thresholds, enable/pause/delete controls and permission-aware notifications; portfolio lots remain pending. |
+| [#175 — Deep security audit implementation plan](https://github.com/nasrinaiv0/movo/pull/175) | Security remediation documentation and penetration-test plan. | Open draft. | Continue implementation under issue #143. |
 
-Checked against GitHub on 2026-11-02 20:00 UTC: #93 is the only open PR. #41 was closed without merging (its consent wording was superseded by later chat work).
+2026-11-04 — Crypto market implementation on PR #177: added the responsive market screen, provider-backed searchable ticker list, sorting, local watchlist, coin detail, provider-supported daily history, foreground refresh, and server-side CoinPaprika proxy with validated inputs and cached responses. The latest web CI run is queued; no crypto implementation checks are marked passed until the current head completes. Required deployment action: configure a licensed CoinPaprika plan/key in Vercel as `COINPAPRIKA_API_KEY`. Price alerts now support local above/below thresholds, crossing detection/rearming, enable/pause/delete, and foreground permission-aware notifications. Translation coverage was fixed for both market and alert UI copy. CI now uses `npm install` because this repository does not commit a lockfile; the first CI attempt exposed this workflow assumption and was corrected. Manual portfolio holdings/valuation are implemented; native iOS requests now route through `apiUrl('/api/crypto')` so the bundled app calls the production API. The CoinPaprika key remains a required Vercel server environment variable. CI now runs dependency install (repository has no lockfile), production dependency audit, typecheck, dedicated translation coverage, full tests and production build.\n\nChecked against GitHub on 2026-11-04. This register is reconciled for the currently open work; historical entries below remain a summary of prior changes.
 
 ## Production database (checked 2026-11-02 20:00 UTC)
 
@@ -44,6 +44,8 @@ match production, and the SQL test suites passed there. A production read-back c
   `assert_movo_bill_ownership`); rewrites the 34 policies to `(select auth.uid())`; indexes the 15 foreign keys.
 - `supabase/tests/security_hardening.test.sql` passes on a local Postgres 16 copy matching production (same policies,
   same function source), fails without the migration, and the migration re-runs cleanly. **Not applied to production yet.**
+
+**Bank-app notification logging (`feat/notification-logging`, 2026-11-03):** Automatic logging now opens on **Bank notifications** (iOS 27 Notification trigger, one automation per app) and no longer offers the text-message recipe. `/api/log` replies carry `notice` (left out for duplicates and ignored promos/OTPs) so background shortcuts need one "has any value" check. The parser reads push wording ("You've paid", "card … was used for", "PHPx" without a space) and ignores offers and statements. Prompts were rewritten per mode; they can't be tested on an iPhone from CI.
 
 ## Recent merged implementation
 
@@ -235,3 +237,43 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - **Changed:** migration `20261102010000_automation_sources_and_cross_source_dedup.sql` (wider source allowlist incl. `siri_shortcut`/`android_assistant`, event `source`/`outcome`, `log_automation_transaction_v2` with cross-source matching and per-user lock); `api/log.js` (v2, income, currency, category, Siri/Android `text` parsing via `api/_lib/voice.js`, safe error mapping, rollout fallback); client keeps real sources (`src/lib/transactionSources.js`, `financeRepository.js`, `App.js`); Siri voice prompt; 83 more institutions with curated favicon domains.
 - **Verified:** Jest 318/318; `tsc`; strict build; `supabase/tests/automation_dedup.test.sql` plus the existing SQL tests on a local Postgres 16 copy of all migrations (bug reproduced before the migration; mutation of the dedup rule makes the test fail).
 - **Not done:** migration not applied to production (needs owner confirmation); no physical iPhone/Android test; Android relies on third-party automation apps (no native app/App Actions).
+
+
+## Unified MOVO automation prompts — 2026-11-03
+
+- Branch: `feat/unified-automation-shortcut-prompts`.
+- Added interactive and hands-free bank notification recipe variants; interactive Siri confirmation variant; retained Apple Pay automatic/interactive recipes.
+- Added prompt safety requirements for server-confirmed success, non-financial notification filtering, no fabricated transaction details, and no POST on Skip.
+- Added regression tests for the new recipe variants and updated Siri progress documentation.
+- Pending: exact-head CI/typecheck/build, review of the shared-preference wiring, actual iPhone trigger-variable validation and While You Were Away end-to-end test. No Supabase migration, production data change, deployment or merge performed.
+
+
+## Crypto portfolio implementation — 2026-11-04 Asia/Manila
+
+- Branch: `feat/live-fx-crypto-markets` (existing PR #177).
+- Added manual holding records with asset, quantity, quote currency, acquisition date and optional average acquisition price. Supports separate position records, edit and remove.
+- Added responsive portfolio view matching MOVO's existing card surfaces, accent tokens, rounded controls, muted labels, tab switcher and compact position rows. Portfolio summary shows total value, cost basis and unrealized P/L only when inputs and provider prices support a valid same-quote calculation.
+- Holdings are persisted under `cryptoHoldings` in MOVO preferences and merged by stable ID across local/signed-in preference copies. They are not written to cash accounts, transactions, income or expenses. No Supabase migration/RLS change is required for this preference-backed implementation.
+- Added validation/valuation helper and unit tests for invalid quantities/costs, quote mismatch, missing market prices, unknown cost basis and ID upsert.
+- No implicit FX conversion is performed. Portfolio values are reference estimates, not exchange execution quotes. Exchange/wallet integrations, fees, realized P/L and custody/trading remain out of scope.
+- Validation on the new head is pending GitHub Actions; live Vercel preview and device smoke testing are still required.
+
+
+## Crypto portfolio implementation — 2026-11-04
+
+- Added manual crypto holding records with validated asset IDs, positive quantities, optional non-negative average acquisition price, quote currency, and stable IDs. Added edit/remove and portfolio valuation/unrealized P/L helpers with regression tests.
+- Added a Market / Portfolio switch, premium responsive overview and holdings cards, add/edit form, empty state, and explicit data/cash-separation disclosures. Portfolio values use only matching quote-currency market prices; missing or incompatible prices and unknown cost basis are shown as unavailable rather than estimated.
+- Added `cryptoHoldings` to preference defaults and ID-based preference merging so holdings persist across signed-in preference sync and local-only use. No Supabase migration or new financial-account/transaction rows are used; crypto remains outside cash, income, expense and net-worth accounting totals.
+- Exact-head CI [41745638862](https://github.com/nasrinaiv0/movo/actions/runs/41745638862) failed at translation catalogue coverage because the new accessible tab label “Crypto sections” was not in the English-first exclusion set. Production audit (0), typecheck passed; test/build stages were skipped by fail-fast. Added the missing label to `scripts/i18n-extract.js` in commit 8de5520. Re-run exact-head CI is pending.
+- Vercel preview remains unverified: the prior Vercel commit status was canceled by an ignored build step; do not treat this as a successful deployment. Keep PR #177 open and do not merge until exact-head CI and a real preview smoke test pass.
+
+
+2026-11-04 — Crypto API routing fix: `src/lib/crypto.js` now uses the shared `apiUrl()` helper. This is important for the Capacitor iOS app, where a relative `/api/crypto` URL would resolve against the bundled `capacitor://localhost` origin rather than MOVO production. Commit `5583368`. The market still requires `COINPAPRIKA_API_KEY` configured in Vercel; verify the production endpoint and preview after that server-side setting is present.
+
+
+## Crypto market provider outage follow-up — 2026-11-04
+- Confirmed PR #179 is merged; native iOS market requests now route through the production MOVO API.
+- The production proxy intentionally returns HTTP 503 when `COINPAPRIKA_API_KEY` is absent. It uses CoinPaprika's paid REST host and does not silently fall back to the keyless personal-use endpoint.
+- Follow-up adds actionable, non-secret configuration guidance and regression coverage for missing credentials, paid-host selection, server-only Authorization handling, provider rate limits, and invalid actions.
+- **External release gate:** configure the licensed CoinPaprika credential as Vercel's server-only `COINPAPRIKA_API_KEY` for the MOVO production project and redeploy. Do not use the free personal-use endpoint for MOVO's commercial/customer-facing market display. No credential was added to source control.
+- Live production response and physical iOS verification remain pending; automated CI alone is not proof that the market feed is live.

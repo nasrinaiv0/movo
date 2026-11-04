@@ -8,6 +8,12 @@ import { Sheet } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
 import FinancialPlanning from './screens/FinancialPlanning';
+import Cashback from './screens/Cashback';
+import ScheduledTransactions from './screens/ScheduledTransactions';
+import ScheduledDuePrompt from './components/ScheduledDuePrompt';
+import ExchangeRates from './screens/ExchangeRates';
+import CryptoMarket from './screens/CryptoMarket';
+import StocksMarket from './screens/StocksMarket';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
 import Menu from './screens/Menu';
@@ -16,7 +22,7 @@ import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
-import AccountTile, { styleFor } from './components/AccountTile';
+import AccountTile from './components/AccountTile';
 import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
 import { markFresh } from './lib/freshRecords';
@@ -28,17 +34,21 @@ import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMe
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification, pushGranted } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
-import { summarize as summarizeSubscriptions } from './lib/subscriptions';
+import { summarize as summarizeSubscriptions, billingDate, subscriptionPaymentAccountId } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
+import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
+import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
+import GrocerySheet from './components/GrocerySheet';
 import AccountSheet from './components/AccountSheet';
+import AccountDetailsSheet from './components/AccountDetailsSheet';
 import ScannerSheet from './components/ScannerSheet';
 import AutoLogSheet from './components/AutoLogSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
@@ -52,7 +62,6 @@ import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './l
 import Archive from './screens/Archive';
 import { listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
-import { creditInfo } from './lib/creditCard';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
@@ -70,6 +79,7 @@ import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl } from './lib/platform';
+import { recordPaymentAttempt } from './lib/paymentAttempts';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -93,10 +103,10 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
-const ROOT_FOR = { Archive: 'Menu', FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
-const DEPTH = { Archive: 1, FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', creditLimit: '', owedNow: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
@@ -205,6 +215,8 @@ function App() {
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
+  const [accountQrDisplay, setAccountQrDisplay] = useState({});
+  const [qrRetryTick, setQrRetryTick] = useState(0);
   const [fx, setFx] = useState(loadRates);
   const [cloudAccounts, setCloudAccounts] = useState([]);
   const [cloudPostings, setCloudPostings] = useState([]);
@@ -236,7 +248,7 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
-  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '' });
+  const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null });
   const [csvRows, setCsvRows] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [csvFileName, setCsvFileName] = useState('');
@@ -414,11 +426,21 @@ function App() {
   const months = useMemo(() => Array.from(new Set([refMonth, ...txs.map(t => monthKey(t.date))])).sort().reverse(), [txs, refMonth]);
 
   const statsFor = useCallback((key) => {
-    const list = txs.filter(t => monthKey(t.date) === key);
+    const list = key === 'all' ? txs : txs.filter(t => monthKey(t.date) === key);
     const sum = (type) => list.filter(t => t.type === type).reduce((s, t) => s + t.amount, 0);
-    const [y, m] = key.split('-').map(Number); const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const [y, m] = key === 'all' ? [new Date().getFullYear(), new Date().getMonth() + 1] : key.split('-').map(Number);
+    const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
     const buckets = Array(12).fill(0);
-    list.filter(t => t.type === 'expense').forEach(t => { const d = Number(dayKey(t.date).slice(8, 10)); buckets[Math.min(11, Math.floor(((d - 1) / days) * 12))] += t.amount; });
+    if (key === 'all') {
+      const [ry, rm] = monthKey(new Date()).split('-').map(Number);
+      list.filter(t => t.type === 'expense').forEach(t => {
+        const [ty, tm] = monthKey(t.date).split('-').map(Number);
+        const offset = (ry - ty) * 12 + rm - tm;
+        if (offset >= 0 && offset < 12) buckets[11 - offset] += t.amount;
+      });
+    } else {
+      list.filter(t => t.type === 'expense').forEach(t => { const d = Number(dayKey(t.date).slice(8, 10)); buckets[Math.min(11, Math.floor(((d - 1) / days) * 12))] += t.amount; });
+    }
     const income = sum('income'); const expenses = sum('expense');
     return { income, expenses, transfers: sum('transfer'), transferCount: list.filter(t => t.type === 'transfer').length, incomeCount: list.filter(t => t.type === 'income').length, net: income - expenses, days, bars: buckets, count: list.length, list };
   }, [txs]);
@@ -458,7 +480,7 @@ function App() {
   const subscriptions = useMemo(() => (Array.isArray(prefs.subscriptions) ? prefs.subscriptions.filter(s => s && typeof s === 'object' && typeof s.name === 'string' && s.id) : []), [prefs.subscriptions]);
   const todayKey = dayKey(new Date());
   const subSummary = useMemo(() => summarizeSubscriptions(subscriptions, new Date(`${todayKey}T12:00:00`), toBase), [subscriptions, toBase, todayKey]);
-  const plans = useMemo(() => (prefs.plans || []).map(p => ({ ...p, target: toBase(p.target, p.currency || 'PHP'), saved: toBase(p.saved, p.currency || 'PHP'), currency: base })), [prefs.plans, toBase, base]);
+  const plans = useMemo(() => (prefs.plans || []).map(p => { const currency = p.currency || 'PHP'; const target = p.target ?? p.target_amount ?? p.amount; const saved = p.saved ?? p.saved_amount ?? 0; return { ...p, target: toBase(Number(target) || 0, currency), saved: toBase(Number(saved) || 0, currency), fundingAllocations: (Array.isArray(p.fundingAllocations) ? p.fundingAllocations : []).map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency || currency), currency: base })), due: p.due || p.due_date || p.target_date || p.date || '', currency: base }; }), [prefs.plans, toBase, base]);
   const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
@@ -518,9 +540,12 @@ function App() {
   }, [view, go]);
   const openNotification = (n) => { setActiveNotificationId(n.id); setPref('readIds', Array.from(new Set([...prefs.readIds, n.id]))); go('NotificationDetail'); };
   const openTx = (t) => setSheet({ name: 'tx', id: t.id });
-  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '' })); setSheet({ name: 'transaction', type }); };
+  const openForm = (type = 'expense', accountId = '') => { setError(''); setForm(f => ({ ...f, transaction_type: type, account_id: accountId || f.account_id, occurred_at: today(), time: '', source: '', ref: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null })); setSheet({ name: 'transaction', type }); };
+  const openGrocery = () => { setError(''); setSheet({ name: 'grocery' }); };
+  const saveGroceryDraft = (draft) => { setPref('groceryDraft', draft); notify(tr('Grocery list saved as draft.')); };
+  const logGroceryExpense = ({ merchant, amount, accountId, note }) => { setForm(f => ({ ...f, merchant, amount:String(amount), transaction_type:'expense', category:'food:groceries', account_id:accountId, occurred_at:today(), time:'', note, source:'', ref:'', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null })); setPref('groceryDraft', null); setSheet({ name:'transaction', type:'expense' }); };
   /* "Add amount" on a card or account: a transfer into it from another account, or a manual top-up (income). */
-  const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '' })); setSheet({ name: 'transaction', type: 'transfer' }); };
+  const openTransferTo = (accountId) => { setError(''); setForm(f => ({ ...f, transaction_type: 'transfer', account_id: '', transfer_to_account_id: accountId, occurred_at: today(), time: '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null })); setSheet({ name: 'transaction', type: 'transfer' }); };
   const openEditAccount = (account) => {
     setError('');
     setAccountForm({
@@ -528,6 +553,7 @@ function App() {
       institution_name: account.institution_name || '', opening_balance: String(account.opening_balance ?? account.balance ?? 0),
       currency: account.currency || 'PHP', mask: prefs.accountStyles?.[account.id]?.mask || account.mask || '', color: prefs.accountStyles?.[account.id]?.color || '', icon: prefs.accountStyles?.[account.id]?.icon || '',
       chip: prefs.accountStyles?.[account.id]?.chip || 'gold', contactless: prefs.accountStyles?.[account.id]?.contactless ?? true, cardKind: prefs.accountStyles?.[account.id]?.cardKind || 'debit', cardNetwork: prefs.accountStyles?.[account.id]?.cardNetwork || account.cardNetwork || '',
+      qrCode: prefs.accountQrCodes?.[account.id] || '',
       linkedBankId: prefs.accountStyles?.[account.id]?.cardKind === 'credit' ? (prefs.accountStyles?.[account.id]?.issuerBankId || '') : (prefs.cardBankLinks?.[account.id] || ''),
       creditLimit: prefs.accountStyles?.[account.id]?.creditLimit ? String(prefs.accountStyles[account.id].creditLimit) : '',
       owedNow: Number(account.opening_balance) < 0 ? String(-Number(account.opening_balance)) : '',
@@ -539,7 +565,7 @@ function App() {
     setForm({
       merchant: t.merchant || '', amount: String(t.origAmount ?? t.amount ?? ''), transaction_type: t.type || t.transaction_type || 'expense',
       category: t.categoryId || t.category || 'other', account_id: t.account_id || '', transfer_to_account_id: t.transfer_to_account_id || '',
-      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '',
+      occurred_at: new Date(t.date || t.occurred_at).toLocaleDateString('en-CA'), time: new Date(t.date || t.occurred_at).toTimeString().slice(0, 8), note: t.note || '', payment_reference: t.payment_reference || '', receipt_note: t.receipt_note || '', receipt_path: t.receipt_path || '', receipt_path_to_delete: '', receipt_file: null,
     });
     setSheet({ name: 'transaction', id: t.id });
   };
@@ -566,25 +592,58 @@ function App() {
     if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
     dupAck.current = '';
     setBusy(true);
+    let uploadedReceiptPath = '';
+    const oldReceiptPath = form.receipt_path_to_delete || (form.receipt_file ? form.receipt_path : '');
     try {
+      let receiptPath = form.receipt_path || null;
+      if (form.receipt_file) {
+        if (!cloudMode || !session?.user?.id || !supabase) throw new Error(tr('Sign in to attach a receipt securely to your MOVO account.'));
+        const file = form.receipt_file;
+        if (file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) throw new Error(tr('Use a JPG, PNG, WebP or PDF receipt smaller than 10 MB.'));
+        const extension = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'})[file.type];
+        uploadedReceiptPath = `${session.user.id}/${window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}.${extension}`;
+        const upload = await supabase.storage.from('movo-receipts').upload(uploadedReceiptPath,file,{contentType:file.type,upsert:false});
+        if (upload.error) throw upload.error;
+        receiptPath = uploadedReceiptPath;
+      }
       if (cloudMode) {
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
-        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note };
+        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath };
         const row = editingId ? await updateTransaction(editingId, payload) : auto.source ? await createAutomated({ ...payload, ...auto }) : await createTransaction(payload, session.user.id);
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
         if (!editingId) celebrate();
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
         if (!editingId) celebrate();
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '' }); setSheet(null);
-    } catch { setError(editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'); }
-    finally { setBusy(false); }
+      if (!editingId && type === 'expense' && form.subscriptionPaymentId) {
+        const paidSub = subscriptions.find(item => item.id === form.subscriptionPaymentId);
+        if (paidSub && cloudMode && session?.user?.id) await recordPaymentAttempt(session.user.id,{ source_type:'subscription', source_id:String(paidSub.id), due_date:paidSub.start, status:'paid', amount:Number(paidSub.amount)||amount, currency:paidSub.currency||txCurrency, account_id:form.account_id, note:'Subscription renewal recorded' }).catch(()=>null);
+        if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
+          let nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
+          const paidOn = String(occurred_at || today()).slice(0, 10);
+          let advanceGuard = 0;
+          while (nextDue && nextDue <= paidOn && advanceGuard < 400) {
+            nextDue = billingDate(nextDue, paidSub.cycle, 1);
+            advanceGuard += 1;
+          }
+          if (nextDue) {
+            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at, lastPaidAmount: Number(paidSub.amount) || amount, lastPaidCurrency: paidSub.currency || txCurrency } : item));
+            notify(tr('Subscription payment recorded. Next billing date updated.'));
+          }
+        }
+      }
+      if (cloudMode && oldReceiptPath && oldReceiptPath !== receiptPath) await supabase.storage.from('movo-receipts').remove([oldReceiptPath]).catch(() => {});
+      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null);
+    } catch (err) {
+      if (uploadedReceiptPath && supabase) await supabase.storage.from('movo-receipts').remove([uploadedReceiptPath]).catch(() => {});
+      setError(err?.message || (editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'));
+    } finally { setBusy(false); }
   };
   const handleCsvFile = (file) => {
     if (!file) return;
@@ -668,6 +727,50 @@ function App() {
     const openingBalance = accountForm.account_type === 'card' && !isCredit ? 0 : isCredit ? -owedNow : evaluate(String(accountForm.opening_balance || '').replace(/-/g, '−'));
     const currency = /^[A-Z]{3}$/.test(accountForm.currency || '') ? accountForm.currency : base;
     const saveStyle = (id) => { const { color, icon, mask, chip, contactless, cardKind, cardNetwork } = accountForm; setPref('accountStyles', { ...(prefs.accountStyles || {}), [id]: { color, icon, mask, ...(accountForm.account_type === 'card' ? { chip, contactless, cardKind, cardNetwork: cardNetwork && cardNetwork !== 'other' ? cardNetwork : '' } : {}), ...(isCredit ? { creditLimit: Math.round(creditLimit * 100) / 100, issuerBankId: accountForm.linkedBankId || '' } : {}) } }); };
+    const saveQrCode = async (id) => {
+      const next = { ...(prefs.accountQrCodes || {}) };
+      const previous = next[id] || '';
+      let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
+      if (value && isAccountQrDataUrl(value)) {
+        const qrDataUrl = value;
+        const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
+        let localCached = false;
+        try { await saveLocalAccountQr(cacheKey, qrDataUrl); localCached = true; } catch { /* cloud upload may still succeed; local fallback is best-effort */ }
+        if (localCached) setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
+        if (cloudMode && session?.user?.id) {
+          try {
+            const path = await uploadAccountQr(session.user.id, id, qrDataUrl);
+            value = path;
+            try { const signedUrl = await getAccountQrSignedUrl(session.user.id, path); setAccountQrDisplay(cur => ({ ...cur, [id]: signedUrl })); } catch { setAccountQrDisplay(cur => ({ ...cur, [id]: qrDataUrl })); /* IndexedDB cache remains available offline */ }
+          } catch {
+            value = previous || (localCached ? `localqr:${cacheKey}` : '');
+            if (localCached) {
+              setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
+              notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+            } else notify(tr('QR upload failed and offline storage is unavailable. Please retry while connected.'));
+          }
+          if (value && !isAccountQrDataUrl(value) && !value.startsWith('localqr:')) {
+            const pending = { ...(prefs.accountQrPending || {}) }; delete pending[id]; setPref('accountQrPending', pending);
+          }
+        } else value = localCached ? `localqr:${cacheKey}` : accountForm.qrCode;
+      }
+      if (value) next[id] = value; else delete next[id];
+      setPref('accountQrCodes', next);
+      if (!value) {
+        const pending = { ...(prefs.accountQrPending || {}) }; delete pending[id]; setPref('accountQrPending', pending);
+        if (cloudMode && session?.user?.id) removeLocalAccountQr(`${session.user.id}:${id}`).catch(() => {});
+        removeLocalAccountQr(`local:${id}`).catch(() => {});
+      }
+      if (previous.startsWith('localqr:') && previous !== value) {
+        const activeCacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
+        if (previous.slice(8) !== activeCacheKey) removeLocalAccountQr(previous.slice(8)).catch(() => {});
+      }
+      if (previous && previous !== value && !isAccountQrDataUrl(previous) && cloudMode && session?.user?.id) {
+        removeAccountQr(session.user.id, previous).catch(() => { /* private orphan cleanup is retried by account cleanup */ });
+      }
+      if (isAccountQrDataUrl(value)) setAccountQrDisplay(cur => ({ ...cur, [id]: value }));
+      else if (!value) setAccountQrDisplay(cur => { const copy = { ...cur }; delete copy[id]; return copy; });
+    };
     if (!name) { setError(tr('Enter an account name.')); return; }
     if (accountForm.mask && !/^\d{4}$/.test(accountForm.mask)) { setError(tr('Enter exactly 4 digits for the last 4 numbers, or leave it empty.')); return; }
     if (isCredit && (!Number.isFinite(creditLimit) || creditLimit <= 0 || creditLimit >= 1e15)) { setError(tr('Enter the card’s credit limit.')); return; }
@@ -683,12 +786,12 @@ function App() {
       if (cloudMode && session?.user) {
         if (editingId) {
           const a = await updateAccount(editingId, { name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, opening_balance: openingBalance });
-          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId);
+          setCloudAccounts(cur => cur.map(item => item.id === editingId ? a : item)); saveStyle(editingId); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(editingId); else saveQrCode(editingId);
           const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[editingId] = linkedBankId; else delete nextLinks[editingId]; setPref('cardBankLinks', nextLinks);
           notify(tr('Account updated in your MOVO account.'));
         } else {
           const a = await createAccount({ name, account_type: accountForm.account_type, institution_name: accountForm.institution_name, currency, opening_balance: openingBalance }, session.user.id);
-          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id);
+          setCloudAccounts(cur => [...cur, a]); saveStyle(a.id); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(a.id); else saveQrCode(a.id);
           if (linkedBankId) setPref('cardBankLinks', { ...(prefs.cardBankLinks || {}), [a.id]: linkedBankId });
           notify(tr('Account added to your signed-in MOVO account.'));
         }
@@ -703,7 +806,7 @@ function App() {
           currency, opening_balance: Math.round(openingBalance * 100) / 100,
           balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
-        saveStyle(a.id);
+        saveStyle(a.id); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(a.id); else saveQrCode(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[a.id] = linkedBankId; else delete nextLinks[a.id]; setPref('cardBankLinks', nextLinks);
         notify(editingId ? 'Account updated on this device.' : 'Account saved on this device only.');
@@ -752,7 +855,7 @@ function App() {
     if (row) archiveItem('budget', row);
     notify(tr('Moved to Archive. You can restore it for 90 days.'));
   };
-  const savePlan = (plan) => { const row = { ...plan, currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
+  const savePlan = (plan) => { const target = Number(plan.target ?? plan.target_amount ?? plan.amount); const saved = Number(plan.saved ?? plan.saved_amount ?? 0); const row = { ...plan, target: Number.isFinite(target) && target > 0 ? target : 0, saved: Number.isFinite(saved) && saved > 0 ? saved : 0, due: plan.due || plan.due_date || plan.target_date || plan.date || '', currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
   const deletePlan = (id) => { const row = (prefs.plans || []).find(p => p.id === id); setPref('plans', plans.filter(p => p.id !== id)); if (row) archiveItem('plan', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   const saveSubscription = (sub) => {
     const row = { ...sub, id: sub.id || window.crypto?.randomUUID?.() || `sub-${Date.now()}` };
@@ -761,10 +864,20 @@ function App() {
   };
   const deleteSubscription = (id) => { const row = subscriptions.find(x => x.id === id); setPref('subscriptions', subscriptions.filter(x => x.id !== id)); if (row) archiveItem('subscription', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   /* Opens the add-transaction sheet pre-filled with this renewal, converted to the home currency. */
+  const logCreditCardPayment = (card, amount) => {
+    const value=Number(amount);
+    if(!Number.isFinite(value)||value<=0) throw new Error(tr('Enter an amount greater than zero.'));
+    const date=today();
+    const current=prefs.creditCardPayments||{};
+    const payments=current[card.id]||[];
+    setPref('creditCardPayments',{...current,[card.id]:[...payments,{id:window.crypto?.randomUUID?.()||String(Date.now()),amount:Math.round(value*100)/100,date,month:date.slice(0,7)}].slice(-120)});
+    notify(tr('Card payment recorded.'));
+  };
   const logSubscription = (sub) => {
     const amount = Math.round(toBase(Number(sub.amount) || 0, sub.currency) * 100) / 100;
+    const paymentAccountId = subscriptionPaymentAccountId(sub, accountsView);
     setError('');
-    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), category: 'Subscriptions', occurred_at: today(), time: '', note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
+    setForm(f => ({ ...f, transaction_type: 'expense', merchant: sub.name, amount: String(amount), account_id: paymentAccountId, category: 'Subscriptions', occurred_at: today(), time: '', subscriptionPaymentId: sub.id, payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, note: sub.currency && sub.currency !== base ? `${tr('Subscription')} · ${money(Number(sub.amount), sub.currency)}` : tr('Subscription') }));
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
@@ -781,9 +894,11 @@ function App() {
     setBusy(true); setError('');
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
+      const qrCleanup = clearLocalAccountQr().catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
+      await qrCleanup;
       notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
     finally { setBusy(false); }
@@ -795,6 +910,7 @@ function App() {
     setBusy(true); setError('');
     try {
       await deleteMyAccount();
+      await clearLocalAccountQr().catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
@@ -890,9 +1006,41 @@ function App() {
      result is saved back; after that every change is saved back, debounced. If the cloud table
      is unavailable MOVO keeps working with this device's preferences only. */
   const prefsSync = useRef({ user: '', ready: false, timer: 0 });
+  const qrMigrationRef = useRef(new Set());
   const [stickerTick, setStickerTick] = useState(0);
   useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
   const userId = cloudMode ? session?.user?.id || '' : '';
+  useEffect(() => {
+    const retry = () => setQrRetryTick(value => value + 1);
+    const onVisibility = () => { if (document.visibilityState === 'visible') retry(); };
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => { window.removeEventListener('online', retry); window.removeEventListener('focus', retry); document.removeEventListener('visibilitychange', onVisibility); };
+  }, []);
+  useEffect(() => {
+    let live = true;
+    setAccountQrDisplay({});
+    const entries = Object.entries(prefs.accountQrCodes || {});
+    Promise.all(entries.map(async ([accountId, value]) => {
+      if (isAccountQrDataUrl(value)) return [accountId, value];
+      if (userId && prefs.accountQrPending?.[accountId]) {
+        try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; } catch { return [accountId, '']; }
+      }
+      if (typeof value === 'string' && value.startsWith('localqr:')) {
+        const cacheKey = value.slice(8);
+        if (cacheKey !== `local:${accountId}` && (!userId || cacheKey !== `${userId}:${accountId}`)) return [accountId, ''];
+        try { return [accountId, await getLocalAccountQr(cacheKey) || '']; } catch { return [accountId, '']; }
+      }
+      if (!userId || typeof value !== 'string') return [accountId, ''];
+      try { const signedUrl = await getAccountQrSignedUrl(userId, value); cacheSignedAccountQr(userId, accountId, signedUrl).catch(() => {}); return [accountId, signedUrl]; }
+      catch {
+        try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; }
+        catch { return [accountId, '']; }
+      }
+    })).then(rows => { if (live) setAccountQrDisplay(Object.fromEntries(rows.filter(([, value]) => value))); });
+    return () => { live = false; };
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, stickerTick]);
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
@@ -909,6 +1057,44 @@ function App() {
     }).catch(() => { /* table unavailable: stay device-only */ });
     return () => { live = false; };
   }, [userId]);
+  useEffect(() => {
+    if (!userId || !prefsSync.current.ready || !prefs.accountQrCodes) return;
+    const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
+    Object.keys(prefs.accountQrPending || {}).forEach(id => pendingMap.set(id, { cacheKey: `${userId}:${id}` }));
+    Object.entries(prefs.accountQrCodes).forEach(([id, value]) => {
+      if (typeof value === 'string' && value.startsWith('localqr:')) {
+        const cacheKey = value.slice(8);
+        if (cacheKey === `local:${id}` || cacheKey === `${userId}:${id}`) pendingMap.set(id, { cacheKey });
+      }
+    });
+    const pending = [...pendingMap.entries()].filter(([id]) => cloudAccounts.some(account => account.id === id) && !qrMigrationRef.current.has(`${userId}:${id}`));
+    if (!pending.length) return;
+    let live = true;
+    pending.forEach(([id]) => qrMigrationRef.current.add(`${userId}:${id}`));
+    Promise.all(pending.map(async ([id, pendingValue]) => {
+      try {
+        const dataUrl = isAccountQrDataUrl(pendingValue) ? pendingValue : await getLocalAccountQr(pendingValue.cacheKey);
+        if (!dataUrl) throw new Error('local_qr_missing');
+        const path = await uploadAccountQr(userId, id, dataUrl);
+        await saveLocalAccountQr(`${userId}:${id}`, dataUrl);
+        const previous = prefs.accountQrCodes?.[id] || '';
+        if (previous && previous !== path && !isAccountQrDataUrl(previous) && !previous.startsWith('localqr:')) removeAccountQr(userId, previous).catch(() => {});
+        return [id, dataUrl, path, previous];
+      } catch { qrMigrationRef.current.delete(`${userId}:${id}`); return [id, null, null, null]; }
+    })).then(rows => {
+      if (!live) { pending.forEach(([id]) => qrMigrationRef.current.delete(`${userId}:${id}`)); return; }
+      const migrated = rows.filter(([, , path]) => path);
+      if (!migrated.length) return;
+      setPrefs(cur => {
+        const next = { ...(cur.accountQrCodes || {}) };
+        migrated.forEach(([id, dataUrl, path, previous]) => { if (next[id] === dataUrl || next[id] === previous || !next[id]) next[id] = path; });
+        const pending = { ...(cur.accountQrPending || {}) }; migrated.forEach(([id]) => { delete pending[id]; });
+        return { ...cur, accountQrCodes: next, accountQrPending: pending };
+      });
+      migrated.forEach(([id]) => qrMigrationRef.current.delete(`${userId}:${id}`));
+    });
+    return () => { live = false; };
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick]);
   useEffect(() => {
     const sync = prefsSync.current;
     if (!sync.ready || !sync.user) return undefined;
@@ -1195,11 +1381,16 @@ function App() {
     } catch { notify(tr('Could not sign out. Please try again.')); }
   };
 
+  const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
+
   const c = {
     refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
+    accountQrDisplay,
+    fx,
+    refreshFx,
     show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
-    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openTransferTo, openEditAccount,
+    walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
     sceneryPhoto, setSceneryPhoto,
@@ -1245,6 +1436,11 @@ function App() {
     switch (view) {
       case 'Wallet': return <Wallet c={c} />;
       case 'FinancialPlanning': return <FinancialPlanning c={c} />;
+      case 'Cashback': return <Cashback c={c} />;
+      case 'ScheduledTransactions': return <ScheduledTransactions c={c} />;
+      case 'ExchangeRates': return <ExchangeRates c={c} />;
+      case 'CryptoMarket': return <CryptoMarket c={c} />;
+      case 'StocksMarket': return <StocksMarket c={c} />;
       case 'Archive': return <Archive c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
@@ -1275,6 +1471,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
+        <ScheduledDuePrompt session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
@@ -1301,6 +1498,7 @@ function App() {
         <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
+      {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
         const type = f.type === 'income' ? 'income' : 'expense';
@@ -1309,15 +1507,16 @@ function App() {
         const acct = (f.last4 && live.find(a => a.mask === f.last4)) || (bank && live.find(a => [a.institution_name, a.name].some(n => String(n || '').toLowerCase() === bank)));
         const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type, ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs);
         setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : '');
-        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', ...(acct ? { account_id: acct.id } : {}) }));
+        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, ...(acct ? { account_id: acct.id } : {}) }));
         setSheet({ name: 'transaction', type });
       }} />}
 
-      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
+      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} qrCodeDisplay={accountQrDisplay[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">
           <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />{tr('Add transaction')}</button>
+          <button type="button" onClick={() => setSheet({ name: 'grocery' })}><Icon name="shopping-basket" size={20} />{tr('Add grocery items')}</button>
           <button type="button" onClick={() => setSheet({ name: 'scanner' })}><Icon name="scan" size={20} />{tr('Scan receipt')}</button>
           <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />{tr('Add account')}</button>
           <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />{tr('Import CSV')}</button>
@@ -1372,19 +1571,28 @@ function App() {
         </form>
       </Sheet>}
 
-      {accountChoice && <Sheet title={tr('Account details')} onClose={() => setSheet(null)} label={tr('Account details')}>
-        <div className="detail-card-view">{accountChoice.account_type === 'card' ? <CardArt a={accountChoice} show={show} styleId={prefs.cardStyles?.[accountChoice.id] || ''} holder={user?.name} /> : <AccountTile a={accountChoice} show={show} style={styleFor(accountChoice, prefs.accountStyles)} size="preview" />}</div>
-        <dl className="detail-list"><div><dt>{tr('Number')}</dt><dd>{accountChoice.mask ? `•••• ${accountChoice.mask}` : '—'}</dd></div>{creditInfo(accountChoice) ? (() => { const ci = creditInfo(accountChoice); const cur = accountChoice.currency; const issuer = baseAccounts.find(x => x.id === accountChoice.issuerBankId); return <>
-          <div><dt>{tr('Credit limit')}</dt><dd>{shown(show, money(ci.limit, cur))}</dd></div>
-          <div><dt>{tr('Used')}</dt><dd>{shown(show, money(ci.owed, cur))} · {ci.usedPercent}%</dd></div>
-          <div><dt>{tr('Available credit')}</dt><dd>{shown(show, money(ci.available, cur))}</dd></div>
-          {issuer && <div><dt>{tr('Issuing bank')}</dt><dd>{issuer.institution_name || issuer.name}</dd></div>}
-        </>; })() : <div><dt>{tr('Balance')}</dt><dd>{shown(show, money(accountChoice.balance, accountChoice.currency))}</dd></div>}</dl>
-        <div className="sheet-actions">{(cloudMode || localAccounts.some(account => account.id === accountChoice.id)) && <><button type="button" className="secondary-button" onClick={() => openEditAccount(accountChoice)}><Icon name="edit" size={16} /> {tr('Edit account')}</button><button type="button" className="danger-button" onClick={() => archiveAccount(accountChoice)}><Icon name="archive" size={16} /> {tr('Archive account')}</button></>}<button type="button" className="primary-button" onClick={() => openForm('expense', accountChoice.id)}>{tr('Add transaction')}</button></div>
-      </Sheet>}
+      {accountChoice && <AccountDetailsSheet
+        account={accountChoice}
+        accounts={accountsView}
+        transactions={txs}
+        prefs={prefs}
+        subscriptions={subscriptions}
+        show={show}
+        holder={user?.name}
+        base={base}
+        qrCodeDisplay={accountQrDisplay[accountChoice.id] || ''}
+        canEdit={cloudMode || localAccounts.some(account => account.id === accountChoice.id)}
+        onClose={() => setSheet(null)}
+        onEdit={() => openEditAccount(accountChoice)}
+        onArchive={() => archiveAccount(accountChoice)}
+        onAddTransaction={() => openForm('expense', accountChoice.id)}
+        onOpenTransaction={item => setSheet({ name: 'tx', id: item.id })}
+        onOpenAccount={id => { setSelectedCardId(id); setSheet({ name: 'cardDetails', id }); }}
+      />}
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}</dl>
+        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}{detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}{detailTx.receipt_note && <div><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}</dl>
+        {detailTx.receipt_path && <button type="button" className="secondary-button" onClick={async()=>{const popup=window.open('about:blank','_blank');try{const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}>{tr('View receipt')}</button>}
         {detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
       </Sheet>}
 

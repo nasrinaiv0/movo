@@ -8,18 +8,21 @@ import { appOrigin } from '../lib/platform';
 
 /*
  * Automatic logging: registration status, the default account for unmatched card names, and the exact iPhone
- * Shortcuts recipe for the chosen setup (Apple Pay automatic, Apple Pay with Log / Skip, Siri voice, bank and e-wallet
- * app notifications, or payment texts). The recipe on
+ * Shortcuts recipe for the chosen setup: bank and e-wallet app notifications (the default; iOS 27 Notification
+ * trigger), Apple Pay, or Siri voice, each fully automatic or with Log / Skip. The recipe on
  * screen and the copied prompt come from the same source (lib/autoLog.js); the device key is masked on screen and only
  * included in what is copied.
  */
 const MODES = [
-  ['automatic', 'card', 'Apple Pay', 'Logs every payment'],
-  ['interactive', 'check', 'Apple Pay', 'Asks Log or Skip'],
-  ['voice', 'mic', 'Siri voice', '“Hey Siri, Log to MOVO”'],
   ['notifications', 'bell', 'Bank notifications', 'GCash, Maya and bank apps'],
-  ['messages', 'message', 'Bank texts', 'GCash, Maya and bank SMS'],
+  ['applepay', 'card', 'Apple Pay', 'Logs every payment'],
+  ['voice', 'mic', 'Siri voice', '“Hey Siri, Log to MOVO”'],
 ];
+export const recipeMode = (source, automatic) => {
+  if (source === 'applepay') return automatic ? 'automatic' : 'interactive';
+  if (source === 'voice') return automatic ? 'voice' : 'voice-interactive';
+  return automatic ? 'notifications-automatic' : 'notifications';
+};
 const STATUS = {
   ready: ['tone-green', 'check', 'Registered for background logging'],
   registering: ['tone-blue', 'refresh', 'Registering this device…'],
@@ -28,11 +31,12 @@ const STATUS = {
 };
 
 export default function AutoLogSheet({ prefs, setPref, status, accounts = [], cloudMode, notify, onResetKey, onClose }) {
-  const [mode, setMode] = useState(prefs.autoLog === false ? 'interactive' : 'automatic');
+  const [mode, setMode] = useState('notifications');
+  const selectedRecipeMode = recipeMode(mode, Boolean(prefs.autoLog));
   const key = prefs.autoLogKey || '';
   const origin = appOrigin();
   const masked = key ? `${key.slice(0, 4)}••••${key.slice(-4)}` : '…';
-  const recipe = shortcutRecipe(origin, masked, mode);
+  const recipe = shortcutRecipe(origin, masked, selectedRecipeMode);
   const copy = (text, done) => navigator.clipboard?.writeText(text).then(() => notify(done), () => notify(tr('Could not copy the prompt. Please try again.')));
   const [tone, icon, label] = STATUS[status] || STATUS['needs-signin'];
   const cloudAccounts = accounts.filter(a => /^[0-9a-f-]{36}$/i.test(String(a.id)));
@@ -60,12 +64,13 @@ export default function AutoLogSheet({ prefs, setPref, status, accounts = [], cl
         <li className="al-trigger"><span>{recipe.trigger}</span></li>
         {recipe.steps.map(step => {
           // "Action — setting · setting · …" reads as the action name with one setting per line.
-          const [action, rest] = step.split(' — ');
+          const cut = step.indexOf(' — ');
+          const action = cut < 0 ? step : step.slice(0, cut); const rest = cut < 0 ? '' : step.slice(cut + 3);
           return <li key={step}><strong className="al-action">{action}</strong>{rest && <span className="al-settings">{rest.replace(/\.$/, '').split(' · ').map(part => <span key={part}>{part}</span>)}</span>}</li>;
         })}
       </ol>
       <div className="al-actions">
-        <button type="button" className="primary-button" disabled={!key} onClick={() => copy(shortcutPrompt(origin, key, mode), tr('Prompt copied. Paste it into Describe a shortcut.'))}><Icon name="doc" size={16} /> {tr('Copy prompt')}</button>
+        <button type="button" className="primary-button" disabled={!key} onClick={() => copy(shortcutPrompt(origin, key, selectedRecipeMode), tr('Prompt copied. Paste it into Describe a shortcut.'))}><Icon name="doc" size={16} /> {tr('Copy prompt')}</button>
         <button type="button" className="secondary-button" disabled={!key} onClick={() => copy(`Bearer ${key}`, tr('Authorization value copied.'))}><Icon name="lock" size={16} /> {tr('Copy key')}</button>
       </div>
       <small className="al-hint">{tr('Paste the prompt into Describe a shortcut (Apple Intelligence), or add the steps above yourself. Test with one small payment first.')}</small>
