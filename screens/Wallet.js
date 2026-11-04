@@ -1,0 +1,224 @@
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import Icon from '../components/Icon';
+import CardArt from '../components/CardArt';
+import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
+import CardStyleSheet from '../components/CardStyleSheet';
+import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
+import AccountTile, { styleFor } from '../components/AccountTile';
+import EditableBoxes from '../components/EditableBoxes';
+import { money, shown } from '../lib/format';
+import { accountSpendingHistory } from '../lib/accountSpending';
+import { creditInfo } from '../lib/creditCard';
+import { walletAssetTotal, walletTypePercentage } from '../lib/walletTotals';
+import { t as tr } from '../lib/i18n';
+
+const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets', 'Cash & Other'];
+const typeOf = { Cards: ['card'], 'Bank Accounts': ['bank'], 'E-Wallets': ['e_wallet'], 'Cash & Other': ['cash', 'investment', 'coupon', 'gift_card', 'other'] };
+/* Short chip labels so all five filters fit on one row; Others covers cash, investments, e-gifts, coupons and merchant cards. */
+const FILTER_LABEL = { 'Bank Accounts': 'Banks', 'Cash & Other': 'Others' };
+const ADD_TYPE = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_wallet', 'Cash & Other': 'cash' };
+const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash & other', 'Cash, investments and more']];
+const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
+const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
+const FORMATS = [['landscape', 'Landscape'], ['portrait', 'Portrait']];
+
+/*
+ * Card format preview: the card is laid out at the size it really has in the Wallet (340px landscape, 160px
+ * portrait) and scaled down to fit the option, so the logo, chip, type, amount and network sit exactly as they do
+ * on the applied card instead of collapsing at thumbnail size.
+ */
+const REAL_WIDTH = { landscape: 340, portrait: 160 };
+function ScaledCard({ orientation, children }) {
+  const box = useRef(null);
+  const [scale, setScale] = useState(0.4);
+  const real = REAL_WIDTH[orientation] || 340;
+  const ratio = orientation === 'portrait' ? 85.6 / 54 : 54 / 85.6;
+  useLayoutEffect(() => {
+    const el = box.current; if (!el) return undefined;
+    const fit = () => { const w = el.clientWidth; if (w) setScale(Math.min(1, w / real)); };
+    fit();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(fit); ro.observe(el); return () => ro.disconnect();
+  }, [real]);
+  return <span ref={box} className={`format-scaled is-${orientation}`} style={{ height: real * ratio * scale }}>
+    <span className="format-scaled-inner" style={{ width: real, transform: `scale(${scale})` }}>{children}</span>
+  </span>;
+}
+export const WALLET_VIEW = { view: 'tiles', sort: 'balance-desc', cardFormat: 'portrait', fxLandscape: 'stack', fxPortrait: 'cylinder' };
+const sorters = { 'balance-desc': (a, b) => b.balance - a.balance, 'balance-asc': (a, b) => a.balance - b.balance, name: (a, b) => a.name.localeCompare(b.name), type: (a, b) => a.account_type.localeCompare(b.account_type) || a.name.localeCompare(b.name) };
+const mask = (a) => (a.mask ? `•••• ${a.mask}` : '');
+const subtitle = (a) => (a.account_type === 'bank' ? 'Savings' : a.account_type === 'e_wallet' ? 'Balance' : a.institution_name || 'Account');
+
+function AccountRow({ a, show, onClick }) {
+  return <button type="button" className="account-row" onClick={onClick}>
+    <Tile name={a.name} size={46} radius={14} />
+    <span className="account-main"><strong>{a.name}</strong><small>{tr(subtitle(a))} {mask(a)}</small></span>
+    <b>{shown(show, money(a.balance, a.currency))}</b>
+  </button>;
+}
+
+const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
+
+export default function Wallet({ c }) {
+  const { prefs, setPref, show, setShow, stats, accountsByType, walletFilter, setWalletFilter, accountsView, refDate, selectedCard, setSelectedCardId, txs, go, openForm, sheet, setSheet } = c;
+  const [editing, setEditing] = useState(false);
+  const [addAmount, setAddAmount] = useState(null);
+  const [addPick, setAddPick] = useState(false);
+  const wv = { ...WALLET_VIEW, ...(prefs.walletView || {}) };
+  const setWv = (patch) => setPref('walletView', { ...wv, ...patch });
+  const live = accountsView.filter(a => !a.is_archived);
+  const sorted = [...live].sort(sorters[wv.sort] || sorters['balance-desc']);
+  const list = walletFilter === 'All' ? sorted : sorted.filter(a => (typeOf[walletFilter] || []).includes(a.account_type));
+  // Percentages compare account groups against liquid/deposit balances, not card limits or card liabilities.
+  const total = walletAssetTotal(live, c.toBase) || 1;
+  const cards = accountsByType.card;
+  const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
+  const selectedCardSpending = useMemo(() => accountSpendingHistory({
+    account: selectedCard,
+    accounts: accountsView,
+    prefs,
+    transactions: txs,
+    days: 10,
+  }), [selectedCard, accountsView, prefs.cardBankLinks, prefs.accountStyles, txs]);
+  const recent = txs.slice(0, 3);
+  const styleOf = (a) => prefs.cardStyles?.[a?.id] || '';
+  const displayModeOf = (a) => prefs.cardDisplayModes?.[a?.id] || 'details';
+  const fieldsOf = (a) => ({ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[a?.id] || {}) });
+  const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
+  const holder = c.user?.name;
+  const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
+  const groups = [['Bank Accounts', live.filter(a => a.account_type === 'bank'), 'bank'], ['Cash & Other', live.filter(a => typeOf['Cash & Other'].includes(a.account_type)), 'bank'], ['E-Wallets', live.filter(a => a.account_type === 'e_wallet'), 'wallet']];
+  // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
+  const openAccount = (a) => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); };
+  // Keyed by style so a new look eases in when the card is edited.
+  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={c.accountQrDisplay?.[a.id] || ''} />;
+  const renderAccounts = (items) => (wv.view === 'list'
+    ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
+    : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
+        {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a, 'landscape')}</button>)}
+      </section>);
+  const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], ['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : ['bank', 'Add Account', () => setSheet({ name: 'account', type: 'bank' })]];
+
+  const boxes = [
+    { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <section className={`card balance-card compact size-${size}`} aria-label={tr('Total balance')}>
+      <div className="balance-label">{tr('Total Balance')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
+      <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
+      <Trend value={c.deltas.balance} chip />
+      {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={200} height={90} /> : <Sparkline values={stats.trend} width={200} height={90} />}</div>}
+    </section> },
+    { id: 'actions', sizes: ['M'], label: tr('Quick actions'), node: <section aria-label={tr('Quick actions')}>
+      <SectionTitle action={tr('More')} onAction={() => setSheet({ name: 'actions' })}>{tr('Quick Actions')}</SectionTitle>
+      <div className="qa-grid">{actions.map(([icon, label, fn]) => <button type="button" key={label} className="qa-button" onClick={fn}><span className="qa-icon"><Icon name={icon} size={20} strokeWidth={2} /></span>{tr(label)}</button>)}</div>
+    </section> },
+    { id: 'types', sizes: ['M'], label: tr('Balance by type'), node: <section className="mini-grid" aria-label={tr('Balance by account type')}>
+      {groups.map(([label, items, icon]) => {
+        const sum = items.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
+        return <button type="button" key={label} className="card mini-card" onClick={() => setWalletFilter(label === 'Bank Accounts' ? 'Bank Accounts' : label)}>
+          <span className="mini-head"><span className={`tile tone-${icon === 'card' ? 'green' : icon === 'bank' ? 'blue' : 'teal'} small`}><Icon name={icon} size={14} /></span><small>{tr(label)}</small></span>
+          <strong className={sum < 0 ? 'neg' : ''}><Money value={sum} show={show} digits={0} /></strong>
+          {sum > 0 && total > 0 && <em className="pct">{walletTypePercentage(sum, total)}%</em>}{sum < 0 && <em className="pct owed">{tr('Owed')}</em>}
+        </button>;
+      })}
+    </section> },
+    { id: 'cards', sizes: ['M'], label: tr('My cards'), node: cards.length > 0 && <section aria-label={tr('My cards')}>
+      <SectionTitle action={tr('See All')} onAction={() => setWalletFilter('Cards')}>{tr('My Cards')}</SectionTitle>
+      <CardPile cards={cards} renderCard={(a) => cardVisual(a, 'landscape')} onOpen={(a) => { setSelectedCardId(a.id); setWalletFilter('Cards'); }} />
+    </section> },
+    { id: 'accounts', sizes: ['M'], label: tr('Accounts'), node: <section aria-label={tr('Accounts')}>
+      <SectionTitle>{tr('Accounts')}</SectionTitle>
+      {list.filter(a => a.account_type !== 'card').length ? renderAccounts(list.filter(a => a.account_type !== 'card')) : <p className="empty">{tr('No bank, e-wallet or cash accounts yet.')}</p>}
+    </section> },
+    { id: 'recent', label: tr('Recent activity'), node: ({ size }) => <section aria-label={tr('Recent activity')}>
+      <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Activity')}</SectionTitle>
+      <div className="card list-card">{(size === 'M' ? recent : txs.slice(0, size === 'S' ? 2 : 8)).map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}</div>
+    </section> },
+  ];
+
+  return <>
+    <RootHeader title={tr('Wallet')} action={{ icon: 'edit', label: tr('Sort and view options'), onClick: () => setSheet({ name: 'walletView' }) }} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
+    <div className="chip-bar wallet-chip-bar">
+      <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(FILTER_LABEL[key] || key) }))} value={walletFilter} onChange={setWalletFilter} />
+      <button type="button" className="round-button accent" aria-label={tr('New account')} title={tr('New account')} onClick={() => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true))}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
+    </div>
+
+    {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
+
+    {walletFilter === 'Cards' && (cards.length ? <>
+      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
+      <section className="card action-strip">
+        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+          <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
+      </section>
+      {selectedCard?.cardKind === 'credit' && (() => {
+        const info = creditInfo(selectedCard);
+        const remainingPercent = info ? Math.max(0, Math.min(100, (info.available / info.limit) * 100)) : 0;
+        const tone = remainingPercent >= 50 ? 'is-healthy' : remainingPercent >= 20 ? 'is-warning' : 'is-critical';
+        return <section className={`card remaining-credit-card ${tone}`} aria-label={tr('Remaining credit')}>
+          <div className="remaining-credit-content">
+            <span className="remaining-credit-copy">
+              <small>{tr('Remaining credit')}</small>
+              <strong>{info ? shown(show, money(info.available, selectedCard.currency)) : '—'}</strong>
+              {info && <small>{Math.round(remainingPercent)}% {tr('available')}</small>}
+            </span>
+            <span className="remaining-credit-sparkline" role="img" aria-label={tr('Recent card activity trend')}>
+              <Sparkline values={selectedCardSpending.map(day => day.total)} width={112} height={44} />
+            </span>
+          </div>
+          {!info && <p className="form-note">{tr('Credit limit')}: —</p>}
+        </section>;
+      })()}
+      {selectedCard?.cardKind !== 'credit' && selectedCard && <button type="button" className="card balance-row balance-summary-card" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
+        <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard.balance, selectedCard.currency))}</strong></span>
+        <span className="remaining-credit-sparkline" role="img" aria-label={tr('Recent account activity trend')}>
+          <Sparkline values={selectedCardSpending.map(day => day.total)} width={112} height={44} />
+        </span>
+      </button>}
+      <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
+      <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
+    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
+
+    {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets' || walletFilter === 'Cash & Other') && <>
+      <SectionTitle>{walletFilter}</SectionTitle>
+      {list.length > 0 && renderAccounts(list)}
+      {!list.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>{tr(`No ${walletFilter.toLowerCase()} yet`)}</h3><p>{tr('Add an account to start organizing your finances.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: walletFilter === 'Bank Accounts' ? 'bank' : walletFilter === 'E-Wallets' ? 'e_wallet' : 'cash' })}>{tr('Add account')}</button></div>}
+    </>}
+
+    {sheet?.name === 'walletView' && <Sheet title={tr('Sort & view')} subtitle={tr('Choose how accounts and cards appear in your wallet.')} onClose={() => setSheet(null)} label={tr('Sort and view')} className="wallet-menu-motion">
+      <p className="mini-title wallet-sort-title">{tr('Sort accounts by')}</p>
+      <div className="wallet-sort-row" role="group" aria-label={tr('Sort accounts by')}>{SORTS.map(([key, label]) => {
+        const compactLabel = { 'balance-desc': 'High balance', 'balance-asc': 'Low balance', name: 'Name A–Z', type: 'Type' }[key];
+        return <button type="button" key={key} className={`wallet-sort-option${wv.sort === key ? ' selected' : ''}`} aria-label={tr(label)} title={tr(label)} aria-pressed={wv.sort === key} onClick={() => setWv({ sort: key })}><span>{tr(compactLabel)}</span>{wv.sort === key && <Icon name="check" size={14} />}</button>;
+      })}</div>
+      <p className="mini-title wallet-view-title">{tr('Layout')}</p>
+      <div className="seg-control wallet-view-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={17} /><span>{tr(label)}</span></button>)}</div>
+      <p className="mini-title wallet-format-title">{tr('Card format')}</p>
+      <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
+        <ScaledCard orientation={key}>{selectedCard ? cardVisual(selectedCard, key) : <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" />}</ScaledCard><span>{tr(label)}</span></button>)}</div>
+      {[['fxLandscape', 'Landscape animation', LANDSCAPE_FX], ['fxPortrait', 'Portrait animation', PORTRAIT_FX]].map(([key, title, list]) => <React.Fragment key={key}>
+        <p className="mini-title wallet-fx-title">{tr(title)}</p>
+        <div className="wallet-fx-row" role="group" aria-label={tr(title)}>{list.map(([fx, label]) => <button type="button" key={fx} className={`wallet-fx-option fx-${fx}${wv[key] === fx ? ' selected' : ''}`} aria-pressed={wv[key] === fx} onClick={() => setWv({ [key]: fx })}><span className="fx-glyph" aria-hidden="true"><i /><i /><i /></span><span>{tr(label)}</span></button>)}</div>
+      </React.Fragment>)}
+      {selectedCard && <button type="button" className="manage-button wallet-change-card-style" onClick={() => setSheet({ name: 'cardStyle' })}><Icon name="palette" size={17} /> {tr('Change card style')}</button>}
+      <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
+    </Sheet>}
+
+    {sheet?.name === 'cardStyle' && selectedCard && <CardStyleSheet account={selectedCard} show={show} holder={holder} current={styleOf(selectedCard)} onPick={pickStyle} onClose={() => setSheet(null)} />}
+
+    {sheet?.name === 'cards' && <Sheet title={tr('Your Cards')} onClose={() => setSheet(null)}>
+      <div className="sheet-list">{cards.map(a => <button type="button" key={a.id} className={`sheet-card${a.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => { setSelectedCardId(a.id); setSheet(null); }}>
+        <Tile name={a.name} size={46} radius={13} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency))}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
+      </button>)}</div>
+      <button type="button" className="manage-button" onClick={() => setSheet({ name: 'account', type: 'card' })}><Icon name="card" size={18} /> {tr('Manage Cards')}</button>
+    </Sheet>}
+    {addAmount && <Sheet title={tr('Add amount')} subtitle={tr('Record money coming into {name}.', { name: addAmount.name })} onClose={() => setAddAmount(null)} label={tr('Add amount')}>
+      <div className="sheet-list">
+        <button type="button" className="sheet-card" onClick={() => { const id = addAmount.id; setAddAmount(null); c.openTransferTo(id); }}><Tile icon="transfer" tone="blue" size={42} radius={13} /><span className="account-main"><strong>{tr('Transfer')}</strong><small>{tr('Moved in from another of your accounts')}</small></span><Icon name="chevron" size={16} /></button>
+        <button type="button" className="sheet-card" onClick={() => { const id = addAmount.id; setAddAmount(null); openForm('income', id); }}><Tile icon="edit" tone="green" size={42} radius={13} /><span className="account-main"><strong>{tr('Manual')}</strong><small>{tr('Cash deposit, salary, refund or any top-up')}</small></span><Icon name="chevron" size={16} /></button>
+      </div>
+      <p className="fineprint">{tr('MOVO records the amount; it does not move real money.')}</p>
+    </Sheet>}
+    {addPick && <Sheet title={tr('New account')} onClose={() => setAddPick(false)} label={tr('New account')}>
+      <div className="sheet-list">{ADD_CHOICES.map(([type, icon, title, sub]) => <button type="button" key={type} className="sheet-card" onClick={() => { setAddPick(false); setSheet({ name: 'account', type }); }}><Tile icon={icon} tone="blue" size={42} radius={13} /><span className="account-main"><strong>{tr(title)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}</div>
+    </Sheet>}
+  </>;
+}
