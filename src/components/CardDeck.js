@@ -136,10 +136,11 @@ function CardCylinder({ cards, selectedId, onSelect, renderCard, effect }) {
   const go = (i) => {
     const el = ref.current; const child = el?.children[i]; if (!child || !cards[i]) return;
     const left = child.offsetLeft - (el.clientWidth - child.offsetWidth) / 2;
-    // Older browsers and jsdom do not expose Element.scrollTo. Keep card selection functional there too.
-    if (typeof el.scrollTo === 'function') {
+    // Some environments expose scrollTo but throw when it is invoked.
+    try {
+      if (typeof el.scrollTo !== 'function') throw new Error('scrollTo unavailable');
       el.scrollTo({ left, behavior: canAnimate() ? 'smooth' : 'auto' });
-    } else {
+    } catch {
       el.scrollLeft = left;
       onSelect(cards[i].id);
     }
