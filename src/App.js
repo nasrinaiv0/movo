@@ -735,7 +735,10 @@ function App() {
         if (cloudMode && session?.user?.id) removeLocalAccountQr(`${session.user.id}:${id}`).catch(() => {});
         removeLocalAccountQr(`local:${id}`).catch(() => {});
       }
-      if (previous.startsWith('localqr:') && previous !== value) removeLocalAccountQr(previous.slice(8)).catch(() => {});
+      if (previous.startsWith('localqr:') && previous !== value) {
+        const activeCacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
+        if (previous.slice(8) !== activeCacheKey) removeLocalAccountQr(previous.slice(8)).catch(() => {});
+      }
       if (previous && previous !== value && !isAccountQrDataUrl(previous) && cloudMode && session?.user?.id) {
         removeAccountQr(session.user.id, previous).catch(() => { /* private orphan cleanup is retried by account cleanup */ });
       }
@@ -1023,14 +1026,16 @@ function App() {
     if (!pending.length) return;
     let live = true;
     pending.forEach(([id]) => qrMigrationRef.current.add(`${userId}:${id}`));
-    Promise.all(pending.map(async ([id, dataUrl]) => {
+    Promise.all(pending.map(async ([id, pendingValue]) => {
       try {
+        const dataUrl = isAccountQrDataUrl(pendingValue) ? pendingValue : await getLocalAccountQr(pendingValue.cacheKey);
+        if (!dataUrl) throw new Error('local_qr_missing');
         const path = await uploadAccountQr(userId, id, dataUrl);
+        await saveLocalAccountQr(`${userId}:${id}`, dataUrl);
         const previous = prefs.accountQrCodes?.[id] || '';
-        try { localStorage.setItem(`movo.accountQrCache.${userId}.${id}`, dataUrl); localStorage.removeItem(`movo.accountQrPending.${userId}.${id}`); } catch { /* device cache is best-effort */ }
-        if (previous && previous !== dataUrl && !isAccountQrDataUrl(previous)) removeAccountQr(userId, previous).catch(() => {});
+        if (previous && previous !== path && !isAccountQrDataUrl(previous) && !previous.startsWith('localqr:')) removeAccountQr(userId, previous).catch(() => {});
         return [id, dataUrl, path, previous];
-      } catch { qrMigrationRef.current.delete(`${userId}:${id}`); return [id, dataUrl, null]; }
+      } catch { qrMigrationRef.current.delete(`${userId}:${id}`); return [id, null, null, null]; }
     })).then(rows => {
       if (!live) return;
       const migrated = rows.filter(([, , path]) => path);
@@ -1042,7 +1047,7 @@ function App() {
       });
     });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes]);
+  }, [userId, prefs.accountQrCodes, cloudAccounts]);
   useEffect(() => {
     const sync = prefsSync.current;
     if (!sync.ready || !sync.user) return undefined;
