@@ -1,7 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
-const CHANNEL_ID = 'movo-payment-reminders';
 const ID_BASE = 410000;
 const MAX_DAYS = 30;
 const dateAtLocalTime = (date, time) => {
@@ -51,14 +50,14 @@ export async function syncPaymentNotifications({ schedules=[], bills=[], subscri
   const today=new Date(); const queue=[];
   const offsets=Array.isArray(preferences.reminder_days)?preferences.reminder_days:[0,1,3];
   const add=(type,item,date,days,title,body)=>{
-    if(!date||!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return;
+    if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
     for(const offset of days){
       const due=asDate(date); due.setDate(due.getDate()-Number(offset));
       const fire=dateAtLocalTime(due,preferences.reminder_time||'09:00');
       const when=moveOutOfQuietHours(fire,preferences.quiet_start,preferences.quiet_end);
       if(when<=today||when.getTime()>today.getTime()+MAX_DAYS*86400000)continue;
       const key=`${type}:${item.id}:${date}:${offset}`;
-      queue.push({id:stableId(key),title,body,smallIcon:'ic_stat_icon_config_sample',schedule:{at:when,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset}});
+      queue.push({id:stableId(key),title,body,schedule:{at:when,allowWhileIdle:true},extra:{type,sourceId:String(item.id),dueDate:date,offset}});
     }
   };
   schedules.filter(x=>x.status==='scheduled').forEach(x=>add('scheduled',x,x.scheduled_for,x.reminder_days||offsets,'Payment reminder',`${x.title} is due ${x.scheduled_for}.`));
