@@ -210,6 +210,7 @@ export default function Subscriptions({ c }) {
   const [tab, setTab] = useState('upcoming');
   const [catalog, setCatalog] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [duePromptShown, setDuePromptShown] = useState(false);
   const now = new Date(); const today = toDay(now);
   const summary = useMemo(() => {
     const s = summarize(subs, now, toBase);
@@ -219,6 +220,11 @@ export default function Subscriptions({ c }) {
   const open = (s) => setDraft({ ...subs.find(x => x.id === s.id) });
   const startNew = (pick) => { setCatalog(false); setDraft({ name: pick.name, category: pick.category, color: pick.color, amount: '', currency: base, cycle: 'monthly', start: today, status: 'active' }); };
   const paused = subs.filter(s => s.status !== 'active');
+  useEffect(() => {
+    if (duePromptShown || draft) return;
+    const dueNow = summary.upcoming.find(item => item.status === 'active' && dayDiff(today, item.next) <= 0);
+    if (dueNow) { setDuePromptShown(true); open(dueNow); }
+  }, [summary.upcoming, duePromptShown, draft, today]);
 
   return <>
     <SubHeader title={tr('Subscriptions')} onBack={() => go('Menu')} right={<button type="button" className="round-button accent" aria-label={tr('Add subscription')} onClick={() => setCatalog(true)}><Icon name="plus" size={20} /></button>} />
