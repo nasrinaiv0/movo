@@ -35,21 +35,23 @@ export default function Transactions({ c }) {
   const limit = txFilter === 'All' && !expanded ? 4 : Infinity;
   let remaining = limit;
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
-  const dateRange = (
-    <label className="month-pill">
-      <Icon name="calendar" size={18} /><span>{monthRange(month)}</span><Icon name="down" size={16} />
-      <select aria-label={tr('Select month')} value={month} onChange={e => setMonth(e.target.value)}>{months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select>
-    </label>
-  );
-  const sliders = <span className="chip-tools">
-    <button type="button" className="round-button flat" aria-label={tr('Quick actions')} title={tr('Quick actions')} onClick={() => c.setSheet({ name: 'actions' })}><Icon name="sliders" size={20} /></button>
-    <button type="button" className="round-button accent" aria-label={tr('Add transaction')} title={tr('Add transaction')} onClick={() => c.openForm('expense')}><Icon name="plus" size={20} strokeWidth={2.2} /></button>
-  </span>;
+  const periodOptions = [{ value: 'all', label: 'All' }, ...months.map(value => ({
+    value,
+    label: value === monthKey(new Date()) ? 'Present' : monthLabel(value).replace(/\\s+\\d{4}$/, ''),
+  }))];
+  const selectedPeriod = month || monthKey(refDate);
+  const periodFilter = <label className="tx-period-filter">
+    <Icon name="sliders" size={21} />
+    <span className="tx-period-filter-value">{periodOptions.find(option => option.value === selectedPeriod)?.label || 'Present'}</span>
+    <Icon name="down" size={17} />
+    <select aria-label={tr('Select month')} value={selectedPeriod} onChange={e => setMonth(e.target.value)}>
+      {periodOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select>
+  </label>;
 
   return <>
     <RootHeader title={tr('Transactions')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
-    <div className="chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{sliders}</div>
-    {txFilter !== 'All' && dateRange}
+    <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{periodFilter}</div>
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
 
     {txFilter === 'All' && <>
@@ -57,7 +59,7 @@ export default function Transactions({ c }) {
         <div><div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
           {isCurrent && <Trend value={deltas.spent} chip />}</div>
-        <Bars values={monthStats.bars} startLabel={monthLabel(month).split(' ')[0]} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
+        <Bars values={monthStats.bars} startLabel={(month === 'all' ? tr('All') : monthLabel(month).split(' ')[0])} endLabel={`${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
       </section>
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
@@ -84,7 +86,7 @@ export default function Transactions({ c }) {
 
     {txFilter !== 'All' && <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />}
     {txFilter === 'All' ? <SectionTitle action={expanded ? tr('Show less') : tr('See All')} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
-      : sort === 'Date' && <div className="month-total"><span>{monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
+      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? 'All' : month === monthKey(new Date()) ? 'Present' : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
 
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
