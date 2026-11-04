@@ -38,7 +38,7 @@ import { summarize as summarizeSubscriptions, billingDate } from './lib/subscrip
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
-import { uploadAccountQr, getAccountQrSignedUrl, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
+import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
 import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
@@ -1008,7 +1008,7 @@ function App() {
         try { return [accountId, await getLocalAccountQr(value.slice(8)) || '']; } catch { return [accountId, '']; }
       }
       if (!userId || typeof value !== 'string') return [accountId, ''];
-      try { return [accountId, await getAccountQrSignedUrl(userId, value)]; }
+      try { const signedUrl = await getAccountQrSignedUrl(userId, value); cacheSignedAccountQr(userId, accountId, signedUrl).catch(() => {}); return [accountId, signedUrl]; }
       catch {
         try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; }
         catch { return [accountId, '']; }
