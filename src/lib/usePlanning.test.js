@@ -118,3 +118,17 @@ test('explicit credit-card liabilities and normalized plans remain consistent in
   expect(summary.plans).toEqual({ count: 1, saved: 3000, target: 12000 });
   expect(summary.goals).toMatchObject({ count: 1, saved: 3000, target: 12000, percent: 25 });
 });
+
+
+test('plan funding allocations reduce available money without changing account assets', () => {
+  const s = planningSummary({
+    accounts: [{ id: 'bank', account_type: 'bank', currency: 'PHP', balance: 50000 }],
+    plans: [{ id: 'p1', name: 'Japan Trip', target: 5000, saved: 2500, currency: 'PHP', fundingAllocations: [
+      { id: 'pa1', account_id: 'bank', account_type: 'bank', amount: 2500, currency: 'PHP', status: 'allocated' },
+    ] }],
+    today,
+  });
+  expect(s.position.assets).toBe(50000);
+  expect(s.position.reservedForGoals).toBe(2500);
+  expect(s.position.availableMoney).toBe(47500);
+});
