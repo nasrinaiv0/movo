@@ -29,8 +29,16 @@ export async function updateSchedule(id, userId, changes) {
   if (patch.amount !== undefined && (!Number.isFinite(Number(patch.amount)) || Number(patch.amount) <= 0)) throw new Error('Enter an amount greater than zero.');
   if (patch.title !== undefined) patch.title = String(patch.title).trim().slice(0,160);
   if (patch.reminder_days) patch.reminder_days = [...new Set(patch.reminder_days.map(Number))].filter(n => OFFSETS.includes(n));
+  if (patch.account_id || patch.transfer_to_account_id || patch.currency) {
+    const ids=[patch.account_id,patch.transfer_to_account_id].filter(Boolean);
+    if(ids.length){const owned=unwrap(await db().from('financial_accounts').select('id,currency,account_type').eq('user_id',userId).in('id',ids));
+      if(owned.length!==ids.length||owned.some(a=>!['bank','e_wallet','cash'].includes(a.account_type)))throw new Error('Choose accounts belonging to your MOVO profile.');
+      const currency=patch.currency||owned[0].currency;
+      if(owned.some(a=>a.currency!==currency))throw new Error('The selected accounts must use the same currency.');
+    }
+  }
   patch.updated_at = new Date().toISOString();
-  return unwrap(await db().from('scheduled_transactions').update(patch).eq('id',id).eq('user_id',userId).eq('status','scheduled').select().single());
+  return unwrap(await db().from('scheduled_transactions').update(patch).eq('id',id).eq('user_id',userId).in('status',['scheduled','paused']).select().single());
 }
 
 export async function setScheduleState(id, userId, action) {
