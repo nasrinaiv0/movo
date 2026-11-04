@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { removeAllAccountQr } from './accountQrStorage';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
@@ -265,6 +266,8 @@ export async function deleteMyAccount() {
 export async function deleteAllCloudData(userId) {
   if (!userId) throw new Error('A signed-in user is required.');
   const client = requireClient();
+  // Remove private QR objects before account rows are cleared; RLS restricts this to the current owner.
+  await removeAllAccountQr(userId);
   for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
     unwrap(await client.from(table).delete().eq('user_id', userId));
   }
