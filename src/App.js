@@ -426,11 +426,21 @@ function App() {
   const months = useMemo(() => Array.from(new Set([refMonth, ...txs.map(t => monthKey(t.date))])).sort().reverse(), [txs, refMonth]);
 
   const statsFor = useCallback((key) => {
-    const list = txs.filter(t => monthKey(t.date) === key);
+    const list = key === 'all' ? txs : txs.filter(t => monthKey(t.date) === key);
     const sum = (type) => list.filter(t => t.type === type).reduce((s, t) => s + t.amount, 0);
-    const [y, m] = key.split('-').map(Number); const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const [y, m] = key === 'all' ? [new Date().getFullYear(), new Date().getMonth() + 1] : key.split('-').map(Number);
+    const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
     const buckets = Array(12).fill(0);
-    list.filter(t => t.type === 'expense').forEach(t => { const d = Number(dayKey(t.date).slice(8, 10)); buckets[Math.min(11, Math.floor(((d - 1) / days) * 12))] += t.amount; });
+    if (key === 'all') {
+      const [ry, rm] = monthKey(new Date()).split('-').map(Number);
+      list.filter(t => t.type === 'expense').forEach(t => {
+        const [ty, tm] = monthKey(t.date).split('-').map(Number);
+        const offset = (ry - ty) * 12 + rm - tm;
+        if (offset >= 0 && offset < 12) buckets[11 - offset] += t.amount;
+      });
+    } else {
+      list.filter(t => t.type === 'expense').forEach(t => { const d = Number(dayKey(t.date).slice(8, 10)); buckets[Math.min(11, Math.floor(((d - 1) / days) * 12))] += t.amount; });
+    }
     const income = sum('income'); const expenses = sum('expense');
     return { income, expenses, transfers: sum('transfer'), transferCount: list.filter(t => t.type === 'transfer').length, incomeCount: list.filter(t => t.type === 'income').length, net: income - expenses, days, bars: buckets, count: list.length, list };
   }, [txs]);
