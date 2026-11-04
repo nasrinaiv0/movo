@@ -93,14 +93,14 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         </section>
       </>}
       {tab === 'more' && <>
-        <dl className="detail-list">
+        <div className="detail-list">
           {row('Account name', account.institution_name || account.name)}
           {row('Account type', tr(account.account_type === 'e_wallet' ? 'E-wallet' : account.account_type === 'card' ? (account.cardKind === 'credit' ? 'Credit card' : 'Debit card') : 'Bank account'))}
           {row('Currency', currency)}
           {row('Number', account.mask ? `•••• ${account.mask}` : '—')}
           {linkedParent && row('Linked account', linkedParent.institution_name || linkedParent.name)}
           {info && row('Credit utilization', `${info.usedPercent}%`)}
-        </dl>
+        </div>
       </>}
       <div className="account-hub-actions">
         <button type="button" className="secondary-button" onClick={onEdit}><Icon name="edit" size={16}/>{tr('Edit account')}</button>
