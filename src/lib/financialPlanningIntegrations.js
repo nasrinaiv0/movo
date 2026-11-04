@@ -47,8 +47,8 @@ export function subscriptionBillData(subscriptions = [], today, until) {
     if (sub.lastPaidAt && Number.isFinite(Date.parse(sub.lastPaidAt))) {
       payments.push({
         id: `subscription-payment-${sub.id}-${sub.lastPaidAt}`,
-        amount: Math.round(amount * 100) / 100,
-        currency: bills[bills.length - 1].currency,
+        amount: Math.round((Number(sub.lastPaidAmount) > 0 ? Number(sub.lastPaidAmount) : amount) * 100) / 100,
+        currency: sub.lastPaidCurrency || bills[bills.length - 1].currency,
         paid_at: sub.lastPaidAt,
         source: 'subscription',
       });
