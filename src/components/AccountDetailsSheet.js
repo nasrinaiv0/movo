@@ -11,7 +11,7 @@ import { t as tr } from '../lib/i18n';
 
 const TABS = [['overview', 'Overview'], ['activity', 'Transactions'], ['connected', 'Connected'], ['more', 'More']];
 
-export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], show = true, holder, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction }) {
+export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], show = true, holder, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
   const [tab, setTab] = useState('overview');
   const [qrOpen, setQrOpen] = useState(false);
   const [scheduled, setScheduled] = useState([]);
@@ -44,7 +44,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   }, [account.id]);
   const fmt = (value) => shown(show, money(value, currency));
   const visual = account.account_type === 'card'
-    ? <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.cardFormat || 'landscape'} displayMode="details" visibleFields={prefs.cardVisibleFields?.[account.id] || {}} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
+    ? <CardArt a={account} show={show} styleId={cardStyleId} holder={holder} qrCode={qrCode} cardNetwork={cardNetwork} orientation={prefs.cardFormat || 'landscape'} displayMode={prefs.cardDisplayModes?.[account.id] || 'details'} visibleFields={{ accountName: true, cardNumber: true, holderName: false, balance: true, ...(prefs.cardDisplayFields?.[account.id] || {}) }} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />
     : <AccountTile a={account} show={show} style={styleFor(account, prefs.accountStyles || {})} size="preview" qrCode={qrCode} onQrClick={qrCode ? () => setQrOpen(true) : undefined} />;
   const row = (label, value) => <div className="account-hub-metric" key={label}><span>{tr(label)}</span><strong>{value}</strong></div>;
   const cashRule = rules[account.id] || {};
@@ -76,7 +76,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
       </div>}
       {tab === 'connected' && <>
         {account.account_type !== 'card' && <section className="account-hub-section"><h3>{tr('Connected cards')}</h3>
-          {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onClose?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('No number')}</small></button>)}
+          {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('No number')}</small></button>)}
           {!linkedCards.length && <p className="empty">{tr('No cards are linked to this account yet.')}</p>}
         </section>}
         <section className="account-hub-section"><h3>{tr('Automatic cashback')}</h3>
