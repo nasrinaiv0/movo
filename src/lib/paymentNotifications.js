@@ -47,6 +47,11 @@ export const scheduledDates = item => {
   return dates;
 };
 
+export async function canSchedulePaymentNotifications() {
+  if (!Capacitor.isNativePlatform()) return false;
+  try { return (await LocalNotifications.checkPermissions()).display === 'granted'; } catch { return false; }
+}
+
 export async function requestPaymentNotificationPermission() {
   if (!Capacitor.isNativePlatform()) return { supported:false, granted:false };
   let permission=await LocalNotifications.checkPermissions();
