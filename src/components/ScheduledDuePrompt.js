@@ -14,6 +14,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], onLogge
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   useEffect(() => {
     let live = true;
+    if (!session?.user?.id) { setItem(null); return () => { live = false; }; }
     if (session?.user?.id) {
       listScheduledTransactions()
         .then(rows => {
