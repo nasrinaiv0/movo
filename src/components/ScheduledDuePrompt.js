@@ -21,6 +21,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [attemptNote,setAttemptNote]=useState('');
+  const [splits,setSplits]=useState([]);
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = useCallback(async (markShown=true) => {
     const date=today();
@@ -79,7 +80,9 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const preferred=next?.kind==='scheduled'?item?.account_id:billAccount;
     setAccount(preferred||'');
     setDestination(item?.transfer_to_account_id||'');
-    setAmount(String(next?.kind==='bill'?amountRemaining(item):item?.amount||''));
+    const dueAmount=next?.kind==='bill'?amountRemaining(item):item?.amount||'';
+    setAmount(String(dueAmount));
+    setSplits(next?.kind==='bill'?[{id:'split-1',account_id:billAccount||'',amount:String(dueAmount)}]:[]);
     setError('');
     setAttemptNote('');
   },[]);
@@ -115,18 +118,29 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     event.preventDefault();if(!entry)return;
     if(entry.kind==='subscription'){onSubscriptionLog?.(entry.item);setActive(null);return;}
     setBusy(true);setError('');
+    let loggedAmount=Number(amount||item.amount||0);
     try{
       if(entry.kind==='scheduled') await logScheduledTransaction(entry.item,account,destination);
-      else if(entry.kind==='bill') await recordBillPayment({
-        occurrence_id:entry.item.id,amount,method:'recorded',account_id:account,
-        paid_at:`${today()}T12:00:00Z`,key:paymentKey(entry.item.id,nonce()),
-      });
+      else if(entry.kind==='bill') {
+        const parts=splits.filter(part=>Number(part.amount)>0);
+        const total=parts.reduce((sum,part)=>sum+Number(part.amount),0);
+        const remaining=amountRemaining(item);
+        if(!parts.length||parts.some(part=>!part.account_id)||total>remaining+0.005)throw new Error(tr('Choose an account for each split and keep the total within the remaining bill balance.'));
+        let pending=[...parts];
+        for(const part of parts){
+          await recordBillPayment({occurrence_id:item.id,amount:Number(part.amount),method:'recorded',account_id:part.account_id,paid_at:`${today()}T12:00:00Z`,key:paymentKey(item.id,nonce())});
+          pending=pending.filter(x=>x.id!==part.id);
+          setSplits(pending);
+        }
+        loggedAmount=total;
+        if(total<remaining-0.005)await snoozeObligation(session.user.id,{source_type:'bill',source_id:String(item.id),occurrence_date:entry.date,reminder_offset:entry.reminderOffset||0},new Date(Date.now()+86400000).toISOString());
+      }
       else if(entry.kind==='loan') await recordLoanEvent({loan_id:item.id,event_type:'principal_payment',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Payment recorded from MOVO reminder'});
       else if(entry.kind==='receivable') await recordReceivableEvent({receivable_id:item.id,event_type:'collected',amount,currency:billCurrency,account_id:account,occurred_at:new Date().toISOString(),note:'Collection recorded from MOVO reminder'});
       else if(entry.kind==='credit_card') await onCreditCardLog?.(item,Number(amount));
       if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
         source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
-        amount:Number(amount||item.amount||0)||null,currency:billCurrency,account_id:account||null,note:'Payment recorded in MOVO',
+        amount:Number(loggedAmount||amount||item.amount||0)||null,currency:billCurrency,account_id:account||null,note:'Payment recorded in MOVO',
       }).catch(()=>null);
       await onLogged?.();
       const queue=await loadDue();
@@ -138,6 +152,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const item=entry.item;
   const billCurrency=item.currency||entry.bill?.currency||'PHP';
   const choices=accounts.filter(a=>a.currency===billCurrency);
+  const splitTotal=splits.reduce((sum,part)=>sum+(Number(part.amount)||0),0);
   const suggested=choices.filter(a=>Number(a.balance||0)>=Number(amount||item.amount||0)).sort((a,b)=>Number(b.balance||0)-Number(a.balance||0))[0];
   const title=entry.kind==='scheduled'?'Scheduled transaction due':entry.kind==='bill'?'Bill payment due':entry.kind==='subscription'?'Subscription renewal due':entry.kind==='loan'?'Loan payment due':entry.kind==='receivable'?'Collection due':'Credit card payment due';
   const description=entry.kind==='bill'?(entry.bill?.name||tr('Bill')):item.title||item.name;
@@ -151,12 +166,23 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       </>:<>
         <p className="form-note">{tr('Review and confirm to add this transaction to your records. MOVO will not move money.')}</p>
         <strong>{billCurrency} {Number(amount).toLocaleString()}</strong>
-        {entry.kind!=='credit_card'&&<>{!account&&suggested&&<p className="form-note">{tr('Suggested account')}: {suggested.institution_name||suggested.name}</p>}
+        {entry.kind!=='credit_card'&&entry.kind!=='bill'&&<>{!account&&suggested&&<p className="form-note">{tr('Suggested account')}: {suggested.institution_name||suggested.name}</p>}
         {!account&&!suggested&&<p className="form-note">{tr('Check your account balance before confirming this transaction.')}</p>}
         <label>{tr('Account to use')}<select required value={account} onChange={e=>setAccount(e.target.value)}><option value="">{tr('Choose account')}</option>{choices.map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>
         {entry.kind==='scheduled'&&item.transaction_type==='transfer'&&<label>{tr('Destination account')}<select required value={destination} onChange={e=>setDestination(e.target.value)}><option value="">{tr('Choose destination')}</option>{choices.filter(a=>a.id!==account).map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>}</>}
-        {entry.kind!=='scheduled'&&<label>{tr(entry.kind==='credit_card'?'Amount to record':'Amount paid')}<input required type="number" min="0.01" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></label>}
-        <button className="primary-button" disabled={busy||(entry.kind!=='credit_card'&&!account)||(entry.kind==='scheduled'&&item.transaction_type==='transfer'&&!destination)}>{tr(entry.kind==='credit_card'?'Record card payment':entry.kind==='receivable'?'Record collection':'Confirm & log transaction')}</button>
+        {entry.kind==='bill'&&<section className="card pad">
+          <strong>{tr('Split payment across accounts')}</strong>
+          <p className="form-note">{tr('Remaining bill balance')}: {billCurrency} {Number(amountRemaining(item)).toLocaleString()}</p>
+          {splits.map((part,index)=><div className="form-grid" key={part.id}>
+            <label>{tr('Account {number}',{number:index+1})}<select required value={part.account_id} onChange={e=>setSplits(current=>current.map(x=>x.id===part.id?{...x,account_id:e.target.value}:x))}><option value="">{tr('Choose account')}</option>{choices.map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>
+            <label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setSplits(current=>current.map(x=>x.id===part.id?{...x,amount:e.target.value}:x))}/></label>
+            {splits.length>1&&<button type="button" className="link-button" onClick={()=>setSplits(current=>current.filter(x=>x.id!==part.id))}>{tr('Remove split')}</button>}
+          </div>)}
+          <button type="button" className="secondary-button" onClick={()=>setSplits(current=>[...current,{id:nonce(),account_id:'',amount:''}])}>{tr('Add another account')}</button>
+          <p className="form-note">{tr('Split total')}: {billCurrency} {splitTotal.toLocaleString()} · {tr('Partial payments are allowed.')}</p>
+        </section>}
+        {entry.kind!=='scheduled'&&entry.kind!=='bill'&&<label>{tr(entry.kind==='credit_card'?'Amount to record':'Amount paid')}<input required type="number" min="0.01" step="0.01" value={amount} onChange={e=>setAmount(e.target.value)}/></label>}
+        <button className="primary-button" disabled={busy||((entry.kind!=='credit_card'&&entry.kind!=='bill')&&!account)||(entry.kind==='bill'&&(!splits.length||splits.some(part=>!part.account_id||Number(part.amount)<=0)||splitTotal>amountRemaining(item)+0.005))||(entry.kind==='scheduled'&&item.transaction_type==='transfer'&&!destination)}>{tr(entry.kind==='credit_card'?'Record card payment':entry.kind==='receivable'?'Record collection':'Confirm & log transaction')}</button>
       </>}
       <label>{tr('Payment issue note')}<textarea rows="2" maxLength="500" value={attemptNote} onChange={e=>setAttemptNote(e.target.value)} placeholder={tr('Optional: declined, insufficient balance, service unavailable…')}/></label>
       <button type="button" className="secondary-button" disabled={busy||!session?.user?.id} onClick={markIssue}>{tr('Record payment issue & retry tomorrow')}</button>
