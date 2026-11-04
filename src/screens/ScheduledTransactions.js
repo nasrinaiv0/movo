@@ -4,7 +4,7 @@ import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { cancelScheduledTransaction, createScheduledTransaction, listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
-import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, snoozeObligation, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
+import { setScheduleState, skipScheduleOccurrence, snoozeSchedule, snoozeObligation, clearReminderSnooze, clearScheduleSnooze, updateSchedule, getReminderPreferences, saveReminderPreferences, listReminderEvents } from '../lib/paymentReminderCenter';
 import { requestPaymentNotificationPermission } from '../lib/paymentNotifications';
 import { listPaymentAttempts, recordPaymentAttempt } from '../lib/paymentAttempts';
 import { listBills, listOccurrences } from '../lib/billsRepository';
@@ -63,6 +63,7 @@ export default function ScheduledTransactions({ c }) {
   const log=async(item,accountId,transferTo,amount=item.amount,title=item.title)=>run(async()=>{await logScheduledTransaction({...item,amount,title},accountId,transferTo);setSheet(null);notify?.(tr('Transaction logged.'));});
   const action=async(item,kind)=>run(async()=>{if(kind==='pause'||kind==='resume'||kind==='cancel')await setScheduleState(item.id,session?.user?.id,kind);if(kind==='skip')await skipScheduleOccurrence(item,session?.user?.id);if(kind==='snooze'){const until=new Date(Date.now()+24*60*60*1000).toISOString();await snoozeSchedule(item.id,session?.user?.id,until);if(session?.user?.id)await snoozeObligation(session.user.id,{source_type:'scheduled',source_id:String(item.id),occurrence_date:item.scheduled_for,reminder_offset:0},until);window.dispatchEvent(new Event('movo:payment-reminders-updated'));}setSheet(null);});
   const edit=item=>{setForm({...item,amount:String(item.amount),reminder_days:item.reminder_days||[0,1,3],ends_on:item.ends_on||''});setError('');setSheet({kind:'edit',item});};
+  const retryAttempt=attempt=>run(async()=>{const event={source_type:attempt.source_type,source_id:String(attempt.source_id),occurrence_date:attempt.due_date,reminder_offset:0};await clearReminderSnooze(session?.user?.id,event);if(attempt.source_type==='scheduled'){const scheduled=items.find(x=>String(x.id)===String(attempt.source_id));if(scheduled?.status==='scheduled')await clearScheduleSnooze(scheduled.id,session.user.id);}window.dispatchEvent(new Event('movo:payment-reminders-updated'));});
   const monthStart=new Date(month.getFullYear(),month.getMonth(),1); const offset=(monthStart.getDay()+6)%7;
   const days=Array.from({length:new Date(month.getFullYear(),month.getMonth()+1,0).getDate()},(_,i)=>i+1);
   const monthKey=`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}-`;
@@ -137,7 +138,7 @@ export default function ScheduledTransactions({ c }) {
       <span className="fp-amount"><small>{tr(event.status==='dismissed'?'Snoozed':event.status==='sent'?'Shown':event.status)}</small></span>
     </article>):<p className="form-note">{tr('No reminder activity yet.')}</p>}</div>
     {paymentAttempts.length>0&&<><SectionTitle>{tr('Payment attempts')}</SectionTitle><div className="card list-card">{paymentAttempts.slice(0,8).map(attempt=><article className="fp-row" key={attempt.id}>
-      <span className="stat-icon tone-red"><Icon name="alert-circle" size={17}/></span><span className="fp-main"><strong>{tr(attempt.status==='failed'?'Payment issue recorded':attempt.status)}</strong><small>{dateLabel(attempt.due_date)} · {attempt.note||tr('No note added')}</small></span><span className="fp-amount"><small>{attempt.currency} {Number(attempt.amount||0).toLocaleString()}</small></span>
+      <span className="stat-icon tone-red"><Icon name="alert-circle" size={17}/></span><span className="fp-main"><strong>{tr(attempt.status==='failed'?'Payment issue recorded':attempt.status)}</strong><small>{dateLabel(attempt.due_date)} · {attempt.note||tr('No note added')}</small></span><span className="fp-amount"><small>{attempt.currency} {Number(attempt.amount||0).toLocaleString()}</small>{attempt.status==='failed'&&<button type="button" className="link-button" onClick={()=>retryAttempt(attempt)}>{tr('Log now')}</button>}</span>
     </article>)}</div></>}
     {notice&&<p className="form-note" role="status">{notice}</p>}
   </>;
