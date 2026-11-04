@@ -57,6 +57,28 @@ function AccountRow({ a, show, onClick }) {
   </button>;
 }
 
+
+/** Ten-day spending bars shown inside the selected card's balance summary. */
+function SpendingBars({ days = [] }) {
+  const values = days.slice(-10);
+  const max = Math.max(0, ...values.map(day => Number(day.total) || 0));
+  return <div className="wallet-spending-bars" aria-hidden="true">
+    <div className="wallet-spending-bars-title">{tr('Last 10 Days Spending')}</div>
+    <div className="wallet-spending-bars-plot">
+      {values.map((day, index) => {
+        const amount = Math.max(0, Number(day.total) || 0);
+        const height = max > 0 && amount > 0 ? Math.max(8, (amount / max) * 100) : 0;
+        return <div className="wallet-spending-bar-column" key={day.key || index}>
+          <span className="wallet-spending-bar-track">
+            <span className="wallet-spending-bar-fill" style={{ height: `${height}%` }} />
+          </span>
+          <span className="wallet-spending-bar-date">{day.key ? Number(day.key.slice(-2)) : ''}</span>
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
 const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
 
 export default function Wallet({ c }) {
@@ -149,30 +171,28 @@ export default function Wallet({ c }) {
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
       </section>
-      {selectedCard?.cardKind === 'credit' && (() => {
-        const info = creditInfo(selectedCard);
-        const remainingPercent = info ? Math.max(0, Math.min(100, (info.available / info.limit) * 100)) : 0;
-        const tone = remainingPercent >= 50 ? 'is-healthy' : remainingPercent >= 20 ? 'is-warning' : 'is-critical';
-        return <section className={`card remaining-credit-card ${tone}`} aria-label={tr('Remaining credit')}>
-          <div className="remaining-credit-content">
-            <span className="remaining-credit-copy">
-              <small>{tr('Remaining credit')}</small>
-              <strong>{info ? shown(show, money(info.available, selectedCard.currency)) : '—'}</strong>
-              {info && <small>{Math.round(remainingPercent)}% {tr('available')}</small>}
-            </span>
-            <span className="remaining-credit-sparkline" role="img" aria-label={tr('Recent card activity trend')}>
-              <Sparkline values={selectedCardSpending.map(day => day.total)} width={112} height={44} />
-            </span>
-          </div>
-          {!info && <p className="form-note">{tr('Credit limit')}: —</p>}
-        </section>;
+      {selectedCard && (() => {
+        const isCredit = selectedCard.cardKind === 'credit';
+        const info = isCredit ? creditInfo(selectedCard) : null;
+        const label = isCredit ? tr('Remaining credit') : tr('Available Balance');
+        const amount = isCredit
+          ? (info ? shown(show, money(info.available, selectedCard.currency)) : '—')
+          : shown(show, money(selectedCard.balance, selectedCard.currency));
+        return <button
+          type="button"
+          className={`card wallet-balance-spending-card${isCredit ? ' is-credit' : ' is-debit'}`}
+          onClick={() => setSheet({ name: 'cards' })}
+          aria-label={label}
+        >
+          <span className="wallet-balance-spending-copy">
+            <small>{label}</small>
+            <strong>{amount}</strong>
+          </span>
+          <span className="wallet-balance-spending-divider" aria-hidden="true" />
+          <SpendingBars days={selectedCardSpending} />
+          <Icon name="chevron" size={22} />
+        </button>;
       })()}
-      {selectedCard?.cardKind !== 'credit' && selectedCard && <button type="button" className="card balance-row balance-summary-card" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
-        <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard.balance, selectedCard.currency))}</strong></span>
-        <span className="remaining-credit-sparkline" role="img" aria-label={tr('Recent account activity trend')}>
-          <Sparkline values={selectedCardSpending.map(day => day.total)} width={112} height={44} />
-        </span>
-      </button>}
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
     </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
