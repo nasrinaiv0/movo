@@ -29,4 +29,13 @@ describe('billingCycleOptions', () => {
       { value: '2026-08', label: 'Aug' },
     ]);
   });
+
+  test('keeps month labels distinguishable when history spans multiple years', () => {
+    expect(billingCycleOptions(['2026-11', '2025-11', '2025-09'], '2026-11')).toEqual([
+      { value: 'all', label: 'All' },
+      { value: '2026-11', label: 'Present' },
+      { value: '2025-11', label: 'Nov 2025' },
+      { value: '2025-09', label: 'Sep' },
+    ]);
+  });
 });
