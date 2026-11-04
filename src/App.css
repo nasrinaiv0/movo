@@ -4508,3 +4508,32 @@ button.account-tile:active { transform: scale(.98); }
 
 /* Payment calendar: compact, adaptive and touch-friendly. */
 .schedule-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px;text-align:center}.schedule-calendar>small{color:var(--muted);font-size:11px;padding:5px 0}.schedule-calendar>button{position:relative;min-height:38px;border:0;border-radius:10px;background:var(--surface-2,rgba(127,127,127,.08));color:inherit;font:inherit;font-size:13px}.schedule-calendar>button.has-schedule{font-weight:700;background:var(--accent-soft,rgba(80,130,220,.14))}.schedule-calendar>button i{position:absolute;bottom:5px;left:calc(50% - 3px);width:6px;height:6px;border-radius:50%;background:var(--accent,#4f8fe8)}.schedule-calendar>span{min-height:38px}
+
+
+/* Portrait wallet cards: give every card its own soft lift and restrained glossy reflection.
+   Do not cast an artificial top-edge shadow onto the card behind it; that creates the harsh
+   horizontal "line" seen where portrait cards overlap. */
+.movo-app .card-pile .credit-card.ccx.orientation-portrait,
+.movo-app .card-stack .credit-card.ccx.orientation-portrait {
+  box-shadow: 0 2px 5px rgba(12, 16, 24, .10), 0 12px 24px -13px rgba(12, 16, 24, .34), 0 26px 42px -28px rgba(12, 16, 24, .30);
+}
+.movo-app .card-pile-item + .card-pile-item .credit-card.ccx.orientation-portrait,
+.movo-app .card-stack-peek .credit-card.ccx.orientation-portrait {
+  box-shadow: 0 2px 5px rgba(12, 16, 24, .10), 0 12px 24px -13px rgba(12, 16, 24, .34), 0 26px 42px -28px rgba(12, 16, 24, .30);
+}
+.movo-app .credit-card.ccx.orientation-portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(145deg, rgba(255,255,255,.16) 0%, rgba(255,255,255,.055) 17%, transparent 39%, transparent 76%, rgba(255,255,255,.045) 100%);
+  opacity: .72;
+}
+.theme-dark .movo-app .card-pile .credit-card.ccx.orientation-portrait,
+.theme-dark.movo-app .card-pile .credit-card.ccx.orientation-portrait,
+.theme-dark .movo-app .card-stack .credit-card.ccx.orientation-portrait,
+.theme-dark.movo-app .card-stack .credit-card.ccx.orientation-portrait {
+  box-shadow: 0 2px 5px rgba(0,0,0,.28), 0 14px 28px -12px rgba(0,0,0,.62), 0 28px 44px -28px rgba(0,0,0,.48);
+}
