@@ -41,7 +41,7 @@ export default function AccountTile({ a, show = true, style, size = 'tile', onCl
       <span className="at-name">{/* One title: the institution (chosen or typed), else the account name. Never both. */ String(a.institution_name || '').trim() || a.name || tr('Account preview')}{a.mask && <small className="at-mask">•••• {a.mask}</small>}</span>
       {size !== 'grid' && <span className="at-type">{a.account_type === 'card' && a.cardKind ? (a.cardKind === 'credit' ? tr('Credit') : tr('Debit')) : tr(typeMeta(a.account_type).label)}</span>}
     </span>
-    {qrCode && <button type="button" className="at-qr" aria-label={tr('Enlarge QR code')} onClick={event => { event.stopPropagation(); onQrClick?.(); }}><img src={qrCode} alt={tr('Account QR code')} /></button>}
+    {qrCode && (onQrClick ? <button type="button" className="at-qr" aria-label={tr('Enlarge QR code')} onClick={event => { event.stopPropagation(); onQrClick(); }}><img src={qrCode} alt={tr('Account QR code')} /></button> : <span className="at-qr" aria-label={tr('Account QR code')}><img src={qrCode} alt={tr('Account QR code')} /></span>)}
     <span className="at-bottom">
       <small>{size === 'grid' ? tr(typeMeta(a.account_type).label) : tr('Balance')}</small>
       <b>{shown(show, money(a.balance || 0, a.currency || 'PHP'))}</b>
