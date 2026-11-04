@@ -102,7 +102,7 @@ export async function recordReminderEvent(userId, event) {
     user_id: userId, source_type: event.source_type, source_id: String(event.source_id),
     occurrence_date: event.occurrence_date, reminder_offset: offset,
     channel: 'in_app', status: event.status || 'queued',
-    ...(event.snoozed_until ? { snoozed_until: event.snoozed_until } : {}),
+    snoozed_until: event.snoozed_until || null,
     ...(event.status === 'sent' ? { sent_at: new Date().toISOString() } : {}),
   };
   return unwrap(await db().from('payment_reminder_events').upsert(row, {
