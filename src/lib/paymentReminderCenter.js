@@ -44,23 +44,45 @@ export async function saveReminderPreferences(userId, input) {
 }
 
 export async function updateSchedule(id, userId, changes) {
-  const allowed = ['title','amount','currency','account_id','transfer_to_account_id','scheduled_for','frequency','category','notes','ends_on','reminder_days','timezone','reference_note'];
-  const patch = Object.fromEntries(Object.entries(changes).filter(([key]) => allowed.includes(key)));
-  if (patch.amount !== undefined && (!Number.isFinite(Number(patch.amount)) || Number(patch.amount) <= 0)) throw new Error('Enter an amount greater than zero.');
-  if (patch.title !== undefined) patch.title = String(patch.title).trim().slice(0,160);
-  if (patch.reminder_days) patch.reminder_days = [...new Set(patch.reminder_days.map(Number))].filter(n => OFFSETS.includes(n));
-  if (patch.account_id || patch.transfer_to_account_id || patch.currency) {
-    const ids=[patch.account_id,patch.transfer_to_account_id].filter(Boolean);
-    if(ids.length){const owned=unwrap(await db().from('financial_accounts').select('id,currency,account_type').eq('user_id',userId).in('id',ids));
-      if(owned.length!==ids.length||owned.some(a=>!['bank','e_wallet','cash'].includes(a.account_type)))throw new Error('Choose accounts belonging to your MOVO profile.');
-      const currency=patch.currency||owned[0].currency;
-      if(owned.some(a=>a.currency!==currency))throw new Error('The selected accounts must use the same currency.');
-    }
-  }
-  patch.updated_at = new Date().toISOString();
-  return unwrap(await db().from('scheduled_transactions').update(patch).eq('id',id).eq('user_id',userId).in('status',['scheduled','paused']).select().single());
+  if(!id||!userId)throw new Error('Sign in to update this schedule.');
+  const allowed=['title','amount','currency','transaction_type','account_id','transfer_to_account_id','scheduled_for','frequency','category','notes','ends_on','reminder_days','timezone','reference_note'];
+  const patch=Object.fromEntries(Object.entries(changes||{}).filter(([key])=>allowed.includes(key)));
+  const current=unwrap(await db().from('scheduled_transactions').select('*').eq('id',id).eq('user_id',userId).in('status',['scheduled','paused']).maybeSingle());
+  if(!current)throw new Error('This schedule is no longer available.');
+  const next={...current,...patch};
+  next.title=String(next.title||'').trim().slice(0,160);
+  if(!next.title)throw new Error('Enter a schedule description.');
+  next.amount=Number(next.amount);
+  if(!Number.isFinite(next.amount)||next.amount<=0||next.amount>=1e16)throw new Error('Enter an amount greater than zero.');
+  next.amount=Math.round(next.amount*100)/100;
+  if(!['expense','transfer'].includes(next.transaction_type))throw new Error('Choose a payment or transfer.');
+  if(!['once','weekly','monthly','yearly'].includes(next.frequency))throw new Error('Choose a valid repeat interval.');
+  const validDate=value=>typeof value==='string'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)&&!Number.isNaN(Date.parse(value))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;
+  if(!validDate(next.scheduled_for))throw new Error('Choose a valid scheduled date.');
+  next.ends_on=next.ends_on||null;
+  if(next.ends_on&&(!validDate(next.ends_on)||next.ends_on<next.scheduled_for))throw new Error('The end date must be on or after the first scheduled date.');
+  next.currency=String(next.currency||'PHP').toUpperCase();
+  if(!/^[A-Z]{3}$/.test(next.currency))throw new Error('Choose a valid currency.');
+  next.account_id=next.account_id||null;
+  next.transfer_to_account_id=next.transaction_type==='transfer'?(next.transfer_to_account_id||null):null;
+  if(!next.account_id)throw new Error('Choose the account to use.');
+  if(next.transaction_type==='transfer'&&(!next.transfer_to_account_id||next.transfer_to_account_id===next.account_id))throw new Error('Choose a different destination account.');
+  const accountIds=[next.account_id,...(next.transaction_type==='transfer'?[next.transfer_to_account_id]:[])];
+  const owned=unwrap(await db().from('financial_accounts').select('id,currency,account_type').eq('user_id',userId).in('id',accountIds));
+  if((owned||[]).length!==accountIds.length||owned.some(a=>!['bank','e_wallet','cash'].includes(a.account_type)))throw new Error('Choose eligible accounts belonging to your MOVO profile.');
+  if(owned.some(a=>a.currency!==next.currency))throw new Error('The selected accounts must use the same currency.');
+  const days=[...new Set((next.reminder_days||[]).map(Number))].filter(n=>OFFSETS.includes(n)).sort((a,b)=>a-b);
+  if(days.length>8)throw new Error('Choose up to eight reminder intervals.');
+  const timezone=String(next.timezone||'Asia/Manila').slice(0,64);
+  try{new Intl.DateTimeFormat('en-US',{timeZone:timezone});}catch{throw new Error('Choose a valid timezone.');}
+  return unwrap(await db().from('scheduled_transactions').update({
+    title:next.title,amount:next.amount,currency:next.currency,transaction_type:next.transaction_type,
+    account_id:next.account_id,transfer_to_account_id:next.transfer_to_account_id,
+    scheduled_for:next.scheduled_for,frequency:next.frequency,category:String(next.category||'Other').trim().slice(0,60)||'Other',
+    notes:String(next.notes||'').trim().slice(0,500)||null,ends_on:next.ends_on,reminder_days:days,timezone,
+    reference_note:String(next.reference_note||'').trim().slice(0,500)||null,updated_at:new Date().toISOString(),
+  }).eq('id',id).eq('user_id',userId).in('status',['scheduled','paused']).select().single());
 }
-
 export async function setScheduleState(id, userId, action) {
   if (!['pause','resume','cancel'].includes(action)) throw new Error('Unsupported schedule action.');
   const patch = action === 'pause' ? { status:'paused', paused_at:new Date().toISOString() }
