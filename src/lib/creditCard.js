@@ -28,3 +28,28 @@ export function creditCardPaymentSummary(payments = []) {
   });
   return { totalPaid: Math.round(valid.reduce((sum, p) => sum + Number(p.amount), 0) * 100) / 100, monthsPaid: new Set(valid.map(p => p.month)).size, payments: valid.slice().sort((a, b) => b.date.localeCompare(a.date)) };
 }
+
+
+/* Credit-card planning figures: card-routed spend, estimated monthly APR interest and post-payment balance. */
+export function creditCardPlanningMetrics({ card, transactions = [], payments = [], annualInterestRate = 0, convertAmount = amount => amount } = {}) {
+  const round = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+  const rate = Number(annualInterestRate); const apr = Number.isFinite(rate) && rate >= 0 && rate <= 100 ? rate : 0;
+  const currency = card?.currency || 'PHP';
+  const amountSpent = round((Array.isArray(transactions) ? transactions : []).reduce((sum, item) => {
+    if (item?.account_id !== card?.id || (item?.transaction_type || item?.type) !== 'expense') return sum;
+    const raw = Number(item.origAmount ?? item.amount); if (!Number.isFinite(raw) || raw <= 0) return sum;
+    const converted = Number(convertAmount(raw, item.origCurrency || item.currency || currency, currency));
+    return Number.isFinite(converted) && converted > 0 ? sum + converted : sum;
+  }, 0));
+  const limitValue = Number(card?.creditLimit); const limit = Number.isFinite(limitValue) && limitValue > 0 ? round(limitValue) : 0;
+  const balanceValue = Number(card?.liability_balance ?? card?.balance ?? 0);
+  const outstanding = card?.liability_balance !== undefined && card?.liability_balance !== null
+    ? (Number.isFinite(balanceValue) && balanceValue >= 0 ? round(balanceValue) : 0)
+    : (Number.isFinite(balanceValue) ? round(Math.max(0, -balanceValue)) : 0);
+  const summary = creditCardPaymentSummary(payments);
+  const estimatedMonthlyInterest = round(outstanding * apr / 1200);
+  const amountAfterInterest = round(outstanding + estimatedMonthlyInterest);
+  const outstandingAfterPayments = round(Math.max(0, amountAfterInterest - summary.totalPaid));
+  const spentLimitPercent = limit > 0 ? round(amountSpent / limit * 100) : null;
+  return { amountSpent, estimatedMonthlyInterest, amountAfterInterest, outstandingAfterPayments, totalPayments: summary.totalPaid, monthsPaid: summary.monthsPaid, paymentCount: summary.payments.length, limit, spentLimitPercent, annualInterestRate: apr };
+}
