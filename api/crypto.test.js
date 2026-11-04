@@ -64,6 +64,20 @@ test('falls back to Binance public tickers when CoinBeacon is unavailable', asyn
   expect(body.coins[0]).toMatchObject({ symbol: 'BTC', price: 3480000, change24h: -1.25 });
 });
 
+test('converts Binance fallback market prices to BTC using the BTCUSDT reference price', async () => {
+  process.env.COINBEACON_API_KEY = 'test-server-secret';
+  global.fetch = jest.fn()
+    .mockResolvedValueOnce({ ok: false, status: 503 })
+    .mockResolvedValueOnce(ok([{ symbol: 'ETHUSDT', lastPrice: '3000', quoteVolume: '900000', priceChangePercent: '1.5' }]))
+    .mockResolvedValueOnce(ok({ price: '60000' }));
+  const res = response();
+  await handler(request({ action: 'markets', quote: 'BTC' }), res);
+  const body = JSON.parse(res.body);
+  expect(res.statusCode).toBe(200);
+  expect(body.coins[0].price).toBeCloseTo(0.05, 8);
+  expect(global.fetch.mock.calls[2][0]).toContain('/api/v3/ticker/price?symbol=BTCUSDT');
+});
+
 test('loads daily candles from CoinBeacon and converts their USD-equivalent USDT prices to PHP', async () => {
   process.env.COINBEACON_API_KEY = 'test-server-secret';
   global.fetch = jest.fn()
