@@ -69,8 +69,9 @@ test('bulk cleanup enumerates only account folders and removes only owned PNG ob
 });
 
 test('signed QR cache rejects invalid user and account targets before network access', async () => {
-  const fetchSpy = jest.spyOn(global, 'fetch');
+  const originalFetch = global.fetch;
+  global.fetch = jest.fn();
   await expect(cacheSignedAccountQr('not-a-user', account, 'https://signed.example/qr')).rejects.toThrow('invalid_account_qr_cache_target');
-  expect(fetchSpy).not.toHaveBeenCalled();
-  fetchSpy.mockRestore();
+  expect(global.fetch).not.toHaveBeenCalled();
+  if (originalFetch === undefined) delete global.fetch; else global.fetch = originalFetch;
 });
