@@ -4537,3 +4537,8 @@ button.account-tile:active { transform: scale(.98); }
 .theme-dark.movo-app .card-stack .credit-card.ccx.orientation-portrait {
   box-shadow: 0 2px 5px rgba(0,0,0,.28), 0 14px 28px -12px rgba(0,0,0,.62), 0 28px 44px -28px rgba(0,0,0,.48);
 }
+
+
+/* Selected navigation icons always follow the user's chosen accent color. */
+.movo-app .bottom-nav .nav-item.nav-active:not(.nav-center) { color: var(--accent) !important; }
+.movo-app .side-nav .side-item.active .side-icon { color: var(--accent); }
