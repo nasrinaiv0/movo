@@ -32,9 +32,11 @@ export function findQrBounds(data, width, height) {
   if (boxWidth < 24 || boxHeight < 24 || ratio < 0.62 || ratio > 1.6) return null;
   const side = Math.max(boxWidth, boxHeight);
   const quiet = Math.max(8, Math.ceil(side * 0.045));
-  const square = side + quiet * 2;
+  const square = Math.min(side + quiet * 2, width, height);
   const cx = (left + right) / 2, cy = (top + bottom) / 2;
-  return { x: Math.max(0, Math.round(cx - square / 2)), y: Math.max(0, Math.round(cy - square / 2)), size: square };
+  const x = Math.min(width - square, Math.max(0, Math.round(cx - square / 2)));
+  const y = Math.min(height - square, Math.max(0, Math.round(cy - square / 2)));
+  return { x, y, size: square };
 }
 
 export function extractQrImage(image, maxSize = 640) {
@@ -53,7 +55,7 @@ export function extractQrImage(image, maxSize = 640) {
   context.fillStyle = '#fff';
   context.fillRect(0, 0, maxSize, maxSize);
   const sx = Math.max(0, bounds.x), sy = Math.max(0, bounds.y);
-  const sw = Math.min(bounds.size, source.width - sx), sh = Math.min(bounds.size, source.height - sy);
+  const sw = bounds.size, sh = bounds.size;
   const scale = Math.min(maxSize / bounds.size, 1);
   const destSize = bounds.size * scale;
   const offset = (maxSize - destSize) / 2;
