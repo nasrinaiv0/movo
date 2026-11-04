@@ -7,6 +7,7 @@ import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, Transaction
 import AccountTile, { styleFor } from '../components/AccountTile';
 import EditableBoxes from '../components/EditableBoxes';
 import { money, shown } from '../lib/format';
+import { creditInfo } from '../lib/creditCard';
 import { t as tr } from '../lib/i18n';
 
 const FILTERS = ['All', 'Cards', 'Bank Accounts', 'E-Wallets', 'Cash & Other'];
@@ -138,9 +139,27 @@ export default function Wallet({ c }) {
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
       </section>
-      <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
+      {selectedCard?.cardKind === 'credit' && (() => {
+        const info = creditInfo(selectedCard);
+        const remainingPercent = info ? Math.max(0, Math.min(100, (info.available / info.limit) * 100)) : 0;
+        const tone = remainingPercent >= 50 ? 'is-healthy' : remainingPercent >= 20 ? 'is-warning' : 'is-critical';
+        return <section className={`card remaining-credit-card ${tone}`} aria-label={tr('Remaining credit')}>
+          <div className="remaining-credit-content">
+            <span className="remaining-credit-copy">
+              <small>{tr('Remaining credit')}</small>
+              <strong>{info ? shown(show, money(info.available, selectedCard.currency)) : '—'}</strong>
+              {info && <small>{Math.round(remainingPercent)}%</small>}
+            </span>
+            {info && <div className="remaining-credit-meter" role="progressbar" aria-label={tr('Remaining credit')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(remainingPercent)}>
+              <span style={{ height: `${remainingPercent}%` }} />
+            </div>}
+          </div>
+          {!info && <p className="form-note">{tr('Credit limit')}: —</p>}
+        </section>;
+      })()}
+      {selectedCard?.cardKind !== 'credit' && <button type="button" className="card balance-row" onClick={() => setSheet({ name: 'cards' })} aria-label={tr('Switch card')}>
         <span><small>{tr('Available Balance')}</small><strong>{shown(show, money(selectedCard?.balance, selectedCard?.currency))}</strong></span><Icon name="chevron" size={18} />
-      </button>
+      </button>}
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
     </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
