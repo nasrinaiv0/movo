@@ -93,7 +93,7 @@ export async function createTransaction(transaction, userId) {
   const occurredAt = transaction.occurred_at || new Date().toISOString();
   if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
   return unwrap(await requireClient().from('transactions').insert({
-    user_id: userId, account_id: transaction.account_id,
+    user_id: userId, account_id: transaction.account_id, schedule_id: transaction.schedule_id || null,
     transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
     category: typeof transaction.category === 'string' ? transaction.category.trim().slice(0, 60) || 'Other' : 'Other',
