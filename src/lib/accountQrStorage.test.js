@@ -40,6 +40,12 @@ test('signed URLs and deletion reject paths outside the current user folder', as
   expect(supabase.storage.from).not.toHaveBeenCalled();
 });
 
+test('rejects non-canonical UUID object filenames', async () => {
+  await expect(getAccountQrSignedUrl(owner, `${owner}/${account}/not-a-uuid.png`)).rejects.toThrow('invalid_account_qr_path');
+  await expect(removeAccountQr(owner, `${owner}/${account}/123e4567-e89b-42d3-a456-426614174002-extra.png`)).rejects.toThrow('invalid_account_qr_path');
+  expect(supabase.storage.from).not.toHaveBeenCalled();
+});
+
 test('creates a short-lived signed URL for an owned object', async () => {
   const createSignedUrl = jest.fn().mockResolvedValue({ data: { signedUrl: 'https://signed.example/qr' }, error: null });
   supabase.storage.from.mockReturnValue({ createSignedUrl });
@@ -58,7 +64,7 @@ test('deletes only the exact validated owned object path', async () => {
 test('bulk cleanup enumerates only account folders and removes only owned PNG objects', async () => {
   const list = jest.fn()
     .mockResolvedValueOnce({ data: [{ name: account, id: null }], error: null })
-    .mockResolvedValueOnce({ data: [{ name: file, id: 'object-1' }, { name: 'notes.txt', id: 'object-2' }], error: null });
+    .mockResolvedValueOnce({ data: [{ name: file, id: 'object-1' }, { name: 'notes.txt', id: 'object-2' }, { name: 'not-a-uuid.png', id: 'object-3' }], error: null });
   const remove = jest.fn().mockResolvedValue({ error: null });
   supabase.storage.from.mockReturnValue({ list, remove });
   const { removeAllAccountQr } = require('./accountQrStorage');
