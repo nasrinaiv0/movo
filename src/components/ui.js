@@ -176,7 +176,7 @@ export function MiniBars({ values, width = 170, height = 70 }) {
 export function Bars({ values, startLabel, endLabel }) {
   const max = Math.max(...values, 1); const last = values.map((v, i) => (v > 0 ? i : -1)).reduce((a, b) => Math.max(a, b), -1);
   return <div className="bars" aria-hidden="true">
-    <div className="bars-plot">{values.map((v, i) => <span key={i} className={i === last ? 'hot' : ''} style={{ height: `${Math.max(8, (v / max) * 100)}%`, '--i': i }} />)}</div>
+    <div className="bars-plot">{values.map((v, i) => <span key={i} className={`${v > 0 ? '' : 'empty'}${i === last ? ' hot' : ''}`.trim()} style={{ height: `${Math.max(8, (v / max) * 100)}%`, '--i': i }} />)}</div>
     <div className="bars-axis"><span>{startLabel}</span><span>{endLabel}</span></div>
   </div>;
 }
