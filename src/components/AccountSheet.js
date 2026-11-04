@@ -10,6 +10,7 @@ import { Sheet, Toggle } from './ui';
 import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLogoUrl } from '../lib/institutions';
+import { extractQrImage } from '../lib/qrImageProcessing';
 
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
@@ -45,18 +46,10 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
       const image = new Image();
       image.onload = () => {
         try {
-          const scale = Math.min(1, 640 / Math.max(image.naturalWidth, image.naturalHeight));
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-          const context = canvas.getContext('2d');
-          if (!context) throw new Error('canvas');
-          context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
-          context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL('image/png');
+          const dataUrl = extractQrImage(image);
           if (dataUrl.length > 1_200_000) throw new Error('large');
           set({ qrCode: dataUrl });
-        } catch { setQrError(tr('Could not process this QR image. Try a smaller or clearer image.')); }
+        } catch (error) { setQrError(tr(error?.message === 'qr_not_detected' ? 'Could not find a QR code in this photo. Try a clearer, closer image.' : 'Could not process this QR image. Try a smaller or clearer image.')); }
         finally { URL.revokeObjectURL(objectUrl); }
       };
       image.onerror = () => { URL.revokeObjectURL(objectUrl); setQrError(tr('Could not read this image. Please choose another file.')); };
