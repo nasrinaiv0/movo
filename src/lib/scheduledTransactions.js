@@ -37,7 +37,7 @@ export async function createScheduledTransaction(input, userId) {
   const frequency=['once','weekly','monthly','yearly'].includes(input.frequency)?input.frequency:'once';
   const scheduledFor=validDate(input.scheduled_for);
   const endsOn=input.ends_on||null;
-  if(endsOn&&(validDate(endsOn)>endsOn||endsOn<scheduledFor))throw new Error('The end date must be on or after the first scheduled date.');
+  if(endsOn){validDate(endsOn);if(endsOn<scheduledFor)throw new Error('The end date must be on or after the first scheduled date.');}
   const reminderDays=[...new Set((Array.isArray(input.reminder_days)?input.reminder_days:[0,1,3]).map(Number))].filter(n=>[0,1,2,3,5,7,14,30].includes(n)).sort((a,b)=>a-b);
   if(reminderDays.length>8)throw new Error('Choose up to eight reminder intervals.');
   const timezone=String(input.timezone||'Asia/Manila').slice(0,64);
