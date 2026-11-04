@@ -998,6 +998,7 @@ function App() {
   }, []);
   useEffect(() => {
     let live = true;
+    setAccountQrDisplay({});
     const entries = Object.entries(prefs.accountQrCodes || {});
     Promise.all(entries.map(async ([accountId, value]) => {
       if (isAccountQrDataUrl(value)) return [accountId, value];
@@ -1005,7 +1006,9 @@ function App() {
         try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; } catch { return [accountId, '']; }
       }
       if (typeof value === 'string' && value.startsWith('localqr:')) {
-        try { return [accountId, await getLocalAccountQr(value.slice(8)) || '']; } catch { return [accountId, '']; }
+        const cacheKey = value.slice(8);
+        if (cacheKey !== `local:${accountId}` && (!userId || cacheKey !== `${userId}:${accountId}`)) return [accountId, ''];
+        try { return [accountId, await getLocalAccountQr(cacheKey) || '']; } catch { return [accountId, '']; }
       }
       if (!userId || typeof value !== 'string') return [accountId, ''];
       try { const signedUrl = await getAccountQrSignedUrl(userId, value); cacheSignedAccountQr(userId, accountId, signedUrl).catch(() => {}); return [accountId, signedUrl]; }
@@ -1068,7 +1071,7 @@ function App() {
       });
     });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, cloudAccounts, qrRetryTick]);
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick]);
   useEffect(() => {
     const sync = prefsSync.current;
     if (!sync.ready || !sync.user) return undefined;
