@@ -1,5 +1,6 @@
 describe('POST /api/account/delete', () => {
-  let calls; let authUser; let txError; let userError;
+  let calls; let authUser; let txError; let userError; let qrFiles;
+  const qrAccount = '123e4567-e89b-42d3-a456-426614174001';
   const load = () => {
     jest.resetModules();
     jest.doMock('@supabase/supabase-js', () => ({
@@ -7,7 +8,7 @@ describe('POST /api/account/delete', () => {
         ? {
           from: (table) => ({ delete: () => ({ eq: (col, val) => { calls.push(['delete', table, col, val]); return Promise.resolve({ error: txError }); } }) }),
           auth: { admin: { deleteUser: async (id) => { calls.push(['deleteUser', id]); return { error: userError }; } } },
-          storage: { from: () => ({ list: async () => ({ data: [], error: null }), remove: async () => ({ error: null }) }) },
+          storage: { from: () => ({ list: async (path) => ({ data: path === 'user-1' ? (qrFiles.length ? [{ name: qrAccount, id: null }] : []) : qrFiles, error: null }), remove: async (paths) => { calls.push(['removeQr', ...paths]); return { error: null }; } }) },
         }
         : { auth: { getUser: async (token) => { calls.push(['getUser', token]); return authUser ? { data: { user: authUser }, error: null } : { data: { user: null }, error: { message: 'bad jwt' } }; } } }),
     }));
@@ -19,7 +20,7 @@ describe('POST /api/account/delete', () => {
     await handler({ method, headers: token ? { authorization: `Bearer ${token}` } : {}, body }, res);
     return res;
   };
-  beforeEach(() => { calls = []; authUser = { id: 'user-1' }; txError = null; userError = null; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
+  beforeEach(() => { calls = []; authUser = { id: 'user-1' }; txError = null; userError = null; qrFiles = []; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
   afterEach(() => { jest.restoreAllMocks(); jest.dontMock('@supabase/supabase-js'); });
 
   test('the verified person is deleted: transactions first, then the Auth user', async () => {
@@ -45,6 +46,17 @@ describe('POST /api/account/delete', () => {
     expect(calls.some(c => c[0] === 'delete' || c[0] === 'deleteUser')).toBe(false);
     res = await call(load(), { method: 'GET' });
     expect(res.statusCode).toBe(405);
+  });
+
+  test('private account QR images are removed before the Auth user is deleted', async () => {
+    qrFiles = [{ name: '123e4567-e89b-42d3-a456-426614174002.png', id: 'object-1' }];
+    const res = await call(load());
+    expect(res.statusCode).toBe(200);
+    const removeIndex = calls.findIndex(c => c[0] === 'removeQr');
+    const userIndex = calls.findIndex(c => c[0] === 'deleteUser');
+    expect(calls[removeIndex]).toEqual(['removeQr', 'user-1/' + qrAccount + '/123e4567-e89b-42d3-a456-426614174002.png']);
+    expect(removeIndex).toBeGreaterThan(-1);
+    expect(userIndex).toBeGreaterThan(removeIndex);
   });
 
   test('if transactions cannot be deleted the account is kept and the reply leaks nothing', async () => {
