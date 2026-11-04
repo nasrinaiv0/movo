@@ -48,7 +48,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   },[]);
   useEffect(() => {
     let live=true;
-    loadDue().then(queue=>{if(live&&queue.length)setActive(queue[0]);})
+    loadDue().then(queue=>{if(live)setActive(queue[0]||null);})
       .catch(err=>{if(live)setError(err.message||tr('Could not load due reminders.'));});
     return()=>{live=false;};
   },[loadDue,setActive]);
