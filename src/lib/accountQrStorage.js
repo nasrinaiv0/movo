@@ -78,7 +78,10 @@ export async function removeAllAccountQr(userId) {
   const removals = [];
   for (let offset = 0; ; offset += 100) {
     const { data: folders, error } = await storage.list(userId, { limit: 100, offset });
-    if (error) throw error;
+    if (error) {
+      if (String(error.statusCode || error.status || '') === '404' || /bucket not found/i.test(error.message || '')) return 0;
+      throw error;
+    }
     for (const folder of folders || []) {
       if (!safeId(folder.name)) continue;
       for (let fileOffset = 0; ; fileOffset += 100) {
