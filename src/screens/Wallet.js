@@ -66,7 +66,8 @@ export default function Wallet({ c }) {
   const live = accountsView.filter(a => !a.is_archived);
   const sorted = [...live].sort(sorters[wv.sort] || sorters['balance-desc']);
   const list = walletFilter === 'All' ? sorted : sorted.filter(a => (typeOf[walletFilter] || []).includes(a.account_type));
-  // Percentages compare account groups against liquid/deposit balances, not card limits or card liabilities.\n  const total = live.filter(a => a.account_type !== 'card').reduce((sum, a) => sum + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0) || 1;
+  // Percentages compare account groups against liquid/deposit balances, not card limits or card liabilities.
+  const total = live.filter(a => a.account_type !== 'card').reduce((sum, a) => sum + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0) || 1;
   const cards = accountsByType.card;
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
   const recent = txs.slice(0, 3);
