@@ -134,8 +134,17 @@ function CardCylinder({ cards, selectedId, onSelect, renderCard, effect }) {
     }, 90);
   };
   const go = (i) => {
-    const el = ref.current; const child = el?.children[i]; if (!child) return;
-    el.scrollTo({ left: child.offsetLeft - (el.clientWidth - child.offsetWidth) / 2, behavior: canAnimate() ? 'smooth' : 'auto' });
+    const el = ref.current; const child = el?.children[i]; if (!child || !cards[i]) return;
+    const left = child.offsetLeft - (el.clientWidth - child.offsetWidth) / 2;
+    // Use native scrolling where supported; retain a deterministic fallback for older DOM environments.
+    if (typeof el.scrollTo === 'function') {
+      try {
+        el.scrollTo({ left, behavior: canAnimate() ? 'smooth' : 'auto' });
+        return;
+      } catch { /* fall through to direct scroll positioning */ }
+    }
+    el.scrollLeft = left;
+    onSelect(cards[i].id);
   };
 
   return <div className="card-cylinder" data-fx={effect} ref={ref} onScroll={onScroll} aria-label={tr('Your cards')}>

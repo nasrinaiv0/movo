@@ -4769,3 +4769,50 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .wallet-chip-bar>.wallet-add-button{background:var(--accent);color:var(--on-accent);border-color:transparent;box-shadow:0 5px 16px rgba(var(--accent-rgb),.22)}
 .movo-app .wallet-chip-bar>.wallet-add-button .movo-icon{color:var(--on-accent)}
 .movo-app .action-strip button:nth-child(2) .movo-icon{color:var(--accent)}
+
+/* Scheduled screen: adaptive layout, accessible contrast and provider logos. */
+.movo-app .scheduled-hero { grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr); background:var(--card-solid); color:var(--text); border:1px solid var(--line); padding:clamp(13px,3.8vw,18px); }
+.movo-app .scheduled-hero-count { grid-template-columns:minmax(0,1fr) auto; gap:clamp(6px,2vw,12px); }
+.movo-app .scheduled-hero-count span { color:var(--muted); opacity:1; font-size:clamp(11px,3vw,13px); }
+.movo-app .scheduled-hero-count strong { color:var(--accent); font-size:clamp(28px,8vw,36px); }
+.movo-app .scheduled-hero p { color:var(--muted); opacity:1; font-size:clamp(10px,2.9vw,12px); }
+.movo-app .scheduled-toolbar { flex-wrap:wrap; align-items:stretch; }
+.movo-app .scheduled-tabs { flex:1 1 150px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.movo-app .scheduled-tabs button { min-width:0; }
+.movo-app .scheduled-reminder-button { flex:0 1 auto; max-width:100%; }
+.movo-app .scheduled-calendar-head { display:grid; grid-template-columns:42px minmax(0,1fr) 42px; align-items:center; justify-items:center; gap:clamp(8px,3vw,16px); min-width:0; }
+.movo-app .scheduled-calendar-head strong { min-width:0; text-align:center; font-size:clamp(14px,4vw,18px); white-space:nowrap; }
+.movo-app .schedule-calendar { grid-template-columns:repeat(7,minmax(0,1fr)); gap:clamp(4px,1.2vw,7px); }
+.movo-app .schedule-calendar > small { font-size:clamp(10px,2.8vw,12px); }
+.movo-app .schedule-calendar > button, .movo-app .schedule-calendar > span { min-height:clamp(40px,11vw,58px); border-radius:clamp(9px,2.8vw,15px); font-size:clamp(12px,3.6vw,15px); }
+.movo-app .scheduled-obligation-row { display:flex; align-items:center; gap:clamp(8px,2.8vw,12px); min-width:0; }
+.movo-app .scheduled-brand-logo { display:grid; flex:0 0 42px; place-items:center; width:42px; height:42px; object-fit:contain; padding:5px; border-radius:13px; background:var(--field); }
+.movo-app .scheduled-obligation-row .fp-main { flex:1 1 auto; min-width:0; overflow:hidden; }
+.movo-app .scheduled-obligation-row .fp-main strong, .movo-app .scheduled-obligation-row .fp-main small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.movo-app .scheduled-obligation-row .fp-amount { flex:0 1 auto; min-width:0; max-width:42%; text-align:right; }
+.movo-app .scheduled-obligation-row .fp-amount b { display:block; max-width:100%; overflow-wrap:anywhere; font-size:clamp(12px,3.7vw,15px); font-variant-numeric:tabular-nums; }
+.movo-app .scheduled-obligation-row .fp-amount small { white-space:nowrap; }
+@media (max-width:380px) {
+ .movo-app .scheduled-hero { grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr); gap:8px; }
+ .movo-app .scheduled-hero-count { grid-template-columns:1fr; gap:2px; }
+ .movo-app .scheduled-hero-count strong { font-size:27px; }
+ .movo-app .scheduled-toolbar { gap:7px; }
+ .movo-app .scheduled-reminder-button { flex:0 0 40px; width:40px; padding:0; }
+ .movo-app .scheduled-reminder-button span { display:none; }
+ .movo-app .scheduled-calendar-head { grid-template-columns:36px minmax(0,1fr) 36px; gap:6px; }
+ .movo-app .scheduled-calendar-head .round-button { width:36px; height:36px; }
+ .movo-app .schedule-calendar > button, .movo-app .schedule-calendar > span { min-height:clamp(38px,10.5vw,46px); }
+ .movo-app .scheduled-obligation-row { gap:8px; padding:10px; }
+ .movo-app .scheduled-brand-logo { flex-basis:36px; width:36px; height:36px; }
+ .movo-app .scheduled-obligation-row .fp-amount { max-width:40%; }
+}
+@media (max-width:340px) {
+ .movo-app .screen-header.root { gap:6px; }
+ .movo-app .screen-header.root h1 { font-size:21px; }
+ .movo-app .screen-header.root .header-actions { gap:3px; }
+ .movo-app .screen-header.root .round-button { width:34px; height:34px; }
+ .movo-app .scheduled-hero { grid-template-columns:1fr; }
+ .movo-app .scheduled-hero-count { grid-template-columns:auto auto; justify-content:start; align-items:center; gap:10px; }
+ .movo-app .scheduled-obligation-row .fp-amount { max-width:43%; }
+}
+@media (prefers-reduced-motion:reduce) { .movo-app .scheduled-hero, .movo-app .scheduled-obligation-row { transition:none; } }
