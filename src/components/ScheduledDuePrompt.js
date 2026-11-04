@@ -119,6 +119,8 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     if(entry.kind==='subscription'){onSubscriptionLog?.(entry.item);setActive(null);return;}
     setBusy(true);setError('');
     let loggedAmount=Number(amount||item.amount||0);
+    let loggedAccountId=account||null;
+    let attemptNoteForLog='Payment recorded in MOVO';
     try{
       if(entry.kind==='scheduled') await logScheduledTransaction(entry.item,account,destination);
       else if(entry.kind==='bill') {
@@ -126,7 +128,9 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         const total=parts.reduce((sum,part)=>sum+Number(part.amount),0);
         let remaining=Number(amount)||amountRemaining(item);
         const startingBalance=remaining;
-        if(!parts.length||parts.some(part=>!part.account_id)||total>remaining+0.005)throw new Error(tr('Choose an account for each split and keep the total within the remaining bill balance.'));
+        if(!parts.length||parts.some(part=>!part.account_id)||new Set(parts.map(part=>part.account_id)).size!==parts.length||total>remaining+0.005)throw new Error(tr('Choose a different account for each split and keep the total within the remaining bill balance.'));
+        loggedAccountId=parts.length===1?parts[0].account_id:null;
+        attemptNoteForLog=parts.length>1?`Split payment recorded across ${parts.length} accounts`:'Payment recorded in MOVO';
         let pending=[...parts];
         for(const part of parts){
           const partAmount=Number(part.amount);
@@ -144,7 +148,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       else if(entry.kind==='credit_card') await onCreditCardLog?.(item,Number(amount));
       if(session?.user?.id) await recordPaymentAttempt(session.user.id,{
         source_type:entry.kind,source_id:String(item.id),due_date:entry.date,status:'paid',
-        amount:Number(loggedAmount||amount||item.amount||0)||null,currency:billCurrency,account_id:account||null,note:'Payment recorded in MOVO',
+        amount:Number(loggedAmount||amount||item.amount||0)||null,currency:billCurrency,account_id:loggedAccountId,note:attemptNoteForLog,
       }).catch(()=>null);
       await onLogged?.();
       const queue=await loadDue();
