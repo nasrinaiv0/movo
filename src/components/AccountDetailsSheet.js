@@ -12,7 +12,7 @@ import { t as tr } from '../lib/i18n';
 
 const TABS = [['overview', 'Account overview'], ['activity', 'Transactions'], ['connected', 'Connected items'], ['more', 'More']];
 
-export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], plans = [], cloudMode = false, show = true, holder, base = 'PHP', qrCodeDisplay = '', canEdit = true, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
+export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], plans = [], cloudMode = false, toBase, show = true, holder, base = 'PHP', qrCodeDisplay = '', canEdit = true, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
   const [tab, setTab] = useState('overview');
   const [qrOpen, setQrOpen] = useState(false);
   const [scheduled, setScheduled] = useState([]);
@@ -39,7 +39,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
     .filter(item => item && item.status === 'allocated' && allocationAccountIds.has(item.account_id))
     .map(item => ({ ...item, label: item.goal_name || tr('Savings goal'), source: 'goal' })), [goalAllocations, allocationAccountIds]);
   const allocatedFundRows = [...goalFundRows, ...planFundRows].sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
-  const allocatedFundTotal = allocatedFundRows.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const allocatedFundTotal = allocatedFundRows.reduce((sum, item) => sum + (toBase ? toBase(Number(item.amount) || 0, item.currency || currency) : (Number(item.amount) || 0)), 0);
   const relatedTransactions = useMemo(() => transactions.filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id), [transactions, account.id]);
   const recentTransactions = relatedTransactions.slice(0, 30);
   const expenses = relatedTransactions.filter(item => item.type === 'expense' || item.transaction_type === 'expense');
@@ -117,7 +117,7 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         <section className="account-hub-section account-allocated-funds" aria-label={tr('Allocated funds for goals and plans')}>
           <h3>{tr('Allocated funds for goals and plans')}</h3>
           {allocatedFundRows.length > 0 ? <>
-            <div className="account-hub-metric"><span>{tr('Total allocated from this account')}</span><strong>{fmt(allocatedFundTotal)}</strong></div>
+            <div className="account-hub-metric"><span>{tr('Total allocated from this account')}</span><strong>{shown(show, money(allocatedFundTotal, base))}</strong></div>
             {allocatedFundRows.map(item => <div className="account-hub-simple-row" key={item.id}><span>{item.label}<small>{tr(item.source === 'plan' ? 'Plan' : 'Savings goal')} · {item.created_at ? new Date(item.created_at).toLocaleDateString() : tr('Allocated')}</small></span><b>{shown(show, money(item.amount, item.currency || currency))}</b></div>)}
           </> : goalAllocationReady ? <p className="empty">{tr('No funds from this account are allocated to goals or plans yet.')}</p> : <p className="form-note">{tr('Loading allocated funds…')}</p>}
         </section>
