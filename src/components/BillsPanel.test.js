@@ -52,3 +52,21 @@ test('paid elsewhere reconciles without an account', async () => {
   expect(app.textContent).toContain('No account was charged');
   act(() => root.unmount()); app.remove();
 });
+
+test('subscription renewals appear in Bills Due and route payment logging through the existing subscription flow', async () => {
+  const app = document.createElement('div'); document.body.appendChild(app);
+  const root = createRoot(app); const onLogSubscription = jest.fn();
+  const start = new Date().toLocaleDateString('en-CA');
+  const subscription = { id: 'sub-1', name: 'Music Plus', amount: 299, currency: 'PHP', cycle: 'monthly', start, status: 'active' };
+  await act(async () => root.render(<BillsPanel
+    c={{ base: 'PHP', toBase: value => value }}
+    accounts={[]}
+    subscriptions={[subscription]}
+    onLogSubscription={onLogSubscription}
+  />));
+  expect(app.textContent).toContain('Music Plus');
+  expect(app.textContent).toContain('Subscription');
+  await act(async () => Array.from(app.querySelectorAll('.bill-row')).find(row => row.textContent.includes('Music Plus')).querySelector('button.primary-button').click());
+  expect(onLogSubscription).toHaveBeenCalledWith(subscription);
+  act(() => root.unmount()); app.remove();
+});
