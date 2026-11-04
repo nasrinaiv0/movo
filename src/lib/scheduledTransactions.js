@@ -30,12 +30,14 @@ export async function createScheduledTransaction(input, userId) {
   if (type === 'transfer' && (!input.transfer_to_account_id || input.transfer_to_account_id === input.account_id)) throw new Error('Choose a different destination account.');
   const title=String(input.title||'').trim();
   if(!title||title.length>160) throw new Error('Enter a description up to 160 characters.');
-  const owned = unwrap(await client().from('financial_accounts').select('id').eq('user_id',userId).in('id',[input.account_id,...(type==='transfer'?[input.transfer_to_account_id]:[])]));
-  if ((owned || []).length !== (type==='transfer' ? 2 : 1)) throw new Error('Choose accounts belonging to your MOVO profile.');
+  const owned = unwrap(await client().from('financial_accounts').select('id,currency,account_type').eq('user_id',userId).in('id',[input.account_id,...(type==='transfer'?[input.transfer_to_account_id]:[])]));
+  if ((owned || []).length !== (type==='transfer' ? 2 : 1) || owned.some(account => !['bank','e_wallet','cash'].includes(account.account_type))) throw new Error('Choose eligible bank, e-wallet or cash accounts belonging to your MOVO profile.');
+  const currency = /^[A-Z]{3}$/.test(input.currency || '') ? input.currency : 'PHP';
+  if (owned.some(account => account.currency !== currency)) throw new Error('The selected accounts must use the scheduled transaction currency.');
   const frequency=['once','weekly','monthly','yearly'].includes(input.frequency)?input.frequency:'once';
   return unwrap(await client().from('scheduled_transactions').insert({
     user_id:userId,title,transaction_type:type,amount:validAmount(input.amount),
-    currency:/^[A-Z]{3}$/.test(input.currency||'')?input.currency:'PHP',
+    currency,
     account_id:input.account_id,transfer_to_account_id:type==='transfer'?input.transfer_to_account_id:null,
     scheduled_for:validDate(input.scheduled_for),frequency,status:'scheduled',
     category:String(input.category||'Other').slice(0,60),notes:String(input.notes||'').slice(0,500)||null,
