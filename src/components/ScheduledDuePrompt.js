@@ -53,7 +53,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const subscriptionsDue=subscriptions.filter(s=>s.status==='active'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(s.start||'')).map(s=>({kind:'subscription',item:s,date:s.start}));
     const candidates=[...schedulesDue,...billsDue,...subscriptionsDue,...loansDue,...receivablesDue,...cardsDue];
     const daysUntil=value=>Math.floor((new Date(value+'T12:00:00Z').getTime()-new Date(date+'T12:00:00Z').getTime())/86400000);
-    const quietNow=inQuietHours(new Date(),preferences.quiet_start,preferences.quiet_end);
+    const quietNow=inQuietHours(new Date(),preferences.quiet_start,preferences.quiet_end,preferences.timezone);
     const eligible=(preferences.enabled===false||quietNow?[]:candidates.filter(entry=>{
       if((localSnoozes[entry.kind+':'+entry.item.id+':'+entry.date]||0)>Date.now())return false;
       const offset=daysUntil(entry.date);
