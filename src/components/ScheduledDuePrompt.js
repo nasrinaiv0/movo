@@ -22,7 +22,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [error,setError]=useState('');
   const [attemptNote,setAttemptNote]=useState('');
   const [splits,setSplits]=useState([]);
-  const [localSnoozes,setLocalSnoozes]=useState({});
+  const [localSnoozes,setLocalSnoozes]=useState(()=>{try{return JSON.parse(window.localStorage.getItem('movo.localPaymentSnoozes.v1')||'{}');}catch{return {};}});
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
   const loadDue = useCallback(async (markShown=true) => {
     const date=today();
@@ -64,11 +64,11 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
       return !previous||(previous.snoozed_until&&previous.snoozed_until<=new Date().toISOString());
     })).sort((a,b)=>a.date.localeCompare(b.date));
     const queue=eligible.map(entry=>({...entry,reminderOffset:Math.max(0,daysUntil(entry.date))}));
-    let notificationEvents=events;
+    let notificationEvents=[...events,...Object.entries(localSnoozes).map(([key,until])=>{const [source_type,source_id,occurrence_date]=key.split(':');return {source_type,source_id,occurrence_date,reminder_offset:Math.max(0,daysUntil(occurrence_date)),channel:'push',status:'dismissed',snoozed_until:new Date(until).toISOString()};})];
     if(userId&&markShown&&queue.length){
       const first=queue[0];
       const saved=await recordReminderEvent(userId,{source_type:first.kind,source_id:String(first.item.id),occurrence_date:first.date,reminder_offset:first.reminderOffset,status:'sent'}).catch(()=>null);
-      if(saved)notificationEvents=[...events.filter(e=>!(e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
+      if(saved)notificationEvents=[...notificationEvents.filter(e=>!(e.channel==='in_app'&&e.source_type===saved.source_type&&e.source_id===saved.source_id&&e.occurrence_date===saved.occurrence_date&&Number(e.reminder_offset)===Number(saved.reminder_offset))),saved];
     }
     await syncPaymentNotifications({
       schedules,bills:occurrences.filter(o=>amountRemaining(o)>0&&occurrenceState(o,date)!=='cancelled').map(o=>({...o,title:billMap.get(o.bill_id)?.name||tr('Bill')})),
@@ -100,7 +100,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
     const interval=window.setInterval(refresh,60000);
     return()=>{live=false;window.clearInterval(interval);window.removeEventListener('movo:payment-reminders-updated',refresh);document.removeEventListener('visibilitychange',onVisible);};
   },[loadDue,setActive,entry]);
-  const close=async()=>{ if(entry){const until=new Date(Date.now()+86400000).toISOString();const localKey=entry.kind+':'+entry.item.id+':'+entry.date;setLocalSnoozes(current=>({...current,[localKey]:Date.now()+86400000}));const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));if(session?.user?.id){try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);await loadDue(false).catch(()=>null);}catch{/* Keep the prompt dismissible while offline. */}}} setActive(null); };
+  const close=async()=>{ if(entry){const until=new Date(Date.now()+86400000).toISOString();const localKey=entry.kind+':'+entry.item.id+':'+entry.date;setLocalSnoozes(current=>{const next={...current,[localKey]:Date.now()+86400000};try{window.localStorage.setItem('movo.localPaymentSnoozes.v1',JSON.stringify(next));}catch{}return next;});const offset=Math.max(0,Math.floor((new Date(`${entry.date}T12:00:00Z`).getTime()-new Date(`${today()}T12:00:00Z`).getTime())/86400000));if(session?.user?.id){try{if(entry.kind==='scheduled')await snoozeSchedule(entry.item.id,session.user.id,until);await snoozeObligation(session.user.id,{source_type:entry.kind,source_id:String(entry.item.id),occurrence_date:entry.date,reminder_offset:offset},until);await loadDue(false).catch(()=>null);}catch{/* Keep the prompt dismissible while offline. */}}} setActive(null); };
   const markIssue=async()=>{
     if(!entry||!session?.user?.id)return;
     setBusy(true);setError('');
