@@ -61,7 +61,7 @@ export default function Transactions({ c }) {
   return <>
     <RootHeader title={tr('Transactions')} headerActions={[
       { icon: 'search', label: tr('Search'), onClick: c.openSearch },
-      { icon: 'sliders', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }) },
+      { icon: 'transactionFilter', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }) },
       { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense') },
     ]} />
     <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
