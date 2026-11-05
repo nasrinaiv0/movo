@@ -5185,3 +5185,49 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .search-bar { border:0 !important; box-shadow:inset 0 0 0 1px var(--line); outline:none; }
 .movo-app.movo-app .search-bar:focus-within { box-shadow:inset 0 0 0 1px var(--line); }
 .movo-app.movo-app .search-bar input:focus, .movo-app.movo-app .search-bar input:focus-visible { outline:none !important; box-shadow:none !important; }
+
+/* Consistent raised, accent-colored controls for every screen header. */
+.movo-app .screen-header.root .round-button {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app .screen-header.sub .back-button {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app .screen-header .round-button .movo-icon,
+.movo-app .screen-header .back-button .movo-icon {
+  color: var(--accent);
+  stroke: currentColor;
+}
+.movo-app .screen-header .round-button:focus-visible,
+.movo-app .screen-header .back-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.theme-dark.movo-app .screen-header.root .round-button,
+.theme-dark.movo-app .screen-header.sub .back-button {
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .24), inset 0 0 0 1px var(--line);
+}
+@media (max-width: 360px) {
+  .movo-app .screen-header.root .round-button,
+  .movo-app .screen-header.sub .back-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+  .movo-app .screen-header .header-actions { gap: 6px; }
+}
