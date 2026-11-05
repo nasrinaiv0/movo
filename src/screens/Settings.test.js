@@ -29,6 +29,21 @@ function findCloudSyncRow(container) {
     .find(row => row.querySelector('strong')?.textContent === 'Cloud Sync');
 }
 
+
+describe('Settings header icon treatment', () => {
+  test('renders the back control as a circular header action using the accent theme', () => {
+    const container = document.createElement('div'); document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => root.render(<Settings c={makeContext()} />));
+    const back = container.querySelector('.screen-header.sub .back-button');
+    expect(back).toBeTruthy();
+    expect(back.classList.contains('back-button')).toBe(true);
+    expect(back.querySelector('.movo-icon')).toBeTruthy();
+    expect(back.getAttribute('aria-label')).toBeTruthy();
+    act(() => root.unmount()); container.remove();
+  });
+});
+
 describe('Cloud Sync setting semantics', () => {
   let container;
   let root;
