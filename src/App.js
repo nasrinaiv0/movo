@@ -55,8 +55,9 @@ import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/auto
 import { guessCategory } from './lib/ocr';
 import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
+import { spendingLimitProgress } from './lib/spendingLimits';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
-import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent } from './lib/obligationsRepository';
+import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
 import Archive from './screens/Archive';
@@ -65,7 +66,7 @@ import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
-import { BudgetsSheet, budgetProgress } from './components/Budgets';
+import { BudgetsSheet, SpendingLimitsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
@@ -80,6 +81,7 @@ import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl } from './lib/platform';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
+import { listBills, listOccurrences, createBill } from './lib/billsRepository';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -101,9 +103,9 @@ const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || ''
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
-  notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
+  notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -215,6 +217,8 @@ function App() {
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
+  const prefsRef = useRef(prefs);
+  useEffect(() => { prefsRef.current = prefs; }, [prefs]);
   const [accountQrDisplay, setAccountQrDisplay] = useState({});
   const [qrRetryTick, setQrRetryTick] = useState(0);
   const [fx, setFx] = useState(loadRates);
@@ -222,6 +226,8 @@ function App() {
   const [cloudPostings, setCloudPostings] = useState([]);
   const [cloudActivities, setCloudActivities] = useState([]);
   const [cloudBudgets, setCloudBudgets] = useState([]);
+  const [cloudBills, setCloudBills] = useState([]);
+  const [cloudBillOccurrences, setCloudBillOccurrences] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions());
   const [sceneryPhoto, setSceneryPhotoState] = useState(loadSceneryPhoto);
@@ -320,13 +326,31 @@ function App() {
     if (!user) return;
     setBusy(true); setError('');
     try {
-      const [a, t, postings, activities, failed] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []), Promise.resolve().then(() => listAutomationInbox()).catch(() => [])]);
+      const today = new Date();
+      const dateKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const until = new Date(today); until.setDate(until.getDate() + 30);
+      const [a, t, postings, activities, failed, bills, billOccurrences, budgets] = await Promise.all([
+        listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []),
+        Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
+        listBills().catch(() => []), listOccurrences(dateKey(until), dateKey(today)).catch(() => []), listBudgets().catch(() => []),
+      ]);
       setInbox(failed || []);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
-      listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
+      setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
     } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
   }, []);
+  const setCloudSyncEnabled = useCallback(async (enabled) => {
+    setPref('cloudSyncEnabled', !!enabled);
+    if (enabled) {
+      if (session?.user) await refreshCloud(session.user);
+      return;
+    }
+    setCloudMode(false);
+    setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]);
+    setInbox([]); setCloudPostings([]); setCloudActivities([]);
+    setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts());
+  }, [session, refreshCloud, setPref]);
   useEffect(() => {
     if (sheet?.name === 'account' && sheet.type) setAccountForm(current => current.account_type === sheet.type ? current : { ...current, account_type: sheet.type });
     if (sheet?.name === 'transaction' && sheet.type) setForm(current => current.transaction_type === sheet.type ? current : { ...current, transaction_type: sheet.type });
@@ -362,13 +386,13 @@ function App() {
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
-    getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user) refreshCloud(s.user); }).catch(() => { if (mounted) setAuthReady(true); });
+    getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!mounted) return; setSession(s);
-      if (s?.user) refreshCloud(s.user); else {
+      if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
-        setCloudAccounts([]); setInbox([]);
+        setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
         setCloudPostings([]);
         setCloudActivities([]);
         setRawTxs(pending?.transactions || loadLocalTransactions());
@@ -480,6 +504,7 @@ function App() {
   const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer' || t.transaction_type === 'allocation').slice(0, 4), [homeStats]);
   const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
+  const spendingLimitList = useMemo(() => spendingLimitProgress((prefs.spendingLimits || []).map(l => ({ ...l, monthly_limit: toBase(Number(l.monthly_limit), l.currency || 'PHP'), currency: base })), homeStats.list, accountsView), [prefs.spendingLimits, homeStats, accountsView, toBase, base]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
   const subscriptions = useMemo(() => (Array.isArray(prefs.subscriptions) ? prefs.subscriptions.filter(s => s && typeof s === 'object' && typeof s.name === 'string' && s.id) : []), [prefs.subscriptions]);
   const todayKey = dayKey(new Date());
@@ -489,7 +514,7 @@ function App() {
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
-  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, briefing.tips, prefs.devices, deviceId]);
+  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, spendingLimits: spendingLimitList, bills: cloudBills, billOccurrences: cloudBillOccurrences, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, spendingLimitList, cloudBills, cloudBillOccurrences, briefing.tips, prefs.devices, deviceId]);
   const allNotifications = useMemo(() => buildNotifications(txs, systemNotices), [txs, systemNotices]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
@@ -892,6 +917,14 @@ function App() {
       notify(tr('Moved to Archive. You can restore it for 90 days.'));
     } catch { notify(tr('Could not delete this transaction or reverse its linked payment.')); }
   };
+  const saveSpendingLimit = async ({ id, scope, account_id, merchant, monthly_limit, alert_percent }) => {
+    const row = { id: id || window.crypto?.randomUUID?.() || `limit-${Date.now()}`, scope, account_id: account_id || '', merchant: merchant || '', monthly_limit, alert_percent: Number(alert_percent) || 80, currency: base };
+    setPref('spendingLimits', [...(prefs.spendingLimits || []).filter(item => item.id !== row.id), row]);
+    notify(tr('Budget saved.'));
+  };
+  const deleteSpendingLimit = async (id) => {
+    setPref('spendingLimits', (prefs.spendingLimits || []).filter(item => item.id !== id));
+  };
   const saveBudget = async ({ id, category: picked, monthly_limit }) => {
     // Budgets are kept per compact category id (custom text stays as written).
     const c = categoryOf(picked); const category = c.custom ? picked : c.primary;
@@ -910,7 +943,7 @@ function App() {
     if (row) archiveItem('budget', row);
     notify(tr('Moved to Archive. You can restore it for 90 days.'));
   };
-  const savePlan = (plan) => { const target = Number(plan.target ?? plan.target_amount ?? plan.amount); const saved = Number(plan.saved ?? plan.saved_amount ?? 0); const row = { ...plan, target: Number.isFinite(target) && target > 0 ? target : 0, saved: Number.isFinite(saved) && saved > 0 ? saved : 0, due: plan.due || plan.due_date || plan.target_date || plan.date || '', currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
+  const savePlan = (plan) => { const target = Number(plan.target ?? plan.target_amount ?? plan.amount); const saved = Number(plan.saved ?? plan.saved_amount ?? 0); const row = { ...plan, target: Number.isFinite(target) && target > 0 ? target : 0, saved: Number.isFinite(saved) && saved > 0 ? saved : 0, annual_rate: Math.max(0, Math.min(100, Number(plan.annual_rate) || 0)), compounding: ['monthly', 'quarterly', 'annually'].includes(plan.compounding) ? plan.compounding : 'monthly', due: plan.due || plan.due_date || plan.target_date || plan.date || '', currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
   const deletePlan = (id) => { const row = (prefs.plans || []).find(p => p.id === id); setPref('plans', plans.filter(p => p.id !== id)); if (row) archiveItem('plan', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
   const saveSubscription = (sub) => {
     const row = { ...sub, id: sub.id || window.crypto?.randomUUID?.() || `sub-${Date.now()}` };
@@ -948,7 +981,7 @@ function App() {
     if (clearText.trim().toUpperCase() !== 'DELETE') return;
     setBusy(true); setError('');
     try {
-      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
+      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
       const qrCleanup = clearLocalAccountQr().catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
@@ -1329,11 +1362,28 @@ function App() {
   }, [todayKey, go]);
   /* Reads a CSV or JSON file on this device and adds what is new; nothing already saved is overwritten. */
   const importDataFile = useCallback(async (file) => {
-    if (cloudMode) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
     if (file.size > IMPORT_MAX_BYTES) return { ok: false, message: tr('The file must be 5 MB or smaller.') };
     if (!/\.(csv|json)$/i.test(file.name || '')) return { ok: false, message: tr('Choose a CSV or JSON file.') };
     const parsed = parseImportFile(file.name, await file.text());
     if (parsed.errors.length) return { ok: false, message: tr(parsed.errors[0]) };
+    const hasObligations = parsed.loans.length || parsed.receivables.length || parsed.bills.length;
+    const hasOtherRecords = parsed.accounts.length || parsed.transactions.length || parsed.subscriptions.length || parsed.budgets.length || parsed.plans.length;
+    if (hasObligations && hasOtherRecords) return { ok: false, message: tr('Import loans, receivables and bills in a separate file from accounts, transactions and plans.') };
+    if (hasObligations && !cloudMode) return { ok: false, message: tr('Sign in to MOVO to import loans, receivables and bills securely.') };
+    if (cloudMode) {
+      if (!session?.user?.id || !hasObligations) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
+      const [existingLoans, existingReceivables, existingBills] = await Promise.all([listLoans(), listReceivables(), listBills()]);
+      const plan = planImport(parsed, { accounts: [], transactions: [], subscriptions: [], budgets: [], plans: [], loans: existingLoans || [], receivables: existingReceivables || [], bills: existingBills || [] },
+        { base, batchId: `import-${Date.now().toString(36)}`, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
+      let added = 0; let failed = 0;
+      for (const item of plan.loans) { try { await createLoan(item, session.user.id); added += 1; } catch { failed += 1; } }
+      for (const item of plan.receivables) { try { await createReceivable(item, session.user.id); added += 1; } catch { failed += 1; } }
+      for (const item of plan.bills) { try { await createBill(item, session.user.id); added += 1; } catch { failed += 1; } }
+      if (added) await refreshCloud(session.user);
+      if (!added && !failed) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
+      const skipped = plan.skipped.duplicates + plan.skipped.invalid + failed;
+      return { ok: added > 0, message: `${tr('Imported {n} financial planning item(s).', { n: added })}${skipped ? ` ${tr('{n} rows were skipped as duplicates, invalid or failed.', { n: skipped })}` : ''}` };
+    }
     const batchId = `import-${Date.now().toString(36)}`;
     const plan = planImport(parsed, { accounts: localAccounts, transactions: rawTxs, subscriptions, budgets: prefs.budgets || [], plans: prefs.plans || [] },
       { base, batchId, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
@@ -1351,7 +1401,7 @@ function App() {
     const summary = tr('Added {items}.', { items: [['{n} accounts', plan.accounts], ['{n} transactions', plan.transactions], ['{n} subscriptions', plan.subscriptions], ['{n} budgets', plan.budgets], ['{n} goals', plan.plans]].filter(([, list]) => list.length).map(([label, list]) => tr(label, { n: list.length })).join(', ') });
     if (!added) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
     return { ok: true, message: skipped ? `${summary} ${tr('{n} rows were skipped as duplicates or incomplete.', { n: skipped })}` : summary };
-  }, [cloudMode, localAccounts, rawTxs, subscriptions, prefs.budgets, prefs.plans, base]);
+  }, [cloudMode, session, refreshCloud, localAccounts, rawTxs, subscriptions, prefs.budgets, prefs.plans, base]);
   /* Usage streak: today counts once Movo is open; a new badge gets its own moment. */
   useEffect(() => {
     if (!authReady) return;
@@ -1439,7 +1489,7 @@ function App() {
       const pending = pendingLocalDataRef.current;
       setSession(null);
       setCloudMode(false);
-      setCloudAccounts([]); setInbox([]);
+      setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
       setCloudPostings([]);
       setCloudActivities([]);
       setRawTxs(pending?.transactions || loadLocalTransactions());
@@ -1452,7 +1502,8 @@ function App() {
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
   const c = {
-    refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
+    refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
+    setCloudSyncEnabled,
     accountQrDisplay,
     fx,
     refreshFx,
@@ -1463,7 +1514,7 @@ function App() {
     notifications, readIds: prefs.readIds, nFilter, setNFilter, markAllRead, openNotification, activeNotification, query, setQuery,
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
-    planTab, budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
+    planTab, budgetList, spendingLimitList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
     subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
@@ -1608,7 +1659,8 @@ function App() {
         wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
       }} />}
       {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
-      {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onOpenLimits={() => setSheet({ name: 'spendingLimits' })} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'spendingLimits' && <SpendingLimitsSheet limits={spendingLimitList} accounts={accountsView} show={show} onSave={saveSpendingLimit} onDelete={deleteSpendingLimit} onClose={() => setSheet({ name: 'budgets', tab: 'budgets' })} />}
 
 
       {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is parsed in this browser. Nothing is uploaded until you confirm the import.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>

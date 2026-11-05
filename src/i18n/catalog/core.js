@@ -2820,5 +2820,133 @@ export default [
     "この取引を削除するか、関連する支払いを取り消せませんでした。",
     "이 거래를 삭제하거나 연결된 결제를 취소할 수 없습니다.",
     "इस लेन-देन को हटाया या इससे जुड़े भुगतान को वापस नहीं किया जा सका।"
-  ]
+  ],
+  [
+    "Import loans, receivables and bills in a separate file from accounts, transactions and plans.",
+    "I-import nang hiwalay ang mga loan, receivable at bill mula sa mga account, transaksyon at plano.",
+    "استورد القروض والمبالغ المستحقة والفواتير في ملف منفصل عن الحسابات والمعاملات والخطط.",
+    "请将贷款、应收款和账单与账户、交易及计划分开导入。",
+    "Importa préstamos, cuentas por cobrar y facturas en un archivo separado de cuentas, transacciones y planes.",
+    "Importa prestiti, crediti e bollette in un file separato da conti, transazioni e piani.",
+    "Importiere Kredite, Forderungen und Rechnungen in einer separaten Datei getrennt von Konten, Transaktionen und Plänen.",
+    "Importez les prêts, créances et factures dans un fichier distinct des comptes, transactions et plans.",
+    "Importe empréstimos, valores a receber e contas em um arquivo separado de contas, transações e planos.",
+    "ローン、売掛金、請求書は、口座・取引・プランとは別のファイルでインポートしてください。",
+    "대출, 미수금 및 청구서는 계좌, 거래 및 계획과 별도의 파일로 가져오세요.",
+    "ऋण, प्राप्य राशि और बिल को खातों, लेन-देन और योजनाओं से अलग फ़ाइल में आयात करें。"
+  ],
+  [
+    "Imported {n} financial planning item(s).",
+    "{n} item sa pagpaplanong pinansyal ang na-import.",
+    "تم استيراد {n} من عناصر التخطيط المالي.",
+    "已导入 {n} 项财务规划项目。",
+    "Se importaron {n} elementos de planificación financiera.",
+    "Importati {n} elementi di pianificazione finanziaria.",
+    "{n} Finanzplanungselement(e) importiert.",
+    "{n} élément(s) de planification financière importé(s).",
+    "{n} item(ns) de planejamento financeiro importado(s).",
+    "財務計画項目を {n} 件インポートしました。",
+    "재무 계획 항목 {n}개를 가져왔습니다.",
+    "{n} वित्तीय योजना आइटम आयात किए गए。"
+  ],
+  [
+    "Sign in to MOVO to import loans, receivables and bills securely.",
+    "Mag-sign in sa MOVO upang ligtas na mag-import ng mga loan, receivable at bill.",
+    "سجّل الدخول إلى MOVO لاستيراد القروض والمبالغ المستحقة والفواتير بأمان.",
+    "登录 MOVO 以安全导入贷款、应收款和账单。",
+    "Inicia sesión en MOVO para importar préstamos, cuentas por cobrar y facturas de forma segura.",
+    "Accedi a MOVO per importare in sicurezza prestiti, crediti e bollette.",
+    "Melde dich bei MOVO an, um Kredite, Forderungen und Rechnungen sicher zu importieren.",
+    "Connectez-vous à MOVO pour importer en toute sécurité les prêts, créances et factures.",
+    "Entre no MOVO para importar empréstimos, valores a receber e contas com segurança.",
+    "MOVO にサインインして、ローン、売掛金、請求書を安全にインポートしてください。",
+    "MOVO에 로그인하여 대출, 미수금 및 청구서를 안전하게 가져오세요.",
+    "ऋण, प्राप्य राशि और बिल सुरक्षित रूप से आयात करने के लिए MOVO में साइन इन करें。"
+  ],
+  [
+    "{n} rows were skipped as duplicates, invalid or failed.",
+    "{n} row ang nilaktawan dahil duplicate, hindi wasto o nabigo.",
+    "تم تخطي {n} صفًا لأنها مكررة أو غير صالحة أو فشلت.",
+    "已跳过 {n} 行，因为它们重复、无效或导入失败。",
+    "Se omitieron {n} filas por estar duplicadas, no ser válidas o haber fallado.",
+    "Sono state ignorate {n} righe perché duplicate, non valide o non riuscite.",
+    "{n} Zeilen wurden wegen Duplikaten, ungültiger Daten oder Fehlern übersprungen.",
+    "{n} ligne(s) ignorée(s) en raison de doublons, de données invalides ou d’échecs.",
+    "{n} linha(s) foram ignoradas por duplicidade, invalidade ou falha.",
+    "重複、無効、または失敗したため、{n} 行をスキップしました。",
+    "중복, 잘못된 데이터 또는 실패로 인해 {n}개 행을 건너뛰었습니다.",
+    "डुप्लिकेट, अमान्य या विफल होने के कारण {n} पंक्तियाँ छोड़ दी गईं。"
+  ],
+
+  [
+    "Cloud sync is paused on this device.",
+    "Naka-pause ang cloud sync sa device na ito.",
+    "تم إيقاف المزامنة السحابية مؤقتًا على هذا الجهاز.",
+    "此设备上的云同步已暂停。",
+    "La sincronización en la nube está pausada en este dispositivo.",
+    "La sincronizzazione cloud è in pausa su questo dispositivo.",
+    "Die Cloud-Synchronisierung ist auf diesem Gerät pausiert.",
+    "La synchronisation cloud est en pause sur cet appareil.",
+    "A sincronização na nuvem está pausada neste dispositivo.",
+    "このデバイスではクラウド同期が一時停止されています。",
+    "이 기기에서 클라우드 동기화가 일시 중지되었습니다.",
+    "इस डिवाइस पर क्लाउड सिंक रोक दिया गया है。"
+  ],
+
+
+  [
+    "Remove photo", "Alisin ang larawan", "إزالة الصورة", "移除照片", "Quitar foto", "Rimuovi foto", "Foto entfernen", "Supprimer la photo", "Remover foto", "写真を削除", "사진 삭제", "फ़ोटो हटाएँ"
+  ],
+  [
+    "Choose an image under 8 MB.", "Pumili ng larawang mas mababa sa 8 MB.", "اختر صورة يقل حجمها عن 8 ميجابايت.", "请选择小于 8 MB 的图片。", "Elige una imagen de menos de 8 MB.", "Scegli un'immagine inferiore a 8 MB.", "Wähle ein Bild unter 8 MB.", "Choisissez une image de moins de 8 Mo.", "Escolha uma imagem com menos de 8 MB.", "8 MB 未満の画像を選択してください。", "8MB 미만의 이미지를 선택하세요.", "8 MB से छोटी छवि चुनें。"
+  ],
+  [
+    "This image could not be read.", "Hindi mabasa ang larawang ito.", "تعذرت قراءة هذه الصورة.", "无法读取此图片。", "No se pudo leer esta imagen.", "Impossibile leggere questa immagine.", "Dieses Bild konnte nicht gelesen werden.", "Cette image n’a pas pu être lue.", "Não foi possível ler esta imagem.", "この画像を読み込めませんでした。", "이 이미지를 읽을 수 없습니다.", "यह छवि पढ़ी नहीं जा सकी。"
+  ],
+  [
+    "This image could not be opened.", "Hindi mabuksan ang larawang ito.", "تعذر فتح هذه الصورة.", "无法打开此图片。", "No se pudo abrir esta imagen.", "Impossibile aprire questa immagine.", "Dieses Bild konnte nicht geöffnet werden.", "Cette image n’a pas pu être ouverte.", "Não foi possível abrir esta imagem.", "この画像を開けませんでした。", "이 이미지를 열 수 없습니다.", "यह छवि खोली नहीं जा सकी。"
+  ],
+  [
+    "Profile photo updated on this device.", "Na-update ang profile photo sa device na ito.", "تم تحديث صورة الملف الشخصي على هذا الجهاز.", "此设备上的个人资料照片已更新。", "La foto de perfil se actualizó en este dispositivo.", "La foto del profilo è stata aggiornata su questo dispositivo.", "Das Profilfoto wurde auf diesem Gerät aktualisiert.", "La photo de profil a été mise à jour sur cet appareil.", "A foto do perfil foi atualizada neste dispositivo.", "このデバイスのプロフィール写真を更新しました。", "이 기기에서 프로필 사진이 업데이트되었습니다.", "इस डिवाइस पर प्रोफ़ाइल फ़ोटो अपडेट की गई。"
+  ],
+  [
+    "This image could not be cropped. Try another photo.", "Hindi ma-crop ang larawang ito. Sumubok ng ibang larawan.", "تعذر اقتصاص هذه الصورة. جرّب صورة أخرى.", "无法裁剪此图片。请尝试其他照片。", "No se pudo recortar esta imagen. Prueba con otra foto.", "Impossibile ritagliare questa immagine. Prova un'altra foto.", "Dieses Bild konnte nicht zugeschnitten werden. Versuche ein anderes Foto.", "Cette image n’a pas pu être recadrée. Essayez une autre photo.", "Não foi possível cortar esta imagem. Tente outra foto.", "この画像をトリミングできませんでした。別の写真をお試しください。", "이 이미지를 자를 수 없습니다. 다른 사진을 사용해 보세요.", "यह छवि क्रॉप नहीं की जा सकी। दूसरी फ़ोटो आज़माएँ。"
+  ],
+
+  ["Account & merchant limits","Mga limitasyon sa account at merchant","حدود الحساب والتاجر","账户和商户限额","Límites por cuenta y comercio","Limiti per conto e commerciante","Konto- und Händlerlimits","Limites par compte et commerçant","Limites por conta e comerciante","口座・加盟店ごとの上限","계좌 및 가맹점 한도","खाता और व्यापारी सीमाएँ"],
+  ["Spending limits","Mga limitasyon sa paggastos","حدود الإنفاق","支出限额","Límites de gasto","Limiti di spesa","Ausgabenlimits","Limites de dépenses","Limites de gastos","支出上限","지출 한도","खर्च की सीमाएँ"],
+  ["Set monthly caps for a specific account or merchant.","Magtakda ng buwanang limitasyon para sa partikular na account o merchant.","حدد سقوفًا شهرية لحساب أو تاجر معين.","为特定账户或商户设置每月限额。","Establece límites mensuales para una cuenta o comercio específico.","Imposta limiti mensili per un conto o commerciante specifico.","Lege monatliche Limits für ein bestimmtes Konto oder einen Händler fest.","Définissez des plafonds mensuels pour un compte ou un commerçant précis.","Defina limites mensais para uma conta ou comerciante específico.","特定の口座または加盟店に月間上限を設定します。","특정 계좌 또는 가맹점의 월별 한도를 설정하세요.","किसी खास खाते या व्यापारी के लिए मासिक सीमा तय करें。"],
+  ["Scope","Saklaw","النطاق","范围","Ámbito","Ambito","Geltungsbereich","Portée","Escopo","対象","범위","दायरा"],
+  ["Alert threshold (%)","Hangganan ng alerto (%)","حد التنبيه (%)","提醒阈值 (%)","Umbral de alerta (%)","Soglia di avviso (%)","Warnschwelle (%)","Seuil d’alerte (%)","Limite de alerta (%)","通知しきい値 (%)","알림 기준(%)","अलर्ट सीमा (%)"],
+  ["Select an account","Pumili ng account","اختر حسابًا","选择账户","Selecciona una cuenta","Seleziona un conto","Konto auswählen","Sélectionnez un compte","Selecione uma conta","口座を選択","계좌 선택","खाता चुनें"],
+  ["Enter a merchant name","Ilagay ang pangalan ng merchant","أدخل اسم التاجر","输入商户名称","Introduce el nombre del comercio","Inserisci il nome del commerciante","Händlernamen eingeben","Saisissez le nom du commerçant","Digite o nome do comerciante","加盟店名を入力","가맹점 이름 입력","व्यापारी का नाम दर्ज करें"],
+  ["No spending limits yet.","Wala pang mga limitasyon sa paggastos.","لا توجد حدود إنفاق بعد.","尚未设置支出限额。","Aún no hay límites de gasto.","Nessun limite di spesa ancora.","Noch keine Ausgabenlimits.","Aucune limite de dépenses pour le moment.","Ainda não há limites de gastos.","支出上限はまだありません。","아직 지출 한도가 없습니다.","अभी तक खर्च की कोई सीमा नहीं है。"],
+  ["Choose an account.","Pumili ng account.","اختر حسابًا.","请选择一个账户。","Elige una cuenta.","Scegli un conto.","Wähle ein Konto aus.","Choisissez un compte.","Escolha uma conta.","口座を選択してください。","계좌를 선택하세요.","एक खाता चुनें。"],
+  ["e.g. Grocery store","hal. Grocery store","مثال: متجر بقالة","例如：杂货店","p. ej., supermercado","es. negozio di alimentari","z. B. Lebensmittelgeschäft","ex. épicerie","ex.: mercado","例：食料品店","예: 식료품점","जैसे किराना स्टोर"],
+  ["Spending limit exceeded","Lumampas sa limitasyon ng paggastos","تم تجاوز حد الإنفاق","已超出支出限额","Límite de gasto excedido","Limite di spesa superato","Ausgabenlimit überschritten","Limite de dépenses dépassée","Limite de gastos excedido","支出上限を超過しました","지출 한도 초과","खर्च की सीमा पार हो गई"],
+  ["Spending limit almost reached","Malapit nang maabot ang limitasyon ng paggastos","أوشك حد الإنفاق على النفاد","即将达到支出限额","Casi alcanzaste el límite de gasto","Limite di spesa quasi raggiunto","Ausgabenlimit fast erreicht","Limite de dépenses presque atteint","Limite de gastos quase atingido","支出上限に近づいています","지출 한도에 거의 도달했습니다","खर्च की सीमा लगभग पूरी हो गई"],
+  ["{name} is over its monthly limit: {spent} of {limit}.","Lumampas na sa buwanang limitasyon ang {name}: {spent} sa {limit}.","تجاوز {name} الحد الشهري: {spent} من {limit}.","{name} 已超出每月限额：{spent} / {limit}。","{name} superó su límite mensual: {spent} de {limit}.","{name} ha superato il limite mensile: {spent} su {limit}.","{name} liegt über dem Monatslimit: {spent} von {limit}.","{name} dépasse sa limite mensuelle : {spent} sur {limit}.","{name} excedeu o limite mensal: {spent} de {limit}.","{name} は月間上限を超えています：{limit} 中 {spent}。","{name}의 월 한도를 초과했습니다: {limit} 중 {spent}.","{name} अपनी मासिक सीमा से अधिक है: {limit} में से {spent}。"],
+  ["{name} has used {percent}% of its monthly limit.","Nagamit na ng {name} ang {percent}% ng buwanang limitasyon nito.","استخدم {name} نسبة {percent}% من حده الشهري.","{name} 已使用每月限额的 {percent}%。","{name} ha utilizado el {percent}% de su límite mensual.","{name} ha utilizzato il {percent}% del limite mensile.","{name} hat {percent}% des Monatslimits verbraucht.","{name} a utilisé {percent}% de sa limite mensuelle.","{name} usou {percent}% do limite mensal.","{name} は月間上限の {percent}% を使用しました。","{name}이(가) 월 한도의 {percent}%를 사용했습니다.","{name} ने अपनी मासिक सीमा का {percent}% उपयोग किया。"],
+  ["Add spending limit","Magdagdag ng limitasyon sa paggastos","إضافة حد إنفاق","添加支出限额","Añadir límite de gasto","Aggiungi limite di spesa","Ausgabenlimit hinzufügen","Ajouter une limite de dépenses","Adicionar limite de gastos","支出上限を追加","지출 한도 추가","खर्च की सीमा जोड़ें"],
+  [
+    "Alert threshold must be between 1 and 100.",
+    "Dapat nasa pagitan ng 1 at 100 ang hangganan ng alerto.",
+    "يجب أن يكون حد التنبيه بين 1 و100.",
+    "提醒阈值必须介于 1 到 100 之间。",
+    "El umbral de alerta debe estar entre 1 y 100.",
+    "La soglia di avviso deve essere compresa tra 1 e 100.",
+    "Die Warnschwelle muss zwischen 1 und 100 liegen.",
+    "Le seuil d’alerte doit être compris entre 1 et 100.",
+    "O limite de alerta deve estar entre 1 e 100.",
+    "通知しきい値は 1～100 の範囲で指定してください。",
+    "알림 기준은 1에서 100 사이여야 합니다.",
+    "अलर्ट सीमा 1 से 100 के बीच होनी चाहिए。"
+  ],
+
+  ["Estimated annual interest (%)","Tinatayang taunang interes (%)","الفائدة السنوية المقدرة (%)","预计年利率 (%)","Interés anual estimado (%)","Interesse annuo stimato (%)","Geschätzter Jahreszins (%)","Intérêt annuel estimé (%)","Juros anuais estimados (%)","推定年利率 (%)","예상 연이율 (%)","अनुमानित वार्षिक ब्याज (%)"],
+  ["Compounding","Pagko-compound","تركيب الفائدة","复利频率","Capitalización","Capitalizzazione","Zinseszinsintervall","Capitalisation","Capitalização","複利計算","복리 주기","चक्रवृद्धि आवृत्ति"],
+  ["Estimated interest over {months} months: {amount}","Tinatayang interes sa loob ng {months} buwan: {amount}","الفائدة المقدرة خلال {months} شهرًا: {amount}","预计 {months} 个月利息：{amount}","Interés estimado en {months} meses: {amount}","Interesse stimato in {months} mesi: {amount}","Geschätzte Zinsen über {months} Monate: {amount}","Intérêts estimés sur {months} mois : {amount}","Juros estimados em {months} meses: {amount}","{months} か月間の推定利息：{amount}","{months}개월 예상 이자: {amount}","{months} महीनों में अनुमानित ब्याज: {amount}"],
+  ["Quarterly","Kada quarter","ربع سنوي","每季度","Trimestral","Trimestrale","Vierteljährlich","Trimestriel","Trimestral","四半期ごと","분기별","त्रैमासिक"],
+  ["Annually","Taun-taon","سنويًا","每年","Anual","Annuale","Jährlich","Annuel","Anual","毎年","매년","वार्षिक"]
+
 ];

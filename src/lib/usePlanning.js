@@ -63,18 +63,30 @@ export default function usePlanning(c) {
   const reload = useCallback(async () => {
     if (!cloud) { setLoaded(true); return; }
     const today = todayKey();
-    const settle = (p) => p.then(v => v || [], () => null);
-    const [loans, receivables, goals, occurrences, payments, planAllocations] = await Promise.all([
-      settle(listLoans()), settle(listReceivables()), settle(listGoals()),
-      settle(listOccurrences(shift(today, 62), shift(today, -62))), settle(listBillPayments(`${shift(today, -62)}T00:00:00Z`)), settle(listPlanAllocations()),
+    setError('');
+    const requests = await Promise.allSettled([
+      listLoans(), listReceivables(), listGoals(),
+      listOccurrences(shift(today, 62), shift(today, -62)),
+      listBillPayments(`${shift(today, -62)}T00:00:00Z`), listPlanAllocations(),
     ]);
-    const allocations = (await Promise.all((goals || []).map(g => listGoalAllocations(g.id).catch(() => [])))).flat();
-    setData({ loans: loans || [], receivables: receivables || [], goals: goals || [], allocations, planAllocations: planAllocations || [], occurrences: occurrences || [], payments: payments || [] });
-    setError([loans, receivables, goals, planAllocations].some(v => v === null) ? 'Some financial records could not be loaded. Pull to refresh or try again.' : '');
+    const values = requests.map(result => result.status === 'fulfilled' ? (result.value || []) : []);
+    const [loans, receivables, goals, occurrences, payments, planAllocations] = values;
+    const goalAllocationResults = await Promise.allSettled((goals || []).map(goal => listGoalAllocations(goal.id)));
+    const allocations = goalAllocationResults.flatMap(result => result.status === 'fulfilled' ? (result.value || []) : []);
+    const failed = requests.some(result => result.status === 'rejected') || goalAllocationResults.some(result => result.status === 'rejected');
+    setData({ loans, receivables, goals, allocations, planAllocations, occurrences, payments });
+    setError(failed
+      ? 'Some financial data could not be loaded. Check your connection and database setup, then tap refresh. Your records have not been changed.'
+      : '');
     setLoaded(true);
   }, [cloud]);
 
-  useEffect(() => { reload().catch(() => setLoaded(true)); }, [reload, c.accountsView]);
+  useEffect(() => {
+    reload().catch(error => {
+      setError(error?.message || 'Financial data could not be loaded. Please refresh.');
+      setLoaded(true);
+    });
+  }, [reload, c.accountsView]);
 
   const accounts = useMemo(() => planningAccounts(c.accountsView || []), [c.accountsView]);
   const toBase = c.toBase;

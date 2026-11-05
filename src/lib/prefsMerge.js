@@ -7,7 +7,7 @@
 import { mergeStreak } from './streak';
 
 const MAPS = ['cardStyles', 'accountStyles', 'layouts', 'cardBankLinks', 'accountQrCodes'];
-const ID_LISTS = ['budgets', 'plans', 'subscriptions', 'devices', 'archive', 'cryptoHoldings'];
+const ID_LISTS = ['budgets', 'plans', 'subscriptions', 'devices', 'archive', 'cryptoHoldings', 'spendingLimits'];
 const STRING_LISTS = { readIds: 500, pushed: 200 };
 const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay'];
 
@@ -18,6 +18,8 @@ const list = (v) => (Array.isArray(v) ? v : []);
 export function cloudSafePreferences(prefs) {
   const safe = isObj(prefs) ? { ...prefs } : {};
   delete safe.autoLogKey;
+  delete safe.cloudSyncEnabled;
+  delete safe.profilePhoto;
   delete safe.accountQrPending;
   // Device-only data URLs are never sent to the 256 KB preferences row; cloud entries are storage paths.
   if (safe.accountQrCodes && typeof safe.accountQrCodes === 'object') {

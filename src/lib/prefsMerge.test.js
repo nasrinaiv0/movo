@@ -44,3 +44,8 @@ test('large local QR data URLs are excluded from cloud preferences while private
   expect(accountQrCodes.localBank).toBeUndefined();
   expect(accountQrCodes.cloudBank).toContain('/123e4567-e89b-42d3-a456-426614174002.png');
 });
+
+
+test('keeps cloud sync pause preference local to this device', () => {
+  expect(cloudSafePreferences({ cloudSyncEnabled: false, profilePhoto: 'data:image/jpeg;base64,abc', theme: 'dark' })).toEqual({ theme: 'dark' });
+});

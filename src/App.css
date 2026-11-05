@@ -61,6 +61,9 @@ h1, h2, h3, p { margin: 0; }
 .home-header .hello small { display: block; color: var(--muted); font-size: 14px; }
 .home-header .hello h1 { font-size: 22px; }
 .avatar { position: relative; display: grid; place-items: center; width: 54px; height: 54px; border: 0; border-radius: 50%; background: var(--accent); color: var(--on-accent, #fff); font-weight: 700; font-size: 18.5px; flex: none; }
+.avatar-photo { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.ep-photo-actions { display: flex; justify-content: center; gap: 16px; margin: 2px 0 8px; }
+.ep-photo-actions .link-button { display: inline-flex; align-items: center; gap: 6px; }
 .avatar.big { width: 76px; height: 76px; font-size: 26px; }
 .avatar.huge { width: 98px; height: 98px; font-size: 33px; }
 .avatar i { position: absolute; right: -2px; bottom: 0; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--card-solid); color: var(--accent-ink, var(--accent)); box-shadow: var(--shadow-sm); }
