@@ -3,23 +3,24 @@
 :root {
   --accent: #086b3a; --accent-rgb: 8,107,58; --accent-2: #138653;
   --bg: #f3f3f7; --bg-grad: none;
-  --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #14161f; --muted: #7d8294; --line: rgba(20,24,40,.045);
+  --card: rgba(255,255,255,.9); --card-solid: #fff; --text: #000; --muted: #7d8294; --line: rgba(20,24,40,.045);
   --shadow: 0 8px 28px rgba(30,38,70,.06); --shadow-sm: 0 2px 10px rgba(30,38,70,.05);
-  --green: #12a566; --green-bg: rgba(18,165,102,.12); --red: #e5484d; --red-bg: rgba(229,72,77,.1);
+  --green: #12a566; --green-bg: rgba(18,165,102,.12); --red: #d32f2f; --red-bg: rgba(211,47,47,.12);
   --nav-bg: rgba(255,255,255,.92); --nav-active: #14161f; --nav-muted: #7d8294; --chip-bg: rgba(255,255,255,.8);
   --sheet-bg: #fff; --overlay: rgba(15,18,30,.4); --field: rgba(20,24,40,.045); --on-accent: #fff;
   font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
 }
+.accent-blue { --accent: #2f6bff; --accent-rgb: 47,107,255; --accent-2: #5f8aff; }
 .accent-purple { --accent: #7c4dff; --accent-rgb: 124,77,255; --accent-2: #a56bff; }
 .accent-orange { --accent: #ff8a1f; --accent-rgb: 255,138,31; --accent-2: #ff5e62; }
 .accent-green { --accent: #086b3a; --accent-rgb: 8,107,58; --accent-2: #138653; }
-.accent-red { --accent: #ef4444; --accent-rgb: 239,68,68; --accent-2: #f97316; }
+.accent-red { --accent: #d32f2f; --accent-rgb: 211,47,47; --accent-2: #b71c1c; }
 .accent-slate { --accent: #334155; --accent-rgb: 51,65,85; --accent-2: #64748b; }
 .theme-dark {
   --bg: #0d0f15; --bg-grad: none;
   --card: rgba(28,31,42,.92); --card-solid: #1b1e29; --text: #f4f5f9; --muted: #98a0b4; --line: rgba(255,255,255,.05);
   --shadow: 0 10px 30px rgba(0,0,0,.3); --shadow-sm: 0 2px 10px rgba(0,0,0,.25);
-  --green: #3ddc97; --green-bg: rgba(61,220,151,.14); --red: #ff6b72; --red-bg: rgba(255,107,114,.14);
+  --green: #3ddc97; --green-bg: rgba(61,220,151,.14); --red: #ff453a; --red-bg: rgba(255,69,58,.14);
   --nav-bg: rgba(24,27,37,.94); --nav-active: #fff; --nav-muted: #8d95a9; --chip-bg: rgba(255,255,255,.07);
   --sheet-bg: #181b25; --overlay: rgba(0,0,0,.6); --field: rgba(255,255,255,.07);
 }
@@ -5594,7 +5595,7 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .secondary-button { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-subtle); }
 .movo-app .danger-button {
   background: var(--danger-surface); color: var(--danger-ink);
-  border: 1px solid color-mix(in srgb, var(--red) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 24%, transparent);
 }
 .movo-app .wide-button { color: var(--text); background: var(--surface-1); border-color: var(--border-subtle); }
 .movo-app .round-button, .movo-app .back-button, .movo-app .sheet-close { color: var(--accent-ink, var(--text)); }
@@ -5704,11 +5705,11 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 
 /* Readable text and surfaces shared across appearance modes. */
 .movo-app {
-  --muted: #5f6473; --green: #087344; --red: #b92e3b;
+  --muted: #5f6473; --green: #087344; --red: #d32f2f;
   --surface: var(--surface-2); --surface-raised: var(--surface-1);
   --control-placeholder: var(--muted);
 }
-.movo-app.theme-dark { --muted: #b1b7c6; --green: #58dba0; --red: #ff8b94; }
+.movo-app.theme-dark { --muted: #b1b7c6; --green: #58dba0; --red: #ff453a; }
 .movo-app :is(input, textarea)::placeholder { color: var(--control-placeholder); opacity: 1; }
 .movo-app :is(select, textarea) { color-scheme: inherit; }
 .movo-app select option { background: var(--card-solid); color: var(--text); }
@@ -5722,3 +5723,46 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app.movo-app .home-header .header-action-buttons > button > .movo-icon { color: var(--accent-ink, var(--accent)) !important; }
 .movo-app.movo-app.movo-app .screen-header :is(.round-button.accent, .wallet-header-add, .transaction-header-add) > .movo-icon { color: var(--on-accent) !important; }
 .movo-app.movo-app :is(.crypto-sort button, .crypto-ranges button, .crypto-view-switch button) { color: var(--button-ink) !important; }
+
+/* Red hierarchy: subdued chart marks, readable amounts and status indicators. */
+.movo-app { --chart-red: #c56c6c; }
+.movo-app.theme-dark { --chart-red: #cd7169; }
+.movo-app .flow-legend .out,
+.movo-app .flow-bars .out,
+.movo-app .flow-net-col .out { background: var(--chart-red); }
+.movo-app .flow-lines .out-line { stroke: var(--chart-red); }
+/* When red is the chosen accent, graph-only strokes use the quieter shade. */
+.movo-app.accent-red .crypto-chart path { stroke: var(--chart-red); }
+
+
+/* Surface-aware lettering. On light controls use black; on dark controls use white.
+   Accent-filled controls use the app's WCAG-tested black/white foreground.
+   Secondary labels retain their muted hierarchy; negative values retain semantic red. */
+.movo-app.movo-app :is(
+  .primary-button, .movo-ai-send, .legal-nav button.selected,
+  .crypto-alert-form button, .crypto-holding-save,
+  .crypto-portfolio-add, .crypto-portfolio-empty > button,
+  .movo-ai-message.user, .layout-desktop .side-add,
+  .tx-sheet .tx-save, .tx-sheet .tx-seg button.selected,
+  .wallet-add-button, .wallet-header-add, .transaction-header-add,
+  .round-button.accent, .qa-icon
+) {
+  color: var(--on-accent, #fff) !important;
+}
+.movo-app.movo-app :is(
+  .secondary-button, .danger-button, .wide-button, .customize-button,
+  .month-pill, .home-period-filter, .chip-row button, .seg-control button,
+  .theme-segments button, .tx-filter-chip, .wallet-filter-chip,
+  .crypto-sort button, .crypto-ranges button, .crypto-view-switch button,
+  .wallet-sort-option, .wallet-fx-option, .crypto-back, .crypto-watch-button
+):not(:is(.screen-header *, .home-header .header-action-buttons *, .sub-header *, .bottom-nav *)) {
+  color: var(--button-ink) !important;
+}
+.movo-app.movo-app :is(
+  .primary-button, .secondary-button, .danger-button, .wide-button,
+  .chip-row button, .seg-control button, .theme-segments button,
+  .crypto-alert-form button, .crypto-holding-save, .crypto-portfolio-add,
+  .legal-nav button.selected
+) :is(span, strong, small, b, .movo-icon) {
+  color: inherit;
+}

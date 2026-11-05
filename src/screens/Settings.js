@@ -10,7 +10,7 @@ import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
 import { getStoreProducts, getStoreEntitlements, restoreStorePurchases, purchaseStoreProduct, manageStoreSubscriptions, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
 
-export const ACCENTS = [['green', '#13b45f'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#ef4444'], ['slate', '#334155']];
+export const ACCENTS = [['green', '#086b3a'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#d32f2f'], ['slate', '#334155']];
 export const THEMES = [
   ['system', 'System (Default)', 'Follows your device setting', 'contrast'],
   ['light', 'Light', 'Clean and minimal', 'sun'],

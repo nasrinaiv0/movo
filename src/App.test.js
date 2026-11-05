@@ -733,7 +733,7 @@ test('accent text stays readable on dark backgrounds', () => {
   expect(readableAccent('#334155', false)).toBe('#334155');
   expect(readableAccent('#c7f0dc', true)).toBe('#c7f0dc');
   const onLight = hex => 1.05 / (lum(hex) + 0.05);
-  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#ef4444', '#334155'].forEach(accent => {
+  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#d32f2f', '#334155'].forEach(accent => {
     expect(onLight(readableAccent(accent, false))).toBeGreaterThanOrEqual(4.5);
   });
 });
@@ -744,11 +744,17 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
     .map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
     .reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i], 0);
   const ratio = (a, b) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
-  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#ef4444', '#334155', '#f4e542', '#111111'].forEach(accent => {
+  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#d32f2f', '#334155', '#f4e542', '#111111'].forEach(accent => {
     const ink = contrastTextForAccent(accent);
     expect(['#000000', '#ffffff']).toContain(ink);
     expect(ratio(accent, ink)).toBeGreaterThanOrEqual(4.5);
   });
+  // Filled dark green uses white lettering; tinted light green uses black.
+  expect(contrastTextForAccent('#086b3a')).toBe('#ffffff');
+  expect(contrastTextForAccent('#2f6bff')).toBe('#000000');
+  expect(contrastTextForAccent('#d6f5e3')).toBe('#000000');
+  expect(contrastTextForAccent('#1c1c1e')).toBe('#ffffff');
+  expect(contrastTextForAccent('#f3f3f7')).toBe('#000000');
   expect(contrastTextForAccent('invalid')).toBe('#ffffff');
 });
 
