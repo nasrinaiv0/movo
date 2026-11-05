@@ -5054,3 +5054,19 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .tx-accounts.two .acct-pick-availability { font-size:9px; gap:3px; }
 .movo-app .tx-accounts.two .acct-pick-availability strong { font-size:10px; }
 @media(max-width:360px){.movo-app .tx-accounts.two .acct-pick{gap:5px;padding:6px}.movo-app .tx-accounts.two .acct-pick-logo{display:none}}
+
+/* Compact selected-payment availability, aligned to existing account picker spacing. */
+.movo-app .acct-pick { min-height: 66px; }
+.movo-app .acct-pick-text { gap: 2px; }
+.movo-app .acct-pick-availability { display:flex; align-items:center; gap:5px; min-width:0; margin-top:2px; color:var(--muted); font-size:10.5px; line-height:1.2; font-variant-numeric:tabular-nums; }
+.movo-app .acct-pick-availability > .movo-icon { flex:none; opacity:.8; }
+.movo-app .acct-pick-availability > span { white-space:nowrap; }
+.movo-app .acct-pick-availability strong { margin-left:auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text); font-size:11px; font-weight:650; }
+.movo-app .acct-pick-availability.is-credit > .movo-icon { color:var(--accent); }
+.movo-app .tx-accounts.two .acct-pick { min-height:74px; padding:7px 9px; gap:7px; }
+.movo-app .tx-accounts.two .acct-pick-logo { flex-basis:30px; width:30px; height:30px; }
+.movo-app .tx-accounts.two .acct-pick-text strong { font-size:12.5px; }
+.movo-app .tx-accounts.two .acct-pick-text em { font-size:10px; }
+.movo-app .tx-accounts.two .acct-pick-availability { font-size:9px; gap:3px; }
+.movo-app .tx-accounts.two .acct-pick-availability strong { font-size:10px; }
+@media(max-width:360px){.movo-app .tx-accounts.two .acct-pick{gap:5px;padding:6px}.movo-app .tx-accounts.two .acct-pick-logo{display:none}}
