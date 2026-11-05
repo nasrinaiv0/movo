@@ -227,6 +227,34 @@ test('credit card planning fields stay grouped in a responsive card layout with 
 });
 
 
+test('credit spend history follows its source transaction and hides deleted or reversed entries', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const card = { id: 'linked-card', name: 'Linked Card', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -1000, creditLimit: 10000 };
+  const prefs = { creditSpendLogs: { 'linked-card': [
+    { id: 'log-live', transaction_id: 'tx-live', merchant: 'Live Merchant', amount: 100, annual_rate: 24, months: 3, date: '2026-11-01' },
+    { id: 'log-deleted', transaction_id: 'tx-deleted', merchant: 'Deleted Merchant', amount: 200, annual_rate: 24, months: 3, date: '2026-11-02' },
+    { id: 'log-legacy', merchant: 'Legacy Merchant', amount: 50, annual_rate: 0, months: 1, date: '2026-11-03' },
+  ] } };
+  const render = async (txs) => act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, card], prefs, txs,
+    toBase: value => value, go: jest.fn(),
+  }} />));
+  await render([{ id: 'tx-live', account_id: 'linked-card', type: 'expense', amount: 100, origAmount: 100, origCurrency: 'PHP' }]);
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  let history = el.querySelector('.fp-credit-spend-history');
+  expect(history.textContent).toContain('Live Merchant');
+  expect(history.textContent).toContain('Legacy Merchant');
+  expect(history.textContent).not.toContain('Deleted Merchant');
+  await render([]);
+  history = el.querySelector('.fp-credit-spend-history');
+  expect(history.textContent).not.toContain('Live Merchant');
+  expect(history.textContent).not.toContain('Deleted Merchant');
+  expect(history.textContent).toContain('Legacy Merchant');
+  act(() => root.unmount()); el.remove();
+});
+
+
 test('credit card planning shows institution favicon and calculated spend, interest, utilization and post-payment balance', async () => {
   const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
   const card = { id: 'aub-card', name: 'AUB', institution_name: 'Asia United Bank (AUB)', mask: '2556', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -10000, creditLimit: 50000 };
