@@ -15,7 +15,7 @@ export const APP_UPDATES = [
 const DAY = 86400000;
 const startOfWeek = (d) => { const x = new Date(d); x.setHours(9, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
 
-export function buildSystemNotices({ txs = [], now = new Date(), subs = null, budgets = [], bills = [], billOccurrences = [], tips = [], devices = [], deviceId = '', fmt = (n) => String(n) }) {
+export function buildSystemNotices({ txs = [], now = new Date(), subs = null, budgets = [], spendingLimits = [], bills = [], billOccurrences = [], tips = [], devices = [], deviceId = '', fmt = (n) => String(n) }) {
   const out = [];
   // Renewals due today or tomorrow.
   (subs?.upcoming || []).forEach(s => {
@@ -23,6 +23,21 @@ export function buildSystemNotices({ txs = [], now = new Date(), subs = null, bu
     if (days < 0 || days > 1) return;
     out.push({ id: `renew-${s.id}-${s.next}`, kind: 'System', cat: 'catTransactions', icon: 'calendar', tone: 'violet', at: new Date(new Date(now).setHours(8, 0, 0, 0)).toISOString(), title: 'Renewal due', body: days === 0 ? '{name} renews today: {amount}.' : '{name} renews tomorrow: {amount}.', vars: { name: s.name, amount: fmt(Number(s.amount) || 0, s.currency) } });
   });
+  // Account and merchant limits alert when their configured monthly threshold is reached.
+  const limitMonth = new Date(now).toISOString().slice(0, 7);
+  (spendingLimits || []).forEach(limit => {
+    if (!['warn', 'over'].includes(limit.level)) return;
+    const name = limit.scope === 'account' ? (limit.account_name || 'Account') : (limit.merchant || 'Merchant');
+    out.push({
+      id: `spending-limit-${limit.id}-${limitMonth}-${limit.level}`,
+      kind: 'System', cat: 'catTransactions', icon: 'target', tone: limit.level === 'over' ? 'red' : 'orange',
+      at: new Date(now).toISOString(),
+      title: limit.level === 'over' ? 'Spending limit exceeded' : 'Spending limit almost reached',
+      body: limit.level === 'over' ? '{name} is over its monthly limit: {spent} of {limit}.' : '{name} has used {percent}% of its monthly limit.',
+      vars: { name, spent: fmt(limit.spent, limit.currency), limit: fmt(limit.monthly_limit, limit.currency), percent: limit.percent },
+    });
+  });
+
   // Bill reminders use the owner's configured reminder_days and generated occurrences.
   // A paid/cancelled occurrence never produces a reminder; ids are stable per bill/date/day.
   const billById = new Map((bills || []).map(b => [b.id, b]));
