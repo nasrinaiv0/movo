@@ -56,7 +56,7 @@ import { guessCategory } from './lib/ocr';
 import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
-import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent } from './lib/obligationsRepository';
+import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
 import Archive from './screens/Archive';
@@ -80,7 +80,7 @@ import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl } from './lib/platform';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
-import { listBills, listOccurrences } from './lib/billsRepository';
+import { listBills, listOccurrences, createBill } from './lib/billsRepository';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -1339,11 +1339,28 @@ function App() {
   }, [todayKey, go]);
   /* Reads a CSV or JSON file on this device and adds what is new; nothing already saved is overwritten. */
   const importDataFile = useCallback(async (file) => {
-    if (cloudMode) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
     if (file.size > IMPORT_MAX_BYTES) return { ok: false, message: tr('The file must be 5 MB or smaller.') };
     if (!/\.(csv|json)$/i.test(file.name || '')) return { ok: false, message: tr('Choose a CSV or JSON file.') };
     const parsed = parseImportFile(file.name, await file.text());
     if (parsed.errors.length) return { ok: false, message: tr(parsed.errors[0]) };
+    const hasObligations = parsed.loans.length || parsed.receivables.length || parsed.bills.length;
+    const hasOtherRecords = parsed.accounts.length || parsed.transactions.length || parsed.subscriptions.length || parsed.budgets.length || parsed.plans.length;
+    if (hasObligations && hasOtherRecords) return { ok: false, message: tr('Import loans, receivables and bills in a separate file from accounts, transactions and plans.') };
+    if (hasObligations && !cloudMode) return { ok: false, message: tr('Sign in to MOVO to import loans, receivables and bills securely.') };
+    if (cloudMode) {
+      if (!session?.user?.id || !hasObligations) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
+      const [existingLoans, existingReceivables, existingBills] = await Promise.all([listLoans(), listReceivables(), listBills()]);
+      const plan = planImport(parsed, { accounts: [], transactions: [], subscriptions: [], budgets: [], plans: [], loans: existingLoans || [], receivables: existingReceivables || [], bills: existingBills || [] },
+        { base, batchId: `import-${Date.now().toString(36)}`, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
+      let added = 0; let failed = 0;
+      for (const item of plan.loans) { try { await createLoan(item, session.user.id); added += 1; } catch { failed += 1; } }
+      for (const item of plan.receivables) { try { await createReceivable(item, session.user.id); added += 1; } catch { failed += 1; } }
+      for (const item of plan.bills) { try { await createBill(item, session.user.id); added += 1; } catch { failed += 1; } }
+      if (added) await refreshCloud(session.user);
+      if (!added && !failed) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
+      const skipped = plan.skipped.duplicates + plan.skipped.invalid + failed;
+      return { ok: added > 0, message: `${tr('Imported {n} financial planning item(s).', { n: added })}${skipped ? ` ${tr('{n} rows were skipped as duplicates, invalid or failed.', { n: skipped })}` : ''}` };
+    }
     const batchId = `import-${Date.now().toString(36)}`;
     const plan = planImport(parsed, { accounts: localAccounts, transactions: rawTxs, subscriptions, budgets: prefs.budgets || [], plans: prefs.plans || [] },
       { base, batchId, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
