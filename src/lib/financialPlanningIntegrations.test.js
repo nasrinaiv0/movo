@@ -62,3 +62,35 @@ test('credit card liability uses the explicit outstanding amount when available'
   expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', balance: -4000, liability_balance: 0 })).toBe(0);
   expect(creditCardOutstanding({ account_type: 'card', cardKind: 'debit', balance: -4000 })).toBe(0);
 });
+
+
+test('plan savings include only active account-backed allocations and convert to home currency', () => {
+  const { planGoalData } = require('./financialPlanningIntegrations');
+  const result = planGoalData(
+    [{ id: 'plan-1', name: 'Emergency fund', target: 20000, saved: 1000, currency: 'PHP' }],
+    [
+      { id: 'a1', plan_id: 'plan-1', amount: 100, currency: 'USD', status: 'allocated' },
+      { id: 'a2', plan_id: 'plan-1', amount: 500, currency: 'PHP', status: 'released' },
+      { id: 'a3', plan_id: 'other', amount: 900, currency: 'PHP', status: 'allocated' },
+    ],
+    (amount, currency) => currency === 'USD' ? amount * 58 : amount,
+  );
+  expect(result[0].saved).toBe(6800);
+});
+
+
+test('migrated legacy plan allocations are not double-counted and releases reduce saved progress', () => {
+  const { planGoalData } = require('./financialPlanningIntegrations');
+  const plans = [{
+    id: 'legacy-plan', name: 'Trip', target: 10000, saved: 1500, currency: 'PHP',
+    fundingAllocations: [{ id: 'old-allocation', account_id: 'bank', amount: 500, currency: 'PHP', status: 'allocated' }],
+  }];
+  const active = planGoalData(plans, [{
+    id: 'new-ledger-id', legacy_id: 'old-allocation', plan_id: 'legacy-plan', amount: 500, currency: 'PHP', status: 'allocated',
+  }]);
+  const released = planGoalData(plans, [{
+    id: 'new-ledger-id', legacy_id: 'old-allocation', plan_id: 'legacy-plan', amount: 500, currency: 'PHP', status: 'released',
+  }]);
+  expect(active[0].saved).toBe(1500);
+  expect(released[0].saved).toBe(1000);
+});

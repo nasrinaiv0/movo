@@ -1,4 +1,4 @@
-import { billingDate, nextRenewal, renewalsBetween, monthlyCost, summarize, dayDiff, subscriptionPaymentAccountId } from './subscriptions';
+import { billingDate, nextRenewal, renewalsBetween, monthlyCost, summarize, dayDiff, subscriptionPaymentAccountId, revertSubscriptionPayment, restoreSubscriptionPayment } from './subscriptions';
 
 const sub = (over = {}) => ({ id: 's', name: 'Netflix', category: 'Entertainment', amount: 549, currency: 'PHP', cycle: 'monthly', start: '2026-01-31', status: 'active', ...over });
 
@@ -72,3 +72,75 @@ test('catalog ids are unique, every mark exists and both US and Philippine servi
   expect(CATALOG.filter(c => c.region === 'PH').length).toBeGreaterThan(15);
   expect(CATALOG.filter(c => c.region === 'US').length).toBeGreaterThan(15);
 });
+
+
+test('reversing a subscription transaction restores its previous billing cycle only when it is still the current cycle', () => {
+  const advanced = sub({ start: '2026-02-28', lastPaidAt: '2026-01-31T12:00:00Z', lastPaidAmount: 549, lastPaidCurrency: 'PHP' });
+  const reversed = revertSubscriptionPayment([advanced], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+  });
+  expect(reversed[0]).toEqual(expect.objectContaining({ id: 's', start: '2026-01-31' }));
+  expect(reversed[0]).not.toHaveProperty('lastPaidAt');
+  expect(reversed[0]).not.toHaveProperty('lastPaidAmount');
+  expect(reversed[0]).not.toHaveProperty('lastPaidCurrency');
+
+  const laterCycle = sub({ start: '2026-03-31' });
+  expect(revertSubscriptionPayment([laterCycle], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+  })).toBeInstanceOf(Array);
+  expect(revertSubscriptionPayment([laterCycle], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+  })[0].start).toBe('2026-03-31');
+  expect(revertSubscriptionPayment([advanced], { external_reference: 'not-a-subscription' })).toBeInstanceOf(Array);
+});
+
+
+test('restoring an archived subscription payment advances its billing cycle again', () => {
+  const beforePayment = sub({ start: '2026-01-31' });
+  const restored = restoreSubscriptionPayment([beforePayment], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+    occurred_at: '2026-01-31T12:00:00Z', amount: 549, currency: 'PHP',
+  });
+  expect(restored[0]).toEqual(expect.objectContaining({
+    start: '2026-02-28', lastPaidAt: '2026-01-31T12:00:00Z', lastPaidAmount: 549, lastPaidCurrency: 'PHP',
+  }));
+  expect(restoreSubscriptionPayment([sub({ start: '2026-03-31' })], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+  })[0].start).toBe('2026-03-31');
+});
+
+test('subscription reversal restores the exact prior payment metadata when available', () => {
+  const previous = {
+    start: '2026-01-31',
+    lastPaidAt: '2025-12-31T12:00:00Z',
+    lastPaidAmount: 499,
+    lastPaidCurrency: 'PHP',
+  };
+  const advanced = sub({
+    start: '2026-02-28',
+    lastPaidAt: '2026-01-31T12:00:00Z',
+    lastPaidAmount: 549,
+    lastPaidCurrency: 'PHP',
+  });
+  const reversed = revertSubscriptionPayment([advanced], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+    subscription_payment_state: { previous },
+  });
+  expect(reversed[0]).toEqual(expect.objectContaining(previous));
+});
+
+test('restoring a local archived renewal reapplies the exact saved next payment state', () => {
+  const beforePayment = sub({ start: '2026-01-31' });
+  const next = {
+    start: '2026-02-28',
+    lastPaidAt: '2026-01-31T12:00:00Z',
+    lastPaidAmount: 549,
+    lastPaidCurrency: 'PHP',
+  };
+  const restored = restoreSubscriptionPayment([beforePayment], {
+    external_reference: 'movo-subscription:s:2026-01-31:2026-02-28',
+    subscription_payment_state: { next },
+  });
+  expect(restored[0]).toEqual(expect.objectContaining(next));
+});
+

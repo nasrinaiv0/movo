@@ -16,6 +16,9 @@ beforeEach(() => {
   obligations.listReceivables.mockResolvedValue([]);
   obligations.listGoals.mockResolvedValue([]);
   obligations.listGoalAllocations.mockResolvedValue([]);
+  obligations.listPlanAllocations.mockResolvedValue([]);
+  obligations.allocatePlanFunds.mockResolvedValue({ id: 'plan-allocation-1' });
+  obligations.releasePlanFundingAllocation.mockResolvedValue({});
   obligations.recordLoanEvent.mockResolvedValue({});
   billsRepo.listBills.mockResolvedValue([]);
   billsRepo.listOccurrences.mockResolvedValue([]);
@@ -79,12 +82,18 @@ test('credit card purchases appear in Loans & debts and saved plans appear in Go
 
 test('saved plans can reserve funds from an eligible account and update saved progress', async () => {
   const plan = { id: 'plan-trip', name: 'Japan Trip', target: 5000, saved: 1000, currency: 'PHP' };
-  const setPref = jest.fn();
   const el = document.createElement('div'); document.body.appendChild(el);
   const root = createRoot(el);
+  obligations.allocatePlanFunds.mockImplementation(async input => {
+    obligations.listPlanAllocations.mockResolvedValue([{
+      id: 'plan-allocation-1', plan_id: input.plan_id, account_id: input.account_id,
+      account_type: 'bank', amount: input.amount, currency: input.currency, status: 'allocated',
+    }]);
+    return { id: 'plan-allocation-1' };
+  });
   await act(async () => root.render(<FinancialPlanning c={{
     cloudMode: true, base: 'PHP', show: true, accountsView: accounts,
-    plans: [plan], prefs: { plans: [plan] }, setPref,
+    plans: [plan], prefs: { plans: [plan] },
     toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } },
   }} />));
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Goals & Plans')).click());
@@ -98,22 +107,21 @@ test('saved plans can reserve funds from an eligible account and update saved pr
   const amount = dialog.querySelector('input[type="number"]');
   act(() => { Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(amount, '2500'); amount.dispatchEvent(new Event('input', { bubbles: true })); });
   await act(async () => dialog.querySelector('button.primary-button').click());
-  expect(setPref).toHaveBeenCalledWith('plans', [expect.objectContaining({
-    id: 'plan-trip', saved: 3500,
-    fundingAllocations: [expect.objectContaining({ account_id: 'bank', account_type: 'bank', amount: 2500, currency: 'PHP', status: 'allocated' })],
-  })]);
+  expect(obligations.allocatePlanFunds).toHaveBeenCalledWith(expect.objectContaining({
+    plan_id: 'plan-trip', plan_name: 'Japan Trip', account_id: 'bank', amount: 2500, currency: 'PHP',
+  }));
+  expect(el.querySelector('.fp-goal').textContent).toContain('3,500.00');
   expect(el.textContent).toContain('Plan allocation recorded.');
   act(() => root.unmount()); el.remove();
 });
 
 test('plan allocation cannot exceed remaining target or unreserved account balance', async () => {
   const plan = { id: 'plan-trip', name: 'Japan Trip', target: 5000, saved: 4500, currency: 'PHP' };
-  const setPref = jest.fn();
   const el = document.createElement('div'); document.body.appendChild(el);
   const root = createRoot(el);
   await act(async () => root.render(<FinancialPlanning c={{
     cloudMode: true, base: 'PHP', show: true, accountsView: accounts,
-    plans: [plan], prefs: { plans: [plan] }, setPref,
+    plans: [plan], prefs: { plans: [plan] },
     toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } },
   }} />));
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Goals & Plans')).click());
@@ -122,22 +130,22 @@ test('plan allocation cannot exceed remaining target or unreserved account balan
   const amount = dialog.querySelector('input[type="number"]');
   act(() => { Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(amount, '600'); amount.dispatchEvent(new Event('input', { bubbles: true })); });
   await act(async () => dialog.querySelector('button.primary-button').click());
-  expect(setPref).not.toHaveBeenCalled();
+  expect(obligations.allocatePlanFunds).not.toHaveBeenCalled();
   expect(dialog.textContent).toContain('Allocation cannot exceed the remaining plan amount.');
   act(() => root.unmount()); el.remove();
 });
 
 test('plan funding respects the account balance after existing goal and plan reservations', async () => {
-  const plan = { id: 'plan-trip', name: 'Japan Trip', target: 5000, saved: 1000, currency: 'PHP', fundingAllocations: [
-    { id: 'prior', account_id: 'bank', account_type: 'bank', amount: 9000, currency: 'PHP', status: 'allocated' },
-  ] };
-  const setPref = jest.fn();
+  const plan = { id: 'plan-trip', name: 'Japan Trip', target: 20000, saved: 1000, currency: 'PHP' };
+  obligations.listPlanAllocations.mockResolvedValue([{
+    id: 'prior', plan_id: 'plan-trip', account_id: 'bank', amount: 9000, currency: 'PHP', status: 'allocated',
+  }]);
   const el = document.createElement('div'); document.body.appendChild(el);
   const root = createRoot(el);
   await act(async () => root.render(<FinancialPlanning c={{
     cloudMode: true, base: 'PHP', show: true,
     accountsView: [{ id: 'bank', name: 'BPI Savings', account_type: 'bank', currency: 'PHP', balance: 10000 }],
-    plans: [plan], prefs: { plans: [plan] }, setPref,
+    plans: [plan], prefs: { plans: [plan] },
     toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } },
   }} />));
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Goals & Plans')).click());
@@ -146,7 +154,7 @@ test('plan funding respects the account balance after existing goal and plan res
   const amount = dialog.querySelector('input[type="number"]');
   act(() => { Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(amount, '2000'); amount.dispatchEvent(new Event('input', { bubbles: true })); });
   await act(async () => dialog.querySelector('button.primary-button').click());
-  expect(setPref).not.toHaveBeenCalled();
+  expect(obligations.allocatePlanFunds).not.toHaveBeenCalled();
   expect(dialog.textContent).toContain('Allocation exceeds the unreserved account balance.');
   act(() => root.unmount()); el.remove();
 });
@@ -176,6 +184,7 @@ test('bank-account goal allocations stay linked to the selected bank account', a
   }));
   act(() => root.unmount()); el.remove();
 });
+
 
 
 test('credit card planning fields stay grouped in a responsive card layout with readable stats', async () => {
@@ -215,5 +224,37 @@ test('credit card planning shows institution favicon and calculated spend, inter
   expect(cardEl.textContent).toContain('Amount Spent'); expect(cardEl.textContent).toContain('6,000.00');
   expect(cardEl.textContent).toContain('Amount After Interest'); expect(cardEl.textContent).toContain('10,200.00');
   expect(cardEl.textContent).toContain('12.0%'); expect(cardEl.textContent).toContain('8,200.00');
+  act(() => root.unmount()); el.remove();
+});
+test('plan allocations show their source account, can be released, and offer bank and e-wallet choices', async () => {
+  const plan = { id: 'plan-trip', name: 'Japan Trip', target: 5000, saved: 1500, currency: 'PHP' };
+  obligations.listPlanAllocations.mockResolvedValue([{
+    id: 'allocation-wallet', plan_id: 'plan-trip', account_id: 'wallet', amount: 500, currency: 'PHP', status: 'allocated',
+  }]);
+  obligations.releasePlanFundingAllocation.mockImplementation(async () => {
+    obligations.listPlanAllocations.mockResolvedValue([]);
+    return {};
+  });
+  const accountsView = [
+    { id: 'bank', name: 'BPI Savings', institution_name: 'BPI', account_type: 'bank', currency: 'PHP', balance: 10000 },
+    { id: 'wallet', name: 'GCash Wallet', institution_name: 'GCash', account_type: 'e_wallet', currency: 'PHP', balance: 5000 },
+  ];
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView,
+    plans: [plan], prefs: { plans: [plan] },
+    toBase: value => value, go: jest.fn(), session: { user: { id: 'u' } },
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Goals & Plans')).click());
+  expect(el.querySelector('.fp-plan-funding').textContent).toContain('GCash Wallet');
+  expect(el.querySelector('.fp-plan-funding').textContent).toContain('500.00');
+  await act(async () => el.querySelector('.fp-plan-funding button.link-button').click());
+  expect(obligations.releasePlanFundingAllocation).toHaveBeenCalledWith('allocation-wallet');
+  await act(async () => Array.from(el.querySelectorAll('.fp-goal button')).find(button => button.textContent.includes('Allocate funds')).click());
+  const dialog = document.querySelector('[role="dialog"]');
+  const account = dialog.querySelector('select');
+  expect(Array.from(account.options).map(option => option.value)).toEqual(expect.arrayContaining(['bank', 'wallet']));
+  expect(dialog.textContent).toContain('Choose a bank account or e-wallet');
   act(() => root.unmount()); el.remove();
 });

@@ -1,5 +1,6 @@
 /* Financial account hub and QR lightbox. Columns: English, Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi. */
 export default [
+  ["Last 10 days spent", "Nagastos sa nakaraang 10 araw", "Last 10 days spent", "过去 10 天支出", "Gastado en los últimos 10 días", "Speso negli ultimi 10 giorni", "Ausgaben der letzten 10 Tage", "Dépenses des 10 derniers jours", "Gasto nos últimos 10 dias", "過去10日間の支出", "지난 10일 지출", "पिछले 10 दिनों का खर्च"],
   ["Account sections","Mga seksyon ng account","أقسام الحساب","账户信息分区","Secciones de la cuenta","Sezioni dell'account","Kontobereiche","Sections du compte","Seções da conta","口座のセクション","계정 섹션","खाता अनुभाग"],
   ["Account overview","Pangkalahatang-ideya ng account","نظرة عامة على الحساب","账户概览","Resumen de la cuenta","Panoramica dell'account","Kontoübersicht","Aperçu du compte","Visão geral da conta","口座の概要","계정 개요","खाता अवलोकन"],
   ["Connected items","Mga nakakonektang item","العناصر المرتبطة","已关联项目","Elementos conectados","Elementi collegati","Verknüpfte Elemente","Éléments associés","Itens conectados","連携項目","연결된 항목","जुड़े हुए आइटम"],

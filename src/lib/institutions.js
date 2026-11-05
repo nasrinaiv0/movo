@@ -161,8 +161,9 @@ export function institutionLogoCandidates(name, options = {}) {
   if (!text) return [];
   const institution = findInstitutionForLogo(text);
   const canonical = institution?.name || text;
-  const google = getInstitutionFaviconUrl(canonical, options) || getInstitutionFaviconUrl(text, options);
-  const entry = getInstitutionFaviconEntry(canonical) || getInstitutionFaviconEntry(text);
+  const aliases = institution?.aliases || [];
+  const google = getInstitutionFaviconUrl(canonical, options) || aliases.map(alias => getInstitutionFaviconUrl(alias, options)).find(Boolean) || getInstitutionFaviconUrl(text, options);
+  const entry = getInstitutionFaviconEntry(canonical) || aliases.map(alias => getInstitutionFaviconEntry(alias)).find(Boolean) || getInstitutionFaviconEntry(text);
   const official = entry?.domain ? `https://${entry.domain}/favicon.ico` : '';
   return [google, official].filter((value, index, all) => Boolean(value) && all.indexOf(value) === index);
 }
