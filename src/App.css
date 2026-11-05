@@ -5104,3 +5104,23 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .fp-credit-card-toggle .movo-icon{grid-column:2;grid-row:1/3;}
  .movo-app .fp-credit-card .fp-credit-card-actions{grid-template-columns:1fr;}
 }
+
+
+/* Transactions header actions: responsive, thumb-friendly controls without title collisions. */
+.movo-app .screen-header.root.transactions-header {display:flex;align-items:center;gap:clamp(8px,2.4vw,12px);min-width:0;}
+.movo-app .transactions-header .title-block {flex:1 1 auto;min-width:0;}
+.movo-app .transactions-header .title-block h1 {font-size:clamp(22px,6vw,28px);line-height:1.12;letter-spacing:-.65px;overflow-wrap:anywhere;}
+.movo-app .transactions-header .header-actions {display:flex;flex:0 0 auto;align-items:center;gap:clamp(7px,1.8vw,10px);margin-left:auto;min-width:0;}
+.movo-app .transactions-header .header-actions .round-button {display:grid;place-items:center;flex:0 0 clamp(40px,10.2vw,46px);width:clamp(40px,10.2vw,46px);height:clamp(40px,10.2vw,46px);min-width:clamp(40px,10.2vw,46px);min-height:clamp(40px,10.2vw,46px);padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card-solid);color:var(--text);box-shadow:var(--shadow-sm);}
+.movo-app .transactions-header .header-actions .round-button .movo-icon {width:21px;height:21px;max-width:60%;max-height:60%;}
+.movo-app .transactions-header .header-actions .round-button.transaction-header-add {flex-basis:clamp(44px,11vw,50px);width:clamp(44px,11vw,50px);height:clamp(44px,11vw,50px);min-width:clamp(44px,11vw,50px);min-height:clamp(44px,11vw,50px);border:0;background:var(--accent);color:var(--on-accent);box-shadow:0 5px 14px rgba(var(--accent-rgb),.24);}
+.movo-app .transactions-header .header-actions .round-button.transaction-header-add .movo-icon {width:24px;height:24px;color:var(--on-accent);}
+.movo-app .transactions-header .header-actions .round-button:focus-visible {outline:3px solid rgba(var(--accent-rgb),.4);outline-offset:3px;}
+@media(max-width:360px){
+ .movo-app .screen-header.root.transactions-header {gap:6px;}
+ .movo-app .transactions-header .title-block h1 {font-size:clamp(20px,6.3vw,23px);letter-spacing:-.55px;}
+ .movo-app .transactions-header .header-actions {gap:5px;}
+ .movo-app .transactions-header .header-actions .round-button {flex-basis:38px;width:38px;height:38px;min-width:38px;min-height:38px;}
+ .movo-app .transactions-header .header-actions .round-button.transaction-header-add {flex-basis:42px;width:42px;height:42px;min-width:42px;min-height:42px;}
+}
+@media(prefers-reduced-motion:reduce){.movo-app .transactions-header .header-actions .round-button {transition:none;}}
