@@ -72,7 +72,7 @@ export async function createAccount(account, userId) {
 }
 export async function listTransactions({ from, to, accountId } = {}) {
   let query = requireClient().from('transactions')
-    .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,payment_reference,receipt_note,receipt_path')
+    .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,payment_reference,receipt_note,receipt_path,schedule_id')
     .order('occurred_at', { ascending: false }).limit(1000);
   if (from) query = query.gte('occurred_at', from);
   if (to) query = query.lt('occurred_at', to);
@@ -109,7 +109,7 @@ export async function createTransaction(transaction, userId) {
 }
 export async function deleteTransaction(transactionId) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
-  return unwrap(await requireClient().from('transactions').delete().eq('id', transactionId).select('id').single());
+  return unwrap(await requireClient().rpc('delete_transaction_with_reversals', { p_transaction_id: transactionId }));
 }
 export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
@@ -274,4 +274,16 @@ export async function deleteAllCloudData(userId) {
   // Synced preferences live in an optional table: if its migration is not applied yet there is nothing to delete.
   const prefs = await client.from('user_preferences').delete().eq('user_id', userId);
   if (prefs.error && !isMissingTable(prefs.error)) throw prefs.error;
+}
+
+
+/** Reattach reversed bill, subscription, schedule, loan and receivable effects to an archived transaction restored with a new ID. */
+export async function restoreTransactionLinks(reversedTransactionId, restoredTransactionId) {
+  if (typeof reversedTransactionId !== 'string' || !reversedTransactionId || typeof restoredTransactionId !== 'string' || !restoredTransactionId) {
+    throw new Error('Both transaction IDs are required.');
+  }
+  return unwrap(await requireClient().rpc('restore_transaction_links', {
+    p_reversed_transaction_id: reversedTransactionId,
+    p_restored_transaction_id: restoredTransactionId,
+  }));
 }

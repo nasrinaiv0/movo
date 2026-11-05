@@ -66,3 +66,12 @@ describe('MOVO transaction routing', () => {
     ], amount => amount, { credit: { cardKind: 'credit' } })).toBe(1200);
   });
 });
+
+
+test('a non-cash allocation activity with no ledger account never changes an account balance', () => {
+  const account = { id: 'bank-a', account_type: 'bank', currency: 'PHP', opening_balance: 10000 };
+  const allocationActivity = { transaction_type: 'allocation', type: 'transfer', amount: 2500, currency: 'PHP', account_id: null, source_account_id: 'bank-a' };
+  expect(transactionEffect(allocationActivity, account.id)).toBe(0);
+  expect(accountBalance(account, [allocationActivity])).toBe(10000);
+  expect(activityNetAmount(allocationActivity)).toBe(0);
+});

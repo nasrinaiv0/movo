@@ -41,3 +41,15 @@ describe('MOVO obligation and goal accounting', () => {
     expect(validateGoalAllocation({ amount: 50, currentAllocated: 400, eligibleFunds: 450 })).toEqual({ valid: true, reason: null });
   });
 });
+
+
+test('reversed loan and receivable events no longer affect outstanding balances', () => {
+  expect(loanOutstanding({ id: 'l-reverse', principal_amount: 5000 }, [
+    { loan_id: 'l-reverse', event_type: 'principal_payment', amount: 1000 },
+    { loan_id: 'l-reverse', event_type: 'principal_payment', amount: 2000, reversed_at: '2026-11-05T12:00:00Z' },
+  ])).toBe(4000);
+  expect(receivableOutstanding({ id: 'r-reverse', opening_amount: 3000 }, [
+    { receivable_id: 'r-reverse', event_type: 'collected', amount: 500 },
+    { receivable_id: 'r-reverse', event_type: 'collected', amount: 1000, reversed_at: '2026-11-05T12:00:00Z' },
+  ])).toBe(2500);
+});

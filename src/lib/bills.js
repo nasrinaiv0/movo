@@ -37,7 +37,7 @@ export function billsSummary(occurrences, payments, today, toBase = (v) => v) {
     if (dayKey(o.due_date).slice(0, 7) === month) { due += left; if (o.is_estimate && o.actual_amount == null) estimated += left; }
     if (left > 0 && dayKey(o.due_date) < today) { overdue += left; overdueCount += 1; }
   }
-  for (const p of payments || []) if (dayKey(p.paid_at).slice(0, 7) === month) paid += cents(toBase(Number(p.amount), p.currency));
+  for (const p of payments || []) if (p.status !== 'reversed' && dayKey(p.paid_at).slice(0, 7) === month) paid += cents(toBase(Number(p.amount), p.currency));
   const upcoming = live.filter(o => amountRemaining(o) > 0).sort((a, b) => dayKey(a.due_date).localeCompare(dayKey(b.due_date)));
   return { dueThisMonth: fromCents(due), estimatedThisMonth: fromCents(estimated), paidThisMonth: fromCents(paid), remaining: fromCents(remaining), overdue: fromCents(overdue), overdueCount, upcoming };
 }

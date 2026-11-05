@@ -38,7 +38,7 @@ export async function listOccurrences(until, since) {
   return unwrap(await client.from('bill_occurrences').select('*').gte('due_date', since).lte('due_date', until).order('due_date').limit(2000));
 }
 export async function listBillPayments(since) {
-  return unwrap(await requireClient().from('bill_payments').select('id,occurrence_id,amount,currency,method,account_id,transaction_id,paid_at').gte('paid_at', since).order('paid_at', { ascending: false }).limit(2000));
+  return unwrap(await requireClient().from('bill_payments').select('id,occurrence_id,amount,currency,method,account_id,transaction_id,paid_at,status').eq('status', 'active').gte('paid_at', since).order('paid_at', { ascending: false }).limit(2000));
 }
 /** method 'recorded' needs an account and creates one expense; 'external' only reconciles. */
 export async function recordBillPayment({ occurrence_id, amount, method = 'recorded', account_id = null, transaction_id = null, paid_at = null, note = null, key }) {

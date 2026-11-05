@@ -123,12 +123,31 @@ test('explicit credit-card liabilities and normalized plans remain consistent in
 test('plan funding allocations reduce available money without changing account assets', () => {
   const s = planningSummary({
     accounts: [{ id: 'bank', account_type: 'bank', currency: 'PHP', balance: 50000 }],
-    plans: [{ id: 'p1', name: 'Japan Trip', target: 5000, saved: 2500, currency: 'PHP', fundingAllocations: [
-      { id: 'pa1', account_id: 'bank', account_type: 'bank', amount: 2500, currency: 'PHP', status: 'allocated' },
-    ] }],
+    plans: [{ id: 'p1', name: 'Japan Trip', target: 5000, saved: 2500, currency: 'PHP' }],
+    planAllocations: [
+      { id: 'pa1', plan_id: 'p1', account_id: 'bank', amount: 2500, currency: 'PHP', status: 'allocated' },
+    ],
     today,
   });
   expect(s.position.assets).toBe(50000);
   expect(s.position.reservedForGoals).toBe(2500);
   expect(s.position.availableMoney).toBe(47500);
+});
+
+
+test('active plan allocations count toward plan savings and reduce available money without reducing bank balance', () => {
+  const s = planningSummary({
+    accounts: [{ id: 'bank', account_type: 'bank', currency: 'PHP', balance: 10000 }],
+    plans: [{ id: 'p1', name: 'Emergency fund', target: 5000, saved: 500, currency: 'PHP' }],
+    planAllocations: [
+      { id: 'pa1', plan_id: 'p1', account_id: 'bank', amount: 2000, currency: 'PHP', status: 'allocated' },
+      { id: 'pa2', plan_id: 'p1', account_id: 'bank', amount: 700, currency: 'PHP', status: 'released' },
+    ],
+    toBase: amount => amount,
+    today,
+  });
+  expect(s.plans).toEqual({ count: 1, saved: 2500, target: 5000 });
+  expect(s.position.liquidAccounts).toBe(10000);
+  expect(s.position.reservedForGoals).toBe(2000);
+  expect(s.position.availableMoney).toBe(8000);
 });
