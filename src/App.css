@@ -5142,3 +5142,17 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .tx-chip-bar > .tx-period-filter .tx-period-filter-value { font-size:10px; }
 }
 @media(prefers-reduced-motion:reduce){.movo-app .tx-chip-bar .chip-ind.ready{transition:none;}}
+
+/* Wallet account filters: fit all five categories in the available width on every phone. */
+.movo-app.movo-app .wallet-chip-bar { width:100%; min-width:0; gap:clamp(3px,1.2vw,6px); }
+.movo-app.movo-app .wallet-chip-bar > .chip-row { display:flex; flex:1 1 0; width:100%; min-width:0; gap:clamp(2px,.8vw,4px); overflow:visible; overflow-x:visible; padding:2px 0; margin:0; }
+.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { display:flex; flex:1 1 0; justify-content:center; align-items:center; width:0; min-width:0; max-width:none; height:44px; min-height:44px; padding-inline:clamp(2px,1.5vw,8px); font-size:clamp(10px,3vw,13px); line-height:1.1; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip]:focus-visible { outline:3px solid rgba(var(--accent-rgb),.38); outline-offset:2px; }
+@media(max-width:350px) {
+  .movo-app.movo-app .wallet-chip-bar { gap:2px; }
+  .movo-app.movo-app .wallet-chip-bar > .chip-row { gap:2px; }
+  .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { font-size:10px; padding-inline:1px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { transition:none; }
+}
