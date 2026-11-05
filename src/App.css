@@ -5301,3 +5301,251 @@ button.account-tile:active { transform: scale(.98); }
   height: 20px;
   stroke-width: 1.8;
 }
+
+/* Credit-card details: normalize field rhythm, typography and control padding.
+   Scope is intentionally limited to the expanded card-details panel. */
+.movo-app .fp-credit-card .fp-credit-card-details {
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields > label {
+  display: grid;
+  grid-template-rows: auto 46px;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields input,
+.movo-app .fp-credit-card .fp-credit-card-rate input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 46px;
+  margin: 0;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 450;
+  line-height: 1.25;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields input::placeholder,
+.movo-app .fp-credit-card .fp-credit-card-rate input::placeholder {
+  font: inherit;
+  color: var(--muted);
+  opacity: .72;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields input[type="date"] {
+  padding-inline: 10px;
+  font-size: 16px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 46px;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate input {
+  width: 100%;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate > small {
+  min-width: 0;
+  align-self: center;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-actions {
+  gap: 10px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-actions .wide-button {
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.movo-app .fp-credit-card .fp-credit-ledger-history > strong,
+.movo-app .fp-credit-card .fp-credit-spend-history > strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.movo-app .fp-credit-card .fp-allocs li {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.movo-app .fp-credit-card .fp-allocs li small,
+.movo-app .fp-credit-card .form-note {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 380px) {
+  .movo-app .fp-credit-card .fp-credit-card-fields {
+    gap: 10px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-fields > label,
+  .movo-app .fp-credit-card .fp-credit-card-rate > label {
+    font-size: 13px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-fields input,
+  .movo-app .fp-credit-card .fp-credit-card-fields input[type="date"],
+  .movo-app .fp-credit-card .fp-credit-card-rate input {
+    height: 44px;
+    padding-inline: 10px;
+    font-size: 16px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-rate {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-rate > small {
+    font-size: 12px;
+  }
+}
+
+
+/* PR #217 follow-up: all header actions AND standalone back-header controls
+   use a consistent 45px circular hit target, including Settings sub-headers. */
+.movo-app.movo-app .screen-header :is(.round-button, .back-button),
+.movo-app.movo-app .screen-header .header-actions > button,
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action,
+.movo-app.movo-app .sub-header > button:first-child,
+.movo-app.movo-app .back-button {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 45px;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  max-width: 45px;
+  max-height: 45px;
+  padding: 0;
+  border-radius: 50% !important;
+}
+.movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon,
+.movo-app.movo-app .screen-header .header-actions > button > .movo-icon,
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon,
+.movo-app.movo-app .sub-header > button:first-child > .movo-icon,
+.movo-app.movo-app .back-button > .movo-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+@media (max-width: 360px) {
+  .movo-app.movo-app .screen-header :is(.round-button, .back-button),
+  .movo-app.movo-app .screen-header .header-actions > button,
+  .movo-app.movo-app .home-header .header-action-buttons > .home-header-action,
+  .movo-app.movo-app .sub-header > button:first-child,
+  .movo-app.movo-app .back-button {
+    flex-basis: 45px;
+    width: 45px !important;
+    height: 45px !important;
+    min-width: 45px !important;
+    min-height: 45px !important;
+  }
+}
+
+
+/* Home settings action: mirror the standard raised, accent-colored header controls. */
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 45px;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  padding: 0;
+  border: 0;
+  border-radius: 50% !important;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon {
+  display: block;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px;
+  min-height: 18px;
+  color: var(--accent) !important;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.theme-dark.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .24), inset 0 0 0 1px var(--line);
+}
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+
+/* Quick-action glyphs must inherit the adaptive foreground, never render as a
+   solid black disc inside the circular action surface. */
+.movo-app.movo-app .quick-actions button > span > .movo-icon,
+.movo-app.movo-app .quick-actions button > span > svg {
+  color: var(--text) !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  background: transparent !important;
+}
+.movo-app.movo-app .quick-actions button > span > .movo-icon *,
+.movo-app.movo-app .quick-actions button > span > svg * {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+.movo-app.movo-app .quick-actions button > span {
+  color: var(--text);
+}
