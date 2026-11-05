@@ -497,7 +497,7 @@ function App() {
   const homeBreakdown = useMemo(() => breakdownFor(activeHomeMonth), [breakdownFor, activeHomeMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
-    const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer', Allocations: 'allocation' }[txFilter];
+    const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer' }[txFilter];
     const q = search.trim().toLowerCase();
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
@@ -1017,6 +1017,21 @@ function App() {
       throw cause;
     }
   }, [session]);
+  const recordCreditSpend = useCallback(async (entry) => {
+    const account = (accountsView || []).find(a => String(a.id) === String(entry.account_id));
+    if (!account || account.account_type !== 'card' || account.cardKind !== 'credit') throw new Error('Choose a valid credit card.');
+    const amount = Number(entry.amount);
+    if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Enter a valid purchase amount.');
+    const occurred_at = new Date(`${entry.date || new Date().toISOString().slice(0, 10)}T12:00:00`).toISOString();
+    const note = `Credit purchase · APR ${Number(entry.annual_rate) || 0}% · ${Number(entry.months) || 1} month payoff estimate · estimated total ${Number(entry.after_interest_amount) || amount} ${account.currency || base}`;
+    const payload = { merchant: String(entry.merchant || '').trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: account.currency || base, transaction_type: 'expense', category: 'Shopping', account_id: account.id, occurred_at, note };
+    if (!payload.merchant) throw new Error('Enter the merchant name.');
+    let row;
+    if (cloudMode) row = await createTransaction(payload, session.user.id);
+    else row = { ...payload, id: window.crypto?.randomUUID?.() || `credit-${Date.now()}`, created_at: new Date().toISOString() };
+    setRawTxs(cur => [row, ...cur]);
+    return row;
+  }, [accountsView, base, cloudMode, session]);
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
     if (!account) { notify(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
@@ -1507,7 +1522,7 @@ function App() {
     accountQrDisplay,
     fx,
     refreshFx,
-    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
@@ -1590,7 +1605,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
-        <ScheduledDuePrompt session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
+        <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
@@ -1617,8 +1632,8 @@ function App() {
         <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
-      {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
-      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
+      {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
         const type = f.type === 'income' ? 'income' : 'expense';
         // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
@@ -1727,7 +1742,7 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
+      {sheet?.name === 'autolog' && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
       {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />

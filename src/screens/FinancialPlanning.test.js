@@ -201,11 +201,56 @@ test('credit card planning fields stay grouped in a responsive card layout with 
   expect(card).not.toBeNull();
   expect(card.querySelector('.fp-credit-card-stats')).not.toBeNull();
   expect(card.querySelectorAll('.fp-credit-card-stats > span')).toHaveLength(3);
+  expect(card.querySelectorAll('.fp-credit-card-stats > span > .movo-icon')).toHaveLength(3);
+  expect(card.querySelector('.fp-stat-icon-calendar')).not.toBeNull();
+  expect(card.querySelector('.fp-stat-icon-layers')).not.toBeNull();
+  expect(card.querySelector('.fp-stat-icon-receipt')).not.toBeNull();
   expect(card.querySelectorAll('.fp-credit-card-fields')).toHaveLength(2);
-  expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(4);
+  expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(5);
   expect(card.querySelector('.fp-credit-card-fields input[type="date"]')).not.toBeNull();
   expect(card.querySelector('.fp-credit-card-fields input[type="number"][min="1"]')).not.toBeNull();
   expect(card.querySelector('button').textContent).toContain('Record payment');
+  expect(card.querySelectorAll('.fp-credit-card-actions button')).toHaveLength(2);
+  expect(card.querySelector('.fp-credit-card-actions').textContent).toContain('Log credits');
+  expect(card.textContent).toContain('Credit spend limit');
+  await act(async () => card.querySelector('.fp-credit-card-actions button:nth-child(2)').click());
+  const logDialog = document.querySelector('[role="dialog"]');
+  expect(logDialog.textContent).toContain('Merchant');
+  expect(logDialog.textContent).toContain('Credit card used');
+  expect(logDialog.textContent).toContain('Before interest amount');
+  expect(logDialog.textContent).toContain('Annual interest rate (APR %)');
+  expect(logDialog.textContent).toContain('Months to pay');
+  expect(logDialog.textContent).toContain('After interest amount');
+  expect(logDialog.textContent).toContain('Estimated monthly payment');
+  expect(logDialog.querySelector('select').value).toBe('credit-ui');
+  act(() => root.unmount()); el.remove();
+});
+
+
+test('credit spend history follows its source transaction and hides deleted or reversed entries', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const card = { id: 'linked-card', name: 'Linked Card', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -1000, creditLimit: 10000 };
+  const prefs = { creditSpendLogs: { 'linked-card': [
+    { id: 'log-live', transaction_id: 'tx-live', merchant: 'Live Merchant', amount: 100, annual_rate: 24, months: 3, date: '2026-11-01' },
+    { id: 'log-deleted', transaction_id: 'tx-deleted', merchant: 'Deleted Merchant', amount: 200, annual_rate: 24, months: 3, date: '2026-11-02' },
+    { id: 'log-legacy', merchant: 'Legacy Merchant', amount: 50, annual_rate: 0, months: 1, date: '2026-11-03' },
+  ] } };
+  const render = async (txs) => act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, card], prefs, txs,
+    toBase: value => value, go: jest.fn(),
+  }} />));
+  await render([{ id: 'tx-live', account_id: 'linked-card', type: 'expense', amount: 100, origAmount: 100, origCurrency: 'PHP' }]);
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  let history = el.querySelector('.fp-credit-spend-history');
+  expect(history.textContent).toContain('Live Merchant');
+  expect(history.textContent).toContain('Legacy Merchant');
+  expect(history.textContent).not.toContain('Deleted Merchant');
+  await render([]);
+  history = el.querySelector('.fp-credit-spend-history');
+  expect(history.textContent).not.toContain('Live Merchant');
+  expect(history.textContent).not.toContain('Deleted Merchant');
+  expect(history.textContent).toContain('Legacy Merchant');
   act(() => root.unmount()); el.remove();
 });
 
@@ -256,5 +301,23 @@ test('plan allocations show their source account, can be released, and offer ban
   const account = dialog.querySelector('select');
   expect(Array.from(account.options).map(option => option.value)).toEqual(expect.arrayContaining(['bank', 'wallet']));
   expect(dialog.textContent).toContain('Choose a bank account or e-wallet');
+  act(() => root.unmount()); el.remove();
+});
+
+test('record card payment sheet shows the selected card available credit before saving', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const card = { id: 'credit-payment', name: 'GoTyme Credit', institution_name: 'GoTyme', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -12500, creditLimit: 50000 };
+  await act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, card], txs: [],
+    prefs: { accountStyles: {}, creditCardPayments: {} }, toBase: value => value, go: jest.fn(),
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  const cardEl = el.querySelector('.fp-credit-card');
+  expect(cardEl).not.toBeNull();
+  await act(async () => cardEl.querySelector('.fp-credit-card-actions button').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  expect(dialog.querySelector('.acct-pick-availability').textContent).toContain('Available credit');
+  expect(dialog.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');
   act(() => root.unmount()); el.remove();
 });

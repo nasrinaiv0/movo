@@ -9,8 +9,11 @@ test('available credit is the limit minus what is owed', () => {
   expect(creditInfo(card(300, 50000))).toMatchObject({ owed: 0, available: 50300 }); // overpaid
 });
 
-test('only credit cards with a limit have credit info', () => {
+test('only credit cards with a valid limit and known balance have credit info', () => {
   expect(creditInfo(card(-100, 0))).toBeNull();
+  expect(creditInfo({ ...card(null, 50000), balance: null })).toBeNull();
+  expect(creditInfo({ ...card('', 50000), balance: '' })).toBeNull();
+  expect(creditInfo({ ...card('not-a-number', 50000), balance: 'not-a-number' })).toBeNull();
   expect(creditInfo({ account_type: 'card', cardKind: 'debit', balance: 100, creditLimit: 5000 })).toBeNull();
   expect(creditInfo({ account_type: 'bank', balance: 100 })).toBeNull();
   expect(isCreditCard(card(0, 1))).toBe(true);

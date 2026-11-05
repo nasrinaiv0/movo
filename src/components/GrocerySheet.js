@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
+import AccountPicker from './AccountPicker';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { groceryLineTotal, groceryTotal } from '../lib/grocery';
 import './GrocerySheet.css';
 
 const makeItem = () => ({ id: window.crypto?.randomUUID?.() || `grocery-${Date.now()}-${Math.random().toString(36).slice(2)}`, name: '', price: '', quantity: '1' });
-export default function GrocerySheet({ currency = 'PHP', accounts = [], draft, onSaveDraft, onLogExpense, onClose }) {
+export default function GrocerySheet({ currency = 'PHP', accounts = [], draft, onSaveDraft, onLogExpense, onClose, showBalance = true }) {
   const initial = draft?.items?.length ? draft.items : [makeItem()];
   const [items,setItems] = useState(initial.map(x => ({...x})));
   const [accountId,setAccountId] = useState(draft?.accountId || accounts[0]?.id || '');
@@ -28,7 +29,7 @@ export default function GrocerySheet({ currency = 'PHP', accounts = [], draft, o
     <div className="grocery-column-head" aria-hidden="true"><span>{tr('Items')}</span><span>{tr('Price')}</span><span>{tr('Quantity')}</span><span>{tr('Total')}</span><span/></div>
     <div className="grocery-items">{items.map(item=>{const line=groceryLineTotal(item.price,item.quantity);return <div className="grocery-item" key={item.id}><input className="grocery-item-name" aria-label={tr('Item')} placeholder={tr('e.g. Rice')} value={item.name} onChange={e=>update(item.id,{name:e.target.value})}/><input aria-label={tr('Price')} type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" value={item.price} onChange={e=>update(item.id,{price:e.target.value})}/><input aria-label={tr('Quantity')} type="number" min="0.01" step="any" inputMode="decimal" value={item.quantity} onChange={e=>update(item.id,{quantity:e.target.value})}/><strong className="grocery-line-total">{money(line,currency)}</strong><button type="button" className="grocery-remove" aria-label={tr('Remove {item}',{item:item.name||tr('item')})} onClick={()=>setItems(current=>current.filter(x=>x.id!==item.id))}><Icon name="trash-2" size={16}/></button></div>})}</div>
     <button type="button" className="grocery-add" onClick={()=>setItems(current=>[...current,makeItem()])}><Icon name="plus" size={17}/>{tr('Add another item')}</button>
-    <label className="grocery-account">{tr('Paid with')}<select value={accountId} onChange={e=>setAccountId(e.target.value)}><option value="">{tr('Choose account')}</option>{accounts.filter(a=>!a.is_archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+    <div className="grocery-account"><AccountPicker id="grocery-account" label={tr('Paid with')} accounts={accounts.filter(a=>!a.is_archived)} value={accountId} onChange={setAccountId} showBalance={showBalance} /></div>
     {error&&<p className="grocery-error" role="alert">{tr(error)}</p>}
     <div className="grocery-footer"><div><small>{tr('Total items')}</small><b>{validItems.reduce((s,x)=>s+Number(x.quantity),0)}</b></div><div><small>{tr('Total expense')}</small><b>{money(total,currency)}</b></div></div>
     <div className="grocery-actions"><button type="button" className="secondary-button" onClick={saveDraft}>{tr('Save as draft')}</button><button type="button" className="primary-button" disabled={!validItems.length} onClick={log}>{tr('Done · Log expense')}</button></div>

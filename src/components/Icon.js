@@ -50,6 +50,7 @@ const P = {
   globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" /></>,
   layout: <><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="2.6" /><rect x="13" y="3.5" width="7.5" height="7.5" rx="2.6" /><rect x="3.5" y="13" width="7.5" height="7.5" rx="2.6" /><rect x="13" y="13" width="7.5" height="7.5" rx="2.6" /></>,
   calendar: <><rect x="3.5" y="5" width="17" height="15.5" rx="4" /><path d="M8 3v3.6M16 3v3.6M3.5 10h17" /></>,
+  layers: <><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 12 9 5 9-5M3 16l9 5 9-5" /></>,
   coin: <><circle cx="12" cy="12" r="9" /><path d="M9.5 8.5h4a2 2 0 0 1 0 4h-4m0-4v8m0-4h4.5" /></>,
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.7M12 17h.01" /></>,
   face: <><path d="M4 8.5V7a3 3 0 0 1 3-3h1.5M15.5 4H17a3 3 0 0 1 3 3v1.5M20 15.5V17a3 3 0 0 1-3 3h-1.5M8.5 20H7a3 3 0 0 1-3-3v-1.5" /><path d="M9 10v1M15 10v1M12 10v3h-1M9.5 15.5c1.4 1 3.6 1 5 0" /></>,

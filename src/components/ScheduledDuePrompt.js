@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Sheet } from './ui';
+import AccountPicker from './AccountPicker';
 import { t as tr } from '../lib/i18n';
 import { listScheduledTransactions, logScheduledTransaction } from '../lib/scheduledTransactions';
 import { listBills, listOccurrences, recordBillPayment } from '../lib/billsRepository';
@@ -14,7 +15,7 @@ const today = () => new Date().toLocaleDateString('en-CA');
 const shift = (date, days) => { const value=new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate()+days); return value.toISOString().slice(0,10); };
 const nonce = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export default function ScheduledDuePrompt({ session, accountsView = [], subscriptions = [], cardStyles = {}, cardPayments = {}, onSubscriptionLog, onCreditCardLog, onLogged }) {
+export default function ScheduledDuePrompt({ session, accountsView = [], subscriptions = [], cardStyles = {}, cardPayments = {}, onSubscriptionLog, onCreditCardLog, onLogged, showBalance = true }) {
   const [entry,setEntry]=useState(null);
   const [account,setAccount]=useState('');
   const [destination,setDestination]=useState('');
@@ -206,13 +207,13 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         <strong>{billCurrency} {Number(amount).toLocaleString()}</strong>
         {entry.kind!=='credit_card'&&entry.kind!=='bill'&&<>{!account&&suggested&&<p className="form-note">{tr('Suggested account')}: {suggested.institution_name||suggested.name}</p>}
         {!account&&!suggested&&<p className="form-note">{tr('Check your account balance before confirming this transaction.')}</p>}
-        <label>{tr('Account to use')}<select required value={account} onChange={e=>setAccount(e.target.value)}><option value="">{tr('Choose account')}</option>{choices.map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>
-        {entry.kind==='scheduled'&&item.transaction_type==='transfer'&&<label>{tr('Destination account')}<select required value={destination} onChange={e=>setDestination(e.target.value)}><option value="">{tr('Choose destination')}</option>{choices.filter(a=>a.id!==account).map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>}</>}
+        <AccountPicker id="scheduled-account" label={tr('Account to use')} accounts={choices} value={account} onChange={setAccount} showBalance={showBalance} required />
+        {entry.kind==='scheduled'&&item.transaction_type==='transfer'&&<AccountPicker id="scheduled-destination" label={tr('Destination account')} accounts={choices.filter(a=>a.id!==account)} value={destination} onChange={setDestination} showBalance={showBalance} required />}</>}
         {entry.kind==='bill'&&<section className="card pad">
           <strong>{tr('Split payment across accounts')}</strong>
           <p className="form-note">{tr('Remaining bill balance')}: {billCurrency} {Number(amount||amountRemaining(item)).toLocaleString()}</p>
           {splits.map((part,index)=><div className="form-grid" key={part.id}>
-            <label>{tr('Account {number}',{number:index+1})}<select required value={part.account_id} onChange={e=>setSplits(current=>current.map(x=>x.id===part.id?{...x,account_id:e.target.value}:x))}><option value="">{tr('Choose account')}</option>{choices.map(a=><option key={a.id} value={a.id}>{a.institution_name||a.name}</option>)}</select></label>
+            <div><AccountPicker id={`scheduled-split-${part.id}`} label={tr('Account {number}',{number:index+1})} accounts={choices} value={part.account_id} onChange={v=>setSplits(current=>current.map(x=>x.id===part.id?{...x,account_id:v}:x))} showBalance={showBalance} required /></div>
             <label>{tr('Amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setSplits(current=>current.map(x=>x.id===part.id?{...x,amount:e.target.value}:x))}/></label>
             {splits.length>1&&<button type="button" className="link-button" onClick={()=>setSplits(current=>current.filter(x=>x.id!==part.id))}>{tr('Remove split')}</button>}
           </div>)}

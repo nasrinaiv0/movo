@@ -2,6 +2,7 @@ import React from 'react';
 import Icon from './Icon';
 import BrandLogo from './BrandLogo';
 import { institutionLogoUrl } from '../lib/institutions';
+import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 /*
@@ -40,15 +41,27 @@ export function AccountOptions({ accounts = [], currency = false }) {
 }
 
 /** A styled field that shows the chosen account (logo, name, kind, last 4) over a native, grouped select. */
-export default function AccountPicker({ id, label, ariaLabel, accounts = [], value = '', onChange, required, placeholder }) {
-  const chosen = accounts.find(a => a.id === value);
+export default function AccountPicker({ id, label, ariaLabel, accounts = [], value = '', onChange, required, placeholder, showBalance = true }) {
+  const chosen = accounts.find(a => String(a.id) === String(value));
   const logo = chosen ? institutionLogoUrl(chosen.institution_name) || institutionLogoUrl(chosen.name) : '';
+  const credit = chosen?.account_type === 'card' && chosen?.cardKind === 'credit';
+  const rawLimit = chosen?.creditLimit;
+  const rawBalance = chosen?.balance;
+  const limit = rawLimit === null || rawLimit === undefined || rawLimit === '' ? NaN : Number(rawLimit);
+  const balance = rawBalance === null || rawBalance === undefined || rawBalance === '' ? NaN : Number(rawBalance);
+  const hasLimit = credit && Number.isFinite(limit) && limit > 0;
+  const hasBalance = Number.isFinite(balance);
+  const hasAvailableCredit = hasLimit && hasBalance;
+  const available = credit ? (hasAvailableCredit ? Math.max(0, limit + balance) : NaN) : balance;
+  const availabilityLabel = credit ? 'Available credit' : 'Available balance';
+  const showAvailability = !!chosen;
   return <label className={`acct-pick${chosen ? '' : ' is-empty'}`} htmlFor={id}>
     <span className="acct-pick-logo" aria-hidden="true"><BrandLogo src={logo} size={64} fallback={chosen ? undefined : <Icon name="wallet" size={18} />} /></span>
     <span className="acct-pick-text">
       <small>{label}</small>
       <strong>{chosen ? accountName(chosen) : (placeholder || tr('Choose account'))}</strong>
       {chosen && <em>{[accountKind(chosen), mask(chosen), chosen.currency].filter(Boolean).join(' · ')}</em>}
+      {showAvailability && <span className={`acct-pick-availability${credit ? ' is-credit' : ''}`}><Icon name={credit ? 'card' : 'wallet'} size={12} strokeWidth={2} /><span>{tr(availabilityLabel)}</span><strong>{shown(showBalance, Number.isFinite(available) ? money(available, chosen.currency || 'PHP') : '—')}</strong></span>}
     </span>
     <Icon name="down" size={16} className="acct-pick-chevron" />
     <select id={id} aria-label={ariaLabel || label} required={required} value={value} onChange={e => onChange(e.target.value)}>

@@ -16,7 +16,7 @@ const keyFor = (k) => ({ '*': '×', x: '×', '/': '÷', '-': '−', Enter: '=', 
 const pretty = (expr) => tokenize(expr).map(t => (/^\d/.test(t) || t.startsWith('.') ? Number(t).toLocaleString(getFormatLocale(), { maximumFractionDigits: 2 }) + (t.endsWith('.') ? '.' : '') : ` ${t} `)).join('');
 
 /** Calculator-first add/edit transaction sheet: type the amount on the keypad, pick a category, save. */
-export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan, autoCategory = false }) {
+export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan, autoCategory = false, showBalance = true }) {
   // Auto categorization: suggest a category from the description until the person picks one themselves.
   const [catTouched, setCatTouched] = useState(!!editing);
   const [expr, setExpr] = useState(form.amount ? String(Number(form.amount)) : '');
@@ -69,8 +69,8 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
     <label className="tx-note"><Icon name="doc" size={18} /><input aria-label={tr('Description')} required maxLength={160} value={form.merchant} onChange={e => { const merchant = e.target.value; const guess = autoCategory && !catTouched && type === 'expense' ? guessCategory(merchant) : NEEDS_REVIEW; setForm({ ...form, merchant, ...(guess !== NEEDS_REVIEW ? { category: guess } : {}) }); }} placeholder={type === 'income' ? tr('Where is it from?') : type === 'transfer' ? tr('What is the transfer for?') : tr('What was it for?')} /></label>
 
     {(cloudMode || accounts.length > 0) ? <div className={`tx-accounts${type === 'transfer' ? ' two' : ''}`}>
-      <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} required={cloudMode} onChange={v => setForm({ ...form, account_id: v })} />
-      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={accounts.filter(a => a.id !== form.account_id)} value={form.transfer_to_account_id} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
+      <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} showBalance={showBalance} required={cloudMode} onChange={v => setForm({ ...form, account_id: v })} />
+      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={accounts.filter(a => a.id !== form.account_id)} value={form.transfer_to_account_id} showBalance={showBalance} showBalance={showBalance} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
     </div> : <p className="tx-local">{tr('Saved on this device')}</p>}
 
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>

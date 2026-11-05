@@ -8,9 +8,13 @@ export const isCreditCard = (a) => a?.account_type === 'card' && a?.cardKind ===
 /** Limit, amount owed and available credit for a credit card with a limit; null otherwise. */
 export function creditInfo(a) {
   if (!isCreditCard(a)) return null;
-  const limit = Number(a.creditLimit);
-  if (!Number.isFinite(limit) || limit <= 0) return null;
-  const balance = Number(a.balance) || 0;
+  const rawLimit = a.creditLimit;
+  const rawBalance = a.balance;
+  if (rawLimit === null || rawLimit === undefined || rawLimit === '') return null;
+  if (rawBalance === null || rawBalance === undefined || rawBalance === '') return null;
+  const limit = Number(rawLimit);
+  const balance = Number(rawBalance);
+  if (!Number.isFinite(limit) || limit <= 0 || !Number.isFinite(balance)) return null;
   const owed = Math.max(0, -balance);
   const round = (v) => Math.round(v * 100) / 100;
   return { limit: round(limit), owed: round(owed), available: round(limit + balance), usedPercent: Math.min(100, Math.round((owed / limit) * 100)) };
