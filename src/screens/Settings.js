@@ -144,14 +144,14 @@ export default function Settings({ c }) {
   const lock = lockState();
   const pushOn = !!prefs.push && pushGranted();
   const toggleValue = (key) => (key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? c.cloudMode : prefs[key] !== false && !!prefs[key]);
-  const toggleDisabled = (key) => (key === 'email' || (key === 'push' && !pushSupported()) || (key === 'biometrics' && (!bio || !lock.enabled)) || (key === 'cloudSync' && c.cloudMode));
+  const toggleDisabled = (key) => (key === 'email' || (key === 'push' && !pushSupported()) || (key === 'biometrics' && (!bio || !lock.enabled)));
   const toggleChange = async (key, v) => {
     if (key === 'push') return togglePush(c, v);
     if (key === 'biometrics') {
       try { if (v) { await enableBiometric(); c.notify(tr('Face ID / Touch ID can now unlock Movo.')); } else disableBiometric(); } catch { c.notify(tr('Face ID / Touch ID was not set up.')); }
       return rerender(n => n + 1);
     }
-    if (key === 'cloudSync' && !c.cloudMode) return go('Sign in');
+    if (key === 'cloudSync') { if (v && !c.session?.user) return go('Sign in'); return c.setCloudSyncEnabled?.(v); }
     return setPref(key, v);
   };
   const sections = [
@@ -183,7 +183,7 @@ export default function Settings({ c }) {
       ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },
     { title: tr('Data & Sync'), rows: [
-      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : tr('Sign in to enable secure cloud sync.'), onClick: c.cloudMode ? undefined : () => go('Sign in'), status: c.cloudMode ? undefined : tr('Sign in required') },
+      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : c.session?.user ? tr('Cloud sync is paused on this device.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },
     ] },
@@ -206,7 +206,7 @@ export default function Settings({ c }) {
     <SubHeader title={tr('Settings')} onBack={() => go('Menu')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search settings')} placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} /></label>
     {shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
-      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'cloudSync' ? tr('Cloud sync follows your signed-in account; sign out to use local-only mode.') : r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
+      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
     {!shown.length && <p className="empty">{tr('No settings match “{query}”.', { query })}</p>}
     {panel === 'lock' && <LockSheet c={c} onClose={() => { setPanel(''); rerender(n => n + 1); }} />}
     {panel === 'usage' && <UsageSheet c={c} onClose={() => setPanel('')} />}
