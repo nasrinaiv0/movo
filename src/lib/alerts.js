@@ -24,4 +24,91 @@ export function buildSystemNotices({ txs = [], now = new Date(), subs = null, bu
     out.push({ id: `renew-${s.id}-${s.next}`, kind: 'System', cat: 'catTransactions', icon: 'calendar', tone: 'violet', at: new Date(new Date(now).setHours(8, 0, 0, 0)).toISOString(), title: 'Renewal due', body: days === 0 ? '{name} renews today: {amount}.' : '{name} renews tomorrow: {amount}.', vars: { name: s.name, amount: fmt(Number(s.amount) || 0, s.currency) } });
   });
   // Bill reminders use the owner's configured reminder_days and generated occurrences.
-  // A paid/cancelled occurrence never produces a r...[truncated]
+  // A paid/cancelled occurrence never produces a reminder; ids are stable per bill/date/day.
+  const billById = new Map((bills || []).map(b => [b.id, b]));
+  const today = new Date(now); today.setHours(0, 0, 0, 0);
+  (billOccurrences || []).forEach(o => {
+    const bill = billById.get(o.bill_id);
+    if (!bill || bill.status !== 'active' || o.status === 'paid' || o.status === 'cancelled') return;
+    const due = new Date(String(o.due_date || '').slice(0, 10) + 'T00:00:00');
+    if (Number.isNaN(due.getTime())) return;
+    const days = Math.round((due.getTime() - today.getTime()) / DAY);
+    const configured = Array.isArray(bill.reminder_days) ? bill.reminder_days.map(Number) : [3, 1, 0];
+    if (!configured.includes(days) || days < 0 || days > 30) return;
+    const amount = Number(o.actual_amount ?? o.expected_amount ?? bill.amount) + Number(o.late_fee || 0);
+    out.push({
+      id: `bill-${bill.id}-${String(o.due_date).slice(0, 10)}-${days}`,
+      kind: 'System', cat: 'catTransactions', icon: 'calendar', tone: 'orange',
+      at: new Date(new Date(now).setHours(8, 0, 0, 0)).toISOString(),
+      title: days === 0 ? 'Bill due today' : days === 1 ? 'Bill due tomorrow' : 'Bill due soon',
+      body: days === 0 ? '{name} is due today: {amount}.' : days === 1 ? '{name} is due tomorrow: {amount}.' : '{name} is due in {days} days: {amount}.',
+      vars: { name: bill.name, amount: fmt(Number.isFinite(amount) ? amount : 0, bill.currency), days },
+    });
+  });
+  // Limits reached this month.
+  budgets.filter(b => b.level === 'over').forEach(b => {
+    out.push({ id: `limit-${b.category}-${monthKey(now)}`, kind: 'System', cat: 'catTransactions', icon: 'target', tone: 'red', at: new Date(new Date(now).setHours(9, 0, 0, 0)).toISOString(), title: 'Limit reached', body: 'Your {category} limit is used up ({pct}).', vars: { category: b.category, pct: `${b.percent}%` } });
+  });
+  // Monthly report for last month, once it has records.
+  const first = new Date(now.getFullYear(), now.getMonth(), 1, 8);
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 15);
+  const last = txs.filter(t => monthKey(t.date) === monthKey(prev));
+  if (last.length) {
+    const spent = last.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const earned = last.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    out.push({ id: `report-${monthKey(prev)}`, kind: 'System', cat: 'catReports', icon: 'chart', tone: 'teal', at: first.toISOString(), title: 'Monthly Summary Ready', body: '{month}: you spent {spent} and earned {earned}.', vars: { month: prev.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }), spent: fmt(spent), earned: fmt(earned) } });
+  }
+  // One money tip a week, from the person's own numbers.
+  const tip = tips[0];
+  if (tip && txs.length) {
+    const week = startOfWeek(now);
+    out.push({ id: `tip-${week.toISOString().slice(0, 10)}`, kind: 'System', cat: 'catPromo', icon: 'spark', tone: 'green', at: week.toISOString(), title: 'Money tip', body: tip.key, vars: { ...(tip.vars || {}), ...Object.fromEntries(Object.entries(tip.money || {}).map(([k, v]) => [k, fmt(v)])) }, category: tip.category });
+  }
+  // Sign-ins on other devices (the device list follows the account through preference sync).
+  devices.filter(d => d && d.id !== deviceId).slice(-10).forEach(d => {
+    out.push({ id: `signin-${d.id}`, kind: 'Account', cat: 'catAccount', icon: 'shield', tone: 'orange', at: d.at, title: 'New sign-in', body: 'Your account was signed in on {device}.', vars: { device: d.label } });
+  });
+  APP_UPDATES.forEach(u => out.push({ ...u, kind: 'System', cat: 'catAi', icon: 'spark', tone: 'violet' }));
+  return out;
+}
+
+/** True when `now` falls inside quiet hours (start/end "HH:MM", may wrap past midnight). */
+export function isQuiet(now, start, end) {
+  const m = (s) => { const [h, mm] = String(s || '').split(':').map(Number); return Number.isFinite(h) && Number.isFinite(mm) ? h * 60 + mm : null; };
+  const a = m(start); const b = m(end); if (a === null || b === null || a === b) return false;
+  const t = now.getHours() * 60 + now.getMinutes();
+  return a < b ? t >= a && t < b : t >= a || t < b;
+}
+
+/** A short, non-identifying label for this device, e.g. "Safari on iPhone". */
+export function deviceLabel(ua = typeof navigator !== 'undefined' ? navigator.userAgent : '') {
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'a device';
+  const br = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'a browser';
+  return `${br} on ${os}`;
+}
+
+export const pushSupported = () => isNativeApp() || (typeof window !== 'undefined' && 'Notification' in window);
+
+/** Whether this device may show MOVO alerts now (iOS app: local notifications; web: the Notification API). */
+export const pushGranted = () => (isNativeApp() ? nativeNotifyPermission() === 'granted' : typeof Notification !== 'undefined' && Notification.permission === 'granted');
+
+/** Ask once for permission and register the small notification service worker. */
+export async function enablePush() {
+  if (isNativeApp()) return requestNativeNotify();
+  if (!pushSupported()) return 'unsupported';
+  const result = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+  if (result === 'granted' && navigator.serviceWorker) { try { await navigator.serviceWorker.register('/sw.js'); } catch { /* fall back to page notifications */ } }
+  return result;
+}
+
+/** Show a system notification (service worker when available, so it also works when installed to the Home Screen). */
+export async function showSystemNotification(title, body, tag) {
+  if (isNativeApp()) return showNativeNotification(title, body, tag);
+  if (!pushSupported() || Notification.permission !== 'granted') return false;
+  try {
+    const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null;
+    if (reg) await reg.showNotification(title, { body, tag, icon: '/icon-192.png', badge: '/icon-192.png' });
+    else new Notification(title, { body, tag, icon: '/icon-192.png' }); // eslint-disable-line no-new
+    return true;
+  } catch { return false; }
+}
