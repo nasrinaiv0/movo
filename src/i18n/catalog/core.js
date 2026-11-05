@@ -2941,5 +2941,12 @@ export default [
     "通知しきい値は 1～100 の範囲で指定してください。",
     "알림 기준은 1에서 100 사이여야 합니다.",
     "अलर्ट सीमा 1 से 100 के बीच होनी चाहिए。"
-  ]
+  ],
+
+  ["Estimated annual interest (%)","Tinatayang taunang interes (%)","الفائدة السنوية المقدرة (%)","预计年利率 (%)","Interés anual estimado (%)","Interesse annuo stimato (%)","Geschätzter Jahreszins (%)","Intérêt annuel estimé (%)","Juros anuais estimados (%)","推定年利率 (%)","예상 연이율 (%)","अनुमानित वार्षिक ब्याज (%)"],
+  ["Compounding","Pagko-compound","تركيب الفائدة","复利频率","Capitalización","Capitalizzazione","Zinseszinsintervall","Capitalisation","Capitalização","複利計算","복리 주기","चक्रवृद्धि आवृत्ति"],
+  ["Estimated interest over {months} months: {amount}","Tinatayang interes sa loob ng {months} buwan: {amount}","الفائدة المقدرة خلال {months} شهرًا: {amount}","预计 {months} 个月利息：{amount}","Interés estimado en {months} meses: {amount}","Interesse stimato in {months} mesi: {amount}","Geschätzte Zinsen über {months} Monate: {amount}","Intérêts estimés sur {months} mois : {amount}","Juros estimados em {months} meses: {amount}","{months} か月間の推定利息：{amount}","{months}개월 예상 이자: {amount}","{months} महीनों में अनुमानित ब्याज: {amount}"],
+  ["Quarterly","Kada quarter","ربع سنوي","每季度","Trimestral","Trimestrale","Vierteljährlich","Trimestriel","Trimestral","四半期ごと","분기별","त्रैमासिक"],
+  ["Annually","Taun-taon","سنويًا","每年","Anual","Annuale","Jährlich","Annuel","Anual","毎年","매년","वार्षिक"]
+
 ];
