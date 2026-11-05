@@ -5486,3 +5486,22 @@ button.account-tile:active { transform: scale(.98); }
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+
+
+/* Quick-action glyphs must inherit the adaptive foreground, never render as a
+   solid black disc inside the circular action surface. */
+.movo-app.movo-app .quick-actions button > span > .movo-icon,
+.movo-app.movo-app .quick-actions button > span > svg {
+  color: var(--text) !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  background: transparent !important;
+}
+.movo-app.movo-app .quick-actions button > span > .movo-icon *,
+.movo-app.movo-app .quick-actions button > span > svg * {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+.movo-app.movo-app .quick-actions button > span {
+  color: var(--text);
+}
