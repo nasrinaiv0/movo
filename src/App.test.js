@@ -459,9 +459,9 @@ describe('MOVO finance frontend', () => {
     expect(plan.tagName).toBe('BUTTON');
     act(() => plan.click());
     const sheet = container.querySelector('[role="dialog"][aria-label="Plan & Usage"]');
-    expect(sheet.textContent).toContain('Free · this device only');
+    expect(sheet.textContent).toContain('Quick · this device only');
     expect(sheet.textContent).toMatch(/Transactions\d+/);
-    expect(sheet.textContent).toContain('no paid plan or billing');
+    expect(sheet.textContent).toContain('Store purchases and restore are available');
     clickButton(container, 'Close Plan & Usage');
     const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
     act(() => helpRow.click());

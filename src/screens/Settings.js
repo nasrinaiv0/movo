@@ -8,6 +8,7 @@ import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
+import { getStoreProducts, getStoreEntitlements, restoreStorePurchases, purchaseStoreProduct, manageStoreSubscriptions, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
 
 export const ACCENTS = [['green', '#13b45f'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#ef4444'], ['slate', '#334155']];
 export const THEMES = [
@@ -121,17 +122,81 @@ function LockSheet({ c, onClose }) {
   </Sheet>;
 }
 
-/** Plan & Usage: what this account uses in Movo. No paid plan is sold in this build. */
+/** Store purchases are verified server-side; the store supplies localized price metadata. */
 function UsageSheet({ c, onClose }) {
+  const [storeProducts, setStoreProducts] = useState([]);
+  const [storeEntitlement, setStoreEntitlement] = useState(null);
+  const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [purchaseMessage, setPurchaseMessage] = useState('');
+  const nativePurchases = isNativePurchasePlatform();
+
+  useEffect(() => {
+    let live = true;
+    if (!c.session?.access_token) return () => { live = false; };
+    (nativePurchases ? syncStorePurchases(c.session) : getStoreEntitlements(c.session)).then((value) => { if (live) setStoreEntitlement(value); }).catch(() => {
+      if (live) setPurchaseMessage(tr('Could not load your verified subscription status.'));
+    });
+    if (nativePurchases) getStoreProducts().then((items) => { if (live) setStoreProducts(items); }).catch((error) => {
+      if (live) setPurchaseMessage(error.message || tr('Store products are not available right now.'));
+    });
+    return () => { live = false; };
+  }, [c.session?.access_token, nativePurchases]);
+
+  const runRestore = async () => {
+    setPurchaseBusy(true); setPurchaseMessage('');
+    try {
+      const result = await restoreStorePurchases(c.session);
+      setStoreEntitlement(result.entitlement);
+      setPurchaseMessage(result.restoredCount
+        ? tr('Your purchases were restored and verified.')
+        : tr('No active MOVO subscription was found for this store account.'));
+    } catch (error) {
+      setPurchaseMessage(error.message || tr('Could not restore purchases. Please try again.'));
+    } finally { setPurchaseBusy(false); }
+  };
+
+  const runPurchase = async (productIdentifier) => {
+    setPurchaseBusy(true); setPurchaseMessage('');
+    try {
+      await purchaseStoreProduct(productIdentifier, c.session);
+      const value = await getStoreEntitlements(c.session);
+      setStoreEntitlement(value);
+      setPurchaseMessage(tr('Your subscription is active.'));
+    } catch (error) {
+      setPurchaseMessage(error.message || tr('Purchase could not be verified.'));
+    } finally { setPurchaseBusy(false); }
+  };
+
   const rows = [
-    [tr('Plan'), c.cloudMode ? tr('Free · cloud sync') : tr('Free · this device only')],
+    [tr('Plan'), storeEntitlement?.tier ? storeEntitlement.tier.toUpperCase() : (c.cloudMode ? tr('Quick · cloud sync') : tr('Quick · this device only'))],
     [tr('Transactions'), String(c.txs?.length || 0)],
     [tr('Accounts'), String(c.accountsView?.length || 0)],
     [tr('Subscriptions tracked'), String(c.subscriptions?.length || 0)],
     [tr('Storage on this device'), fmtBytes(storageUsed())],
   ];
-  return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Movo is free. There is no paid plan or billing in this version.')} onClose={onClose} label={tr('Plan & Usage')}>
+
+  return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Manage your MOVO subscription and restore purchases from the store.')} onClose={onClose} label={tr('Plan & Usage')}>
     <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+    {storeEntitlement?.active && <p className="form-hint">{tr('Your verified {tier} subscription is active until {date}.', { tier: storeEntitlement.tier, date: storeEntitlement.expiresAt ? longDate(storeEntitlement.expiresAt) : tr('the current period ends') })}</p>}
+    {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}
+    {nativePurchases && <>
+      {!storeEntitlement?.active && <>
+        <h3 className="group-title">{tr('Available plans')}</h3>
+        <div className="card pad">
+          {storeProducts.length ? storeProducts.map((product) => <div className="settings-row" key={product.productIdentifier}>
+            <div className="settings-row-main"><strong>{product.title}</strong><small>{product.priceString}</small></div>
+            <button type="button" className="primary-button" disabled={purchaseBusy || !c.session?.access_token} onClick={() => runPurchase(product.productIdentifier)}>{tr('Subscribe')}</button>
+          </div>) : <p className="form-hint">{tr('Store subscription products are not available yet.')}</p>}
+        </div>
+      </>}
+      <div className="sheet-actions">
+        <button type="button" className="secondary-button" disabled={purchaseBusy || !c.session?.access_token} onClick={runRestore}>{purchaseBusy ? tr('Please wait…') : tr('Restore purchases')}</button>
+        <button type="button" className="secondary-button" disabled={purchaseBusy || !storeEntitlement?.active} onClick={() => manageStoreSubscriptions().catch((error) => setPurchaseMessage(error.message || tr('Could not open subscription management.')))}>{tr('Manage subscription')}</button>
+      </div>
+    </>}
+    {!nativePurchases && <p className="form-hint">{tr('Store purchases and restore are available in the MOVO iOS and Android apps.')}</p>}
+    {purchaseMessage && <p className="form-hint" role="status" aria-live="polite">{purchaseMessage}</p>}
+    <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
   </Sheet>;
 }
 

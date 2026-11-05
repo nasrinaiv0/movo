@@ -39,7 +39,7 @@ describe('creditCardPlanningMetrics', () => {
       { account_id: 'bank-1', type: 'expense', amount: 9000, origCurrency: 'PHP' },
       { account_id: 'cc-1', type: 'income', amount: 1000, origCurrency: 'PHP' },
     ], payments: [{ amount: 2000, month: '2026-11', date: '2026-11-05' }] });
-    expect(metrics).toMatchObject({ amountSpent: 6000, estimatedMonthlyInterest: 200, amountAfterInterest: 10200, outstandingAfterPayments: 8200, totalPayments: 2000, limit: 50000, spentLimitPercent: 12 });
+    expect(metrics).toMatchObject({ amountSpent: 6000, estimatedMonthlyInterest: 160, amountAfterInterest: 8160, outstandingAfterPayments: 8000, totalPayments: 2000, limit: 50000, spentLimitPercent: 12 });
   });
   test('converts card expenses to card currency and safely handles invalid APR or missing limit', () => {
     const metrics = creditCardPlanningMetrics({ card: { ...card, currency: 'USD', creditLimit: 0 }, annualInterestRate: 'bad', transactions: [{ account_id: 'cc-1', type: 'expense', origAmount: 100, origCurrency: 'PHP' }], convertAmount: (amount, from, to) => from === 'PHP' && to === 'USD' ? amount / 50 : amount });
@@ -72,10 +72,10 @@ test('excludes deleted, reversed and duplicate card transactions and applies eac
   expect(metrics).toMatchObject({
     amountSpent: 4000,
     estimatedMonthlyInterest: 240,
-    amountAfterInterest: 10240,
+    amountAfterInterest: 8240,
     totalPayments: 2000,
     paymentCount: 1,
-    outstandingAfterPayments: 8240,
+    outstandingAfterPayments: 8000,
     spentLimitPercent: 8,
   });
 });
@@ -108,4 +108,31 @@ test('uses the live card ledger over a stale liability snapshot when calculating
   });
   expect(metrics.amountSpent).toBe(7500);
   expect(metrics.outstandingAfterPayments).toBe(5000);
+});
+
+test('recorded payments agree in wallet and planning and are never applied twice', () => {
+  const { applyCardPayments, creditRepaymentEstimate } = require('./creditCard');
+  const payments = [{ id: 'p', amount: 2000, date: '2026-11-06', month: '2026-11' }];
+  const adjusted = applyCardPayments({ id: 'cc', ...card(-10000, 20000) }, payments);
+  expect(adjusted.balance).toBe(-8000);
+  expect(creditInfo(adjusted).available).toBe(12000);
+  expect(applyCardPayments(adjusted, payments).balance).toBe(-8000);
+  expect(creditCardPlanningMetrics({ card: adjusted, payments, annualInterestRate: 24 })).toMatchObject({
+    outstandingAfterPayments: 8000, estimatedMonthlyInterest: 160, amountAfterInterest: 8160,
+  });
+  expect(creditRepaymentEstimate(100, 0, 3)).toMatchObject({ monthlyPayment: 33.33, finalPayment: 33.34, total: 100, interest: 0 });
+  expect(creditRepaymentEstimate(1000, 10, 1.5)).toBeNull();
+  expect(creditRepaymentEstimate(1000, 101, 12)).toBeNull();
+});
+
+test('a zero statement balance has zero estimated interest; reversed and ledger-linked payments do not double credit', () => {
+  const { applyCardPayments } = require('./creditCard');
+  const payments = [
+    { id: 'reversed', amount: 1000, date: '2026-11-06', month: '2026-11', status: 'reversed' },
+    { id: 'ledger', amount: 2000, date: '2026-11-06', month: '2026-11', transaction_id: 'transfer' },
+  ];
+  const adjusted = applyCardPayments({ id: 'cc', ...card(-8000, 20000) }, payments);
+  expect(adjusted.balance).toBe(-8000);
+  expect(creditCardPlanningMetrics({ card: adjusted, payments, annualInterestRate: 24, statementBalance: 0 }))
+    .toMatchObject({ outstandingAfterPayments: 8000, estimatedMonthlyInterest: 0 });
 });

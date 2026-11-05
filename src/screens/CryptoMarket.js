@@ -19,7 +19,7 @@ function CryptoLogo({ coin, size = 38 }) {
 
 function money(value, quote) {
   if (!Number.isFinite(value)) return '—';
-  try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: quote, notation: value >= 1000000 ? 'compact' : 'standard', maximumFractionDigits: value < 1 ? 8 : 2 }).format(value); }
+  try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: quote, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value); }
   catch { return `${quote} ${value.toLocaleString()}`; }
 }
 function compact(value) {
@@ -38,6 +38,9 @@ export default function CryptoMarket({ c }) {
   const watchlist = Array.isArray(c.prefs?.cryptoWatchlist) ? c.prefs.cryptoWatchlist : ['btc-bitcoin', 'eth-ethereum', 'sol-solana'];
   const [coins, setCoins] = useState([]);
   const [selected, setSelected] = useState(null);
+  useEffect(() => {
+    setSelected(current => current ? coins.find(coin => coin.id === current.id) || current : null);
+  }, [coins]);
   const [history, setHistory] = useState([]);
   const [range, setRange] = useState(7);
   const [sort, setSort] = useState('rank');
@@ -71,7 +74,7 @@ export default function CryptoMarket({ c }) {
       setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
     } catch (e) {
       setError(e.message === 'crypto_provider_not_configured'
-        ? 'Crypto markets are not configured yet. Add COINBEACON_API_KEY as a server-only Vercel environment variable.'
+        ? 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.'
         : e.code === 'crypto_provider_payment_required' ? e.message
           : e.message === 'crypto_provider_rate_limited' ? 'Market data is temporarily rate-limited. Try again later.'
           : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
@@ -88,7 +91,7 @@ export default function CryptoMarket({ c }) {
       setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
     }).catch((e) => {
       if (active) setError(e.message === 'crypto_provider_not_configured'
-        ? 'Crypto markets are not configured yet. Add the licensed CoinPaprika API key as the server-only COINPAPRIKA_API_KEY environment variable.'
+        ? 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.'
         : e.code === 'crypto_provider_payment_required' ? e.message
           : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
     }).finally(() => { if (active) setLoading(false); });
@@ -217,7 +220,7 @@ export default function CryptoMarket({ c }) {
       </section>
       <section className="card crypto-chart-card">
         <div className="crypto-section-heading"><div><small>PRICE HISTORY</small><h2>{selected.symbol} / {quote}</h2></div><strong>{money(values[values.length - 1] ?? selected.price, quote)}</strong></div>
-        <div className="crypto-ranges">{[1, 7, 30, 90, 365].map((days) => <button type="button" key={days} className={range === days ? 'active' : ''} onClick={() => setRange(days)}>{days === 1 ? '24H' : days === 365 ? '1Y' : `${days}D`}</button>)}</div>
+        <div className="crypto-ranges">{[1, 7, 30, 90, 365].map((days) => <button type="button" key={days} aria-pressed={range === days} className={range === days ? 'active' : ''} onClick={() => setRange(days)}>{days === 1 ? '24H' : days === 365 ? '1Y' : `${days}D`}</button>)}</div>
         {historyLoading ? <p className="crypto-empty">Loading historical prices…</p> : history.length > 1
           ? <svg className="crypto-chart" viewBox="0 0 320 104" role="img" aria-label={`${selected.name} historical price chart`}><path d={path} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
           : <p className="crypto-empty">Historical prices are not available for this period.</p>}
@@ -253,21 +256,19 @@ export default function CryptoMarket({ c }) {
         <p>Latest provider market data. Prices may be delayed; they are not executable trading quotes.</p>
       </section>
       <section className="crypto-market-section">
-        <div className="crypto-section-heading"><div><small>YOUR ASSETS</small><h2>Watchlist</h2></div><span>{favoriteCoins.length} saved</span></div>
-        {favoriteCoins.length ? <div className="crypto-watch-row">{favoriteCoins.slice(0, 8).map((coin) => <button type="button" key={coin.id} onClick={() => setSelected(coin)}><strong>{coin.symbol}</strong><small>{money(coin.price, quote)}</small></button>)}</div> : <p className="crypto-empty">Star a coin to keep it here.</p>}
-      </section>
-      <section className="crypto-market-section">
-        <div className="crypto-section-heading"><div><small>MARKET DISCOVERY</small><h2>Top cryptocurrencies</h2></div><span>{updatedAt ? stamp(updatedAt) : '—'}</span></div>
-        {favoriteCoins.length > 0 && <section className="crypto-watchlist card">
+        {favoriteCoins.length ? <section className="crypto-watchlist card">
           <div className="crypto-section-heading"><div><small>YOUR TRACKED ASSETS</small><h2>Watchlist</h2></div><span className="crypto-live-label"><i /> Auto-refresh · 3 min</span></div>
           <div className="crypto-watchlist-items">{favoriteCoins.map((coin) => <button type="button" className="crypto-watch-item" key={coin.id} onClick={() => setSelected(coin)}>
             <CryptoLogo coin={coin} size={34} />
             <span className="crypto-watch-meta"><strong>{coin.symbol}</strong><small>{money(coin.price, quote)}</small></span>
             <span className={"crypto-watch-change " + (coin.change24h > 0 ? 'up' : coin.change24h < 0 ? 'down' : 'flat')}>{changeText(coin.change24h)}</span>
           </button>)}</div>
-        </section>}
+        </section> : <p className="crypto-empty">Star a coin to keep it here.</p>}
+      </section>
+      <section className="crypto-market-section">
+        <div className="crypto-section-heading"><div><small>MARKET DISCOVERY</small><h2>Top cryptocurrencies</h2></div><span>{updatedAt ? stamp(updatedAt) : '—'}</span></div>
         <label className="crypto-search"><Icon name="search" size={17} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or symbol" aria-label="Search cryptocurrencies" /></label>
-        <div className="crypto-sort" aria-label="Sort cryptocurrency market">{[['rank','Market cap'],['change','24h change'],['price','Price']].map(([key,label]) => <button type="button" key={key} className={sort === key ? 'active' : ''} onClick={() => setSort(key)}>{label}</button>)}</div>
+        <div className="crypto-sort" aria-label="Sort cryptocurrency market">{[['rank','Market cap'],['change','24h change'],['price','Price']].map(([key,label]) => <button type="button" key={key} aria-pressed={sort === key} className={sort === key ? 'active' : ''} onClick={() => setSort(key)}>{label}</button>)}</div>
         {loading ? <p className="crypto-empty">Loading crypto market…</p> : error && !coins.length ? <div className="card crypto-error" role="status"><Icon name="info" size={20} /><p>{error}</p></div> : <div className="crypto-list">
           {visible.map((coin) => <article className="card crypto-row" key={coin.id}>
             <button type="button" className="crypto-row-main" onClick={() => setSelected(coin)}>

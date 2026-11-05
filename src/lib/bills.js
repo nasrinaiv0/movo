@@ -6,7 +6,7 @@
 export const BILL_FREQUENCIES = [['one_time', 'One time'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['quarterly', 'Every 3 months'], ['semiannual', 'Every 6 months'], ['annual', 'Yearly']];
 export const BILL_CATEGORIES = ['Housing/rent', 'Utilities', 'Phone & internet', 'Credit cards', 'Loans', 'Insurance', 'Education', 'Transportation', 'Subscriptions', 'Healthcare', 'Government/taxes', 'Childcare', 'Memberships', 'Other'];
 
-const cents = (v) => { const n = Number(v); return Number.isFinite(n) ? Math.round(n * 100) : 0; };
+const cents = (v) => { const n = Number(v); return Number.isFinite(n) ? Math.round((n + Number.EPSILON) * 100) : 0; };
 const fromCents = (c) => c / 100;
 const dayKey = (d) => (typeof d === 'string' ? d.slice(0, 10) : new Date(d).toISOString().slice(0, 10));
 
@@ -54,3 +54,20 @@ export function reminderFor(o, bill, today) {
 
 /** A stable key for one payment attempt, reused on retry so the server records it once. */
 export const paymentKey = (occurrenceId, nonce) => `pay-${String(occurrenceId).slice(0, 36)}-${nonce}`;
+
+/** Validate the complete split before the first write; retries retain each successful part's key. */
+export function validateBillSplits(parts, remaining, accounts) {
+  const available = new Set(accounts.map(account => String(account.id)));
+  const used = new Set();
+  let total = 0;
+  if (!parts?.length) return { valid: false, total: 0 };
+  for (const part of parts) {
+    const value = Number(part.amount);
+    const amount = cents(value);
+    const id = String(part.account_id || '');
+    if (!available.has(id) || used.has(id) || !Number.isFinite(value) || value <= 0
+      || !Number.isSafeInteger(amount) || amount < 1 || Math.abs(value * 100 - amount) > 0.000001) return { valid: false, total: total / 100 };
+    used.add(id); total += amount;
+  }
+  return { valid: Number.isSafeInteger(total) && total <= cents(remaining), total: total / 100 };
+}

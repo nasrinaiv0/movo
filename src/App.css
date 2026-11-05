@@ -5626,3 +5626,99 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
     animation-iteration-count: 1 !important; transition-duration: .01ms !important;
   }
 }
+
+/* Release controls: one circular header size on every screen, including narrow phones. */
+.movo-app.movo-app :is(.screen-header, .home-header .header-action-buttons, .sub-header) :is(.round-button, .back-button, .home-header-action),
+.movo-app.movo-app .screen-header .header-actions > button {
+  box-sizing: border-box; flex: 0 0 45px; width: 45px !important; height: 45px !important;
+  min-width: 45px !important; min-height: 45px !important; max-width: 45px; max-height: 45px;
+  padding: 0; border-radius: 50% !important; aspect-ratio: 1;
+}
+.movo-app.movo-app .screen-header { min-width: 0; }
+.movo-app.movo-app .screen-header .title-block, .movo-app.movo-app .screen-header.sub h1 { min-width: 0; overflow-wrap: anywhere; }
+.movo-app.movo-app .screen-header .header-actions { flex-shrink: 0; }
+
+/* Action and filter labels use monochrome contrast; header and navigation icons keep their accents. */
+.movo-app { --button-ink: #000; }
+.movo-app.theme-dark { --button-ink: #fff; }
+.movo-app.movo-app :is(.secondary-button, .danger-button, .wide-button, .link-button, .manage-button, .customize-button, .month-pill, .home-period-filter, .chip-row button, .seg-control button, .theme-segments button, .tx-filter-chip, .wallet-filter-chip, .reminder-issue summary):not(:is(.screen-header *, .home-header .header-action-buttons *, .sub-header *, .bottom-nav *)) {
+  color: var(--button-ink) !important;
+}
+.movo-app.movo-app .primary-button:not(:is(.screen-header *, .bottom-nav *)) { color: var(--on-accent, #fff) !important; background: var(--accent); }
+.movo-app.movo-app :is(.chip-row button, .seg-control button, .theme-segments button) :is(span, strong, small) { color: inherit; }
+
+/* Due reminders: full-width account details, aligned fields, compact optional issue controls. */
+.movo-app .scheduled-due-prompt.sheet-center {
+  width: calc(100% - 24px); max-width: 480px; max-height: min(90dvh, 820px);
+  padding: 20px; border-radius: 24px; overscroll-behavior: contain;
+}
+.movo-app .scheduled-due-prompt .sheet-title { padding-inline-end: 42px; font-size: 20px; line-height: 1.25; }
+.movo-app .scheduled-due-prompt .sheet-sub { margin: 4px 0 16px; padding-inline-end: 36px; line-height: 1.35; }
+.movo-app .scheduled-due-prompt .reminder-fields { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.movo-app .scheduled-due-prompt .form-note { line-height: 1.45; font-size: 12px; }
+.movo-app .scheduled-due-prompt .reminder-amount { font-size: 20px; font-variant-numeric: tabular-nums; }
+.movo-app .reminder-splits { display: grid; gap: 12px; min-width: 0; padding: 14px; border-radius: 18px; background: var(--surface-1); border: 1px solid var(--line); }
+.movo-app .reminder-splits > strong { font-size: 14px; line-height: 1.35; }
+.movo-app .reminder-split { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; min-width: 0; }
+.movo-app .reminder-split > div:first-child { grid-column: 1 / -1; min-width: 0; }
+.movo-app .reminder-split .acct-pick { min-height: 78px; padding: 10px; gap: 8px; }
+.movo-app .reminder-split .acct-pick-availability { display: flex; flex-wrap: wrap; row-gap: 3px; }
+.movo-app .reminder-split .acct-pick-availability > span { white-space: normal; }
+.movo-app .reminder-split .acct-pick-availability strong { flex-basis: 100%; margin-inline-start: 0; overflow: visible; white-space: normal; overflow-wrap: anywhere; }
+.movo-app .reminder-split .acct-pick-text small { white-space: normal; letter-spacing: .02em; }
+.movo-app .scheduled-due-prompt :is(input, textarea) { min-height: 44px; padding: 11px 12px; font-size: 16px; line-height: 1.35; }
+.movo-app .reminder-split-amount { grid-column: 1; }
+.movo-app .reminder-remove { align-self: end; min-height: 44px; padding-inline: 4px; }
+.movo-app .reminder-add { width: 100%; min-height: 44px; padding: 10px 12px; font-size: 13px; }
+.movo-app .scheduled-due-prompt .primary-button { width: 100%; min-height: 46px; padding: 12px; line-height: 1.3; }
+.movo-app .reminder-issue { padding: 12px; background: var(--surface-2); border-radius: 14px; }
+.movo-app .reminder-issue summary { cursor: pointer; font-size: 13px; font-weight: 600; line-height: 1.4; }
+.movo-app .reminder-issue-fields { display: grid; gap: 10px; padding-top: 12px; }
+.movo-app .reminder-issue-fields .secondary-button { min-height: 44px; padding: 10px; font-size: 12px; line-height: 1.4; }
+.movo-app .reminder-dismiss { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.movo-app .reminder-dismiss button { justify-content: center; min-height: 44px; padding: 10px 6px; font-size: 12px; line-height: 1.35; text-align: center; }
+
+/* Compact financial planning cards retain readable figures and full touch targets. */
+.movo-app .fp-hero { padding: 14px; margin-bottom: 10px; border-radius: 20px; }
+.movo-app .fp-hero .balance-amount { margin: 5px 0 10px; font-size: 28px; }
+.movo-app .fp-hero .sub-hero-row { gap: 8px; }
+.movo-app :is(.fp-glance, .fp-loan-list) { margin-bottom: 10px; }
+.movo-app .fp-row { padding: 11px 12px; gap: 10px; }
+.movo-app .fp-main { min-width: 0; }
+.movo-app .fp-main strong { line-height: 1.3; }
+.movo-app .fp-main small { line-height: 1.4; }
+.movo-app .fp-loan-list { display: grid; gap: 10px; }
+.movo-app .fp-loan-card { overflow: hidden; min-width: 0; border-radius: 18px; }
+.movo-app .fp-loan-card .fp-row { align-items: flex-start; box-shadow: none; }
+.movo-app .fp-loan-card .fp-amount { max-width: 42%; overflow-wrap: anywhere; }
+.movo-app .fp-loan-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 12px 12px; }
+.movo-app .fp-loan-actions button { min-width: 0; min-height: 44px; padding: 9px 6px; border-radius: 12px; font-size: 12px; gap: 5px; }
+.movo-app .fp-credit-card { padding: 12px; gap: 10px; border-radius: 18px; }
+.movo-app .fp-credit-card .fp-credit-card-fields { gap: 10px; }
+@media (max-width: 360px) {
+  .movo-app .scheduled-due-prompt.sheet-center { padding: 16px; width: calc(100% - 20px); }
+  .movo-app .reminder-splits { padding: 10px; }
+  .movo-app .fp-loan-actions { gap: 6px; }
+  .movo-app .fp-loan-actions button { gap: 4px; font-size: 11px; }
+}
+
+/* Readable text and surfaces shared across appearance modes. */
+.movo-app {
+  --muted: #5f6473; --green: #087344; --red: #b92e3b;
+  --surface: var(--surface-2); --surface-raised: var(--surface-1);
+  --control-placeholder: var(--muted);
+}
+.movo-app.theme-dark { --muted: #b1b7c6; --green: #58dba0; --red: #ff8b94; }
+.movo-app :is(input, textarea)::placeholder { color: var(--control-placeholder); opacity: 1; }
+.movo-app :is(select, textarea) { color-scheme: inherit; }
+.movo-app select option { background: var(--card-solid); color: var(--text); }
+.movo-app .sheet-close { width: 45px; height: 45px; min-width: 45px; border-radius: 50%; color: var(--accent-ink); background: var(--surface-2); }
+.movo-app .sheet-title { padding-inline-end: 48px; }
+.movo-app :is(.secondary-button, .danger-button, .wide-button) { line-height: 1.4; }
+.movo-app .danger-button { background: var(--danger-surface); border-color: var(--border-strong); }
+.movo-app :is(.crypto-search, .crypto-holding-form, .crypto-alert-form) :is(input,select):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+.movo-app.movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon,
+.movo-app.movo-app.movo-app .home-header .header-action-buttons > button > .movo-icon { color: var(--accent-ink, var(--accent)) !important; }
+.movo-app.movo-app.movo-app .screen-header :is(.round-button.accent, .wallet-header-add, .transaction-header-add) > .movo-icon { color: var(--on-accent) !important; }
+.movo-app.movo-app :is(.crypto-sort button, .crypto-ranges button, .crypto-view-switch button) { color: var(--button-ink) !important; }

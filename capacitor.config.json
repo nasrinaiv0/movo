@@ -10,6 +10,11 @@
     "preferredContentMode": "mobile"
   },
   "plugins": {
-    "CapacitorHttp": { "enabled": true }
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "NativePurchases": {
+      "autoFinishTransactions": false
+    }
   }
 }

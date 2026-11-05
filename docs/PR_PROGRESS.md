@@ -280,3 +280,13 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Follow-up adds actionable, non-secret configuration guidance and regression coverage for missing credentials, paid-host selection, server-only Authorization handling, provider rate limits, and invalid actions.
 - **External release gate:** configure the licensed CoinPaprika credential as Vercel's server-only `COINPAPRIKA_API_KEY` for the MOVO production project and redeploy. Do not use the free personal-use endpoint for MOVO's commercial/customer-facing market display. No credential was added to source control.
 - Live production response and physical iOS verification remain pending; automated CI alone is not proof that the market feed is live.
+
+## 2026-11-06 — Sandbox recovery, financial accuracy and adaptive UI
+
+- Recovered unpushed sandbox commit `7ab3ad7` onto current main `a1c6fd9`; preserved commercial-readiness changes.
+- Fixed shared bank/debit ledgers, posted transaction filtering, credit payment duplication, separate estimated interest, cross-currency plan allocation totals and cent-safe sums. Monetary labels always display two decimal places, including summaries and Cryptocurrency.
+- Added Pay/Edit/Delete loan actions; deletion archives the obligation and preserves recorded payments/account balances.
+- Compacted reminder, Financial Planning and Cryptocurrency layouts; removed duplicate watchlist; made header buttons 45px circles and action/filter labels monochrome with theme-aware contrast.
+- Validation in Vercel Sandbox: actual React component fixtures with synthetic data, 36 screen/width/theme combinations (320/390/430px, light/dark, green/orange); no page/dialog overflow; header dimensions checked; screenshots reviewed. Store-table SQL privilege assertions passed in isolated PostgreSQL 18. Full production build and exact head test results are recorded in the PR.
+- Store checkout remains disabled until credentials, database migration and signed-device purchase/refund/restore tests are complete. Native store tests use mocked SDK responses; no customer payment was made. New release copy currently has English fallbacks pending native-language review.
+- PR175 was rechecked: closed without merging on 5 November; its historical audit follow-up remains documented. No other open PR was returned at publication time. No production database data was modified.

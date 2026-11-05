@@ -239,10 +239,10 @@ module.exports = async function handler(req, res) {
     // One shared, idempotent path for every channel: request retries, cross-source duplicates, RLS-equivalent
     // ownership checks and rate limits all live in log_automation_transaction_v2.
     let { data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction_v2', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_transaction_type: type, p_amount: amount, p_currency: requestedCurrency || account.currency || 'PHP', p_merchant: merchant, p_category: category, p_occurred_at: occurredAt, p_note: note, p_source: source, p_external_reference: reference || null });
-    // Rollout safety: until migration 20261102010000 is applied, v2 does not exist and the old constraint only
-    // accepts 'notification'. Expenses still log through the earlier function (without the channel name).
-    if (rpcError && type === 'expense' && /PGRST202|could not find the function|does not exist/i.test(`${rpcError.code || ''} ${rpcError.message || ''}`)) {
-      ({ data: result, error: rpcError } = await api.admin.rpc('log_automation_transaction', { p_token_hash: tokenHash, p_request_id: requestId, p_user_id: registered.user_id, p_account_id: account.id, p_amount: amount, p_currency: requestedCurrency || account.currency || 'PHP', p_merchant: merchant, p_category: category, p_occurred_at: occurredAt, p_note: note, p_source: 'notification', p_external_reference: reference || null }));
+    if (rpcError && /PGRST202|could not find the function|does not exist/i.test(String(rpcError.code || '') + ' ' + String(rpcError.message || ''))) {
+      // Fail closed: the legacy RPC does not enforce the v2 cross-source idempotency contract.
+      console.error('[movo-automation] required v2 migration missing');
+      return json(res, 503, { error: 'automation_service_unavailable' });
     }
     if (rpcError) {
       const message = String(rpcError.message || '');

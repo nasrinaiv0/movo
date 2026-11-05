@@ -151,3 +151,13 @@ test('active plan allocations count toward plan savings and reduce available mon
   expect(s.position.reservedForGoals).toBe(2000);
   expect(s.position.availableMoney).toBe(8000);
 });
+
+test('allocations into foreign-currency plans are converted exactly once', () => {
+  const s = planningSummary({
+    plans: [{ id: 'usd-plan', name: 'Travel', target: 1000, saved: 100, currency: 'USD' }],
+    planAllocations: [{ id: 'allocation', plan_id: 'usd-plan', amount: 50, currency: 'USD', status: 'allocated' }],
+    toBase: (value, currency) => currency === 'USD' ? value * 58 : value,
+    today,
+  });
+  expect(s.plans).toEqual({ count: 1, target: 58000, saved: 8700 });
+});

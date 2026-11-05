@@ -276,8 +276,8 @@ test('credit card planning shows institution favicon and calculated spend, inter
   const cardEl = el.querySelector('.fp-credit-card');
   expect(cardEl.querySelector('.fp-credit-card-logo').getAttribute('src')).toContain('domain=aub.com.ph');
   expect(cardEl.textContent).toContain('Amount Spent'); expect(cardEl.textContent).toContain('6,000.00');
-  expect(cardEl.textContent).toContain('Amount After Interest'); expect(cardEl.textContent).toContain('10,200.00');
-  expect(cardEl.textContent).toContain('12.0%'); expect(cardEl.textContent).toContain('8,200.00');
+  expect(cardEl.textContent).toContain('Amount After Interest'); expect(cardEl.textContent).toContain('8,160.00');
+  expect(cardEl.textContent).toContain('12.0%'); expect(cardEl.textContent).toContain('8,000.00');
   act(() => root.unmount()); el.remove();
 });
 test('plan allocations show their source account, can be released, and offer bank and e-wallet choices', async () => {
@@ -330,4 +330,23 @@ test('record card payment sheet shows the selected card available credit before 
   expect(dialog.querySelector('.acct-pick-availability').textContent).toContain('Available credit');
   expect(dialog.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');
   act(() => root.unmount()); el.remove();
+});
+
+test('loan actions edit metadata and require confirmation before deletion', async () => {
+  const el=document.createElement('div');document.body.appendChild(el);const root=createRoot(el);
+  obligations.updateLoan.mockResolvedValue({});obligations.deleteLoan.mockResolvedValue({});
+  const c={cloudMode:true,base:'PHP',show:true,accountsView:accounts,toBase:v=>v,go:jest.fn(),session:{user:{id:'u'}},refreshFinance:jest.fn(),notify:jest.fn()};
+  await act(async()=>root.render(<FinancialPlanning c={c}/>));
+  await act(async()=>Array.from(el.querySelectorAll('.fp-glance .fp-row')).find(b=>b.textContent.includes('Loans & debts')).click());
+  expect(el.querySelector('.fp-loan-actions').textContent).toContain('PayEditDelete');
+  await act(async()=>el.querySelectorAll('.fp-loan-actions button')[1].click());
+  const form=document.querySelector('[role="dialog"] form');
+  await act(async()=>form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
+  expect(obligations.updateLoan).toHaveBeenCalledWith('l1',expect.objectContaining({name:'Car loan'}),'u');
+  await act(async()=>el.querySelectorAll('.fp-loan-actions button')[2].click());
+  expect(obligations.deleteLoan).not.toHaveBeenCalled();
+  expect(document.querySelector('[role="dialog"]').textContent).toContain('Recorded payments and account balances will be kept');
+  await act(async()=>document.querySelector('[role="dialog"] .danger-button').click());
+  expect(obligations.deleteLoan).toHaveBeenCalledWith('l1','u');
+  act(()=>root.unmount());el.remove();
 });

@@ -1,3 +1,6 @@
+import { roundMoney, sumMoney } from './moneyMath';
+import { postedTransactions } from './financeCalculations';
+
 /**
  * MOVO's canonical accounting projections. Inputs to summary helpers must already use one reporting currency.
  * Persistence and UI must not invent their own sign rules.
@@ -8,25 +11,25 @@ const active = row => row && row.is_archived !== true && row.status !== 'archive
 export function loanOutstanding(loan, events = []) {
   if (!loan) return 0;
   const opening = amountOf(loan.opening_principal ?? loan.principal_amount ?? loan.amount);
-  const delta = (Array.isArray(events) ? events : []).filter(e => e.loan_id === loan.id && !e.reversed_at).reduce((sum, e) => {
+  const delta = postedTransactions(events).filter(e => e.loan_id === loan.id).reduce((sum, e) => {
     const amount = amountOf(e.amount);
     if (e.event_type === 'borrowed' || e.event_type === 'principal_increase') return sum + amount;
     if (e.event_type === 'principal_payment') return sum - amount;
     return sum;
   }, 0);
-  return Math.max(0, opening + delta);
+  return Math.max(0, roundMoney(opening + delta));
 }
 
 export function receivableOutstanding(receivable, events = []) {
   if (!receivable) return 0;
   const opening = amountOf(receivable.opening_outstanding_amount ?? receivable.opening_amount ?? receivable.amount);
-  const delta = (Array.isArray(events) ? events : []).filter(e => e.receivable_id === receivable.id && !e.reversed_at).reduce((sum, e) => {
+  const delta = postedTransactions(events).filter(e => e.receivable_id === receivable.id).reduce((sum, e) => {
     const amount = amountOf(e.amount);
     if (e.event_type === 'lent' || e.event_type === 'amount_increased') return sum + amount;
     if (e.event_type === 'collected' || e.event_type === 'written_off') return sum - amount;
     return sum;
   }, 0);
-  return Math.max(0, opening + delta);
+  return Math.max(0, roundMoney(opening + delta));
 }
 
 export function loanEventEffect(event) {
@@ -54,7 +57,7 @@ export function creditCardEventEffect(event) {
   switch (event?.event_type) {
     case 'purchase': return { cashDelta: 0, liabilityDelta: amount, income: 0, expense: amount };
     case 'payment': return { cashDelta: -amount, liabilityDelta: -amount, income: 0, expense: 0 };
-    case 'interest': case 'fee': return { cashDelta: -amount, liabilityDelta: amount, income: 0, expense: amount };
+    case 'interest': case 'fee': return { cashDelta: 0, liabilityDelta: amount, income: 0, expense: amount };
     default: return { cashDelta: 0, liabilityDelta: 0, income: 0, expense: 0 };
   }
 }
@@ -66,14 +69,14 @@ export function goalProgress(goal, allocations = []) {
 }
 
 export function financialPosition({ accounts = [], loans = [], receivables = [], goalAllocations = [], otherAssets = 0, otherLiabilities = 0 } = {}) {
-  const activeAccounts = accounts.filter(active);
+  const activeAccounts = accounts.filter(a => active(a) && !a.linkedAccountId).map(a => ({ ...a, card_kind: a.card_kind || a.cardKind }));
   const assetAccounts = activeAccounts.filter(a => a.account_type !== 'card' || a.card_kind === 'debit');
-  const liquidAccounts = assetAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const liquidAccounts = sumMoney(assetAccounts.map(a => Number(a.balance || 0)));
   const spendableAccounts = activeAccounts.filter(a => ['bank','e_wallet','cash'].includes(a.account_type));
   const cardLiabilities = activeAccounts.filter(a => a.account_type === 'card' && a.card_kind === 'credit')
     .reduce((sum, a) => sum + Math.max(0, Number(a.liability_balance ?? -Number(a.balance || 0))), 0);
   const loanLiabilities = loans.filter(active).reduce((sum, l) => sum + amountOf(l.outstanding_balance ?? l.outstanding_principal ?? l.amount), 0);
-  const receivableAssets = receivables.filter(active).reduce((sum, r) => sum + amountOf(r.outstanding_balance ?? r.opening_amount ?? r.amount), 0);
+  const receivableAssets = receivables.filter(active).reduce((sum, r) => sum + amountOf(r.outstanding_balance ?? r.outstanding_amount ?? r.opening_amount ?? r.amount), 0);
   const assets = liquidAccounts + amountOf(otherAssets) + receivableAssets;
   const liabilities = cardLiabilities + loanLiabilities + amountOf(otherLiabilities);
   const reserved = goalAllocations.filter(a => a.status !== 'released' && (!a.account_type || ['bank','e_wallet','cash'].includes(a.account_type))).reduce((sum, a) => sum + amountOf(a.amount), 0);

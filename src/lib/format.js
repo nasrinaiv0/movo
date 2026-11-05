@@ -12,11 +12,10 @@ export const getFormatLocale = () => LOCALE;
 export function setBaseCurrency(code) { if (/^[A-Z]{3}$/.test(code || '')) BASE = code; }
 export const baseCurrency = () => BASE;
 
-const fractionDigits = (currency) => cached(`fd:${currency}`, () => { try { return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits; } catch { return 2; } });
-export const money = (value, currency = BASE, digits = 2) => {
-  const d = Math.min(digits, fractionDigits(currency));
-  return cached(`m:${LOCALE}:${currency}:${d}`, () => new Intl.NumberFormat(LOCALE, { style: 'currency', currency, minimumFractionDigits: d, maximumFractionDigits: d })).format(Number(value) || 0);
-};
+/** Monetary labels always retain both decimal places; compact views must not hide cents. */
+export const money = (value, currency = BASE) => cached(`m:${LOCALE}:${currency}:2`, () =>
+  new Intl.NumberFormat(LOCALE, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 })
+).format(Number(value) || 0);
 export const currencySymbol = (currency = BASE) => cached(`sym:${LOCALE}:${currency}`, () => {
   try { return new Intl.NumberFormat(LOCALE, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency')?.value || currency; } catch { return currency; }
 });

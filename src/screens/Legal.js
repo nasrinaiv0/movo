@@ -46,6 +46,8 @@ export function TermsOfService({ c }) {
       <h2>{tr('1. What MOVO does')}</h2>
       <p>{tr('MOVO is a personal finance tracking tool that lets you record, organize, review, and export financial information you choose to provide. Unless a screen explicitly confirms otherwise, displayed balances and totals are calculations from the records available in MOVO and are not verified bank balances.')}</p>
       <p>{tr('MOVO is not a bank, payment processor, credit provider, accounting firm, tax adviser, investment adviser, or emergency service. It does not connect to your bank or move money. Optional phone automations that you set up yourself can send MOVO the details of a payment or bank notification so it can be recorded.')}</p>
+      <h3>{tr('Store subscriptions and billing')}</h3>
+      <p>{tr('Subscriptions purchased through the MOVO iOS or Android app are billed and managed by Apple or Google. The store shows the price, billing period, applicable taxes, and renewal terms before purchase. Subscriptions renew automatically unless you cancel through your Apple or Google account before the renewal date. You can restore eligible purchases from the same store account while signed in to the MOVO account originally linked to the purchase. Deleting your MOVO account does not cancel a store subscription.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('2. Your account and responsibilities')}</h2>
@@ -119,6 +121,11 @@ export function PrivacyPolicy({ c }) {
         <li><strong>{tr('Technical information:')}</strong> {tr('basic request and error metadata needed to operate and protect the service. MOVO\'s chat error logging is designed to avoid recording prompts, financial records, or secret values.')}</li>
       </ul>
       <p>{tr('Please do not submit passwords, card PINs, CVVs, one-time passcodes, or unnecessary sensitive personal information.')}</p>
+    </section>
+    <section className="legal-section">
+      <h2>{tr('Store purchase information:')}</h2>
+      <p>{tr('When you subscribe through Apple or Google, the store processes your payment. MOVO receives product identifiers, transaction and purchase-verification data, subscription status, and expiry information to verify and provide your entitlement. Google purchase tokens are used transiently for verification; MOVO stores a one-way hash. MOVO does not receive or store your full payment card number or store-account password.')}</p>
+      <p>{tr('You can request account deletion in MOVO or at movo.nasrinai.com/account-deletion.html. Deleting your MOVO account does not automatically cancel a subscription billed by Apple or Google; cancel it in your store account to stop renewal.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('3. Local mode and cloud mode')}</h2>
