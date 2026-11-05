@@ -277,6 +277,7 @@ export default function FinancialPlanning({ c }) {
     </Sheet>}
     {cardDraft && <Sheet title={tr('Record card payment')} subtitle={cardDraft.name} onClose={() => setCardDraft(null)} label={tr('Record card payment')}>
       <form className="sheet-form" onSubmit={e => { e.preventDefault(); const amount = Number(cardDraft.amount); if (!Number.isFinite(amount) || amount <= 0) { setError(tr('Enter an amount greater than zero.')); return; } saveCardPayment(cardDraft.id, { id: window.crypto?.randomUUID?.() || String(Date.now()), amount: Math.round(amount * 100) / 100, date: cardDraft.date, month: cardDraft.month }); setCardDraft(null); setNotice(tr('Card payment recorded.')); }}>
+        <AccountPicker id="fp-card-payment-card" label={tr('Credit card')} accounts={creditCards} value={cardDraft.id} showBalance={show} required onChange={id => { const selected = creditCards.find(a => String(a.id) === String(id)); setCardDraft({ ...cardDraft, id, name: selected?.institution_name || selected?.name || cardDraft.name }); }} />
         <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={cardDraft.amount} onChange={e => setCardDraft({ ...cardDraft, amount: e.target.value })} /></label>
         <label>{tr('Payment date')}<input required type="date" value={cardDraft.date} onChange={e => setCardDraft({ ...cardDraft, date: e.target.value, month: e.target.value.slice(0,7) })} /></label>
         <button className="primary-button">{tr('Save payment')}</button>
