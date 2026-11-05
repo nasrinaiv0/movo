@@ -5,6 +5,7 @@ import { CATEGORY_ICONS } from './TransactionSheet';
 import { categoryOf } from '../lib/categories';
 import { evaluate } from '../lib/calc';
 import { baseCurrency } from '../lib/format';
+import { estimateSavingsGrowth } from '../lib/savingsProjection';
 import { t as tr, rich } from '../lib/i18n';
 
 // A budget's category may be a compact id or an older label; both resolve to the compact category.
@@ -61,7 +62,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
         const target = evaluate(String(draft.target || '')); const saved = evaluate(String(draft.saved || '0'));
         if (!draft.name.trim()) throw new Error(tr('Name your plan.'));
         if (!(target > 0) || !(saved >= 0)) throw new Error(tr('Enter a target above zero and a saved amount of zero or more.'));
-        onSavePlan({ id: draft.id, name: draft.name.trim().slice(0, 60), target, saved, due: draft.due || '' });
+        onSavePlan({ id: draft.id, name: draft.name.trim().slice(0, 60), target, saved, due: draft.due || '', annual_rate: Math.max(0, Math.min(100, Number(draft.annual_rate) || 0)), compounding: draft.compounding || 'monthly' });
       }
       setDraft(null);
     } catch (cause) { setErr(tr(cause.message || 'Could not save. Please try again.')); }
@@ -74,11 +75,11 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
         <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
         <span className="budget-main"><span><strong>{tr(name)}</strong><small><Money value={b.spent} show={show} digits={0} /> {tr('of')} <Money value={b.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
         <b>{b.percent}%</b></button>; })}
-      {tab === 'plans' && plans.map(p => { const need = Math.max(0, p.target - p.saved); const m = monthsLeft(p.due); return <button type="button" key={p.id} className="sheet-card budget-item" onClick={() => setDraft({ ...p, target: String(p.target), saved: String(p.saved) })}>
+      {tab === 'plans' && plans.map(p => { const need = Math.max(0, p.target - p.saved); const m = monthsLeft(p.due); const horizon = m || 12; const projection = Number(p.annual_rate) > 0 ? estimateSavingsGrowth(p.saved, need / horizon, p.annual_rate, horizon, p.compounding || 'monthly') : null; return <button type="button" key={p.id} className="sheet-card budget-item" onClick={() => setDraft({ ...p, target: String(p.target), saved: String(p.saved), annual_rate: String(p.annual_rate || ''), compounding: p.compounding || 'monthly' })}>
         <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
-        <span className="budget-main"><span><strong>{p.name}</strong><small>{need ? (m ? rich('Save {amount}/month to reach it', { amount: <Money value={need / m} show={show} digits={0} /> }) : <><Money value={need} show={show} digits={0} /> {tr('to go')}</>) : tr('Goal reached')}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{p.name}</strong><small>{need ? (m ? rich('Save {amount}/month to reach it', { amount: <Money value={need / m} show={show} digits={0} /> }) : <><Money value={need} show={show} digits={0} /> {tr('to go')}</>) : tr('Goal reached')}</small>{projection && <small>{rich('Estimated interest over {months} months: {amount}', { months: horizon, amount: <Money value={projection.interestEarned} show={show} digits={0} /> })}</small>}</span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
         <b>{pct(p.saved, p.target)}%</b></button>; })}
-      <button type="button" className="manage-button" onClick={() => setDraft(tab === 'budgets' ? { category: CATEGORY_ICONS.find(c => !used.has(c[0]))?.[0] || 'Other', limit: '' } : { name: '', target: '', saved: '', due: '' })}><Icon name="plus" size={18} /> {tab === 'budgets' ? tr('Add budget') : tr('Add plan')}</button>
+      <button type="button" className="manage-button" onClick={() => setDraft(tab === 'budgets' ? { category: CATEGORY_ICONS.find(c => !used.has(c[0]))?.[0] || 'Other', limit: '' }  : { name: '', target: '', saved: '', due: '', annual_rate: '', compounding: 'monthly' })}><Icon name="plus" size={18} /> {tab === 'budgets' ? tr('Add budget') : tr('Add plan')}</button>
     </div>}
     {draft && <form className="sheet-form" onSubmit={save}>
       {tab === 'budgets' ? <>
@@ -88,6 +89,8 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
         <label>{tr('Plan name')}<input autoFocus maxLength={60} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder={tr('e.g. Emergency fund, Japan trip')} /></label>
         <div className="form-grid"><label>{tr('Target ({code})', { code: baseCurrency() })}<input inputMode="decimal" value={draft.target} onChange={e => setDraft({ ...draft, target: e.target.value.replace(/[^\d.]/g, '') })} placeholder="50000" /></label>
           <label>{tr('Saved so far')}<input inputMode="decimal" value={draft.saved} onChange={e => setDraft({ ...draft, saved: e.target.value.replace(/[^\d.]/g, '') })} placeholder="0" /></label></div>
+        <label>{tr('Estimated annual interest (%)')}<input inputMode="decimal" value={draft.annual_rate || ''} onChange={e => setDraft({ ...draft, annual_rate: e.target.value.replace(/[^\d.]/g, '') })} placeholder="e.g. 4.5" /></label>
+        <label>{tr('Compounding')}<select value={draft.compounding || 'monthly'} onChange={e => setDraft({ ...draft, compounding: e.target.value })}><option value="monthly">{tr('Monthly')}</option><option value="quarterly">{tr('Quarterly')}</option><option value="annually">{tr('Annually')}</option></select></label>
         <label>{tr('Target date (optional)')}<input type="date" value={draft.due} onChange={e => setDraft({ ...draft, due: e.target.value })} /></label>
       </>}
       {err && <p className="form-error" role="alert">{err}</p>}
