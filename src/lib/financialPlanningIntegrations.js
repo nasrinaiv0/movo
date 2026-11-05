@@ -25,15 +25,35 @@ export function creditCardOutstanding(card) {
  * This is a read-only view: plans remain in their existing preference store and are never
  * copied into savings_goals or treated as cash allocations.
  */
-export function planGoalData(plans = []) {
+export function planGoalData(plans = [], allocations = [], toBase = (value) => value) {
+  const reservedByPlan = new Map();
+  (Array.isArray(allocations) ? allocations : []).filter(item => item && item.status === 'allocated' && item.plan_id).forEach(item => {
+    const amount = Number(item.amount);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    const converted = Number(toBase(amount, item.currency || 'PHP'));
+    if (!Number.isFinite(converted) || converted <= 0) return;
+    const key = String(item.plan_id);
+    reservedByPlan.set(key, (reservedByPlan.get(key) || 0) + converted);
+  });
   return (Array.isArray(plans) ? plans : []).flatMap(plan => {
     if (!plan || !plan.id || typeof plan.name !== 'string' || !plan.name.trim()
       || plan.status === 'archived' || plan.status === 'cancelled') return [];
     const target = positiveAmount(plan.target ?? plan.target_amount ?? plan.amount);
     if (!target) return [];
     const savedValue = Number(plan.saved ?? plan.saved_amount ?? 0);
-    const saved = Number.isFinite(savedValue) && savedValue > 0 && savedValue < 1e16
-      ? Math.round(savedValue * 100) / 100 : 0;
+    const migratedLegacyIds = new Set((Array.isArray(allocations) ? allocations : [])
+      .filter(item => item && String(item.plan_id) === String(plan.id) && item.legacy_id)
+      .map(item => String(item.legacy_id)));
+    const migratedLegacyAmount = (Array.isArray(plan.fundingAllocations) ? plan.fundingAllocations : [])
+      .filter(item => item && item.status === 'allocated' && item.id && migratedLegacyIds.has(String(item.id)))
+      .reduce((sum, item) => {
+        const amount = Number(item.amount);
+        const converted = Number(toBase(amount, item.currency || plan.currency || 'PHP'));
+        return Number.isFinite(amount) && amount > 0 && Number.isFinite(converted) && converted > 0 ? sum + converted : sum;
+      }, 0);
+    const manualSaved = Number.isFinite(savedValue) && savedValue > 0 && savedValue < 1e16
+      ? Math.max(0, Math.round((savedValue - migratedLegacyAmount) * 100) / 100) : 0;
+    const saved = Math.round((manualSaved + (reservedByPlan.get(String(plan.id)) || 0)) * 100) / 100;
     const candidateDate = plan.due || plan.due_date || plan.target_date || plan.date || '';
     return [{
       ...plan,

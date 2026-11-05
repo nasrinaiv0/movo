@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { financialPosition, goalProgress } from './accounting';
 import { billsSummary } from './bills';
 import { listBillPayments, listOccurrences } from './billsRepository';
-import { listGoalAllocations, listGoals, listLoans, listReceivables } from './obligationsRepository';
+import { listGoalAllocations, listGoals, listLoans, listReceivables, listPlanAllocations } from './obligationsRepository';
 import { creditCardOutstanding, planGoalData, subscriptionBillData } from './financialPlanningIntegrations';
 
 /*
@@ -22,18 +22,17 @@ const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate
 export const planningAccounts = (accounts = []) => accounts.filter(a => !a.is_archived && (a.account_type !== 'card'
   || (a.cardKind === 'debit' && !a.linkedAccountId) || a.cardKind === 'credit'));
 
-export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
+export function planningSummary({ accounts = [], loans = [], receivables = [], goals = [], plans = [], allocations = [], planAllocations = [], occurrences = [], payments = [], toBase = (v) => v, today = todayKey() }) {
   const live = allocations.filter(a => a.status === 'allocated');
-  const activePlans = planGoalData(plans);
+  const activePlans = planGoalData(plans, planAllocations, toBase);
   const position = financialPosition({
     accounts: accounts.map(a => ({ ...a, balance: toBase(Number(a.balance) || 0, a.currency), liability_balance: a.account_type === 'card' && a.cardKind === 'credit' ? toBase(creditCardOutstanding(a), a.currency) : a.liability_balance, card_kind: a.account_type === 'card' ? (a.cardKind === 'credit' ? 'credit' : a.cardKind === 'debit' ? 'debit' : 'unknown') : undefined })),
     loans: loans.map(l => ({ ...l, outstanding_balance: toBase(Number(l.outstanding_principal) || 0, l.currency) })),
     receivables: receivables.map(r => ({ ...r, outstanding_balance: toBase(Number(r.outstanding_amount) || 0, r.currency) })),
     goalAllocations: [
       ...live.map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency) })),
-      ...activePlans.flatMap(plan => (Array.isArray(plan.fundingAllocations) ? plan.fundingAllocations : [])
-        .filter(a => a && a.status === 'allocated')
-        .map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency || plan.currency), currency: undefined }))),
+      ...planAllocations.filter(a => a && a.status === 'allocated')
+        .map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency), currency: undefined })),
     ],
   });
   const activeLoans = loans.filter(l => l.status === 'active' && Number(l.outstanding_principal) > 0);
@@ -57,7 +56,7 @@ export function planningSummary({ accounts = [], loans = [], receivables = [], g
 
 export default function usePlanning(c) {
   const cloud = !!c.cloudMode;
-  const [data, setData] = useState({ loans: [], receivables: [], goals: [], allocations: [], occurrences: [], payments: [] });
+  const [data, setData] = useState({ loans: [], receivables: [], goals: [], allocations: [], planAllocations: [], occurrences: [], payments: [] });
   const [loaded, setLoaded] = useState(!cloud);
   const [error, setError] = useState('');
 
@@ -65,17 +64,17 @@ export default function usePlanning(c) {
     if (!cloud) { setLoaded(true); return; }
     const today = todayKey();
     const settle = (p) => p.then(v => v || [], () => null);
-    const [loans, receivables, goals, occurrences, payments] = await Promise.all([
+    const [loans, receivables, goals, occurrences, payments, planAllocations] = await Promise.all([
       settle(listLoans()), settle(listReceivables()), settle(listGoals()),
-      settle(listOccurrences(shift(today, 62), shift(today, -62))), settle(listBillPayments(`${shift(today, -62)}T00:00:00Z`)),
+      settle(listOccurrences(shift(today, 62), shift(today, -62))), settle(listBillPayments(`${shift(today, -62)}T00:00:00Z`)), settle(listPlanAllocations()),
     ]);
     const allocations = (await Promise.all((goals || []).map(g => listGoalAllocations(g.id).catch(() => [])))).flat();
-    setData({ loans: loans || [], receivables: receivables || [], goals: goals || [], allocations, occurrences: occurrences || [], payments: payments || [] });
-    setError([loans, receivables, goals].some(v => v === null) ? 'Some financial records could not be loaded. Pull to refresh or try again.' : '');
+    setData({ loans: loans || [], receivables: receivables || [], goals: goals || [], allocations, planAllocations: planAllocations || [], occurrences: occurrences || [], payments: payments || [] });
+    setError([loans, receivables, goals, planAllocations].some(v => v === null) ? 'Some financial records could not be loaded. Pull to refresh or try again.' : '');
     setLoaded(true);
   }, [cloud]);
 
-  useEffect(() => { reload().catch(() => setLoaded(true)); }, [reload]);
+  useEffect(() => { reload().catch(() => setLoaded(true)); }, [reload, c.accountsView]);
 
   const accounts = useMemo(() => planningAccounts(c.accountsView || []), [c.accountsView]);
   const toBase = c.toBase;
@@ -85,7 +84,7 @@ export default function usePlanning(c) {
     occurrences: [...data.occurrences, ...subscriptionData.occurrences],
     payments: [...data.payments, ...subscriptionData.payments],
   }), [data.occurrences, data.payments, subscriptionData]);
-  const plans = useMemo(() => planGoalData(c.plans || []), [c.plans]);
-  const summary = useMemo(() => planningSummary({ ...data, ...integrations, plans, accounts, toBase: toBase || ((v) => v), today }), [data, integrations, plans, accounts, toBase, today]);
+  const plans = useMemo(() => planGoalData(c.plans || [], data.planAllocations, toBase || ((v) => v)), [c.plans, data.planAllocations, toBase]);
+  const summary = useMemo(() => planningSummary({ ...data, ...integrations, plans: c.plans || [], accounts, toBase: toBase || ((v) => v), today }), [data, integrations, c.plans, accounts, toBase, today]);
   return { ...data, accounts, plans, subscriptionData, summary, loaded, error, reload, cloud };
 }

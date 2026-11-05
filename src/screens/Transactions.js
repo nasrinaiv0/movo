@@ -5,8 +5,8 @@ import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } fro
 import { t as tr } from '../lib/i18n';
 import { activityNetAmount } from '../lib/financeCalculations';
 
-const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
-const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
+const FILTERS = ['All', 'Income', 'Expenses', 'Transfers', 'Allocations'];
+const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Allocations: ['Date', 'Amount', 'Account', 'Category'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
 
 export function sortList(list, sort) {
   const copy = list.slice();
@@ -17,7 +17,7 @@ export function sortList(list, sort) {
   if (sort === 'Account') return copy.sort((a, b) => (a.accountName || '').localeCompare(b.accountName || ''));
   return copy;
 }
-const net = (list) => list.reduce((sum, transaction) => sum + activityNetAmount(transaction), 0);
+const net = (list) => list.reduce((sum, transaction) => sum + (transaction.type === 'allocation' ? Number(transaction.amount) || 0 : activityNetAmount(transaction)), 0);
 
 export function billingCycleOptions(months = [], currentMonth) {
   const monthNames = months.map(value => monthLabel(value).replace(/\s+\d{4}$/, ''));
@@ -100,12 +100,12 @@ export default function Transactions({ c }) {
 
     {txFilter !== 'All' && <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />}
     {txFilter === 'All' ? <SectionTitle action={expanded ? tr('Show less') : tr('See All')} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
-      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? tr('All billing cycles') : (!month || month === currentCycle) ? tr('Present') : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
+      : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? tr('All billing cycles') : (!month || month === currentCycle) ? tr('Present') : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : txFilter === 'Allocations' ? monthTxs.reduce((sum, item) => sum + (Number(item.amount) || 0), 0) : monthStats.transfers))}</b></div>}
 
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
-        {g.label && <div className="group-head"><span><b>{g.label}</b>{g.label !== g.date && <> · {g.date}</>}</span><span>{shown(show, `${txFilter === 'Transfers' ? '' : g.total < 0 ? '−' : '+'}${money(Math.abs(g.total))}`)}</span></div>}
-        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : undefined} onOpen={c.openTx} />)}</div>
+        {g.label && <div className="group-head"><span><b>{g.label}</b>{g.label !== g.date && <> · {g.date}</>}</span><span>{shown(show, `${txFilter === 'Transfers' || txFilter === 'Allocations' ? '' : g.total < 0 ? '−' : '+'}${money(Math.abs(g.total))}`)}</span></div>}
+        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : t.type === 'allocation' ? t.accountName : undefined} onOpen={c.openTx} />)}</div>
       </section>)}
       {!monthTxs.length && <div className="card empty-card"><Icon name="list" size={28} /><h3>{tr('No transactions')}</h3><p>{tr('Nothing matches this view. Try another month or filter, or add a record.')}</p><button type="button" className="primary-button" onClick={() => c.setSheet({ name: 'transaction' })}><Icon name="plus" size={16} /> {tr('Add transaction')}</button></div>}
     </div>

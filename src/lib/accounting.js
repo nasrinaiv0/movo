@@ -8,7 +8,7 @@ const active = row => row && row.is_archived !== true && row.status !== 'archive
 export function loanOutstanding(loan, events = []) {
   if (!loan) return 0;
   const opening = amountOf(loan.opening_principal ?? loan.principal_amount ?? loan.amount);
-  const delta = (Array.isArray(events) ? events : []).filter(e => e.loan_id === loan.id).reduce((sum, e) => {
+  const delta = (Array.isArray(events) ? events : []).filter(e => e.loan_id === loan.id && !e.reversed_at).reduce((sum, e) => {
     const amount = amountOf(e.amount);
     if (e.event_type === 'borrowed' || e.event_type === 'principal_increase') return sum + amount;
     if (e.event_type === 'principal_payment') return sum - amount;
@@ -20,7 +20,7 @@ export function loanOutstanding(loan, events = []) {
 export function receivableOutstanding(receivable, events = []) {
   if (!receivable) return 0;
   const opening = amountOf(receivable.opening_outstanding_amount ?? receivable.opening_amount ?? receivable.amount);
-  const delta = (Array.isArray(events) ? events : []).filter(e => e.receivable_id === receivable.id).reduce((sum, e) => {
+  const delta = (Array.isArray(events) ? events : []).filter(e => e.receivable_id === receivable.id && !e.reversed_at).reduce((sum, e) => {
     const amount = amountOf(e.amount);
     if (e.event_type === 'lent' || e.event_type === 'amount_increased') return sum + amount;
     if (e.event_type === 'collected' || e.event_type === 'written_off') return sum - amount;

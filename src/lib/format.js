@@ -60,7 +60,7 @@ export const greeting = (date = new Date()) => {
 };
 
 export const signed = (type, amount, currency = BASE) =>
-  (type === 'income' ? '+' : type === 'transfer' ? '' : '−') + money(amount, currency);
+  (type === 'income' ? '+' : type === 'transfer' || type === 'allocation' ? '' : '−') + money(amount, currency);
 
 /** Smooth SVG path through points, scaled to a w×h box with separate horizontal and vertical insets. */
 export function smoothPath(values, w, h, padX = 6, padY = padX, range) {
@@ -89,11 +89,15 @@ export function bucketOf(category = '') {
 
 /** Tone of the category chip shown next to a transaction. */
 export const chipTone = (t) => {
-  if (t.type === 'transfer') return 'gray';
+  if (t.type === 'transfer' || t.type === 'allocation') return 'gray';
   if (t.type === 'income') return 'green';
   return categoryOf(t.categoryId || t.category).tone;
 };
-export const chipLabel = (t) => (t.type === 'transfer' ? 'Transfer' : categoryOf(t.categoryId || t.category).label);
+export const chipLabel = (t) => {
+  if (t.type === 'transfer') return 'Transfer';
+  if (t.type === 'allocation') return t.event_type === 'allocated' ? 'Allocation' : 'Released';
+  return categoryOf(t.categoryId || t.category).label;
+};
 
 /** Neutral monogram tile colours (no third-party logos are reproduced). */
 const TILES = ['#1f6fff', '#12a66a', '#111827', '#e5484d', '#f08a24', '#7c5cf0', '#0e9aa7', '#c2410c'];

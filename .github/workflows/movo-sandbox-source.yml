@@ -1,0 +1,22 @@
+name: MOVO Sandbox Source
+
+on:
+  push:
+    branches:
+      - feat/plan-funding-account-management
+
+jobs:
+  package-source:
+    # Updated source snapshot for the current PR QA pass
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Package source for isolated sandbox testing
+        run: tar -czf /tmp/movo-source.tar.gz --exclude=.git --exclude=node_modules --exclude=.vercel --exclude=./public/wallpapers --exclude=./public/ocr .
+      - name: Upload source bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: movo-sandbox-source
+          path: /tmp/movo-source.tar.gz
+          retention-days: 1

@@ -1798,3 +1798,49 @@ export function summarize(subs, ref, toBase = (v) => v) {
 }
 
 export const catalogFor = (name = '') => CATALOG.find(c => c.name.toLowerCase() === String(name).toLowerCase());
+
+
+/** Restore the exact previous renewal date when its payment transaction is reversed. */
+export function revertSubscriptionPayment(subscriptions = [], transaction = {}) {
+  const reference = String(transaction?.external_reference || '');
+  const match = reference.match(/^movo-subscription:([^:]{1,120}):(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/);
+  if (!match) return subscriptions;
+  const [, subscriptionId, previousDue, advancedDue] = match;
+  if (!valid(previousDue) || !valid(advancedDue)) return subscriptions;
+  const previousState = transaction?.subscription_payment_state?.previous;
+  let changed = false;
+  const next = (Array.isArray(subscriptions) ? subscriptions : []).map(subscription => {
+    if (!subscription || String(subscription.id) !== subscriptionId || subscription.start !== advancedDue) return subscription;
+    changed = true;
+    if (previousState && previousState.start === previousDue) return { ...subscription, ...previousState };
+    const restored = { ...subscription, start: previousDue };
+    delete restored.lastPaidAt;
+    delete restored.lastPaidAmount;
+    delete restored.lastPaidCurrency;
+    return restored;
+  });
+  return changed ? next : subscriptions;
+}
+
+
+/** Reapply a renewal when its archived payment transaction is restored locally. */
+export function restoreSubscriptionPayment(subscriptions = [], transaction = {}) {
+  const reference = String(transaction?.external_reference || '');
+  const match = reference.match(/^movo-subscription:([^:]{1,120}):(\d{4}-\d{2}-\d{2}):(\d{4}-\d{2}-\d{2})$/);
+  if (!match) return subscriptions;
+  const [, subscriptionId, previousDue, nextDue] = match;
+  if (!valid(previousDue) || !valid(nextDue)) return subscriptions;
+  const nextState = transaction?.subscription_payment_state?.next;
+  let changed = false;
+  const next = (Array.isArray(subscriptions) ? subscriptions : []).map(subscription => {
+    if (!subscription || String(subscription.id) !== subscriptionId || subscription.start !== previousDue) return subscription;
+    changed = true;
+    if (nextState && nextState.start === nextDue) return { ...subscription, ...nextState };
+    return {
+      ...subscription, start: nextDue, lastPaidAt: transaction.occurred_at || new Date().toISOString(),
+      lastPaidAmount: Number(transaction.amount) || Number(subscription.amount) || 0,
+      lastPaidCurrency: transaction.currency || subscription.currency || 'PHP',
+    };
+  });
+  return changed ? next : subscriptions;
+}

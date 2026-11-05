@@ -31,15 +31,36 @@ export async function listAccountingPostings() {
 /** Non-cash accounting events that must appear in expense analytics without posting cash a second time. */
 export async function listAccountingActivities() {
   const client = requireClient();
-  const [loanResult, receivableResult] = await Promise.all([
-    client.from('loan_events').select('id,event_type,amount,currency,occurred_at,note').in('event_type', ['interest_payment','fee']).order('occurred_at', { ascending: false }).limit(2000),
-    client.from('receivable_events').select('id,event_type,amount,currency,occurred_at,note').eq('event_type', 'written_off').order('occurred_at', { ascending: false }).limit(2000),
+  const [loanResult, receivableResult, allocationResult] = await Promise.all([
+    client.from('loan_events').select('id,event_type,amount,currency,occurred_at,note').in('event_type', ['interest_payment','fee']).is('reversed_at', null).order('occurred_at', { ascending: false }).limit(2000),
+    client.from('receivable_events').select('id,event_type,amount,currency,occurred_at,note').eq('event_type', 'written_off').is('reversed_at', null).order('occurred_at', { ascending: false }).limit(2000),
+    client.from('allocation_events').select('id,allocation_id,source_type,source_id,source_name,account_id,event_type,amount,currency,note,occurred_at').order('occurred_at', { ascending: false }).limit(4000),
   ]);
   if (loanResult.error) throw loanResult.error;
   if (receivableResult.error) throw receivableResult.error;
+  if (allocationResult.error) throw allocationResult.error;
+
+  const allocationIds = [...new Set((allocationResult.data || []).map(row => row.allocation_id).filter(Boolean))];
+  const [goalState, planState] = allocationIds.length ? await Promise.all([
+    client.from('goal_allocations').select('id,status,amount').in('id', allocationIds),
+    client.from('plan_funding_allocations').select('id,status,amount').in('id', allocationIds),
+  ]) : [{ data: [], error: null }, { data: [], error: null }];
+  if (goalState.error) throw goalState.error;
+  if (planState.error) throw planState.error;
+  const activeAllocations = new Set([...(goalState.data || []), ...(planState.data || [])]
+    .filter(row => row.status === 'allocated' && Number(row.amount) > 0).map(row => row.id));
+
   const loanRows = (loanResult.data || []).map(row => ({ ...row, transaction_type: 'expense', type: 'expense', category: row.event_type === 'fee' ? 'Loan fees' : 'Interest', merchant: row.event_type === 'fee' ? 'Loan fee' : 'Loan interest', source: 'accounting_event', account_id: null, transfer_to_account_id: null }));
   const receivableRows = (receivableResult.data || []).map(row => ({ ...row, transaction_type: 'expense', type: 'expense', category: 'Bad debt', merchant: 'Receivable write-off', source: 'accounting_event', account_id: null, transfer_to_account_id: null }));
-  return [...loanRows, ...receivableRows];
+  const allocationRows = (allocationResult.data || []).map(row => ({
+    ...row, transaction_type: 'allocation', type: 'allocation',
+    category: row.event_type === 'allocated' ? 'Savings allocation' : 'Allocation release',
+    merchant: row.event_type === 'allocated' ? `Allocated to ${row.source_name}` : row.event_type === 'auto_released' ? `Contingency release · ${row.source_name}` : `Released from ${row.source_name}`,
+    source: 'allocation_event', source_account_id: row.account_id,
+    can_reverse: row.event_type === 'allocated' && activeAllocations.has(row.allocation_id),
+    account_id: null, transfer_to_account_id: null,
+  }));
+  return [...loanRows, ...receivableRows, ...allocationRows];
 }
 
 export async function listLoans() {
@@ -156,4 +177,28 @@ export async function allocateToGoal(input) {
 export async function releaseGoalAllocation(allocationId) {
   if (!allocationId) throw new Error('An allocation ID is required.');
   return unwrap(await requireClient().rpc('release_goal_allocation', { p_allocation_id: allocationId }));
+}
+
+
+/** Account-backed plan reservations; these are earmarks, not cash transactions. */
+export async function listPlanAllocations() {
+  return unwrap(await requireClient().from('plan_funding_allocations').select('*').order('created_at', { ascending: false }).limit(2000));
+}
+export async function allocatePlanFunds(input) {
+  const amount = validAmount(input?.amount, 'Allocation');
+  if (!input?.plan_id || !input?.plan_name || !input?.account_id) throw new Error('A plan and funding account are required.');
+  return unwrap(await requireClient().rpc('allocate_plan_funds', {
+    p_plan_id: String(input.plan_id), p_plan_name: validName(input.plan_name),
+    p_amount: amount, p_currency: validCurrency(input.currency),
+    p_account_id: input.account_id,
+    p_note: typeof input.note === 'string' ? input.note.trim().slice(0, 500) || null : null,
+  }));
+}
+export async function releasePlanFundingAllocation(allocationId) {
+  if (!allocationId) throw new Error('An allocation ID is required.');
+  return unwrap(await requireClient().rpc('release_plan_funding_allocation', { p_allocation_id: allocationId }));
+}
+export async function reverseAllocationEvent(eventId) {
+  if (!eventId) throw new Error('An allocation event ID is required.');
+  return unwrap(await requireClient().rpc('reverse_allocation_event', { p_event_id: eventId }));
 }

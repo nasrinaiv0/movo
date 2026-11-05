@@ -1,4 +1,5 @@
 import { billingCycleOptions, sortList } from './Transactions';
+import { chipLabel, signed, money } from '../lib/format';
 
 describe('sortList', () => {
   test('sorts transfer rows by source and destination account names, not merchant text', () => {
@@ -42,4 +43,11 @@ describe('billingCycleOptions', () => {
   test('keeps the All option available when there is no transaction history', () => {
     expect(billingCycleOptions([], '2026-11')).toEqual([{ value: 'all', label: 'All' }]);
   });
+});
+
+
+test('allocation activities have a neutral amount and explicit allocation labels', () => {
+  expect(chipLabel({ type: 'allocation', event_type: 'allocated' })).toBe('Allocation');
+  expect(chipLabel({ type: 'allocation', event_type: 'auto_released' })).toBe('Released');
+  expect(signed('allocation', 250, 'PHP')).toBe(money(250, 'PHP'));
 });

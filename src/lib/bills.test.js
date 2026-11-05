@@ -30,7 +30,7 @@ describe('MOVO bills', () => {
       occ({ id: 'd', due_date: '2026-12-05' }),                                           // next month: remaining only
       occ({ id: 'e', due_date: '2026-11-28', status: 'cancelled' }),                      // ignored
     ];
-    const s = billsSummary(list, [{ amount: 400, currency: 'PHP', paid_at: '2026-11-04T12:00:00Z' }, { amount: 1000, currency: 'PHP', paid_at: '2026-11-14T12:00:00Z' }, { amount: 99, currency: 'PHP', paid_at: '2026-10-30T12:00:00Z' }], today);
+    const s = billsSummary(list, [{ amount: 400, currency: 'PHP', paid_at: '2026-11-04T12:00:00Z' }, { amount: 1000, currency: 'PHP', paid_at: '2026-11-14T12:00:00Z' }, { amount: 250, currency: 'PHP', paid_at: '2026-11-15T12:00:00Z', status: 'reversed' }, { amount: 99, currency: 'PHP', paid_at: '2026-10-30T12:00:00Z' }], today);
     expect(s).toEqual(expect.objectContaining({ dueThisMonth: 1600, estimatedThisMonth: 1000, paidThisMonth: 1400, remaining: 2600, overdue: 600, overdueCount: 1 }));
     expect(s.upcoming.map(o => o.id)).toEqual(['a', 'b', 'd']);
   });

@@ -34,7 +34,7 @@ import { mergePreferences, unionById, cloudSafePreferences } from './lib/prefsMe
 import { buildSystemNotices, isQuiet, deviceLabel, showSystemNotification, pushGranted } from './lib/alerts';
 import { lockState } from './lib/appLock';
 import { buildBriefing } from './lib/insights';
-import { summarize as summarizeSubscriptions, billingDate, subscriptionPaymentAccountId } from './lib/subscriptions';
+import { summarize as summarizeSubscriptions, billingDate, subscriptionPaymentAccountId, revertSubscriptionPayment, restoreSubscriptionPayment } from './lib/subscriptions';
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
@@ -56,8 +56,8 @@ import { guessCategory } from './lib/ocr';
 import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
-import { listAccountingPostings, listAccountingActivities } from './lib/obligationsRepository';
-import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
+import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent } from './lib/obligationsRepository';
+import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
 import Archive from './screens/Archive';
 import { listenForAppUrls } from './lib/native';
@@ -386,8 +386,12 @@ function App() {
   const txs = useMemo(() => {
     const regular = rawTxs.map(t => normalize(t, baseAccounts, base, rates));
     const accounting = cloudActivities.map(t => ({
-      ...t, type: 'expense', date: t.occurred_at, origAmount: Number(t.amount), origCurrency: t.currency || base,
-      currency: base, amount: convert(Number(t.amount), t.currency || base, base, rates), accountName: tr('Accounting event'),
+      ...t,
+      id: t.transaction_type === 'allocation' ? `allocation-${t.id}` : t.id,
+      type: t.transaction_type === 'allocation' ? 'allocation' : 'expense',
+      date: t.occurred_at, origAmount: Number(t.amount), origCurrency: t.currency || base,
+      currency: base, amount: convert(Number(t.amount), t.currency || base, base, rates),
+      accountName: t.source_account_id ? (baseAccounts.find(account => account.id === t.source_account_id)?.name || tr('Account')) : tr('Accounting event'),
     }));
     return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [rawTxs, cloudActivities, baseAccounts, base, rates]);
@@ -469,11 +473,11 @@ function App() {
   const homeBreakdown = useMemo(() => breakdownFor(activeHomeMonth), [breakdownFor, activeHomeMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
-    const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer' }[txFilter];
+    const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer', Allocations: 'allocation' }[txFilter];
     const q = search.trim().toLowerCase();
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
-  const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer').slice(0, 4), [homeStats]);
+  const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer' || t.transaction_type === 'allocation').slice(0, 4), [homeStats]);
   const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
@@ -606,38 +610,70 @@ function App() {
         if (upload.error) throw upload.error;
         receiptPath = uploadedReceiptPath;
       }
+      const paidSub = !editingId && type === 'expense' && form.subscriptionPaymentId
+        ? subscriptions.find(item => item.id === form.subscriptionPaymentId) : null;
+      let subscriptionNextDue = '';
+      if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
+        subscriptionNextDue = billingDate(paidSub.start, paidSub.cycle, 1);
+        const paidOn = String(occurred_at || today()).slice(0, 10);
+        let advanceGuard = 0;
+        while (subscriptionNextDue && subscriptionNextDue <= paidOn && advanceGuard < 400) {
+          subscriptionNextDue = billingDate(subscriptionNextDue, paidSub.cycle, 1);
+          advanceGuard += 1;
+        }
+      }
+      const subscriptionReference = paidSub && subscriptionNextDue
+        ? `movo-subscription:${paidSub.id}:${paidSub.start}:${subscriptionNextDue}` : undefined;
+      const subscriptionPaymentState = paidSub && subscriptionNextDue ? {
+        previous: {
+          start: paidSub.start,
+          lastPaidAt: paidSub.lastPaidAt ?? null,
+          lastPaidAmount: paidSub.lastPaidAmount ?? null,
+          lastPaidCurrency: paidSub.lastPaidCurrency ?? null,
+        },
+        next: {
+          start: subscriptionNextDue,
+          lastPaidAt: occurred_at,
+          lastPaidAmount: Number(paidSub.amount) || amount,
+          lastPaidCurrency: paidSub.currency || txCurrency,
+        },
+      } : null;
+      let savedTransaction = null;
       if (cloudMode) {
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
-        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath };
+        const payload = { merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
         const row = editingId ? await updateTransaction(editingId, payload) : auto.source ? await createAutomated({ ...payload, ...auto }) : await createTransaction(payload, session.user.id);
+        const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
+        savedTransaction = transactionRow;
         if (!editingId) markFresh(row.id);
-        setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
+        setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
         if (!editingId) celebrate();
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, external_reference: subscriptionReference, source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
+        const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
+        savedTransaction = transactionRow;
         if (!editingId) markFresh(row.id);
-        setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? row : x) : [row, ...cur]);
+        setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
         notify(editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
         if (!editingId) celebrate();
       }
-      if (!editingId && type === 'expense' && form.subscriptionPaymentId) {
-        const paidSub = subscriptions.find(item => item.id === form.subscriptionPaymentId);
-        if (paidSub && cloudMode && session?.user?.id) await recordPaymentAttempt(session.user.id,{ source_type:'subscription', source_id:String(paidSub.id), due_date:paidSub.start, status:'paid', amount:Number(paidSub.amount)||amount, currency:paidSub.currency||txCurrency, account_id:form.account_id, note:'Subscription renewal recorded' }).catch(()=>null);
-        if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
-          let nextDue = billingDate(paidSub.start, paidSub.cycle, 1);
-          const paidOn = String(occurred_at || today()).slice(0, 10);
-          let advanceGuard = 0;
-          while (nextDue && nextDue <= paidOn && advanceGuard < 400) {
-            nextDue = billingDate(nextDue, paidSub.cycle, 1);
-            advanceGuard += 1;
-          }
-          if (nextDue) {
-            setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id ? { ...item, start: nextDue, lastPaidAt: occurred_at, lastPaidAmount: Number(paidSub.amount) || amount, lastPaidCurrency: paidSub.currency || txCurrency } : item));
-            notify(tr('Subscription payment recorded. Next billing date updated.'));
-          }
+      if (paidSub && subscriptionNextDue) {
+        if (cloudMode && session?.user?.id && savedTransaction?.id) {
+          await recordPaymentAttempt(session.user.id, {
+            source_type: 'subscription', source_id: String(paidSub.id), due_date: paidSub.start,
+            next_due_date: subscriptionNextDue, transaction_id: savedTransaction.id, status: 'paid',
+            attempted_at: occurred_at, previous_state: subscriptionPaymentState?.previous,
+            amount: Number(paidSub.amount) || amount, currency: paidSub.currency || txCurrency,
+            account_id: form.account_id, note: 'Subscription renewal recorded',
+          }).catch(() => null);
         }
+        setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id
+          ? { ...item, ...subscriptionPaymentState.next }
+          : item));
+        notify(tr('Subscription payment recorded. Next billing date updated.'));
       }
+      if (!editingId && cloudMode && session?.user) await refreshCloud(session.user);
       if (cloudMode && oldReceiptPath && oldReceiptPath !== receiptPath) await supabase.storage.from('movo-receipts').remove([oldReceiptPath]).catch(() => {});
       setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null);
     } catch (err) {
@@ -831,11 +867,30 @@ function App() {
   const removeTransaction = async (t) => {
     const raw = rawTxs.find(x => x.id === t.id) || t;
     try {
-      if (cloudMode) await deleteTransaction(t.id);
+      if (String(t.id).startsWith('allocation-')) {
+        if (t.event_type !== 'allocated') {
+          notify(tr('Allocation release history is kept for audit purposes.'));
+          return;
+        }
+        await reverseAllocationEvent(String(t.id).slice('allocation-'.length));
+        await refreshCloud(session?.user);
+        setSheet(null);
+        notify(tr('Allocation reversed and released from its account.'));
+        return;
+      }
+      if (cloudMode) {
+        await deleteTransaction(t.id);
+        const saved = session?.user?.id ? await loadPreferences(session.user.id).catch(() => null) : null;
+        if (saved?.prefs) setPrefs(cur => ({ ...cur, ...saved.prefs, archive: cur.archive }));
+        await refreshCloud(session?.user);
+      } else {
+        const restoredSubscriptions = revertSubscriptionPayment(prefs.subscriptions || [], raw);
+        if (restoredSubscriptions !== (prefs.subscriptions || [])) setPref('subscriptions', restoredSubscriptions);
+      }
       archiveItem('transaction', raw);
       setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null);
       notify(tr('Moved to Archive. You can restore it for 90 days.'));
-    } catch { notify(tr('Could not delete this transaction.')); }
+    } catch { notify(tr('Could not delete this transaction or reverse its linked payment.')); }
   };
   const saveBudget = async ({ id, category: picked, monthly_limit }) => {
     // Budgets are kept per compact category id (custom text stays as written).
@@ -1192,8 +1247,21 @@ function App() {
         if (!open.has(it.account_id) || (it.transfer_to_account_id && !open.has(it.transfer_to_account_id))) { notify(tr('Its account is no longer in your wallet. Add the account again, then restore.')); return; }
         if (cloudMode && session?.user) {
           const row = await createTransaction({ ...it, transaction_type: it.transaction_type || it.type }, session.user.id);
+          try {
+            await restoreTransactionLinks(it.id, row.id);
+          } catch (restoreError) {
+            await deleteTransaction(row.id).catch(() => {});
+            throw restoreError;
+          }
+          const restoredPrefs = await loadPreferences(session.user.id).catch(() => null);
+          if (restoredPrefs?.prefs) setPrefs(cur => ({ ...cur, ...restoredPrefs.prefs, archive: cur.archive }));
           setRawTxs(cur => [row, ...cur]);
-        } else setRawTxs(cur => [it, ...cur.filter(x => x.id !== it.id)]);
+          await refreshCloud(session.user);
+        } else {
+          const restoredSubscriptions = restoreSubscriptionPayment(prefs.subscriptions || [], it);
+          if (restoredSubscriptions !== (prefs.subscriptions || [])) setPref('subscriptions', restoredSubscriptions);
+          setRawTxs(cur => [it, ...cur.filter(x => x.id !== it.id)]);
+        }
       } else if (entry.kind === 'budget') {
         await saveBudget({ category: it.category, monthly_limit: it.monthly_limit });
       } else if (entry.kind === 'plan') {
@@ -1593,7 +1661,9 @@ function App() {
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
         <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}{detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}{detailTx.receipt_note && <div><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}</dl>
         {detailTx.receipt_path && <button type="button" className="secondary-button" onClick={async()=>{const popup=window.open('about:blank','_blank');try{const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}>{tr('View receipt')}</button>}
-        {detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
+        {detailTx.source === 'allocation_event'
+          ? detailTx.can_reverse && <div className="sheet-actions"><button type="button" className="danger-button" aria-label={tr('Reverse')} onClick={() => removeTransaction(detailTx)}><Icon name="undo-2" size={16} /> {tr('Reverse')}</button></div>
+          : detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
       </Sheet>}
 
       {pendingLog && <div className="log-prompt" role="alertdialog" aria-label={tr('Log this payment?')}>

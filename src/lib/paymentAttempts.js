@@ -17,9 +17,27 @@ export async function recordPaymentAttempt(userId, input) {
   }
   const currency=String(input.currency||'PHP').toUpperCase();
   if(!/^[A-Z]{3}$/.test(currency))throw new Error('Choose a valid payment currency.');
+  const nextDueDate = input.next_due_date == null ? null : String(input.next_due_date);
+  if (nextDueDate && (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(nextDueDate) || Number.isNaN(Date.parse(nextDueDate+'T00:00:00Z')))) throw new Error('The next billing date is invalid.');
+  const attemptedAt = input.attempted_at == null ? new Date().toISOString() : String(input.attempted_at);
+  if (Number.isNaN(Date.parse(attemptedAt))) throw new Error('The payment timestamp is invalid.');
+  const previousState = input.previous_state && typeof input.previous_state === 'object' && !Array.isArray(input.previous_state)
+    ? {
+        start: String(input.previous_state.start || dueDate),
+        lastPaidAt: input.previous_state.lastPaidAt ?? null,
+        lastPaidAmount: input.previous_state.lastPaidAmount == null ? null : Number(input.previous_state.lastPaidAmount),
+        lastPaidCurrency: input.previous_state.lastPaidCurrency == null ? null : String(input.previous_state.lastPaidCurrency).toUpperCase(),
+      }
+    : null;
+  if (input.transaction_id) {
+    const ownedTransaction = unwrap(await db().from('transactions').select('id').eq('id', input.transaction_id).eq('user_id', userId).maybeSingle());
+    if (!ownedTransaction) throw new Error('Choose a transaction belonging to your MOVO profile.');
+  }
   return unwrap(await db().from('payment_attempts').insert({
     user_id:userId,source_type:input.source_type,source_id:String(input.source_id),
-    due_date:input.due_date,status:input.status,amount,currency,
+    due_date:input.due_date,next_due_date:nextDueDate,transaction_id:input.transaction_id||null,
+    attempted_at:attemptedAt,previous_state:previousState,
+    status:input.status,amount,currency,
     account_id:input.account_id||null,note:String(input.note||'').trim().slice(0,500)||null,
   }).select().single());
 }
