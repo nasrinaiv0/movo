@@ -23,7 +23,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
   const [error,setError]=useState('');
   const [attemptNote,setAttemptNote]=useState('');
   const [splits,setSplits]=useState([]);
-  const [localSnoozes,setLocalSnoozes]=useState(()=>{try{return JSON.parse(window.localStorage.getItem('movo.localPaymentSnoozes.v1')||'{}');}catch{return {};}});
+  const [localSnoozes]=useState(()=>{try{return JSON.parse(window.localStorage.getItem('movo.localPaymentSnoozes.v1')||'{}');}catch{return {};}});
   const [localActions,setLocalActions]=useState(()=>{try{return JSON.parse(window.localStorage.getItem('movo.localPaymentReminderActions.v1')||'{}');}catch{return {};}});
   const dismissedThisSession=useRef(new Set());
   const accounts=accountsView.filter(a=>!a.is_archived&&['bank','e_wallet','cash'].includes(a.account_type));
