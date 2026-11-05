@@ -5001,3 +5001,30 @@ button.account-tile:active { transform: scale(.98); }
   .movo-app .fp-credit-card-rate { grid-template-columns: 1fr; gap: 5px; }
   .movo-app .fp-credit-card-rate > small { font-size: 9px; }
 }
+
+
+/* Credit spend logging and paired card actions. */
+.movo-app .fp-credit-card-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; min-width:0; }
+.movo-app .fp-credit-card-actions .wide-button { min-width:0; width:100%; margin:0; }
+.movo-app .fp-credit-log-form { gap:12px; }
+.movo-app .fp-credit-log-form > label,
+.movo-app .fp-credit-log-fields > label { display:grid; gap:5px; min-width:0; font-size:12px; line-height:1.3; }
+.movo-app .fp-credit-log-form input,
+.movo-app .fp-credit-log-form select { width:100%; min-width:0; max-width:100%; height:42px; padding:0 11px; border:1px solid var(--line); border-radius:11px; background:var(--field); font-size:14px; }
+.movo-app .fp-credit-log-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; min-width:0; }
+.movo-app .fp-credit-log-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:12px; border:1px solid var(--line); border-radius:13px; background:var(--field); }
+.movo-app .fp-credit-log-summary > div { display:grid; gap:4px; min-width:0; }
+.movo-app .fp-credit-log-summary > div small { color:var(--muted); font-size:10px; line-height:1.3; }
+.movo-app .fp-credit-log-summary > div b { font-size:15px; line-height:1.2; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.movo-app .fp-credit-log-summary > small { grid-column:1/-1; color:var(--muted); font-size:10px; line-height:1.45; }
+.movo-app .fp-credit-spend-history { display:grid; gap:4px; min-width:0; }
+.movo-app .fp-credit-spend-history > strong { font-size:11px; }
+.movo-app .fp-credit-spend-history .fp-allocs { margin:0; }
+.movo-app .fp-credit-spend-history .fp-allocs li small { display:block; color:var(--muted); font-size:9px; }
+@media(max-width:360px) {
+ .movo-app .fp-credit-card-actions { gap:6px; }
+ .movo-app .fp-credit-card-actions .wide-button { padding-inline:7px; font-size:11px; }
+ .movo-app .fp-credit-log-fields { gap:7px; }
+ .movo-app .fp-credit-log-summary { padding:9px; gap:8px; }
+ .movo-app .fp-credit-log-summary > div b { font-size:13px; }
+}
