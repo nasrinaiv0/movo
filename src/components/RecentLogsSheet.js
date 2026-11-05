@@ -46,7 +46,7 @@ function FailedRow({ item, accounts, show, onLog, onDismiss }) {
       </span>
     </div>
     {open && <form className="rl-fix" onSubmit={(e) => { e.preventDefault(); if (valid && !busy) run(() => onLog(item, { account_id: account, amount: Math.round(value * 100) / 100, merchant: merchant.trim().slice(0, 160) })); }}>
-      <AccountPicker id={`rl-account-${item.id}`} label={tr('Log to')} ariaLabel={tr('Account for {name}', { name: title })} accounts={accounts} value={account} onChange={setAccount} required />
+      <AccountPicker id={`rl-account-${item.id}`} label={tr('Log to')} ariaLabel={tr('Account for {name}', { name: title })} accounts={accounts} value={account} onChange={setAccount} showBalance={show} required />
       <div className="rl-fix-fields">
         <label><span>{tr('Amount')}</span><input inputMode="decimal" aria-label={tr('Amount')} value={amount} onChange={e => setAmount(e.target.value.replace(/[^\d.,]/g, ''))} placeholder="0.00" required /></label>
         <label><span>{tr('Description')}</span><input aria-label={tr('Description')} maxLength={160} value={merchant} onChange={e => setMerchant(e.target.value)} required /></label>
