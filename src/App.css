@@ -5124,3 +5124,21 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .transactions-header .header-actions .round-button.transaction-header-add {flex-basis:42px;width:42px;height:42px;min-width:42px;min-height:42px;}
 }
 @media(prefers-reduced-motion:reduce){.movo-app .transactions-header .header-actions .round-button {transition:none;}}
+
+
+/* Transactions type filters: compact All pill and a wider, readable billing-cycle selector. */
+.movo-app .tx-chip-bar { display:flex;align-items:center;gap:clamp(5px,1.5vw,8px);min-width:0; }
+.movo-app .tx-chip-bar > .chip-row { display:flex;flex:1 1 0;min-width:0;gap:clamp(3px,1vw,6px);overflow:hidden;padding:2px 0;margin:0;mask-image:none;-webkit-mask-image:none; }
+.movo-app .tx-chip-bar > .chip-row button[data-chip] { flex:1 1 0;min-width:0;padding-inline:2px;font-size:clamp(10px,2.8vw,12px);line-height:1.15;white-space:nowrap;overflow:visible;text-overflow:clip;text-align:center; }
+.movo-app .tx-chip-bar > .chip-row button[data-chip]:first-of-type { flex:0 0 clamp(38px,11vw,48px);width:clamp(38px,11vw,48px); }
+.movo-app .tx-chip-bar > .tx-period-filter { flex:0 0 clamp(88px,23vw,100px);width:clamp(88px,23vw,100px);min-width:clamp(88px,23vw,100px);max-width:none;height:44px;gap:7px;padding-inline:9px;margin:0 14px 0 0; }
+.movo-app .tx-chip-bar > .tx-period-filter .tx-period-filter-value { flex:1 1 auto;max-width:none;min-width:0;font-size:clamp(11px,2.9vw,13px);text-align:center;text-overflow:clip; }
+.movo-app .tx-chip-bar > .tx-period-filter > .movo-icon { flex:0 0 auto;width:15px;height:15px; }
+@media(max-width:360px){
+ .movo-app .tx-chip-bar { gap:4px; }
+ .movo-app .tx-chip-bar > .chip-row { gap:2px; }
+ .movo-app .tx-chip-bar > .chip-row button[data-chip] { font-size:10px;padding-inline:1px; }
+ .movo-app .tx-chip-bar > .tx-period-filter { flex-basis:82px;width:82px;min-width:82px;height:42px;padding-inline:6px;margin-right:12px;gap:4px; }
+ .movo-app .tx-chip-bar > .tx-period-filter .tx-period-filter-value { font-size:10px; }
+}
+@media(prefers-reduced-motion:reduce){.movo-app .tx-chip-bar .chip-ind.ready{transition:none;}}
