@@ -5258,6 +5258,50 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 
+/* Header action sizing contract: applies only to controls inside screen headers.
+   Content actions, Quick Actions, bottom navigation, sheets and form controls keep their
+   existing sizing. The 30px square is intentional and keeps every page header consistent. */
+.movo-app .screen-header .header-actions > .round-button,
+.movo-app .screen-header .header-actions > button.round-button,
+.movo-app .screen-header > .round-button:not(.back-button),
+.movo-app .screen-header.root .header-actions .round-button,
+.movo-app .screen-header .header-action-buttons > .round-button {
+  box-sizing: border-box !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  flex: 0 0 30px !important;
+  width: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  padding: 0 !important;
+}
+
+.movo-app .screen-header .header-actions > .round-button > .movo-icon,
+.movo-app .screen-header > .round-button:not(.back-button) > .movo-icon,
+.movo-app .screen-header .header-action-buttons > .round-button > .movo-icon {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+}
+
+/* Settings rows share one icon geometry and stroke treatment wherever they appear. */
+.movo-app .menu-card .menu-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+}
+
+.movo-app .menu-card .menu-icon > .movo-icon {
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.8;
+}
+
 /* Credit-card details: normalize field rhythm, typography and control padding.
    Scope is intentionally limited to the expanded card-details panel. */
 .movo-app .fp-credit-card .fp-credit-card-details {
