@@ -5450,3 +5450,39 @@ button.account-tile:active { transform: scale(.98); }
     min-height: 45px !important;
   }
 }
+
+
+/* Home settings action: mirror the standard raised, accent-colored header controls. */
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 45px;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  padding: 0;
+  border: 0;
+  border-radius: 50% !important;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon {
+  display: block;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px;
+  min-height: 18px;
+  color: var(--accent) !important;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.theme-dark.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .24), inset 0 0 0 1px var(--line);
+}
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
