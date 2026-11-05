@@ -39,9 +39,12 @@ export default function FinancialPlanning({ c }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [cardDraft, setCardDraft] = useState(null);
+  const [creditSpendDraft, setCreditSpendDraft] = useState(null);
   const creditCards = (c.accountsView || []).filter(a => !a.is_archived && a.account_type === 'card' && a.cardKind === 'credit');
   const cardStyles = c.prefs?.accountStyles || {};
   const cardPayments = c.prefs?.creditCardPayments || {};
+  const creditSpendLogs = c.prefs?.creditSpendLogs || {};
+  const saveCreditSpendLog = (id, entry) => c.setPref?.('creditSpendLogs', { ...creditSpendLogs, [id]: [...(creditSpendLogs[id] || []), entry].slice(-120) });
   const saveCardStyle = (id, patch) => c.setPref?.('accountStyles', { ...cardStyles, [id]: { ...(cardStyles[id] || {}), ...patch } });
   const saveCardPayment = (id, payment) => c.setPref?.('creditCardPayments', { ...cardPayments, [id]: [...(cardPayments[id] || []), payment].slice(-120) });
   const cash = (value, currency) => shown(show, money(Number(value) || 0, currency || base));
@@ -130,7 +133,10 @@ export default function FinancialPlanning({ c }) {
         const style = cardStyles[card.id] || {};
         const dueDate = style.paymentDueDate || '';
         const payments = cardPayments[card.id] || [];
+        const creditSpends = creditSpendLogs[card.id] || [];
         const metrics = creditCardPlanningMetrics({ card, transactions: c.txs || [], payments, annualInterestRate: style.annualInterestRate, statementBalance: style.statementBalance, convertAmount: (amount, from, to) => convert(amount, from, to, c.fx?.rates) });
+        const spendLimit = Number(style.creditSpendLimit) > 0 ? Number(style.creditSpendLimit) : metrics.limit;
+        const spendLimitPercent = spendLimit > 0 ? Math.max(0, metrics.amountSpent / spendLimit * 100) : null;
         const paidMonths = metrics.monthsPaid;
         const today = new Date().toISOString().slice(0, 10);
         const overdue = dueDate && dueDate < today && metrics.outstandingAfterPayments > 0;
@@ -147,15 +153,16 @@ export default function FinancialPlanning({ c }) {
           <div className="fp-credit-card-metrics">
             <div><small>{tr('Amount Spent')}</small><b>{cash(metrics.amountSpent, card.currency)}</b></div>
             <div><small>{tr('Amount After Interest')}</small><b>{cash(metrics.amountAfterInterest, card.currency)}</b><span>+ {cash(metrics.estimatedMonthlyInterest, card.currency)} {tr('Estimated interest')}</span></div>
-            <div className="fp-credit-utilization"><small>{tr('Spent / Limit')}</small><b>{metrics.spentLimitPercent === null ? '—' : `${metrics.spentLimitPercent.toFixed(1)}%`}</b>{metrics.limit > 0 ? <><div className="fp-credit-utilization-track"><span style={{ width: `${Math.min(100, Math.max(0, metrics.spentLimitPercent))}%` }} /></div><span>{cash(metrics.amountSpent, card.currency)} / {cash(metrics.limit, card.currency)}</span></> : <span>{tr('Set a credit limit in Wallet')}</span>}</div>
+            <div className="fp-credit-utilization"><small>{tr('Spent / Limit')}</small><b>{spendLimitPercent === null ? '—' : `${spendLimitPercent.toFixed(1)}%`}</b>{spendLimit > 0 ? <><div className="fp-credit-utilization-track"><span style={{ width: `${Math.min(100, spendLimitPercent)}%` }} /></div><span>{cash(metrics.amountSpent, card.currency)} / {cash(spendLimit, card.currency)} {tr('Spend limit')}</span></> : <span>{tr('Set a spend limit below')}</span>}</div>
           </div>
           <div className="fp-credit-card-stats"><span><b>{dueDate ? formatDate(dueDate) : '—'}</b><small>{tr('Payment due')}</small></span><span><b>{paidMonths}</b><small>{tr('Months paid')}</small></span><span><b>{metrics.paymentCount}</b><small>{tr('Payments logged')}</small></span></div>
           {overdue && <p className="app-alert">{tr('Payment may be overdue. Confirm the latest statement.')}</p>}
           <div className="form-grid fp-credit-card-fields"><label>{tr('Payment due date')}<input type="date" value={dueDate} onChange={e => saveCardStyle(card.id, { paymentDueDate: e.target.value })} /></label><label>{tr('Minimum due')}<input type="number" min="0" step="0.01" value={style.minimumDue ?? ''} placeholder="0.00" onChange={e => saveCardStyle(card.id, { minimumDue: e.target.value })} /></label></div>
-          <div className="form-grid fp-credit-card-fields"><label>{tr('Statement balance')}<input type="number" min="0" step="0.01" value={style.statementBalance ?? ''} placeholder={String(metrics.outstandingAfterPayments)} onChange={e => saveCardStyle(card.id, { statementBalance: e.target.value })} /></label><label>{tr('Billing day')}<input type="number" min="1" max="31" value={style.billingDay ?? ''} placeholder="—" onChange={e => saveCardStyle(card.id, { billingDay: e.target.value })} /></label></div>
+          <div className="form-grid fp-credit-card-fields"><label>{tr('Credit spend limit')}<input type="number" min="0" step="0.01" value={style.creditSpendLimit ?? ''} placeholder={String(metrics.limit || '')} onChange={e => saveCardStyle(card.id, { creditSpendLimit: e.target.value })} /></label><label>{tr('Statement balance')}<input type="number" min="0" step="0.01" value={style.statementBalance ?? ''} placeholder={String(metrics.outstandingAfterPayments)} onChange={e => saveCardStyle(card.id, { statementBalance: e.target.value })} /></label><label>{tr('Billing day')}<input type="number" min="1" max="31" value={style.billingDay ?? ''} placeholder="—" onChange={e => saveCardStyle(card.id, { billingDay: e.target.value })} /></label></div>
           <div className="fp-credit-card-rate"><label>{tr('Annual interest rate (%)')}<input type="number" min="0" max="100" step="0.01" value={style.annualInterestRate ?? ''} placeholder="e.g. 24" onChange={e => saveCardStyle(card.id, { annualInterestRate: e.target.value })} /></label><small>{tr('Estimated monthly interest = outstanding × APR ÷ 12. Actual issuer interest may differ.')}</small></div>
-          <button type="button" className="secondary-button wide-button" onClick={() => setCardDraft({ id: card.id, name: institution, amount: '', date: today, month: today.slice(0,7) })}>{tr('Record payment')}</button>
+          <div className="fp-credit-card-actions"><button type="button" className="secondary-button wide-button" onClick={() => setCardDraft({ id: card.id, name: institution, amount: '', date: today, month: today.slice(0,7) })}>{tr('Record payment')}</button><button type="button" className="primary-button wide-button" onClick={() => setCreditSpendDraft({ account_id: card.id, cardName: institution, currency: card.currency || base, merchant: '', amount: '', annual_rate: String(style.annualInterestRate ?? ''), months: '12', date: today })}>{tr('Log credits')}</button></div>
           {metrics.paymentCount > 0 && <ul className="fp-allocs">{payments.slice(-6).reverse().map((payment,i) => <li key={payment.id || i}><span>{payment.month} · {payment.date}</span><b>{cash(payment.amount, card.currency)}</b></li>)}</ul>}
+          {creditSpends.length > 0 && <div className="fp-credit-spend-history"><strong>{tr('Recent credit spends')}</strong><ul className="fp-allocs">{creditSpends.slice(-4).reverse().map((entry,i) => <li key={entry.id || i}><span>{entry.merchant} · {entry.date} <small>{entry.months} {tr('months')} · {Number(entry.annual_rate).toFixed(2)}% APR</small></span><b>{cash(entry.amount, card.currency)}</b></li>)}</ul></div>}
           <p className="form-note">{tr('Recorded payments reduce the displayed outstanding estimate. They do not create a bank transaction or edit the card ledger balance.')}</p>
         </article>;
       })}
@@ -248,6 +255,26 @@ export default function FinancialPlanning({ c }) {
       <button type="button" className="secondary-button wide-button" onClick={() => c.openBudgets?.('plans')}>{tr('Add plan')}</button>
     </>}
 
+    {creditSpendDraft && <Sheet title={tr('Log credit spend')} subtitle={creditSpendDraft.cardName} onClose={() => setCreditSpendDraft(null)} label={tr('Log credit spend')}>
+      {(() => {
+        const principal = Number(creditSpendDraft.amount) || 0;
+        const apr = Math.min(100, Math.max(0, Number(creditSpendDraft.annual_rate) || 0));
+        const months = Math.min(600, Math.max(1, Number(creditSpendDraft.months) || 1));
+        const monthlyRate = apr / 1200;
+        const monthlyPayment = principal > 0 ? (monthlyRate > 0 ? principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months)) : principal / months) : 0;
+        const afterInterest = monthlyPayment * months;
+        const valid = creditSpendDraft.merchant.trim() && principal > 0 && Number.isFinite(principal) && months >= 1 && months <= 600 && apr >= 0 && apr <= 100;
+        return <form className="sheet-form fp-credit-log-form" onSubmit={async e => { e.preventDefault(); setError(''); if (!valid) { setError(tr('Enter a merchant, a positive amount and valid repayment terms.')); return; } setBusy(true); try { await c.recordCreditSpend({ ...creditSpendDraft, amount: principal, annual_rate: apr, months, after_interest_amount: afterInterest }); saveCreditSpendLog(creditSpendDraft.account_id, { id: window.crypto?.randomUUID?.() || String(Date.now()), merchant: creditSpendDraft.merchant.trim(), amount: Math.round(principal * 100) / 100, annual_rate: apr, months, after_interest_amount: Math.round(afterInterest * 100) / 100, monthly_payment: Math.round(monthlyPayment * 100) / 100, date: creditSpendDraft.date }); setCreditSpendDraft(null); setNotice(tr('Credit purchase recorded.')); } catch (err) { setError(err?.message || tr('Could not save this transaction. Check the selected account and try again.')); } finally { setBusy(false); } }}>
+          <label>{tr('Merchant')}<input required maxLength={160} autoFocus value={creditSpendDraft.merchant} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, merchant: e.target.value })} placeholder={tr('Where did you spend?')} /></label>
+          <label>{tr('Credit card used')}<select value={creditSpendDraft.account_id} onChange={e => { const selected = creditCards.find(a => String(a.id) === String(e.target.value)); setCreditSpendDraft({ ...creditSpendDraft, account_id: e.target.value, cardName: selected?.institution_name || selected?.name || creditSpendDraft.cardName, currency: selected?.currency || base }); }}>{creditCards.map(a => <option key={a.id} value={a.id}>{a.institution_name || a.name} ·•••• {a.mask || '----'}</option>)}</select></label>
+          <label>{tr('Before interest amount')}<input required type="number" min="0.01" step="0.01" value={creditSpendDraft.amount} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, amount: e.target.value })} /></label>
+          <div className="form-grid fp-credit-log-fields"><label>{tr('Annual interest rate (APR %)')}<input required type="number" min="0" max="100" step="0.01" value={creditSpendDraft.annual_rate} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, annual_rate: e.target.value })} /></label><label>{tr('Months to pay')}<input required type="number" min="1" max="600" step="1" value={creditSpendDraft.months} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, months: e.target.value })} /></label></div>
+          <label>{tr('Purchase date')}<input required type="date" value={creditSpendDraft.date} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, date: e.target.value })} /></label>
+          <div className="fp-credit-log-summary"><div><small>{tr('After interest amount')}</small><b>{cash(afterInterest, creditSpendDraft.currency)}</b></div><div><small>{tr('Estimated monthly payment')}</small><b>{cash(monthlyPayment, creditSpendDraft.currency)}</b></div><small>{tr('Estimate assumes a fixed monthly repayment with APR ÷ 12. Credit-card issuers usually calculate interest daily on the average daily balance; statement timing, fees, new purchases and payment dates can change the actual amount. Pay the full statement balance by the due date to avoid purchase interest when your issuer offers a grace period.')}</small></div>
+          <button type="submit" className="primary-button wide-button" disabled={busy || !valid}>{busy ? tr('Saving…') : tr('Save credit spend')}</button>
+        </form>;
+      })()}
+    </Sheet>}
     {cardDraft && <Sheet title={tr('Record card payment')} subtitle={cardDraft.name} onClose={() => setCardDraft(null)} label={tr('Record card payment')}>
       <form className="sheet-form" onSubmit={e => { e.preventDefault(); const amount = Number(cardDraft.amount); if (!Number.isFinite(amount) || amount <= 0) { setError(tr('Enter an amount greater than zero.')); return; } saveCardPayment(cardDraft.id, { id: window.crypto?.randomUUID?.() || String(Date.now()), amount: Math.round(amount * 100) / 100, date: cardDraft.date, month: cardDraft.month }); setCardDraft(null); setNotice(tr('Card payment recorded.')); }}>
         <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={cardDraft.amount} onChange={e => setCardDraft({ ...cardDraft, amount: e.target.value })} /></label>
