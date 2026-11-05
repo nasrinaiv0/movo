@@ -3,7 +3,6 @@ import Icon from './Icon';
 import BrandLogo from './BrandLogo';
 import { institutionLogoUrl } from '../lib/institutions';
 import { money, shown } from '../lib/format';
-import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 /*
