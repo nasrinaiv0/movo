@@ -18,6 +18,7 @@ const list = (v) => (Array.isArray(v) ? v : []);
 export function cloudSafePreferences(prefs) {
   const safe = isObj(prefs) ? { ...prefs } : {};
   delete safe.autoLogKey;
+  delete safe.cloudSyncEnabled;
   delete safe.accountQrPending;
   // Device-only data URLs are never sent to the 256 KB preferences row; cloud entries are storage paths.
   if (safe.accountQrCodes && typeof safe.accountQrCodes === 'object') {
