@@ -5408,12 +5408,13 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 
-/* PR #217 follow-up: every screen-header action is a true 45px circle.
-   This intentionally overrides older header sizing without touching content
-   actions, quick actions, bottom navigation, or sheet controls. */
+/* PR #217 follow-up: all header actions AND standalone back-header controls
+   use a consistent 45px circular hit target, including Settings sub-headers. */
 .movo-app.movo-app .screen-header :is(.round-button, .back-button),
 .movo-app.movo-app .screen-header .header-actions > button,
-.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action,
+.movo-app.movo-app .sub-header > button:first-child,
+.movo-app.movo-app .back-button {
   box-sizing: border-box;
   display: grid;
   place-items: center;
@@ -5429,7 +5430,9 @@ button.account-tile:active { transform: scale(.98); }
 }
 .movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon,
 .movo-app.movo-app .screen-header .header-actions > button > .movo-icon,
-.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon {
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon,
+.movo-app.movo-app .sub-header > button:first-child > .movo-icon,
+.movo-app.movo-app .back-button > .movo-icon {
   width: 18px;
   height: 18px;
   flex: none;
@@ -5437,7 +5440,9 @@ button.account-tile:active { transform: scale(.98); }
 @media (max-width: 360px) {
   .movo-app.movo-app .screen-header :is(.round-button, .back-button),
   .movo-app.movo-app .screen-header .header-actions > button,
-  .movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  .movo-app.movo-app .home-header .header-action-buttons > .home-header-action,
+  .movo-app.movo-app .sub-header > button:first-child,
+  .movo-app.movo-app .back-button {
     flex-basis: 45px;
     width: 45px !important;
     height: 45px !important;
