@@ -58,8 +58,9 @@ test('plans normalize legacy amount and date fields and exclude archived or inva
 test('credit card liability uses the explicit outstanding amount when available', () => {
   const { creditCardOutstanding } = require('./financialPlanningIntegrations');
   expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', balance: -4000 })).toBe(4000);
-  expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', balance: 0, liability_balance: 1750 })).toBe(1750);
-  expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', balance: -4000, liability_balance: 0 })).toBe(0);
+  expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', balance: 0, liability_balance: 1750 })).toBe(0);
+  expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', balance: -4000, liability_balance: 0 })).toBe(4000);
+  expect(creditCardOutstanding({ account_type: 'card', cardKind: 'credit', liability_balance: 1750 })).toBe(1750);
   expect(creditCardOutstanding({ account_type: 'card', cardKind: 'debit', balance: -4000 })).toBe(0);
 });
 

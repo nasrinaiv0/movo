@@ -79,3 +79,33 @@ test('excludes deleted, reversed and duplicate card transactions and applies eac
     spentLimitPercent: 8,
   });
 });
+
+
+test('includes every valid payment log beyond the former 120-entry retention limit', () => {
+  const payments = Array.from({ length: 125 }, (_, index) => ({
+    id: `payment-${index + 1}`, amount: 10, month: '2026-11', date: `2026-11-${String((index % 28) + 1).padStart(2, '0')}`,
+  }));
+  const summary = creditCardPaymentSummary(payments);
+  expect(summary.payments).toHaveLength(125);
+  expect(summary.totalPaid).toBe(1250);
+});
+
+test('subtracts every retained payment from the card ledger balance', () => {
+  const payments = Array.from({ length: 125 }, (_, index) => ({ id: `p-${index}`, amount: 10, month: '2026-11', date: `2026-11-${String((index % 28) + 1).padStart(2, '0')}` }));
+  const metrics = creditCardPlanningMetrics({ card: { id: 'cc-1', account_type: 'card', cardKind: 'credit', balance: -2000, creditLimit: 5000 }, payments });
+  expect(metrics.totalPayments).toBe(1250);
+  expect(metrics.outstandingAfterPayments).toBe(750);
+});
+
+test('uses the live card ledger over a stale liability snapshot when calculating outstanding', () => {
+  const metrics = creditCardPlanningMetrics({
+    card: { id: 'cc-1', account_type: 'card', cardKind: 'credit', balance: -7500, liability_balance: 0, creditLimit: 10000 },
+    transactions: [
+      { id: 'purchase-1', account_id: 'cc-1', type: 'expense', amount: 3000, origAmount: 3000, origCurrency: 'PHP' },
+      { id: 'purchase-2', account_id: 'cc-1', type: 'expense', amount: 4500, origAmount: 4500, origCurrency: 'PHP' },
+    ],
+    payments: [{ id: 'payment-1', amount: 2500, month: '2026-11', date: '2026-11-05' }],
+  });
+  expect(metrics.amountSpent).toBe(7500);
+  expect(metrics.outstandingAfterPayments).toBe(5000);
+});

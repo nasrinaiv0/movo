@@ -50,6 +50,7 @@ export function creditCardPlanningMetrics({ card, transactions = [], payments = 
   const rate = Number(annualInterestRate); const apr = Number.isFinite(rate) && rate >= 0 && rate <= 100 ? rate : 0;
   const currency = card?.currency || 'PHP';
   const seenTransactions = new Set();
+  let creditTransactionCount = 0;
   const excludedStatuses = new Set(['deleted', 'reversed', 'void', 'voided', 'cancelled', 'canceled', 'archived', 'refunded']);
   const amountSpent = round((Array.isArray(transactions) ? transactions : []).reduce((sum, item) => {
     if (!item || String(item.account_id) !== String(card?.id) || (item.transaction_type || item.type) !== 'expense') return sum;
@@ -67,13 +68,19 @@ export function creditCardPlanningMetrics({ card, transactions = [], payments = 
     let converted;
     try { converted = Number(convertAmount(raw, item.origCurrency || item.currency || currency, currency)); }
     catch (_) { return sum; }
-    return Number.isFinite(converted) && converted > 0 ? sum + converted : sum;
+    if (!Number.isFinite(converted) || converted <= 0) return sum;
+    creditTransactionCount += 1;
+    return sum + converted;
   }, 0));
   const limitValue = Number(card?.creditLimit); const limit = Number.isFinite(limitValue) && limitValue > 0 ? round(limitValue) : 0;
-  const balanceValue = Number(card?.liability_balance ?? card?.balance ?? 0);
-  const outstanding = card?.liability_balance !== undefined && card?.liability_balance !== null
-    ? (Number.isFinite(balanceValue) && balanceValue >= 0 ? round(balanceValue) : 0)
-    : (Number.isFinite(balanceValue) ? round(Math.max(0, -balanceValue)) : 0);
+  // accountsView.balance is the authoritative card ledger: opening balance plus every
+  // posted card transaction. Prefer it over legacy liability_balance snapshots, which
+  // can become stale after additional credit logs.
+  const hasLedgerBalance = card?.balance !== undefined && card?.balance !== null && card?.balance !== '';
+  const balanceValue = Number(hasLedgerBalance ? card.balance : card?.liability_balance ?? 0);
+  const outstanding = hasLedgerBalance
+    ? (Number.isFinite(balanceValue) ? round(Math.max(0, -balanceValue)) : 0)
+    : (Number.isFinite(balanceValue) ? round(Math.max(0, balanceValue)) : 0);
   const summary = creditCardPaymentSummary(payments);
   const statementValue = statementBalance === undefined || statementBalance === null || String(statementBalance).trim() === '' ? NaN : Number(statementBalance);
   const interestPrincipal = Number.isFinite(statementValue) && statementValue > 0 ? statementValue : outstanding;
@@ -81,5 +88,5 @@ export function creditCardPlanningMetrics({ card, transactions = [], payments = 
   const amountAfterInterest = round(outstanding + estimatedMonthlyInterest);
   const outstandingAfterPayments = round(Math.max(0, amountAfterInterest - summary.totalPaid));
   const spentLimitPercent = limit > 0 ? round(amountSpent / limit * 100) : null;
-  return { amountSpent, estimatedMonthlyInterest, amountAfterInterest, outstandingAfterPayments, totalPayments: summary.totalPaid, monthsPaid: summary.monthsPaid, paymentCount: summary.payments.length, limit, spentLimitPercent, annualInterestRate: apr };
+  return { amountSpent, estimatedMonthlyInterest, amountAfterInterest, outstandingAfterPayments, totalPayments: summary.totalPaid, monthsPaid: summary.monthsPaid, paymentCount: summary.payments.length, payments: summary.payments, creditTransactionCount, limit, spentLimitPercent, annualInterestRate: apr };
 }

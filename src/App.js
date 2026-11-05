@@ -958,7 +958,7 @@ function App() {
     const date=today();
     const current=prefs.creditCardPayments||{};
     const payments=current[card.id]||[];
-    setPref('creditCardPayments',{...current,[card.id]:[...payments,{id:window.crypto?.randomUUID?.()||String(Date.now()),amount:Math.round(value*100)/100,date,month:date.slice(0,7)}].slice(-120)});
+    setPref('creditCardPayments',{...current,[card.id]:[...payments,{id:window.crypto?.randomUUID?.()||String(Date.now()),amount:Math.round(value*100)/100,date,month:date.slice(0,7)}]});
     notify(tr('Card payment recorded.'));
   };
   const logSubscription = (sub) => {

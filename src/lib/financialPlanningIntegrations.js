@@ -13,11 +13,15 @@ const positiveAmount = value => {
 /** The single liability rule used by both the Financial Planning screen and its summary. */
 export function creditCardOutstanding(card) {
   if (!card || card.account_type !== 'card' || card.cardKind !== 'credit') return 0;
-  const hasExplicitLiability = card.liability_balance !== undefined && card.liability_balance !== null;
+  // accountsView.balance is calculated from the opening balance and the complete
+  // transaction ledger. Legacy liability_balance snapshots must not override it.
+  const hasLedgerBalance = card.balance !== undefined && card.balance !== null && card.balance !== '';
+  if (hasLedgerBalance) {
+    const balance = Number(card.balance);
+    return Number.isFinite(balance) ? Math.round(Math.max(0, -balance) * 100) / 100 : 0;
+  }
   const explicit = Number(card.liability_balance);
-  if (hasExplicitLiability && Number.isFinite(explicit) && explicit >= 0) return Math.round(explicit * 100) / 100;
-  const balance = Number(card.balance);
-  return Number.isFinite(balance) ? Math.round(Math.max(0, -balance) * 100) / 100 : 0;
+  return Number.isFinite(explicit) && explicit >= 0 ? Math.round(explicit * 100) / 100 : 0;
 }
 
 /**
