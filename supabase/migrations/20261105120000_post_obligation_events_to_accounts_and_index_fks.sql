@@ -25,74 +25,47 @@ declare
   v_signed numeric;
   v_currency text := coalesce(p_currency, 'PHP');
 begin
-  if v_user is null then
-    raise exception 'authentication_required' using errcode = '42501';
-  end if;
-  if p_amount is null or p_amount <= 0 or p_amount >= 1e16 then
-    raise exception 'invalid_amount' using errcode = '22023';
-  end if;
-  if p_event_type not in ('borrowed','principal_increase','principal_payment','interest_payment','fee') then
-    raise exception 'invalid_loan_event' using errcode = '22023';
-  end if;
-  if p_account_id is null then
-    raise exception 'loan_event_account_required' using errcode = '22023';
-  end if;
+  if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
+  if p_amount is null or p_amount <= 0 or p_amount >= 1e16 then raise exception 'invalid_amount' using errcode = '22023'; end if;
+  if p_event_type not in ('borrowed','principal_increase','principal_payment','interest_payment','fee') then raise exception 'invalid_loan_event' using errcode = '22023'; end if;
+  if p_account_id is null then raise exception 'loan_event_account_required' using errcode = '22023'; end if;
 
-  select * into v_loan
-  from public.financial_loans
-  where id = p_loan_id and user_id = v_user
-  for update;
+  select * into v_loan from public.financial_loans
+  where id = p_loan_id and user_id = v_user for update;
   if not found then raise exception 'loan_not_found' using errcode = 'P0002'; end if;
-
   if p_event_type = 'principal_payment' and round(p_amount,2) > v_loan.outstanding_principal then
     raise exception 'payment_exceeds_principal' using errcode = '22023';
   end if;
-  if not exists (
-    select 1 from public.financial_accounts
-    where id = p_account_id and user_id = v_user and currency = v_currency
-  ) then
+  if not exists (select 1 from public.financial_accounts
+    where id = p_account_id and user_id = v_user and currency = v_currency) then
     raise exception 'account_owner_or_currency_mismatch' using errcode = '42501';
   end if;
   if p_transaction_id is not null and not exists (
     select 1 from public.transactions where id = p_transaction_id and user_id = v_user
-  ) then
-    raise exception 'transaction_owner_mismatch' using errcode = '42501';
-  end if;
+  ) then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
 
-  insert into public.loan_events(
-    user_id,loan_id,event_type,amount,currency,account_id,transaction_id,occurred_at,note
-  ) values (
-    v_user,p_loan_id,p_event_type,round(p_amount,2),v_currency,p_account_id,
-    p_transaction_id,coalesce(p_occurred_at,now()),left(p_note,1000)
-  ) returning * into v_event;
+  insert into public.loan_events(user_id,loan_id,event_type,amount,currency,account_id,transaction_id,occurred_at,note)
+  values(v_user,p_loan_id,p_event_type,round(p_amount,2),v_currency,p_account_id,p_transaction_id,coalesce(p_occurred_at,now()),left(p_note,1000))
+  returning * into v_event;
 
   if p_event_type in ('borrowed','principal_increase') then
-    update public.financial_loans
-    set outstanding_principal = outstanding_principal + round(p_amount,2),
-        updated_at = now(), status = 'active'
-    where id = p_loan_id;
-  elsif p_event_type = 'principal_payment' then
-    update public.financial_loans
-    set outstanding_principal = greatest(0,outstanding_principal - round(p_amount,2)),
-        updated_at = now(),
-        status = case when outstanding_principal - round(p_amount,2) <= 0 then 'paid_off' else 'active' end
-    where id = p_loan_id;
+    update public.financial_loans set outstanding_principal=outstanding_principal+round(p_amount,2),
+      updated_at=now(),status='active' where id=p_loan_id;
+  elsif p_event_type='principal_payment' then
+    update public.financial_loans set outstanding_principal=greatest(0,outstanding_principal-round(p_amount,2)),
+      updated_at=now(),status=case when outstanding_principal-round(p_amount,2)<=0 then 'paid_off' else 'active' end
+    where id=p_loan_id;
   end if;
 
   v_signed := case
     when p_event_type in ('borrowed','principal_increase') then round(p_amount,2)
     when p_event_type in ('principal_payment','interest_payment','fee') then -round(p_amount,2)
-    else 0
-  end;
+    else 0 end;
   if v_signed <> 0 then
-    insert into public.accounting_postings(
-      user_id,account_id,signed_amount,currency,source_type,source_id,occurred_at
-    ) values (
-      v_user,p_account_id,v_signed,v_currency,'loan_event',v_event.id,v_event.occurred_at
-    )
+    insert into public.accounting_postings(user_id,account_id,signed_amount,currency,source_type,source_id,occurred_at)
+    values(v_user,p_account_id,v_signed,v_currency,'loan_event',v_event.id,v_event.occurred_at)
     on conflict (source_type,source_id,account_id) do nothing;
   end if;
-
   return v_event;
 end
 $function$;
@@ -119,105 +92,59 @@ declare
   v_signed numeric;
   v_currency text := coalesce(p_currency, 'PHP');
 begin
-  if v_user is null then
-    raise exception 'authentication_required' using errcode = '42501';
-  end if;
-  if p_amount is null or p_amount <= 0 or p_amount >= 1e16 then
-    raise exception 'invalid_amount' using errcode = '22023';
-  end if;
-  if p_event_type not in ('lent','amount_increased','collected','written_off') then
-    raise exception 'invalid_receivable_event' using errcode = '22023';
-  end if;
+  if v_user is null then raise exception 'authentication_required' using errcode = '42501'; end if;
+  if p_amount is null or p_amount <= 0 or p_amount >= 1e16 then raise exception 'invalid_amount' using errcode = '22023'; end if;
+  if p_event_type not in ('lent','amount_increased','collected','written_off') then raise exception 'invalid_receivable_event' using errcode = '22023'; end if;
   if p_event_type <> 'written_off' and p_account_id is null then
     raise exception 'receivable_event_account_required' using errcode = '22023';
   end if;
 
-  select * into v_item
-  from public.financial_receivables
-  where id = p_receivable_id and user_id = v_user
-  for update;
+  select * into v_item from public.financial_receivables
+  where id = p_receivable_id and user_id = v_user for update;
   if not found then raise exception 'receivable_not_found' using errcode = 'P0002'; end if;
-
   if p_event_type in ('collected','written_off') and round(p_amount,2) > v_item.outstanding_amount then
     raise exception 'event_exceeds_receivable' using errcode = '22023';
   end if;
-  if p_account_id is not null and not exists (
-    select 1 from public.financial_accounts
-    where id = p_account_id and user_id = v_user and currency = v_currency
-  ) then
+  if p_account_id is not null and not exists (select 1 from public.financial_accounts
+    where id = p_account_id and user_id = v_user and currency = v_currency) then
     raise exception 'account_owner_or_currency_mismatch' using errcode = '42501';
   end if;
   if p_transaction_id is not null and not exists (
     select 1 from public.transactions where id = p_transaction_id and user_id = v_user
-  ) then
-    raise exception 'transaction_owner_mismatch' using errcode = '42501';
-  end if;
+  ) then raise exception 'transaction_owner_mismatch' using errcode = '42501'; end if;
 
-  insert into public.receivable_events(
-    user_id,receivable_id,event_type,amount,currency,account_id,transaction_id,occurred_at,note
-  ) values (
-    v_user,p_receivable_id,p_event_type,round(p_amount,2),v_currency,p_account_id,
-    p_transaction_id,coalesce(p_occurred_at,now()),left(p_note,1000)
-  ) returning * into v_event;
+  insert into public.receivable_events(user_id,receivable_id,event_type,amount,currency,account_id,transaction_id,occurred_at,note)
+  values(v_user,p_receivable_id,p_event_type,round(p_amount,2),v_currency,p_account_id,p_transaction_id,coalesce(p_occurred_at,now()),left(p_note,1000))
+  returning * into v_event;
 
   if p_event_type in ('lent','amount_increased') then
-    update public.financial_receivables
-    set outstanding_amount = outstanding_amount + round(p_amount,2),
-        updated_at = now(), status = 'active'
-    where id = p_receivable_id;
+    update public.financial_receivables set outstanding_amount=outstanding_amount+round(p_amount,2),
+      updated_at=now(),status='active' where id=p_receivable_id;
   else
-    update public.financial_receivables
-    set outstanding_amount = greatest(0,outstanding_amount - round(p_amount,2)),
-        updated_at = now(),
-        status = case
-          when outstanding_amount - round(p_amount,2) <= 0
-            then case when p_event_type = 'written_off' then 'written_off' else 'settled' end
-          else 'active'
-        end
-    where id = p_receivable_id;
+    update public.financial_receivables set outstanding_amount=greatest(0,outstanding_amount-round(p_amount,2)),
+      updated_at=now(),status=case when outstanding_amount-round(p_amount,2)<=0
+        then case when p_event_type='written_off' then 'written_off' else 'settled' end else 'active' end
+    where id=p_receivable_id;
   end if;
 
   v_signed := case
     when p_event_type in ('lent','amount_increased') then -round(p_amount,2)
-    when p_event_type = 'collected' then round(p_amount,2)
-    else 0
-  end;
+    when p_event_type='collected' then round(p_amount,2)
+    else 0 end;
   if v_signed <> 0 then
-    insert into public.accounting_postings(
-      user_id,account_id,signed_amount,currency,source_type,source_id,occurred_at
-    ) values (
-      v_user,p_account_id,v_signed,v_currency,'receivable_event',v_event.id,v_event.occurred_at
-    )
+    insert into public.accounting_postings(user_id,account_id,signed_amount,currency,source_type,source_id,occurred_at)
+    values(v_user,p_account_id,v_signed,v_currency,'receivable_event',v_event.id,v_event.occurred_at)
     on conflict (source_type,source_id,account_id) do nothing;
   end if;
-
   return v_event;
 end
 $function$;
 
--- Cover all remaining FK indexes reported by the live Supabase performance advisor.
-create index if not exists allocation_events_account_id_idx
-  on public.allocation_events(account_id);
-create index if not exists payment_attempts_account_id_idx
-  on public.payment_attempts(account_id);
-create index if not exists payment_attempts_account_owner_idx
-  on public.payment_attempts(account_id,user_id);
-create index if not exists payment_attempts_transaction_id_idx
-  on public.payment_attempts(transaction_id);
-create index if not exists plan_funding_allocations_account_id_idx
-  on public.plan_funding_allocations(account_id);
-create index if not exists scheduled_transactions_account_id_idx
-  on public.scheduled_transactions(account_id);
-create index if not exists scheduled_transactions_destination_account_owner_idx
-  on public.scheduled_transactions(destination_account_id,user_id);
-create index if not exists scheduled_transactions_last_transaction_id_idx
-  on public.scheduled_transactions(last_transaction_id);
-create index if not exists scheduled_transactions_source_account_owner_idx
-  on public.scheduled_transactions(source_account_id,user_id);
-create index if not exists scheduled_transactions_transfer_to_account_id_idx
-  on public.scheduled_transactions(transfer_to_account_id);
-create index if not exists transactions_schedule_id_idx
-  on public.transactions(schedule_id);
+-- The first hardening migration already covers scheduled transaction, payment attempt account,
+-- and transaction schedule indexes. Add the three remaining FK indexes only.
+create index if not exists allocation_events_account_id_idx on public.allocation_events(account_id);
+create index if not exists payment_attempts_transaction_id_idx on public.payment_attempts(transaction_id);
+create index if not exists plan_funding_allocations_account_id_idx on public.plan_funding_allocations(account_id);
 
 revoke all on function public.record_loan_event(uuid,text,numeric,text,uuid,uuid,timestamptz,text) from public, anon;
 revoke all on function public.record_receivable_event(uuid,text,numeric,text,uuid,uuid,timestamptz,text) from public, anon;
