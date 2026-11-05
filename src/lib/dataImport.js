@@ -9,6 +9,7 @@ export const IMPORT_MAX_BYTES = 5 * 1024 * 1024;
 const MAX_ROWS = 20000;
 const ACCOUNT_TYPES = ['bank', 'card', 'e_wallet', 'cash', 'investment', 'other'];
 const CYCLES = ['weekly', 'monthly', 'quarterly', 'yearly'];
+const BILL_CYCLES = ['one_time', 'weekly', 'monthly', 'quarterly', 'semiannual', 'annual'];
 
 const key = (v) => String(v || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 const text = (v, n) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, n) : '');
@@ -99,6 +100,60 @@ export function normalizeBudget(raw) {
   return category && limit !== null && limit > 0 ? { category, monthly_limit: limit } : null;
 }
 
+export function normalizeLoan(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = text(pick(raw, ['name', 'loanname', 'title', 'creditor', 'lender']), 120);
+  const principal = num(pick(raw, ['outstandingprincipal', 'currentprincipal', 'currentbalance', 'balance', 'principalamount', 'principal', 'loanamount', 'amount']));
+  if (!name || principal === null || principal <= 0) return null;
+  const rate = num(pick(raw, ['interestrate', 'annualinterestrate', 'apr', 'rate']));
+  return {
+    name, principal_amount: principal, currency: currency(pick(raw, ['currency', 'ccy'])),
+    interest_rate: Math.max(0, rate || 0), due_date: day(pick(raw, ['due', 'duedate', 'nextpaymentdate', 'maturitydate'])),
+    lender: text(pick(raw, ['lender', 'creditor', 'provider']), 120),
+    obligation_type: key(pick(raw, ['obligationtype', 'type'])) === 'debt' ? 'debt' : 'loan',
+    notes: text(pick(raw, ['notes', 'note', 'description']), 2000),
+  };
+}
+
+export function normalizeReceivable(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = text(pick(raw, ['name', 'borrower', 'person', 'counterparty', 'title']), 120);
+  const amount = num(pick(raw, ['outstandingamount', 'amountowed', 'openingamount', 'receivableamount', 'balance', 'amount']));
+  if (!name || amount === null || amount <= 0) return null;
+  return {
+    name, opening_amount: amount, currency: currency(pick(raw, ['currency', 'ccy'])),
+    counterparty: text(pick(raw, ['counterparty', 'borrower', 'person']), 120),
+    reason: text(pick(raw, ['reason', 'purpose', 'description']), 500),
+    due_date: day(pick(raw, ['due', 'duedate', 'expecteddate', 'repaymentdate'])),
+    notes: text(pick(raw, ['notes', 'note']), 2000),
+  };
+}
+
+export function normalizeBill(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = text(pick(raw, ['name', 'billname', 'payee', 'merchant', 'title']), 120);
+  const amount = num(pick(raw, ['amount', 'expectedamount', 'estimatedamount', 'price', 'cost']));
+  const firstDue = day(pick(raw, ['firstduedate', 'nextduedate', 'duedate', 'nextdue', 'due', 'date']));
+  if (!name || amount === null || amount <= 0 || !firstDue) return null;
+  const rawFrequency = key(pick(raw, ['frequency', 'recurrence', 'cycle', 'interval']));
+  const frequency = BILL_CYCLES.includes(rawFrequency) ? rawFrequency
+    : /week/.test(rawFrequency) ? 'weekly'
+      : /quarter|3month/.test(rawFrequency) ? 'quarterly'
+        : /semiannual|6month/.test(rawFrequency) ? 'semiannual'
+          : /year|annual/.test(rawFrequency) ? 'annual'
+            : /once|oneoff|onetime/.test(rawFrequency) ? 'one_time' : 'monthly';
+  const rawDays = pick(raw, ['reminderdays', 'remindbefore', 'reminder']);
+  const reminder_days = (Array.isArray(rawDays) ? rawDays : String(rawDays ?? '3,1,0').split(/[;, ]+/))
+    .map(Number).filter(n => Number.isInteger(n) && n >= 0 && n <= 30).filter((n, i, a) => a.indexOf(n) === i).slice(0, 6);
+  return {
+    name, category: text(pick(raw, ['category', 'billcategory']), 60) || 'Other',
+    amount, amount_type: key(pick(raw, ['amounttype', 'type'])) === 'variable' ? 'variable' : 'fixed',
+    currency: currency(pick(raw, ['currency', 'ccy'])), frequency, first_due_date: firstDue,
+    reminder_days: reminder_days.length ? reminder_days : [3, 1, 0],
+    notes: text(pick(raw, ['notes', 'note', 'description']), 1000),
+  };
+}
+
 export function normalizePlan(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const name = text(pick(raw, ['name', 'goal', 'title']), 60);
@@ -114,6 +169,9 @@ const LISTS = {
   subscriptions: ['subscriptions', 'subs', 'recurring'],
   budgets: ['budgets', 'limits'],
   plans: ['plans', 'goals', 'savings', 'savingsgoals'],
+  loans: ['loans', 'debts', 'creditfacilities'],
+  receivables: ['receivables', 'moneyowed', 'owedtome', 'amountstocollect'],
+  bills: ['bills', 'utilities', 'recurringbills'],
 };
 
 function collect(list, fn, hint) {
@@ -143,6 +201,9 @@ export function parseJsonData(input) {
   add('subscriptions', LISTS.subscriptions, normalizeSubscription);
   add('budgets', LISTS.budgets, normalizeBudget);
   add('plans', LISTS.plans, normalizePlan);
+  add('loans', LISTS.loans, normalizeLoan);
+  add('receivables', LISTS.receivables, normalizeReceivable);
+  add('bills', LISTS.bills, normalizeBill);
   return finish(result);
 }
 
@@ -162,6 +223,12 @@ export function parseCsvData(input) {
       return finish(result);
     }
     const r = collect(objects(), normalizeTransaction); result.transactions = r.out; result.skipped = r.skipped;
+  } else if (has('principal', 'principalamount', 'outstandingprincipal', 'loanamount')) {
+    const r = collect(objects(), normalizeLoan); result.loans = r.out; result.skipped = r.skipped;
+  } else if (has('amountowed', 'openingamount', 'receivableamount', 'counterparty')) {
+    const r = collect(objects(), normalizeReceivable); result.receivables = r.out; result.skipped = r.skipped;
+  } else if (has('firstduedate', 'nextduedate', 'billcategory', 'reminderdays')) {
+    const r = collect(objects(), normalizeBill); result.bills = r.out; result.skipped = r.skipped;
   } else if (has('cycle', 'billingcycle', 'frequency', 'nextbillingdate', 'renewal', 'renewaldate')) {
     const r = collect(objects(), normalizeSubscription); result.subscriptions = r.out; result.skipped = r.skipped;
   } else if (has('balance', 'currentbalance', 'openingbalance', 'accounttype', 'last4')) {
@@ -178,14 +245,14 @@ export function parseImportFile(name, content) {
   return /\.json$/i.test(String(name || '')) || /^\s*[[{]/.test(String(content || '')) ? parseJsonData(content) : parseCsvData(content);
 }
 
-function empty() { return { accounts: [], transactions: [], subscriptions: [], budgets: [], plans: [], skipped: 0, errors: [] }; }
+function empty() { return { accounts: [], transactions: [], subscriptions: [], budgets: [], plans: [], loans: [], receivables: [], bills: [], skipped: 0, errors: [] }; }
 function finish(result) {
-  const total = ['accounts', 'transactions', 'subscriptions', 'budgets', 'plans'].reduce((s, k) => s + result[k].length, 0);
-  return total ? result : { ...result, errors: result.errors.length ? result.errors : ['No accounts, transactions, subscriptions, budgets or plans were found in this file.'] };
+  const total = ['accounts', 'transactions', 'subscriptions', 'budgets', 'plans', 'loans', 'receivables', 'bills'].reduce((s, k) => s + result[k].length, 0);
+  return total ? result : { ...result, errors: result.errors.length ? result.errors : ['No supported accounts, transactions, subscriptions, budgets, plans, loans, receivables or bills were found in this file.'] };
 }
 
 /** Counts per kind, for "Imported 3 accounts, 120 transactions…". */
-export const importCounts = (r) => ({ accounts: r.accounts.length, transactions: r.transactions.length, subscriptions: r.subscriptions.length, budgets: r.budgets.length, plans: r.plans.length });
+export const importCounts = (r) => ({ accounts: r.accounts.length, transactions: r.transactions.length, subscriptions: r.subscriptions.length, budgets: r.budgets.length, plans: r.plans.length, loans: r.loans.length, receivables: r.receivables.length, bills: r.bills.length });
 
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 
@@ -228,5 +295,11 @@ export function planImport(parsed, existing, { base = 'PHP', newId, batchId, fin
     .map(b => ({ ...b, currency: base, id: id('budget'), import_batch: batchId }));
   const plans = fresh(existing.plans || [], parsed.plans, (x, r) => sameName(x.name, r.name))
     .map(p => ({ ...p, currency: base, id: id('plan'), import_batch: batchId }));
-  return { accounts, transactions, subscriptions, budgets, plans, skipped: { ...skipped, invalid: parsed.skipped || 0 } };
+  const loans = fresh(existing.loans || [], parsed.loans || [], (x, r) => sameName(x.name, r.name))
+    .map(r => ({ ...r, currency: r.currency || base, import_batch: batchId }));
+  const receivables = fresh(existing.receivables || [], parsed.receivables || [], (x, r) => sameName(x.name, r.name) && sameName(x.counterparty, r.counterparty))
+    .map(r => ({ ...r, currency: r.currency || base, import_batch: batchId }));
+  const bills = fresh(existing.bills || [], parsed.bills || [], (x, r) => sameName(x.name, r.name))
+    .map(r => ({ ...r, currency: r.currency || base, import_batch: batchId }));
+  return { accounts, transactions, subscriptions, budgets, plans, loans, receivables, bills, skipped: { ...skipped, invalid: parsed.skipped || 0 } };
 }
