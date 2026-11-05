@@ -52,14 +52,6 @@ export default function AccountPicker({ id, label, ariaLabel, accounts = [], val
   const available = credit && hasLimit ? Math.max(0, limit + (Number.isFinite(balance) ? balance : 0)) : balance;
   const availabilityLabel = credit ? 'Available credit' : 'Available balance';
   const showAvailability = chosen && (hasLimit || hasBalance);
-  const credit = chosen?.account_type === 'card' && chosen?.cardKind === 'credit';
-  const limit = Number(chosen?.creditLimit);
-  const balance = Number(chosen?.balance);
-  const hasLimit = credit && Number.isFinite(limit) && limit > 0;
-  const hasBalance = !credit && Number.isFinite(balance);
-  const available = credit && hasLimit ? Math.max(0, limit + (Number.isFinite(balance) ? balance : 0)) : balance;
-  const availabilityLabel = credit ? 'Available credit' : 'Available balance';
-  const showAvailability = chosen && (hasLimit || hasBalance);
   return <label className={`acct-pick${chosen ? '' : ' is-empty'}`} htmlFor={id}>
     <span className="acct-pick-logo" aria-hidden="true"><BrandLogo src={logo} size={64} fallback={chosen ? undefined : <Icon name="wallet" size={18} />} /></span>
     <span className="acct-pick-text">
