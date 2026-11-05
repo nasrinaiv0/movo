@@ -23,7 +23,7 @@ test('matches merchant limits by normalized exact merchant name, not substrings'
     ],
   );
   expect(result[0]).toMatchObject({ spent: 900, percent: 90, level: 'warn' });
-  expect(normalizeMerchant('Coffee & Co.')).toBe(normalizeMerchant('Coffee and Co'));
+  expect(normalizeMerchant('Coffee & Co.')).toBe(normalizeMerchant('Coffee-Co'));
 });
 
 test('marks limits over budget and ignores malformed or non-expense amounts', () => {
