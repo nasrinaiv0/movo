@@ -5301,3 +5301,80 @@ button.account-tile:active { transform: scale(.98); }
   height: 20px;
   stroke-width: 1.8;
 }
+
+
+/* Adaptive design tokens — shared by every MOVO screen, sheet and control. */
+.movo-app {
+  --surface-1: var(--card-solid); --surface-2: var(--field);
+  --surface-hover: rgba(var(--accent-rgb), .07); --surface-pressed: rgba(var(--accent-rgb), .12);
+  --border-subtle: var(--line); --border-strong: color-mix(in srgb, var(--text) 18%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 34%, var(--line));
+  --danger-ink: var(--red); --danger-surface: var(--red-bg);
+  --control-placeholder: var(--muted); --focus-ring: rgba(var(--accent-rgb), .42);
+  --control-radius: 13px; --control-height: 46px;
+  color-scheme: light;
+  font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+.movo-app.theme-dark {
+  --surface-hover: rgba(var(--accent-rgb), .14); --surface-pressed: rgba(var(--accent-rgb), .2);
+  --border-strong: color-mix(in srgb, var(--text) 26%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent) 19%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 48%, var(--line));
+  color-scheme: dark;
+}
+.movo-app.accent-custom { --accent-2: color-mix(in srgb, var(--accent) 78%, white); }
+.movo-app.theme-dark.tint-blue { --bg: #101522; --nav-bg: rgba(23, 32, 51, .96); }
+.movo-app.theme-dark.tint-purple { --bg: #171222; --nav-bg: rgba(34, 25, 49, .96); }
+.movo-app.theme-dark.tint-orange { --bg: #1d1510; --nav-bg: rgba(44, 29, 19, .96); }
+
+.movo-app :where(button, input, select, textarea) {
+  font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+.movo-app :where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea) {
+  color: var(--text); caret-color: var(--accent);
+}
+.movo-app :where(input, textarea, select)::placeholder { color: var(--control-placeholder); opacity: .78; }
+.movo-app :where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) { accent-color: var(--accent); }
+.movo-app :where(button, input, select, textarea):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.movo-app :where(button, input, select, textarea):disabled { cursor: not-allowed; }
+
+.movo-app .primary-button {
+  background: var(--accent); color: var(--on-accent, #fff); border: 1px solid var(--accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.movo-app .secondary-button { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-subtle); }
+.movo-app .danger-button {
+  background: var(--danger-surface); color: var(--danger-ink);
+  border: 1px solid color-mix(in srgb, var(--red) 28%, transparent);
+}
+.movo-app .wide-button { color: var(--text); background: var(--surface-1); border-color: var(--border-subtle); }
+.movo-app .round-button, .movo-app .back-button, .movo-app .sheet-close { color: var(--accent-ink, var(--text)); }
+.movo-app .sheet-menu button, .movo-app .seg-control, .movo-app .theme-segments {
+  background-color: var(--surface-2); color: var(--text);
+}
+.movo-app .seg-control button.selected, .movo-app .theme-segments button.selected {
+  background: var(--surface-1); color: var(--accent-ink, var(--text));
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--text) 10%, transparent);
+}
+.movo-app .chip-row button.selected { color: var(--accent) !important; text-decoration-color: var(--accent); }
+.movo-app .link-button, .movo-app .manage-button { color: var(--accent-ink, var(--accent)); }
+.movo-app :where(.tx-row, .menu-row, .note-row, .account-row, .sheet-card, .mini-card, .balance-row, .profile-card, .theme-option):active {
+  background-color: var(--surface-pressed);
+}
+
+.movo-app :where(.sheet-form, .form-card, .credit-log-form, .fp-credit-card-fields, .fp-credit-log-form, .search-field) :where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea) {
+  color: var(--text); background-color: var(--surface-2); border-color: var(--border-subtle);
+  border-radius: var(--control-radius); font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+.movo-app :where(.sheet-form, .form-card, .credit-log-form, .fp-credit-card-fields, .fp-credit-log-form) :where(input, select, textarea):focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+body:has(.movo-app.theme-dark) { background: #090b10; color-scheme: dark; }
+body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
+@media (prefers-reduced-motion: reduce) {
+  .movo-app *, .movo-app *::before, .movo-app *::after {
+    scroll-behavior: auto !important; animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important; transition-duration: .01ms !important;
+  }
+}
