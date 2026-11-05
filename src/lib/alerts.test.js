@@ -24,4 +24,31 @@ test('builds real notices from records: renewals, limits, monthly report, tip, s
 });
 
 test('device labels name only the browser and device type', () => {
-  expect(deviceLabel('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1'...[truncated]
+  expect(deviceLabel('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1')).toBe('Safari on iPhone');
+  expect(deviceLabel('Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/120 Safari/537.36')).toBe('Chrome on Windows');
+});
+
+
+test('builds configured bill reminders for due occurrences and skips paid or cancelled bills', () => {
+  const now = new Date(2026, 10, 5, 10);
+  const bills = [
+    { id: 'rent', name: 'Rent', amount: 12000, currency: 'PHP', status: 'active', reminder_days: [3, 1, 0] },
+    { id: 'water', name: 'Water', amount: 800, currency: 'PHP', status: 'active', reminder_days: [1] },
+    { id: 'paused', name: 'Paused', amount: 100, status: 'paused', reminder_days: [0] },
+  ];
+  const billOccurrences = [
+    { id: 'o1', bill_id: 'rent', due_date: '2026-11-05', expected_amount: 12000, paid_amount: 0, status: 'scheduled' },
+    { id: 'o2', bill_id: 'water', due_date: '2026-11-05', expected_amount: 800, paid_amount: 800, status: 'paid' },
+    { id: 'o3', bill_id: 'paused', due_date: '2026-11-05', expected_amount: 100, paid_amount: 0, status: 'scheduled' },
+  ];
+  const notices = buildSystemNotices({ now, bills, billOccurrences, fmt: n => `₱${n}` });
+  const billNotices = notices.filter(n => n.id.startsWith('bill-'));
+  expect(billNotices).toHaveLength(1);
+  expect(billNotices[0]).toMatchObject({
+    id: 'bill-rent-2026-11-05-0',
+    title: 'Bill due today',
+    body: '{name} is due today: {amount}.',
+    vars: { name: 'Rent', amount: '₱12000', days: 0 },
+    cat: 'catTransactions',
+  });
+});
