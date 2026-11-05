@@ -56,7 +56,7 @@ import { guessCategory } from './lib/ocr';
 import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { accountBalance, savingsBalance } from './lib/financeCalculations';
-import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent } from './lib/obligationsRepository';
+import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
 import Archive from './screens/Archive';
@@ -80,6 +80,7 @@ import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl } from './lib/platform';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
+import { listBills, listOccurrences, createBill } from './lib/billsRepository';
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -222,6 +223,8 @@ function App() {
   const [cloudPostings, setCloudPostings] = useState([]);
   const [cloudActivities, setCloudActivities] = useState([]);
   const [cloudBudgets, setCloudBudgets] = useState([]);
+  const [cloudBills, setCloudBills] = useState([]);
+  const [cloudBillOccurrences, setCloudBillOccurrences] = useState([]);
   const [localAccounts, setLocalAccounts] = useState(loadLocalAccounts);
   const [rawTxs, setRawTxs] = useState(() => loadLocalTransactions());
   const [sceneryPhoto, setSceneryPhotoState] = useState(loadSceneryPhoto);
@@ -320,10 +323,17 @@ function App() {
     if (!user) return;
     setBusy(true); setError('');
     try {
-      const [a, t, postings, activities, failed] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []), Promise.resolve().then(() => listAutomationInbox()).catch(() => [])]);
+      const today = new Date();
+      const dateKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const until = new Date(today); until.setDate(until.getDate() + 30);
+      const [a, t, postings, activities, failed, bills, billOccurrences, budgets] = await Promise.all([
+        listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []),
+        Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
+        listBills().catch(() => []), listOccurrences(dateKey(until), dateKey(today)).catch(() => []), listBudgets().catch(() => []),
+      ]);
       setInbox(failed || []);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
-      listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
+      setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
     } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
   }, []);
@@ -368,7 +378,7 @@ function App() {
       if (s?.user) refreshCloud(s.user); else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
-        setCloudAccounts([]); setInbox([]);
+        setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
         setCloudPostings([]);
         setCloudActivities([]);
         setRawTxs(pending?.transactions || loadLocalTransactions());
@@ -489,7 +499,7 @@ function App() {
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
-  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, briefing.tips, prefs.devices, deviceId]);
+  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, bills: cloudBills, billOccurrences: cloudBillOccurrences, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, cloudBills, cloudBillOccurrences, briefing.tips, prefs.devices, deviceId]);
   const allNotifications = useMemo(() => buildNotifications(txs, systemNotices), [txs, systemNotices]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
@@ -948,7 +958,7 @@ function App() {
     if (clearText.trim().toUpperCase() !== 'DELETE') return;
     setBusy(true); setError('');
     try {
-      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); }
+      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
       const qrCleanup = clearLocalAccountQr().catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
@@ -1329,11 +1339,28 @@ function App() {
   }, [todayKey, go]);
   /* Reads a CSV or JSON file on this device and adds what is new; nothing already saved is overwritten. */
   const importDataFile = useCallback(async (file) => {
-    if (cloudMode) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
     if (file.size > IMPORT_MAX_BYTES) return { ok: false, message: tr('The file must be 5 MB or smaller.') };
     if (!/\.(csv|json)$/i.test(file.name || '')) return { ok: false, message: tr('Choose a CSV or JSON file.') };
     const parsed = parseImportFile(file.name, await file.text());
     if (parsed.errors.length) return { ok: false, message: tr(parsed.errors[0]) };
+    const hasObligations = parsed.loans.length || parsed.receivables.length || parsed.bills.length;
+    const hasOtherRecords = parsed.accounts.length || parsed.transactions.length || parsed.subscriptions.length || parsed.budgets.length || parsed.plans.length;
+    if (hasObligations && hasOtherRecords) return { ok: false, message: tr('Import loans, receivables and bills in a separate file from accounts, transactions and plans.') };
+    if (hasObligations && !cloudMode) return { ok: false, message: tr('Sign in to MOVO to import loans, receivables and bills securely.') };
+    if (cloudMode) {
+      if (!session?.user?.id || !hasObligations) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
+      const [existingLoans, existingReceivables, existingBills] = await Promise.all([listLoans(), listReceivables(), listBills()]);
+      const plan = planImport(parsed, { accounts: [], transactions: [], subscriptions: [], budgets: [], plans: [], loans: existingLoans || [], receivables: existingReceivables || [], bills: existingBills || [] },
+        { base, batchId: `import-${Date.now().toString(36)}`, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
+      let added = 0; let failed = 0;
+      for (const item of plan.loans) { try { await createLoan(item, session.user.id); added += 1; } catch { failed += 1; } }
+      for (const item of plan.receivables) { try { await createReceivable(item, session.user.id); added += 1; } catch { failed += 1; } }
+      for (const item of plan.bills) { try { await createBill(item, session.user.id); added += 1; } catch { failed += 1; } }
+      if (added) await refreshCloud(session.user);
+      if (!added && !failed) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
+      const skipped = plan.skipped.duplicates + plan.skipped.invalid + failed;
+      return { ok: added > 0, message: `${tr('Imported {n} financial planning item(s).', { n: added })}${skipped ? ` ${tr('{n} rows were skipped as duplicates, invalid or failed.', { n: skipped })}` : ''}` };
+    }
     const batchId = `import-${Date.now().toString(36)}`;
     const plan = planImport(parsed, { accounts: localAccounts, transactions: rawTxs, subscriptions, budgets: prefs.budgets || [], plans: prefs.plans || [] },
       { base, batchId, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
@@ -1351,7 +1378,7 @@ function App() {
     const summary = tr('Added {items}.', { items: [['{n} accounts', plan.accounts], ['{n} transactions', plan.transactions], ['{n} subscriptions', plan.subscriptions], ['{n} budgets', plan.budgets], ['{n} goals', plan.plans]].filter(([, list]) => list.length).map(([label, list]) => tr(label, { n: list.length })).join(', ') });
     if (!added) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
     return { ok: true, message: skipped ? `${summary} ${tr('{n} rows were skipped as duplicates or incomplete.', { n: skipped })}` : summary };
-  }, [cloudMode, localAccounts, rawTxs, subscriptions, prefs.budgets, prefs.plans, base]);
+  }, [cloudMode, session, refreshCloud, localAccounts, rawTxs, subscriptions, prefs.budgets, prefs.plans, base]);
   /* Usage streak: today counts once Movo is open; a new badge gets its own moment. */
   useEffect(() => {
     if (!authReady) return;
@@ -1439,7 +1466,7 @@ function App() {
       const pending = pendingLocalDataRef.current;
       setSession(null);
       setCloudMode(false);
-      setCloudAccounts([]); setInbox([]);
+      setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
       setCloudPostings([]);
       setCloudActivities([]);
       setRawTxs(pending?.transactions || loadLocalTransactions());
