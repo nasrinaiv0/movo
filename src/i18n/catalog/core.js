@@ -2927,6 +2927,19 @@ export default [
   ["Spending limit almost reached","Malapit nang maabot ang limitasyon ng paggastos","أوشك حد الإنفاق على النفاد","即将达到支出限额","Casi alcanzaste el límite de gasto","Limite di spesa quasi raggiunto","Ausgabenlimit fast erreicht","Limite de dépenses presque atteint","Limite de gastos quase atingido","支出上限に近づいています","지출 한도에 거의 도달했습니다","खर्च की सीमा लगभग पूरी हो गई"],
   ["{name} is over its monthly limit: {spent} of {limit}.","Lumampas na sa buwanang limitasyon ang {name}: {spent} sa {limit}.","تجاوز {name} الحد الشهري: {spent} من {limit}.","{name} 已超出每月限额：{spent} / {limit}。","{name} superó su límite mensual: {spent} de {limit}.","{name} ha superato il limite mensile: {spent} su {limit}.","{name} liegt über dem Monatslimit: {spent} von {limit}.","{name} dépasse sa limite mensuelle : {spent} sur {limit}.","{name} excedeu o limite mensal: {spent} de {limit}.","{name} は月間上限を超えています：{limit} 中 {spent}。","{name}의 월 한도를 초과했습니다: {limit} 중 {spent}.","{name} अपनी मासिक सीमा से अधिक है: {limit} में से {spent}。"],
   ["{name} has used {percent}% of its monthly limit.","Nagamit na ng {name} ang {percent}% ng buwanang limitasyon nito.","استخدم {name} نسبة {percent}% من حده الشهري.","{name} 已使用每月限额的 {percent}%。","{name} ha utilizado el {percent}% de su límite mensual.","{name} ha utilizzato il {percent}% del limite mensile.","{name} hat {percent}% des Monatslimits verbraucht.","{name} a utilisé {percent}% de sa limite mensuelle.","{name} usou {percent}% do limite mensal.","{name} は月間上限の {percent}% を使用しました。","{name}이(가) 월 한도의 {percent}%를 사용했습니다.","{name} ने अपनी मासिक सीमा का {percent}% उपयोग किया。"],
-  ["Add spending limit","Magdagdag ng limitasyon sa paggastos","إضافة حد إنفاق","添加支出限额","Añadir límite de gasto","Aggiungi limite di spesa","Ausgabenlimit hinzufügen","Ajouter une limite de dépenses","Adicionar limite de gastos","支出上限を追加","지출 한도 추가","खर्च की सीमा जोड़ें"]
-
+  ["Add spending limit","Magdagdag ng limitasyon sa paggastos","إضافة حد إنفاق","添加支出限额","Añadir límite de gasto","Aggiungi limite di spesa","Ausgabenlimit hinzufügen","Ajouter une limite de dépenses","Adicionar limite de gastos","支出上限を追加","지출 한도 추가","खर्च की सीमा जोड़ें"],
+  [
+    "Alert threshold must be between 1 and 100.",
+    "Dapat nasa pagitan ng 1 at 100 ang hangganan ng alerto.",
+    "يجب أن يكون حد التنبيه بين 1 و100.",
+    "提醒阈值必须介于 1 到 100 之间。",
+    "El umbral de alerta debe estar entre 1 y 100.",
+    "La soglia di avviso deve essere compresa tra 1 e 100.",
+    "Die Warnschwelle muss zwischen 1 und 100 liegen.",
+    "Le seuil d’alerte doit être compris entre 1 et 100.",
+    "O limite de alerta deve estar entre 1 e 100.",
+    "通知しきい値は 1～100 の範囲で指定してください。",
+    "알림 기준은 1에서 100 사이여야 합니다.",
+    "अलर्ट सीमा 1 से 100 के बीच होनी चाहिए。"
+  ]
 ];
