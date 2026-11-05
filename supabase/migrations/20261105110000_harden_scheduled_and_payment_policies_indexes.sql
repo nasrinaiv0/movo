@@ -14,7 +14,8 @@ drop policy if exists "Users read their payment reminder events" on public.payme
 alter policy "Users manage their payment attempts" on public.payment_attempts
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 
--- Cover every FK reported by the live Supabase performance advisor.
+-- Cover the FK indexes reported by the original advisor review. Account ownership constraints
+-- reference (account_id,user_id) and (transfer_to_account_id,user_id), not nonexistent columns.
 create index if not exists payment_attempts_account_id_idx
   on public.payment_attempts(account_id);
 create index if not exists payment_attempts_account_owner_idx
@@ -22,11 +23,11 @@ create index if not exists payment_attempts_account_owner_idx
 create index if not exists scheduled_transactions_account_id_idx
   on public.scheduled_transactions(account_id);
 create index if not exists scheduled_transactions_destination_account_owner_idx
-  on public.scheduled_transactions(destination_account_id, user_id);
+  on public.scheduled_transactions(transfer_to_account_id, user_id);
 create index if not exists scheduled_transactions_last_transaction_id_idx
   on public.scheduled_transactions(last_transaction_id);
 create index if not exists scheduled_transactions_source_account_owner_idx
-  on public.scheduled_transactions(source_account_id, user_id);
+  on public.scheduled_transactions(account_id, user_id);
 create index if not exists scheduled_transactions_transfer_to_account_id_idx
   on public.scheduled_transactions(transfer_to_account_id);
 create index if not exists transactions_schedule_id_idx
