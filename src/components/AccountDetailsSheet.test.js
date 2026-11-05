@@ -10,8 +10,13 @@ jest.mock('./ui', () => {
   return {
     Sheet: ({ children }) => React.createElement('div', { 'data-testid': 'sheet' }, children),
     TransactionRow: () => null,
-    Bars: ({ values, startLabel, endLabel }) => React.createElement('div', { 'data-testid': 'spending-bars', 'data-values': values.join(','), 'data-start': startLabel, 'data-end': endLabel }),
+    Money: () => null,
+
   };
+});
+jest.mock('./MoneyFlow', () => {
+  const React = require('react');
+  return { __esModule: true, default: ({ txs, variant }) => React.createElement('div', { 'data-testid': 'account-money-flow', 'data-transaction-ids': txs.map(item => item.id).join(','), 'data-variant': variant }) };
 });
 jest.mock('./CardArt', () => {
   const React = require('react');
@@ -27,6 +32,7 @@ jest.mock('./AccountTile', () => {
 });
 jest.mock('../lib/cashback', () => ({ estimateCashback: () => [] }));
 jest.mock('../lib/scheduledTransactions', () => ({ listScheduledTransactions: () => Promise.resolve([]) }));
+jest.mock('../lib/obligationsRepository', () => ({ listGoals: jest.fn(() => Promise.resolve([])), listGoalAllocations: jest.fn(() => Promise.resolve([])) }));
 
 test('read-only account hub shows resolved QR artwork, supports Escape to close zoom, and hides edit/archive actions', async () => {
   const el = document.createElement('div');
@@ -78,18 +84,15 @@ test('read-only account hub shows resolved QR artwork, supports Escape to close 
 });
 
 
-test('account overview charts 10 local days of account expenses only', async () => {
+test('account overview shows Money Flow scoped to the selected account', async () => {
   const el = document.createElement('div');
   document.body.appendChild(el);
   const root = createRoot(el);
-  const date = daysAgo => { const value = new Date(); value.setDate(value.getDate() - daysAgo); return value.toISOString(); };
   const transactions = [
-    { id: 'expense-today', account_id: 'cash-1', type: 'expense', amount: 125, date: date(0) },
-    { id: 'expense-yesterday', account_id: 'cash-1', type: 'expense', amount: 75, date: date(1) },
-    { id: 'expense-old', account_id: 'cash-1', type: 'expense', amount: 900, date: date(12) },
-    { id: 'income', account_id: 'cash-1', type: 'income', amount: 500, date: date(0) },
-    { id: 'transfer-in', account_id: 'other-account', transfer_to_account_id: 'cash-1', type: 'expense', amount: 300, date: date(0) },
-    { id: 'other-account-expense', account_id: 'other-account', type: 'expense', amount: 800, date: date(0) },
+    { id: 'cash-expense', account_id: 'cash-1', type: 'expense', amount: 125, date: new Date().toISOString() },
+    { id: 'cash-income', account_id: 'cash-1', type: 'income', amount: 500, date: new Date().toISOString() },
+    { id: 'transfer-to-cash', account_id: 'other-account', transfer_to_account_id: 'cash-1', type: 'transfer', amount: 300, date: new Date().toISOString() },
+    { id: 'other-account-expense', account_id: 'other-account', type: 'expense', amount: 800, date: new Date().toISOString() },
   ];
   await act(async () => {
     root.render(<AccountDetailsSheet
@@ -103,14 +106,78 @@ test('account overview charts 10 local days of account expenses only', async () 
     />);
     await Promise.resolve();
   });
-  const chart = el.querySelector('[data-testid="spending-bars"]');
-  expect(chart).not.toBeNull();
-  const values = chart.getAttribute('data-values').split(',').map(Number);
-  expect(values).toHaveLength(10);
-  expect(values.slice(-2)).toEqual([75, 125]);
-  expect(values.reduce((sum, value) => sum + value, 0)).toBe(200);
-  expect(chart.getAttribute('data-start')).toBe('9 days ago');
-  expect(chart.getAttribute('data-end')).toBe('Today');
+  expect(el.querySelector('[aria-label="Last 10 Days Spending"]')).toBeNull();
+  const flow = el.querySelector('[data-testid="account-money-flow"]');
+  expect(flow).not.toBeNull();
+  expect(flow.getAttribute('data-variant')).toBe('bars');
+  expect(flow.getAttribute('data-transaction-ids').split(',')).toEqual(['cash-expense', 'cash-income', 'transfer-to-cash']);
+  act(() => root.unmount());
+  el.remove();
+});
+
+
+test('connected items show goal and plan allocations belonging to the selected account', async () => {
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => {
+    root.render(<AccountDetailsSheet
+      account={{ id: 'bank-1', name: 'BPI Savings', account_type: 'bank', currency: 'PHP', balance: 12000 }}
+      accounts={[]}
+      transactions={[]}
+      prefs={{}}
+      subscriptions={[]}
+      plans={[{ id: 'trip', name: 'Japan trip', currency: 'PHP', fundingAllocations: [
+        { id: 'plan-allocation', account_id: 'bank-1', amount: 2500, currency: 'PHP', status: 'allocated', created_at: '2026-11-01T00:00:00Z' },
+        { id: 'other-account-plan', account_id: 'cash-1', amount: 900, currency: 'PHP', status: 'allocated' },
+      ] }]}
+      show
+      onClose={jest.fn()}
+    />);
+    await Promise.resolve();
+  });
+  const tabs = [...el.querySelectorAll('[role="tab"]')];
+  await act(async () => tabs.find(tab => tab.textContent.includes('Connected'))?.click());
+  expect(el.textContent).toContain('Allocated funds for goals and plans');
+  expect(el.textContent).toContain('Japan trip');
+  expect(el.textContent).toContain('₱2,500.00');
+  expect(el.textContent).not.toContain('other-account-plan');
+  expect(el.textContent).not.toContain('₱900.00');
+  act(() => root.unmount());
+  el.remove();
+});
+
+
+test('connected items load cloud goal allocations and include linked bank allocations for a debit card', async () => {
+  const repository = require('../lib/obligationsRepository');
+  repository.listGoals.mockResolvedValue([{ id: 'goal-1', name: 'Emergency fund' }]);
+  repository.listGoalAllocations.mockResolvedValue([
+    { id: 'goal-allocation', goal_id: 'goal-1', account_id: 'bank-1', amount: 1800, currency: 'PHP', status: 'allocated', created_at: '2026-11-02T00:00:00Z' },
+    { id: 'unrelated-allocation', goal_id: 'goal-1', account_id: 'cash-1', amount: 700, currency: 'PHP', status: 'allocated' },
+  ]);
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => {
+    root.render(<AccountDetailsSheet
+      account={{ id: 'debit-1', name: 'BPI Debit', account_type: 'card', cardKind: 'debit', linkedAccountId: 'bank-1', currency: 'PHP', balance: 0 }}
+      accounts={[{ id: 'bank-1', name: 'BPI Savings', account_type: 'bank', currency: 'PHP', balance: 5000 }]}
+      transactions={[]}
+      prefs={{}}
+      subscriptions={[]}
+      cloudMode
+      show
+      onClose={jest.fn()}
+    />);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  const tabs = [...el.querySelectorAll('[role="tab"]')];
+  await act(async () => tabs.find(tab => tab.textContent.includes('Connected'))?.click());
+  expect(el.textContent).toContain('Emergency fund');
+  expect(el.textContent).toContain('₱1,800.00');
+  expect(el.textContent).not.toContain('₱700.00');
+  expect(repository.listGoals).toHaveBeenCalled();
   act(() => root.unmount());
   el.remove();
 });

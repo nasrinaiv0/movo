@@ -16,6 +16,12 @@
 export const INSTITUTION_FAVICONS = {
   // Philippines
   'BDO Unibank': { domain: 'bdo.com.ph', countryCode: 'PH' },
+  'China Banking Corporation (Chinabank)': { domain: 'chinabank.ph', countryCode: 'PH' },
+  'Lloyds Bank': { domain: 'lloydsbank.com', countryCode: 'GB' },
+  'RBC Royal Bank': { domain: 'rbc.com', countryCode: 'CA' },
+  'BMO Bank of Montreal': { domain: 'bmo.com', countryCode: 'CA' },
+  'DBS / POSB': { domain: 'dbs.com.sg', countryCode: 'SG' },
+
   BPI: { domain: 'bpi.com.ph', countryCode: 'PH' },
   Metrobank: { domain: 'metrobank.com.ph', countryCode: 'PH' },
   'Land Bank of the Philippines': { domain: 'landbank.com', countryCode: 'PH' },

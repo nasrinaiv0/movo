@@ -9,7 +9,7 @@ export function MovoFallback({ className = '' }) {
 
 /** A remote brand logo that falls back to the MOVO mark (or a given `fallback`) when there is no URL or it fails. */
 export default function BrandLogo({ src, name, fallbackSrcs = [], fallback, className = '', size, onMissing }) {
-  const sources = [src || (name ? merchantLogoUrl(name, { size: size || 64 }) : ''), ...fallbackSrcs].filter((value, index, all) => Boolean(value) && all.indexOf(value) === index);
+  const sources = [src, name ? merchantLogoUrl(name, { size: size || 64 }) : '', ...fallbackSrcs].filter((value, index, all) => Boolean(value) && all.indexOf(value) === index);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => { setAttempt(0); }, [sources.join('|')]);
   const activeSrc = sources[attempt] || '';

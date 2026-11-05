@@ -1,4 +1,5 @@
 import { getInstitutionFaviconEntry, getInstitutionFaviconUrl, INSTITUTION_FAVICONS } from './institutionFavicons';
+import { institutionLogoCandidates } from './institutions';
 
 describe('institution favicon registry', () => {
   test('maps a known institution name to its curated domain metadata', () => {
@@ -67,4 +68,12 @@ describe('institution favicon registry', () => {
       expect(entry.countryCode).toBeTruthy();
     }
   });
+});
+
+
+test('institution logo candidates include curated alias fallbacks without guessing manual names',()=>{
+  const aub=institutionLogoCandidates('AUB',{size:64});
+  expect(aub.length).toBeGreaterThan(0);
+  expect(aub[0]).toContain('domain=aub.com.ph');
+  expect(institutionLogoCandidates('Unknown personal bank')).toEqual([]);
 });

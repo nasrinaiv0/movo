@@ -183,3 +183,35 @@ export async function snoozeObligation(userId, event, until) {
   ]);
   return {in_app:inApp,push};
 }
+
+
+/** Stable key for one due occurrence, shared by local and cloud reminder actions. */
+export function reminderActionKey(entry) {
+  if(!entry?.kind||!entry?.item?.id||!entry?.date)return '';
+  return `${entry.kind}:${entry.item.id}:${entry.date}`;
+}
+
+/** A local action permanently resolves only the matching occurrence; later cycles remain eligible. */
+export function isReminderActioned(entry, actions = {}) {
+  const key=reminderActionKey(entry);
+  return Boolean(key && actions && Object.prototype.hasOwnProperty.call(actions,key));
+}
+
+
+/** Sent reminders are shown again on the next app open; only explicit dismissals or active snoozes suppress them. */
+export function reminderEventAllowsDisplay(event, now = Date.now()) {
+  if(!event)return true;
+  if(['dismissed','skipped','archived','deleted'].includes(String(event.status||'').toLowerCase()))return false;
+  const until=Date.parse(event.snoozed_until||'');
+  return !Number.isFinite(until)||until<=now;
+}
+
+
+/** A skip or active snooze applies to the whole due occurrence, not just one reminder offset. */
+export function reminderOccurrenceAllowsDisplay(events = [], entry, offset = 0, now = Date.now()) {
+  const matches=(Array.isArray(events)?events:[]).filter(event=>event.channel==='in_app'&&event.source_type===entry?.kind&&event.source_id===String(entry?.item?.id)&&event.occurrence_date===entry?.date);
+  if(matches.some(event=>['dismissed','skipped','archived','deleted'].includes(String(event.status||'').toLowerCase())))return false;
+  if(matches.some(event=>{const until=Date.parse(event.snoozed_until||'');return Number.isFinite(until)&&until>now;}))return false;
+  const previous=matches.find(event=>Number(event.reminder_offset)===Number(offset));
+  return reminderEventAllowsDisplay(previous,now);
+}

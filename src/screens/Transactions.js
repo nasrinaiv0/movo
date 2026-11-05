@@ -32,7 +32,7 @@ export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
   const currentCycle = monthKey(refDate);
   const selectedCycle = month === 'all' ? 'all' : (month || currentCycle);
-  const cycleLabel = selectedCycle === 'all' ? tr('All billing cycles') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
+  const cycleLabel = selectedCycle === 'all' ? tr('All') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
   /* Month-over-month indicators describe the current month only; older months show their totals alone. */
   const isCurrent = month === monthKey(refDate);
   const sorts = SORTS[txFilter];
@@ -49,9 +49,8 @@ export default function Transactions({ c }) {
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
     <label className="tx-period-filter" aria-label={tr('Filter by billing cycle')}>
-      <Icon name="sliders" size={19} />
       <span className="tx-period-filter-value">{cycleLabel}</span>
-      <Icon name="down" size={15} />
+      <Icon name="down" size={14} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
         <option value="all">{tr('All')}</option>
         {billingCycleOptions(months, currentCycle).slice(1).map(option => <option key={option.value} value={option.value}>{tr(option.label)}</option>)}
@@ -62,8 +61,8 @@ export default function Transactions({ c }) {
   return <>
     <RootHeader title={tr('Transactions')} headerActions={[
       { icon: 'search', label: tr('Search'), onClick: c.openSearch },
-      { icon: 'sliders', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }) },
-      { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense') },
+      { icon: 'transactionFilter', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }) },
+      { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense'), className: 'accent' },
     ]} />
     <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
