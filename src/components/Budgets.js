@@ -115,7 +115,7 @@ export function SpendingLimitsSheet({ limits = [], accounts = [], show, onSave, 
     if (!(amount > 0)) { setError(tr('Enter a monthly limit greater than zero.')); return; }
     if (!(threshold >= 1 && threshold <= 100)) { setError(tr('Alert threshold must be between 1 and 100.')); return; }
     if (draft.scope === 'account' && !draft.account_id) { setError(tr('Choose an account.')); return; }
-    if (draft.scope === 'merchant' && !String(draft.merchant || '').trim()) { setError(tr('Enter a merchant name.')); return; }
+    if (draft.scope === 'merchant' && !String(draft.merchant || '').trim()) { setError(tr('Enter a merchant name')); return; }
     await onSave({ id: draft.id, scope: draft.scope, account_id: draft.scope === 'account' ? draft.account_id : '', merchant: draft.scope === 'merchant' ? String(draft.merchant).trim().slice(0, 100) : '', monthly_limit: amount, alert_percent: threshold });
     setDraft(null);
   };
