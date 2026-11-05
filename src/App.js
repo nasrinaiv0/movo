@@ -94,9 +94,24 @@ export function readableAccent(hex, dark) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '')); if (!m) return undefined;
   let [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
   const lum = () => [r, g, b].map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; }).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
-  if (!dark) return `#${m[1]}`;
-  for (let i = 0; i < 12 && (lum() + 0.05) / (0.0116 + 0.05) < 6; i += 1) [r, g, b] = [r, g, b].map(v => Math.round(v + (255 - v) * 0.18));
+  if (dark) {
+    for (let i = 0; i < 12 && (lum() + 0.05) / (0.0116 + 0.05) < 6; i += 1) [r, g, b] = [r, g, b].map(v => Math.round(v + (255 - v) * 0.18));
+  } else {
+    // Accent-colored text/icons sit on light surfaces; darken bright accents to WCAG AA.
+    for (let i = 0; i < 12 && 1.05 / (lum() + 0.05) < 4.5; i += 1) [r, g, b] = [r, g, b].map(v => Math.round(v * 0.82));
+  }
   return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+}
+/** Chooses accessible foreground ink for accent-filled controls (WCAG contrast). */
+export function contrastTextForAccent(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return '#ffffff';
+  const channels = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255);
+  const luminance = channels.map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+    .reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i], 0);
+  const whiteContrast = 1.05 / (luminance + 0.05);
+  const blackContrast = (luminance + 0.05) / 0.05;
+  return blackContrast >= whiteContrast ? '#000000' : '#ffffff';
 }
 // When a record reached MOVO (created_at), falling back to when it happened for older local rows.
 const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || '') || 0;
@@ -1553,7 +1568,7 @@ function App() {
     root.setProperty('--font-scale', String(fontScale));
     root.setProperty('--app-font', fontStack);
   }, [fontScale, fontStack, prefs.fontStyle]);
-  const rootStyle = { ...glassVars, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
+  const rootStyle = { ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
