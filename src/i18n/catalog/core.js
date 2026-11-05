@@ -2878,4 +2878,21 @@ export default [
     "डुप्लिकेट, अमान्य या विफल होने के कारण {n} पंक्तियाँ छोड़ दी गईं。"
   ]
 
+  ],
+
+  [
+    "Cloud sync is paused on this device.",
+    "Naka-pause ang cloud sync sa device na ito.",
+    "تم إيقاف المزامنة السحابية مؤقتًا على هذا الجهاز.",
+    "此设备上的云同步已暂停。",
+    "La sincronización en la nube está pausada en este dispositivo.",
+    "La sincronizzazione cloud è in pausa su questo dispositivo.",
+    "Die Cloud-Synchronisierung ist auf diesem Gerät pausiert.",
+    "La synchronisation cloud est en pause sur cet appareil.",
+    "A sincronização na nuvem está pausada neste dispositivo.",
+    "このデバイスではクラウド同期が一時停止されています。",
+    "이 기기에서 클라우드 동기화가 일시 중지되었습니다.",
+    "इस डिवाइस पर क्लाउड सिंक रोक दिया गया है。"
+  ]
+
 ];
