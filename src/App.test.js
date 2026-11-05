@@ -732,6 +732,10 @@ test('accent text stays readable on dark backgrounds', () => {
   expect(onDark(readableAccent('#2f6bff', true))).toBeGreaterThanOrEqual(6);
   expect(readableAccent('#334155', false)).toBe('#334155');
   expect(readableAccent('#c7f0dc', true)).toBe('#c7f0dc');
+  const onLight = hex => 1.05 / (lum(hex) + 0.05);
+  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#ef4444', '#334155'].forEach(accent => {
+    expect(onLight(readableAccent(accent, false))).toBeGreaterThanOrEqual(4.5);
+  });
 });
  
 test('accent-filled controls choose a WCAG-strong foreground for every accent family', () => {
