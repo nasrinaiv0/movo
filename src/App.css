@@ -5357,7 +5357,7 @@ button.account-tile:active { transform: scale(.98); }
   background: var(--surface-1); color: var(--accent-ink, var(--text));
   box-shadow: 0 1px 5px color-mix(in srgb, var(--text) 10%, transparent);
 }
-.movo-app .chip-row button.selected { color: var(--accent) !important; text-decoration-color: var(--accent); }
+.movo-app .chip-row button.selected { color: var(--accent-ink, var(--accent)) !important; text-decoration-color: var(--accent-ink, var(--accent)); }
 .movo-app .link-button, .movo-app .manage-button { color: var(--accent-ink, var(--accent)); }
 .movo-app :where(.tx-row, .menu-row, .note-row, .account-row, .sheet-card, .mini-card, .balance-row, .profile-card, .theme-option):active {
   background-color: var(--surface-pressed);
