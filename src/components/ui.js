@@ -26,11 +26,11 @@ export function IconButton({ icon, label, onClick, dot, size = 20, className = '
 }
 
 /** Large-title header used by the five root screens. */
-export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell, action, headerActions }) {
-  return <header className="screen-header root">
+export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell, action, headerActions, className = '' }) {
+  return <header className={`screen-header root ${className}`.trim()}>
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions">
-      {headerActions ? headerActions.map(item => <IconButton key={item.label} icon={item.icon} label={item.label} onClick={item.onClick} dot={item.dot} className={item.className} />) : <>
+      {headerActions ? headerActions.map(item => <IconButton key={item.label} icon={item.icon} label={item.label} onClick={item.onClick} dot={item.dot} size={item.size || 20} className={item.className} />) : <>
         {action ? <IconButton icon={action.icon} label={action.label} onClick={action.onClick} /> : !hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
         {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
         {onSettings && <IconButton icon="gearSolid" label={tr('Settings')} onClick={onSettings} />}
