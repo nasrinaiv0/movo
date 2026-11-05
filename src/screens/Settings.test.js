@@ -17,6 +17,8 @@ function makeContext(cloudMode = false) {
     query: '',
     setQuery: jest.fn(),
     cloudMode,
+    session: cloudMode ? { user: { id: 'user-1' } } : null,
+    setCloudSyncEnabled: jest.fn(),
     openLegal: jest.fn(),
     setSheet: jest.fn(),
   };
@@ -43,35 +45,55 @@ describe('Cloud Sync setting semantics', () => {
     root = null;
   });
 
-  test('local-only mode exposes a working sign-in action instead of a fake switch', () => {
+  test('local-only mode exposes a switch that directs unsigned users to sign in', () => {
     context = makeContext(false);
     root = createRoot(container);
     act(() => root.render(<Settings c={context} />));
 
     const row = findCloudSyncRow(container);
     expect(row).toBeTruthy();
-    expect(row.tagName).toBe('BUTTON');
+    expect(row.tagName).toBe('DIV');
     expect(row.textContent).toContain('Sign in to enable secure cloud sync.');
-    expect(row.textContent).toContain('Sign in required');
-    expect(row.querySelector('[role="switch"]')).toBeNull();
+    const toggle = row.querySelector('[role="switch"]');
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
 
-    act(() => row.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    act(() => toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(context.go).toHaveBeenCalledWith('Sign in');
-    expect(context.setPref).not.toHaveBeenCalledWith('cloudSync', expect.anything());
+    expect(context.setCloudSyncEnabled).not.toHaveBeenCalled();
   });
 
-  test('signed-in cloud mode reports active sync without rendering a misleading switch', () => {
+  test('signed-in cloud mode can pause sync without signing out', () => {
     context = makeContext(true);
     root = createRoot(container);
     act(() => root.render(<Settings c={context} />));
 
     const row = findCloudSyncRow(container);
     expect(row).toBeTruthy();
-    expect(row.tagName).toBe('DIV');
     expect(row.textContent).toContain('Cloud sync is active for your signed-in account.');
-    expect(row.querySelector('[role="switch"]')).toBeNull();
-    expect(row.getAttribute('aria-disabled')).toBeNull();
+    const toggle = row.querySelector('[role="switch"]');
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+
+    act(() => toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(context.setCloudSyncEnabled).toHaveBeenCalledWith(false);
     expect(context.go).not.toHaveBeenCalled();
-    expect(context.setPref).not.toHaveBeenCalledWith('cloudSync', expect.anything());
+  });
+
+  test('a signed-in user can resume paused cloud sync', () => {
+    context = makeContext(false);
+    context.session = { user: { id: 'user-1' } };
+    context.prefs.cloudSyncEnabled = false;
+    root = createRoot(container);
+    act(() => root.render(<Settings c={context} />));
+
+    const row = findCloudSyncRow(container);
+    expect(row.textContent).toContain('Cloud sync is paused on this device.');
+    const toggle = row.querySelector('[role="switch"]');
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+
+    act(() => toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(context.setCloudSyncEnabled).toHaveBeenCalledWith(true);
   });
 });
