@@ -5028,3 +5028,12 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .fp-credit-log-summary { padding:9px; gap:8px; }
  .movo-app .fp-credit-log-summary > div b { font-size:13px; }
 }
+
+
+/* Credit card planning stats: lightweight 2D outline icons with aligned labels. */
+.movo-app .fp-credit-card-stats > span { display:flex; align-items:center; gap:9px; min-width:0; }
+.movo-app .fp-credit-card-stats > span > .movo-icon { flex:0 0 23px; width:23px; height:23px; color:var(--muted); }
+.movo-app .fp-credit-card-stat-copy { display:grid; gap:3px; min-width:0; }
+.movo-app .fp-credit-card-stat-copy b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.movo-app .fp-credit-card-stat-copy small { display:block; }
+@media(max-width:380px){.movo-app .fp-credit-card-stats > span{gap:6px}.movo-app .fp-credit-card-stats > span > .movo-icon{flex-basis:19px;width:19px;height:19px}}
