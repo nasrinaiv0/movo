@@ -202,7 +202,9 @@ test('credit card planning fields stay grouped in a responsive card layout with 
   expect(card.querySelector('.fp-credit-card-stats')).not.toBeNull();
   expect(card.querySelectorAll('.fp-credit-card-stats > span')).toHaveLength(3);
   expect(card.querySelectorAll('.fp-credit-card-stats > span > .movo-icon')).toHaveLength(3);
-  expect(Array.from(card.querySelectorAll('.fp-credit-card-stats > span > .movo-icon')).map(icon => icon.outerHTML)).toEqual(expect.arrayContaining([expect.stringContaining('') ]));
+  expect(card.querySelector('.fp-stat-icon-calendar')).not.toBeNull();
+  expect(card.querySelector('.fp-stat-icon-layers')).not.toBeNull();
+  expect(card.querySelector('.fp-stat-icon-receipt')).not.toBeNull();
   expect(card.querySelectorAll('.fp-credit-card-fields')).toHaveLength(2);
   expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(5);
   expect(card.querySelector('.fp-credit-card-fields input[type="date"]')).not.toBeNull();
