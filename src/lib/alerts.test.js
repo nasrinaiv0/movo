@@ -52,3 +52,21 @@ test('builds configured bill reminders for due occurrences and skips paid or can
     cat: 'catTransactions',
   });
 });
+
+
+test('emits monthly account and merchant limit warnings at their configured thresholds', () => {
+  const notices = buildSystemNotices({
+    now: new Date('2026-11-05T12:00:00'),
+    spendingLimits: [
+      { id: 'bank-1', scope: 'account', account_name: 'Main Bank', spent: 850, monthly_limit: 1000, percent: 85, level: 'warn', currency: 'PHP' },
+      { id: 'merchant-1', scope: 'merchant', merchant: 'Coffee Shop', spent: 1200, monthly_limit: 1000, percent: 120, level: 'over', currency: 'PHP' },
+      { id: 'ok-1', scope: 'merchant', merchant: 'Groceries', spent: 200, monthly_limit: 1000, percent: 20, level: 'ok', currency: 'PHP' },
+    ],
+    fmt: n => `₱${n}`,
+  });
+  const limitNotices = notices.filter(n => n.id.startsWith('spending-limit-'));
+  expect(limitNotices).toHaveLength(2);
+  expect(limitNotices.map(n => n.title)).toEqual(['Spending limit almost reached', 'Spending limit exceeded']);
+  expect(limitNotices[0].vars).toMatchObject({ name: 'Main Bank', percent: 85 });
+  expect(limitNotices[1].vars).toMatchObject({ name: 'Coffee Shop', spent: '₱1200', limit: '₱1000' });
+});
