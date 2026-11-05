@@ -17,7 +17,7 @@ test('matches merchant limits by normalized exact merchant name, not substrings'
   const result = spendingLimitProgress(
     [{ id: 'm', scope: 'merchant', merchant: 'Coffee & Co.', monthly_limit: 1000, alert_percent: 80 }],
     [
-      { type: 'expense', merchant: 'Coffee and Co', amount: 850 },
+      { type: 'expense', merchant: 'Coffee-Co', amount: 850 },
       { type: 'expense', merchant: 'Coffee Company', amount: 900 },
       { type: 'expense', merchant: 'Coffee & Co.', amount: 50 },
     ],
