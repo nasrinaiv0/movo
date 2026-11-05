@@ -5231,3 +5231,13 @@ button.account-tile:active { transform: scale(.98); }
   }
   .movo-app .screen-header .header-actions { gap: 6px; }
 }
+
+/* Enforce the active accent on every icon in every screen header, including per-screen overrides such as Transactions and header-right action buttons. */
+.movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon {
+  color: var(--accent) !important;
+  stroke: currentColor;
+}
+/* Filled accent actions keep sufficient foreground contrast. */
+.movo-app.movo-app .screen-header :is(.round-button.accent, .round-button.wallet-header-add, .round-button.transaction-header-add) > .movo-icon {
+  color: var(--on-accent, #fff) !important;
+}
