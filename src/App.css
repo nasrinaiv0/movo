@@ -5406,3 +5406,42 @@ button.account-tile:active { transform: scale(.98); }
     font-size: 12px;
   }
 }
+
+
+/* PR #217 follow-up: every screen-header action is a true 30px circle.
+   This intentionally overrides older 48/56px header sizing without touching
+   content actions, quick actions, bottom navigation, or sheet controls. */
+.movo-app.movo-app .screen-header :is(.round-button, .back-button),
+.movo-app.movo-app .screen-header .header-actions > button,
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px;
+  max-height: 30px;
+  padding: 0;
+  border-radius: 50% !important;
+}
+.movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon,
+.movo-app.movo-app .screen-header .header-actions > button > .movo-icon,
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+@media (max-width: 360px) {
+  .movo-app.movo-app .screen-header :is(.round-button, .back-button),
+  .movo-app.movo-app .screen-header .header-actions > button,
+  .movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+    flex-basis: 30px;
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+  }
+}
