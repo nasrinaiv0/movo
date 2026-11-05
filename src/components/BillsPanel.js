@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AccountOptions } from './AccountPicker';
+import AccountPicker from './AccountPicker';
 import Icon from './Icon';
 import { SectionTitle, Sheet } from './ui';
 import { formatDate } from '../lib/format';
@@ -105,9 +105,9 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
         {pay.actual !== null && <label>{tr('Actual bill amount')}<input type="number" min="0.01" step="0.01" value={pay.actual} onChange={e=>{const actual=e.target.value;const remaining=actual?Math.max(0,Number(actual)-Number(pay.occ.paid_amount||0)):amountRemaining(pay.occ);setPay({...pay,actual,remaining,amount:actual||pay.amount,splits:pay.split_enabled&&pay.splits.length===1?pay.splits.map(x=>({...x,amount:actual||pay.amount})):pay.splits});}} placeholder={String(pay.occ.expected_amount)} /></label>}
         <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value, splits:pay.split_enabled&&pay.splits.length===1?pay.splits.map(x=>({...x,amount:e.target.value})):pay.splits })} /></label>
         <label className="legal-disclosure-check"><input type="checkbox" checked={!!pay.split_enabled} onChange={e=>setPay({...pay,split_enabled:e.target.checked})}/><span>{tr('Split payment across accounts')}</span></label>
-        {!pay.split_enabled?<label>{tr('Paid from')}<select required value={pay.account_id} onChange={e => setPay({ ...pay, account_id: e.target.value })}><option value="">{tr('Choose account')}</option><AccountOptions accounts={payAccounts(pay.occ.currency)} currency /></select></label>:<section className="card pad">
+        {!pay.split_enabled?<AccountPicker id="bill-payment-account" label={tr('Paid from')} accounts={payAccounts(pay.occ.currency)} value={pay.account_id} onChange={v => setPay({ ...pay, account_id: v })} showBalance={c.show} required />:<section className="card pad">
           {pay.splits.map((part,index)=><div className="form-grid" key={part.id}>
-            <label>{tr('Account {number}',{number:index+1})}<select required value={part.account_id} onChange={e=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,account_id:e.target.value}:x)})}><option value="">{tr('Choose account')}</option><AccountOptions accounts={payAccounts(pay.occ.currency)} currency /></select></label>
+            <div className="bill-split-account"><AccountPicker id={`bill-split-${part.id}`} label={tr('Account {number}',{number:index+1})} accounts={payAccounts(pay.occ.currency)} value={part.account_id} onChange={v=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,account_id:v}:x)})} showBalance={c.show} required /></div>
             <label>{tr('Split amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,amount:e.target.value}:x)})}/></label>
             {pay.splits.length>1&&<button type="button" className="link-button" onClick={()=>setPay({...pay,splits:pay.splits.filter(x=>x.id!==part.id)})}>{tr('Remove split')}</button>}
           </div>)}
@@ -127,7 +127,7 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
       <label className="legal-disclosure-check"><input type="checkbox" checked={form.amount_type === 'variable'} onChange={e => setForm({ ...form, amount_type: e.target.checked ? 'variable' : 'fixed' })} /><span>{tr('The amount changes each time (use it as an estimate)')}</span></label>
       <label>{tr('Repeats')}<select value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value })}>{BILL_FREQUENCIES.map(([k, l]) => <option key={k} value={k}>{tr(l)}</option>)}</select></label>
       <label>{tr('Next due date')}<input required type="date" value={form.first_due_date} onChange={e => setForm({ ...form, first_due_date: e.target.value })} /></label>
-      <label>{tr('Usually paid from')}<select value={form.account_id} onChange={e => setForm({ ...form, account_id: e.target.value })}><option value="">{tr('Not set')}</option>{payAccounts(form.currency || base).map(a => <option key={a.id} value={a.id}>{a.name} · {a.currency}</option>)}</select></label>
+      <AccountPicker id="bill-default-account" label={tr('Usually paid from')} accounts={payAccounts(form.currency || base)} value={form.account_id} onChange={v => setForm({ ...form, account_id: v })} showBalance={c.show} placeholder={tr('Not set')} />
       <button className="primary-button" disabled={busy}>{tr('Save bill')}</button>
     </form></Sheet>}
 
