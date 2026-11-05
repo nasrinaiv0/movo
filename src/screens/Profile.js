@@ -90,11 +90,11 @@ export function EditProfile({ c }) {
       image.onload = () => {
         try {
           const side = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
-          if (!side) throw new Error('invalid image dimensions');
+          if (!side) throw new Error();
           const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
           const sx = ((image.naturalWidth || image.width) - side) / 2;
           const sy = ((image.naturalHeight || image.height) - side) / 2;
-          const ctx = canvas.getContext('2d'); if (!ctx) throw new Error('canvas unavailable');
+          const ctx = canvas.getContext('2d'); if (!ctx) throw new Error();
           ctx.drawImage(image, sx, sy, side, side, 0, 0, 512, 512);
           setPref('profilePhoto', canvas.toDataURL('image/jpeg', 0.78));
           setPhotoError(''); c.notify(tr('Profile photo updated on this device.'));
