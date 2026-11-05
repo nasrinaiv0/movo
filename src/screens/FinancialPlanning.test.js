@@ -275,3 +275,21 @@ test('plan allocations show their source account, can be released, and offer ban
   expect(dialog.textContent).toContain('Choose a bank account or e-wallet');
   act(() => root.unmount()); el.remove();
 });
+
+test('record card payment sheet shows the selected card available credit before saving', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const card = { id: 'credit-payment', name: 'GoTyme Credit', institution_name: 'GoTyme', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -12500, creditLimit: 50000 };
+  await act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, card], txs: [],
+    prefs: { accountStyles: {}, creditCardPayments: {} }, toBase: value => value, go: jest.fn(),
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  const cardEl = el.querySelector('.fp-credit-card');
+  expect(cardEl).not.toBeNull();
+  await act(async () => cardEl.querySelector('.fp-credit-card-actions button').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  expect(dialog.querySelector('.acct-pick-availability').textContent).toContain('Available credit');
+  expect(dialog.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');
+  act(() => root.unmount()); el.remove();
+});
