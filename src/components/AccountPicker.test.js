@@ -30,3 +30,19 @@ test('options are grouped by kind and the chosen account is described', () => {
   expect(el.querySelector('.acct-pick-text em').textContent).toBe('Credit card · •••• 9012 · PHP');
   act(() => root.unmount());
 });
+
+test('shows available balances and available credit for the selected payment method', () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const accounts = [
+    { id: 'bank', name: 'BPI', account_type: 'bank', currency: 'PHP', balance: 25835 },
+    { id: 'credit', name: 'Visa', account_type: 'card', cardKind: 'credit', currency: 'PHP', creditLimit: 50000, balance: -12500 },
+  ];
+  act(() => root.render(<AccountPicker id="availability" label="Paid with" accounts={accounts} value="bank" onChange={() => {}} />));
+  expect(el.querySelector('.acct-pick-availability').textContent).toContain('Available balance');
+  expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('25,835');
+  act(() => root.render(<AccountPicker id="availability" label="Paid with" accounts={accounts} value="credit" onChange={() => {}} />));
+  expect(el.querySelector('.acct-pick-availability').textContent).toContain('Available credit');
+  expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');
+  act(() => root.unmount());
+});
