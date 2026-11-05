@@ -1554,7 +1554,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
-        <ScheduledDuePrompt session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
+        <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
@@ -1581,8 +1581,8 @@ function App() {
         <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
-      {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
-      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
+      {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
       {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
         const type = f.type === 'income' ? 'income' : 'expense';
         // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
@@ -1690,7 +1690,7 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <AutoLogSheet prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
+      {sheet?.name === 'autolog' && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
       {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
