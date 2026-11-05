@@ -5156,3 +5156,14 @@ button.account-tile:active { transform: scale(.98); }
 @media(prefers-reduced-motion:reduce) {
   .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { transition:none; }
 }
+
+
+/* Home header actions use one consistent outline treatment across all three controls. */
+.movo-app .home-header .header-action-buttons .home-header-action {
+  color: var(--accent);
+}
+.movo-app .home-header .header-action-buttons .home-header-action .movo-icon {
+  color: inherit;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
