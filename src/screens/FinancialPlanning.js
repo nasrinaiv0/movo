@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
-import AccountPicker, { AccountOptions, accountName, accountKind } from '../components/AccountPicker';
+import AccountPicker, { accountName, accountKind } from '../components/AccountPicker';
 import { Chips, Money, SectionTitle, Sheet, SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
@@ -266,7 +266,7 @@ export default function FinancialPlanning({ c }) {
         const valid = creditSpendDraft.merchant.trim() && principal > 0 && Number.isFinite(principal) && months >= 1 && months <= 600 && apr >= 0 && apr <= 100;
         return <form className="sheet-form fp-credit-log-form" onSubmit={async e => { e.preventDefault(); setError(''); if (!valid) { setError(tr('Enter a merchant, a positive amount and valid repayment terms.')); return; } setBusy(true); try { await c.recordCreditSpend({ ...creditSpendDraft, amount: principal, annual_rate: apr, months, after_interest_amount: afterInterest }); saveCreditSpendLog(creditSpendDraft.account_id, { id: window.crypto?.randomUUID?.() || String(Date.now()), merchant: creditSpendDraft.merchant.trim(), amount: Math.round(principal * 100) / 100, annual_rate: apr, months, after_interest_amount: Math.round(afterInterest * 100) / 100, monthly_payment: Math.round(monthlyPayment * 100) / 100, date: creditSpendDraft.date }); setCreditSpendDraft(null); setNotice(tr('Credit purchase recorded.')); } catch (err) { setError(err?.message || tr('Could not save this transaction. Check the selected account and try again.')); } finally { setBusy(false); } }}>
           <label>{tr('Merchant')}<input required maxLength={160} autoFocus value={creditSpendDraft.merchant} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, merchant: e.target.value })} placeholder={tr('Where did you spend?')} /></label>
-          <label>{tr('Credit card used')}<select value={creditSpendDraft.account_id} onChange={e => { const selected = creditCards.find(a => String(a.id) === String(e.target.value)); setCreditSpendDraft({ ...creditSpendDraft, account_id: e.target.value, cardName: selected?.institution_name || selected?.name || creditSpendDraft.cardName, currency: selected?.currency || base }); }}>{creditCards.map(a => <option key={a.id} value={a.id}>{a.institution_name || a.name} ·•••• {a.mask || '----'}</option>)}</select></label>
+          <AccountPicker id="fp-credit-spend-card" label={tr('Credit card used')} accounts={creditCards} value={creditSpendDraft.account_id} onChange={value => { const selected = creditCards.find(a => String(a.id) === String(value)); setCreditSpendDraft({ ...creditSpendDraft, account_id: value, cardName: selected?.institution_name || selected?.name || creditSpendDraft.cardName, currency: selected?.currency || base }); }} showBalance={show} required />
           <label>{tr('Before interest amount')}<input required type="number" min="0.01" step="0.01" value={creditSpendDraft.amount} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, amount: e.target.value })} /></label>
           <div className="form-grid fp-credit-log-fields"><label>{tr('Annual interest rate (APR %)')}<input required type="number" min="0" max="100" step="0.01" value={creditSpendDraft.annual_rate} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, annual_rate: e.target.value })} /></label><label>{tr('Months to pay')}<input required type="number" min="1" max="600" step="1" value={creditSpendDraft.months} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, months: e.target.value })} /></label></div>
           <label>{tr('Purchase date')}<input required type="date" value={creditSpendDraft.date} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, date: e.target.value })} /></label>
@@ -307,7 +307,7 @@ export default function FinancialPlanning({ c }) {
         </> : <label>{tr('Interest rate (% per year)')}<input type="number" inputMode="decimal" min="0" step="0.001" value={form.interest_rate} onChange={e => set({ interest_rate: e.target.value })} /></label>}
         <label>{tr('Due date')}<input type="date" value={form.due_date} onChange={e => set({ due_date: e.target.value })} /></label>
         <label className="legal-disclosure-check"><input type="checkbox" checked={form.new_proceeds} onChange={e => set({ new_proceeds: e.target.checked })} /><span>{tr('This is a new loan draw; add the proceeds to the account balance')}</span></label>
-        <label>{tr('Payment account')}<select required={form.new_proceeds} value={form.account_id} onChange={e => set({ account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option><AccountOptions accounts={inCurrency(form.currency)} currency /></select></label>
+        <AccountPicker id="loan-payment-account" label={tr('Payment account')} accounts={inCurrency(form.currency)} value={form.account_id} onChange={v => set({ account_id: v })} showBalance={show} required={form.new_proceeds} placeholder={tr('Choose account (optional)')} />
         <button className="primary-button" disabled={busy}>{tr('Save loan / debt')}</button>
       </form>
     </Sheet>}
@@ -321,7 +321,7 @@ export default function FinancialPlanning({ c }) {
         <label>{tr('Amount owed')}<input required type="number" inputMode="decimal" min="0.01" step="0.01" value={form.opening_amount} onChange={e => set({ opening_amount: e.target.value })} /></label>
         <label>{tr('Due date')}<input type="date" value={form.due_date} onChange={e => set({ due_date: e.target.value })} /></label>
         <label className="legal-disclosure-check"><input type="checkbox" checked={form.new_lending} onChange={e => set({ new_lending: e.target.checked })} /><span>{tr('This is money I am lending now; subtract it from my account')}</span></label>
-        <label>{tr('Deposit / collection account')}<select required={form.new_lending} value={form.account_id} onChange={e => set({ account_id: e.target.value })}><option value="">{tr('Choose account (optional)')}</option><AccountOptions accounts={inCurrency(form.currency)} currency /></select></label>
+        <AccountPicker id="receivable-account" label={tr('Deposit / collection account')} accounts={inCurrency(form.currency)} value={form.account_id} onChange={v => set({ account_id: v })} showBalance={show} required={form.new_lending} placeholder={tr('Choose account (optional)')} />
         <button className="primary-button" disabled={busy}>{tr('Save receivable')}</button>
       </form>
     </Sheet>}
@@ -359,7 +359,7 @@ export default function FinancialPlanning({ c }) {
     {sheet?.kind === 'allocate' && <Sheet title={tr('Allocate existing funds')} subtitle={form.goal?.name} onClose={() => setSheet(null)} label={tr('Allocate existing funds')}>
       <form className="sheet-form" onSubmit={e => { e.preventDefault(); run(() => allocateToGoal({ goal_id: form.goal_id, account_id: form.account_id, amount: form.amount, currency: form.currency, note: form.note }), 'Funds allocated to goal.'); }}>
         {error && <p className="app-alert" role="alert">{error}</p>}
-        <label>{tr('Account to reserve from')}<select required value={form.account_id} onChange={e => set({ account_id: e.target.value })}><option value="">{tr('Choose account')}</option><AccountOptions accounts={inCurrency(form.currency)} currency /></select></label>
+        <AccountPicker id="goal-reserve-account" label={tr('Account to reserve from')} accounts={inCurrency(form.currency)} value={form.account_id} onChange={v => set({ account_id: v })} showBalance={show} required />
         <label>{tr('Amount')}<input required type="number" inputMode="decimal" min="0.01" step="0.01" value={form.amount} onChange={e => set({ amount: e.target.value })} /></label>
         <p className="form-note">{tr('Create a goal, then allocate money already in an account. This does not add to your balance.')}</p>
         <button className="primary-button" disabled={busy || !form.account_id}>{tr('Allocate funds')}</button>
@@ -375,7 +375,7 @@ export default function FinancialPlanning({ c }) {
         {error && <p className="app-alert" role="alert">{error}</p>}
         <label>{tr('Event type')}<select value={form.event_type} onChange={e => set({ event_type: e.target.value })}>{(form.target === 'loan' ? LOAN_EVENTS : RECEIVABLE_EVENTS).map(([v, l]) => <option value={v} key={v}>{tr(l)}</option>)}</select></label>
         <label>{tr('Amount')}<input required type="number" inputMode="decimal" min="0.01" step="0.01" value={form.amount} onChange={e => set({ amount: e.target.value })} /></label>
-        <label>{tr('Account')}<select required={!(form.target === 'receivable' && form.event_type === 'written_off')} value={form.account_id} onChange={e => set({ account_id: e.target.value })}><option value="">{tr('No cash account')}</option><AccountOptions accounts={inCurrency(form.item.currency)} currency /></select></label>
+        <AccountPicker id="obligation-event-account" label={tr('Account')} accounts={inCurrency(form.item.currency)} value={form.account_id} onChange={v => set({ account_id: v })} showBalance={show} required={!(form.target === 'receivable' && form.event_type === 'written_off')} placeholder={tr('No cash account')} />
         <label>{tr('Note')}<input maxLength="1000" value={form.note} onChange={e => set({ note: e.target.value })} /></label>
         <button className="primary-button" disabled={busy}>{tr('Save event')}</button>
       </form>
