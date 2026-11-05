@@ -55,3 +55,38 @@ describe('MOVO file import', () => {
     expect(plan(parsed).skipped.conflicts).toBe(1);
   });
 });
+
+
+test('imports normalized loans, receivables and recurring bills from JSON', () => {
+  const parsed = parseJsonData(JSON.stringify({
+    loans: [{ name: 'Car loan', outstanding_principal: '125000', currency: 'PHP', interest_rate: '8.5', due_date: '2027-06-01', lender: 'ABC Bank' }],
+    receivables: [{ name: 'Alex', amount_owed: '2500', currency: 'PHP', reason: 'Shared rent', due_date: '2026-12-01' }],
+    bills: [{ name: 'Electricity', amount: '3200', category: 'Utilities', frequency: 'Monthly', first_due_date: '2026-11-20', reminder_days: [5, 2, 0] }],
+  }));
+  expect(parsed.errors).toEqual([]);
+  expect(parsed.loans[0]).toMatchObject({ name: 'Car loan', principal_amount: 125000, interest_rate: 8.5, lender: 'ABC Bank' });
+  expect(parsed.receivables[0]).toMatchObject({ name: 'Alex', opening_amount: 2500, reason: 'Shared rent' });
+  expect(parsed.bills[0]).toMatchObject({ name: 'Electricity', amount: 3200, frequency: 'monthly', first_due_date: '2026-11-20', reminder_days: [5, 2, 0] });
+});
+
+test('detects CSV files for loans, receivables and bills', () => {
+  expect(parseCsvData('Name,Principal Amount,Interest Rate\nCar loan,125000,8.5').loans[0]).toMatchObject({ name: 'Car loan', principal_amount: 125000 });
+  expect(parseCsvData('Name,Amount Owed,Counterparty\nAlex,2500,Alex').receivables[0]).toMatchObject({ name: 'Alex', opening_amount: 2500 });
+  expect(parseCsvData('Name,Amount,Frequency,First Due Date\nElectricity,3200,monthly,2026-11-20').bills[0]).toMatchObject({ name: 'Electricity', amount: 3200, first_due_date: '2026-11-20' });
+});
+
+test('deduplicates imported obligations by name and counterparty', () => {
+  const parsed = parseJsonData(JSON.stringify({
+    loans: [{ name: 'Car loan', principal: 125000 }],
+    receivables: [{ name: 'Alex', amount_owed: 2500, counterparty: 'Alex' }],
+    bills: [{ name: 'Electricity', amount: 3200, first_due_date: '2026-11-20' }],
+  }));
+  const result = planImport(parsed, {
+    accounts: [], transactions: [], loans: [{ name: 'car loan' }],
+    receivables: [{ name: 'Alex', counterparty: 'Alex' }], bills: [{ name: 'electricity' }],
+  }, { base: 'PHP', batchId: 'b2', fingerprint: transactionFingerprint });
+  expect(result.loans).toEqual([]);
+  expect(result.receivables).toEqual([]);
+  expect(result.bills).toEqual([]);
+  expect(result.skipped.duplicates).toBe(3);
+});
