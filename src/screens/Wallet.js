@@ -160,7 +160,7 @@ export default function Wallet({ c }) {
     <RootHeader title={tr('Wallet')} unread={c.unread} headerActions={[
       { icon: 'edit', label: tr('Sort and view options'), onClick: () => setSheet({ name: 'walletView' }) },
       { icon: 'bell', label: tr('Notifications'), onClick: () => go('Notifications'), dot: c.unread },
-      { icon: 'plus', label: tr('New account'), onClick: () => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true)), className: 'accent wallet-header-add' },
+      { icon: 'plus', label: tr('New account'), onClick: () => (ADD_TYPE[walletFilter] ? setSheet({ name: 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true)), className: 'accent' },
     ]} />
     <div className="chip-bar wallet-chip-bar">
       <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(FILTER_LABEL[key] || key) }))} value={walletFilter} onChange={setWalletFilter} />
