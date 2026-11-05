@@ -152,9 +152,9 @@ export default function Home({ c }) {
       <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{ramOn ? ramMessage : subline}</p></div>
       <div className="header-actions">
         <div className="header-action-buttons">
-          <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} />
-          <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} />
-          <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} />
+          <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} size={24} className="home-header-action" />
+          <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} size={24} className="home-header-action" />
+          <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} size={24} className="home-header-action" />
         </div>
         {!balanceShown && periodPill(false)}
       </div>
