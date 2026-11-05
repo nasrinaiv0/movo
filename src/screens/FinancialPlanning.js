@@ -109,7 +109,7 @@ export default function FinancialPlanning({ c }) {
     {header}
     {hero}
     <Chips items={TABS.map(([k, l]) => ({ key: k, label: tr(l), dot: k === 'bills' && bills.overdueCount > 0 }))} value={tab} onChange={pick} label={tr('Financial planning sections')} />
-    {(error || p.error) && <div className="app-alert" role="alert"><span>{error || tr(p.error)}</span>{p.error && <button type="button" className="link-button" aria-label="Retry loading financial planning" onClick={() => p.reload()}>↻</button>}</div>}
+    {(error || p.error) && <div className="app-alert" role="alert"><span>{error || tr(p.error)}</span>{p.error && <button type="button" className="link-button" aria-label="↻" onClick={() => p.reload()}>↻</button>}</div>}
     {notice && <p className="form-note fp-notice" role="status">{notice}</p>}
 
     {tab === 'overview' && <>
