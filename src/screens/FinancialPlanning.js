@@ -348,7 +348,7 @@ export default function FinancialPlanning({ c }) {
         run(() => allocatePlanFunds({ plan_id: form.plan_id, plan_name: form.plan.name, account_id: account.id, amount, currency: account.currency || form.currency, note: form.note }), 'Plan allocation recorded.');
       }}>
         {error && <p className="app-alert" role="alert">{error}</p>}
-        <AccountPicker id="plan-funding-account" label={tr('Choose a bank account or e-wallet')} accounts={inCurrency(form.currency)} value={form.account_id} showBalance={show} onChange={account_id => set({ account_id })} required />
+        <AccountPicker id="plan-funding-account" label={tr('Choose a bank account or e-wallet')} accounts={inCurrency(form.currency)} value={form.account_id} showBalance={show} showBalance={show} onChange={account_id => set({ account_id })} required />
         {form.account_id && p.accounts.find(account => String(account.id) === String(form.account_id)) && <p className="form-note">{tr('Available to allocate')}: {cash(availableForAllocation(p.accounts.find(account => String(account.id) === String(form.account_id))), form.currency)}</p>}
         <label>{tr('Amount')}<input required type="number" inputMode="decimal" min="0.01" max={Math.max(0, Number(form.plan?.target) - Number(form.plan?.saved))} step="0.01" value={form.amount} onChange={e => set({ amount: e.target.value })} /></label>
         <p className="form-note">{tr('This earmarks funds for the plan without moving money or changing the account balance.')}</p>
