@@ -48,7 +48,7 @@ export default function AutoLogSheet({ showBalance = true, prefs, setPref, statu
     </section>
 
     {cloudMode && cloudAccounts.length > 0 && <section className="al-default">
-      <AccountPicker id="al-default-account" label={tr('Default account')} accounts={cloudAccounts} value={prefs.autoLogAccount || ''} showBalance={showBalance} placeholder={tr('Match by bank account')} onChange={v => setPref('autoLogAccount', v)} />
+      <AccountPicker id="al-default-account" label={tr('Default account')} accounts={cloudAccounts} value={prefs.autoLogAccount || ''} showBalance={showBalance} showBalance={showBalance} placeholder={tr('Match by bank account')} onChange={v => setPref('autoLogAccount', v)} />
       <small className="al-hint">{tr('Card payments log to the bank account of the same bank. This default is used when none matches.')}</small>
     </section>}
 
