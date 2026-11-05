@@ -102,7 +102,7 @@ const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || ''
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
-  notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
+  notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
@@ -216,6 +216,8 @@ function App() {
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
+  const prefsRef = useRef(prefs);
+  useEffect(() => { prefsRef.current = prefs; }, [prefs]);
   const [accountQrDisplay, setAccountQrDisplay] = useState({});
   const [qrRetryTick, setQrRetryTick] = useState(0);
   const [fx, setFx] = useState(loadRates);
@@ -337,6 +339,17 @@ function App() {
     } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
     finally { setBusy(false); setAuthReady(true); }
   }, []);
+  const setCloudSyncEnabled = useCallback(async (enabled) => {
+    setPref('cloudSyncEnabled', !!enabled);
+    if (enabled) {
+      if (session?.user) await refreshCloud(session.user);
+      return;
+    }
+    setCloudMode(false);
+    setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]);
+    setInbox([]); setCloudPostings([]); setCloudActivities([]);
+    setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts());
+  }, [session, refreshCloud, setPref]);
   useEffect(() => {
     if (sheet?.name === 'account' && sheet.type) setAccountForm(current => current.account_type === sheet.type ? current : { ...current, account_type: sheet.type });
     if (sheet?.name === 'transaction' && sheet.type) setForm(current => current.transaction_type === sheet.type ? current : { ...current, transaction_type: sheet.type });
@@ -372,10 +385,10 @@ function App() {
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
-    getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user) refreshCloud(s.user); }).catch(() => { if (mounted) setAuthReady(true); });
+    getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, s) => {
       if (!mounted) return; setSession(s);
-      if (s?.user) refreshCloud(s.user); else {
+      if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
         setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
@@ -1479,7 +1492,8 @@ function App() {
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
   const c = {
-    refreshFinance: () => (session?.user ? refreshCloud(session.user) : Promise.resolve()),
+    refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
+    setCloudSyncEnabled,
     accountQrDisplay,
     fx,
     refreshFx,
