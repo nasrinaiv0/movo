@@ -47,5 +47,5 @@ test('large local QR data URLs are excluded from cloud preferences while private
 
 
 test('keeps cloud sync pause preference local to this device', () => {
-  expect(cloudSafePreferences({ cloudSyncEnabled: false, theme: 'dark' })).toEqual({ theme: 'dark' });
+  expect(cloudSafePreferences({ cloudSyncEnabled: false, profilePhoto: 'data:image/jpeg;base64,abc', theme: 'dark' })).toEqual({ theme: 'dark' });
 });
