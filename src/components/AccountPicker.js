@@ -67,7 +67,7 @@ export default function AccountPicker({ id, label, ariaLabel, accounts = [], val
       <small>{label}</small>
       <strong>{chosen ? accountName(chosen) : (placeholder || tr('Choose account'))}</strong>
       {chosen && <em>{[accountKind(chosen), mask(chosen), chosen.currency].filter(Boolean).join(' · ')}</em>}
-      {showAvailability && <span className={`acct-pick-availability${credit ? ' is-credit' : ''}`}><Icon name={credit ? 'creditCard' : 'wallet'} size={12} strokeWidth={2} /><span>{tr(availabilityLabel)}</span><strong>{shown(showBalance, money(available, chosen.currency || 'PHP'))}</strong></span>}
+      {showAvailability && <span className={`acct-pick-availability${credit ? ' is-credit' : ''}`}><Icon name={credit ? 'card' : 'wallet'} size={12} strokeWidth={2} /><span>{tr(availabilityLabel)}</span><strong>{shown(showBalance, money(available, chosen.currency || 'PHP'))}</strong></span>}
       {showAvailability && <span className={`acct-pick-availability${credit ? ' is-credit' : ''}`}><Icon name={credit ? 'creditCard' : 'wallet'} size={12} strokeWidth={2} /><span>{tr(availabilityLabel)}</span><strong>{shown(showBalance, money(available, chosen.currency || 'PHP'))}</strong></span>}
     </span>
     <Icon name="down" size={16} className="acct-pick-chevron" />
