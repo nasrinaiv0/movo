@@ -473,7 +473,7 @@ function App() {
   const homeBreakdown = useMemo(() => breakdownFor(activeHomeMonth), [breakdownFor, activeHomeMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
-    const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer', Allocations: 'allocation' }[txFilter];
+    const type = { Income: 'income', Expenses: 'expense', Transfers: 'transfer' }[txFilter];
     const q = search.trim().toLowerCase();
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
