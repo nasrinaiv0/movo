@@ -2891,6 +2891,28 @@ export default [
     "このデバイスではクラウド同期が一時停止されています。",
     "이 기기에서 클라우드 동기화가 일시 중지되었습니다.",
     "इस डिवाइस पर क्लाउड सिंक रोक दिया गया है。"
+  ],
+
+  [
+    "Change photo", "Palitan ang larawan", "تغيير الصورة", "更换照片", "Cambiar foto", "Cambia foto", "Foto ändern", "Changer la photo", "Alterar foto", "写真を変更", "사진 변경", "फ़ोटो बदलें"
+  ],
+  [
+    "Remove photo", "Alisin ang larawan", "إزالة الصورة", "移除照片", "Quitar foto", "Rimuovi foto", "Foto entfernen", "Supprimer la photo", "Remover foto", "写真を削除", "사진 삭제", "फ़ोटो हटाएँ"
+  ],
+  [
+    "Choose an image under 8 MB.", "Pumili ng larawang mas mababa sa 8 MB.", "اختر صورة يقل حجمها عن 8 ميجابايت.", "请选择小于 8 MB 的图片。", "Elige una imagen de menos de 8 MB.", "Scegli un'immagine inferiore a 8 MB.", "Wähle ein Bild unter 8 MB.", "Choisissez une image de moins de 8 Mo.", "Escolha uma imagem com menos de 8 MB.", "8 MB 未満の画像を選択してください。", "8MB 미만의 이미지를 선택하세요.", "8 MB से छोटी छवि चुनें。"
+  ],
+  [
+    "This image could not be read.", "Hindi mabasa ang larawang ito.", "تعذرت قراءة هذه الصورة.", "无法读取此图片。", "No se pudo leer esta imagen.", "Impossibile leggere questa immagine.", "Dieses Bild konnte nicht gelesen werden.", "Cette image n’a pas pu être lue.", "Não foi possível ler esta imagem.", "この画像を読み込めませんでした。", "이 이미지를 읽을 수 없습니다.", "यह छवि पढ़ी नहीं जा सकी。"
+  ],
+  [
+    "This image could not be opened.", "Hindi mabuksan ang larawang ito.", "تعذر فتح هذه الصورة.", "无法打开此图片。", "No se pudo abrir esta imagen.", "Impossibile aprire questa immagine.", "Dieses Bild konnte nicht geöffnet werden.", "Cette image n’a pas pu être ouverte.", "Não foi possível abrir esta imagem.", "この画像を開けませんでした。", "이 이미지를 열 수 없습니다.", "यह छवि खोली नहीं जा सकी。"
+  ],
+  [
+    "Profile photo updated on this device.", "Na-update ang profile photo sa device na ito.", "تم تحديث صورة الملف الشخصي على هذا الجهاز.", "此设备上的个人资料照片已更新。", "La foto de perfil se actualizó en este dispositivo.", "La foto del profilo è stata aggiornata su questo dispositivo.", "Das Profilfoto wurde auf diesem Gerät aktualisiert.", "La photo de profil a été mise à jour sur cet appareil.", "A foto do perfil foi atualizada neste dispositivo.", "このデバイスのプロフィール写真を更新しました。", "이 기기에서 프로필 사진이 업데이트되었습니다.", "इस डिवाइस पर प्रोफ़ाइल फ़ोटो अपडेट की गई。"
+  ],
+  [
+    "This image could not be cropped. Try another photo.", "Hindi ma-crop ang larawang ito. Sumubok ng ibang larawan.", "تعذر اقتصاص هذه الصورة. جرّب صورة أخرى.", "无法裁剪此图片。请尝试其他照片。", "No se pudo recortar esta imagen. Prueba con otra foto.", "Impossibile ritagliare questa immagine. Prova un'altra foto.", "Dieses Bild konnte nicht zugeschnitten werden. Versuche ein anderes Foto.", "Cette image n’a pas pu être recadrée. Essayez une autre photo.", "Não foi possível cortar esta imagem. Tente outra foto.", "この画像をトリミングできませんでした。別の写真をお試しください。", "이 이미지를 자를 수 없습니다. 다른 사진을 사용해 보세요.", "यह छवि क्रॉप नहीं की जा सकी। दूसरी फ़ोटो आज़माएँ。"
   ]
 
 ];
