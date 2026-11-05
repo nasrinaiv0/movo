@@ -2893,9 +2893,7 @@ export default [
     "इस डिवाइस पर क्लाउड सिंक रोक दिया गया है。"
   ],
 
-  [
-    "Change photo", "Palitan ang larawan", "تغيير الصورة", "更换照片", "Cambiar foto", "Cambia foto", "Foto ändern", "Changer la photo", "Alterar foto", "写真を変更", "사진 변경", "फ़ोटो बदलें"
-  ],
+
   [
     "Remove photo", "Alisin ang larawan", "إزالة الصورة", "移除照片", "Quitar foto", "Rimuovi foto", "Foto entfernen", "Supprimer la photo", "Remover foto", "写真を削除", "사진 삭제", "फ़ोटो हटाएँ"
   ],
