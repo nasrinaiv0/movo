@@ -5167,3 +5167,21 @@ button.account-tile:active { transform: scale(.98); }
   stroke: currentColor;
   stroke-width: 1.8;
 }
+
+/* Search result identity: MOVO brand mark with the transaction category pinned at bottom-left. */
+.movo-app .search-result-icon { position:relative; display:grid; place-items:center; flex:none; width:42px; height:42px; border-radius:13px; background:var(--card); color:var(--accent-ink,var(--accent)); box-shadow:inset 0 0 0 1px var(--line); }
+.movo-app .search-result-icon > .movo-mark { display:block; width:22px; height:auto; }
+.movo-app .search-result-category { position:absolute; left:-3px; bottom:-3px; display:grid; place-items:center; width:19px; height:19px; border:2px solid var(--bg); border-radius:50%; background:var(--category-bg,var(--field)); color:var(--category-color,var(--muted)); }
+.movo-app .search-result-category.tone-green { --category-bg:var(--green-bg); --category-color:var(--green); }
+.movo-app .search-result-category.tone-red { --category-bg:var(--red-bg); --category-color:var(--red); }
+.movo-app .search-result-category.tone-blue { --category-bg:rgba(var(--accent-rgb),.14); --category-color:var(--accent-ink,var(--accent)); }
+.movo-app .search-result-category.tone-violet { --category-bg:rgba(124,77,255,.14); --category-color:#7c4dff; }
+.movo-app .search-result-category.tone-orange { --category-bg:rgba(255,138,31,.16); --category-color:#e8730c; }
+.movo-app .search-result-category.tone-teal { --category-bg:rgba(16,185,170,.15); --category-color:#0e9e92; }
+.movo-app .search-result-category.tone-amber { --category-bg:rgba(247,183,62,.2); --category-color:#b77900; }
+.movo-app .search-result-category.tone-gray { --category-bg:rgba(120,128,145,.14); --category-color:var(--muted); }
+/* The generic fractional hairline overlay was rendering as two harsh vertical green seams on iOS. */
+.movo-app.movo-app .search-bar::after { content:none !important; display:none !important; }
+.movo-app.movo-app .search-bar { border:0 !important; box-shadow:inset 0 0 0 1px var(--line); outline:none; }
+.movo-app.movo-app .search-bar:focus-within { box-shadow:inset 0 0 0 1px var(--line); }
+.movo-app.movo-app .search-bar input:focus, .movo-app.movo-app .search-bar input:focus-visible { outline:none !important; box-shadow:none !important; }
