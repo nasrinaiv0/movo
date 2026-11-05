@@ -70,7 +70,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
 
     {(cloudMode || accounts.length > 0) ? <div className={`tx-accounts${type === 'transfer' ? ' two' : ''}`}>
       <AccountPicker id="tx-account" label={type === 'transfer' ? tr('From') : type === 'income' ? tr('To account') : tr('Paid with')} ariaLabel={type === 'transfer' ? tr('From account') : tr('Account')} accounts={accounts} value={form.account_id} showBalance={showBalance} required={cloudMode} onChange={v => setForm({ ...form, account_id: v })} />
-      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={accounts.filter(a => a.id !== form.account_id)} value={form.transfer_to_account_id} showBalance={showBalance} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
+      {type === 'transfer' && <AccountPicker id="tx-to-account" label={tr('To')} ariaLabel={tr('To account')} accounts={accounts.filter(a => a.id !== form.account_id)} value={form.transfer_to_account_id} showBalance={showBalance} showBalance={showBalance} onChange={v => setForm({ ...form, transfer_to_account_id: v })} />}
     </div> : <p className="tx-local">{tr('Saved on this device')}</p>}
 
     {type === 'expense' && <section className={`tx-cats${allCats ? ' all' : ''}`} aria-label={tr('Category')}>
