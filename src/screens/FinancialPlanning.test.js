@@ -202,10 +202,23 @@ test('credit card planning fields stay grouped in a responsive card layout with 
   expect(card.querySelector('.fp-credit-card-stats')).not.toBeNull();
   expect(card.querySelectorAll('.fp-credit-card-stats > span')).toHaveLength(3);
   expect(card.querySelectorAll('.fp-credit-card-fields')).toHaveLength(2);
-  expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(4);
+  expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(5);
   expect(card.querySelector('.fp-credit-card-fields input[type="date"]')).not.toBeNull();
   expect(card.querySelector('.fp-credit-card-fields input[type="number"][min="1"]')).not.toBeNull();
   expect(card.querySelector('button').textContent).toContain('Record payment');
+  expect(card.querySelectorAll('.fp-credit-card-actions button')).toHaveLength(2);
+  expect(card.querySelector('.fp-credit-card-actions').textContent).toContain('Log credits');
+  expect(card.textContent).toContain('Credit spend limit');
+  await act(async () => card.querySelector('.fp-credit-card-actions button:nth-child(2)').click());
+  const logDialog = document.querySelector('[role="dialog"]');
+  expect(logDialog.textContent).toContain('Merchant');
+  expect(logDialog.textContent).toContain('Credit card used');
+  expect(logDialog.textContent).toContain('Before interest amount');
+  expect(logDialog.textContent).toContain('Annual interest rate (APR %)');
+  expect(logDialog.textContent).toContain('Months to pay');
+  expect(logDialog.textContent).toContain('After interest amount');
+  expect(logDialog.textContent).toContain('Estimated monthly payment');
+  expect(logDialog.querySelector('select').value).toBe('credit-ui');
   act(() => root.unmount()); el.remove();
 });
 
