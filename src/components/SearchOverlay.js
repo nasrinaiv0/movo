@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
-import { Tile } from './ui';
+import { MovoMark } from './MovoLogo';
+import { categoryOf } from '../lib/categories';
 import { relativeDay, shown, signed } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
@@ -9,6 +10,14 @@ const LIMIT = 40;
 const haystack = (t, show) => [t.merchant, t.category, t.subcategory, t.accountName, t.type, t.note, show ? String(t.amount) : ''].filter(Boolean).join(' ').toLowerCase();
 
 /** Wraps each matched term in <mark> so people see why a row matched. */
+function SearchResultIcon({ transaction }) {
+  const category = categoryOf(transaction.type === 'income' || transaction.type === 'transfer' ? transaction.type : transaction.categoryId || transaction.category);
+  return <span className={`search-result-icon tone-${category.tone}`} aria-hidden="true">
+    <MovoMark size={21} />
+    <span className={`search-result-category tone-${category.tone}`}><Icon name={category.icon} size={11} strokeWidth={2.2} /></span>
+  </span>;
+}
+
 function Highlight({ text = '', terms }) {
   if (!terms.length) return text;
   const lower = text.toLowerCase(); const marks = new Array(text.length).fill(false);
@@ -64,7 +73,7 @@ export default function SearchOverlay({ txs, show, refDate, onOpen, onClose }) {
         <p className="search-caption">{terms.length ? (results.length === 1 ? tr('1 result') : tr('{n} results', { n: results.length })) : tr('Recent')}</p>
         {terms.length > 0 && !results.length && <div className="search-empty"><Icon name="search" size={22} /><p>{tr('No transactions match “{query}”', { query: query.trim() })}</p></div>}
         {results.slice(0, LIMIT).map((t, i) => <button type="button" key={t.id} className="search-row" style={{ '--i': Math.min(i, 8) }} onClick={() => close(() => onOpen(t))}>
-          <Tile name={t.merchant} icon={t.type === 'transfer' ? 'transfer' : undefined} size={38} />
+          <SearchResultIcon transaction={t} />
           <span className="search-main"><strong><Highlight text={t.merchant} terms={terms} /></strong><small><Highlight text={`${tr(t.category || 'Other')} · ${t.accountName || t.method || ''}`} terms={terms} /> · {relativeDay(t.date, refDate)}</small></span>
           <b className={t.type === 'income' ? 'pos' : ''}>{shown(show, signed(t.type, t.amount, t.currency))}</b>
         </button>)}

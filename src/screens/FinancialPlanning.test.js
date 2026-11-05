@@ -205,13 +205,21 @@ test('credit card planning fields stay grouped in a responsive card layout with 
   expect(card.querySelector('.fp-stat-icon-calendar')).not.toBeNull();
   expect(card.querySelector('.fp-stat-icon-layers')).not.toBeNull();
   expect(card.querySelector('.fp-stat-icon-receipt')).not.toBeNull();
+  const detailsToggle = card.querySelector('.fp-credit-card-toggle');
+  expect(detailsToggle.getAttribute('aria-expanded')).toBe('false');
+  expect(card.querySelector('.fp-credit-card-fields')).toBeNull();
+  await act(async () => detailsToggle.click());
+  expect(card.querySelector('.fp-credit-card-toggle').getAttribute('aria-expanded')).toBe('true');
   expect(card.querySelectorAll('.fp-credit-card-fields')).toHaveLength(2);
   expect(card.querySelectorAll('.fp-credit-card-fields input')).toHaveLength(5);
   expect(card.querySelector('.fp-credit-card-fields input[type="date"]')).not.toBeNull();
   expect(card.querySelector('.fp-credit-card-fields input[type="number"][min="1"]')).not.toBeNull();
-  expect(card.querySelector('button').textContent).toContain('Record payment');
+  expect(card.querySelector('.fp-credit-card-actions').textContent).toContain('Record payment');
   expect(card.querySelectorAll('.fp-credit-card-actions button')).toHaveLength(2);
   expect(card.querySelector('.fp-credit-card-actions').textContent).toContain('Log credits');
+  await act(async () => card.querySelector('.fp-credit-card-toggle').click());
+  expect(card.querySelector('.fp-credit-card-fields')).toBeNull();
+  await act(async () => card.querySelector('.fp-credit-card-toggle').click());
   expect(card.textContent).toContain('Credit spend limit');
   await act(async () => card.querySelector('.fp-credit-card-actions button:nth-child(2)').click());
   const logDialog = document.querySelector('[role="dialog"]');
@@ -242,6 +250,7 @@ test('credit spend history follows its source transaction and hides deleted or r
   }} />));
   await render([{ id: 'tx-live', account_id: 'linked-card', type: 'expense', amount: 100, origAmount: 100, origCurrency: 'PHP' }]);
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  await act(async () => el.querySelector('.fp-credit-card-toggle').click());
   let history = el.querySelector('.fp-credit-spend-history');
   expect(history.textContent).toContain('Live Merchant');
   expect(history.textContent).toContain('Legacy Merchant');
@@ -315,6 +324,7 @@ test('record card payment sheet shows the selected card available credit before 
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
   const cardEl = el.querySelector('.fp-credit-card');
   expect(cardEl).not.toBeNull();
+  await act(async () => cardEl.querySelector('.fp-credit-card-toggle').click());
   await act(async () => cardEl.querySelector('.fp-credit-card-actions button').click());
   const dialog = document.querySelector('[role="dialog"]');
   expect(dialog.querySelector('.acct-pick-availability').textContent).toContain('Available credit');

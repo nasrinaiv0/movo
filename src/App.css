@@ -5073,3 +5073,186 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .tx-accounts.two .acct-pick-availability { font-size:9px; gap:3px; }
 .movo-app .tx-accounts.two .acct-pick-availability strong { font-size:10px; }
 @media(max-width:360px){.movo-app .tx-accounts.two .acct-pick{gap:5px;padding:6px}.movo-app .tx-accounts.two .acct-pick-logo{display:none}}
+
+
+/* Financial planning credit-card details: compact disclosure and overflow-safe mobile layout. */
+.movo-app .fp-credit-card-toggle{display:grid;grid-template-columns:minmax(0,1fr) auto 18px;align-items:center;gap:8px;width:100%;min-width:0;min-height:38px;padding:8px 10px;border:1px solid var(--line);border-radius:11px;background:var(--field);color:var(--text);text-align:left;font:inherit;font-size:12px;font-weight:650;}
+.movo-app .fp-credit-card-toggle-meta{min-width:0;color:var(--muted);font-size:10px;font-weight:500;text-align:right;white-space:nowrap;}
+.movo-app .fp-credit-card-toggle .movo-icon{color:var(--muted);justify-self:end;}
+.movo-app .fp-credit-card-details{display:grid;gap:10px;min-width:0;padding-top:2px;}
+.movo-app .fp-credit-card-details>*{min-width:0;max-width:100%;}
+.movo-app .fp-credit-ledger-history,.movo-app .fp-credit-spend-history{display:grid;gap:6px;min-width:0;padding-top:8px;border-top:1px solid var(--line);}
+.movo-app .fp-credit-ledger-history>strong,.movo-app .fp-credit-spend-history>strong{font-size:11px;font-weight:650;}
+.movo-app .fp-credit-card .fp-credit-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;}
+.movo-app .fp-credit-card .fp-credit-card-actions button{width:100%;min-width:0;margin:0;padding-inline:8px;white-space:normal;overflow-wrap:anywhere;}
+.movo-app .fp-credit-card .fp-goal-head{display:grid;grid-template-columns:32px minmax(0,1fr) minmax(0,auto);align-items:center;gap:8px;}
+.movo-app .fp-credit-card .fp-amount{max-width:100%;min-width:0;}
+.movo-app .fp-credit-card .fp-amount b{overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+.movo-app .fp-credit-card-metrics{grid-template-columns:repeat(3,minmax(0,1fr));}
+.movo-app .fp-credit-card-metrics>div{min-width:0;overflow:hidden;}
+.movo-app .fp-credit-card-stats>span{grid-template-columns:22px minmax(0,1fr);align-items:center;gap:5px;}
+.movo-app .fp-credit-card-stats .fp-credit-card-stat-copy{min-width:0;}
+.movo-app .fp-credit-card-stats b{overflow-wrap:anywhere;white-space:normal;}
+@media(max-width:390px){
+ .movo-app .fp-credit-card{padding:10px;gap:9px;}
+ .movo-app .fp-credit-card .fp-goal-head{grid-template-columns:30px minmax(0,1fr);row-gap:5px;}
+ .movo-app .fp-credit-card .fp-amount{grid-column:2;grid-row:2;text-align:left;max-width:100%;}
+ .movo-app .fp-credit-card-metrics{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .movo-app .fp-credit-card-metrics>div:last-child{grid-column:1/-1;}
+ .movo-app .fp-credit-card-toggle{grid-template-columns:minmax(0,1fr) 18px;}
+ .movo-app .fp-credit-card-toggle-meta{grid-column:1;grid-row:2;text-align:left;white-space:normal;}
+ .movo-app .fp-credit-card-toggle .movo-icon{grid-column:2;grid-row:1/3;}
+ .movo-app .fp-credit-card .fp-credit-card-actions{grid-template-columns:1fr;}
+}
+
+
+/* Transactions header actions: responsive, thumb-friendly controls without title collisions. */
+.movo-app .screen-header.root.transactions-header {display:flex;align-items:center;gap:clamp(8px,2.4vw,12px);min-width:0;}
+.movo-app .transactions-header .title-block {flex:1 1 auto;min-width:0;}
+.movo-app .transactions-header .title-block h1 {font-size:clamp(22px,6vw,28px);line-height:1.12;letter-spacing:-.65px;overflow-wrap:anywhere;}
+.movo-app .transactions-header .header-actions {display:flex;flex:0 0 auto;align-items:center;gap:clamp(7px,1.8vw,10px);margin-left:auto;min-width:0;}
+.movo-app .transactions-header .header-actions .round-button {display:grid;place-items:center;flex:0 0 clamp(40px,10.2vw,46px);width:clamp(40px,10.2vw,46px);height:clamp(40px,10.2vw,46px);min-width:clamp(40px,10.2vw,46px);min-height:clamp(40px,10.2vw,46px);padding:0;border:1px solid var(--line);border-radius:50%;background:var(--card-solid);color:var(--text);box-shadow:var(--shadow-sm);}
+.movo-app .transactions-header .header-actions .round-button .movo-icon {width:21px;height:21px;max-width:60%;max-height:60%;}
+.movo-app .transactions-header .header-actions .round-button.transaction-header-add {flex-basis:clamp(44px,11vw,50px);width:clamp(44px,11vw,50px);height:clamp(44px,11vw,50px);min-width:clamp(44px,11vw,50px);min-height:clamp(44px,11vw,50px);border:0;background:var(--accent);color:var(--on-accent);box-shadow:0 5px 14px rgba(var(--accent-rgb),.24);}
+.movo-app .transactions-header .header-actions .round-button.transaction-header-add .movo-icon {width:24px;height:24px;color:var(--on-accent);}
+.movo-app .transactions-header .header-actions .round-button:focus-visible {outline:3px solid rgba(var(--accent-rgb),.4);outline-offset:3px;}
+@media(max-width:360px){
+ .movo-app .screen-header.root.transactions-header {gap:6px;}
+ .movo-app .transactions-header .title-block h1 {font-size:clamp(20px,6.3vw,23px);letter-spacing:-.55px;}
+ .movo-app .transactions-header .header-actions {gap:5px;}
+ .movo-app .transactions-header .header-actions .round-button {flex-basis:38px;width:38px;height:38px;min-width:38px;min-height:38px;}
+ .movo-app .transactions-header .header-actions .round-button.transaction-header-add {flex-basis:42px;width:42px;height:42px;min-width:42px;min-height:42px;}
+}
+@media(prefers-reduced-motion:reduce){.movo-app .transactions-header .header-actions .round-button {transition:none;}}
+
+
+/* Transactions type filters: compact All pill and a wider, readable billing-cycle selector. */
+.movo-app .tx-chip-bar { display:flex;align-items:center;gap:clamp(5px,1.5vw,8px);min-width:0; }
+.movo-app .tx-chip-bar > .chip-row { display:flex;flex:1 1 0;min-width:0;gap:clamp(3px,1vw,6px);overflow:hidden;padding:2px 0;margin:0;mask-image:none;-webkit-mask-image:none; }
+.movo-app .tx-chip-bar > .chip-row button[data-chip] { flex:1 1 0;min-width:0;padding-inline:2px;font-size:clamp(10px,2.8vw,12px);line-height:1.15;white-space:nowrap;overflow:visible;text-overflow:clip;text-align:center; }
+.movo-app .tx-chip-bar > .chip-row button[data-chip]:first-of-type { flex:0 0 clamp(38px,11vw,48px);width:clamp(38px,11vw,48px); }
+.movo-app .tx-chip-bar > .tx-period-filter { flex:0 0 clamp(88px,23vw,100px);width:clamp(88px,23vw,100px);min-width:clamp(88px,23vw,100px);max-width:none;height:44px;gap:7px;padding-inline:9px;margin:0 14px 0 0; }
+.movo-app .tx-chip-bar > .tx-period-filter .tx-period-filter-value { flex:1 1 auto;max-width:none;min-width:0;font-size:clamp(11px,2.9vw,13px);text-align:center;text-overflow:clip; }
+.movo-app .tx-chip-bar > .tx-period-filter > .movo-icon { flex:0 0 auto;width:15px;height:15px; }
+@media(max-width:360px){
+ .movo-app .tx-chip-bar { gap:4px; }
+ .movo-app .tx-chip-bar > .chip-row { gap:2px; }
+ .movo-app .tx-chip-bar > .chip-row button[data-chip] { font-size:10px;padding-inline:1px; }
+ .movo-app .tx-chip-bar > .tx-period-filter { flex-basis:82px;width:82px;min-width:82px;height:42px;padding-inline:6px;margin-right:12px;gap:4px; }
+ .movo-app .tx-chip-bar > .tx-period-filter .tx-period-filter-value { font-size:10px; }
+}
+@media(prefers-reduced-motion:reduce){.movo-app .tx-chip-bar .chip-ind.ready{transition:none;}}
+
+/* Wallet account filters: fit all five categories in the available width on every phone. */
+.movo-app.movo-app .wallet-chip-bar { width:100%; min-width:0; gap:clamp(3px,1.2vw,6px); }
+.movo-app.movo-app .wallet-chip-bar > .chip-row { display:flex; flex:1 1 0; width:100%; min-width:0; gap:clamp(2px,.8vw,4px); overflow:visible; overflow-x:visible; padding:2px 0; margin:0; }
+.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { display:flex; flex:1 1 0; justify-content:center; align-items:center; width:0; min-width:0; max-width:none; height:44px; min-height:44px; padding-inline:clamp(2px,1.5vw,8px); font-size:clamp(10px,3vw,13px); line-height:1.1; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip]:focus-visible { outline:3px solid rgba(var(--accent-rgb),.38); outline-offset:2px; }
+@media(max-width:350px) {
+  .movo-app.movo-app .wallet-chip-bar { gap:2px; }
+  .movo-app.movo-app .wallet-chip-bar > .chip-row { gap:2px; }
+  .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { font-size:10px; padding-inline:1px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { transition:none; }
+}
+
+
+/* Home header actions use one consistent outline treatment across all three controls. */
+.movo-app .home-header .header-action-buttons .home-header-action {
+  color: var(--accent);
+}
+.movo-app .home-header .header-action-buttons .home-header-action .movo-icon {
+  color: inherit;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+
+/* Search result identity: MOVO brand mark with the transaction category pinned at bottom-left. */
+.movo-app .search-result-icon { position:relative; display:grid; place-items:center; flex:none; width:42px; height:42px; border-radius:13px; background:var(--card); color:var(--accent-ink,var(--accent)); box-shadow:inset 0 0 0 1px var(--line); }
+.movo-app .search-result-icon > .movo-mark { display:block; width:22px; height:auto; }
+.movo-app .search-result-category { position:absolute; left:-3px; bottom:-3px; display:grid; place-items:center; width:19px; height:19px; border:2px solid var(--bg); border-radius:50%; background:var(--category-bg,var(--field)); color:var(--category-color,var(--muted)); }
+.movo-app .search-result-category.tone-green { --category-bg:var(--green-bg); --category-color:var(--green); }
+.movo-app .search-result-category.tone-red { --category-bg:var(--red-bg); --category-color:var(--red); }
+.movo-app .search-result-category.tone-blue { --category-bg:rgba(var(--accent-rgb),.14); --category-color:var(--accent-ink,var(--accent)); }
+.movo-app .search-result-category.tone-violet { --category-bg:rgba(124,77,255,.14); --category-color:#7c4dff; }
+.movo-app .search-result-category.tone-orange { --category-bg:rgba(255,138,31,.16); --category-color:#e8730c; }
+.movo-app .search-result-category.tone-teal { --category-bg:rgba(16,185,170,.15); --category-color:#0e9e92; }
+.movo-app .search-result-category.tone-amber { --category-bg:rgba(247,183,62,.2); --category-color:#b77900; }
+.movo-app .search-result-category.tone-gray { --category-bg:rgba(120,128,145,.14); --category-color:var(--muted); }
+/* The generic fractional hairline overlay was rendering as two harsh vertical green seams on iOS. */
+.movo-app.movo-app .search-bar::after { content:none !important; display:none !important; }
+.movo-app.movo-app .search-bar { border:0 !important; box-shadow:inset 0 0 0 1px var(--line); outline:none; }
+.movo-app.movo-app .search-bar:focus-within { box-shadow:inset 0 0 0 1px var(--line); }
+.movo-app.movo-app .search-bar input:focus, .movo-app.movo-app .search-bar input:focus-visible { outline:none !important; box-shadow:none !important; }
+
+/* Consistent raised, accent-colored controls for every screen header. */
+.movo-app .screen-header.root .round-button {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app .screen-header.sub .back-button {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app .screen-header .round-button .movo-icon,
+.movo-app .screen-header .back-button .movo-icon {
+  color: var(--accent);
+  stroke: currentColor;
+}
+.movo-app .screen-header .round-button:focus-visible,
+.movo-app .screen-header .back-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.theme-dark.movo-app .screen-header.root .round-button,
+.theme-dark.movo-app .screen-header.sub .back-button {
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .24), inset 0 0 0 1px var(--line);
+}
+@media (max-width: 360px) {
+  .movo-app .screen-header.root .round-button,
+  .movo-app .screen-header.sub .back-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+  .movo-app .screen-header .header-actions { gap: 6px; }
+}
+
+/* Enforce the active accent on every icon in every screen header, including per-screen overrides such as Transactions and header-right action buttons. */
+.movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon {
+  color: var(--accent) !important;
+  stroke: currentColor;
+}
+/* Filled accent actions keep sufficient foreground contrast. */
+.movo-app.movo-app .screen-header :is(.round-button.accent, .round-button.wallet-header-add, .round-button.transaction-header-add) > .movo-icon {
+  color: var(--on-accent, #fff) !important;
+}
+
+
+/* NasrinAI chat header actions follow the same active accent as app screen headers. */
+.movo-app.movo-app .movo-ai-chat-header :is(.movo-ai-open-site, .movo-ai-reset) {
+  color: var(--accent);
+}
+.movo-app.movo-app .movo-ai-chat-header :is(.movo-ai-open-site, .movo-ai-reset) > .movo-icon {
+  color: currentColor;
+  stroke: currentColor;
+}
+.movo-app.movo-app .movo-ai-chat-header .movo-ai-reset:focus-visible,
+.movo-app.movo-app .movo-ai-chat-header .movo-ai-open-site:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
