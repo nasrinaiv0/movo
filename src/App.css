@@ -5241,3 +5241,18 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app.movo-app .screen-header :is(.round-button.accent, .round-button.wallet-header-add, .round-button.transaction-header-add) > .movo-icon {
   color: var(--on-accent, #fff) !important;
 }
+
+
+/* NasrinAI chat header actions follow the same active accent as app screen headers. */
+.movo-app.movo-app .movo-ai-chat-header :is(.movo-ai-open-site, .movo-ai-reset) {
+  color: var(--accent);
+}
+.movo-app.movo-app .movo-ai-chat-header :is(.movo-ai-open-site, .movo-ai-reset) > .movo-icon {
+  color: currentColor;
+  stroke: currentColor;
+}
+.movo-app.movo-app .movo-ai-chat-header .movo-ai-reset:focus-visible,
+.movo-app.movo-app .movo-ai-chat-header .movo-ai-open-site:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
