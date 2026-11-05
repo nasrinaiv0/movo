@@ -46,3 +46,26 @@ test('shows available balances and available credit for the selected payment met
   expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');
   act(() => root.unmount());
 });
+
+ 
+test('availability is accurate for zero, missing and numeric account values', () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const accounts = [
+    { id: 12, name: 'Cash', account_type: 'cash', currency: 'PHP', balance: 0 },
+    { id: 'credit-known', name: 'Card', account_type: 'card', cardKind: 'credit', currency: 'PHP', creditLimit: 50000, balance: -12500 },
+    { id: 'credit-missing', name: 'Unconfigured card', account_type: 'card', cardKind: 'credit', currency: 'PHP', creditLimit: 50000 },
+    { id: 'bank-missing', name: 'Unlinked bank', account_type: 'bank', currency: 'PHP', balance: null },
+  ];
+  act(() => root.render(<AccountPicker id="availability-edge" label="Paid with" accounts={accounts} value="12" onChange={() => {}} />));
+  expect(el.querySelector('.acct-pick-text strong').textContent).toBe('Cash');
+  expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('0.00');
+  act(() => root.render(<AccountPicker id="availability-edge" label="Paid with" accounts={accounts} value="credit-known" onChange={() => {}} />));
+  expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');
+  act(() => root.render(<AccountPicker id="availability-edge" label="Paid with" accounts={accounts} value="credit-missing" onChange={() => {}} />));
+  expect(el.querySelector('.acct-pick-availability').textContent).toContain('Available credit');
+  expect(el.querySelector('.acct-pick-availability strong').textContent).toBe('—');
+  act(() => root.render(<AccountPicker id="availability-edge" label="Paid with" accounts={accounts} value="bank-missing" onChange={() => {}} />));
+  expect(el.querySelector('.acct-pick-availability strong').textContent).toBe('—');
+  act(() => root.unmount()); el.remove();
+});
