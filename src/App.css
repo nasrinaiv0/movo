@@ -5301,3 +5301,328 @@ button.account-tile:active { transform: scale(.98); }
   height: 20px;
   stroke-width: 1.8;
 }
+
+/* Credit-card details: normalize field rhythm, typography and control padding.
+   Scope is intentionally limited to the expanded card-details panel. */
+.movo-app .fp-credit-card .fp-credit-card-details {
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields > label {
+  display: grid;
+  grid-template-rows: auto 46px;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields input,
+.movo-app .fp-credit-card .fp-credit-card-rate input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 46px;
+  margin: 0;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 450;
+  line-height: 1.25;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields input::placeholder,
+.movo-app .fp-credit-card .fp-credit-card-rate input::placeholder {
+  font: inherit;
+  color: var(--muted);
+  opacity: .72;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-fields input[type="date"] {
+  padding-inline: 10px;
+  font-size: 16px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate > label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 46px;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate input {
+  width: 100%;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-rate > small {
+  min-width: 0;
+  align-self: center;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-actions {
+  gap: 10px;
+}
+
+.movo-app .fp-credit-card .fp-credit-card-actions .wide-button {
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.movo-app .fp-credit-card .fp-credit-ledger-history > strong,
+.movo-app .fp-credit-card .fp-credit-spend-history > strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.movo-app .fp-credit-card .fp-allocs li {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.movo-app .fp-credit-card .fp-allocs li small,
+.movo-app .fp-credit-card .form-note {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 380px) {
+  .movo-app .fp-credit-card .fp-credit-card-fields {
+    gap: 10px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-fields > label,
+  .movo-app .fp-credit-card .fp-credit-card-rate > label {
+    font-size: 13px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-fields input,
+  .movo-app .fp-credit-card .fp-credit-card-fields input[type="date"],
+  .movo-app .fp-credit-card .fp-credit-card-rate input {
+    height: 44px;
+    padding-inline: 10px;
+    font-size: 16px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-rate {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .movo-app .fp-credit-card .fp-credit-card-rate > small {
+    font-size: 12px;
+  }
+}
+
+
+/* PR #217 follow-up: all header actions AND standalone back-header controls
+   use a consistent 45px circular hit target, including Settings sub-headers. */
+.movo-app.movo-app .screen-header :is(.round-button, .back-button),
+.movo-app.movo-app .screen-header .header-actions > button,
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action,
+.movo-app.movo-app .sub-header > button:first-child,
+.movo-app.movo-app .back-button {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 45px;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  max-width: 45px;
+  max-height: 45px;
+  padding: 0;
+  border-radius: 50% !important;
+}
+.movo-app.movo-app .screen-header :is(.round-button, .back-button) > .movo-icon,
+.movo-app.movo-app .screen-header .header-actions > button > .movo-icon,
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon,
+.movo-app.movo-app .sub-header > button:first-child > .movo-icon,
+.movo-app.movo-app .back-button > .movo-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+@media (max-width: 360px) {
+  .movo-app.movo-app .screen-header :is(.round-button, .back-button),
+  .movo-app.movo-app .screen-header .header-actions > button,
+  .movo-app.movo-app .home-header .header-action-buttons > .home-header-action,
+  .movo-app.movo-app .sub-header > button:first-child,
+  .movo-app.movo-app .back-button {
+    flex-basis: 45px;
+    width: 45px !important;
+    height: 45px !important;
+    min-width: 45px !important;
+    min-height: 45px !important;
+  }
+}
+
+
+/* Home settings action: mirror the standard raised, accent-colored header controls. */
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 45px;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  padding: 0;
+  border: 0;
+  border-radius: 50% !important;
+  background: var(--card-solid);
+  color: var(--accent);
+  box-shadow: 0 5px 16px rgba(20, 24, 40, .10), 0 1px 3px rgba(20, 24, 40, .06);
+}
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action > .movo-icon {
+  display: block;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px;
+  min-height: 18px;
+  color: var(--accent) !important;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.theme-dark.movo-app.movo-app .home-header .header-action-buttons > .home-header-action {
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .24), inset 0 0 0 1px var(--line);
+}
+.movo-app.movo-app .home-header .header-action-buttons > .home-header-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+
+/* Quick-action glyphs must inherit the adaptive foreground, never render as a
+   solid black disc inside the circular action surface. */
+.movo-app.movo-app .quick-actions button > span > .movo-icon,
+.movo-app.movo-app .quick-actions button > span > svg {
+  color: var(--text) !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  background: transparent !important;
+}
+.movo-app.movo-app .quick-actions button > span > .movo-icon *,
+.movo-app.movo-app .quick-actions button > span > svg * {
+  fill: none !important;
+  stroke: currentColor !important;
+}
+.movo-app.movo-app .quick-actions button > span {
+  color: var(--text);
+}
+
+
+/* Adaptive design tokens — shared by every MOVO screen, sheet and control. */
+.movo-app {
+  --surface-1: var(--card-solid); --surface-2: var(--field);
+  --surface-hover: rgba(var(--accent-rgb), .07); --surface-pressed: rgba(var(--accent-rgb), .12);
+  --border-subtle: var(--line); --border-strong: color-mix(in srgb, var(--text) 18%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 34%, var(--line));
+  --danger-ink: var(--red); --danger-surface: var(--red-bg);
+  --control-placeholder: var(--muted); --focus-ring: rgba(var(--accent-rgb), .42);
+  --control-radius: 13px; --control-height: 46px;
+  color-scheme: light;
+  font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+.movo-app.theme-dark {
+  --surface-hover: rgba(var(--accent-rgb), .14); --surface-pressed: rgba(var(--accent-rgb), .2);
+  --border-strong: color-mix(in srgb, var(--text) 26%, transparent);
+  --accent-soft: color-mix(in srgb, var(--accent) 19%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 48%, var(--line));
+  color-scheme: dark;
+}
+.movo-app.accent-custom { --accent-2: color-mix(in srgb, var(--accent) 78%, white); }
+.movo-app.theme-dark.tint-blue { --bg: #101522; --nav-bg: rgba(23, 32, 51, .96); }
+.movo-app.theme-dark.tint-purple { --bg: #171222; --nav-bg: rgba(34, 25, 49, .96); }
+.movo-app.theme-dark.tint-orange { --bg: #1d1510; --nav-bg: rgba(44, 29, 19, .96); }
+
+.movo-app :where(button, input, select, textarea) {
+  font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+.movo-app :where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea) {
+  color: var(--text); caret-color: var(--accent);
+}
+.movo-app :where(input, textarea, select)::placeholder { color: var(--control-placeholder); opacity: .78; }
+.movo-app :where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) { accent-color: var(--accent); }
+.movo-app :where(button, input, select, textarea):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.movo-app :where(button, input, select, textarea):disabled { cursor: not-allowed; }
+
+.movo-app .primary-button {
+  background: var(--accent); color: var(--on-accent, #fff); border: 1px solid var(--accent);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.movo-app .secondary-button { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-subtle); }
+.movo-app .danger-button {
+  background: var(--danger-surface); color: var(--danger-ink);
+  border: 1px solid color-mix(in srgb, var(--red) 28%, transparent);
+}
+.movo-app .wide-button { color: var(--text); background: var(--surface-1); border-color: var(--border-subtle); }
+.movo-app .round-button, .movo-app .back-button, .movo-app .sheet-close { color: var(--accent-ink, var(--text)); }
+.movo-app .sheet-menu button, .movo-app .seg-control, .movo-app .theme-segments {
+  background-color: var(--surface-2); color: var(--text);
+}
+.movo-app .seg-control button.selected, .movo-app .theme-segments button.selected {
+  background: var(--surface-1); color: var(--accent-ink, var(--text));
+  box-shadow: 0 1px 5px color-mix(in srgb, var(--text) 10%, transparent);
+}
+.movo-app .chip-row button.selected { color: var(--accent-ink, var(--accent)) !important; text-decoration-color: var(--accent-ink, var(--accent)); }
+.movo-app .link-button, .movo-app .manage-button { color: var(--accent-ink, var(--accent)); }
+.movo-app :where(.tx-row, .menu-row, .note-row, .account-row, .sheet-card, .mini-card, .balance-row, .profile-card, .theme-option):active {
+  background-color: var(--surface-pressed);
+}
+
+.movo-app :where(.sheet-form, .form-card, .credit-log-form, .fp-credit-card-fields, .fp-credit-log-form, .search-field) :where(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea) {
+  color: var(--text); background-color: var(--surface-2); border-color: var(--border-subtle);
+  border-radius: var(--control-radius); font-family: var(--app-font, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+}
+.movo-app :where(.sheet-form, .form-card, .credit-log-form, .fp-credit-card-fields, .fp-credit-log-form) :where(input, select, textarea):focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
+}
+body:has(.movo-app.theme-dark) { background: #090b10; color-scheme: dark; }
+body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
+@media (prefers-reduced-motion: reduce) {
+  .movo-app *, .movo-app *::before, .movo-app *::after {
+    scroll-behavior: auto !important; animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important; transition-duration: .01ms !important;
+  }
+}
