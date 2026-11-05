@@ -4932,3 +4932,72 @@ button.account-tile:active { transform: scale(.98); }
  .movo-app .fp-plan-funding .fp-allocs li { gap:6px; }
  .movo-app .fp-plan-funding .fp-allocs li > b { font-size:10.5px; }
  .movo-app .fp-plan-funding .fp-allocs li > .link-button { font-size:10px; }}
+
+
+/* Financial planning credit cards: one compact spacing and type scale, no field overflow. */
+.movo-app .fp-credit-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.movo-app .fp-credit-card,
+.movo-app .fp-credit-card * { box-sizing: border-box; }
+.movo-app .fp-credit-card .fp-goal-head {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(104px, .9fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.movo-app .fp-credit-card .fp-main { min-width: 0; }
+.movo-app .fp-credit-card .fp-main strong { font-size: 14px; line-height: 1.25; }
+.movo-app .fp-credit-card .fp-main small,
+.movo-app .fp-credit-card .fp-amount small { font-size: 10px; line-height: 1.3; }
+.movo-app .fp-credit-card .fp-amount { min-width: 0; max-width: none; text-align: right; }
+.movo-app .fp-credit-card .fp-amount b { font-size: 14px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.movo-app .fp-credit-card-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; min-width: 0; }
+.movo-app .fp-credit-card-metrics > div { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 9px 8px; border-radius: 11px; }
+.movo-app .fp-credit-card-metrics small { font-size: 10px; line-height: 1.25; }
+.movo-app .fp-credit-card-metrics b { font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.movo-app .fp-credit-card-metrics span { font-size: 9px; line-height: 1.3; overflow-wrap: anywhere; }
+.movo-app .fp-credit-card-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; padding: 8px 0; }
+.movo-app .fp-credit-card-stats > span { min-width: 0; }
+.movo-app .fp-credit-card-stats b { font-size: 12px; line-height: 1.25; }
+.movo-app .fp-credit-card-stats small { font-size: 10px; line-height: 1.3; }
+.movo-app .fp-credit-card-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 10px; min-width: 0; }
+.movo-app .fp-credit-card-fields > label { display: grid; grid-template-rows: auto 40px; align-content: start; gap: 5px; min-width: 0; font-size: 11px; line-height: 1.25; }
+.movo-app .fp-credit-card-fields input { display: block; width: 100%; min-width: 0; max-width: 100%; height: 40px; padding: 0 9px; border-radius: 10px; font-size: 13px; line-height: 1.2; }
+.movo-app .fp-credit-card-fields input[type="date"] { min-width: 0; padding-inline: 6px; font-size: 11px; }
+.movo-app .fp-credit-card-rate { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; }
+.movo-app .fp-credit-card-rate label { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 6px; min-width: 0; font-size: 10.5px; line-height: 1.25; }
+.movo-app .fp-credit-card-rate input { width: 72px; max-width: 100%; min-width: 0; height: 36px; font-size: 12px; }
+.movo-app .fp-credit-card-rate > small { min-width: 0; font-size: 9px; line-height: 1.35; }
+.movo-app .fp-credit-card .wide-button { width: 100%; min-width: 0; min-height: 42px; margin: 0; border-radius: 12px; font-size: 13px; }
+.movo-app .fp-credit-card .fp-allocs { min-width: 0; margin: 0; }
+.movo-app .fp-credit-card .fp-allocs li { gap: 8px; min-width: 0; padding: 6px 0; font-size: 11px; }
+.movo-app .fp-credit-card .fp-allocs li > span { min-width: 0; overflow-wrap: anywhere; }
+.movo-app .fp-credit-card .form-note { margin: 0; font-size: 10px; line-height: 1.4; }
+/* Leave a clear scroll runway below the last card and above the floating tab bar. */
+.movo-app .screen:has(.fp-credit-card) { padding-bottom: calc(190px + env(safe-area-inset-bottom)); }
+@media (max-width: 380px) {
+  .movo-app .fp-credit-card { gap: 8px; padding: 10px; }
+  .movo-app .fp-credit-card .fp-goal-head { grid-template-columns: 30px minmax(0, 1fr) minmax(92px, .85fr); gap: 7px; }
+  .movo-app .fp-credit-card-logo { width: 30px; height: 30px; }
+  .movo-app .fp-credit-card .fp-main strong,
+  .movo-app .fp-credit-card .fp-amount b { font-size: 12px; }
+  .movo-app .fp-credit-card .fp-main small,
+  .movo-app .fp-credit-card .fp-amount small { font-size: 9px; }
+  .movo-app .fp-credit-card-metrics { gap: 5px; }
+  .movo-app .fp-credit-card-metrics > div { padding: 7px 6px; }
+  .movo-app .fp-credit-card-metrics small { font-size: 9px; }
+  .movo-app .fp-credit-card-metrics b { font-size: 11px; }
+  .movo-app .fp-credit-card-fields { gap: 8px; }
+  .movo-app .fp-credit-card-fields > label { font-size: 10px; }
+  .movo-app .fp-credit-card-fields input { height: 38px; font-size: 12px; }
+  .movo-app .fp-credit-card-fields input[type="date"] { font-size: 10px; }
+  .movo-app .fp-credit-card-rate { grid-template-columns: 1fr; gap: 5px; }
+  .movo-app .fp-credit-card-rate > small { font-size: 9px; }
+}
