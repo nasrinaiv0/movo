@@ -2820,8 +2820,7 @@ export default [
     "この取引を削除するか、関連する支払いを取り消せませんでした。",
     "이 거래를 삭제하거나 연결된 결제를 취소할 수 없습니다.",
     "इस लेन-देन को हटाया या इससे जुड़े भुगतान को वापस नहीं किया जा सका।"
-  ]
-
+  ],
   [
     "Import loans, receivables and bills in a separate file from accounts, transactions and plans.",
     "I-import nang hiwalay ang mga loan, receivable at bill mula sa mga account, transaksyon at plano.",
