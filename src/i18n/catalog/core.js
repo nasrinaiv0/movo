@@ -2821,4 +2821,62 @@ export default [
     "이 거래를 삭제하거나 연결된 결제를 취소할 수 없습니다.",
     "इस लेन-देन को हटाया या इससे जुड़े भुगतान को वापस नहीं किया जा सका।"
   ]
+
+  [
+    "Import loans, receivables and bills in a separate file from accounts, transactions and plans.",
+    "I-import nang hiwalay ang mga loan, receivable at bill mula sa mga account, transaksyon at plano.",
+    "استورد القروض والمبالغ المستحقة والفواتير في ملف منفصل عن الحسابات والمعاملات والخطط.",
+    "请将贷款、应收款和账单与账户、交易及计划分开导入。",
+    "Importa préstamos, cuentas por cobrar y facturas en un archivo separado de cuentas, transacciones y planes.",
+    "Importa prestiti, crediti e bollette in un file separato da conti, transazioni e piani.",
+    "Importiere Kredite, Forderungen und Rechnungen in einer separaten Datei getrennt von Konten, Transaktionen und Plänen.",
+    "Importez les prêts, créances et factures dans un fichier distinct des comptes, transactions et plans.",
+    "Importe empréstimos, valores a receber e contas em um arquivo separado de contas, transações e planos.",
+    "ローン、売掛金、請求書は、口座・取引・プランとは別のファイルでインポートしてください。",
+    "대출, 미수금 및 청구서는 계좌, 거래 및 계획과 별도의 파일로 가져오세요.",
+    "ऋण, प्राप्य राशि और बिल को खातों, लेन-देन और योजनाओं से अलग फ़ाइल में आयात करें。"
+  ],
+  [
+    "Imported {n} financial planning item(s).",
+    "{n} item sa pagpaplanong pinansyal ang na-import.",
+    "تم استيراد {n} من عناصر التخطيط المالي.",
+    "已导入 {n} 项财务规划项目。",
+    "Se importaron {n} elementos de planificación financiera.",
+    "Importati {n} elementi di pianificazione finanziaria.",
+    "{n} Finanzplanungselement(e) importiert.",
+    "{n} élément(s) de planification financière importé(s).",
+    "{n} item(ns) de planejamento financeiro importado(s).",
+    "財務計画項目を {n} 件インポートしました。",
+    "재무 계획 항목 {n}개를 가져왔습니다.",
+    "{n} वित्तीय योजना आइटम आयात किए गए。"
+  ],
+  [
+    "Sign in to MOVO to import loans, receivables and bills securely.",
+    "Mag-sign in sa MOVO upang ligtas na mag-import ng mga loan, receivable at bill.",
+    "سجّل الدخول إلى MOVO لاستيراد القروض والمبالغ المستحقة والفواتير بأمان.",
+    "登录 MOVO 以安全导入贷款、应收款和账单。",
+    "Inicia sesión en MOVO para importar préstamos, cuentas por cobrar y facturas de forma segura.",
+    "Accedi a MOVO per importare in sicurezza prestiti, crediti e bollette.",
+    "Melde dich bei MOVO an, um Kredite, Forderungen und Rechnungen sicher zu importieren.",
+    "Connectez-vous à MOVO pour importer en toute sécurité les prêts, créances et factures.",
+    "Entre no MOVO para importar empréstimos, valores a receber e contas com segurança.",
+    "MOVO にサインインして、ローン、売掛金、請求書を安全にインポートしてください。",
+    "MOVO에 로그인하여 대출, 미수금 및 청구서를 안전하게 가져오세요.",
+    "ऋण, प्राप्य राशि और बिल सुरक्षित रूप से आयात करने के लिए MOVO में साइन इन करें。"
+  ],
+  [
+    "{n} rows were skipped as duplicates, invalid or failed.",
+    "{n} row ang nilaktawan dahil duplicate, hindi wasto o nabigo.",
+    "تم تخطي {n} صفًا لأنها مكررة أو غير صالحة أو فشلت.",
+    "已跳过 {n} 行，因为它们重复、无效或导入失败。",
+    "Se omitieron {n} filas por estar duplicadas, no ser válidas o haber fallado.",
+    "Sono state ignorate {n} righe perché duplicate, non valide o non riuscite.",
+    "{n} Zeilen wurden wegen Duplikaten, ungültiger Daten oder Fehlern übersprungen.",
+    "{n} ligne(s) ignorée(s) en raison de doublons, de données invalides ou d’échecs.",
+    "{n} linha(s) foram ignoradas por duplicidade, invalidade ou falha.",
+    "重複、無効、または失敗したため、{n} 行をスキップしました。",
+    "중복, 잘못된 데이터 또는 실패로 인해 {n}개 행을 건너뛰었습니다.",
+    "डुप्लिकेट, अमान्य या विफल होने के कारण {n} पंक्तियाँ छोड़ दी गईं。"
+  ]
+
 ];
