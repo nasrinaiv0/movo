@@ -51,7 +51,7 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
   const summary = useMemo(() => billsSummary(allOccurrences, allPayments, today, toBase), [allOccurrences, allPayments, today, toBase]);
   const billOf = (o) => allBills.find(b => b.id === o.bill_id);
   const payAccounts = (currency) => accounts.filter(a => a.currency === currency);
-  const shown = summary.upcoming.filter(o => o.due_date <= shift(today, 45));
+  const shown = summary.upcoming; // Overdue + current billing cycle only; never future cycles.
 
   const openPay = (o) => {
     const bill = billOf(o);
@@ -92,7 +92,7 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
     <SectionTitle action={tr('Add')} onAction={() => onAdding(true)}>{tr('Upcoming and overdue')}</SectionTitle>
     <section className="card pad bills-list" aria-label={tr('Upcoming and overdue bills')}>
       
-      {!shown.length && <p className="empty">{tr('Nothing due in the next 45 days.')}</p>}
+      {!shown.length && <p className="empty">{tr('Nothing overdue or due in the current billing cycle.')}</p>}
       {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); const subscription = o.source === 'subscription' ? subscriptions.find(item => item.id === o.subscription_id) : null; return <article className={`bill-row bill-row-compact is-${state}`} key={o.id}>
         <div className="bill-row-main">
           <span className="bill-row-copy">

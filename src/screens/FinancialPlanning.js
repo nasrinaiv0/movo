@@ -102,7 +102,7 @@ export default function FinancialPlanning({ c }) {
   const live = p.allocations.filter(a => a.status === 'allocated');
   const bills = summary.bills;
   const glance = [
-    { key: 'bills', icon: 'receipt', tone: 'orange', title: 'Bills', sub: bills.overdueCount ? tr('{n} overdue', { n: bills.overdueCount }) : bills.next ? tr('Next due {date}', { date: formatDate(bills.next.due_date) }) : tr('Nothing due in the next 45 days.'), amount: bills.dueThisMonth, note: tr('Due this month'), alert: bills.overdueCount > 0 },
+    { key: 'bills', icon: 'receipt', tone: 'orange', title: 'Bills', sub: bills.overdueCount ? tr('{n} overdue', { n: bills.overdueCount }) : bills.next ? tr('Next due {date}', { date: formatDate(bills.next.due_date) }) : tr('Nothing overdue or due in the current billing cycle.'), amount: bills.totalDue, note: tr('Overdue + current cycle'), alert: bills.overdueCount > 0 },
     { key: 'loans', icon: 'bank', tone: 'red', title: 'Loans & debts', sub: summary.loans.count ? tr('{n} active', { n: summary.loans.count }) : tr('No loans or debts recorded yet.'), amount: summary.loans.total, note: tr('Outstanding') },
     { key: 'owed', icon: 'user', tone: 'green', title: 'Owed to you', sub: summary.receivables.count ? tr('{n} active', { n: summary.receivables.count }) : tr('No one currently owes you money in MOVO.'), amount: summary.receivables.total, note: tr('To collect') },
     { key: 'goals', icon: 'target', tone: 'blue', title: 'Goals & Plans', sub: summary.goals.count ? tr('{n}% saved', { n: Math.round(summary.goals.percent) }) : tr('No goals or plans yet.'), amount: summary.goals.saved, note: tr('Saved') },

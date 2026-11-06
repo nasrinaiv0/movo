@@ -60,6 +60,15 @@ const P = {
   limits: <path d={LIMITS_GAUGE_PATH} fill="currentColor" fillRule="evenodd" stroke="none" />,
   sliders: <><path d="M3.5 5.2h17M3.5 12h17M3.5 18.8h17" /><circle cx="9" cy="5.2" r="2.4" /><circle cx="16" cy="12" r="2.4" /><circle cx="7" cy="18.8" r="2.4" /></>,
   transactionFilter: <><circle cx="12" cy="12" r="12" fill="#1e1e1e" stroke="none" /><g fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h11M18 4h3M3 12h7M14 12h7M3 20h13M20 20h1M14 1v6M10 9v6M16 17v6" /></g></>,
+  // Page-specific reference-matched header glyphs. currentColor inherits the accent/theme ink.
+  walletHeaderEdit: <>
+    <path d="M11.4 4.2H5.7a2.5 2.5 0 0 0-2.5 2.5v11.6a2.5 2.5 0 0 0 2.5 2.5h11.6a2.5 2.5 0 0 0 2.5-2.5v-6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m10.1 13.8 7.3-7.3 3.1 3.1-7.3 7.3-4.2 1.2c-.6.2-1.1-.3-.9-.9zM18.3 5.6l1.4-1.4a1.9 1.9 0 0 1 2.7 2.7L21 8.3Z" fill="currentColor" stroke="none" />
+  </>,
+  quickActionShare: <>
+    <path d="M5.2 4.1h5.5v2.7H6.5v11.6h11.4v-5.2h2.7v5.5a2.4 2.4 0 0 1-2.4 2.4H5.9a2.4 2.4 0 0 1-2.4-2.4V6a1.9 1.9 0 0 1 1.7-1.9Z" fill="currentColor" stroke="none" />
+    <path d="M9.1 16.5C9.1 9.6 13 5.7 18.4 5.7V3.4a1 1 0 0 1 1.7-.7l3.7 3.7a1.5 1.5 0 0 1 0 2.1l-3.7 3.7a1 1 0 0 1-1.7-.7V9.4c-4.6 0-7.1 2.1-8 7.2-.2 1-1.3 1-1.3-.1Z" fill="currentColor" stroke="none" />
+  </>,
   chart: <><rect x="4.4" y="11" width="3.6" height="8.6" rx="1.5" /><rect x="10.2" y="4.4" width="3.6" height="15.2" rx="1.5" /><rect x="16" y="8" width="3.6" height="11.6" rx="1.5" /></>,
   cart: <><path d="M3 4.2h2.2a1 1 0 0 1 1 .8l1.6 8.6a1.8 1.8 0 0 0 1.8 1.5h7.2a1.8 1.8 0 0 0 1.8-1.4l1.2-5.3H7" /><circle cx="9.6" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" /></>,
   briefcase: <><rect x="3" y="7.5" width="18" height="12.5" rx="3.6" /><path d="M9 7.5V6.2A2.2 2.2 0 0 1 11.2 4h1.6A2.2 2.2 0 0 1 15 6.2v1.3M3 13h18" /></>,

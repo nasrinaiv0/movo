@@ -1,3 +1,4 @@
+import Icon from './Icon';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RootHeader } from './ui';
@@ -15,5 +16,22 @@ test('groups utility actions, keeps Plus separate, and preserves click handlers 
   expect(el.querySelector('.header-add-action').parentElement.className).toBe('header-actions');
   act(() => { el.querySelector('[aria-label="Search"]').click(); el.querySelector('[aria-label="Add"]').click(); el.querySelector('[aria-label="Notifications"]').click(); });
   expect(onSearch).toHaveBeenCalledTimes(1); expect(onAdd).toHaveBeenCalledTimes(1); expect(onBell).toHaveBeenCalledTimes(1);
+  act(() => root.unmount());
+});
+
+
+test('page-specific wallet edit and quick action icons inherit adaptive currentColor', () => {
+  const el = document.createElement('div'); const root = createRoot(el);
+  act(() => root.render(<div>
+    <Icon name="walletHeaderEdit" size={21} />
+    <Icon name="quickActionShare" size={21} />
+  </div>));
+  const icons = Array.from(el.querySelectorAll('svg'));
+  expect(icons).toHaveLength(2);
+  icons.forEach(icon => {
+    expect(icon.querySelectorAll('path').length).toBeGreaterThan(0);
+    expect(icon.outerHTML).toContain('currentColor');
+    expect(icon.outerHTML).not.toMatch(/(?:#1e1e1e|#fff|#000)/i);
+  });
   act(() => root.unmount());
 });

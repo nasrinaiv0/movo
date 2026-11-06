@@ -6325,10 +6325,10 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   align-items: stretch;
   column-gap: 12px;
   box-sizing: border-box;
-  height: 162px;
-  min-height: 162px;
+  height: 136px;
+  min-height: 136px;
   max-height: none;
-  padding: 14px 16px 13px;
+  padding: 12px 16px 12px;
   overflow: hidden;
 }
 .movo-app .total-card.billing-cycle-summary .billing-cycle-summary-head {
@@ -6368,6 +6368,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   gap: 4px;
   min-height: 20px;
   max-width: 100%;
+  margin-top: auto; /* Align the comparison with the chart's month-axis row. */
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(255,255,255,.14);
@@ -6385,7 +6386,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding-top: 31px;
+  padding-top: 13px;
   box-sizing: border-box;
   align-self: stretch;
   gap: 4px;
@@ -6429,8 +6430,10 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .billing-cycle-chart .billing-cycle-chart-axis {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   flex: 0 0 auto;
   min-width: 0;
+  min-height: 24px;
   gap: 12px;
   color: var(--summary-card-ink, #fff);
   opacity: .82;
@@ -6439,13 +6442,13 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 @media(max-width: 360px) {
   .movo-app .total-card.billing-cycle-summary {
-    height: 162px;
-    min-height: 162px;
+    height: 140px;
+    min-height: 140px;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
     column-gap: 8px;
     padding-inline: 13px;
   }
-  .movo-app .total-card.billing-cycle-summary .billing-cycle-chart { padding-top: 36px; }
+  .movo-app .total-card.billing-cycle-summary .billing-cycle-chart { padding-top: 14px; }
   .movo-app .total-card.billing-cycle-summary .billing-cycle-summary-compare {
     padding: 2px 5px;
     font-size: 9px;
