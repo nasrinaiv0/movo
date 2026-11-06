@@ -1652,7 +1652,7 @@ function App() {
         })}
         <span className="side-spacer" />
         <button type="button" className="side-item side-add" onClick={() => openForm('expense')} title={tr('Add transaction')}><span className="side-icon"><Icon name="plus" size={22} strokeWidth={2} /></span><span className="side-label">{tr('Add transaction')}</span></button>
-        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
+        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gearSolid" size={22} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}

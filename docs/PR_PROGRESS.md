@@ -367,3 +367,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Cashback and Scheduled (entered from Menu) gain an optional Back button returning to Menu, while retaining original large titles and all actions, including Scheduled Plus. At narrow widths (<360px), only these pages' header utilities wrap to a second row.
 - Broad MOVO button border removal is already in main. Preserve CSS icon pseudo-element borders needed to draw indicators while removing decorative shadows.
 - Added navigation, responsive CSS, exact padding and icon safety tests; a dated engineering update accompanies this single code commit.
+
+
+## PR #229 — Unified Settings icon across MOVO (2026-11-07)
+- Profile header, Profile Financial Settings row and sidebar now use the same solid Settings gear already shown on Home and shared headers.
+- Per-context SVG sizes stay unchanged (Home 24px, shared header 23px, Profile header 19px, menu 20px, sidebar 22px). Theme-adaptive currentColor, 45px touch targets, 0.5px header padding and borderless controls are preserved.
+- The legacy gear icon name aliases to canonical gearSolid in the shared Icon component to prevent a second design recurring. Other icons such as shield and sliders remain distinct.
+- New SettingsIconConsistency.test.js covers matching SVG artwork, click routing and existing size contracts. Dated engineering documentation accompanies this commit.
