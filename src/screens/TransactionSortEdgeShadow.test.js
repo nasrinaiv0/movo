@@ -22,7 +22,7 @@ test('Transactions sort filters disable left/right gradient mask and indicator s
   const indicator = rootRule('.movo-app.movo-app .tx-sort-bar > .chip-row > .chip-ind');
   expect(decl(indicator, 'box-shadow')).toBe('none');
   const buttons = rootRule('.movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip]');
-  expect(decl(buttons, 'height')).toBe('44px');
+  expect(decl(buttons, 'height')).toBe('40px');
   // Shared horizontal scrollers keep their edge fades; the override is local.
   expect(css).toMatch(/\.chip-row, \.card-scroller, \.tx-chips\s*\{[^}]*mask-image: linear-gradient/);
 });

@@ -24,3 +24,12 @@
 - Full `CI=true npm run build`: 694 tests passing / 124 suites; TypeScript typecheck passed; optimized CRA build compiled successfully.
 - Headless Chromium at 390px mobile width loaded the built MOVO app. A screenshot-representative Transactions sort control was rendered using MOVO's real production CSS. In both light and dark appearance, computed `mask-image`, `-webkit-mask-image` and `box-shadow` were all `none`; three equal-width options and 44px active button were verified. No authenticated user data was accessed.
 - GitHub exact-commit CI and any production deployment remain separate merge gates.
+
+## Follow-up: standardize filter controls to exactly 40px (2026-11-07)
+- Requested: make every Transactions and Wallet filter control 40px high.
+- Changes: Transactions type chips (42 to 40), billing cycle selector (42 to 40), Transactions Date/Amount/etc sort chips (44 to 40), Wallet account type chips (38 to 40), plus Wallet Sort & View option controls (40 with explicit min/max) and corresponding Wallet filter-side action (40).
+- Applies to all light/dark accents and narrow mobile widths. Native select remains full-size within its 40px parent; the gliding `chip-ind` copies the actual chip dimensions via the existing ResizeObserver.
+- Existing edge-fade mask removal and indicator shadow removal from this PR remain intact. Header buttons, cards, finance/accounting/storage/auth and data services are untouched.
+- Regression: `src/screens/TransactionWalletFilterHeight.test.js`, updated prior spacing and edge-shadow expectations, and real Chromium computed-style checks. Retain 40px as requested while preserving focus-visible states, keyboard activation, aria labels and touch interactions.
+- Same-commit docs and regression tests are required; do not merge until exact-head CI passes.
+- Completed Sandbox verification for follow-up: 704/704 Jest tests in 125 suites, TypeScript check and optimized CRA build passed. Chromium loaded the actual built MOVO app and checked representative filters in light and dark appearances at 320px, 390px and 430px mobile widths: 36 exact rendered/computed height checks per width, all passed. The initial browser regression exposed a legacy 44px Wallet override, corrected before this final successful run.

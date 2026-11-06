@@ -413,3 +413,9 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Preserve active pill appearance, gaps, 44px targets, arrow-free labels, sorting callbacks and the horizontal fades of genuinely scrolling rows. No change to financial records, auth or calculations.
 - Includes a focused regression test and the engineering record `docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md`. Require Vercel Sandbox checks and exact-head GitHub CI before merging.
 - Verification: focused Sandbox tests 18/18, full test suites 124/124 and 694/694 tests, TypeScript and optimized build passing. Chromium mobile-width computed-style checks confirmed both masks and indicator shadow are `none` in light and dark appearance; three options and 44px target intact.
+
+## Transactions and Wallet — exactly 40px filter heights (2026-11-07, PR #232 follow-up)
+- Align Transactions type/date-sort/account-sort filters and billing-cycle select to 40px, Wallet category filters and Wallet sort/layout selectors to 40px. Preserve all current horizontal spacing, responsive widths, selected-pill animation, semantic button labels, and existing side-shadow removal in PR #232.
+- Only filter controls are targeted; header actions and unrelated cards/navigation remain unchanged.
+- Added `TransactionWalletFilterHeight.test.js`, updated existing Transactions filter spacing / shadow regression expectations and extended dated engineering docs in the same commit. Vercel Sandbox and exact-head GitHub CI required before merge.
+- Follow-up final verification: isolated Vercel Sandbox 704/704 tests in 125 suites, TypeScript and build passed. Browser verified 36 40px controls per mobile width across light/dark at 320/390/430px; exact-head GitHub CI remains a separate merge gate.
