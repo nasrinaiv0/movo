@@ -13,8 +13,8 @@ Audit base main 9c423c7; native changes staged until compiled and reviewed.
 | 5 | HttpOnly web sessions | GAP | Supabase web session JavaScript-readable |
 | 6 | CSP/CORS | PARTIAL | Headers present; broad connect sources and API origin checks need review |
 | 7 | CSRF | CONDITIONAL | Bearer auth; cookie conversion requires CSRF defense |
-| 8 | Native Keychain/Keystore | STAGED | New Keychain/Keystore AES vault, physical native sign-off pending |
-| 9 | Device-only auth values | STAGED | iOS WhenUnlockedThisDeviceOnly; AndroidKeyStore non-exportable key |
+| 8 | Native Keychain/Keystore | STAGED | Device-only Supabase and automation-key vaults; physical-device sign-off pending |
+| 9 | Device-only auth values | STAGED | iOS WhenUnlockedThisDeviceOnly; AndroidKeyStore non-exportable key; automation token migrated |
 | 10 | JS bridge/dynamic code | PARTIAL | No eval found in examined app; native bridge tests pending |
 | 11 | Device attestation | GAP | No App Attest/Play Integrity server integration |
 | 12 | TLS and pinning | PARTIAL | TLS 1.3/HSTS, no certificate pinning |
@@ -32,3 +32,6 @@ Audit base main 9c423c7; native changes staged until compiled and reviewed.
 Live Supabase read-only findings: all 28 public tables RLS-enabled; 12 authenticated SECURITY DEFINER warnings, one deny-all RLS mapping table, leaked-password protection disabled. No independent two-user exploit test performed.
 
 Absolute security cannot be certified. Device testing, adversarial permission testing, review and patching must continue after every release.
+
+## Additional device-key finding
+PR #227 originally protected Supabase refresh tokens but continued mirroring the phone-automation device credential in the general settings object. The follow-up moves this separate transaction-logging secret into the same native vault, removes it from general persisted preferences, and preserves the legacy key only until write-before-delete migration succeeds. Native executable and signed-device tests remain necessary; do not equate successful static tests with hardware-backed validation.

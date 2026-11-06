@@ -31,3 +31,14 @@ test('vulnerability disclosure has a publicly deployable security.txt', () => {
   expect(txt).toContain('Expires:');
   expect(txt).toContain('Canonical: https://movo.nasrinai.com/.well-known/security.txt');
 });
+
+test('phone-automation device keys cannot be mirrored into native preferences', () => {
+  const source = fromRoot('src/App.js');
+  expect(source).toContain('JSON.stringify(sanitizeNativePreferenceCache(prefs))');
+  expect(source).toContain('saveNativeAutomationKey');
+  const vault = fromRoot('src/lib/nativeAutomationKey.js');
+  expect(vault).toContain('delete clone.autoLogKey');
+  expect(vault).toContain("MovoNative.secureSet({ key: VAULT_KEY, value: activeKey })");
+  expect(fromRoot('ios/App/App/MovoNativePlugin.swift')).toContain('movo-autolog-key');
+  expect(fromRoot('android/app/src/main/java/com/nasrinai/movo/MovoNativePlugin.java')).toContain('movo-autolog-key');
+});

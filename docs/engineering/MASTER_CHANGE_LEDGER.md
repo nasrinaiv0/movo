@@ -504,3 +504,5 @@ For all four runs, the job logs show the full dependency install still reports *
 ## 2026-11-06 — Native session / privacy security pass
 - Device-only Keychain/Keystore auth, migration, backup and screenshot protections, R8, native CI, public security.txt. No production financial data or database mutations.
 - Evidence, open risks and rollback documented in docs/engineering/updates/2026-11-06-native-session-hardening.md. Release remains blocked for signed-device and authorization verification.
+
+- PR #227 follow-up: native phone-automation API device key moved out of the mirrored general preferences JSON into device-only Keychain/Keystore, with write-before-delete migration, failed-vault protections, safe rotation and regression tests. Documentation: docs/engineering/updates/2026-11-06-native-session-hardening.md
