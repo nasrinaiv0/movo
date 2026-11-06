@@ -500,3 +500,7 @@ For all four runs, the job logs show the full dependency install still reports *
 - Full evidence, risks, and rollback: docs/engineering/updates/2026-11-06-financial-commercial-remediation.md. Release remains blocked.
 
 - Terms and Privacy expanded for commercial release; canonical shared supplement and synchronization regression tests. See dated financial-commercial remediation update.
+
+## 2026-11-06 — Native session / privacy security pass
+- Device-only Keychain/Keystore auth, migration, backup and screenshot protections, R8, native CI, public security.txt. No production financial data or database mutations.
+- Evidence, open risks and rollback documented in docs/engineering/updates/2026-11-06-native-session-hardening.md. Release remains blocked for signed-device and authorization verification.
