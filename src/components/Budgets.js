@@ -69,7 +69,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
   };
   return <Sheet title={tr('Budgets & Plans')} subtitle={tab === 'budgets' ? (cloudMode ? tr('Monthly limits per category, synced to your account.') : tr('Monthly limits per category, saved on this device.')) : tr('Savings goals with a target and optional date, saved on this device.')} onClose={onClose} label={tr('Budgets and plans')} center>
     <div className="seg-control two" role="group" aria-label={tr('Section')}>{[['budgets', 'Budgets'], ['plans', 'Plans']].map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => { setTab(k); setDraft(null); setErr(''); }}>{tr(l)}</button>)}</div>
-    {tab === 'budgets' && onOpenLimits && <button type="button" className="link-button" onClick={onOpenLimits}>{tr('Account & merchant limits')}</button>}
+    {tab === 'budgets' && onOpenLimits && <button type="button" className="link-button" onClick={onOpenLimits}><Icon name="limits" size={16} /> {tr('Account & merchant limits')}</button>}
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>
         <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
@@ -125,7 +125,7 @@ export function SpendingLimitsSheet({ limits = [], accounts = [], show, onSave, 
   return <Sheet title={tr('Spending limits')} subtitle={tr('Set monthly caps for a specific account or merchant.')} onClose={onClose} label={tr('Spending limits')} center>
     {!draft && <div className="sheet-list">
       {limits.map(limit => <button type="button" key={limit.id} className={`sheet-card budget-item ${limit.level}`} onClick={() => startDraft(limit)}>
-        <span className="tx-chip-icon tone-blue"><Icon name={limit.scope === 'account' ? 'wallet' : 'store'} size={14} /></span>
+        <span className="tx-chip-icon tone-blue"><Icon name="limits" size={14} /></span>
         <span className="budget-main"><span><strong>{limit.scope === 'account' ? (limit.account_name || tr('Account')) : limit.merchant}</strong><small><Money value={limit.spent} show={show} digits={0} /> {tr('of')} <Money value={limit.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, limit.percent)}%` }} /></span></span>
         <b>{limit.percent}%</b>
       </button>)}
