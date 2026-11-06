@@ -51,7 +51,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
 
   return <Sheet label={label} onClose={onClose} hideClose className={`tx-sheet tone-${type}`}>{(close) => <form className="tx-form" onSubmit={submit}>
     <div className="tx-top">
-      <button type="button" className="tx-round" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="close" size={18} /></button>
+      <button type="button" className="tx-round tx-close-compact" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="close" size={18} /></button>
       <div className="tx-seg" role="group" aria-label={tr('Transaction type')}>
         {Object.keys(TYPE_LABEL).map(t => <button type="button" key={t} className={type === t ? 'selected' : ''} aria-pressed={type === t} onClick={() => setForm({ ...form, transaction_type: t })}>{tr(TYPE_LABEL[t])}</button>)}
       </div>

@@ -5943,3 +5943,59 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app .chip-row button.selected :is(span, strong, small, b, svg, .movo-icon) {
   color: inherit;
 }
+
+
+/* Unified hairline: every ordinary MOVO button has a 0.25px outline.
+   Current text color supplies a subtle surface-aware edge for dark/light/brand fills.
+   Scrims and the animated mascot are not visible button surfaces. */
+.movo-app.movo-app button:not(.search-scrim):not(.ram-stage) {
+  border-width: 0.25px !important;
+  border-style: solid !important;
+  border-color: color-mix(in srgb, currentColor 16%, transparent) !important;
+}
+/* Close controls: smaller 30px visible circles, without making the hit targets tiny. */
+.movo-app.movo-app :is(.sheet-close, .tx-close-compact, .account-qr-close) {
+  box-sizing: border-box;
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  min-height: 30px !important;
+  max-width: 30px;
+  max-height: 30px;
+  flex: 0 0 30px !important;
+  padding: 0;
+  border-radius: 50% !important;
+  position: relative;
+}
+.movo-app.movo-app :is(.sheet-close, .tx-close-compact, .account-qr-close)::after {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+}
+/* Maintain the absolute positioning of modal and QR close buttons. */
+.movo-app.movo-app :is(.sheet-close, .account-qr-close) { position: absolute; }
+.movo-app.movo-app :is(.sheet-close, .tx-close-compact, .account-qr-close) > .movo-icon,
+.movo-app.movo-app :is(.sheet-close, .tx-close-compact, .account-qr-close) > svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+.movo-app.movo-app :is(.search-clear, .movo-ai-error button, .app-alert button, .style-remove) {
+  box-sizing: border-box;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  border-radius: 50%;
+}
+.movo-app.movo-app :is(.search-clear, .movo-ai-error button, .app-alert button, .style-remove) > .movo-icon,
+.movo-app.movo-app :is(.search-clear, .movo-ai-error button, .app-alert button, .style-remove) > svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+/* The Home utility group previously zeroed out button borders with a
+   more-specific rule. Include its icons in the 0.25px button contract. */
+.movo-app.movo-app .home-header .home-utility-pill > .round-button {
+  border: 0.25px solid color-mix(in srgb, currentColor 16%, transparent) !important;
+}
