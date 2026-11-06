@@ -27,10 +27,13 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install Android 36 packages
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      # ubuntu-latest already provides the Android command-line SDK. Avoid
+      # setup-android@v3's obsolete 'sdkmanager tools' package installation.
+      - name: Verify Android SDK and install API 36 packages
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          sdkmanager --version
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - name: Set up Node 22
         uses: actions/setup-node@v4
         with:

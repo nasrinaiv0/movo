@@ -39,3 +39,7 @@ Release state: NOT CERTIFIED / STORE BILLING REMAINS DISABLED.
 - Isolated Vercel Sandbox: movo-22-point-security-audit-20261106, exact main source SHA 9c423c7.
 - Initial 17 focused native storage and privacy tests passed; remaining full tests/build and native CI results are required before merge.
 - This work is security hardening, not a penetration-test certification or claim of a fully secure app.
+
+## CI runner compatibility follow-up
+- PR #227's first Android job failed during the SDK setup action, before any application compilation: setup-android@v3 attempted sdkmanager tools, and the current repository no longer contains package 'tools'.
+- Updated the workflow to rely on GitHub ubuntu-latest's already-installed Android SDK command-line tools and to install platforms;android-36 / build-tools;36.0.0 explicitly. Retry debug and unsigned release compile. This correction changes no production financial data or native auth behavior.

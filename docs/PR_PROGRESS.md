@@ -317,3 +317,5 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Source and tests: 17 focused tests passed initially. Require full suite, production build and Apple/Android simulator compile before merging. Signed physical device tests remain mandatory for app stores.
 - Not addressed: web cookie sessions, passwordless MFA/passkeys, verified deep links, app attestation, 12 privileged-RPC cross-user tests, login alerts, active device controls and comprehensive rate limiting.
 - Detailed dated update: docs/engineering/updates/2026-11-06-native-session-hardening.md. Full 22-control matrix: docs/security/SECURITY_HARDENING_22_POINT_2026-11-06.md.
+
+- PR #227 Android CI first attempt stopped before compilation in android-actions/setup-android@v3 because sdkmanager rejected obsolete package 'tools'. Removed the action and used the preinstalled ubuntu-latest SDK command-line tools with explicit API 36 packages. Native compilation still needs a passing rerun; this follow-up modifies the workflow and same-commit docs only.
