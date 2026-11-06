@@ -305,3 +305,5 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Policy expansion: canonical English Terms/Privacy supplements shared with static pages and in-app view, November 6 effective date, sync regression tests; reviewed legal translation/operator disclosure remains a release gate.
 
 - Legal navigation regression expectation updated for November 6 policy date; tested as part of the same code/documentation commit.
+
+- CI dependency follow-up (PR #226): the lockfile generated under npm 11 was rejected by the GitHub runner npm 10 because of an npm-version-specific optional yaml peer dependency. Pinned npm 11.19.1 for the CI install to match the validated lockfile; no dependency/lockfile change or financial-data write.

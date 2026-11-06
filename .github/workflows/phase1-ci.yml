@@ -29,8 +29,8 @@ jobs:
         env:
           MOVO_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/require-pr-documentation.cjs
-      - name: Install locked dependencies
-        run: npm ci
+      - name: Install locked dependencies (pinned npm 11)
+        run: npx --yes npm@11.19.1 ci
       - name: Audit production dependencies
         run: npm run audit:production
       - name: TypeScript typecheck

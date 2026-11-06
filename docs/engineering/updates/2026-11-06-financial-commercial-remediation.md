@@ -44,3 +44,8 @@ Branch: fix/release-accounting-security-20261106
 - Official references: https://privacy.gov.ph/data-privacy-act-/ ; https://privacy.gov.ph/implementing-rules-regulations-data-privacy-act-2012/ ; https://developer.apple.com/app-store/review/guidelines/ ; https://support.google.com/googleplay/android-developer/answer/10144311
 
 - Updated the in-app navigation test to assert the November 6 policy effective date; ensures consistency with public pages.
+
+## CI dependency toolchain compatibility follow-up
+- First PR #226 CI attempt passed the mandatory per-commit documentation gate, but npm ci under the runner's default npm 10 rejected the npm 11-generated package-lock due to a missing optional nested yaml@2.9.1 peer entry.
+- Reproduced the discrepancy: npm 10.9.4 install --package-lock-only would add the nested yaml entry, whereas npm 11.19.1 accepted the original committed lockfile cleanly. To avoid unnecessary lockfile churn and preserve Vercel's tested resolution, the PR CI install is pinned to npm 11.19.1 through npx.
+- CI must now be re-run at the exact new PR head. This follow-up changes only the CI script and the mandatory same-commit engineering and PR progress documentation. The original lockfile stays unchanged.
