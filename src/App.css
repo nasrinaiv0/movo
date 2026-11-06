@@ -6316,3 +6316,181 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 @media (max-height: 600px) {
   .movo-app .lock-screen:has(.lock-recovery) { justify-content: flex-start; }
 }
+
+/* Transactions > Total Spent: split summary and monthly chart, side by side. */
+.movo-app .total-card.billing-cycle-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+  column-gap: 12px;
+  box-sizing: border-box;
+  height: 162px;
+  min-height: 162px;
+  max-height: none;
+  padding: 14px 16px 13px;
+  overflow: hidden;
+}
+.movo-app .total-card.billing-cycle-summary .billing-cycle-summary-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  align-self: auto;
+  gap: 3px;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  container-type: inline-size;
+}
+.movo-app .total-card.billing-cycle-summary .balance-label {
+  min-height: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.movo-app .total-card.billing-cycle-summary .balance-amount {
+  margin: 0;
+  max-width: 100%;
+  min-width: 0;
+  line-height: 1.14;
+  font-size: clamp(18px, 5.2vw, 25px);
+  white-space: nowrap;
+}
+.movo-app .total-card.billing-cycle-summary .balance-amount .money {
+  max-width: 100%;
+  font-size: min(1em, calc(100cqi / (var(--len, 10) * .58)));
+  letter-spacing: -.5px;
+}
+.movo-app .total-card.billing-cycle-summary .billing-cycle-summary-compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  color: var(--summary-card-ink, #fff);
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.movo-app .total-card.billing-cycle-summary .billing-cycle-summary-compare strong { font-weight: 750; }
+.movo-app .total-card.billing-cycle-summary .billing-cycle-summary-compare .movo-icon { flex: 0 0 auto; }
+.movo-app .total-card.billing-cycle-summary .billing-cycle-chart {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding-top: 31px;
+  box-sizing: border-box;
+  align-self: stretch;
+  gap: 4px;
+  overflow: hidden;
+}
+.movo-app .billing-cycle-chart .billing-cycle-chart-title {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--summary-card-ink, #fff);
+  opacity: .88;
+}
+.movo-app .billing-cycle-chart .billing-cycle-chart-plot {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  gap: clamp(3px, 1.6vw, 7px);
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+.movo-app .billing-cycle-chart-column {
+  display: flex;
+  flex: 1 1 0;
+  align-items: flex-end;
+  min-width: 0;
+  height: 100%;
+}
+.movo-app .billing-cycle-chart-bar {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border-radius: 5px 5px 3px 3px;
+  background: var(--summary-card-chart-soft, rgba(255,255,255,.28));
+  transition: height .18s ease-out;
+}
+.movo-app .billing-cycle-chart-column.selected .billing-cycle-chart-bar {
+  background: var(--summary-card-ink, #fff);
+}
+.movo-app .billing-cycle-chart .billing-cycle-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  min-width: 0;
+  gap: 12px;
+  color: var(--summary-card-ink, #fff);
+  opacity: .82;
+  line-height: 1.2;
+  font-size: 10px;
+}
+@media(max-width: 360px) {
+  .movo-app .total-card.billing-cycle-summary {
+    height: 162px;
+    min-height: 162px;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    column-gap: 8px;
+    padding-inline: 13px;
+  }
+  .movo-app .total-card.billing-cycle-summary .billing-cycle-chart { padding-top: 36px; }
+  .movo-app .total-card.billing-cycle-summary .billing-cycle-summary-compare {
+    padding: 2px 5px;
+    font-size: 9px;
+    gap: 3px;
+  }
+}
+@media(prefers-reduced-motion: reduce) {
+  .movo-app .billing-cycle-chart-bar { transition: none; }
+}
+
+/* Wallet selectors: real approved institution favicons rather than initials. */
+.movo-app .wallet-brand-mark {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 var(--wallet-brand-mark-size, 46px);
+  width: var(--wallet-brand-mark-size, 46px);
+  height: var(--wallet-brand-mark-size, 46px);
+  min-width: 0;
+  overflow: hidden;
+  border: .25px solid var(--line);
+  border-radius: 13px;
+  background: var(--field);
+  color: var(--text);
+}
+.movo-app .wallet-brand-mark-image {
+  display: block;
+  max-width: 76%;
+  max-height: 76%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.movo-app .sheet-card .wallet-brand-mark,
+.movo-app .account-row .wallet-brand-mark { flex-shrink: 0; }
+.movo-app .sheet-card .account-main,
+.movo-app .account-row .account-main { flex: 1 1 auto; min-width: 0; }
+.movo-app .sheet-card .account-main strong,
+.movo-app .account-row .account-main strong { overflow-wrap: anywhere; }
+.movo-app .sheet-card > b,
+.movo-app .account-row > b { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
+/* Very narrow phones: keep Transactions header and billing filters inside the viewport. */
+@media (max-width: 360px) {
+  .movo-app .transactions-header { margin-right: -14px; }
+  .movo-app .tx-chip-bar { margin-right: -14px; }
+}

@@ -4,6 +4,8 @@ import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, M
 import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { activityNetAmount } from '../lib/financeCalculations';
+import { billingCycleSpending, spendingVsPreviousCycle } from '../lib/billingCycleSpending';
+import { percentLabel } from '../lib/trend';
 
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
 const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
@@ -28,13 +30,43 @@ export function billingCycleOptions(months = [], currentMonth) {
   }))];
 }
 
+/** Twelve monthly billing-cycle totals, not daily buckets. Full width and below the amount. */
+export function BillingCycleChart({ cycles, visible = true }) {
+  const max = Math.max(0, ...cycles.map(row => Number(row.amount) || 0));
+  const first = cycles[0]?.key;
+  const last = cycles[cycles.length - 1]?.key;
+  return <div className="billing-cycle-chart" role="group" aria-label={tr('Billing cycles')}>
+    <div className="billing-cycle-chart-title">{tr('Billing cycles')}</div>
+    <div className="billing-cycle-chart-plot" aria-hidden="true">
+      {cycles.map((row, index) => {
+        const amount = visible ? Math.max(0, Number(row.amount) || 0) : 0;
+        const height = max > 0 && amount > 0 ? Math.max(9, amount / max * 100) : 5;
+        return <span key={row.key} className={'billing-cycle-chart-column' + (index === cycles.length - 1 ? ' selected' : '')}>
+          <span className="billing-cycle-chart-bar" style={{ height: height + '%' }} />
+        </span>;
+      })}
+    </div>
+    <div className="billing-cycle-chart-axis">
+      <span>{first ? monthLabel(first) : ''}</span>
+      <span>{last ? monthLabel(last) : ''}</span>
+    </div>
+  </div>;
+}
+
 export default function Transactions({ c }) {
   const { show, setShow, txFilter, setTxFilter, month, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, breakdown, refDate, expanded, setExpanded, deltas } = c;
   const currentCycle = monthKey(refDate);
   const selectedCycle = month === 'all' ? 'all' : (month || currentCycle);
   const cycleLabel = selectedCycle === 'all' ? tr('All') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
   /* Month-over-month indicators describe the current month only; older months show their totals alone. */
-  const isCurrent = month === monthKey(refDate);
+  const isCurrent = selectedCycle === currentCycle;
+  const chartCycles = useMemo(
+    () => billingCycleSpending(c.txs || [], selectedCycle === 'all' ? currentCycle : selectedCycle, 12),
+    [c.txs, selectedCycle, currentCycle]
+  );
+  const previousSpendTrend = selectedCycle === 'all'
+    ? null
+    : isCurrent ? deltas.spent : spendingVsPreviousCycle(c.txs || [], selectedCycle);
   const sorts = SORTS[txFilter];
   const sort = sorts.includes(sortKey) ? sortKey : 'Date';
   const sorted = useMemo(() => sortList(monthTxs, sort), [monthTxs, sort]);
@@ -68,11 +100,18 @@ export default function Transactions({ c }) {
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
 
     {txFilter === 'All' && <>
-      <section className="card total-card" aria-label={tr('Total spent')}>
-        <div><div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
+      <section className="card total-card billing-cycle-summary" aria-label={tr('Total spent')}>
+        <div className="billing-cycle-summary-head">
+          <div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
           <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
-          {isCurrent && <Trend value={deltas.spent} chip />}</div>
-        <Bars values={monthStats.bars} startLabel={(month === 'all' ? tr('All') : monthLabel(month)).split(' ')[0]} endLabel={month === 'all' ? tr('Last 12 months') : `${monthLabel(month).split(' ')[0]} ${monthStats.days}`} />
+          {show && selectedCycle !== 'all' && (
+            <div className={'billing-cycle-summary-compare' + (previousSpendTrend ? ' ' + previousSpendTrend.tone : '')}
+              aria-label={previousSpendTrend ? (previousSpendTrend.direction + ' ' + percentLabel(previousSpendTrend.percent) + ' ' + tr('vs previous cycle')) : tr('No previous cycle')}>
+              {previousSpendTrend ? <><Icon name={previousSpendTrend.direction === 'up' ? 'arrowUp' : previousSpendTrend.direction === 'down' ? 'arrowDown' : 'minus'} size={12}/><strong>{percentLabel(previousSpendTrend.percent)}</strong><span>{tr('vs previous cycle')}</span></> : <span>{tr('No previous cycle')}</span>}
+            </div>
+          )}
+        </div>
+        <BillingCycleChart cycles={chartCycles} visible={show}/>
       </section>
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
