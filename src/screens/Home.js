@@ -149,9 +149,9 @@ export default function Home({ c }) {
         : <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
           {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}
         </button>}
-      <div className="hello bubble" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p>{ramOn ? ramMessage : subline}</p></div>
+      <div className="hello home-greeting" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p className="home-greeting-context">{ramOn ? ramMessage : subline}</p></div>
       <div className="header-actions">
-        <div className="header-action-buttons">
+        <div className="header-action-buttons home-utility-pill" role="group" aria-label={tr('Utilities')}>
           <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} size={24} className="home-header-action" />
           <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} size={24} className="home-header-action" />
           <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} size={24} className="home-header-action" />

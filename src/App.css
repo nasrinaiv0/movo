@@ -5766,3 +5766,158 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 ) :is(span, strong, small, b, .movo-icon) {
   color: inherit;
 }
+
+/* Home masthead: no greeting card; one neutral glass utility pill. */
+.movo-app.movo-app .screen-header.home-header {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "avatar hello actions" "period period period";
+  align-items: center;
+  column-gap: clamp(6px, 1.8vw, 12px);
+  row-gap: 8px;
+  min-height: 88px;
+  padding: 12px clamp(12px, 3.6vw, 20px);
+  margin-bottom: 14px;
+  overflow: visible;
+}
+.movo-app .home-header > .home-greeting {
+  grid-area: hello;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 62px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+.movo-app .home-header .home-greeting small {
+  display: block;
+  color: var(--muted);
+  font-size: clamp(11px, 2.8vw, 14px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.movo-app .home-header .home-greeting h1,
+.movo-app .is-scrolled .home-header .home-greeting h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(19px, 5.5vw, 28px);
+  font-weight: 680;
+  line-height: 1.12;
+  letter-spacing: -.035em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.movo-app .home-header .home-greeting-context {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.movo-app.movo-app .home-header .home-utility-pill {
+  grid-area: actions;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-width: max-content;
+  min-height: 55px;
+  padding: 4px 5px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 999px;
+  background: rgba(247, 247, 249, .82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 6px 22px rgba(0, 0, 0, .06);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  isolation: isolate;
+}
+.movo-app.theme-dark .home-header .home-utility-pill {
+  background: rgba(42, 42, 45, .82);
+  border-color: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .11), 0 8px 24px rgba(0, 0, 0, .23);
+}
+.movo-app.movo-app .home-header .home-utility-pill > .round-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 45px !important;
+  box-sizing: border-box;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  max-width: 45px;
+  max-height: 45px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background-color .2s ease, transform .2s ease;
+}
+.movo-app.movo-app .home-header .home-utility-pill > .round-button:hover,
+.movo-app.movo-app .home-header .home-utility-pill > .round-button:focus-visible {
+  background: color-mix(in srgb, var(--text) 8%, transparent) !important;
+}
+.movo-app.movo-app .home-header .home-utility-pill > .round-button:active { transform: scale(.95); }
+.movo-app .home-header .home-utility-pill .red-dot {
+  top: 7px;
+  right: 8px;
+  box-shadow: 0 0 0 2px var(--card-solid);
+}
+.movo-app .home-header > .ram-mascot {
+  grid-area: avatar;
+  align-self: center;
+  width: clamp(50px, 17vw, 72px);
+  height: 68px;
+  margin: 0;
+  z-index: 2;
+}
+.movo-app .home-header .ram-stage {
+  width: clamp(80px, 23vw, 108px);
+  height: clamp(80px, 23vw, 108px);
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.movo-app .home-header > .mascot {
+  grid-area: avatar;
+  width: clamp(48px, 14vw, 64px);
+  height: clamp(48px, 14vw, 64px);
+  min-width: 0;
+  margin: 0;
+}
+.movo-app .home-header .ram-bubble { top: 74px; left: 44px; }
+.movo-app .is-scrolled .home-header .ram-stage {
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%) scale(.85);
+}
+.movo-app[dir="rtl"] .home-header .ram-stage { left: auto; right: -12px; }
+.movo-app[dir="rtl"] .home-header .ram-bubble { left: auto; right: 44px; }
+@media (max-width: 359px) {
+  .movo-app.movo-app .screen-header.home-header { column-gap: 5px; padding-inline: 10px; }
+  .movo-app .home-header > .ram-mascot { width: 48px; }
+  .movo-app .home-header .home-greeting { gap: 2px; }
+  .movo-app .home-header .home-greeting small { font-size: 10.5px; }
+  .movo-app .home-header .home-greeting h1 { font-size: 18px; }
+  .movo-app.movo-app .home-header .home-utility-pill { padding-inline: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .home-header .home-utility-pill > .round-button { transition: none; }
+}

@@ -81,6 +81,22 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelectorAll('.bottom-nav .nav-item')).toHaveLength(5);
   });
 
+  test('Home greeting is unboxed and its three utility buttons remain accessible', () => {
+    const header = container.querySelector('.screen-header.home-header');
+    const greeting = header.querySelector('.home-greeting');
+    const pill = header.querySelector('.home-utility-pill[role="group"]');
+    expect(greeting).not.toBeNull();
+    expect(greeting.classList.contains('bubble')).toBe(false);
+    expect(greeting.querySelector('h1').textContent).toContain('Friend');
+    expect(pill).not.toBeNull();
+    expect(Array.from(pill.querySelectorAll('button')).map(button => button.getAttribute('aria-label')))
+      .toEqual(['Search', 'Notifications', 'Settings']);
+    expect(header.querySelector('.ram-mascot, .mascot')).not.toBeNull();
+    expect(header.querySelector('.ram-bubble.is-open')).toBeNull();
+    clickButton(container, 'Search');
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+
   test('ships no demo mode or sample data: a first visit starts empty with no demo banner', () => {
     act(() => root.unmount());
     window.localStorage.clear();
