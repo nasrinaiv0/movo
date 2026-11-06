@@ -93,6 +93,29 @@ export async function listLoanEvents(loanId) {
   if (!loanId) throw new Error('A loan ID is required.');
   return unwrap(await requireClient().from('loan_events').select('*').eq('loan_id', loanId).order('occurred_at', { ascending: false }));
 }
+
+/** Metadata edits preserve the posted principal and payment ledger. */
+export async function updateLoan(loanId, input, userId) {
+  if (!loanId || !userId) throw new Error('Sign in to edit this loan.');
+  const rate = Number(input.interest_rate);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new Error('Enter an annual interest rate from 0 to 100.');
+  const dueDate = input.due_date || null;
+  if (dueDate && (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate) || !Number.isFinite(Date.parse(dueDate)) || new Date(dueDate + 'T00:00:00Z').toISOString().slice(0, 10) !== dueDate)) throw new Error('Enter a valid due date.');
+  const schedule = buildMonthlyInterestSchedule(input.inconsistent_interest, input.interest_months, input.monthly_interest_rates);
+  return unwrap(await requireClient().from('financial_loans').update({
+    name: validName(input.name), lender: String(input.lender || '').trim().slice(0, 120) || null,
+    obligation_type: input.obligation_type === 'debt' ? 'debt' : 'loan',
+    due_date: dueDate, interest_rate: schedule.length ? 0 : rate, interest_schedule: schedule,
+    notes: String(input.notes || '').trim().slice(0, 2000) || null, updated_at: new Date().toISOString(),
+  }).eq('id', loanId).eq('user_id', userId).neq('status', 'archived').select().single());
+}
+
+/** Soft deletion keeps posted cash movements and payment evidence intact. */
+export async function deleteLoan(loanId, userId) {
+  if (!loanId || !userId) throw new Error('Sign in to delete this loan.');
+  return unwrap(await requireClient().from('financial_loans').update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('id', loanId).eq('user_id', userId).select().single());
+}
 /** The SQL RPC locks the loan row and inserts the event + updates principal in one transaction. */
 export async function recordLoanEvent(input) {
   const amount = validAmount(input?.amount);

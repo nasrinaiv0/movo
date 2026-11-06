@@ -81,6 +81,22 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelectorAll('.bottom-nav .nav-item')).toHaveLength(5);
   });
 
+  test('Home greeting is unboxed and its three utility buttons remain accessible', () => {
+    const header = container.querySelector('.screen-header.home-header');
+    const greeting = header.querySelector('.home-greeting');
+    const pill = header.querySelector('.home-utility-pill[role="group"]');
+    expect(greeting).not.toBeNull();
+    expect(greeting.classList.contains('bubble')).toBe(false);
+    expect(greeting.querySelector('h1').textContent).toContain('Friend');
+    expect(pill).not.toBeNull();
+    expect(Array.from(pill.querySelectorAll('button')).map(button => button.getAttribute('aria-label')))
+      .toEqual(['Search', 'Notifications', 'Settings']);
+    expect(header.querySelector('.ram-mascot, .mascot')).not.toBeNull();
+    expect(header.querySelector('.ram-bubble.is-open')).toBeNull();
+    clickButton(container, 'Search');
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+
   test('ships no demo mode or sample data: a first visit starts empty with no demo banner', () => {
     act(() => root.unmount());
     window.localStorage.clear();
@@ -459,9 +475,9 @@ describe('MOVO finance frontend', () => {
     expect(plan.tagName).toBe('BUTTON');
     act(() => plan.click());
     const sheet = container.querySelector('[role="dialog"][aria-label="Plan & Usage"]');
-    expect(sheet.textContent).toContain('Free · this device only');
+    expect(sheet.textContent).toContain('Quick · this device only');
     expect(sheet.textContent).toMatch(/Transactions\d+/);
-    expect(sheet.textContent).toContain('no paid plan or billing');
+    expect(sheet.textContent).toContain('Store purchases and restore are available');
     clickButton(container, 'Close Plan & Usage');
     const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
     act(() => helpRow.click());
@@ -733,7 +749,7 @@ test('accent text stays readable on dark backgrounds', () => {
   expect(readableAccent('#334155', false)).toBe('#334155');
   expect(readableAccent('#c7f0dc', true)).toBe('#c7f0dc');
   const onLight = hex => 1.05 / (lum(hex) + 0.05);
-  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#ef4444', '#334155'].forEach(accent => {
+  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#d32f2f', '#334155'].forEach(accent => {
     expect(onLight(readableAccent(accent, false))).toBeGreaterThanOrEqual(4.5);
   });
 });
@@ -744,11 +760,17 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
     .map(v => v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
     .reduce((sum, value, i) => sum + value * [0.2126, 0.7152, 0.0722][i], 0);
   const ratio = (a, b) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
-  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#ef4444', '#334155', '#f4e542', '#111111'].forEach(accent => {
+  ['#13b45f', '#2f6bff', '#7c4dff', '#ff8a1f', '#d32f2f', '#334155', '#f4e542', '#111111'].forEach(accent => {
     const ink = contrastTextForAccent(accent);
     expect(['#000000', '#ffffff']).toContain(ink);
     expect(ratio(accent, ink)).toBeGreaterThanOrEqual(4.5);
   });
+  // Filled dark green uses white lettering; tinted light green uses black.
+  expect(contrastTextForAccent('#086b3a')).toBe('#ffffff');
+  expect(contrastTextForAccent('#2f6bff')).toBe('#000000');
+  expect(contrastTextForAccent('#d6f5e3')).toBe('#000000');
+  expect(contrastTextForAccent('#1c1c1e')).toBe('#ffffff');
+  expect(contrastTextForAccent('#f3f3f7')).toBe('#000000');
   expect(contrastTextForAccent('invalid')).toBe('#ffffff');
 });
 

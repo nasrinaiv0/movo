@@ -10,6 +10,8 @@ test('renders the still ram with its mood and message (no WebGL in tests)', () =
   expect(el.querySelector('.ram-mascot.mood-angry.is-still')).not.toBeNull();
   expect(el.querySelector('canvas')).toBeNull();
   expect(el.querySelector('.ram-stage').getAttribute('aria-label')).toBe('MOVO ram: upset. Grr! Food is over its limit.');
+  expect(el.querySelector('.ram-bubble.is-open')).toBeNull();
+  act(() => el.querySelector('.ram-stage').click());
   expect(el.querySelector('.ram-bubble.is-open')).not.toBeNull();
   act(() => el.querySelector('.ram-bubble-link').click());
   expect(onChange).toHaveBeenCalled();

@@ -347,8 +347,8 @@ describe('POST /api/log handler', () => {
   });
 });
 
-describe('POST /api/log rollout fallback', () => {
-  test('before the v2 migration, expenses still log through the earlier function as notifications', async () => {
+describe('POST /api/log safe migration handling', () => {
+  test('missing v2 migration refuses to log rather than falling back to weaker idempotency', async () => {
     jest.resetModules();
     const calls = [];
     jest.doMock('@supabase/supabase-js', () => ({ createClient: (url, key) => (key === 'service' ? {
@@ -360,9 +360,8 @@ describe('POST /api/log rollout fallback', () => {
     const handler = require('../../api/log');
     const res = { headers: {}, setHeader() {}, status(c) { this.statusCode = c; return this; }, json(b) { this.body = b; return this; } };
     await handler({ method: 'POST', headers: { authorization: `Bearer ${'a'.repeat(32)}` }, body: { amount: 50, merchant: 'Bread', source: 'applepay' } }, res);
-    expect(res.statusCode).toBe(200);
-    expect(calls.map(c => c.name)).toEqual(['log_automation_transaction_v2', 'log_automation_transaction']);
-    expect(calls[1].params.p_source).toBe('notification');
+    expect(res.statusCode).toBe(503);
+    expect(calls.map(c => c.name)).toEqual(['log_automation_transaction_v2']);
     jest.dontMock('@supabase/supabase-js'); jest.restoreAllMocks();
   });
 });

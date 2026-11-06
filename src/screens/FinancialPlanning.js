@@ -5,10 +5,10 @@ import AccountPicker, { accountName, accountKind } from '../components/AccountPi
 import { Chips, Money, SectionTitle, Sheet, SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, createReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
+import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, createReceivable, updateLoan, deleteLoan, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
-import { creditCardPlanningMetrics } from '../lib/creditCard';
+import { creditCardPlanningMetrics, creditRepaymentEstimate } from '../lib/creditCard';
 import { cardNetworkLogoUrl, institutionLogoCandidates } from '../lib/institutions';
 import { convert } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
@@ -70,6 +70,7 @@ export default function FinancialPlanning({ c }) {
   const releasePlanAllocation = (planId, allocationId) => releasePlanFundingAllocation(allocationId);
 
   const run = async (fn, success) => {
+    if (busy) return false;
     setBusy(true); setError(''); setNotice('');
     try {
       await fn(); setSheet(null); await p.reload(); if (c.refreshFinance) await c.refreshFinance();
@@ -95,7 +96,7 @@ export default function FinancialPlanning({ c }) {
     <button type="button" className="budget-empty" onClick={() => c.go('Sign in')}><Icon name="lock" size={20} /><span><strong>{tr('Sign in to manage your financial records')}</strong><small>{tr('Bills, loans, debts, receivables and goal allocations use secure cloud records so balances stay consistent across your devices.')}</small></span></button>
   </>;
 
-  const loans = p.loans; const receivables = p.receivables; const goals = p.goals;
+  const loans = p.loans.filter(loan => loan.status !== 'archived' && !loan.is_archived); const receivables = p.receivables; const goals = p.goals;
   const plans = p.plans;
   const creditCardDebts = p.accounts.filter(a => creditCardOutstanding(a) > 0);
   const live = p.allocations.filter(a => a.status === 'allocated');
@@ -168,11 +169,11 @@ export default function FinancialPlanning({ c }) {
             {overdue && <p className="app-alert">{tr('Payment may be overdue. Confirm the latest statement.')}</p>}
             <div className="form-grid fp-credit-card-fields"><label>{tr('Payment due date')}<input type="date" value={dueDate} onChange={e => saveCardStyle(card.id, { paymentDueDate: e.target.value })} /></label><label>{tr('Minimum due')}<input type="number" min="0" step="0.01" value={style.minimumDue ?? ''} placeholder="0.00" onChange={e => saveCardStyle(card.id, { minimumDue: e.target.value })} /></label></div>
             <div className="form-grid fp-credit-card-fields"><label>{tr('Credit spend limit')}<input type="number" min="0" step="0.01" value={style.creditSpendLimit ?? ''} placeholder={String(metrics.limit || '')} onChange={e => saveCardStyle(card.id, { creditSpendLimit: e.target.value })} /></label><label>{tr('Statement balance')}<input type="number" min="0" step="0.01" value={style.statementBalance ?? ''} placeholder={String(metrics.outstandingAfterPayments)} onChange={e => saveCardStyle(card.id, { statementBalance: e.target.value })} /></label><label>{tr('Billing day')}<input type="number" min="1" max="31" value={style.billingDay ?? ''} placeholder="—" onChange={e => saveCardStyle(card.id, { billingDay: e.target.value })} /></label></div>
-            <div className="fp-credit-card-rate"><label>{tr('Annual interest rate (%)')}<input type="number" min="0" max="100" step="0.01" value={style.annualInterestRate ?? ''} placeholder="e.g. 24" onChange={e => saveCardStyle(card.id, { annualInterestRate: e.target.value })} /></label><small>{tr('Estimated monthly interest = outstanding × APR ÷ 12. Actual issuer interest may differ.')}</small></div>
+            <div className="fp-credit-card-rate"><label>{tr('Annual interest rate (%)')}<input type="number" min="0" max="100" step="0.01" value={style.annualInterestRate ?? ''} placeholder="e.g. 24" onChange={e => saveCardStyle(card.id, { annualInterestRate: e.target.value })} /></label><small>{tr('Estimated interest uses the statement balance, when entered, or the remaining balance × APR ÷ 12. It is not added to your ledger.')}</small></div>
             <div className="fp-credit-card-actions"><button type="button" className="secondary-button wide-button" onClick={() => setCardDraft({ id: card.id, name: institution, amount: '', date: today, month: today.slice(0,7) })}>{tr('Record payment')}</button><button type="button" className="primary-button wide-button" onClick={() => setCreditSpendDraft({ account_id: card.id, cardName: institution, currency: card.currency || base, merchant: '', amount: '', annual_rate: String(style.annualInterestRate ?? ''), months: '12', date: today })}>{tr('Log credits')}</button></div>
             {metrics.paymentCount > 0 && <div className="fp-credit-ledger-history"><strong>{tr('Payment history')} · {metrics.paymentCount}</strong><ul className="fp-allocs">{metrics.payments.map((payment,i) => <li key={payment.id || `${payment.date}-${i}`}><span>{payment.month} · {payment.date}</span><b>{cash(payment.amount, card.currency)}</b></li>)}</ul></div>}
             {creditSpends.length > 0 && <div className="fp-credit-spend-history"><strong>{tr('Recent credit spends')} · {creditSpends.length}</strong><ul className="fp-allocs">{creditSpends.slice().reverse().map((entry,i) => <li key={entry.id || i}><span>{entry.merchant} · {entry.date} <small>{entry.months} {tr('months')} · {Number(entry.annual_rate).toFixed(2)}% APR</small></span><b>{cash(entry.amount, card.currency)}</b></li>)}</ul></div>}
-            <p className="form-note">{tr('The outstanding estimate includes every recorded credit-card transaction and subtracts every valid logged payment. Payment records are tracking entries and do not move money.')}</p>
+            <p className="form-note">{tr('Outstanding includes recorded purchases and payments once. Estimated interest is shown separately and does not change your recorded balance.')}</p>
           </div>}
         </article>;
       })}
@@ -195,13 +196,17 @@ export default function FinancialPlanning({ c }) {
           </button>;
         })}</div>
       </>}
-      {loans.length > 0 ? <div className="card list-card">{loans.map(l => { const principal = Number(l.principal_amount) || 0; const left = Number(l.outstanding_principal) || 0; return <button type="button" className="fp-row" key={l.id} onClick={() => open('event', { target: 'loan', item: l, event_type: 'principal_payment', amount: '', account_id: l.account_id && inCurrency(l.currency).some(a => a.id === l.account_id) ? l.account_id : (inCurrency(l.currency)[0]?.id || ''), note: '' })}>
+      {loans.length > 0 ? <div className="fp-loan-list">{loans.map(l => { const principal = Number(l.principal_amount) || 0; const left = Number(l.outstanding_principal) || 0; const pay = () => open('event', { target: 'loan', item: l, event_type: 'principal_payment', amount: '', account_id: l.account_id && inCurrency(l.currency).some(a => a.id === l.account_id) ? l.account_id : (inCurrency(l.currency)[0]?.id || ''), note: '' }); return <article className="card fp-loan-card" key={l.id}><button type="button" className="fp-row" onClick={() => open('event', { target: 'loan', item: l, event_type: 'principal_payment', amount: '', account_id: l.account_id && inCurrency(l.currency).some(a => a.id === l.account_id) ? l.account_id : (inCurrency(l.currency)[0]?.id || ''), note: '' })}>
         <span className="stat-icon tone-red"><Icon name="bank" size={17} strokeWidth={2} /></span>
         <span className="fp-main"><strong>{l.name}</strong><small>{l.lender || tr(l.obligation_type === 'debt' ? 'Other debt' : 'Loan')} · {due(l.due_date)}</small>
           {Array.isArray(l.interest_schedule) && l.interest_schedule.length > 0 && <small title={l.interest_schedule.map(x => `M${x.month}: ${x.rate}%`).join(' · ')}>{tr('Monthly rates')}: {l.interest_schedule.slice(0, 3).map(x => `M${x.month} ${x.rate}%`).join(' · ')}{l.interest_schedule.length > 3 ? ` · +${l.interest_schedule.length - 3}` : ''}</small>}
           {principal > 0 && <span className="progress-track" aria-label={tr('{n}% paid', { n: Math.round(pct(principal - left, principal)) })}><span style={{ width: `${pct(principal - left, principal)}%` }} /></span>}</span>
         <span className="fp-amount"><b>{cash(left, l.currency)}</b>{statusChip(l.status)}</span>
-      </button>; })}</div>
+      </button><div className="fp-loan-actions" role="group" aria-label={tr('Actions for {name}', { name: l.name })}>
+        <button type="button" className="primary-button" disabled={busy || left <= 0} onClick={pay}><Icon name="wallet" size={16}/>{tr('Pay')}</button>
+        <button type="button" className="secondary-button" disabled={busy} onClick={() => open('edit-loan', { ...l, inconsistent_interest: !!l.interest_schedule?.length, interest_months: String(l.interest_schedule?.length || 12), monthly_interest_rates: l.interest_schedule?.map(item => String(item.rate)) || Array(12).fill('') })}><Icon name="edit" size={16}/>{tr('Edit')}</button>
+        <button type="button" className="secondary-button" disabled={busy} onClick={() => open('delete-loan', l)}><Icon name="trash" size={16}/>{tr('Delete')}</button>
+      </div></article>; })}</div>
         : !creditCardDebts.length && <button type="button" className="budget-empty" onClick={() => open('loan', blankLoan(base))}><Icon name="plus" size={20} /><span><strong>{tr('Add a loan or debt')}</strong><small>{tr('No loans or debts recorded yet.')}</small></span></button>}
     </>}
 
@@ -267,13 +272,13 @@ export default function FinancialPlanning({ c }) {
 
     {creditSpendDraft && <Sheet title={tr('Log credit spend')} subtitle={creditSpendDraft.cardName} onClose={() => setCreditSpendDraft(null)} label={tr('Log credit spend')}>
       {(() => {
-        const principal = Number(creditSpendDraft.amount) || 0;
-        const apr = Math.min(100, Math.max(0, Number(creditSpendDraft.annual_rate) || 0));
-        const months = Math.min(600, Math.max(1, Number(creditSpendDraft.months) || 1));
-        const monthlyRate = apr / 1200;
-        const monthlyPayment = principal > 0 ? (monthlyRate > 0 ? principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months)) : principal / months) : 0;
-        const afterInterest = monthlyPayment * months;
-        const valid = creditSpendDraft.merchant.trim() && principal > 0 && Number.isFinite(principal) && months >= 1 && months <= 600 && apr >= 0 && apr <= 100;
+        const principal = Number(creditSpendDraft.amount);
+        const apr = Number(creditSpendDraft.annual_rate);
+        const months = Number(creditSpendDraft.months);
+        const estimate = creditRepaymentEstimate(creditSpendDraft.amount, creditSpendDraft.annual_rate, creditSpendDraft.months);
+        const monthlyPayment = estimate?.monthlyPayment || 0;
+        const afterInterest = estimate?.total || 0;
+        const valid = !!creditSpendDraft.merchant.trim() && !!estimate && creditCards.some(card => String(card.id) === String(creditSpendDraft.account_id));
         return <form className="sheet-form fp-credit-log-form" onSubmit={async e => { e.preventDefault(); setError(''); if (!valid) { setError(tr('Enter a merchant, a positive amount and valid repayment terms.')); return; } setBusy(true); try { const transaction = await c.recordCreditSpend({ ...creditSpendDraft, amount: principal, annual_rate: apr, months, after_interest_amount: afterInterest }); if (!transaction?.id) throw new Error(tr('Could not save this transaction. Check the selected account and try again.')); saveCreditSpendLog(creditSpendDraft.account_id, { id: window.crypto?.randomUUID?.() || String(Date.now()), transaction_id: String(transaction.id), merchant: creditSpendDraft.merchant.trim(), amount: Math.round(principal * 100) / 100, annual_rate: apr, months, after_interest_amount: Math.round(afterInterest * 100) / 100, monthly_payment: Math.round(monthlyPayment * 100) / 100, date: creditSpendDraft.date }); setCreditSpendDraft(null); setNotice(tr('Credit purchase recorded.')); } catch (err) { setError(err?.message || tr('Could not save this transaction. Check the selected account and try again.')); } finally { setBusy(false); } }}>
           <label>{tr('Merchant')}<input required maxLength={160} autoFocus value={creditSpendDraft.merchant} onChange={e => setCreditSpendDraft({ ...creditSpendDraft, merchant: e.target.value })} placeholder={tr('Where did you spend?')} /></label>
           <AccountPicker id="fp-credit-spend-card" label={tr('Credit card used')} accounts={creditCards} value={creditSpendDraft.account_id} onChange={value => { const selected = creditCards.find(a => String(a.id) === String(value)); setCreditSpendDraft({ ...creditSpendDraft, account_id: value, cardName: selected?.institution_name || selected?.name || creditSpendDraft.cardName, currency: selected?.currency || base }); }} showBalance={show} required />
@@ -301,6 +306,24 @@ export default function FinancialPlanning({ c }) {
         <button type="button" onClick={() => { setTab('goals'); open('goal', blankGoal(base)); }}><Icon name="target" size={18} />{tr('Create a savings goal')}</button>
         <button type="button" onClick={() => { setSheet(null); c.openBudgets?.('plans'); }}><Icon name="target" size={18} />{tr('Add plan')}</button>
       </div>
+    </Sheet>}
+
+    {sheet?.kind === 'delete-loan' && <Sheet title={tr('Delete loan or debt')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Delete loan or debt')}>
+      <p className="form-note">{tr('Remove this loan or debt from Financial Planning? Recorded payments and account balances will be kept. This does not cancel the debt with your lender.')}</p>
+      {error && <p className="app-alert" role="alert">{error}</p>}
+      <div className="sheet-actions"><button className="secondary-button" disabled={busy} onClick={() => setSheet(null)}>{tr('Cancel')}</button><button className="danger-button" disabled={busy} onClick={() => run(() => deleteLoan(form.id, c.session?.user?.id), 'Loan or debt deleted.')}>{busy ? tr('Saving…') : tr('Delete')}</button></div>
+    </Sheet>}
+    {sheet?.kind === 'edit-loan' && <Sheet title={tr('Edit loan or debt')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Edit loan or debt')}>
+      <form className="sheet-form" onSubmit={e => { e.preventDefault(); if (!busy) run(() => updateLoan(form.id, form, c.session?.user?.id), 'Loan or debt updated.'); }}>
+        {error && <p className="app-alert" role="alert">{error}</p>}
+        <label>{tr('Name')}<input required maxLength={120} value={form.name} onChange={e => set({ name: e.target.value })}/></label>
+        <div className="form-grid"><label>{tr('Record type')}<select value={form.obligation_type} onChange={e => set({ obligation_type: e.target.value })}><option value="loan">{tr('Loan')}</option><option value="debt">{tr('Debt')}</option></select></label><label>{tr('Due date')}<input type="date" value={form.due_date || ''} onChange={e => set({ due_date: e.target.value })}/></label></div>
+        <label>{tr('Lender / creditor')}<input maxLength={120} value={form.lender || ''} onChange={e => set({ lender: e.target.value })}/></label>
+        {form.inconsistent_interest ? <div className="form-grid">{form.monthly_interest_rates.map((rate,index) => <label key={index}>{tr('Month {number} interest (%)', { number: index + 1 })}<input required type="number" min="0" max="100" step="0.001" value={rate} onChange={e => set({ monthly_interest_rates: form.monthly_interest_rates.map((value,i) => i === index ? e.target.value : value) })}/></label>)}</div> : <label>{tr('Annual interest rate (%)')}<input required type="number" min="0" max="100" step="0.001" value={form.interest_rate ?? 0} onChange={e => set({ interest_rate: e.target.value })}/></label>}
+        <label>{tr('Notes')}<textarea rows={2} maxLength={2000} value={form.notes || ''} onChange={e => set({ notes: e.target.value })}/></label>
+        <p className="form-note">{tr('Use Pay to record a repayment or principal adjustment. Editing these details keeps your payment history and outstanding balance.')}</p>
+        <button type="submit" className="primary-button" disabled={busy}>{busy ? tr('Saving…') : tr('Save changes')}</button>
+      </form>
     </Sheet>}
 
     {sheet?.kind === 'loan' && <Sheet title={tr('Add a loan or debt')} onClose={() => setSheet(null)} label={tr('Add a loan or debt')}>

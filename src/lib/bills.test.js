@@ -63,3 +63,16 @@ describe('MOVO bills', () => {
       .toEqual(expect.objectContaining({ name: 'Rent', amount: 15000.46, frequency: 'monthly', reminder_days: [7, 1], amount_type: 'fixed', currency: 'PHP' }));
   });
 });
+
+test('split payments validate cents, ownership choices, duplicates and total before writing', () => {
+  const { validateBillSplits } = require('./bills');
+  const accounts = [{ id: 'cash' }, { id: 'bank' }];
+  expect(validateBillSplits([{ account_id: 'cash', amount: '0.10' }, { account_id: 'bank', amount: '0.20' }], 0.3, accounts)).toEqual({ valid: true, total: 0.3 });
+  for (const parts of [
+    [{ account_id: 'cash', amount: '0.301' }],
+    [{ account_id: 'cash', amount: 'NaN' }],
+    [{ account_id: 'other', amount: '0.20' }],
+    [{ account_id: 'cash', amount: '0.20' }, { account_id: 'cash', amount: '0.10' }],
+    [{ account_id: 'cash', amount: '0.31' }],
+  ]) expect(validateBillSplits(parts, 0.3, accounts).valid).toBe(false);
+});

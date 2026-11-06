@@ -15,7 +15,7 @@ const canRender3D = () => typeof window !== 'undefined' && process.env.NODE_ENV 
 export default function RamMascot({ mood = 'cute', message = '', onChangeMascot }) {
   const host = useRef(null); const api = useRef(null); const timer = useRef(0);
   const [ready, setReady] = useState(false); const [failed, setFailed] = useState(false);
-  const [bubble, setBubble] = useState(true);
+  const [bubble, setBubble] = useState(false);
   const moodRef = useRef(mood); moodRef.current = mood;
 
   useEffect(() => {
@@ -41,8 +41,8 @@ export default function RamMascot({ mood = 'cute', message = '', onChangeMascot 
   }, [ready]);
 
   const showBubble = (ms = 4200) => { setBubble(true); clearTimeout(timer.current); timer.current = setTimeout(() => setBubble(false), ms); };
-  useEffect(() => { showBubble(5200); return () => clearTimeout(timer.current); }, []);
-  useEffect(() => { if (ready) showBubble(); }, [mood]);
+  // Leave the greeting unobstructed until the user taps the mascot.
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const poke = () => { api.current?.poke(); showBubble(); };
   const label = `${tr('MOVO ram')}: ${tr(MOOD_LABEL[mood] || 'cheerful')}. ${message}`;

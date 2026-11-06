@@ -53,3 +53,14 @@ test('reversed loan and receivable events no longer affect outstanding balances'
     { receivable_id: 'r-reverse', event_type: 'collected', amount: 1000, reversed_at: '2026-11-05T12:00:00Z' },
   ])).toBe(2500);
 });
+
+test('card interest increases debt without pretending cash was paid', () => {
+  expect(creditCardEventEffect({ event_type: 'interest', amount: 100 })).toEqual({ cashDelta: 0, liabilityDelta: 100, income: 0, expense: 100 });
+});
+
+test('the canonical position excludes linked debit duplicates even before screen filtering', () => {
+  expect(financialPosition({ accounts: [
+    { id: 'bank', account_type: 'bank', balance: 1000 },
+    { id: 'card', account_type: 'card', cardKind: 'debit', linkedAccountId: 'bank', balance: 1000 },
+  ] }).assets).toBe(1000);
+});

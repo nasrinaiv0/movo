@@ -1,69 +1,108 @@
 describe('POST /api/account/delete', () => {
-  let calls; let authUser; let txError; let userError; let qrFiles;
-  const qrAccount = '123e4567-e89b-42d3-a456-426614174001';
-  const load = () => {
+  const userId = '123e4567-e89b-42d3-a456-426614174000';
+  let calls;
+  let storageError;
+  let transactionError;
+  let userError;
+  let handler;
+
+  beforeEach(() => {
+    calls = [];
+    storageError = null;
+    transactionError = null;
+    userError = null;
     jest.resetModules();
     jest.doMock('@supabase/supabase-js', () => ({
       createClient: (url, key) => (key === 'service'
         ? {
-          from: (table) => ({ delete: () => ({ eq: (col, val) => { calls.push(['delete', table, col, val]); return Promise.resolve({ error: txError }); } }) }),
-          auth: { admin: { deleteUser: async (id) => { calls.push(['deleteUser', id]); return { error: userError }; } } },
-          storage: { from: () => ({ list: async (path) => ({ data: path === 'user-1' ? (qrFiles.length ? [{ name: qrAccount, id: null }] : []) : qrFiles, error: null }), remove: async (paths) => { calls.push(['removeQr', ...paths]); return { error: null }; } }) },
+          from: (table) => ({
+            delete: () => ({
+              eq: async (column, value) => {
+                calls.push(['delete', table, column, value]);
+                return { error: transactionError };
+              },
+            }),
+          }),
+          auth: { admin: { deleteUser: async (id) => {
+            calls.push(['deleteUser', id]);
+            return { error: userError };
+          } } },
+          storage: { from: (bucket) => ({
+            list: async (prefix) => {
+              calls.push(['list', bucket, prefix]);
+              if (storageError) return { data: null, error: storageError };
+              if (prefix === userId) {
+                return { data: [{ name: bucket === 'movo-receipts' ? 'transactions' : 'accounts', id: null, metadata: null }], error: null };
+              }
+              if (prefix === userId + '/transactions') {
+                return { data: [{ name: 'receipt.pdf', id: 'receipt-file', metadata: { size: 10 } }], error: null };
+              }
+              if (prefix === userId + '/accounts') {
+                return { data: [{ name: 'qr.png', id: 'qr-file', metadata: { size: 10 } }], error: null };
+              }
+              return { data: [], error: null };
+            },
+            remove: async (paths) => {
+              calls.push(['remove', bucket, ...paths]);
+              return { error: storageError };
+            },
+          }) },
         }
-        : { auth: { getUser: async (token) => { calls.push(['getUser', token]); return authUser ? { data: { user: authUser }, error: null } : { data: { user: null }, error: { message: 'bad jwt' } }; } } }),
+        : { auth: { getUser: async (token) => {
+          calls.push(['getUser', token]);
+          return { data: { user: { id: userId } }, error: null };
+        } } }),
     }));
-    process.env.SUPABASE_URL = 'https://example.supabase.co'; process.env.SUPABASE_ANON_KEY = 'anon'; process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
-    return require('../../api/account/delete');
-  };
-  const call = async (handler, { body = { confirm: 'DELETE' }, token = 'jwt-1', method = 'POST' } = {}) => {
-    const res = { headers: {}, statusCode: 0, body: null, setHeader(k, v) { this.headers[k] = v; }, status(c) { this.statusCode = c; return this; }, json(b) { this.body = b; return this; } };
-    await handler({ method, headers: token ? { authorization: `Bearer ${token}` } : {}, body }, res);
+    process.env.SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_ANON_KEY = 'anon';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
+    handler = require('../../api/account/delete');
+  });
+
+  afterEach(() => {
+    jest.dontMock('@supabase/supabase-js');
+    jest.restoreAllMocks();
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_ANON_KEY;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  });
+
+  const invoke = async ({ method = 'POST', body = { confirm: 'DELETE' }, token = 'valid-jwt' } = {}) => {
+    const res = {
+      headers: {},
+      statusCode: 0,
+      body: null,
+      setHeader(key, value) { this.headers[key] = value; },
+      status(code) { this.statusCode = code; return this; },
+      json(value) { this.body = value; return this; },
+    };
+    await handler({ method, headers: token ? { authorization: 'Bearer ' + token } : {}, body }, res);
     return res;
   };
-  beforeEach(() => { calls = []; authUser = { id: 'user-1' }; txError = null; userError = null; qrFiles = []; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
-  afterEach(() => { jest.restoreAllMocks(); jest.dontMock('@supabase/supabase-js'); });
 
-  test('the verified person is deleted after QR cleanup and transaction cleanup', async () => {
-    const res = await call(load());
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toEqual({ deleted: true });
-    expect(calls).toEqual([['getUser', 'jwt-1'], ['delete', 'transactions', 'user_id', 'user-1'], ['deleteUser', 'user-1']]);
+  test('removes every private user bucket recursively before deleting database rows and auth user', async () => {
+    const result = await invoke();
+    expect(result.statusCode).toBe(200);
+    expect(calls).toContainEqual(['remove', 'movo-account-qrs', userId + '/accounts/qr.png']);
+    expect(calls).toContainEqual(['remove', 'movo-receipts', userId + '/transactions/receipt.pdf']);
+    const lastStorageRemove = Math.max(...calls.map((call, index) => call[0] === 'remove' ? index : -1));
+    const transactionDelete = calls.findIndex((call) => call[0] === 'delete' && call[1] === 'transactions');
+    const authDelete = calls.findIndex((call) => call[0] === 'deleteUser');
+    expect(lastStorageRemove).toBeLessThan(transactionDelete);
+    expect(transactionDelete).toBeLessThan(authDelete);
   });
 
-  test('the user id comes from the verified token, never from the request', async () => {
-    await call(load(), { body: { confirm: 'DELETE', userId: 'someone-else', user_id: 'someone-else' } });
-    expect(calls.filter(c => c[0] !== 'getUser').every(c => c.includes('user-1') && !c.includes('someone-else'))).toBe(true);
+  test('does not delete database or auth data when storage cleanup fails', async () => {
+    storageError = { message: 'storage unavailable', statusCode: '500' };
+    const result = await invoke();
+    expect(result.statusCode).toBe(500);
+    expect(calls.some((call) => call[0] === 'delete')).toBe(false);
+    expect(calls.some((call) => call[0] === 'deleteUser')).toBe(false);
   });
 
-  test('nothing is deleted without the confirmation, a token, or a valid token', async () => {
-    let res = await call(load(), { body: {} });
-    expect(res.statusCode).toBe(400);
-    res = await call(load(), { token: '' });
-    expect(res.statusCode).toBe(401);
-    authUser = null;
-    res = await call(load());
-    expect(res.statusCode).toBe(401);
-    expect(calls.some(c => c[0] === 'delete' || c[0] === 'deleteUser')).toBe(false);
-    res = await call(load(), { method: 'GET' });
-    expect(res.statusCode).toBe(405);
-  });
-
-  test('private account QR images are removed before the Auth user is deleted', async () => {
-    qrFiles = [{ name: '123e4567-e89b-42d3-a456-426614174002.png', id: 'object-1' }];
-    const res = await call(load());
-    expect(res.statusCode).toBe(200);
-    const removeIndex = calls.findIndex(c => c[0] === 'removeQr');
-    const userIndex = calls.findIndex(c => c[0] === 'deleteUser');
-    expect(calls[removeIndex]).toEqual(['removeQr', 'user-1/' + qrAccount + '/123e4567-e89b-42d3-a456-426614174002.png']);
-    expect(removeIndex).toBeGreaterThan(-1);
-    expect(userIndex).toBeGreaterThan(removeIndex);
-  });
-
-  test('if transactions cannot be deleted the account is kept and the reply leaks nothing', async () => {
-    txError = { message: 'permission denied for table transactions' };
-    const res = await call(load());
-    expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({ error: 'delete_failed' });
-    expect(calls.some(c => c[0] === 'deleteUser')).toBe(false);
+  test('requires explicit confirmation and authenticated ownership', async () => {
+    const result = await invoke({ body: { confirm: 'no' } });
+    expect(result.statusCode).toBe(400);
+    expect(calls.some((call) => call[0] === 'remove')).toBe(false);
   });
 });

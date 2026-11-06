@@ -5,6 +5,7 @@ import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/Car
 import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
 import AccountTile, { styleFor } from '../components/AccountTile';
+import AccountBrandMark from '../components/AccountBrandMark';
 import EditableBoxes from '../components/EditableBoxes';
 import { money, shown } from '../lib/format';
 import { accountSpendingHistory } from '../lib/accountSpending';
@@ -51,7 +52,7 @@ const subtitle = (a) => (a.account_type === 'bank' ? 'Savings' : a.account_type 
 
 function AccountRow({ a, show, onClick }) {
   return <button type="button" className="account-row" onClick={onClick}>
-    <Tile name={a.name} size={46} radius={14} />
+    <AccountBrandMark account={a} size={46} />
     <span className="account-main"><strong>{a.name}</strong><small>{tr(subtitle(a))} {mask(a)}</small></span>
     <b>{shown(show, money(a.balance, a.currency))}</b>
   </button>;
@@ -171,7 +172,7 @@ export default function Wallet({ c }) {
     {walletFilter === 'Cards' && (cards.length ? <>
       <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
       <section className="card action-strip">
-        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['limits', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
       </section>
       {selectedCard && (() => {
@@ -229,7 +230,7 @@ export default function Wallet({ c }) {
 
     {sheet?.name === 'cards' && <Sheet title={tr('Your Cards')} onClose={() => setSheet(null)}>
       <div className="sheet-list">{cards.map(a => <button type="button" key={a.id} className={`sheet-card${a.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => { setSelectedCardId(a.id); setSheet(null); }}>
-        <Tile name={a.name} size={46} radius={13} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency))}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
+        <AccountBrandMark account={a} size={46} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency))}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
       </button>)}</div>
       <button type="button" className="manage-button" onClick={() => setSheet({ name: 'account', type: 'card' })}><Icon name="card" size={18} /> {tr('Manage Cards')}</button>
     </Sheet>}

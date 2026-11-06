@@ -51,3 +51,25 @@ test('allocation activities have a neutral amount and explicit allocation labels
   expect(chipLabel({ type: 'allocation', event_type: 'auto_released' })).toBe('Released');
   expect(signed('allocation', 250, 'PHP')).toBe(money(250, 'PHP'));
 });
+
+test('Total Spent billing-cycle chart renders twelve months with no chart leak when balances hidden', () => {
+  const React = require('react');
+  const {createRoot}=require('react-dom/client');
+  const {act}=require('react');
+  const {BillingCycleChart}=require('./Transactions');
+  global.IS_REACT_ACT_ENVIRONMENT=true;
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  try {
+    const cycles=Array.from({length:12},(_,i)=>({key:'2026-'+String(i+1).padStart(2,'0'),amount:(i+1)*100.50}));
+    act(()=>root.render(React.createElement(BillingCycleChart,{cycles,visible:true})));
+    expect(host.querySelectorAll('.billing-cycle-chart-bar')).toHaveLength(12);
+    expect(host.textContent).toContain('Billing cycles');
+    expect(host.textContent).toContain('Jan');
+    expect(host.textContent).toContain('Dec');
+    const [first,last]=host.querySelectorAll('.billing-cycle-chart-bar');
+    expect(parseFloat(first.style.height)).toBeLessThan(parseFloat(last.style.height));
+    act(()=>root.render(React.createElement(BillingCycleChart,{cycles,visible:false})));
+    expect([...host.querySelectorAll('.billing-cycle-chart-bar')].every(b=>b.style.height==='5%')).toBe(true);
+  } finally {act(()=>root.unmount());host.remove()}
+});

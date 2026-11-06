@@ -290,6 +290,83 @@ describe('NasrinAI consent and legal links', () => {
       }
     });
 
+    test('transcribes the final iOS-style recording after Stop even when quiet speech was not detected', async () => {
+      const originalNow = Date.now;
+      let now = 10000;
+      Date.now = () => now;
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ text: 'Buy groceries tomorrow' }) });
+      try {
+        act(() => button('I understand').click());
+        await act(async () => {
+          button('Talk with NasrinAI').click();
+          await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        expect(button('End voice conversation')).toBeTruthy();
+        now = 11000;
+        await act(async () => {
+          button('End voice conversation').click();
+          await new Promise(resolve => setTimeout(resolve, 30));
+        });
+        expect(container.querySelector('#movo-ai-prompt').value).toContain('Buy groceries tomorrow');
+        expect(button('Talk with NasrinAI')).toBeTruthy();
+        expect(global.fetch).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(global.fetch.mock.calls[0][1].body).action).toBe('transcribe');
+        expect(JSON.parse(global.fetch.mock.calls[0][1].body).mime).toBe('audio/mp4');
+      } finally {
+        Date.now = originalNow;
+      }
+    });
+
+    test('shows a transcription error if the final recording cannot be transcribed', async () => {
+      const originalNow = Date.now;
+      let now = 10000;
+      Date.now = () => now;
+      global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'transcription_unavailable' }) });
+      try {
+        act(() => button('I understand').click());
+        await act(async () => {
+          button('Talk with NasrinAI').click();
+          await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        now = 11000;
+        await act(async () => {
+          button('End voice conversation').click();
+          await new Promise(resolve => setTimeout(resolve, 30));
+        });
+        expect(container.textContent).toContain('Voice transcription is temporarily unavailable');
+        expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+      } finally {
+        Date.now = originalNow;
+      }
+    });
+
+    test('detects quieter microphone input and transcribes after a short pause', async () => {
+      const callbacks = [];
+      const originalNow = Date.now;
+      let now = 10000;
+      Date.now = () => now;
+      window.requestAnimationFrame = callback => { callbacks.push(callback); return callbacks.length; };
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ text: 'Quiet voice was heard' }) });
+      try {
+        act(() => button('I understand').click());
+        await act(async () => {
+          button('Talk with NasrinAI').click();
+          await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        contexts[0].sampleValue = 130; // RMS 0.015625: below the old 0.025 cutoff
+        await act(async () => { callbacks.shift()(); });
+        contexts[0].sampleValue = 128;
+        now = 11000;
+        await act(async () => {
+          callbacks.shift()();
+          await new Promise(resolve => setTimeout(resolve, 25));
+        });
+        expect(container.querySelector('#movo-ai-prompt').value).toContain('Quiet voice was heard');
+      } finally {
+        Date.now = originalNow;
+      }
+    });
+
     test('unlocks audio inside the mic tap and falls back to the device voice when playback is blocked', async () => {
       act(() => button('I understand').click());
       await act(async () => { button('Talk with NasrinAI').click(); await new Promise(r => setTimeout(r, 0)); });

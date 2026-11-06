@@ -3,10 +3,12 @@ import Icon from './Icon';
 import { MovoMark } from './MovoLogo';
 import { verifyPasscode, unlockWithBiometric, lockState } from '../lib/appLock';
 import { t as tr } from '../lib/i18n';
+import PasscodeRecovery from './PasscodeRecovery';
 
 /** Covers the app until the passcode (or Face ID / Touch ID) is confirmed. */
-export default function LockScreen({ onUnlock, onForgot }) {
+export default function LockScreen({ onUnlock, onForgot, account }) {
   const [pin, setPin] = useState('');
+  const [recovering, setRecovering] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [fails, setFails] = useState(0);
@@ -32,6 +34,12 @@ export default function LockScreen({ onUnlock, onForgot }) {
     }
   };
 
+  if (recovering) return <div className="lock-screen" role="dialog" aria-modal="true" aria-label="Recover MOVO passcode">
+    <MovoMark size={56}/>
+    <PasscodeRecovery account={account} onCancel={() => setRecovering(false)}
+      onResetDevice={onForgot} onRecovered={onUnlock}/>
+  </div>;
+
   return <div className="lock-screen" role="dialog" aria-modal="true" aria-label={tr('Movo is locked')}>
     <MovoMark size={64} />
     <h2>{tr('Enter passcode')}</h2>
@@ -43,6 +51,6 @@ export default function LockScreen({ onUnlock, onForgot }) {
       <button type="button" onClick={() => press('0')}>0</button>
       <button type="button" className="lock-alt" onClick={() => setPin(pin.slice(0, -1))} aria-label={tr('Delete')}><Icon name="backspace" size={34} strokeWidth={1.8} /></button>
     </div>
-    <button type="button" className="link-button" onClick={onForgot}>{tr('Forgot passcode?')}</button>
+    <button type="button" className="link-button" onClick={() => setRecovering(true)}>{tr('Forgot passcode?')}</button>
   </div>;
 }

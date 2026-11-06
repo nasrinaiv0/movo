@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MOVO</string>
+    <string name="title_activity_main">MOVO</string>
+    <string name="package_name">com.nasrinai.movo</string>
+    <string name="custom_url_scheme">com.nasrinai.movo</string>
+</resources>

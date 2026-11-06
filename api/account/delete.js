@@ -14,6 +14,55 @@ const { createClient } = require('@supabase/supabase-js');
  */
 const MAX_BODY_BYTES = 2048;
 
+const USER_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_STORAGE_OBJECTS_PER_BUCKET = 100000;
+const STORAGE_PAGE_SIZE = 1000;
+
+/**
+ * Recursively removes objects below one user's UUID prefix. Supabase Storage must be
+ * mutated through the Storage API; deleting storage.objects rows directly leaves orphaned blobs.
+ */
+async function removeUserBucketObjects(admin, bucketName, userId) {
+  if (!USER_ID_RE.test(userId)) throw new Error('invalid_user_id');
+  const bucket = admin.storage.from(bucketName);
+  const folders = [userId];
+  const paths = [];
+  const visited = new Set();
+
+  while (folders.length) {
+    const prefix = folders.shift();
+    if (visited.has(prefix)) continue;
+    visited.add(prefix);
+    let offset = 0;
+    for (;;) {
+      const { data, error } = await bucket.list(prefix, { limit: STORAGE_PAGE_SIZE, offset });
+      if (error) {
+        const status = String(error.statusCode || error.status || '');
+        if (status === '404' || /bucket not found/i.test(error.message || '')) return;
+        throw error;
+      }
+      const entries = Array.isArray(data) ? data : [];
+      for (const entry of entries) {
+        const name = String(entry?.name || '');
+        if (!name || name === '.' || name === '..' || name.includes('/') || name.includes('\\')) continue;
+        const path = prefix + '/' + name;
+        if (entry.id == null && entry.metadata == null) folders.push(path);
+        else if (entry.id != null) paths.push(path);
+        if (paths.length + folders.length + visited.size > MAX_STORAGE_OBJECTS_PER_BUCKET) {
+          throw new Error('storage_cleanup_limit_exceeded');
+        }
+      }
+      if (entries.length < STORAGE_PAGE_SIZE) break;
+      offset += STORAGE_PAGE_SIZE;
+    }
+  }
+  for (let offset = 0; offset < paths.length; offset += 1000) {
+    const { error } = await bucket.remove(paths.slice(offset, offset + 1000));
+    if (error) throw error;
+  }
+}
+
+
 function json(res, status, body) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -46,28 +95,11 @@ module.exports = async function handler(req, res) {
     const userId = data?.user?.id;
     if (error || !userId) return json(res, 401, { error: 'sign_in_required' });
 
-    stage = 'delete_account_qr_images';
-    const qrBucket = api.admin.storage.from('movo-account-qrs');
-    for (let offset = 0; ; offset += 100) {
-      const { data: folders, error: folderError } = await qrBucket.list(userId, { limit: 100, offset });
-      if (folderError) {
-        if (String(folderError.statusCode || folderError.status || '') === '404' || /bucket not found/i.test(folderError.message || '')) break;
-        throw folderError;
-      }
-      for (const folder of folders || []) {
-        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(folder.name)) continue;
-        for (let fileOffset = 0; ; fileOffset += 100) {
-          const { data: files, error: filesError } = await qrBucket.list(`${userId}/${folder.name}`, { limit: 100, offset: fileOffset });
-          if (filesError) throw filesError;
-          const paths = (files || []).filter(file => file.id && /\.png$/i.test(file.name) && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(file.name.slice(0, -4))).map(file => `${userId}/${folder.name}/${file.name}`);
-          for (let i = 0; i < paths.length; i += 100) {
-            const { error } = await qrBucket.remove(paths.slice(i, i + 100));
-            if (error) throw error;
-          }
-          if (!files || files.length < 100) break;
-        }
-      }
-      if (!folders || folders.length < 100) break;
+    stage = 'delete_user_storage';
+    // Storage objects are not removed by ON DELETE CASCADE. Walk only this user's UUID
+    // prefix in every private user-owned bucket before deleting the Auth user.
+    for (const bucketName of ['movo-account-qrs', 'movo-receipts']) {
+      await removeUserBucketObjects(api.admin, bucketName, userId);
     }
 
     stage = 'delete_transactions';

@@ -1,0 +1,8 @@
+{
+  "com.nasrinai.movo.pro.monthly": { "tier": "pro", "basePlanId": "monthly", "period": "monthly" },
+  "com.nasrinai.movo.max.monthly": { "tier": "max", "basePlanId": "monthly", "period": "monthly" },
+  "com.nasrinai.movo.ultra.monthly": { "tier": "ultra", "basePlanId": "monthly", "period": "monthly" },
+  "com.nasrinai.movo.pro.annual": { "tier": "pro", "basePlanId": "annual", "period": "annual" },
+  "com.nasrinai.movo.max.annual": { "tier": "max", "basePlanId": "annual", "period": "annual" },
+  "com.nasrinai.movo.ultra.annual": { "tier": "ultra", "basePlanId": "annual", "period": "annual" }
+}

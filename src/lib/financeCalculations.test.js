@@ -75,3 +75,18 @@ test('a non-cash allocation activity with no ledger account never changes an acc
   expect(accountBalance(account, [allocationActivity])).toBe(10000);
   expect(activityNetAmount(allocationActivity)).toBe(0);
 });
+
+test('transfers within one shared bank/debit ledger have no balance effect', () => {
+  const account = { id: 'bank', currency: 'PHP', opening_balance: 1000 };
+  const transfer = { id: 'same-ledger', type: 'transfer', account_id: 'bank', transfer_to_account_id: 'bank', amount: 250 };
+  expect(accountBalance(account, [transfer])).toBe(1000);
+});
+
+test('duplicates, reversals and unposted transactions cannot inflate or reduce balances', () => {
+  const expense = { id: 'expense', type: 'expense', account_id: 'bank', amount: 0.1 };
+  const rows = [expense, expense, { ...expense, id: 'other', amount: 0.2 },
+    { ...expense, id: 'pending', status: 'pending', amount: 999 },
+    { ...expense, id: 'reversed', reversed_at: '2026-11-06', amount: 999 }];
+  expect(accountBalance({ id: 'bank', opening_balance: 1 }, rows)).toBe(0.7);
+  expect(activityNetAmount(rows[3])).toBe(0);
+});

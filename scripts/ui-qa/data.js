@@ -1,0 +1,12 @@
+const date=new Date().toLocaleDateString('en-CA');
+export const listLoans=async()=>[{id:'loan',name:'Home renovation loan',lender:'BPI',obligation_type:'loan',principal_amount:100000,outstanding_principal:60000,currency:'PHP',status:'active',due_date:'2026-12-01',account_id:'bank'}];
+export const listReceivables=async()=>[]; export const listGoals=async()=>[]; export const listGoalAllocations=async()=>[]; export const listPlanAllocations=async()=>[];
+export const allocateToGoal=async()=>({}); export const allocatePlanFunds=allocateToGoal; export const createGoal=allocateToGoal; export const createLoan=allocateToGoal; export const createReceivable=allocateToGoal; export const updateLoan=allocateToGoal; export const deleteLoan=allocateToGoal; export const recordLoanEvent=allocateToGoal; export const recordReceivableEvent=allocateToGoal; export const releaseGoalAllocation=allocateToGoal; export const releasePlanFundingAllocation=allocateToGoal;
+export const listBills=async()=>[{id:'bill',name:'Rent and Utilities',account_id:'cash',currency:'PHP',status:'active'}];
+export const listOccurrences=async()=>[{id:'due',bill_id:'bill',expected_amount:5858,paid_amount:0,due_date:date,currency:'PHP',status:'due'}];
+export const listBillPayments=async()=>[]; export const recordBillPayment=allocateToGoal;
+export const listScheduledTransactions=async()=>[]; export const logScheduledTransaction=allocateToGoal;
+export const getReminderPreferences=async()=>({enabled:true,reminder_days:[0],timezone:'Asia/Manila'}); export const listReminderEvents=async()=>[]; export const recordReminderEvent=allocateToGoal;
+export const reminderActionKey=e=>e.kind+e.item.id; export const isReminderActioned=()=>false; export const reminderOccurrenceAllowsDisplay=()=>true; export const snoozeSchedule=allocateToGoal; export const snoozeObligation=allocateToGoal;
+export const syncPaymentNotifications=allocateToGoal; export const inQuietHours=()=>false; export const canSchedulePaymentNotifications=()=>false;
+export const recordPaymentAttempt=allocateToGoal;

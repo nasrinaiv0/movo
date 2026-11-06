@@ -1,4 +1,5 @@
 import { renewalsBetween } from './subscriptions';
+import { roundMoney, sumMoney } from './moneyMath';
 
 const validDay = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return false;
@@ -30,18 +31,19 @@ export function creditCardOutstanding(card) {
  * copied into savings_goals or treated as cash allocations.
  */
 export function planGoalData(plans = [], allocations = [], toBase = (value) => value) {
-  const reservedByPlan = new Map();
-  (Array.isArray(allocations) ? allocations : []).filter(item => item && item.status === 'allocated' && item.plan_id).forEach(item => {
-    const amount = Number(item.amount);
-    if (!Number.isFinite(amount) || amount <= 0) return;
-    const converted = Number(toBase(amount, item.currency || 'PHP'));
-    if (!Number.isFinite(converted) || converted <= 0) return;
-    const key = String(item.plan_id);
-    reservedByPlan.set(key, (reservedByPlan.get(key) || 0) + converted);
-  });
   return (Array.isArray(plans) ? plans : []).flatMap(plan => {
     if (!plan || !plan.id || typeof plan.name !== 'string' || !plan.name.trim()
       || plan.status === 'archived' || plan.status === 'cancelled') return [];
+    const currency = /^[A-Z]{3}$/.test(plan.currency || '') ? plan.currency : 'PHP';
+    // Normalize allocations into the plan currency; the summary converts the result once.
+    const inPlanCurrency = (amount, from = currency) => {
+      if (from === currency) return Number(amount);
+      const denominator = Number(toBase(1000000, currency));
+      const numerator = Number(toBase(Number(amount), from));
+      return Number.isFinite(numerator) && denominator > 0 ? roundMoney(numerator / denominator * 1000000) : 0;
+    };
+    const planAllocations = (Array.isArray(allocations) ? allocations : []).filter(item => item && String(item.plan_id) === String(plan.id));
+    const reserved = sumMoney(planAllocations.filter(item => item.status === 'allocated').map(item => inPlanCurrency(item.amount, item.currency || currency)));
     const target = positiveAmount(plan.target ?? plan.target_amount ?? plan.amount);
     if (!target) return [];
     const savedValue = Number(plan.saved ?? plan.saved_amount ?? 0);
@@ -52,12 +54,12 @@ export function planGoalData(plans = [], allocations = [], toBase = (value) => v
       .filter(item => item && item.status === 'allocated' && item.id && migratedLegacyIds.has(String(item.id)))
       .reduce((sum, item) => {
         const amount = Number(item.amount);
-        const converted = Number(toBase(amount, item.currency || plan.currency || 'PHP'));
+        const converted = inPlanCurrency(amount, item.currency || currency);
         return Number.isFinite(amount) && amount > 0 && Number.isFinite(converted) && converted > 0 ? sum + converted : sum;
       }, 0);
     const manualSaved = Number.isFinite(savedValue) && savedValue > 0 && savedValue < 1e16
       ? Math.max(0, Math.round((savedValue - migratedLegacyAmount) * 100) / 100) : 0;
-    const saved = Math.round((manualSaved + (reservedByPlan.get(String(plan.id)) || 0)) * 100) / 100;
+    const saved = Math.round((manualSaved + reserved) * 100) / 100;
     const candidateDate = plan.due || plan.due_date || plan.target_date || plan.date || '';
     return [{
       ...plan,
@@ -66,7 +68,7 @@ export function planGoalData(plans = [], allocations = [], toBase = (value) => v
       target,
       saved,
       due: validDay(candidateDate) ? candidateDate : '',
-      currency: /^[A-Z]{3}$/.test(plan.currency || '') ? plan.currency : 'PHP',
+      currency,
     }];
   });
 }
