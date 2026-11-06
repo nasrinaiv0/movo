@@ -69,7 +69,7 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
   const sel = pick >= 0 && data[pick] ? data[pick] : null;
   const totals = sel || data.reduce((s, b) => ({ income: s.income + b.income, expense: s.expense + b.expense }), { income: 0, expense: 0 });
   const net = totals.income - totals.expense;
-  return <section className="card flow-card" aria-label={tr('Money flow')}>
+  return <section className={'card flow-card' + (variant === 'bars' ? ' flow-card-bars' : '')} aria-label={tr('Money flow')}>
     <div className="flow-head">
       <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
@@ -83,7 +83,14 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
     <div className={`flow-plot is-${variant}`} role="list">
       {variant === 'lines' && data.length > 1 && <svg className="flow-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={line('income')} className="in-line" /><path d={line('expense')} className="out-line" /></svg>}
       {data.map((b, i) => <button type="button" role="listitem" key={b.key} className={`flow-col${pick === i ? ' on' : ''}`} style={{ '--i': i }} onClick={() => setPick(pick === i ? -1 : i)} aria-label={tr('{period}: in {income}, out {expense}', { period: b.title, income: Math.round(b.income), expense: Math.round(b.expense) })}>
-        {variant === 'bars' && <span className="flow-bars"><i className="in" style={{ height: `${(b.income / max) * 100}%` }} /><i className="out" style={{ height: `${(b.expense / max) * 100}%` }} /></span>}
+        {variant === 'bars' && <span className="flow-bars">
+          {b.income > 0
+            ? <i className="in flow-value-bar" style={{ height: ((b.income / max) * 100) + '%' }} />
+            : <i className="in flow-zero-dot" data-zero-value="income" />}
+          {b.expense > 0
+            ? <i className="out flow-value-bar" style={{ height: ((b.expense / max) * 100) + '%' }} />
+            : <i className="out flow-zero-dot" data-zero-value="expense" />}
+        </span>}
         {variant === 'lines' && <span className="flow-bars" />}
         {variant === 'net' && <span className="flow-net-col"><i className={b.income - b.expense >= 0 ? 'in up' : 'out down'} style={{ height: `${(Math.abs(b.income - b.expense) / netMax) * 50}%` }} /></span>}
         {/* Every column keeps its label row so bars share one baseline; only some labels are written. */}
