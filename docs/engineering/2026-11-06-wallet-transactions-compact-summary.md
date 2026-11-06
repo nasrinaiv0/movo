@@ -31,3 +31,11 @@
 - Exempt the Home mascot speech-bubble's `Change mascot` text link from the legacy global 0.25px button hairline (a header descendant retained that border despite the general borderless-button rule).
 - Preserve the text-link styling, accent-color adaptation, the existing click handler, and visible keyboard focus. No changes to the bubble card or to header action button borders.
 - Regression coverage added to `RamMascot.test.js` in addition to existing mascot interaction tests.
+
+
+## Empty-record visuals across MOVO
+- The empty-only `card list-card` wrapper previously produced a thin filled capsule for scheduled payments, overdue obligations, reminder activity, manual/estimated cashback, and other record lists.
+- Style only cards with a **single empty-state paragraph**, or a categories list with no `li` items, as transparent text (no card border, shadow, backdrop or 0.25px pseudo-element hairline). Hide a truly empty list-card.
+- Uses `:has(> … :only-child)` and `ul:empty` guards; actual populated cards, headings, actionable add prompts, statistical summaries, and sheet/form notices are deliberately untouched.
+- Maintains empty messages and translations in place. Works with adaptive dark/light themes and the existing padding system; text remains visible and left-aligned.
+- Regression check: empty Schedule sections (list mode, obligations, reminders), empty Wallet recent/card transactions, Cashback lists, Bills, and subscription categories render without horizontal capsules. Populated lists retain the original cards.

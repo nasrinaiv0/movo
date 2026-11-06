@@ -6994,3 +6994,41 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .bill-payment-sheet .form-note { margin: 0; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .movo-app .bill-payment-sheet .sheet-actions { gap: 8px; margin-top: 4px; }
 .movo-app .bill-payment-sheet .sheet-actions > button { min-width: 0; min-height: 44px; padding: 10px 8px; border-radius: 14px; font-size: 13px; }
+
+
+/* Empty-only list surfaces: no decorative horizontal capsule when there are
+   no records. Guard with :has() so populated lists, forms, charts, controls,
+   and intentional onboarding/CTA cards keep their existing backgrounds.
+   The ::after override also removes the shared 0.25px card hairline. */
+.movo-app.movo-app :is(
+  .card.list-card:has(> p.form-note:only-child),
+  .card:has(> p.empty:only-child),
+  .card.pad:has(> ul:empty + p.empty:last-child)
+) {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 4px 2px 8px;
+  overflow: visible;
+}
+.movo-app.movo-app :is(
+  .card.list-card:has(> p.form-note:only-child),
+  .card:has(> p.empty:only-child),
+  .card.pad:has(> ul:empty + p.empty:last-child)
+)::after {
+  content: none !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app .card.list-card:empty {
+  display: none; /* Truly empty lists must not leave a blank horizontal bar. */
+}
+.movo-app.movo-app :is(.card.list-card, .card.pad):has(> p:only-child:is(.form-note, .empty)) > p {
+  margin: 2px 0 6px;
+  padding: 4px 2px;
+  text-align: start;
+  background: transparent;
+  box-shadow: none;
+}
