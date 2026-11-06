@@ -43,3 +43,7 @@ Release state: NOT CERTIFIED / STORE BILLING REMAINS DISABLED.
 ## CI runner compatibility follow-up
 - PR #227's first Android job failed during the SDK setup action, before any application compilation: setup-android@v3 attempted sdkmanager tools, and the current repository no longer contains package 'tools'.
 - Updated the workflow to rely on GitHub ubuntu-latest's already-installed Android SDK command-line tools and to install platforms;android-36 / build-tools;36.0.0 explicitly. Retry debug and unsigned release compile. This correction changes no production financial data or native auth behavior.
+
+## Android CLI path follow-up
+- Second PR #227 Android job failed before compilation: sdkmanager not present on default PATH in ubuntu-latest after removing the obsolete setup action. Android command-line tools were present in the previous runner under ANDROID_HOME/cmdline-tools.
+- Adjusted workflow to discover sdkmanager by absolute path from ANDROID_HOME and invoke it explicitly. No app, data, or native-auth code changed. Require another native CI run before merge.
