@@ -25,17 +25,30 @@ export function IconButton({ icon, label, onClick, dot, size = 20, className = '
   return <button type="button" className={`round-button ${className}`.trim()} aria-label={label} onClick={onClick}><Icon name={icon} size={size} />{dot && <i className="red-dot" />}</button>;
 }
 
+/** Shared utility capsule; creation actions stay outside the group. */
+export function HeaderActions({ items }) {
+  const utilities = items.filter(item => item && item.icon !== 'plus');
+  const additions = items.filter(item => item && item.icon === 'plus');
+  const button = item => <IconButton key={item.label} {...item} size={23}
+    className={`${item.className || ''}${item.icon === 'plus' ? ' header-add-action' : ''}`.trim()} />;
+  return <>
+    {utilities.length > 0 && <div className="header-utility-group" role="group" aria-label={tr('Utilities')}>
+      {utilities.map(button)}
+    </div>}
+    {additions.map(button)}
+  </>;
+}
+
 /** Large-title header used by the five root screens. */
 export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell, action, headerActions, className = '' }) {
+  const items = headerActions || [
+    action || (!hideSearch && { icon: 'search', label: tr('Search'), onClick: onSearch }),
+    !hideBell && onBell && { icon: 'bell', label: tr('Notifications'), onClick: onBell, dot: unread },
+    onSettings && { icon: 'gearSolid', label: tr('Settings'), onClick: onSettings },
+  ];
   return <header className={`screen-header root ${className}`.trim()}>
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
-    <div className="header-actions">
-      {headerActions ? headerActions.map(item => <IconButton key={item.label} icon={item.icon} label={item.label} onClick={item.onClick} dot={item.dot} size={item.size || 20} className={item.className} />) : <>
-        {action ? <IconButton icon={action.icon} label={action.label} onClick={action.onClick} /> : !hideSearch && <IconButton icon="search" label={tr('Search')} onClick={onSearch} />}
-        {!hideBell && onBell && <IconButton icon="bell" label={tr('Notifications')} onClick={onBell} dot={unread} />}
-        {onSettings && <IconButton icon="gearSolid" label={tr('Settings')} onClick={onSettings} />}
-      </>}
-    </div>
+    <div className="header-actions"><HeaderActions items={items} /></div>
   </header>;
 }
 

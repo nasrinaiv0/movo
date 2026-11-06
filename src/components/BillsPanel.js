@@ -5,7 +5,7 @@ import { SectionTitle, Sheet } from './ui';
 import { formatDate } from '../lib/format';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-import { BILL_CATEGORIES, BILL_FREQUENCIES, amountDue, amountRemaining, billsSummary, occurrenceState, paymentKey } from '../lib/bills';
+import { BILL_CATEGORIES, BILL_FREQUENCIES, amountDue, amountRemaining, billsSummary, occurrenceState, paymentKey, validateBillSplits } from '../lib/bills';
 import { createBill, listBillPayments, listBills, listOccurrences, recordBillPayment, setBillStatus, updateOccurrence } from '../lib/billsRepository';
 import { subscriptionBillData } from '../lib/financialPlanningIntegrations';
 
@@ -112,23 +112,25 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
       </article>; })}
     </section>
 
-    {pay && <Sheet title={tr('Bill payment due')} subtitle={billOf(pay.occ)?.name || tr('Bill')} onClose={() => setPay(null)} label={tr('Record bill payment')}>
+    {pay && <Sheet title={tr('Bill payment due')} subtitle={billOf(pay.occ)?.name || tr('Bill')} onClose={() => setPay(null)} label={tr('Record bill payment')} className="bill-payment-sheet">
       <form className="sheet-form bill-pay" onSubmit={e => { e.preventDefault(); submitPay('recorded'); }}>
         {pay.actual !== null && <label>{tr('Actual bill amount')}<input type="number" min="0.01" step="0.01" value={pay.actual} onChange={e=>{const actual=e.target.value;const remaining=actual?Math.max(0,Number(actual)-Number(pay.occ.paid_amount||0)):amountRemaining(pay.occ);setPay({...pay,actual,remaining,amount:actual||pay.amount,splits:pay.split_enabled&&pay.splits.length===1?pay.splits.map(x=>({...x,amount:actual||pay.amount})):pay.splits});}} placeholder={String(pay.occ.expected_amount)} /></label>}
+        <div className="bill-payment-fields">
         <label>{tr('Amount paid')}<input required type="number" min="0.01" step="0.01" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value, splits:pay.split_enabled&&pay.splits.length===1?pay.splits.map(x=>({...x,amount:e.target.value})):pay.splits })} /></label>
-        <label className="legal-disclosure-check"><input type="checkbox" checked={!!pay.split_enabled} onChange={e=>setPay({...pay,split_enabled:e.target.checked})}/><span>{tr('Split payment across accounts')}</span></label>
-        {!pay.split_enabled?<AccountPicker id="bill-payment-account" label={tr('Paid from')} accounts={payAccounts(pay.occ.currency)} value={pay.account_id} onChange={v => setPay({ ...pay, account_id: v })} showBalance={c.show} required />:<section className="card pad">
-          {pay.splits.map((part,index)=><div className="form-grid" key={part.id}>
+        <label>{tr('Date paid')}<input type="date" required value={pay.paid_at} max={today} onChange={e => setPay({ ...pay, paid_at: e.target.value })} /></label>
+        </div>
+        <label className="bill-split-toggle"><input type="checkbox" checked={!!pay.split_enabled} onChange={e=>setPay({...pay,split_enabled:e.target.checked})}/><span>{tr('Split payment across accounts')}</span></label>
+        {!pay.split_enabled?<AccountPicker id="bill-payment-account" label={tr('Paid from')} accounts={payAccounts(pay.occ.currency)} value={pay.account_id} onChange={v => setPay({ ...pay, account_id: v })} showBalance={c.show} required />:<section className="bill-payment-splits">
+          {pay.splits.map((part,index)=><div className="bill-payment-split" key={part.id}>
             <div className="bill-split-account"><AccountPicker id={`bill-split-${part.id}`} label={tr('Account {number}',{number:index+1})} accounts={payAccounts(pay.occ.currency)} value={part.account_id} onChange={v=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,account_id:v}:x)})} showBalance={c.show} required /></div>
-            <label>{tr('Split amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,amount:e.target.value}:x)})}/></label>
-            {pay.splits.length>1&&<button type="button" className="link-button" onClick={()=>setPay({...pay,splits:pay.splits.filter(x=>x.id!==part.id)})}>{tr('Remove split')}</button>}
+            <label className="bill-split-amount">{tr('Split amount')}<input required type="number" min="0.01" step="0.01" value={part.amount} onChange={e=>setPay({...pay,splits:pay.splits.map(x=>x.id===part.id?{...x,amount:e.target.value}:x)})}/></label>
+            {pay.splits.length>1&&<button type="button" className="link-button bill-split-remove" aria-label={tr('Remove split')} onClick={()=>setPay({...pay,splits:pay.splits.filter(x=>x.id!==part.id)})}><Icon name="close" size={16} /></button>}
           </div>)}
-          <button type="button" className="secondary-button" onClick={()=>setPay({...pay,splits:[...pay.splits,{id:newNonce(),key:paymentKey(pay.occ.id,newNonce()),account_id:'',amount:''}]})}>{tr('Add another account')}</button>
+          <button type="button" className="secondary-button bill-split-add" onClick={()=>setPay({...pay,splits:[...pay.splits,{id:newNonce(),key:paymentKey(pay.occ.id,newNonce()),account_id:'',amount:''}]})}>{tr('Add another account')}</button>
           <p className="form-note">{tr('Split total')}: {money(pay.splits.reduce((sum,x)=>sum+(Number(x.amount)||0),0),pay.occ.currency)} · {tr('Remaining')}: {money(pay.remaining??amountRemaining(pay.occ),pay.occ.currency)}</p>
         </section>}
-        <label>{tr('Date paid')}<input type="date" required value={pay.paid_at} max={today} onChange={e => setPay({ ...pay, paid_at: e.target.value })} /></label>
         <p className="form-note">{tr('MOVO records what you paid; it does not send money to the biller.')}</p>
-        <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => submitPay('external')}>{tr('Paid elsewhere')}</button><button className="primary-button" disabled={busy || !pay.account_id}>{tr('Record payment')}</button></div>
+        <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => submitPay('external')}>{tr('Paid elsewhere')}</button><button className="primary-button" disabled={busy || (pay.split_enabled ? !validateBillSplits(pay.splits, Number(pay.remaining ?? amountRemaining(pay.occ)), payAccounts(pay.occ.currency)).valid : !pay.account_id)}>{tr('Record payment')}</button></div>
       </form>
     </Sheet>}
     {adding && <Sheet title={tr('Add a bill')} onClose={() => onAdding(false)} label={tr('Add a bill')}><form className="sheet-form" onSubmit={e => { e.preventDefault(); run(() => createBill({ ...form, currency: form.currency || base }, c.session?.user?.id), tr('Bill added.')).then(ok => { if (ok) { setForm(blankBill(base)); onAdding(false); } }); }}>

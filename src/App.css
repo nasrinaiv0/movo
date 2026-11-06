@@ -6817,3 +6817,177 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 .movo-app .appearance-theme-section > .mini-title { margin-top: 4px; }
 .movo-app .appearance-theme-section > .link-button { justify-self: start; }
+
+/* Shared flat header controls: one utility capsule and a separate creation action. */
+.movo-app.movo-app.movo-app .screen-header.root {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.movo-app.movo-app.movo-app .screen-header.root .title-block {
+  flex: 1 1 105px;
+}
+.movo-app.movo-app.movo-app .screen-header .header-actions {
+  align-items: center;
+  gap: 10px;
+}
+.movo-app.movo-app.movo-app .screen-header .header-utility-group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 45px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 999px;
+  background: var(--card-solid);
+  background-image: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.movo-app.movo-app.movo-app .screen-header :is(.round-button, .back-button) {
+  box-sizing: border-box;
+  display: grid !important;
+  place-items: center;
+  flex: 0 0 45px !important;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  max-width: 45px;
+  max-height: 45px;
+  margin: 0;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--accent-ink, var(--accent));
+}
+.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button {
+  border: 0 !important;
+  background: transparent !important;
+  outline: none;
+}
+.movo-app.movo-app.movo-app .screen-header :is(.round-button, .back-button)::after {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app .screen-header :is(.round-button, .back-button) .movo-icon {
+  width: 23px !important;
+  height: 23px !important;
+  min-width: 23px;
+  min-height: 23px;
+}
+.movo-app.movo-app.movo-app .screen-header .header-add-action {
+  background: var(--accent) !important;
+  border: 0 !important;
+  color: var(--on-accent) !important;
+}
+.movo-app.movo-app.movo-app .screen-header .header-add-action .movo-icon {
+  color: var(--on-accent) !important;
+}
+.movo-app.movo-app.movo-app .screen-header :is(.round-button, .back-button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent) !important;
+}
+/* Crypto has room for the full timestamp, even at larger accessibility text sizes. */
+.movo-app.movo-app.movo-app .crypto-market-header {
+  display: grid;
+  grid-template-columns: 45px minmax(0, 1fr) 45px;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 8px;
+}
+.movo-app.movo-app.movo-app .crypto-market-header > .header-actions,
+.movo-app .crypto-market-header .market-update { display: contents; }
+.movo-app .crypto-market-header .market-refresh-button { grid-column: 3; grid-row: 1; }
+.movo-app .crypto-market-header .market-update-copy { grid-column: 2 / -1; grid-row: 2; }
+.movo-app .crypto-market-header > h1 { grid-column: 2; grid-row: 1; min-width: 0; }
+.market-update {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+.market-update-copy { min-width: 0; text-align: right; }
+.market-update-label { display: flex; gap: 6px; justify-content: flex-end; align-items: center; color: var(--muted); font-size: 11px; font-weight: 600; }
+.market-update-copy time { display: block; font-size: 11px; line-height: 1.5; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; animation: market-update-arrive .45s ease-out; }
+.market-telemetry { display: flex; gap: 2px; align-items: center; height: 12px; color: var(--accent-ink, var(--accent)); }
+.market-telemetry i { width: 2px; height: 5px; background: currentColor; border-radius: 2px; }
+.market-telemetry i:nth-child(2) { height: 11px; animation-delay: -.3s; }
+.market-telemetry i:nth-child(3) { height: 8px; animation-delay: -.15s; }
+.market-telemetry i:nth-child(4) { height: 4px; animation-delay: -.45s; }
+.market-refresh-icon { display: grid; place-items: center; }
+.market-update.is-updating .market-telemetry i { animation-name: market-telemetry-pulse; animation-duration: .8s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+.market-update.is-updating .market-refresh-icon { animation: market-refresh-spin 1.2s linear infinite; }
+.market-update.is-stale:not(.is-updating) .market-telemetry { color: var(--muted); }
+@keyframes market-telemetry-pulse { 50% { transform: scaleY(.35); opacity: .5; } }
+@keyframes market-refresh-spin { to { transform: rotate(360deg); } }
+@keyframes market-update-arrive { from { opacity: .4; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .market-update .market-telemetry i, .market-update .market-refresh-icon, .market-update-copy time { animation: none !important; }
+}
+
+/* Bill payment: compact form rhythm without clipping account availability. */
+.movo-app .sheet.bill-payment-sheet {
+  padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+}
+.movo-app .bill-payment-sheet .sheet-handle { margin: -10px -16px 0; padding: 10px 16px 4px; }
+.movo-app .bill-payment-sheet .sheet-grabber { margin-bottom: 10px; }
+.movo-app .bill-payment-sheet .sheet-title { padding-inline-end: 42px; font-size: 18px; line-height: 1.3; }
+.movo-app .bill-payment-sheet .sheet-sub { margin: 3px 0 10px; font-size: 12px; }
+.movo-app .bill-payment-sheet .sheet-close { top: 10px; inset-inline-end: 10px; width: 44px; height: 44px; }
+.movo-app .bill-payment-sheet .bill-pay { gap: 8px; }
+.movo-app .bill-payment-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.movo-app .bill-payment-sheet .bill-pay label { min-width: 0; gap: 4px; font-size: 12px; }
+.movo-app .bill-payment-sheet .bill-pay input:not([type="checkbox"]) {
+  min-width: 0;
+  min-inline-size: 0;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+.movo-app .bill-payment-sheet .bill-pay .bill-split-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  margin: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.movo-app .bill-split-toggle input[type="checkbox"] { flex: 0 0 18px; width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--accent); }
+.movo-app .bill-payment-splits { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--card-solid); }
+.movo-app .bill-payment-split { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; min-width: 0; }
+.movo-app .bill-payment-split + .bill-payment-split { padding-top: 8px; border-top: 1px solid var(--line); }
+.movo-app .bill-payment-split .bill-split-account { grid-column: 1 / -1; min-width: 0; }
+.movo-app .bill-payment-sheet .bill-pay .acct-pick { display: flex; gap: 8px; padding: 7px 9px; min-height: 62px; border-radius: 12px; }
+.movo-app .bill-payment-sheet .acct-pick-logo { flex-basis: 28px; width: 28px; height: 28px; }
+.movo-app .bill-payment-sheet .acct-pick-text { gap: 2px; }
+.movo-app .bill-payment-sheet .acct-pick-text > strong { font-size: 13px; }
+.movo-app .bill-payment-sheet .acct-pick-text > small { font-size: 9px; }
+.movo-app .bill-payment-sheet .acct-pick-text > em { font-size: 10px; }
+.movo-app .bill-payment-sheet .acct-pick-availability { flex-wrap: wrap; gap: 3px; font-size: 10px; }
+.movo-app .bill-payment-sheet .acct-pick-availability > span { white-space: normal; }
+.movo-app .bill-payment-sheet .acct-pick-availability strong { flex-shrink: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; overflow: visible; font-size: 11px; }
+.movo-app .bill-payment-sheet .bill-pay .bill-split-amount { display: grid; grid-template-columns: minmax(65px, 1fr) minmax(0, 120px); align-items: center; gap: 8px; grid-column: 1 / -1; }
+.movo-app .bill-payment-split:has(.bill-split-remove) .bill-split-amount { grid-column: 1; }
+.movo-app .bill-payment-sheet .bill-split-remove { display: grid; place-items: center; width: 44px; min-height: 44px; padding: 0; color: var(--muted); }
+.movo-app .bill-payment-sheet .bill-split-add { justify-self: start; min-height: 44px; padding: 8px 10px; font-size: 12px; background: transparent; box-shadow: none !important; }
+.movo-app .bill-payment-sheet .form-note { margin: 0; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.movo-app .bill-payment-sheet .sheet-actions { gap: 8px; margin-top: 4px; }
+.movo-app .bill-payment-sheet .sheet-actions > button { min-width: 0; min-height: 44px; padding: 10px 8px; border-radius: 14px; font-size: 13px; }
