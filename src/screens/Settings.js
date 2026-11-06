@@ -350,8 +350,8 @@ export function Appearance({ c }) {
   return <>
     <SubHeader title={tr('Appearance')} onBack={() => go('Settings')} />
     <h2 className="group-title">{tr('Theme')}</h2>
-    <div className="card pad"><ThemePicker c={c} />
-      <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></div>
+    <section className="appearance-theme-section"><ThemePicker c={c} />
+      <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></section>
     <h2 className="group-title">{tr('Liquid Glass')}</h2>
     <section className="card pad glass-settings">
       <div className="glass-head"><span className="menu-main"><strong>{tr('Liquid Glass')}</strong><small>{tr('Translucent, light-bending surfaces')}</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label={tr('Liquid Glass')} /></div>

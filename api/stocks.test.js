@@ -7,3 +7,12 @@ test('requires a server-side licensed provider key',async()=>{delete process.env
 test('rejects unsafe ticker symbols before calling the provider',async()=>{process.env.TWELVE_DATA_API_KEY='secret';global.fetch=jest.fn();const res=response();await handler(request({action:'quote',symbol:'AAPL&apikey=leak',quote:'USD'}),res);expect(res.statusCode).toBe(400);expect(global.fetch).not.toHaveBeenCalled();});
 test('normalizes a stock quote and never returns the API key',async()=>{process.env.TWELVE_DATA_API_KEY='server-secret';global.fetch=jest.fn().mockResolvedValue({ok:true,json:async()=>({symbol:'AAPL',name:'Apple Inc',exchange:'NASDAQ',currency:'USD',close:'225.50',percent_change:'1.25',previous_close:'222.72',datetime:'2026-11-04'})});const res=response();await handler(request({action:'quote',symbol:'AAPL',quote:'USD'}),res);expect(res.statusCode).toBe(200);expect(JSON.parse(res.body).quote).toMatchObject({symbol:'AAPL',price:225.5,changePercent:1.25});expect(res.body).not.toContain('server-secret');expect(global.fetch.mock.calls[0][0]).toContain('apikey=server-secret');});
 test('returns validated search results',async()=>{process.env.TWELVE_DATA_API_KEY='server-secret';global.fetch=jest.fn().mockResolvedValue({ok:true,json:async()=>({data:[{symbol:'AAPL',instrument_name:'Apple Inc',exchange:'NASDAQ',country:'United States',currency:'USD',instrument_type:'Common Stock'}]})});const res=response();await handler(request({action:'search',query:'Apple'}),res);expect(JSON.parse(res.body).results[0]).toMatchObject({symbol:'AAPL',name:'Apple Inc',exchange:'NASDAQ'});});
+
+test('absent percentage is null rather than a fabricated zero percent', async () => {
+ process.env.TWELVE_DATA_API_KEY='server-secret';
+ global.fetch=jest.fn().mockResolvedValue({ok:true,json:async()=>({symbol:'AAPL',close:'225.50',percent_change:null,previous_close:'',datetime:'2026-11-06'})});
+ const res=response();
+ await handler(request({action:'quote',symbol:'AAPL'}),res);
+ expect(res.statusCode).toBe(200);
+ expect(JSON.parse(res.body).quote).toMatchObject({price:225.5,changePercent:null,previousClose:null});
+});

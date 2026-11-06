@@ -40,8 +40,8 @@ export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unre
 }
 
 /** Back-arrow header used by sub-screens. */
-export function SubHeader({ title, onBack, right }) {
-  return <header className="screen-header sub">
+export function SubHeader({ title, onBack, right, className = '' }) {
+  return <header className={('screen-header sub ' + className).trim()}>
     <button type="button" className="back-button" aria-label={tr('Back')} onClick={onBack}><Icon name="back" size={22} /></button>
     <h1>{title}</h1>
     <div className="header-actions">{right}</div>

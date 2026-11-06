@@ -1,5 +1,5 @@
 /**
- * Largest publicly traded companies by market cap, source snapshot on 2026-11-06.
+ * Market-cap ranking snapshot (including a private-company entry) on 2026-11-06.
  * Source: https://companiesmarketcap.com/
  * The order is historical, not a real-time ranking. The app does not scrape this site.
  * Quotes are intentionally fetched on demand through MOVO's licensed market-data service.
