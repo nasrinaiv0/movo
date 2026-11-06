@@ -7359,7 +7359,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   a[class*="button"],
   a[class*="btn"]
 )::after {
-  border: 0 !important;
+  /* Keep borders used by CSS icons and switch indicators; suppress faux hairlines. */
   box-shadow: none !important;
 }
 
@@ -7392,4 +7392,223 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 ):focus-visible {
   outline: 2px solid var(--accent, #086b3a) !important;
   outline-offset: 2px;
+}
+
+
+/* MOVO header button interior and child navigation — 2026-11-07.
+   Exactly 0.5px of inner padding on each header action, without touching
+   the 45px touch target, 22px icons, capsule inset or inter-button gap. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  header,
+  .screen-header,
+  .sub-header,
+  .home-header,
+  .sheet-header,
+  .sheet-head,
+  .sheet-top,
+  .modal-header,
+  .modal-head,
+  .dialog-header,
+  .panel-header,
+  .header-actions,
+  .header-action-buttons
+) :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+) {
+  padding: 0.5px !important;
+}
+
+/* Cashback and Scheduled keep their root header typography and utilities.
+   Only those screens opt into an optional Back control. */
+.movo-app .screen-header.root.has-back {
+  align-items: center;
+  column-gap: 8px;
+}
+.movo-app .screen-header.root.has-back > .back-button {
+  flex: 0 0 45px;
+  width: 45px;
+  height: 45px;
+  margin: 0;
+}
+@media (max-width: 359px) {
+  .movo-app .screen-header.root.has-back {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+  .movo-app .screen-header.root.has-back > .header-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-left: 0;
+  }
+}
+
+
+/* PR #229 adaptive chip typography and compact scroll headers.
+   The screen container already handles iPhone safe-area spacing; only the
+   header itself receives 10px top/bottom, preserving 45px actions. */
+.movo-app.movo-app.movo-app .screen > .screen-header {
+  box-sizing: border-box;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+/* Filters are neutral to the selected accent; the moving dark/light pill
+   requires white/dark ink over its own opposite-colored fill. */
+.movo-app.movo-app.movo-app .chip-row > button[data-chip]:not(.selected) {
+  color: var(--text) !important;
+}
+.movo-app.movo-app.movo-app:not(.theme-dark) .chip-row > button[data-chip].selected {
+  color: #fff !important;
+}
+.movo-app.movo-app.movo-app.theme-dark .chip-row > button[data-chip].selected {
+  color: #14161f !important;
+}
+/* Only the mascot artwork changes: compact the ram slot without touching
+   the greeting/header buttons or the 3D mascot's tap target. */
+.movo-app.movo-app.movo-app .screen > .screen-header.home-header > .ram-mascot {
+  height: 68px;
+}
+.movo-app.movo-app.movo-app .screen > .screen-header.home-header .ram-stage {
+  width: 88px;
+  height: 88px;
+  left: -10px;
+  top: 50%;
+  transition: transform .28s ease;
+}
+/* is-scrolled already toggles from the existing App scroll listener. */
+.movo-app.movo-app.movo-app .screen.is-scrolled > .screen-header.home-header .ram-stage {
+  transform: translateY(-50%) scale(.88);
+}
+.movo-app.movo-app.movo-app .screen > .screen-header.home-header > .mascot {
+  transform-origin: center left;
+  transition: transform .28s ease;
+}
+.movo-app.movo-app.movo-app .screen.is-scrolled > .screen-header.home-header > .mascot {
+  transform: scale(.9);
+}
+@media (max-width: 359px) {
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header > .ram-mascot {
+    height: 60px;
+  }
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header .ram-stage {
+    width: 76px;
+    height: 76px;
+    left: -14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header .ram-stage,
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header > .mascot {
+    transition: none;
+  }
+}
+
+
+/* PR #229 — Transaction filter and sort rhythm (2026-11-07).
+   Scope to Transactions: the generic chip rows across Wallet, Planning,
+   Subscriptions, etc. retain their existing spacing and behavior. */
+.movo-app.movo-app .tx-chip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 16px;
+}
+.movo-app.movo-app .tx-chip-bar > .chip-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  margin: 0;
+  text-align: center;
+}
+.movo-app.movo-app .tx-chip-bar > .tx-period-filter {
+  flex: 0 0 72px;
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  height: 42px;
+  margin: 0;
+}
+/* Each sorting option shares the full row width, with consistent gaps.
+   Clear the area directly above the next date heading or transaction card. */
+.movo-app.movo-app .tx-sort-bar {
+  min-width: 0;
+  margin: 0 0 16px;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row {
+  display: grid;
+  grid-template-columns: repeat(var(--tx-sort-count, 4), minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 6px;
+  font-size: clamp(11px, 3.2vw, 13px);
+  text-align: center;
+  white-space: nowrap;
+}
+/* Ensure that the one-row filters fit narrow screens without clipping the
+   right billing-cycle control or truncating the accessible sort labels. */
+@media (max-width: 390px) {
+  .movo-app.movo-app .tx-chip-bar { gap: 6px; }
+  .movo-app.movo-app .tx-chip-bar > .chip-row { gap: 4px; }
+  .movo-app.movo-app .tx-chip-bar > .tx-period-filter {
+    flex-basis: 60px;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    height: 40px;
+  }
+  .movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
+    height: 40px;
+    min-height: 40px;
+  }
+  .movo-app.movo-app .tx-sort-bar > .chip-row { gap: 6px; }
+  .movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
+    padding-inline: 3px;
+  }
+}
+
+
+/* PR #229 — Wallet card actions: compact vertical padding and larger icons.
+   Keep the existing four-column grid and 44px minimum tap targets. */
+.movo-app.movo-app .action-strip {
+  padding-block: 8px;
+}
+.movo-app.movo-app .action-strip > button {
+  gap: 5px;
 }

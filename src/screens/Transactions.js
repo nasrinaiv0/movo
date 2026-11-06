@@ -136,7 +136,9 @@ export default function Transactions({ c }) {
       <div><small>{tr('Total Income')}</small><div className="balance-amount md">{shown(show, money(monthStats.income))}</div><small>{monthStats.incomeCount} transactions</small></div>
     </section>}
 
-    {txFilter !== 'All' && <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />}
+    {txFilter !== 'All' && <div className="tx-sort-bar" style={{ '--tx-sort-count': sorts.length }}>
+      <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />
+    </div>}
     {txFilter === 'All' ? <SectionTitle action={expanded ? tr('Show less') : tr('See All')} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
       : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? tr('All billing cycles') : (!month || month === currentCycle) ? tr('Present') : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
 

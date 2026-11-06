@@ -7,7 +7,6 @@ const FILLED = {
   list: <path fillRule="evenodd" d="M8.2 2.6h7.6a4.1 4.1 0 0 1 4.1 4.1v10.6a4.1 4.1 0 0 1-4.1 4.1H8.2a4.1 4.1 0 0 1-4.1-4.1V6.7a4.1 4.1 0 0 1 4.1-4.1Zm.5 5.1a1 1 0 0 0 0 2h6.6a1 1 0 0 0 0-2Zm0 4.1a1 1 0 0 0 0 2h6.6a1 1 0 0 0 0-2Zm0 4.1a1 1 0 0 0 0 2h3.6a1 1 0 0 0 0-2Z" />,
   user: <><circle cx="12" cy="7.6" r="4.4" /><path d="M4 19.6C4 16.5 7.6 14.6 12 14.6s8 1.9 8 5a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19.6Z" /></>,
   bell: <path d="M12 2.6a6.4 6.4 0 0 0-6.4 6.4c0 4.7-1.7 6.3-2.5 7a.9.9 0 0 0 .6 1.5h16.6a.9.9 0 0 0 .6-1.5c-.8-.7-2.5-2.3-2.5-7A6.4 6.4 0 0 0 12 2.6Zm-2.2 16.2a2.3 2.3 0 0 0 4.4 0Z" />,
-  gear: null,
 
 };
 // Vector traced from the user-provided Limits gauge, with transparent background.
@@ -22,7 +21,6 @@ const P = {
   gearSolid: <path fill="currentColor" stroke="none" fillRule="evenodd" d="M9.2 1.6C9.2.7 9.9 0 10.8 0h2.4c.9 0 1.6.7 1.6 1.6v1.5c1.2.4 2.2 1 3.1 1.8l1.4-.5c.8-.3 1.7 0 2.1.8l1.2 2.1c.5.8.2 1.7-.6 2.2l-1.3.8c.2 1.2.2 2.4 0 3.6l1.3.8c.8.5 1.1 1.4.6 2.2l-1.2 2.1c-.4.8-1.3 1.1-2.1.8l-1.4-.5c-.9.8-1.9 1.4-3.1 1.8v1.5c0 .9-.7 1.6-1.6 1.6h-2.4c-.9 0-1.6-.7-1.6-1.6v-1.5c-1.2-.4-2.2-1-3.1-1.8l-1.4.5c-.8.3-1.7 0-2.1-.8l-1.2-2.1c-.5-.8-.2-1.7.6-2.2l1.3-.8a10 10 0 0 1 0-3.6l-1.3-.8c-.8-.5-1.1-1.4-.6-2.2l1.2-2.1c.4-.8 1.3-1.1 2.1-.8l1.4.5c.9-.8 1.9-1.4 3.1-1.8V1.6ZM12 16.2a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Z" />,
   search: <><circle cx="10.6" cy="10.6" r="6.6" /><path d="m15.6 15.6 4.6 4.6" /></>,
   bell: <><path d="M6 10a6 6 0 0 1 12 0c0 4.2 1.2 5.6 2 6.4.5.5.1 1.4-.6 1.4H4.6c-.7 0-1.1-.9-.6-1.4.8-.8 2-2.2 2-6.4Z" /><path d="M9.8 20.4a2.4 2.4 0 0 0 4.4 0" /></>,
-  gear: <><circle cx="12" cy="12" r="3.1" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" /></>,
   chevron: <path d="m9.5 5.5 6.5 6.5-6.5 6.5" />,
   back: <path d="M14.5 5.5 8 12l6.5 6.5" />,
   down: <path d="m5.5 9.5 6.5 6.5 6.5-6.5" />,
@@ -116,11 +114,13 @@ const P = {
 };
 
 export default function Icon({ name, size = 20, strokeWidth = 1.7, filled = false, className = '' }) {
-  const solid = filled && FILLED[name];
+  // Keep legacy gear callers identical to the canonical solid Settings artwork.
+  const glyph = name === 'gear' ? 'gearSolid' : name;
+  const solid = filled && FILLED[glyph];
   return (
     <svg className={`movo-icon ${className}`.trim()} width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'}
       stroke={solid ? 'none' : 'currentColor'} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {solid || P[name] || P.spark}
+      {solid || P[glyph] || P.spark}
     </svg>
   );
 }

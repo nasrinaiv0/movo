@@ -10,9 +10,9 @@ export default function Profile({ c }) {
   const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
   const sum = (arr) => arr.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
-  const menu = [['gear', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
+  const menu = [['gearSolid', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
-    <SubHeader title={tr('Profile')} onBack={() => go('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gear" size={19} /></button>} />
+    <SubHeader title={tr('Profile')} onBack={() => go('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gearSolid" size={19} /></button>} />
     <div className="card profile-card-wrap">
       <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
         <span className="avatar big">{c.prefs?.profilePhoto ? <img className="avatar-photo" src={c.prefs.profilePhoto} alt="" /> : user.initial}<i><Icon name="camera" size={13} /></i></span>

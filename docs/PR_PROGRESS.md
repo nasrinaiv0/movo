@@ -360,3 +360,44 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Vercel Sandbox verification: 117 suites / 656 tests passing, TypeScript check and production React build successful; headless Chromium computed-style audits found zero button-border violations on Home (both themes), Wallet, Transactions, Menu, Subscriptions and its tabs, Cashback and Add form, Financial Planning, Limits and transaction search. Focus indicator remains 2px. No browser page errors on main navigation.
 - Implementation, automated regression checks, this PR progress entry, and `docs/engineering/updates/2026-11-07-borderless-controls.md` are included in the same commit to satisfy per-commit documentation gates.
 - Keep independent security PR #227 unchanged. Merge only after exact-head GitHub CI and deployment checks succeed.
+
+
+## Header 0.5px padding and back navigation — 2026-11-07
+- On latest merged main, use 0.5px internal padding for header buttons without changing the established 45px touch targets, 22px icons, utility group spacing, colors or states.
+- Cashback and Scheduled (entered from Menu) gain an optional Back button returning to Menu, while retaining original large titles and all actions, including Scheduled Plus. At narrow widths (<360px), only these pages' header utilities wrap to a second row.
+- Broad MOVO button border removal is already in main. Preserve CSS icon pseudo-element borders needed to draw indicators while removing decorative shadows.
+- Added navigation, responsive CSS, exact padding and icon safety tests; a dated engineering update accompanies this single code commit.
+
+
+## PR #229 — Unified Settings icon across MOVO (2026-11-07)
+- Profile header, Profile Financial Settings row and sidebar now use the same solid Settings gear already shown on Home and shared headers.
+- Per-context SVG sizes stay unchanged (Home 24px, shared header 23px, Profile header 19px, menu 20px, sidebar 22px). Theme-adaptive currentColor, 45px touch targets, 0.5px header padding and borderless controls are preserved.
+- The legacy gear icon name aliases to canonical gearSolid in the shared Icon component to prevent a second design recurring. Other icons such as shield and sliders remain distinct.
+- New SettingsIconConsistency.test.js covers matching SVG artwork, click routing and existing size contracts. Dated engineering documentation accompanies this commit.
+
+
+## PR #229 — Adaptive Financial Planning filters, 10px headers and scrolling mascot (2026-11-07)
+- Shared filter buttons now show the application's main foreground color when unselected; selected chips use contrast-safe white text on the light-mode dark sliding pill, or dark text on the dark-mode white pill. Preserve button sizes and tap behavior.
+- Standardized all direct root/sub/Home/Wallet/Transactions/Menu headers at exactly 10px top/bottom internal padding and 10px lower separation. Preserve the iPhone safe-area inset on screen, existing icon sizes and 0.5px button interior padding.
+- Home ram avatar slot compacted from 80px to 68px (60px on narrow phones). Animated artwork scales to 88% on scroll, photo mascot to 90%, while retaining the existing interaction target; reduced-motion disables transitions.
+- Added AdaptiveFilterHeaderMascot.test.js with CSS cascade, real tab-click, scroll integration, responsive and accessibility checks. Dated engineering documentation included. No financial/data logic changes.
+
+
+## PR #229 — Transactions filters spacing (2026-11-07)
+- Standardized Transactions type filters and billing selector onto one aligned row, with consistent gaps, no negative inherited margins, and clear 16px separation beneath the row.
+- Date / Amount / From-To / Account sort chips use equal-width 3- or 4-column layout, 8px gaps (6px narrow), and 16px of clear separation above transaction cards/date headings. No more active chip touching the card.
+- Narrow <=390px spacing retains click targets, accessible labels and no overlaps. Preserved existing theme, colors, selection indicator, filter/sort logic and all other pages.
+- Added TransactionFilterSpacing.test.js plus a dated engineering record in this same code commit. Gate on Vercel Sandbox full CI/build and exact-head GitHub CI before merging.
+
+
+## PR #229 — Compact Wallet card actions and enlarged icons (2026-11-07)
+- For View Details / Add amount / Limits / More beneath the selected card, decrease vertical bar padding from 14px to 8px, enlarge each icon from 20px to 26px and reduce icon/label gap from 7px to 5px. Keep the 4-column arrangement, horizontal padding, 11px labels and 44px minimum touch target.
+- No changes to click actions, labels, card boundaries, outline-free button styling, themes or financial functionality. Added WalletCardActionSpacing.test.js and dated engineering record. Require Vercel Sandbox test/build and GitHub CI before merging.
+
+
+## PR #229 — Financial Planning: Collect, Edit and Delete in Owed to you (2026-11-07)
+- Each receivable now uses the Loans & Debts three-action card, preserving compact layout and icons. Collect reuses the existing record_receivable_event SQL RPC (account- and owner-validated) and is disabled on settled or fully collected records.
+- Edit updates metadata only, leaving principal, currency, outstanding balances, account links and event history intact. Delete presents a confirmation and soft-archives the receivable without erasing collections or changing cash balances.
+- Owner-scoping, date validation, archive filtering and real UI callbacks have targeted regression tests. Internationalized UI copy is available in all 11 languages.
+- Detailed same-commit documentation: docs/engineering/updates/2026-11-07-pr229-receivable-actions.md. Existing Wallet four-action compact strip was committed already in a4a7a3e and is preserved here.
+- Require full Vercel Sandbox tests/build, GitHub exact-head CI and live mobile visual review before merge.

@@ -23,6 +23,10 @@ describe('MOVO borderless interactive controls', () => {
   });
   test('removes faux hairline border on button pseudo-elements without modifying panel styling', () => {
     expect(policy).toMatch(/\)::before,[\s\S]*\)::after\s*\{[\s\S]*?box-shadow:\s*none\s*!important/);
+    const pseudo = policy.match(/\)::after\s*\{([^}]*)\}/);
+    expect(pseudo).not.toBeNull();
+    expect(pseudo[1]).not.toMatch(/border:\s*0\s*!important/); // real icon strokes survive
+
     expect(policy).not.toMatch(/\.card\s*\{|\.sheet\s*\{|\.sub-calendar\s*\{/);
     expect(policy).toContain('.sub-cal-day');
     expect(policy).toContain('.search-row');

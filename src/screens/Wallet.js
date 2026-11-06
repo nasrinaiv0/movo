@@ -173,7 +173,7 @@ export default function Wallet({ c }) {
       <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['limits', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
-          <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
+          <button type="button" key={label} onClick={fn}><Icon name={icon} size={26} />{tr(label)}</button>)}
       </section>
       {selectedCard && (() => {
         const isCredit = selectedCard.cardKind === 'credit';
