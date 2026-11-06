@@ -156,6 +156,35 @@ export async function createReceivable(input, userId) {
     throw error;
   }
 }
+/** Edit receivable metadata only. Posted principal, currency and collection
+ * events are accounting records, not editable form fields. */
+export async function updateReceivable(receivableId, input, userId) {
+  if (!receivableId || !userId) throw new Error('Sign in to edit this receivable.');
+  const dueDate = input?.due_date || null;
+  if (dueDate && (!/^\d{4}-\d{2}-\d{2}$/.test(dueDate)
+    || !Number.isFinite(Date.parse(dueDate))
+    || new Date(dueDate + 'T00:00:00Z').toISOString().slice(0, 10) !== dueDate)) {
+    throw new Error('Enter a valid due date.');
+  }
+  const name = validName(input?.name);
+  return unwrap(await requireClient().from('financial_receivables').update({
+    name,
+    counterparty: String(input?.counterparty || '').trim().slice(0, 120) || null,
+    reason: String(input?.reason || '').trim().slice(0, 500) || null,
+    due_date: dueDate,
+    notes: String(input?.notes || '').trim().slice(0, 2000) || null,
+    updated_at: new Date().toISOString(),
+  }).eq('id', receivableId).eq('user_id', userId).neq('status', 'archived').select().single());
+}
+
+/** Soft-archive receivables. Never remove events or recorded account movements. */
+export async function deleteReceivable(receivableId, userId) {
+  if (!receivableId || !userId) throw new Error('Sign in to delete this receivable.');
+  return unwrap(await requireClient().from('financial_receivables').update({
+    status: 'archived', updated_at: new Date().toISOString(),
+  }).eq('id', receivableId).eq('user_id', userId).neq('status', 'archived').select().single());
+}
+
 export async function listReceivableEvents(receivableId) {
   if (!receivableId) throw new Error('A receivable ID is required.');
   return unwrap(await requireClient().from('receivable_events').select('*').eq('receivable_id', receivableId).order('occurred_at', { ascending: false }));
