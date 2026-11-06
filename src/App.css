@@ -7032,3 +7032,125 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   background: transparent;
   box-shadow: none;
 }
+
+
+/* PR #225 shared header and legal rhythm.
+   Keep the iOS safe-area on .screen; the 10px is inside the header, never
+   a replacement for the device's safe area or the 45px button hit targets. */
+.movo-app.movo-app .screen > .screen-header {
+  align-items: center;
+  padding-block: 10px;
+  margin-bottom: 10px;
+}
+.movo-app.movo-app .screen > .screen-header.root {
+  padding-top: 10px;
+}
+.movo-app.movo-app .screen > .screen-header.home-header {
+  align-items: center;
+  min-height: 0;
+  padding-block: 10px;
+  margin-bottom: 10px;
+  row-gap: 6px;
+}
+.movo-app.movo-app .home-header > .ram-mascot {
+  height: 80px;
+}
+.movo-app.movo-app .home-header .ram-stage {
+  width: 96px;
+  height: 96px;
+  left: -10px;
+}
+/* The compact mascot must not crowd greeting text on small phones. */
+@media (max-width: 359px) {
+  .movo-app.movo-app .home-header > .ram-mascot { width: 48px; height: 64px; }
+  .movo-app.movo-app .home-header .ram-stage { width: 80px; height: 80px; left: -14px; }
+}
+
+/* Terms and Privacy share identical section spacing, including the later
+   supplemental sections nested in [data-legal-supplement]. The original
+   flex gap on .legal-page applies only to direct children, not those cards. */
+.movo-app.movo-app .legal-page {
+  gap: 14px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+.movo-app.movo-app .legal-page > [data-legal-supplement] {
+  display: grid;
+  gap: 14px;
+}
+.movo-app.movo-app .legal-page :is(.legal-intro, .legal-section, .legal-contact) {
+  padding: 16px;
+  margin: 0;
+}
+.movo-app.movo-app .legal-page :is(.legal-section, .legal-contact) h2 {
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+.movo-app.movo-app .legal-page :is(.legal-section, .legal-contact) p {
+  margin: 0 0 12px;
+  line-height: 1.65;
+}
+.movo-app.movo-app .legal-page :is(.legal-section, .legal-contact) p:last-child {
+  margin-bottom: 0;
+}
+.movo-app.movo-app .legal-page .legal-section li {
+  line-height: 1.65;
+}
+.movo-app.movo-app .screen:has(> .legal-page) {
+  padding-bottom: calc(160px + env(safe-area-inset-bottom));
+}
+/* Shorten the sticky-header fade so it doesn't wash out legal content. */
+.movo-app.movo-app .screen:has(> .legal-page).is-scrolled > .screen-header::after {
+  height: 10px;
+}
+\n
+/* MOVO social footer from server-side Vercel configuration.
+   It is deliberately not a card or an extra header; no border/pill shadows. */
+.movo-app.movo-app .legal-page > .movo-social-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 8px 2px 4px;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.movo-app .movo-social-caption {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.movo-app .movo-social-icons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+.movo-app.movo-app .movo-social-link {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-ink, var(--text));
+  text-decoration: none;
+}
+.movo-app .movo-social-link svg { display: block; width: 22px; height: 22px; }
+.movo-app .movo-social-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .movo-app .movo-social-link:hover { background: var(--field); }
+}
