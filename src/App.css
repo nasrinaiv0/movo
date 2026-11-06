@@ -5947,8 +5947,8 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 
 /* Unified hairline: every ordinary MOVO button has a 0.25px outline.
    Current text color supplies a subtle surface-aware edge for dark/light/brand fills.
-   Scrims and the animated mascot are not visible button surfaces. */
-.movo-app.movo-app button:not(.search-scrim):not(.ram-stage) {
+   Scrims, the animated mascot and the borderless mascot text action are excluded. */
+.movo-app.movo-app button:not(.search-scrim):not(.ram-stage):not(.ram-bubble-link) {
   border-width: 0.25px !important;
   border-style: solid !important;
   border-color: color-mix(in srgb, currentColor 16%, transparent) !important;

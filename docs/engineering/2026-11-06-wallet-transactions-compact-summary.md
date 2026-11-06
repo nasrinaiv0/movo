@@ -26,3 +26,8 @@
 - Automated tests cover overdue + current, paid, cancelled, repeated rows, multiple bills, weekly recurrence and exact cents.
 
 - New billing labels are included in the i18n catalog with translations for all supported languages; run `npm run i18n` whenever the catalogue changes.
+
+## Mascot speech-bubble text border follow-up
+- Exempt the Home mascot speech-bubble's `Change mascot` text link from the legacy global 0.25px button hairline (a header descendant retained that border despite the general borderless-button rule).
+- Preserve the text-link styling, accent-color adaptation, the existing click handler, and visible keyboard focus. No changes to the bubble card or to header action button borders.
+- Regression coverage added to `RamMascot.test.js` in addition to existing mascot interaction tests.

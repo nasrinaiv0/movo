@@ -26,3 +26,10 @@ test('a disappointed ram says so to assistive tech, and taps keep the message sh
   expect(el.querySelector('.ram-bubble.is-open p').textContent).toBe('Oh no, Food is close to its limit.');
   act(() => root.unmount());
 });
+
+
+test('the Change mascot text link stays borderless despite global button hairlines', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'App.css'), 'utf8');
+  expect(css).toContain('button:not(.search-scrim):not(.ram-stage):not(.ram-bubble-link)');
+  expect(css).toMatch(/\.ram-bubble-link\s*\{[^}]*border:\s*0;/);
+});
