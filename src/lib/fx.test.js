@@ -2,11 +2,11 @@ import { convert, formatCurrency, isRateStale, rateBetween, refreshRates, fetchR
 
 const rates = { USD: 1, PHP: 50, EUR: 0.5, JPY: 150 };
 
-test('converts through USD and leaves unknown currencies unchanged', () => {
+test('converts known currencies and fails closed for unknown currencies', () => {
   expect(convert(100, 'USD', 'PHP', rates)).toBe(5000);
   expect(convert(5000, 'PHP', 'EUR', rates)).toBe(50);
   expect(convert(42, 'PHP', 'PHP', rates)).toBe(42);
-  expect(convert(42, 'XYZ', 'PHP', rates)).toBe(42);
+  expect(convert(42, 'XYZ', 'PHP', rates)).toBeNaN();
 });
 
 test('handles invalid numeric input safely', () => {

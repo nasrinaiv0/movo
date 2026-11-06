@@ -18,7 +18,7 @@ let lastFailureAt = 0;
 export function loadRates() {
   try {
     const cached = JSON.parse(localStorage.getItem(KEY));
-    if (cached?.rates?.USD === 1) return { ...cached, rates: { ...FALLBACK, ...cached.rates }, live: cached.live === true };
+    if (cached?.rates?.USD === 1) return { ...cached, rates: cached.live === true ? cached.rates : { ...FALLBACK, ...cached.rates }, live: cached.live === true };
   } catch { /* ignore unavailable or malformed browser storage */ }
   return { rates: FALLBACK, at: 0, fetched: 0, live: false, provider: 'Indicative estimate' };
 }
@@ -41,7 +41,7 @@ export async function refreshRates(current, force = false) {
         if (Number.isFinite(value) && value > 0) rates[code] = value;
       });
       if (!rates.PHP || !rates.EUR) throw new Error('rates_incomplete');
-      const next = { rates: { ...FALLBACK, ...rates }, at: Number(body.time_last_update_unix) * 1000, fetched: Date.now(), live: true, provider: 'ExchangeRate-API' };
+      const next = { rates, at: Number(body.time_last_update_unix) * 1000, fetched: Date.now(), live: true, provider: 'ExchangeRate-API' };
       try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* cache is optional */ }
       failureCount = 0; lastFailureAt = 0;
       return next;
@@ -53,13 +53,13 @@ export async function refreshRates(current, force = false) {
   return pendingRefresh;
 }
 
-/** Converts between currencies through USD; unknown currencies remain unchanged rather than being guessed. */
+/** Converts through USD. Missing or invalid rates return NaN, never a false 1:1 conversion. */
 export function convert(amount, from, to, rates = FALLBACK) {
   const n = Number(amount);
   if (!Number.isFinite(n) || !from || !to) return 0;
   if (from === to) return Math.round(n * 100000000) / 100000000;
   const a = Number(rates[from]); const b = Number(rates[to]);
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return n;
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return NaN;
   return Math.round((n / a) * b * 100) / 100;
 }
 
@@ -68,8 +68,8 @@ export function currencyName(code, locale = 'en') {
 }
 
 export function formatCurrency(value, code, locale = 'en-PH') {
-  try { return new Intl.NumberFormat(locale, { style: 'currency', currency: code, maximumFractionDigits: code === 'JPY' || code === 'KRW' ? 0 : 2 }).format(Number(value) || 0); }
-  catch { return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(Number(value) || 0)} ${code}`; }
+  try { return Number.isFinite(Number(value)) ? new Intl.NumberFormat(locale, { style: 'currency', currency: code, maximumFractionDigits: code === 'JPY' || code === 'KRW' ? 0 : 2 }).format(Number(value)) : '— ' + code; }
+  catch { return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(Number(value))} ${code}`; }
 }
 
 export function rateBetween(from, to, rates) {

@@ -1,0 +1,121 @@
+{
+  "terms": [
+    {
+      "heading": "12. Transaction records and connected automations",
+      "paragraphs": [
+        "MOVO is a recordkeeping application, not a bank account or a payment instruction service. Manually entered expenses, incoming payments, scheduled items and phone-automation logs reflect information supplied or approved by you; they do not prove that a bank, merchant or card issuer has settled a transaction. MOVO does not initiate, cancel or reverse a payment at your bank.",
+        "Phone automations and imported records may be delayed, incomplete, duplicated or misclassified. Verify amounts, currencies, payment accounts, billing cycles and reference numbers against your bank or card statements before relying on them. Deleting a MOVO record does not reverse a real-world purchase or payment."
+      ]
+    },
+    {
+      "heading": "13. Balances, investments and currency estimates",
+      "paragraphs": [
+        "Balances, credit utilisation, debts, forecasts, savings projections, cryptocurrency values and stock quotes are informational estimates derived from records and third-party reference data. Pending transactions can affect available funds differently from settled balances. Market prices and currency conversions may be delayed, indicative or unavailable, and are not executable quotes.",
+        "MOVO does not provide regulated investment, credit, legal, tax or professional accounting advice. You remain responsible for reconciling MOVO records, checking important figures and making financial decisions. Never treat a displayed forecast as a guaranteed return or a promise that funds are available."
+      ]
+    },
+    {
+      "heading": "14. Paid subscriptions, restoration and refunds",
+      "paragraphs": [
+        "If paid features become available through the iOS or Android app, the relevant app store displays the applicable price, billing period, trial terms and any taxes before you confirm a purchase. Eligible subscriptions renew automatically according to the terms shown by that store unless cancelled there. The store manages payment processing, billing changes, cancellation and applicable refund requests; MOVO cannot cancel your store subscription merely by deleting your MOVO account.",
+        "Restore Purchases can restore an eligible, verified purchase to the MOVO account originally linked to it. Restores and access depend on valid store verification, account matching and product availability. Refunds and statutory consumer rights are determined under applicable law and the relevant store rules. MOVO will not describe disabled checkout as a functioning purchase option."
+      ],
+      "links": [
+        {
+          "label": "Manage Apple subscriptions",
+          "url": "https://apps.apple.com/account/subscriptions"
+        },
+        {
+          "label": "Manage Google Play subscriptions",
+          "url": "https://play.google.com/store/account/subscriptions"
+        }
+      ]
+    },
+    {
+      "heading": "15. Security, service changes and user responsibilities",
+      "paragraphs": [
+        "Use a secure device, protect sign-in codes and recovery channels, and do not share bank passwords, card PINs, CVVs or one-time passcodes with MOVO. Exported CSV files and screenshots may expose sensitive financial records. A device-level passcode or convenience app lock is not a substitute for account authentication or encryption of local browser storage.",
+        "We may temporarily restrict a feature to prevent misuse, investigate a security incident or comply with applicable law. Where required, we will provide applicable notices and respect non-waivable consumer and privacy rights. No provision here restricts rights that cannot legally be excluded."
+      ]
+    },
+    {
+      "heading": "16. Third-party content and support",
+      "paragraphs": [
+        "Bank and payment-network names, merchant logos and product names may belong to their respective owners and do not imply partnership or endorsement. Market-data and AI services can provide information that is incomplete or unavailable. Third-party services may have additional terms.",
+        "To report an inaccurate calculation, disputed purchase entitlement, unauthorized access or data-handling concern, contact support@nasrinai.com. Include the affected feature and relevant non-secret details only; do not email passwords, one-time codes or full card numbers."
+      ]
+    }
+  ],
+  "privacy": [
+    {
+      "heading": "10. Why we process information and the applicable basis",
+      "paragraphs": [
+        "We use the information you provide to deliver requested tracking, authentication, cloud sync, transaction logging, support and exports; to maintain service integrity and prevent misuse; and to meet legal obligations where applicable. Depending on the processing and the law that applies, these activities may rely on your request or agreement, legitimate interests that do not override your rights, legal obligations or your consent where required.",
+        "Financial-context sharing with NasrinAI is optional and requires a separate in-app choice. You may decline it and continue using non-AI MOVO features. Withdrawing consent limits future optional sharing; it does not automatically retract material already processed by a third-party provider. Contact support@nasrinai.com for privacy requests."
+      ]
+    },
+    {
+      "heading": "11. Service providers and external requests",
+      "paragraphs": [
+        "Cloud-enabled functions use infrastructure and authentication providers, including Vercel and Supabase, which may process the account, financial and technical records needed to operate the service. When you request NasrinAI features, your message and permitted user-scoped context may be processed by NasrinAI and the AI or voice providers used to deliver that feature. Store-purchase verification may involve Apple or Google.",
+        "Market prices, currency reference data, icon/favicon services and linked third-party content can involve requests to external services. Depending on the feature and how it is loaded, those services may receive network information such as an IP address, browser or app request metadata. MOVO does not need your bank password or card security code to maintain manually entered transaction records.",
+        "Providers may process data outside the Philippines. Appropriate safeguards and applicable contractual or legal protections must be evaluated for international transfers; the operator must keep its processor list and transfer assessment current."
+      ]
+    },
+    {
+      "heading": "12. Device permissions, receipts and voice",
+      "paragraphs": [
+        "Camera or photo access is used only for optional scanning, attachment or visual features when permitted by your device. The app may process some images locally and may save receipt attachments in owner-restricted cloud storage if you explicitly attach them. Uploaded receipts can contain sensitive merchant, account or personal information, so review images before attaching.",
+        "Microphone access is used for voice features when you activate them. Short voice clips may be sent to transcription or voice-response providers to fulfil the request. Permission can be withdrawn through device settings, although the voice feature may then stop working. Do not assume third-party provider retention practices are identical to MOVO's local storage."
+      ]
+    },
+    {
+      "heading": "13. Security and account separation",
+      "paragraphs": [
+        "MOVO uses account authentication, database access controls and transport-security measures for applicable cloud services. These are designed to reduce unauthorized access, but no internet or device storage can be guaranteed completely secure. A local app lock is a convenience control and does not itself encrypt local browser records or replace server authentication.",
+        "Only provide information necessary for the function you choose. Protect your phone and account access, sign out of shared devices and avoid putting passwords, PINs, CVVs or one-time passcodes in chat prompts, receipts or support requests. Security incidents and legally notifiable breaches are handled according to applicable law."
+      ]
+    },
+    {
+      "heading": "14. How long data stays and how deletion works",
+      "paragraphs": [
+        "Local-only data remains on the current device or browser profile until you clear it, delete app/browser storage or the device removes it. Signed-in cloud records, chat history and preferences remain while your account is active unless you delete them or request a supported removal. Certain items moved into MOVO's Archive are retained for up to 90 days before scheduled removal; this Archive period does not apply to every type of deleted record.",
+        "Use Settings → Delete Account in MOVO or the public account-deletion page to request removal of your cloud account and associated personal data. Local data on another device may need separate clearing. Some data may remain temporarily in backups, security logs or records that must lawfully be retained for accounting, fraud prevention, dispute resolution or legal claims; such exceptions should be limited to applicable purposes and retention requirements. Deleting MOVO does not cancel an Apple or Google subscription.",
+        "Backup, incident and legally retained records may have different retention periods depending on the underlying service and legal obligations. This notice does not promise immediate removal from every backup or third-party system; contact our privacy team to ask about a particular record."
+      ],
+      "links": [
+        {
+          "label": "Request account deletion",
+          "url": "https://movo.nasrinai.com/account-deletion.html"
+        }
+      ]
+    },
+    {
+      "heading": "15. Your choices and privacy rights",
+      "paragraphs": [
+        "Where applicable, you may ask to be informed about processing, access or correct personal data, object to qualifying processing, withdraw consent, request deletion or blocking, obtain a portable copy, and raise a complaint with the appropriate regulator. You may export available financial records in MOVO and contact support@nasrinai.com for additional requests.",
+        "We may need to verify your identity before disclosing or deleting cloud records. We will assess requests under the applicable law, including lawful retention exceptions, without asking you to email passwords or full payment-card information."
+      ],
+      "links": [
+        {
+          "label": "Philippines National Privacy Commission",
+          "url": "https://privacy.gov.ph/"
+        }
+      ]
+    },
+    {
+      "heading": "16. AI assistance and automated inferences",
+      "paragraphs": [
+        "Optional AI-generated summaries, classifications, suggestions and market insights may be incorrect or biased and are provided for review, not as automatic financial instructions. MOVO's suggestions do not independently authorize a payment, apply for credit or make a binding lending or insurance decision on your behalf.",
+        "If you do not enable NasrinAI's financial-context sharing, that optional data sharing should not occur. Contact support if you believe information was shared without authorization, or if you want to exercise your rights in relation to a recommendation."
+      ]
+    },
+    {
+      "heading": "17. Children, policy updates and operator information",
+      "paragraphs": [
+        "MOVO is not designed for children. If you believe a minor's data was submitted improperly, please contact support@nasrinai.com so it can be reviewed.",
+        "MOVO is operated by the developer or legal operator identified in the applicable app-store listing. For identity or privacy questions and requests, contact support@nasrinai.com. Material policy changes will be dated and communicated as required by law; changes in optional processing may require renewed notice or consent."
+      ]
+    }
+  ]
+}

@@ -13,9 +13,13 @@ export function setBaseCurrency(code) { if (/^[A-Z]{3}$/.test(code || '')) BASE 
 export const baseCurrency = () => BASE;
 
 /** Monetary labels always retain both decimal places; compact views must not hide cents. */
-export const money = (value, currency = BASE) => cached(`m:${LOCALE}:${currency}:2`, () =>
-  new Intl.NumberFormat(LOCALE, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 })
-).format(Number(value) || 0);
+export const money = (value, currency = BASE) => {
+  // A failed conversion or ledger calculation must not masquerade as zero.
+  if (typeof value === 'number' && !Number.isFinite(value)) return `— ${currency}`;
+  return cached(`m:${LOCALE}:${currency}:2`, () =>
+    new Intl.NumberFormat(LOCALE, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  ).format(Number(value) || 0);
+};
 export const currencySymbol = (currency = BASE) => cached(`sym:${LOCALE}:${currency}`, () => {
   try { return new Intl.NumberFormat(LOCALE, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find(p => p.type === 'currency')?.value || currency; } catch { return currency; }
 });

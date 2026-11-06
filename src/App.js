@@ -57,7 +57,7 @@ import { guessCategory } from './lib/ocr';
 import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { spendingLimitProgress } from './lib/spendingLimits';
-import { accountBalance, savingsBalance } from './lib/financeCalculations';
+import { accountBalance, accountAvailableBalance, savingsBalance } from './lib/financeCalculations';
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
@@ -452,17 +452,22 @@ function App() {
         });
       }
       const opening = cloudMode ? Number(account.opening_balance || 0) : Number(account.opening_balance ?? account.balance ?? 0);
-      return accountBalance(account, relevantLedger, (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates), opening);
+      const converter = (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates);
+      return {
+        settled: accountBalance(account, relevantLedger, converter, opening),
+        available: accountAvailableBalance(account, relevantLedger, converter, opening),
+      };
     };
     return baseAccounts.map(a => {
       const st = prefs.accountStyles?.[a.id] || {};
       const currency = a.currency || 'PHP';
       const linkedBankId = a.account_type === 'card' && cardKindOf(a) === 'debit' ? links[a.id] || '' : '';
       const linkedBank = linkedBankId ? baseAccounts.find(item => item.id === linkedBankId && item.account_type === 'bank') : null;
-      const ledgerBalance = linkedBank ? balanceFor(linkedBank) : balanceFor(a);
+      const ledgerBalances = linkedBank ? balanceFor(linkedBank) : balanceFor(a);
+      const ledgerBalance = ledgerBalances.settled;
       const adjusted = applyCardPayments({ ...a, cardKind: st.cardKind || a.cardKind, balance: ledgerBalance }, prefs.creditCardPayments?.[a.id] || []);
       const balance = adjusted.balance;
-      return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, cardNetwork: st.cardNetwork || a.cardNetwork || '', creditLimit: Number(st.creditLimit) || 0, issuerBankId: st.issuerBankId || '', mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, recordedPaymentsApplied: adjusted.recordedPaymentsApplied, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
+      return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, cardNetwork: st.cardNetwork || a.cardNetwork || '', creditLimit: Number(st.creditLimit) || 0, issuerBankId: st.issuerBankId || '', mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, available_balance: ledgerBalances.available, recordedPaymentsApplied: adjusted.recordedPaymentsApplied, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
     });
   }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, prefs.creditCardPayments, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);

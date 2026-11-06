@@ -16,3 +16,12 @@ Recovered store work includes Apple/Google restoration, server verification, acc
 ## Engineering release gates
 
 Apply the store-entitlements migration to the intended Supabase project after backup/schema review; the isolated SQL test covered the new entitlement table/function, not the existing automation RPC search-path changes. Verify notification retry handling with live store test events. Review new translations with native speakers. Confirm preview/production deployment at the exact PR SHA before merging. Existing web financial records were not modified by this work.
+
+
+## Finance and policy URL remediation — November 6 evening
+- Isolated branch based on 703f31f corrects 1,000-row transaction and 5,000-row posting truncation, pending/settled balance handling, unavailable FX, and public /terms and /privacy URLs.
+- Live Supabase now contains store entitlements with owner-scoped RLS. No store credentials were added, and billing is still intentionally disabled.
+- Required owner/commercial steps remain official store sandbox testing, signed builds, counsel-reviewed legal texts and business/operator disclosures. No-Go until independently verified.
+- See docs/engineering/updates/2026-11-06-financial-commercial-remediation.md for evidence and risks.
+
+- Terms/Privacy expanded for store renewals/refunds, bank-record limitations, processing grounds, vendor disclosures, optional AI/voice, archive/deletion and user rights. Shared canonical source. Reviewed legal translations and verified legal operator identification are outstanding.

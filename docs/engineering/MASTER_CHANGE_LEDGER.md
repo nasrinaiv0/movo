@@ -491,3 +491,12 @@ For all four runs, the job logs show the full dependency install still reports *
 3. Re-run authenticated finance CRUD, CSV import/export, ownership and currency isolation for PR #43; chart provenance for PR #52.
 4. Recheck leaked-password protection and main-branch protection through authorized admin access.
 5. Continue full dependency-tree remediation independently of the production-only audit.
+
+
+## 2026-11-06 — Finance and commercial blocker remediation
+- Branch: fix/release-accounting-security-20261106; source/main 703f31f.
+- Changes: complete paginated ledger/postings/activities, separated pending vs posted funds, missing FX reporting, public legal routes, CI reproducibility and per-commit docs enforcement.
+- Database: live entitlements table added with owner-scoped RLS; no customer financial rows changed. Paid billing still disabled.
+- Full evidence, risks, and rollback: docs/engineering/updates/2026-11-06-financial-commercial-remediation.md. Release remains blocked.
+
+- Terms and Privacy expanded for commercial release; canonical shared supplement and synchronization regression tests. See dated financial-commercial remediation update.

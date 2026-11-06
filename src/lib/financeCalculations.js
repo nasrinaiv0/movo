@@ -2,6 +2,7 @@ import { roundMoney, sumMoney } from './moneyMath';
 
 const inactiveStatuses = new Set(['deleted', 'reversed', 'void', 'voided', 'cancelled', 'canceled', 'archived', 'refunded', 'pending', 'scheduled', 'failed']);
 export const isPostedTransaction = row => !!row && !inactiveStatuses.has(String(row.status || row.transaction_status || '').toLowerCase())
+  && row.is_pending !== true
   && !['is_deleted', 'deleted_at', 'deletedAt', 'is_reversed', 'reversed_at', 'reversedAt', 'is_voided', 'voided_at', 'voidedAt', 'is_archived', 'archived_at'].some(key => row[key]);
 
 export function postedTransactions(rows = []) {
@@ -43,15 +44,16 @@ export function transactionEffect(transaction, accountId) {
 /** Convert the transaction's positive amount into the target account currency before applying its direction. */
 export function accountTransactionDelta(account, transactions, convertAmount = (amount) => amount) {
   if (!account?.id || !Array.isArray(transactions)) return 0;
-  return sumMoney(postedTransactions(transactions).map(transaction => {
+  const effects = postedTransactions(transactions).map(transaction => {
     const effect = transactionEffect(transaction, account.id);
     if (!effect) return 0;
     const currency = transaction.origCurrency || transaction.currency || account.currency || 'PHP';
-    const amount = Math.abs(effect);
-    const converted = Number(convertAmount(amount, currency, account.currency || 'PHP'));
-    if (!Number.isFinite(converted) || converted < 0) return 0;
+    const converted = Number(convertAmount(Math.abs(effect), currency, account.currency || 'PHP'));
+    if (!Number.isFinite(converted) || converted < 0) return NaN;
     return Math.sign(effect) * converted;
-  }));
+  });
+  if (effects.some(value => !Number.isFinite(value))) return NaN;
+  return sumMoney(effects);
 }
 
 /** Opening balance plus posted ledger effects; archived accounts are still calculable for history. */
@@ -85,4 +87,24 @@ export function activityNetAmount(transaction) {
   if (type === 'income') return amount;
   if (type === 'expense') return -amount;
   return 0;
+}
+
+/** Available balance reserves pending debits; pending credits are not spendable. */
+export function accountAvailableBalance(account, transactions, convertAmount = amount => amount, openingBalance) {
+  const settled = accountBalance(account, transactions, convertAmount, openingBalance);
+  if (!Number.isFinite(settled)) return NaN;
+  const pending = (Array.isArray(transactions) ? transactions : []).filter(row =>
+    row?.is_pending === true &&
+    !['deleted','reversed','void','voided','cancelled','canceled','refunded','failed'].includes(String(row.status || '').toLowerCase())
+  );
+  const held = pending.map(row => {
+    const type = row.transaction_type || row.type;
+    if (row.account_id !== account?.id || !['expense', 'transfer'].includes(type)) return 0;
+    const amount = Number(row.origAmount ?? row.amount);
+    if (!Number.isFinite(amount) || amount < 0) return NaN;
+    const converted = Number(convertAmount(amount, row.origCurrency || row.currency || account.currency || 'PHP', account.currency || 'PHP'));
+    return Number.isFinite(converted) && converted >= 0 ? converted : NaN;
+  });
+  if (held.some(amount => !Number.isFinite(amount))) return NaN;
+  return roundMoney(settled - sumMoney(held));
 }

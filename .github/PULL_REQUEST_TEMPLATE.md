@@ -15,6 +15,13 @@
 - YYYY-MM-DD — Validation:
 - YYYY-MM-DD — Blockers / decisions:
 
+## Mandatory same-commit documentation
+- [ ] Every commit changing application code, APIs, migrations, native code, CI, or public resources also updates docs/PR_PROGRESS.md
+- [ ] Every such commit also includes a dated file under docs/engineering/updates/
+- [ ] Each update documents purpose, paths, tests, data/security implications, rollback, and remaining release gates
+- [ ] No documentation claims that unverified live devices, entitlements, or browser flows passed
+- CI rejects any PR commit that violates these requirements
+
 ## Validation evidence
 - [ ] Tests pass on the latest PR head
 - [ ] Production build passes on the latest PR head

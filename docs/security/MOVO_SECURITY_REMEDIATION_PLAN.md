@@ -108,3 +108,12 @@ Also:
 
 ## Current baseline
 The prior review was a partial source inspection. It did not execute the test suite, dependency audit, Supabase production/RLS verification, live deployment tests, or penetration tests. Reported risks are a mixture of code-level concerns and controls that remain unverified; do not label unverified items as confirmed exploitable vulnerabilities.
+
+
+## 2026-11-06 review status (not security certification)
+- Store entitlement RLS now protects the new live table; authenticated SELECT only, direct INSERT denied and anonymous SELECT denied. No purchase entitlements created.
+- Twelve authenticated-callable SECURITY DEFINER financial RPCs remain on the advisor list. Retain needed functionality and verify caller/ownership checks with distinct simulated users before changing grants.
+- Leaked-password protection warning remains in Supabase. MOVO uses passwordless OTP and social OAuth; configure the feature if password auth becomes enabled.
+- Full tenant-isolation, device automation, account deletion, live store purchase and browser penetration tests remain release blockers.
+
+- Privacy supplements now disclose optional NasrinAI financial context, voice/camera, hosting providers, market/favicon requests, unencrypted local storage, supported 90-day Archive and deletion exceptions. Reconcile with production vendor contracts before publication.

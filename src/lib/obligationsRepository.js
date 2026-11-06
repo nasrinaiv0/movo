@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { fetchAllRows } from './supabasePagination';
 import { buildMonthlyInterestSchedule } from './loanInterest';
 
 const requireClient = () => {
@@ -25,16 +26,16 @@ const validDate = value => {
 
 /** List functions rely on RLS as the primary ownership boundary. */
 export async function listAccountingPostings() {
-  return unwrap(await requireClient().from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at', { ascending: false }).limit(5000)).map(row => ({ ...row, transaction_type: 'accounting_posting', amount: Math.abs(Number(row.signed_amount)), type: 'accounting_posting' }));
+  return (await fetchAllRows(() => requireClient().from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at', { ascending: false }).order('id', { ascending: false }))).map(row => ({ ...row, transaction_type: 'accounting_posting', amount: Math.abs(Number(row.signed_amount)), type: 'accounting_posting' }));
 }
 
 /** Non-cash accounting events that must appear in expense analytics without posting cash a second time. */
 export async function listAccountingActivities() {
   const client = requireClient();
   const [loanResult, receivableResult, allocationResult] = await Promise.all([
-    client.from('loan_events').select('id,event_type,amount,currency,occurred_at,note').in('event_type', ['interest_payment','fee']).is('reversed_at', null).order('occurred_at', { ascending: false }).limit(2000),
-    client.from('receivable_events').select('id,event_type,amount,currency,occurred_at,note').eq('event_type', 'written_off').is('reversed_at', null).order('occurred_at', { ascending: false }).limit(2000),
-    client.from('allocation_events').select('id,allocation_id,source_type,source_id,source_name,account_id,event_type,amount,currency,note,occurred_at').order('occurred_at', { ascending: false }).limit(4000),
+    fetchAllRows(() => client.from('loan_events').select('id,event_type,amount,currency,occurred_at,note').in('event_type', ['interest_payment','fee']).is('reversed_at', null).order('occurred_at', { ascending: false }).order('id', { ascending: false })).then(data => ({ data, error: null })),
+    fetchAllRows(() => client.from('receivable_events').select('id,event_type,amount,currency,occurred_at,note').eq('event_type', 'written_off').is('reversed_at', null).order('occurred_at', { ascending: false }).order('id', { ascending: false })).then(data => ({ data, error: null })),
+    fetchAllRows(() => client.from('allocation_events').select('id,allocation_id,source_type,source_id,source_name,account_id,event_type,amount,currency,note,occurred_at').order('occurred_at', { ascending: false }).order('id', { ascending: false })).then(data => ({ data, error: null })),
   ]);
   if (loanResult.error) throw loanResult.error;
   if (receivableResult.error) throw receivableResult.error;
