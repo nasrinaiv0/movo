@@ -154,7 +154,7 @@ export default function Home({ c }) {
         <div className="header-action-buttons home-utility-pill" role="group" aria-label={tr('Utilities')}>
           <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} size={24} className="home-header-action" />
           <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} size={24} className="home-header-action" />
-          <IconButton icon="gear" label={tr('Settings')} onClick={() => go('Settings')} size={24} className="home-header-action" />
+          <IconButton icon="gearSolid" label={tr('Settings')} onClick={() => go('Settings')} size={24} className="home-header-action" />
         </div>
         {!balanceShown && periodPill(false)}
       </div>

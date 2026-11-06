@@ -55,7 +55,7 @@ test('shows 100 ranked companies after My Watchlist without 100 automatic quote 
   expect(loadStockQuote).toHaveBeenCalledWith('AAPL', {force:false});
   expect(container.querySelector('.stock-update-copy time').dateTime).toBe('2026-11-06T00:02:00.000Z');
   expect(container.textContent).toContain('Last Update');
-  expect(container.textContent).toContain('Rankings are not live prices');
+  expect(container.textContent).toContain('Quotes load as you browse');
   expect(formatStocksLastUpdate(null)).toBe('Awaiting market data');
   expect(formatStocksLastUpdate('invalid')).toBe('Awaiting market data');
 });
@@ -92,4 +92,44 @@ test('opens a ranked company and fetches a quote on demand, not an invented pric
   expect(container.querySelector('.stock-detail')).not.toBeNull();
   expect(container.textContent).toContain('Shopify');
   expect(container.textContent).toContain('$123.45');
+});
+
+test('lazy Top 100 prices show provider-reported value and signed daily percentage only for visible rows', async () => {
+  const observers = [];
+  const original = global.IntersectionObserver;
+  global.IntersectionObserver = class {
+    constructor(callback) { this.callback = callback; this.nodes = []; observers.push(this); }
+    observe(node) { this.nodes.push(node); }
+    disconnect() {}
+  };
+  try {
+    await renderScreen();
+    // Visibility is opt-in. The directory does not request quotes for all 100.
+    expect(loadStockQuote.mock.calls.map(([symbol]) => symbol)).toEqual(['AAPL']);
+    const rank = container.querySelectorAll('.stock-global-row')[2]; // Microsoft
+    const target = rank.querySelector('.stock-global-price');
+    expect(target.textContent).toBe('——');
+    const observer = observers.find(o => o.nodes.includes(target));
+    expect(observer).toBeTruthy();
+    await act(async () => {
+      observer.callback([{ isIntersecting: true }]);
+      await new Promise(resolve => setTimeout(resolve, 30));
+    });
+    expect(loadStockQuote).toHaveBeenCalledWith('MSFT');
+    expect(target.querySelector('strong').textContent).toBe('$123.45');
+    expect(target.querySelector('small').textContent).toBe('-0.02%');
+    expect(target.querySelector('small').classList.contains('down')).toBe(true);
+    const privateRow = container.querySelectorAll('.stock-global-row')[7];
+    expect(privateRow.querySelector('.stock-global-price strong').textContent).toBe('Private');
+    expect(loadStockQuote.mock.calls.map(([symbol]) => symbol)).not.toContain('SPCX');
+  } finally { global.IntersectionObserver = original; }
+});
+
+test('unavailable price/percentage never default to fabricated zero percent', () => {
+  const {formatStockMove} = require('./StocksMarket');
+  expect(formatStockMove(null)).toBe('—');
+  expect(formatStockMove(undefined)).toBe('—');
+  expect(formatStockMove(0)).toBe('0.00%');
+  expect(formatStockMove(-1.256)).toBe('-1.26%');
+  expect(formatStockMove(1.25)).toBe('+1.25%');
 });

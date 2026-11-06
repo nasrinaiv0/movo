@@ -44,6 +44,88 @@ export function formatStocksLastUpdate(iso, locale) {
   }).format(new Date(iso));
 }
 
+// Load only the rows the user actually views. Provider calls use one credit per
+// symbol; a small queue prevents a 100-stock burst on opening the directory.
+const globalQuotePending = new Map();
+const globalQuoteQueue = [];
+let globalQuoteActive = 0;
+function drainGlobalQuotes() {
+  while (globalQuoteActive < 2 && globalQuoteQueue.length) {
+    const task = globalQuoteQueue.shift();
+    globalQuoteActive += 1;
+    Promise.resolve().then(() => loadStockQuote(task.symbol)).then(
+      data => task.resolve(data),
+      () => task.resolve(null)
+    ).finally(() => {
+      globalQuoteActive -= 1;
+      drainGlobalQuotes();
+    });
+  }
+}
+export function queuedGlobalStockQuote(symbol) {
+  const previous = globalQuotePending.get(symbol);
+  if (!previous || Date.now() - previous.at > 90_000) {
+    globalQuotePending.set(symbol, { at: Date.now(), promise: new Promise(resolve => {
+      globalQuoteQueue.push({ symbol, resolve });
+      drainGlobalQuotes();
+    }) });
+  }
+  return globalQuotePending.get(symbol).promise;
+}
+export function formatStockMove(change) {
+  return Number.isFinite(change) ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : '—';
+}
+export function formatLicensedQuotePrice(value, currency) {
+  if (!Number.isFinite(value)) return '—';
+  const code = typeof currency === 'string' ? currency.trim().toUpperCase() : '';
+  if (code && /^[A-Z]{3}$/.test(code)) {
+    try { return money(value, code); } catch { /* Provider supplied an invalid currency. */ }
+  }
+  // Unknown quote currency: never invent a dollar or peso symbol.
+  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+}
+
+
+export function GlobalStockPrice({ symbol, onQuote, unlisted = false }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [quote, setQuote] = useState(null);
+  useEffect(() => {
+    if (unlisted || typeof IntersectionObserver === 'undefined') return;
+    const element = ref.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) {
+        setVisible(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: [64, 0].map(n => n + 'px').join(' ') });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [symbol, unlisted]);
+  useEffect(() => {
+    if (!visible || unlisted) return;
+    let live = true;
+    queuedGlobalStockQuote(symbol).then(data => {
+      if (!live) return;
+      if (data?.quote && Number.isFinite(data.quote.price)) {
+        setQuote(data.quote);
+        onQuote?.(data);
+      }
+    });
+    return () => { live = false; };
+  }, [symbol, visible, onQuote, unlisted]);
+  const valid = Number.isFinite(quote?.price);
+  const delta = Number.isFinite(quote?.changePercent) ? quote.changePercent : null;
+  const value = valid ? formatLicensedQuotePrice(quote.price, quote.currency) : '—';
+  return <span ref={ref} className="stock-global-price" aria-label={unlisted ? tr('Not publicly listed') : valid ? tr('Price {amount}, daily change {change}', {amount: value, change: formatStockMove(delta)}) : tr('Price unavailable')}>
+    <strong title={valid ? value : undefined}>{unlisted ? tr('Private') : value}</strong>
+    <small className={delta === null ? 'flat' : delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'}>
+      {formatStockMove(delta)}
+    </small>
+  </span>;
+}
+
 export default function StocksMarket({ c }) {
   const quote = String(c.base || c.prefs?.currency || 'USD').toUpperCase();
   const saved = Array.isArray(c.prefs?.stockWatchlist) ? c.prefs.stockWatchlist : ['AAPL', 'MSFT', 'NVDA'];
@@ -152,11 +234,17 @@ export default function StocksMarket({ c }) {
     (i ? 'L' : 'M') + (8 + i / Math.max(1, points.length - 1) * 304).toFixed(1) + ' ' + (92 - (v - min) / span * 78).toFixed(1)
   ).join(' ');
   const displayQuote = selected ? (watchQuotes.find(item => item.symbol === selected.symbol) || selectedQuote) : null;
+  const noteDirectoryQuote = useCallback(data => {
+    if (data?.stale || !data?.fetchedAt || !Number.isFinite(Date.parse(data.fetchedAt))) return;
+    setLastUpdated(old => !old || data.fetchedAt > old ? data.fetchedAt : old);
+  }, []);
+
 
   return (
     <>
       <SubHeader
         title="Stocks"
+        className="stocks-market-header"
         onBack={() => c.go('Menu')}
         right={
           <div className="stock-update-header">
@@ -253,7 +341,7 @@ export default function StocksMarket({ c }) {
             <p className="stock-ranking-note">
               Market-cap ranking snapshot: {new Date(TOP_GLOBAL_STOCKS_SNAPSHOT + 'T12:00:00Z').toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'})}
               {' · '}<a href={TOP_GLOBAL_STOCKS_SOURCE} target="_blank" rel="noreferrer noopener">Source</a>
-              {' · '}Rankings are not live prices.
+              {' · '}{tr('Quotes load as you browse; delayed or unavailable listings show —.')}
             </p>
             <div className="stock-top-global-list">
               {TOP_GLOBAL_STOCKS.map(item => (
@@ -264,6 +352,7 @@ export default function StocksMarket({ c }) {
                     <StockLogo symbol={item.symbol}/>
                     <span className="stock-row-main"><strong>{item.name}</strong><small>{item.symbol}</small></span>
                   </button>
+                  <GlobalStockPrice symbol={item.symbol} onQuote={noteDirectoryQuote} unlisted={item.symbol === 'SPCX'} />
                   <button type="button" className="stock-add stock-global-add"
                     onClick={() => toggle(item.symbol)}
                     aria-label={saved.includes(item.symbol) ? tr('Remove {name} from watchlist', {name:item.name}) : tr('Add {name} to watchlist', {name:item.name})}>

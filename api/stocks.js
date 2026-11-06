@@ -3,7 +3,7 @@ const QUOTES = new Set(['PHP','USD','EUR','GBP','JPY','AUD','CAD','SGD','CHF','H
 function json(res,status,payload){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');if(!res.getHeader||!res.getHeader('Cache-Control'))res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(payload));}
 function safeSymbol(value){const s=String(value||'').trim().toUpperCase();return /^[A-Z0-9][A-Z0-9:._-]{0,24}$/.test(s)?s:null;}
 function safeQuote(value){const s=String(value||'USD').trim().toUpperCase();return QUOTES.has(s)?s:null;}
-function num(v){const n=Number(v);return Number.isFinite(n)?n:null;}
+function num(v){if(v === null || v === undefined || String(v).trim() === '')return null;const n=Number(v);return Number.isFinite(n)?n:null;}
 function normalizeQuote(row,symbol){
  const price=num(row.close||row.price); if(price===null)return null;
  const change=num(row.percent_change); const prev=num(row.previous_close);
