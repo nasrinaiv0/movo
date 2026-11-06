@@ -307,3 +307,5 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Legal navigation regression expectation updated for November 6 policy date; tested as part of the same code/documentation commit.
 
 - CI dependency follow-up (PR #226): the lockfile generated under npm 11 was rejected by the GitHub runner npm 10 because of an npm-version-specific optional yaml peer dependency. Pinned npm 11.19.1 for the CI install to match the validated lockfile; no dependency/lockfile change or financial-data write.
+
+- PR #226 exact-head CI caught a missing in-app Legal screen change in the initial Git tree; restored src/screens/Legal.js (November 6 effective date and canonical supplements) in the same commit as this update and the dated engineering note. Retest before merging.

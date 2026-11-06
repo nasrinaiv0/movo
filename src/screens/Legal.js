@@ -3,15 +3,36 @@ import { SubHeader } from '../components/ui';
 import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
 import { MovoMark } from '../components/MovoLogo';
+import legalSupplement from '../lib/legalSupplement.json';
 
-const TERMS_EFFECTIVE_DATE = '2026-11-03T12:00:00Z';
-const PRIVACY_EFFECTIVE_DATE = '2026-11-03T12:00:00Z';
+const TERMS_EFFECTIVE_DATE = '2026-11-06T12:00:00Z';
+const PRIVACY_EFFECTIVE_DATE = '2026-11-06T12:00:00Z';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label={tr('Legal documents')}>
     <button type="button" className={current === 'TermsOfService' ? 'selected' : ''} aria-current={current === 'TermsOfService' ? 'page' : undefined} onClick={() => c.openLegal?.('TermsOfService')}>{tr('Terms of Service')}</button>
     <button type="button" className={current === 'PrivacyPolicy' ? 'selected' : ''} aria-current={current === 'PrivacyPolicy' ? 'page' : undefined} onClick={() => c.openLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button>
   </nav>;
+}
+
+/**
+ * Additional policy disclosures are one shared source for the in-app policy
+ * and the public standalone policy pages. English text remains canonical until
+ * legal translation review is completed.
+ */
+export function LegalSupplement({ kind }) {
+  const sections = legalSupplement[kind] || [];
+  return <div data-legal-supplement={kind} lang="en">
+    {sections.map(section => <section className="legal-section" key={section.heading}>
+      <h2>{section.heading}</h2>
+      {section.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+      {(section.links || []).length > 0 && <p className="legal-supplement-links">
+        {section.links.map(link => <React.Fragment key={link.url}>
+          <a href={link.url} target="_blank" rel="noopener noreferrer">{link.label}</a>{' '}
+        </React.Fragment>)}
+      </p>}
+    </section>)}
+  </div>;
 }
 
 function LegalPage({ c, title, current, effectiveDate, children }) {
@@ -32,6 +53,7 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
       </header>
       <LegalNavigation c={c} current={current} />
       {children}
+      <LegalSupplement kind={current === 'TermsOfService' ? 'terms' : 'privacy'} />
       <footer className="legal-contact">
         <h2>{tr('Questions or privacy requests?')}</h2>
         <p>{rich('Contact the MOVO service team at {link}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
