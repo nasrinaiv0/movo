@@ -1,5 +1,18 @@
 # MOVO Master Change Ledger
 
+## 2026-11-07 — Header Back button visual cleanup (PR #230 follow-up)
+
+- All shared RootHeader/SubHeader back buttons use transparent fill (idle/hover/press/focus), no background-image or box-shadow, while retaining their 45px button area and accessible focus ring.
+- Only shared header back buttons are targeted: separate Plus and utility capsules are unaffected.
+- Verification and safety context: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+## 2026-11-07 — Proposed grouped header capsule padding removal
+
+- Scope: 0 padding on all four capsule edges and interior grouped-header action buttons, with existing 45px targets, 22px icons, 4px gap, 1px container border and independent Plus actions retained.
+- Validation: added tests in `src/components/HeaderButtonSpacing.test.js`; results documented in change PR, verified in Vercel Sandbox before merging.
+- Security/financial runtime untouched. Separate draft native-auth hardening PR #227 remains independent.
+- Engineering details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
 ## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
 
 **This section supersedes older status rows below wherever they disagree.**

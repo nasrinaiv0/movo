@@ -5,6 +5,11 @@
 
 ## Open pull requests
 
+**2026-11-07 — Follow-up on PR #230:** All shared RootHeader and SubHeader back-arrow buttons are now transparent across light/dark, hover, active and focus states (with accessible focus ring preserved). No changes to 45px hit targets or standalone controls; Vercel Sandbox browser QA (375px light, 320px dark, 1024px desktop) and 692 automated tests passed; GitHub CI to confirm. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+**2026-11-07 — Grouped header zero-padding change:** `ui/header-group-zero-padding-20261107` removes utility capsule and grouped-button padding across MOVO, preserves icon geometry, and adds a CSS regression test. Vercel Sandbox validation and GitHub CI to be recorded in PR; no production merge implied. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
 | [#214 — Credit-card ledger and compact card details](https://github.com/nasrinaiv0/movo/pull/214) | Financial Planning credit-card ledger reconciliation, complete payment/credit history, expandable details and responsive card layout. | Open; ready for review. Local tests, typecheck, build, translation coverage and GitHub Actions CI passed; Vercel Sandbox viewport checks passed. Hosted Vercel preview skipped by the configured Ignore Build Step. | Review the implementation and test results; merge after approval. |

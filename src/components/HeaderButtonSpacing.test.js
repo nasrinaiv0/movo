@@ -12,13 +12,13 @@ postcss.parse(style).walkRules(rule => rules.push(rule));
 const own = sel => rules.filter(rule => rule.selector === sel).slice(-1)[0];
 const prop = (rule, name) => rule?.nodes.find(node => node.type === 'decl' && node.prop === name)?.value;
 
-test('Home pill and shared utility capsule have identical 5px insets and 4px spacing', () => {
+test('Home pill and shared utility capsule use zero inset and preserve 4px spacing', () => {
   const shared = '.movo-app.movo-app.movo-app .screen-header .header-utility-group,\n.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill';
   const group = own(shared);
   expect(group).toBeDefined();
-  expect(prop(group, 'padding')).toBe('5px');
+  expect(prop(group, 'padding')).toBe('0');
   expect(prop(group, 'gap')).toBe('4px');
-  expect(prop(group, 'min-height')).toBe('57px');
+  expect(prop(group, 'min-height')).toBe('45px');
   expect(prop(group, 'align-items')).toBe('center');
 });
 
@@ -48,11 +48,27 @@ test('every header control uses 0.5px padding without changing button or icon di
     expect(prop(rule, name)).toBeUndefined();
   });
   const group = rules.find(item => item.selector.includes('.header-utility-group') &&
-    item.selector.includes('.home-utility-pill') && prop(item, 'padding') === '5px');
+    item.selector.includes('.home-utility-pill') && prop(item, 'padding') === '0');
   expect(group).toBeDefined();
   const icons = rules.find(item => item.selector.includes('.header-utility-group > .round-button > :is('));
   expect(prop(icons, 'width')).toBe('22px');
   expect(prop(icons, 'height')).toBe('22px');
+});
+
+test('all grouped header buttons override 0.5px global header insets without altering standalone actions', () => {
+  const global = rules.findIndex(rule => rule.selector.includes('movo-app.movo-app.movo-app.movo-app.movo-app.movo-app') &&
+    rule.selector.includes('.sheet-header') && prop(rule, 'padding') === '0.5px');
+  const override = rules.findIndex(rule => rule.selector.includes('.header-utility-group > .round-button') &&
+    rule.selector.includes('.home-utility-pill > .home-header-action') &&
+    rule.selector.includes('movo-app.movo-app.movo-app.movo-app.movo-app.movo-app') &&
+    prop(rule, 'padding') === '0');
+  expect(global).toBeGreaterThanOrEqual(0);
+  expect(override).toBeGreaterThan(global);
+  expect(rules[override].nodes.find(node => node.prop === 'padding')?.important).toBe(true);
+  const shared = rules.find(rule => rule.selector.includes('.header-utility-group') &&
+    rule.selector.includes('.home-utility-pill') && prop(rule, 'gap') === '4px' &&
+    prop(rule, 'min-height') === '45px');
+  expect(shared).toBeDefined();
 });
 
 test('Cashback/Scheduled Back buttons wrap their utilities only below 360px', () => {
@@ -88,4 +104,22 @@ test('regular headers still keep creation buttons outside their utility group', 
   act(() => { el.querySelector('[aria-label="Search"]').click(); el.querySelector('[aria-label="Add"]').click(); });
   expect(click).toHaveBeenCalledTimes(2);
   act(() => root.unmount());
+});
+
+
+test('header back buttons never paint a background, including hover and focus states', () => {
+  const base = own('.movo-app.movo-app.movo-app .screen-header .back-button,\n.movo-app.movo-app.movo-app .screen-header .back-button:is(:hover, :active, :focus, :focus-visible)');
+  expect(base).toBeDefined();
+  expect(prop(base, 'background')).toBe('transparent');
+  expect(prop(base, 'background-image')).toBe('none');
+  expect(prop(base, 'box-shadow')).toBe('none');
+  ['background', 'background-image', 'box-shadow'].forEach(name => {
+    expect(base.nodes.find(node => node.prop === name)?.important).toBe(true);
+  });
+  const focus = own('.movo-app.movo-app.movo-app .screen-header .back-button:focus-visible');
+  expect(prop(focus, 'outline')).toContain('2px solid');
+  expect(focus.nodes.find(node => node.prop === 'outline')?.important).toBe(true);
+  const controls = rules.find(rule => rule.selector.includes('.screen-header :is(.round-button, .back-button)') &&
+    prop(rule, 'width') === '45px');
+  expect(controls).toBeDefined();
 });
