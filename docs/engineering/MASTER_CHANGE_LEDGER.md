@@ -513,3 +513,10 @@ For all four runs, the job logs show the full dependency install still reports *
 - Full evidence, risks, and rollback: docs/engineering/updates/2026-11-06-financial-commercial-remediation.md. Release remains blocked.
 
 - Terms and Privacy expanded for commercial release; canonical shared supplement and synchronization regression tests. See dated financial-commercial remediation update.
+
+## 2026-11-07 — Adaptive contrast for five accent-filled financial summary cards
+- Branch: `fix/adaptive-summary-card-contrast-20261107` from main d31d73f.
+- All text and chart ink on Home balance, Transactions spent, Cashback, Subscription and Financial Planning summary surfaces now inherit preexisting WCAG-tested `--on-accent` (black on pale accents; white on dark accents).
+- SVG fills, billing-cycle bars, icon bubbles and summary separators follow the same foreground. Preserved geometry, financial calculations, data access, accessibility labels and behavior.
+- Regression tests and review gates: docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md. No persistent data operations or migrations.
+- Vercel Sandbox evidence: 701 tests / 124 suites passing, typecheck and optimized build passing, 28 browser-computed foreground/chart checks passing (5 fixtures × 2 accent cases). Same-commit documentation included.

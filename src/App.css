@@ -2919,18 +2919,19 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 
-/* PR #121 follow-up: accent-filled balance/spending hero cards with adaptive white content.
+/* Accent-filled summary cards use the existing WCAG-checked --on-accent foreground.
+   This follows the *accent fill*, not the page appearance: pale pink = black, dark slate = white.
    The selected accent remains the source of the fill, so user accent/theme preferences still apply. */
 .movo-app {
-  --summary-card-ink: #fff;
-  --summary-card-chart-soft: rgba(255, 255, 255, .22);
+  --summary-card-ink: var(--on-accent, #ffffff);
+  --summary-card-chart-soft: color-mix(in srgb, var(--summary-card-ink) 22%, transparent);
 }
 .movo-app .balance-card,
 .movo-app .total-card {
   background: var(--accent) !important;
   color: var(--summary-card-ink);
   border-color: transparent;
-  color-scheme: dark;
+  /* Do not force dark native controls on light-colored accent cards. */
 }
 .movo-app .balance-card *,
 .movo-app .total-card * {
@@ -2949,6 +2950,16 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .total-card .balance-art .mini-bar {
   stroke: var(--summary-card-ink);
   color: var(--summary-card-ink);
+}
+/* SVG fills also need contrast: stroke-only overrides leave MiniBars and
+   the area below the sparkline invisible against an identical accent fill. */
+.movo-app .balance-card .balance-art .mini-bars rect,
+.movo-app .total-card .balance-art .mini-bars rect {
+  fill: var(--summary-card-ink);
+}
+.movo-app .balance-card .balance-art .sparkline path[fill]:not([fill="none"]),
+.movo-app .total-card .balance-art .sparkline path[fill]:not([fill="none"]) {
+  fill: var(--summary-card-ink);
 }
 .movo-app .balance-card .bars-plot span,
 .movo-app .total-card .bars-plot span {
@@ -3062,8 +3073,8 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .balance-card .balance-amount { font-size: 28px; line-height: 1.05; margin: 4px 0 8px; letter-spacing: -.5px; }
 .movo-app .balance-card .balance-art { position: absolute; right: 0; bottom: 0; width: 50%; height: 64%; margin: 0; pointer-events: none; }
 .movo-app .balance-card .balance-art svg { width: 100%; height: 100%; display: block; }
-.movo-app .balance-card .balance-go { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; min-width: 34px; min-height: 34px; border: 0; background: rgba(255,255,255,.18) !important; box-shadow: none !important; }
-.movo-app :is(.balance-card, .total-card) :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,.2) !important; font-size: 12px; font-weight: 600; }
+.movo-app .balance-card .balance-go { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; min-width: 34px; min-height: 34px; border: 0; background: color-mix(in srgb, var(--summary-card-ink) 18%, transparent) !important; box-shadow: none !important; }
+.movo-app :is(.balance-card, .total-card) :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: color-mix(in srgb, var(--summary-card-ink) 16%, transparent) !important; font-size: 12px; font-weight: 600; }
 
 /* Sort & view: segmented pills, compact previews, aligned buttons. */
 .movo-app .wallet-sort-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
@@ -3325,11 +3336,11 @@ button.account-tile:active { transform: scale(.98); }
 @media (max-width: 380px) { .movo-app .chip-bar { gap: 4px; } .movo-app .chip-bar > .chip-row { gap: 2px; } .movo-app .chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
 
 /* Subscriptions summary uses the accent hero style (same as Total Balance): accent fill, white text. */
-.movo-app.movo-app.movo-app.movo-app .sub-hero.card { background: var(--accent); color: #fff; border-color: transparent; padding: var(--box-pad, 16px); }
+.movo-app.movo-app.movo-app.movo-app .sub-hero.card { background: var(--accent); color: var(--on-accent, #ffffff); border-color: transparent; padding: var(--box-pad, 16px); }
 .movo-app.movo-app .sub-hero::after { box-shadow: none; }
-.movo-app.movo-app .sub-hero > small, .movo-app.movo-app .sub-hero-row small { color: rgba(255, 255, 255, .78); }
-.movo-app.movo-app .sub-hero .balance-amount, .movo-app.movo-app .sub-hero-row b { color: #fff; }
-.movo-app.movo-app .sub-hero-row { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+.movo-app.movo-app .sub-hero > small, .movo-app.movo-app .sub-hero-row small { color: var(--on-accent, #ffffff); opacity: .82; }
+.movo-app.movo-app .sub-hero .balance-amount, .movo-app.movo-app .sub-hero-row b { color: var(--on-accent, #ffffff); }
+.movo-app.movo-app .sub-hero-row { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--on-accent, #ffffff) 20%, transparent); }
 .movo-app :is(.back-button, .sub-header > button:first-child) { box-shadow: none; }
 
 /* Profile: the card holds the profile row and, when signed out, a Sign in button. */
@@ -6374,7 +6385,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   margin-top: auto; /* Align the comparison with the chart's month-axis row. */
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,.14);
+  background: color-mix(in srgb, var(--summary-card-ink) 14%, transparent);
   color: var(--summary-card-ink, #fff);
   font-size: 10px;
   line-height: 1.25;

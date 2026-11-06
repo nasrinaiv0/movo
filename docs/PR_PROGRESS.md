@@ -406,3 +406,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Owner-scoping, date validation, archive filtering and real UI callbacks have targeted regression tests. Internationalized UI copy is available in all 11 languages.
 - Detailed same-commit documentation: docs/engineering/updates/2026-11-07-pr229-receivable-actions.md. Existing Wallet four-action compact strip was committed already in a4a7a3e and is preserved here.
 - Require full Vercel Sandbox tests/build, GitHub exact-head CI and live mobile visual review before merge.
+
+## Adaptive summary-card accent contrast (2026-11-07)
+- Correct five screenshot-referenced surfaces: Home Total Balance, Transactions Total Spent / billing cycle graph, Financial Planning Net worth, Cashback tracked, and Monthly subscriptions.
+- Reuse the existing WCAG black/white `--on-accent` algorithm for all summary-card text and SVG/bar graph colors; use subtle matching translucent chart backgrounds instead of fixed white. Accent fill and existing component layouts are preserved.
+- Scope: stylesheet + dedicated regression tests + dated engineering record. No financial data, API, account, layout, theme preference or user interaction changes.
+- Merge gate: full Vercel Sandbox install, test/typecheck/build, followed by same-commit PR CI and visual review. See docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md.
+- Verification: Vercel Sandbox targeted 20/20; full prebuild 701/701 tests / 124 suites; TypeScript and optimized build passed; 28/28 computed-style browser assertions on real built app for pastel pink and dark charcoal passed. PR checks and authenticated human visual review remain merge gates.
