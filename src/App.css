@@ -5642,7 +5642,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 /* Action and filter labels use monochrome contrast; header and navigation icons keep their accents. */
 .movo-app { --button-ink: #000; }
 .movo-app.theme-dark { --button-ink: #fff; }
-.movo-app.movo-app :is(.secondary-button, .danger-button, .wide-button, .link-button, .manage-button, .customize-button, .month-pill, .home-period-filter, .chip-row button, .seg-control button, .theme-segments button, .tx-filter-chip, .wallet-filter-chip, .reminder-issue summary):not(:is(.screen-header *, .home-header .header-action-buttons *, .sub-header *, .bottom-nav *)) {
+.movo-app.movo-app :is(.danger-button, .wide-button, .link-button, .manage-button, .customize-button, .month-pill, .home-period-filter, .seg-control button, .theme-segments button, .tx-filter-chip, .wallet-filter-chip, .reminder-issue summary):not(:is(.screen-header *, .home-header .header-action-buttons *, .sub-header *, .bottom-nav *)) {
   color: var(--button-ink) !important;
 }
 .movo-app.movo-app .primary-button:not(:is(.screen-header *, .bottom-nav *)) { color: var(--on-accent, #fff) !important; background: var(--accent); }
@@ -5750,7 +5750,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   color: var(--on-accent, #fff) !important;
 }
 .movo-app.movo-app :is(
-  .secondary-button, .danger-button, .wide-button, .customize-button,
+  .danger-button, .wide-button, .customize-button,
   .month-pill, .home-period-filter, .chip-row button, .seg-control button,
   .theme-segments button, .tx-filter-chip, .wallet-filter-chip,
   .crypto-sort button, .crypto-ranges button, .crypto-view-switch button,
@@ -5920,4 +5920,26 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .home-header .home-utility-pill > .round-button { transition: none; }
+}
+
+/* Surface-aware chip labels: the sliding highlight inverts between modes.
+   Never force the page's white/black ink onto an opposite-colored chip. */
+.movo-app.movo-app.theme-light .chip-row button.selected,
+.movo-app.movo-app:not(.theme-dark) .chip-row button.selected {
+  color: #fff !important;
+}
+.movo-app.movo-app.theme-dark .chip-row button.selected {
+  color: #14161f !important;
+}
+/* White secondary actions in dark mode must keep dark lettering, including icons
+   and nested labels (financial planning, Shortcuts, App Lock, other sheets). */
+.movo-app.movo-app.theme-dark .secondary-button:not(:disabled) {
+  color: #14161f !important;
+}
+.movo-app.movo-app.theme-dark .secondary-button:disabled {
+  color: #3a3f4b !important;
+}
+.movo-app.movo-app.theme-dark .secondary-button :is(span, strong, small, b, svg, .movo-icon),
+.movo-app.movo-app .chip-row button.selected :is(span, strong, small, b, svg, .movo-icon) {
+  color: inherit;
 }
