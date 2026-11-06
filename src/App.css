@@ -7512,3 +7512,93 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
     transition: none;
   }
 }
+
+
+/* PR #229 — Transaction filter and sort rhythm (2026-11-07).
+   Scope to Transactions: the generic chip rows across Wallet, Planning,
+   Subscriptions, etc. retain their existing spacing and behavior. */
+.movo-app.movo-app .tx-chip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 16px;
+}
+.movo-app.movo-app .tx-chip-bar > .chip-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  margin: 0;
+  text-align: center;
+}
+.movo-app.movo-app .tx-chip-bar > .tx-period-filter {
+  flex: 0 0 72px;
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  height: 42px;
+  margin: 0;
+}
+/* Each sorting option shares the full row width, with consistent gaps.
+   Clear the area directly above the next date heading or transaction card. */
+.movo-app.movo-app .tx-sort-bar {
+  min-width: 0;
+  margin: 0 0 16px;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row {
+  display: grid;
+  grid-template-columns: repeat(var(--tx-sort-count, 4), minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 6px;
+  font-size: clamp(11px, 3.2vw, 13px);
+  text-align: center;
+  white-space: nowrap;
+}
+/* Ensure that the one-row filters fit narrow screens without clipping the
+   right billing-cycle control or truncating the accessible sort labels. */
+@media (max-width: 390px) {
+  .movo-app.movo-app .tx-chip-bar { gap: 6px; }
+  .movo-app.movo-app .tx-chip-bar > .chip-row { gap: 4px; }
+  .movo-app.movo-app .tx-chip-bar > .tx-period-filter {
+    flex-basis: 60px;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    height: 40px;
+  }
+  .movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
+    height: 40px;
+    min-height: 40px;
+  }
+  .movo-app.movo-app .tx-sort-bar > .chip-row { gap: 6px; }
+  .movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
+    padding-inline: 3px;
+  }
+}

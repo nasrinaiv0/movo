@@ -381,3 +381,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Standardized all direct root/sub/Home/Wallet/Transactions/Menu headers at exactly 10px top/bottom internal padding and 10px lower separation. Preserve the iPhone safe-area inset on screen, existing icon sizes and 0.5px button interior padding.
 - Home ram avatar slot compacted from 80px to 68px (60px on narrow phones). Animated artwork scales to 88% on scroll, photo mascot to 90%, while retaining the existing interaction target; reduced-motion disables transitions.
 - Added AdaptiveFilterHeaderMascot.test.js with CSS cascade, real tab-click, scroll integration, responsive and accessibility checks. Dated engineering documentation included. No financial/data logic changes.
+
+
+## PR #229 — Transactions filters spacing (2026-11-07)
+- Standardized Transactions type filters and billing selector onto one aligned row, with consistent gaps, no negative inherited margins, and clear 16px separation beneath the row.
+- Date / Amount / From-To / Account sort chips use equal-width 3- or 4-column layout, 8px gaps (6px narrow), and 16px of clear separation above transaction cards/date headings. No more active chip touching the card.
+- Narrow <=390px spacing retains click targets, accessible labels and no overlaps. Preserved existing theme, colors, selection indicator, filter/sort logic and all other pages.
+- Added TransactionFilterSpacing.test.js plus a dated engineering record in this same code commit. Gate on Vercel Sandbox full CI/build and exact-head GitHub CI before merging.
