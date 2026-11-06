@@ -7602,3 +7602,13 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
     padding-inline: 3px;
   }
 }
+
+
+/* PR #229 — Wallet card actions: compact vertical padding and larger icons.
+   Keep the existing four-column grid and 44px minimum tap targets. */
+.movo-app.movo-app .action-strip {
+  padding-block: 8px;
+}
+.movo-app.movo-app .action-strip > button {
+  gap: 5px;
+}
