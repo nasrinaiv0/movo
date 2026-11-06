@@ -1,5 +1,14 @@
 # MOVO Master Change Ledger
 
+## 2026-11-07 — TTS and receipt-scanning reliability (repair PR)
+
+- Fix CSP permissions for local Tesseract WebAssembly without enabling arbitrary JS eval.
+- Preserve sparse black text on white receipts instead of converting entire images black, support iOS image decode fallback, surface camera failures.
+- TTS now speaks short utterance segments with robust Stop/Listen and Safari audio-failure handling; server supports bounded SSE/NDJSON/JSON voice response formats, retaining user-only context verification.
+- Vercel Sandbox production build: 712/712 tests and 127/127 suites; typecheck and optimized bundle pass.
+- Details: docs/engineering/updates/2026-11-07-tts-receipt-scanner-repair.md
+- No schema, accounting, financial or auth changes. Production deployment waits for merge.
+
 ## 2026-11-07 — Header Back button visual cleanup (PR #230 follow-up)
 
 - All shared RootHeader/SubHeader back buttons use transparent fill (idle/hover/press/focus), no background-image or box-shadow, while retaining their 45px button area and accessible focus ring.

@@ -2,6 +2,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { classifyNasrinAIKeyFormat } = require('./key-format.cjs');
+const { parseVoiceResponse } = require('./voice-stream.cjs');
 
 const MAX_MESSAGE_CHARS = 1600;
 const MAX_UPSTREAM_CONTEXT_CHARS = 3800;
@@ -384,19 +385,10 @@ module.exports = async function handler(req, res) {
         return json(res, 502, { error: 'voice_reply_too_large' });
       }
       if (voiceMode && upstream.ok) {
-        const events = responseText.split(/\r?\n/).filter(Boolean).slice(0, 5000).map((line) => { try { return JSON.parse(line); } catch { return null; } }).filter(Boolean);
-        const done = [...events].reverse().find((event) => event.type === 'done');
-        if (events.some((event) => event.type === 'error')) payload = { error: { code: 'voice_reply_failed' } };
-        else if (done) {
-          const audioParts = [];
-          let audioBytes = 0;
-          for (const event of events.filter((item) => item.type === 'audio' && typeof item.data === 'string').sort((a,b) => a.seq-b.seq)) {
-            if (audioParts.length >= 40 || event.data.length > 1_500_000 || audioBytes + event.data.length > 8_000_000) break;
-            audioParts.push({ mime: typeof event.mime === 'string' && /^audio\/(mpeg|wav|mp4|webm)$/i.test(event.mime) ? event.mime : 'audio/mpeg', data: event.data });
-            audioBytes += event.data.length;
-          }
-          payload = { ...done, reply: extractReply(done), audioParts };
-        }
+        const { done, audioParts, hasError } = parseVoiceResponse(responseText);
+        if (hasError) payload = { error: { code: 'voice_reply_failed' } };
+        else if (done) payload = { ...done, reply: extractReply(done), audioParts };
+
       } else {
         try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
       }

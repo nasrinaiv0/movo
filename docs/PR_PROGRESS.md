@@ -5,6 +5,8 @@
 
 ## Open pull requests
 
+**2026-11-07 — TTS / receipt scan repair:** Isolated branch, fixes local OCR contrast collapse, WASM CSP, iOS image decode fallback, scanner recovery, bounded SSE/NDJSON voice streaming and chunked TTS. Vercel Sandbox build: 712 tests pass; detailed manual/automated verification recorded in dated engineering update. Unmerged until exact-head CI review.
+
 **2026-11-07 — Follow-up on PR #230:** All shared RootHeader and SubHeader back-arrow buttons are now transparent across light/dark, hover, active and focus states (with accessible focus ring preserved). No changes to 45px hit targets or standalone controls; Vercel Sandbox browser QA (375px light, 320px dark, 1024px desktop) and 692 automated tests passed; GitHub CI to confirm. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
 
 **2026-11-07 — Grouped header zero-padding change:** `ui/header-group-zero-padding-20261107` removes utility capsule and grouped-button padding across MOVO, preserves icon geometry, and adds a CSS regression test. Vercel Sandbox validation and GitHub CI to be recorded in PR; no production merge implied. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
