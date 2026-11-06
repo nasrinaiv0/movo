@@ -5,6 +5,9 @@
 
 ## Open pull requests
 
+**2026-11-07 — Grouped header zero-padding change:** `ui/header-group-zero-padding-20261107` removes utility capsule and grouped-button padding across MOVO, preserves icon geometry, and adds a CSS regression test. Vercel Sandbox validation and GitHub CI to be recorded in PR; no production merge implied. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
 | [#214 — Credit-card ledger and compact card details](https://github.com/nasrinaiv0/movo/pull/214) | Financial Planning credit-card ledger reconciliation, complete payment/credit history, expandable details and responsive card layout. | Open; ready for review. Local tests, typecheck, build, translation coverage and GitHub Actions CI passed; Vercel Sandbox viewport checks passed. Hosted Vercel preview skipped by the configured Ignore Build Step. | Review the implementation and test results; merge after approval. |

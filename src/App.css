@@ -7159,17 +7159,17 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 
 
-/* PR #225 header-action geometry and responsive pill alignment.
-   Every grouped utility action has the same symmetric surrounding space;
-   creation actions remain distinct outside the capsule. */
+/* Shared grouped header capsule geometry: no outside inset on any edge.
+   Keep existing 45px button targets, 22px icons and 4px inter-button gap;
+   creation actions remain separate from the capsule. */
 .movo-app.movo-app.movo-app .screen-header .header-utility-group,
 .movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 5px;
-  min-height: 57px;
+  padding: 0;
+  min-height: 45px;
   min-width: max-content;
   border-radius: 999px;
 }
@@ -7423,6 +7423,14 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   a[class*="btn"]
 ) {
   padding: 0.5px !important;
+}
+
+/* Grouped header controls are edge-to-edge on every side. The generic 0.5px
+   header-control rule above still applies to standalone actions. Match its
+   specificity for grouped controls so their actual padding stays zero. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill > .home-header-action {
+  padding: 0 !important;
 }
 
 /* Cashback and Scheduled keep their root header typography and utilities.
