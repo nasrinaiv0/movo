@@ -1,3 +1,4 @@
+import { startDeviceSpeech } from '../lib/deviceSpeech';
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
 import { categoryOf } from '../lib/categories';
@@ -284,6 +285,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const audioPlayingRef = useRef(false);
   const currentAudioRef = useRef(null);
   const deviceSpeechRef = useRef(null);
+  const listenSpeechRef = useRef(null);
   const speechStartRef = useRef(0);
   const loudFramesRef = useRef(0);
   const streamRef = useRef(null);
@@ -353,16 +355,20 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   function speakWithDevice(text) {
-    const synth = window.speechSynthesis;
-    if (!synth || typeof SpeechSynthesisUtterance === 'undefined') { spokenRef.current = ''; return; }
-    const words = plain(text).slice(0, 600); if (!words) return;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(words); u.lang = getLanguage().code || navigator.language || 'en-US';
-    // While the device voice talks, the mic treats input like playback echo (louder, sustained sound to interrupt).
-    const end = () => { if (deviceSpeechRef.current === u) { deviceSpeechRef.current = null; audioPlayingRef.current = false; } spokenRef.current = ''; };
-    u.onend = end; u.onerror = end;
-    deviceSpeechRef.current = u; audioPlayingRef.current = true;
-    synth.speak(u);
+    deviceSpeechRef.current?.cancel?.();
+    const end = () => {
+      deviceSpeechRef.current = null;
+      audioPlayingRef.current = false;
+      spokenRef.current = '';
+    };
+    const controller = startDeviceSpeech(plain(text).slice(0, 1800), {
+      language: getLanguage().code || navigator.language || 'en-US',
+      onEnd: end,
+      onError: () => { end(); setError(tr('Speech playback was blocked. Tap Listen to try again.')); }
+    });
+    if (!controller) { end(); setError(tr('Speech playback is not available on this device.')); return; }
+    deviceSpeechRef.current = controller;
+    audioPlayingRef.current = true;
   }
 
   function say(text, audioParts) {
@@ -376,7 +382,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     audioQueueRef.current = [];
     try { currentAudioRef.current?.stop?.(); } catch { /* already stopped */ }
     currentAudioRef.current = null;
+    deviceSpeechRef.current?.cancel?.();
     deviceSpeechRef.current = null;
+    listenSpeechRef.current?.cancel?.();
+    listenSpeechRef.current = null;
     audioPlayingRef.current = false;
     window.speechSynthesis?.cancel();
   };
@@ -558,15 +567,35 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     try { recorderRef.current?.stop?.(); } catch { /* cleanup */ }
     streamRef.current?.getTracks?.().forEach(track => track.stop());
     audioContextRef.current?.close?.().catch(() => {});
+    listenSpeechRef.current?.cancel?.();
+    deviceSpeechRef.current?.cancel?.();
     window.speechSynthesis?.cancel();
   }, []);
 
   const speak = (text, index) => {
-    const synth = window.speechSynthesis; if (!synth) return;
-    if (speaking === index) { synth.cancel(); setSpeaking(-1); return; }
-    synth.cancel(); const u = new SpeechSynthesisUtterance(text);
-    u.onend = () => setSpeaking(-1); u.onerror = () => setSpeaking(-1);
-    setSpeaking(index); synth.speak(u);
+    if (speaking === index) {
+      listenSpeechRef.current?.cancel?.();
+      listenSpeechRef.current = null;
+      setSpeaking(-1);
+      return;
+    }
+    listenSpeechRef.current?.cancel?.();
+    setError('');
+    const controller = startDeviceSpeech(text, {
+      language: getLanguage().code || navigator.language || 'en-US',
+      onEnd: () => { listenSpeechRef.current = null; setSpeaking(-1); },
+      onError: () => {
+        listenSpeechRef.current = null; setSpeaking(-1);
+        setError(tr('Speech playback was blocked. Check your device volume and tap Listen again.'));
+      }
+    });
+    if (!controller) {
+      setSpeaking(-1);
+      setError(tr('Speech playback is not available on this device.'));
+      return;
+    }
+    listenSpeechRef.current = controller;
+    setSpeaking(index);
   };
 
   const attach = async (event) => {

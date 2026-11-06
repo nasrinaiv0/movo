@@ -15,15 +15,39 @@ function getWorker() {
 }
 
 /** Downscale to ~1600px and boost contrast in greyscale: OCR is faster and more accurate on clean, even text. */
+async function decodeImage(file) {
+  // Safari (including iOS home-screen installs) does not consistently expose createImageBitmap for File/Blob.
+  if (typeof window !== 'undefined' && typeof window.createImageBitmap === 'function') {
+    try { return await window.createImageBitmap(file); } catch { /* use HTMLImageElement below */ }
+  }
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    const release = () => URL.revokeObjectURL(url);
+    image.onload = () => { release(); resolve(image); };
+    image.onerror = () => { release(); reject(new Error('Could not decode that photo. Try a JPEG or PNG image.')); };
+    image.src = url;
+  });
+}
+
+/** Resize before OCR; use an HTMLImageElement fallback on iOS Safari. */
 async function prepare(file) {
-  const bitmap = await (window.createImageBitmap ? window.createImageBitmap(file) : Promise.reject(new Error('unsupported')));
-  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close?.();
-  return enhance(canvas);
+  const image = await decodeImage(file);
+  try {
+    const width = image.width || image.naturalWidth;
+    const height = image.height || image.naturalHeight;
+    if (!width || !height) throw new Error('Image has no readable dimensions.');
+    const scale = Math.min(1, 1600 / Math.max(width, height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error('Cannot read images in this browser.');
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return enhance(canvas);
+  } finally {
+    image.close?.();
+  }
 }
 
 /** Greyscale + contrast stretch (5th–95th percentile), in place. */
@@ -36,8 +60,15 @@ export function enhance(canvas) {
     const total = d.length / 4; let lo = 0; let hi = 255; let acc = 0;
     for (let v = 0; v < 256; v += 1) { acc += hist[v]; if (acc > total * 0.05) { lo = v; break; } }
     acc = 0; for (let v = 255; v >= 0; v -= 1) { acc += hist[v]; if (acc > total * 0.05) { hi = v; break; } }
+    // Sparse ink on a white receipt often occupies <5% of pixels. Both percentiles
+    // can be 255: stretching that degenerate range turns the entire receipt black.
+    // Keep the original grayscale unless there is meaningful luminance separation.
+    const stretch = hi > lo + 12;
     const range = Math.max(1, hi - lo);
-    for (let i = 0; i < d.length; i += 4) { const y = Math.max(0, Math.min(255, ((d[i] - lo) * 255) / range)); d[i] = y; d[i + 1] = y; d[i + 2] = y; }
+    for (let i = 0; i < d.length; i += 4) {
+      const y = stretch ? Math.max(0, Math.min(255, ((d[i] - lo) * 255) / range)) : d[i];
+      d[i] = y; d[i + 1] = y; d[i + 2] = y;
+    }
     ctx.putImageData(img, 0, 0);
   } catch { /* canvas unavailable: use the plain image */ }
   return canvas;
