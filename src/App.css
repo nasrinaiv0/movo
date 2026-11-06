@@ -6494,3 +6494,206 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   .movo-app .transactions-header { margin-right: -14px; }
   .movo-app .tx-chip-bar { margin-right: -14px; }
 }
+
+
+/* Money Flow — borderless paired bars + slightly clearer zero-value micro-dots.
+   Ordinary MOVO buttons retain fine borders; Money Flow bar columns are different. */
+.movo-app {
+  --flow-in-color: #62c993;
+  --flow-out-color: #d17e78;
+  --flow-empty-in: #7caa95;
+  --flow-empty-out: #ad8581;
+}
+.movo-app.theme-light {
+  --flow-in-color: #298756;
+  --flow-out-color: #ba5956;
+  --flow-empty-in: #6b9680;
+  --flow-empty-out: #a67e7c;
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-col,
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-col.on {
+  border: 0 !important;
+  outline: none;
+  box-shadow: none !important;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-col.on {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  border-radius: 7px;
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-col:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 7px;
+}
+.movo-app .flow-card-bars .flow-legend .in,
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-value-bar.in {
+  background: var(--flow-in-color);
+}
+.movo-app .flow-card-bars .flow-legend .out,
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-value-bar.out {
+  background: var(--flow-out-color);
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-bars {
+  align-items: flex-end;
+  gap: clamp(2px, .7vw, 5px);
+  min-width: 0;
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-value-bar {
+  width: min(12px, 43%);
+  min-height: 3px;
+  max-height: 100%;
+  border: none;
+  border-radius: 5px 5px 3px 3px;
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-zero-dot {
+  display: block;
+  width: 4px;
+  height: 4px;
+  min-width: 4px;
+  min-height: 4px;
+  max-width: 4px;
+  max-height: 4px;
+  flex: 0 0 4px;
+  border: 0;
+  border-radius: 50%;
+  opacity: .9;
+  animation: none;
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-zero-dot.in {
+  background: var(--flow-empty-in);
+}
+.movo-app .flow-card-bars .flow-plot.is-bars .flow-zero-dot.out {
+  background: var(--flow-empty-out);
+}
+@media (max-width: 360px) {
+  .movo-app .flow-card-bars .flow-plot.is-bars { gap: 2px; }
+  .movo-app .flow-card-bars .flow-plot.is-bars .flow-bars { gap: 2px; }
+  .movo-app .flow-card-bars .flow-plot.is-bars .flow-zero-dot {
+    width: 3px;
+    height: 3px;
+    min-width: 3px;
+    min-height: 3px;
+    max-width: 3px;
+    max-height: 3px;
+    flex-basis: 3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .flow-card-bars .flow-plot.is-bars .flow-value-bar { animation: none; }
+}
+
+
+/* MOVO compact controls: no decorative strokes on buttons.
+   Keep borders and the hairline overlays for panels, cards and boxes.
+   Buttons inside page, sheet and home headers retain their hairline
+   treatment; this excludes the bottom navigation and filters. */
+.movo-app.movo-app.movo-app.movo-app button:not(:where(
+  header button,
+  .screen-header button,
+  .home-header button,
+  .sub-header button,
+  .transactions-header button,
+  .header-actions button,
+  .header-action-buttons button,
+  .sheet-header button,
+  .sheet-head button,
+  .sheet-top button,
+  .card,
+  .account-row,
+  .sheet-card,
+  .mini-card,
+  .menu-card,
+  .crypto-row,
+  .balance-row,
+  .profile-card,
+  .card-pile-item,
+  .scenery-tile
+)) {
+  border: 0 !important;
+}
+
+/* The old 0.25px hairline is painted by an ::after shadow.
+   Eliminate that line only for real controls; never suppress the
+   ::after of the panel or card surrounding them. */
+.movo-app.movo-app :is(
+  .chip-row button,
+  .theme-segments button,
+  .seg-control button,
+  .flow-ranges button,
+  .crypto-sort button,
+  .crypto-ranges button,
+  .crypto-view-switch button,
+  .crypto-star,
+  .crypto-watch-button,
+  .month-pill,
+  .edit-tray-list button,
+  .tool-pill,
+  .tool-seg,
+  button.wide-button,
+  button.round-button,
+  button.movo-ai-reset,
+  button.movo-ai-open-site,
+  button.movo-ai-signin,
+  button.edit-tool
+):not(:is(
+  header button, .screen-header button, .home-header button,
+  .sub-header button, .transactions-header button,
+  .header-actions button, .header-action-buttons button,
+  .sheet-header button, .sheet-head button, .sheet-top button
+))::after {
+  box-shadow: none !important;
+}
+
+/* Navigation bar is a single capsule, not five outlined cells. */
+.movo-app .bottom-nav > .nav-item {
+  border: 0 !important;
+  outline: 0;
+  box-shadow: none !important;
+  background: transparent;
+}
+.movo-app .bottom-nav > .nav-item::after {
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.movo-app .bottom-nav > .nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.movo-app .bottom-nav .nav-icon > .movo-icon {
+  width: 29px !important;
+  height: 29px !important;
+}
+.movo-app .bottom-nav .nav-center .orb > svg {
+  width: 27px;
+  height: 27px;
+}
+.movo-app .bottom-nav .nav-pill {
+  box-shadow: none !important;
+}
+.movo-app .bottom-nav > .nav-item::before {
+  box-shadow: none !important;
+}
+
+/* Action-strip entries need spacing, not dividing rules. */
+.movo-app .action-strip button,
+.movo-app .action-strip button + button {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.movo-app .action-strip button::after {
+  box-shadow: none !important;
+}
+
+/* Preserve visible keyboard focus even when decorative borders are gone. */
+.movo-app button:not(:is(
+  header button, .screen-header button, .home-header button,
+  .sub-header button, .header-actions button,
+  .header-action-buttons button, .sheet-header button,
+  .sheet-head button, .sheet-top button
+)):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
