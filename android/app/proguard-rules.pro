@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Preserve Capacitor plugin classes and reflected JS bridge method names.
+# Native security vault cannot be removed or renamed by the release shrinker.
+-keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
+-keep class com.nasrinai.movo.MovoNativePlugin { *; }
+-keepattributes RuntimeVisibleAnnotations,Signature,InnerClasses

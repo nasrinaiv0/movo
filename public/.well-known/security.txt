@@ -1,0 +1,5 @@
+Contact: mailto:support@nasrinai.com
+Expires: 2027-05-06T00:00:00Z
+Canonical: https://movo.nasrinai.com/.well-known/security.txt
+Preferred-Languages: en
+Policy: https://movo.nasrinai.com/privacy

@@ -12,8 +12,8 @@ import { isNativeApp } from './platform';
 export const MovoNative = registerPlugin('MovoNative');
 export const AUTH_CALLBACK = 'movo://auth-callback';
 
-/* ---------- Storage: iOS may clear a web view's storage, so MOVO's keys are mirrored to native Preferences. ---------- */
-const KEEP = /^(movo\.|sb-)/;
+/* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
+const KEEP = /^movo\.(?!lock\.)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */

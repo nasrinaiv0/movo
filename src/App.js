@@ -80,7 +80,8 @@ import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
-import { apiUrl } from './lib/platform';
+import { apiUrl, isNativeApp } from './lib/platform';
+import { nativeAutomationKey, sanitizeNativePreferenceCache, saveNativeAutomationKey } from './lib/nativeAutomationKey';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
 import { listBills, listOccurrences, createBill } from './lib/billsRepository';
 
@@ -133,10 +134,15 @@ const today = () => new Date().toLocaleDateString('en-CA');
 function readPrefs() {
   try {
     const stored = JSON.parse(localStorage.getItem(PREF));
-    if (stored) return { ...DEFAULTS, onboarded: true, ...stored }; // people who already used MOVO skip the first-run tour
+    if (stored) return { ...DEFAULTS, onboarded: true, ...stored,
+      ...(isNativeApp() ? { autoLogKey: nativeAutomationKey() } : {}),
+    }; // people who already used MOVO skip the first-run tour
     const old = JSON.parse(localStorage.getItem(OLD_PREF)) || {};
-    return { ...DEFAULTS, theme: old.dark ? 'dark' : DEFAULTS.theme, accent: old.accent === 'mono' ? 'slate' : (old.accent || DEFAULTS.accent), showBalance: old.showBalance !== false };
-  } catch { return { ...DEFAULTS }; }
+    return { ...DEFAULTS, theme: old.dark ? 'dark' : DEFAULTS.theme, accent: old.accent === 'mono' ? 'slate' : (old.accent || DEFAULTS.accent), showBalance: old.showBalance !== false,
+      ...(isNativeApp() ? { autoLogKey: nativeAutomationKey() } : {}) };
+  } catch {
+    return { ...DEFAULTS, ...(isNativeApp() ? { autoLogKey: nativeAutomationKey() } : {}) };
+  }
 }
 const hexToRgb = (hex) => { const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || ''); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '47,107,255'; };
 const monthsBack = (key, n) => { const [y, m] = key.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 - n, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
@@ -284,6 +290,13 @@ function App() {
   }, []);
   const setPref = useCallback((key, value) => {
     const apply = () => setPrefs(cur => ({ ...cur, [key]: value }));
+    if (key === 'autoLogKey' && isNativeApp()) {
+      // Never activate a new shortcut device key until Keychain/Keystore
+      // confirms it is durably protected on this device.
+      saveNativeAutomationKey(value).then(apply).catch(() =>
+        setError(tr('Could not save. Please try again.')));
+      return;
+    }
     if (APPEARANCE_KEYS.has(key)) revealChange(apply, flushSync); else apply();
   }, []);
   const lang = setLanguage(prefs.language || detectLanguage());
@@ -303,7 +316,13 @@ function App() {
   }, []);
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
-  useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
+  useEffect(() => {
+    try {
+      // The local automation credential stays only in the native vault.
+      // Preferences mirroring may persist harmless theme/notification settings.
+      localStorage.setItem(PREF, JSON.stringify(sanitizeNativePreferenceCache(prefs)));
+    } catch { /* storage unavailable */ }
+  }, [prefs]);
   const layout = useLayout();
   const [burst, setBurst] = useState(null);
   const celebrate = useCallback((label, badge) => setBurst({ id: Date.now(), label, badge }), []);
@@ -1767,7 +1786,39 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
+      {sheet?.name === 'autolog' && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => {
+        const oldKey = prefs.autoLogKey;
+        const replacement = newKey();
+        // Persist the replacement BEFORE revoking the old automation device.
+        if (isNativeApp()) {
+          try { await saveNativeAutomationKey(replacement); }
+          catch { notify(tr('Could not save. Please try again.')); return; }
+        }
+        if (oldKey) {
+          try {
+            const response = await fetch(apiUrl('/api/log'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + oldKey },
+              body: JSON.stringify({ action: 'revoke' }),
+            });
+            if (!response.ok) throw new Error('revoke_failed');
+          } catch {
+            if (isNativeApp()) {
+              try { await saveNativeAutomationKey(oldKey); }
+              catch {
+                setAutomationStatus('error');
+                notify(tr('Could not register this device'));
+                return;
+              }
+            }
+            notify(tr('Could not revoke the old key. No key was changed; try again.'));
+            return;
+          }
+        }
+        setPrefs(cur => ({ ...cur, autoLogKey: replacement }));
+        setAutomationStatus('registering');
+        notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.'));
+      }} />}
       {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />

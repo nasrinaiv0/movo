@@ -36,8 +36,12 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   window.localStorage.clear();
   await restoreNativeStorage(window.localStorage);
   expect(window.localStorage.getItem('movo.preferences.v3')).toBe('{"theme":"dark"}');
-  expect(window.localStorage.getItem('sb-x-auth-token')).toBe('tok');
+  expect(window.localStorage.getItem('sb-x-auth-token')).toBeNull();
   expect(window.localStorage.getItem('other.key')).toBeNull();
+  expect(Preferences.get).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token' });
+  expect(Preferences.set).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token', value: 'tok' });
+  // Non-secret Preferences may be mirrored, but never Supabase auth tokens.
+  expect(Preferences.set).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token', value: 'tok' });
   set.mockClear();
   window.localStorage.setItem('movo.local.accounts.v1', '[]');
   window.localStorage.setItem('unrelated', '1');
