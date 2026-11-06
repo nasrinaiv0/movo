@@ -12,7 +12,7 @@
 - \`MOVO_SOCIAL_THREADS_URL\` — MOVO Threads (threads.net or threads.com)
 - \`MOVO_SOCIAL_TIKTOK_URL\` — MOVO TikTok (@handle)
 
-Configure these as plain URL values on the Vercel MOVO project (Production and Preview as appropriate). No OAuth credentials or platform tokens are required. A link appears only after its variable is configured with an allowed real account URL. Changes are reflected within the edge cache lifetime (5 minutes). Do not use fictitious or generic platform homepages.
+Configure these as plain URL values on the Vercel MOVO project (Production and Preview as appropriate). No OAuth credentials or platform tokens are required. A link appears only after its variable is configured with an allowed real account URL. Vercel environment-variable changes apply to new deployments only: redeploy MOVO after saving or editing profile URLs, then allow the 5-minute endpoint cache to expire. Do not use fictitious or generic platform homepages.
 
 ## Security and regression QA
 - Exact trusted domain allowlists reject unsafe protocols, lookalike domains, credentials, unexpected ports and generic homepages. Browser code independently validates links and uses \`noopener noreferrer\`.

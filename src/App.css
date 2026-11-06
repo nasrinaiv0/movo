@@ -7154,3 +7154,80 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 @media (hover: hover) {
   .movo-app .movo-social-link:hover { background: var(--field); }
 }
+
+
+/* PR #225 header-action geometry and responsive pill alignment.
+   Every grouped utility action has the same symmetric surrounding space;
+   creation actions remain distinct outside the capsule. */
+.movo-app.movo-app.movo-app .screen-header .header-utility-group,
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px;
+  min-height: 57px;
+  min-width: max-content;
+  border-radius: 999px;
+}
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
+  display: grid;
+  grid-template-columns: repeat(3, 45px);
+  justify-self: end;
+  width: max-content;
+  max-width: 100%;
+}
+/* Equal-sized icon cells: 45px target, centered 22px glyph, 11.5px
+   optical inset on each edge. Avoid shifting controls with margins. */
+.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button,
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill > .home-header-action {
+  display: grid !important;
+  place-items: center;
+  flex: 0 0 45px !important;
+  box-sizing: border-box;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  max-width: 45px;
+  max-height: 45px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button > :is(.movo-icon, svg),
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill > .home-header-action > :is(.movo-icon, svg) {
+  display: block;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px;
+  min-height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  margin: 0;
+  padding: 0;
+  justify-self: center;
+  align-self: center;
+}
+/* Other page headers share equal space between the utility capsule and
+   a separate Plus action; existing theme/focus/button fill styles remain. */
+.movo-app.movo-app.movo-app .screen-header .header-actions {
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* The 45px touch targets must never shrink to make the header fit.
+   Below 360px, move the Home utility pill to its own right-aligned row. */
+@media (max-width: 359px) {
+  .movo-app.movo-app.movo-app .screen-header.home-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "avatar hello hello" "actions actions actions";
+    row-gap: 4px;
+    column-gap: 8px;
+  }
+  .movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
+    grid-area: actions;
+    justify-self: end;
+    margin: 0;
+  }
+}

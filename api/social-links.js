@@ -1,7 +1,7 @@
 'use strict';
 
 /* Public profile destinations only. The server reads Vercel environment
-   variables at request time so no rebuild is needed when an account changes. */
+   variables supplied to the deployed function; changing Vercel settings requires redeploying. */
 const ACCOUNTS = [
   { id: 'instagram', key: 'MOVO_SOCIAL_INSTAGRAM_URL', hosts: ['instagram.com', 'www.instagram.com'] },
   { id: 'facebook', key: 'MOVO_SOCIAL_FACEBOOK_URL', hosts: ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.com'] },

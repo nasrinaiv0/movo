@@ -51,7 +51,7 @@
 - Small, borderless icon-only social links at the bottom of in-app Terms of Service, Privacy Policy and Help Center. They appear after the real content and do not alter policy text, header layout, links or the persistent bottom navigation.
 - Vercel runtime variables (no default destinations): \`MOVO_SOCIAL_INSTAGRAM_URL\`, \`MOVO_SOCIAL_FACEBOOK_URL\`, \`MOVO_SOCIAL_TWITTER_URL\` (or \`MOVO_SOCIAL_X_URL\`), \`MOVO_SOCIAL_THREADS_URL\`, \`MOVO_SOCIAL_TIKTOK_URL\`.
 - Server reads variables via the read-only \`GET /api/social-links\` endpoint. URLs are validated as HTTPS with exact trusted platform domains; empty, unsafe and generic homepage values are omitted. The client validates the response again.
-- Changes to variables are reflected after cache expiry (5-minute edge cache). No social network credentials, access tokens or user data are needed or returned.
+- Vercel environment-variable changes apply only to new deployments: redeploy MOVO after changing profile URLs. New deployments may take up to 5 minutes to refresh the cached links. No social network credentials, access tokens or user data are needed or returned.
 - SVG brand-style marks use adaptive \`currentColor\`, 44px touch targets, descriptive accessible labels, and \`rel="noopener noreferrer"\`. Links open separately so users don't lose their finance session.
 - In the native Capacitor app, the social endpoint uses MOVO's existing production \`apiUrl()\` routing. If none of the five variables is configured, the entire social footer is hidden without empty boxes.
 - Release QA: test light/dark, small phones and RTL, API response when unset, URL spoofing rejection, and full Terms/Privacy/Help footer rendering. **Do not invent public profile URLs.**
