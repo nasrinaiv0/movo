@@ -309,3 +309,46 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - CI dependency follow-up (PR #226): the lockfile generated under npm 11 was rejected by the GitHub runner npm 10 because of an npm-version-specific optional yaml peer dependency. Pinned npm 11.19.1 for the CI install to match the validated lockfile; no dependency/lockfile change or financial-data write.
 
 - PR #226 exact-head CI caught a missing in-app Legal screen change in the initial Git tree; restored src/screens/Legal.js (November 6 effective date and canonical supplements) in the same commit as this update and the dated engineering note. Retest before merging.
+
+
+## PR #225 — Wallet/Transactions adaptive icons, compact summary and billing-cycle dues (2026-11-06)
+- Base: refreshed to main 9c423c71. Scope: Wallet edit and Transactions quick-action SVGs use adaptive accent ink; compact Total Spent card aligns comparison with month axis.
+- Bills/Financial Planning: overdue unpaid obligations plus one current billing cycle per bill; future periods are not counted as currently due; duplicate occurrences do not inflate totals. No ledger data is changed.
+- Regressions: cycle/deduplication/cents and icon rendering tests, plus all 11 locale outputs. Source documentation: docs/engineering/2026-11-06-wallet-transactions-compact-summary.md.
+- Validation: initial Vercel Sandbox 108 suites / 618 tests, typecheck, production build passed; deployment/preview requires separate verification. PR remains open.
+
+
+## PR #225 — Mascot bubble text-link border follow-up (2026-11-06)
+- In the Home header, exempt only `Change mascot` (`.ram-bubble-link`) from MOVO's global 0.25px button hairline; preserve accent color, callback, keyboard focus and card panels.
+- Added `RamMascot.test.js` regression and updated the detailed engineering documentation alongside this code change.
+- Vercel Sandbox: 108 suites / 619 tests, typecheck and build passed before rebasing. Live PR CI/preview must verify the rebased revision.
+
+
+## PR #225 — Empty-only record surfaces across MOVO (2026-11-06)
+- Removed decorative horizontal background/border/shadow on **empty-only** record lists: Scheduled payments/transfers, overdue obligations, reminders, Cashback lists and other empty-single-paragraph cards.
+- CSS limits selection to direct empty children or empty categories; populated cards, buttons, charts and onboarding CTAs retain their styling. Truly empty list cards render no blank capsule. No changes to financial calculations or storage.
+- Regression test: `EmptyRecordSurfaces.test.js`; full Vercel Sandbox 109 suites / 622 tests plus TypeScript check and production build passed. Rebased exact-head CI and preview validation remain the merge gates.
+
+
+## PR #225 — Consistent headers, legal spacing and Vercel-configured social profiles (2026-11-06)
+- Root and back-navigation headers use 10px upper/lower internal padding with 10px bottom separation. Home mascot/header row is more compact while retaining 45px actions and safe-area spacing.
+- Terms, Privacy and Help Center share 14px section gaps, including canonical supplemental policy sections; adjusted sticky fade and bottom scroll clearance for fixed navigation.
+- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through \`/api/social-links\`. No fake profiles or client-side embedded links.
+- Changed files, new security/API and rendering tests, translations and documentation are committed together with a dated engineering update, as required by MOVO CI. No finance/ledger or policy wording changes.
+- Sandbox tests and GitHub exact-head CI required before merging. Vercel preview can be canceled by ignored-build setting and must not be assumed verified.
+
+- Social-env deployment clarification: setting or editing MOVO social profile URLs in Vercel Project Settings requires a new deployment, because previously deployed functions retain their old environment. Links remain hidden until a valid URL is present in the running deployment. Cached public profile output may take up to five minutes to refresh.
+
+
+## PR #225 — Equal header button insets and responsive action groups (2026-11-06)
+- Home Search/Bell/Settings capsule and the shared root-screen utility capsule now use symmetric 5px interior padding, 4px inter-button gaps and 45px circles with centered 22px icons. This preserves theme-specific icon colors, notifications dots and selection backgrounds.
+- Separately grouped Plus controls stay outside their utility capsule with 8px header spacing. On screens narrower than 360px, the Home action pill moves to its own right-aligned grid row rather than clipping the greeting or shrinking 45px hit targets.
+- Additional regression coverage in src/components/HeaderButtonSpacing.test.js checks equal geometry, responsive grid and real button callbacks. No financial, legal or social-link runtime calculations change.
+- Previous Vercel env redeployment documentation correction and this change are documented in dated notes and verified against the exact PR head.
+
+
+## PR #225 — Chat status, solid More icon, and edge-to-edge Google favicons (2026-11-06)
+- Removed chat status pill and green badge background, leaving only the animated NasrinAI dot mark in adaptive accent and accessible progress text.
+- Replaced outlined More dots with three solid currentColor dots.
+- Eliminated CSS padding/percentage insets from Google S2 fetched favicons, scoped to true images and matching catalog wrapper; restored full logo area in account, transaction, subscriptions, crypto and stocks lists while leaving other images intact.
+- New ChatMoreFavicons.test.js regression coverage. Engineering update: docs/engineering/updates/2026-11-06-pr225-chat-more-favicons.md. Require full GitHub CI and sandbox build at this commit before merging.

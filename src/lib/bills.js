@@ -26,20 +26,47 @@ export function occurrenceState(o, today, soonDays = 3) {
   return days <= soonDays ? 'due_soon' : 'scheduled';
 }
 
-/** Home and Bills tab totals for the month containing `today`. */
+/**
+ * Only expose unpaid overdue occurrences plus ONE present-cycle due date per bill.
+ * A future calendar month or a second upcoming renewal in the current month is a
+ * different billing cycle; it must not appear in Bills Due or inflate totals.
+ * Do not collapse distinct overdue periods: they remain real unpaid liabilities.
+ */
+export function currentCycleBillOccurrences(occurrences = [], today) {
+  const month = String(today || '').slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) return [];
+  const seen = new Set();
+  const nextByBill = new Set();
+  return [...(occurrences || [])]
+    .filter(o => o && o.due_date && o.status !== 'cancelled' && amountRemaining(o) > 0
+      && dayKey(o.due_date).slice(0, 7) <= month)
+    .sort((a, b) => dayKey(a.due_date).localeCompare(dayKey(b.due_date)))
+    .filter(o => {
+      const dueDate = dayKey(o.due_date);
+      const bill = String(o.bill_id || o.id || '');
+      const identity = bill + ':' + dueDate;
+      if (seen.has(identity)) return false;
+      seen.add(identity);
+      if (dueDate < today) return true;
+      if (nextByBill.has(bill)) return false;
+      nextByBill.add(bill);
+      return true;
+    });
+}
+
+/** Home and Bills totals: overdue plus this cycle, never future-cycle amounts. */
 export function billsSummary(occurrences, payments, today, toBase = (v) => v) {
   const month = today.slice(0, 7);
-  const live = (occurrences || []).filter(o => o.status !== 'cancelled');
+  const upcoming = currentCycleBillOccurrences(occurrences, today);
   let due = 0; let estimated = 0; let remaining = 0; let overdue = 0; let overdueCount = 0; let paid = 0;
-  for (const o of live) {
+  for (const o of upcoming) {
     const left = cents(toBase(amountRemaining(o), o.currency));
     remaining += left;
     if (dayKey(o.due_date).slice(0, 7) === month) { due += left; if (o.is_estimate && o.actual_amount == null) estimated += left; }
-    if (left > 0 && dayKey(o.due_date) < today) { overdue += left; overdueCount += 1; }
+    if (dayKey(o.due_date) < today) { overdue += left; overdueCount += 1; }
   }
   for (const p of payments || []) if (p.status !== 'reversed' && dayKey(p.paid_at).slice(0, 7) === month) paid += cents(toBase(Number(p.amount), p.currency));
-  const upcoming = live.filter(o => amountRemaining(o) > 0).sort((a, b) => dayKey(a.due_date).localeCompare(dayKey(b.due_date)));
-  return { dueThisMonth: fromCents(due), estimatedThisMonth: fromCents(estimated), paidThisMonth: fromCents(paid), remaining: fromCents(remaining), overdue: fromCents(overdue), overdueCount, upcoming };
+  return { dueThisMonth: fromCents(due), estimatedThisMonth: fromCents(estimated), paidThisMonth: fromCents(paid), remaining: fromCents(remaining), totalDue: fromCents(remaining), overdue: fromCents(overdue), overdueCount, upcoming };
 }
 
 /** Reminder for today, if any: `before` (n days before), `today`, or `overdue`. */

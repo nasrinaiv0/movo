@@ -4,6 +4,7 @@ import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
 import { MovoMark } from '../components/MovoLogo';
 import legalSupplement from '../lib/legalSupplement.json';
+import SocialLinks from '../components/SocialLinks';
 
 const TERMS_EFFECTIVE_DATE = '2026-11-06T12:00:00Z';
 const PRIVACY_EFFECTIVE_DATE = '2026-11-06T12:00:00Z';
@@ -58,6 +59,7 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
         <h2>{tr('Questions or privacy requests?')}</h2>
         <p>{rich('Contact the MOVO service team at {link}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       </footer>
+      <SocialLinks />
     </article>
   </>;
 }
