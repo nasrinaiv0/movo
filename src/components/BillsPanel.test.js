@@ -102,3 +102,29 @@ test('upcoming and overdue use compact bill rows with aligned amounts and workin
     app.remove();
   }
 });
+
+test('split payment can be submitted without a default account and is disabled while a split is incomplete', async () => {
+  repo.listBills.mockResolvedValue([{ ...bill, account_id: '' }]);
+  repo.listOccurrences.mockResolvedValue([{ ...occ, is_estimate: false }]);
+  repo.recordBillPayment.mockResolvedValue({ id: 'split-payment' });
+  const app = document.createElement('div'); document.body.appendChild(app);
+  const root = createRoot(app);
+  const button = label => [...app.querySelectorAll('button')].find(b => b.textContent === label);
+  try {
+    await act(async () => root.render(<BillsPanel c={{ base: 'PHP', show: true }} accounts={[{ id: 'acc1', name: 'Cash', account_type: 'cash', currency: 'PHP', balance: 5000 }]} />));
+    await act(async () => button('Log payment').click());
+    await act(async () => app.querySelector('.bill-split-toggle input').click());
+    expect(button('Record payment').disabled).toBe(true);
+    await act(async () => {
+      const select = app.querySelector('.bill-split-account select');
+      select.value = 'acc1'; select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(button('Record payment').disabled).toBe(false);
+    await act(async () => button('Add another account').click());
+    expect(button('Record payment').disabled).toBe(true);
+    await act(async () => [...app.querySelectorAll('.bill-split-remove')][1].click());
+    expect(button('Record payment').disabled).toBe(false);
+    await act(async () => button('Record payment').click());
+    expect(repo.recordBillPayment).toHaveBeenLastCalledWith(expect.objectContaining({ account_id: 'acc1', amount: 2500, method: 'recorded' }));
+  } finally { act(() => root.unmount()); app.remove(); }
+});

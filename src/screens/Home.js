@@ -151,7 +151,7 @@ export default function Home({ c }) {
         </button>}
       <div className="hello home-greeting" aria-live="polite"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1><p className="home-greeting-context">{ramOn ? ramMessage : subline}</p></div>
       <div className="header-actions">
-        <div className="header-action-buttons home-utility-pill" role="group" aria-label={tr('Utilities')}>
+        <div className="header-action-buttons home-utility-pill header-utility-group" role="group" aria-label={tr('Utilities')}>
           <IconButton icon="search" label={tr('Search')} onClick={c.openSearch} size={24} className="home-header-action" />
           <IconButton icon="bell" label={tr('Notifications')} onClick={() => go('Notifications')} dot={unread} size={24} className="home-header-action" />
           <IconButton icon="gearSolid" label={tr('Settings')} onClick={() => go('Settings')} size={24} className="home-header-action" />

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './CryptoMarket.css';
 import Icon from '../components/Icon';
+import MarketUpdate from '../components/MarketUpdate';
 import { SubHeader } from '../components/ui';
 import { loadCryptoHistory, loadCryptoMarkets, sortCryptoCoins } from '../lib/crypto';
 import { evaluateCryptoAlerts } from '../lib/cryptoAlerts';
@@ -65,54 +66,56 @@ export default function CryptoMarket({ c }) {
   const [holdingFormOpen, setHoldingFormOpen] = useState(false);
   const portfolio = useMemo(() => summarizeCryptoHoldings(holdings, coins, quote), [holdings, coins, quote]);
 
-  const refresh = async (force = false) => {
-    if (force) setRefreshing(true);
+  const requestVersion = useRef(0);
+  const requestBusy = useRef(false);
+  const refresh = useCallback(async (force = false) => {
+    if (requestBusy.current) return;
+    requestBusy.current = true;
+    const version = ++requestVersion.current;
+    setRefreshing(true);
     try {
       const result = await loadCryptoMarkets(quote, { force });
+      if (version !== requestVersion.current) return;
       setCoins(result.coins);
-      setUpdatedAt(result.coins.reduce((latest, coin) => !latest || coin.updatedAt > latest ? coin.updatedAt : latest, ''));
+      // Provider timestamps only; a browser refresh is not a market update.
+      const times = result.coins.map(coin => Date.parse(coin.updatedAt)).filter(Number.isFinite);
+      setUpdatedAt(times.length ? new Date(Math.max(...times)).toISOString() : '');
       setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
     } catch (e) {
+      if (version !== requestVersion.current) return;
       setError(e.message === 'crypto_provider_not_configured'
         ? 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.'
         : e.code === 'crypto_provider_payment_required' ? e.message
           : e.message === 'crypto_provider_rate_limited' ? 'Market data is temporarily rate-limited. Try again later.'
           : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
-    } finally { setLoading(false); setRefreshing(false); }
-  };
-
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-    loadCryptoMarkets(quote, { signal: controller.signal }).then((result) => {
-      if (!active) return;
-      setCoins(result.coins);
-      setUpdatedAt(result.coins.reduce((latest, coin) => !latest || coin.updatedAt > latest ? coin.updatedAt : latest, ''));
-      setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
-    }).catch((e) => {
-      if (active) setError(e.message === 'crypto_provider_not_configured'
-        ? 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.'
-        : e.code === 'crypto_provider_payment_required' ? e.message
-          : 'Crypto market data is temporarily unavailable. Your watchlist is unchanged.');
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; controller.abort(); };
+    } finally {
+      if (version === requestVersion.current) {
+        requestBusy.current = false;
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
   }, [quote]);
 
   useEffect(() => {
-    let active = true;
+    setLoading(true);
+    setCoins([]);
+    setSelected(null);
+    setUpdatedAt('');
+    setError('');
+    refresh();
     const update = () => {
-      if (document.visibilityState === 'hidden') return;
-      loadCryptoMarkets(quote, { force: true }).then((result) => {
-        if (!active) return;
-        setCoins(result.coins);
-        setUpdatedAt(result.coins.reduce((latest, coin) => !latest || coin.updatedAt > latest ? coin.updatedAt : latest, ''));
-        setError(result.stale ? 'Showing cached market data. The provider could not be refreshed.' : '');
-      }).catch(() => { if (active) setError('Market refresh failed. Showing the last available prices.'); });
+      if (document.visibilityState !== 'hidden') refresh(true);
     };
     const timer = window.setInterval(update, 3 * 60 * 1000);
     document.addEventListener('visibilitychange', update);
-    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
-  }, [quote]);
+    return () => {
+      ++requestVersion.current;
+      requestBusy.current = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [refresh]);
 
   useEffect(() => {
     if (!selected) { setHistory([]); return undefined; }
@@ -187,7 +190,8 @@ export default function CryptoMarket({ c }) {
   const path = values.map((value, i) => `${i ? 'L' : 'M'}${(8 + i / Math.max(1, values.length - 1) * 304).toFixed(1)} ${(92 - (value - min) / span * 78).toFixed(1)}`).join(' ');
 
   return <>
-    <SubHeader title={trTitle()} onBack={() => c.go('Menu')} right={<button type="button" className="round-button" onClick={() => refresh(true)} disabled={refreshing} aria-label="Refresh crypto markets"><Icon name="refresh" size={18} /></button>} />
+    <SubHeader title={trTitle()} className="crypto-market-header" onBack={() => c.go('Menu')}
+      right={<MarketUpdate updatedAt={updatedAt} busy={loading || refreshing} stale={Boolean(error)} onRefresh={() => refresh(true)} />} />
     {selected ? <section className="crypto-detail">
       <button type="button" className="crypto-back" onClick={() => setSelected(null)}><Icon name="chevron" size={15} /> Back to market</button>
       <div className="card crypto-detail-hero">
