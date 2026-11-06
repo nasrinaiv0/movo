@@ -7,3 +7,9 @@ test('money retains cents and always displays two decimal digits, including comp
  expect(money(0.01,'PHP')).toContain('0.01');
  expect(money(120,'JPY')).toContain('120.00');
 });
+
+test('unavailable financial values never appear as zero',()=>{
+ expect(money(NaN,'PHP')).toBe('— PHP');
+ expect(money(Infinity,'USD')).toBe('— USD');
+ expect(money(0,'PHP')).toMatch(/0[.,]00/);
+});

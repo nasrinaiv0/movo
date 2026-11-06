@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { removeAllAccountQr } from './accountQrStorage';
+import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
@@ -70,14 +71,17 @@ export async function createAccount(account, userId) {
     opening_balance: Math.round(openingBalance * 100) / 100,
   }).select().single());
 }
+/** Fetch the complete owner-scoped ledger; never truncate balance inputs. */
 export async function listTransactions({ from, to, accountId } = {}) {
-  let query = requireClient().from('transactions')
-    .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,payment_reference,receipt_note,receipt_path,schedule_id')
-    .order('occurred_at', { ascending: false }).limit(1000);
-  if (from) query = query.gte('occurred_at', from);
-  if (to) query = query.lt('occurred_at', to);
-  if (accountId) query = query.eq('account_id', accountId);
-  return unwrap(await query);
+  return fetchAllRows(() => {
+    let query = requireClient().from('transactions')
+      .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,payment_reference,receipt_note,receipt_path,schedule_id')
+      .order('occurred_at', { ascending: false }).order('id', { ascending: false });
+    if (from) query = query.gte('occurred_at', from);
+    if (to) query = query.lt('occurred_at', to);
+    if (accountId) query = query.eq('account_id', accountId);
+    return query;
+  });
 }
 export async function createTransaction(transaction, userId) {
   if (!userId) throw new Error('A signed-in user is required.');

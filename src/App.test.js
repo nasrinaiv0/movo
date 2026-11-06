@@ -264,11 +264,11 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: November 3, 2026');
+    expect(container.textContent).toContain('Effective date: November 6, 2026');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: November 3, 2026');
+    expect(container.textContent).toContain('Effective date: November 6, 2026');
     expect(container.textContent).not.toContain('not yet been published');
     expect(container.textContent).toContain('Things you delete in MOVO stay in the Archive for 90 days');
     expect(container.textContent).toContain('Data Privacy Act of 2012');

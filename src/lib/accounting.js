@@ -71,16 +71,16 @@ export function goalProgress(goal, allocations = []) {
 export function financialPosition({ accounts = [], loans = [], receivables = [], goalAllocations = [], otherAssets = 0, otherLiabilities = 0 } = {}) {
   const activeAccounts = accounts.filter(a => active(a) && !a.linkedAccountId).map(a => ({ ...a, card_kind: a.card_kind || a.cardKind }));
   const assetAccounts = activeAccounts.filter(a => a.account_type !== 'card' || a.card_kind === 'debit');
-  const liquidAccounts = sumMoney(assetAccounts.map(a => Number(a.balance || 0)));
+  const liquidAccounts = sumMoney(assetAccounts.map(a => Number(a.balance ?? 0)));
   const spendableAccounts = activeAccounts.filter(a => ['bank','e_wallet','cash'].includes(a.account_type));
   const cardLiabilities = activeAccounts.filter(a => a.account_type === 'card' && a.card_kind === 'credit')
-    .reduce((sum, a) => sum + Math.max(0, Number(a.liability_balance ?? -Number(a.balance || 0))), 0);
+    .reduce((sum, a) => sum + Math.max(0, Number(a.liability_balance ?? -Number(a.balance ?? 0))), 0);
   const loanLiabilities = loans.filter(active).reduce((sum, l) => sum + amountOf(l.outstanding_balance ?? l.outstanding_principal ?? l.amount), 0);
   const receivableAssets = receivables.filter(active).reduce((sum, r) => sum + amountOf(r.outstanding_balance ?? r.outstanding_amount ?? r.opening_amount ?? r.amount), 0);
   const assets = liquidAccounts + amountOf(otherAssets) + receivableAssets;
   const liabilities = cardLiabilities + loanLiabilities + amountOf(otherLiabilities);
   const reserved = goalAllocations.filter(a => a.status !== 'released' && (!a.account_type || ['bank','e_wallet','cash'].includes(a.account_type))).reduce((sum, a) => sum + amountOf(a.amount), 0);
-  const spendable = spendableAccounts.reduce((sum, a) => sum + Number(a.balance || 0), 0);
+  const spendable = spendableAccounts.reduce((sum, a) => sum + Number(a.available_balance ?? a.balance ?? 0), 0);
   const unclassifiedCardAccounts = activeAccounts.filter(a => a.account_type === 'card' && !['credit','debit'].includes(a.card_kind)).length;
   return { liquidAccounts, receivableAssets, assets, liabilities, netWorth: assets - liabilities, reservedForGoals: reserved, availableMoney: spendable - reserved, unclassifiedCardAccounts };
 }

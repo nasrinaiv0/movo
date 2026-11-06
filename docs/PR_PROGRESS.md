@@ -290,3 +290,18 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Validation in Vercel Sandbox: actual React component fixtures with synthetic data, 36 screen/width/theme combinations (320/390/430px, light/dark, green/orange); no page/dialog overflow; header dimensions checked; screenshots reviewed. Store-table SQL privilege assertions passed in isolated PostgreSQL 18. Full production build and exact head test results are recorded in the PR.
 - Store checkout remains disabled until credentials, database migration and signed-device purchase/refund/restore tests are complete. Native store tests use mocked SDK responses; no customer payment was made. New release copy currently has English fallbacks pending native-language review.
 - PR175 was rechecked: closed without merging on 5 November; its historical audit follow-up remains documented. No other open PR was returned at publication time. No production database data was modified.
+
+
+## 2026-11-06 — Production accounting and commercial blocker remediation
+- Branch fix/release-accounting-security-20261106, base main 703f31f. Release NOT CLEARED.
+- Fixed truncated account ledger/posting/activity fetches, pending versus posted balance treatment, missing exchange-rate behavior, and non-finite currency formatting.
+- Added public Terms and Privacy standalone HTML and Vercel routes; existing account deletion page retained. Legal review required before store publication.
+- Applied additive store entitlement persistence migration to live Supabase with RLS and minimal grants; store billing remains disabled pending official test purchases and server credentials.
+- Required change documentation per code-containing commit: update this file plus docs/engineering/updates/ dated record. GitHub CI enforces this, template updated.
+- Vercel Sandbox 619/619 initial full tests, 110 suites, typecheck, build, production-only dependency audit successful; final PR head to be reverified.
+- Remaining blockers: actual Apple/Google billing sandbox verification and native signed builds, permission/tenancy security testing, snapshot-consistent finance projections, booked FX policy, legal approval.
+- Detailed evidence/rollback: docs/engineering/updates/2026-11-06-financial-commercial-remediation.md
+
+- Policy expansion: canonical English Terms/Privacy supplements shared with static pages and in-app view, November 6 effective date, sync regression tests; reviewed legal translation/operator disclosure remains a release gate.
+
+- Legal navigation regression expectation updated for November 6 policy date; tested as part of the same code/documentation commit.

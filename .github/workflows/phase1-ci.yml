@@ -19,12 +19,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies (repository does not commit a lockfile)
-        run: npm install
+      - name: Verify documentation accompanies each implementation commit
+        env:
+          MOVO_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/require-pr-documentation.cjs
+      - name: Install locked dependencies
+        run: npm ci
       - name: Audit production dependencies
         run: npm run audit:production
       - name: TypeScript typecheck
