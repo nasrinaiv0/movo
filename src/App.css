@@ -6584,3 +6584,116 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 @media (prefers-reduced-motion: reduce) {
   .movo-app .flow-card-bars .flow-plot.is-bars .flow-value-bar { animation: none; }
 }
+
+
+/* MOVO compact controls: no decorative strokes on buttons.
+   Keep borders and the hairline overlays for panels, cards and boxes.
+   Buttons inside page, sheet and home headers retain their hairline
+   treatment; this excludes the bottom navigation and filters. */
+.movo-app.movo-app.movo-app.movo-app button:not(:where(
+  header button,
+  .screen-header button,
+  .home-header button,
+  .sub-header button,
+  .transactions-header button,
+  .header-actions button,
+  .header-action-buttons button,
+  .sheet-header button,
+  .sheet-head button,
+  .sheet-top button,
+  .card,
+  .account-row,
+  .sheet-card,
+  .mini-card,
+  .menu-card,
+  .crypto-row,
+  .balance-row,
+  .profile-card,
+  .card-pile-item,
+  .scenery-tile
+)) {
+  border: 0 !important;
+}
+
+/* The old 0.25px hairline is painted by an ::after shadow.
+   Eliminate that line only for real controls; never suppress the
+   ::after of the panel or card surrounding them. */
+.movo-app.movo-app :is(
+  .chip-row button,
+  .theme-segments button,
+  .seg-control button,
+  .flow-ranges button,
+  .crypto-sort button,
+  .crypto-ranges button,
+  .crypto-view-switch button,
+  .crypto-star,
+  .crypto-watch-button,
+  .month-pill,
+  .edit-tray-list button,
+  .tool-pill,
+  .tool-seg,
+  button.wide-button,
+  button.round-button,
+  button.movo-ai-reset,
+  button.movo-ai-open-site,
+  button.movo-ai-signin,
+  button.edit-tool
+):not(:is(
+  header button, .screen-header button, .home-header button,
+  .sub-header button, .transactions-header button,
+  .header-actions button, .header-action-buttons button,
+  .sheet-header button, .sheet-head button, .sheet-top button
+))::after {
+  box-shadow: none !important;
+}
+
+/* Navigation bar is a single capsule, not five outlined cells. */
+.movo-app .bottom-nav > .nav-item {
+  border: 0 !important;
+  outline: 0;
+  box-shadow: none !important;
+  background: transparent;
+}
+.movo-app .bottom-nav > .nav-item::after {
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.movo-app .bottom-nav > .nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.movo-app .bottom-nav .nav-icon > .movo-icon {
+  width: 29px !important;
+  height: 29px !important;
+}
+.movo-app .bottom-nav .nav-center .orb > svg {
+  width: 27px;
+  height: 27px;
+}
+.movo-app .bottom-nav .nav-pill {
+  box-shadow: none !important;
+}
+.movo-app .bottom-nav > .nav-item::before {
+  box-shadow: none !important;
+}
+
+/* Action-strip entries need spacing, not dividing rules. */
+.movo-app .action-strip button,
+.movo-app .action-strip button + button {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.movo-app .action-strip button::after {
+  box-shadow: none !important;
+}
+
+/* Preserve visible keyboard focus even when decorative borders are gone. */
+.movo-app button:not(:is(
+  header button, .screen-header button, .home-header button,
+  .sub-header button, .header-actions button,
+  .header-action-buttons button, .sheet-header button,
+  .sheet-head button, .sheet-top button
+)):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
