@@ -527,3 +527,10 @@ For all four runs, the job logs show the full dependency install still reports *
 - No changes to financial calculations, user balances, tables, session data, secrets or backend authorization. Regression tests and corresponding engineering update live in this same commit.
 - Details: docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md.
 - Final Vercel Sandbox evidence: 704/704 tests (125 suites), typecheck and optimized build green, browser 40px heights across Wallet/Transactions verified in light/dark at 320, 390 and 430px. Main and production unchanged until merge.
+
+## 2026-11-07 — Adaptive contrast for five accent-filled financial summary cards
+- Branch: `fix/adaptive-summary-card-contrast-20261107` from main d31d73f.
+- All text and chart ink on Home balance, Transactions spent, Cashback, Subscription and Financial Planning summary surfaces now inherit preexisting WCAG-tested `--on-accent` (black on pale accents; white on dark accents).
+- SVG fills, billing-cycle bars, icon bubbles and summary separators follow the same foreground. Preserved geometry, financial calculations, data access, accessibility labels and behavior.
+- Regression tests and review gates: docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md. No persistent data operations or migrations.
+- Vercel Sandbox evidence: 701 tests / 124 suites passing, typecheck and optimized build passing, 28 browser-computed foreground/chart checks passing (5 fixtures × 2 accent cases). Same-commit documentation included.
