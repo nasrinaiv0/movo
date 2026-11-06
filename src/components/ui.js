@@ -40,13 +40,14 @@ export function HeaderActions({ items }) {
 }
 
 /** Large-title header used by the five root screens. */
-export function RootHeader({ title, subtitle, onSearch, onBell, onSettings, unread, hideSearch, hideBell, action, headerActions, className = '' }) {
+export function RootHeader({ title, subtitle, onBack, onSearch, onBell, onSettings, unread, hideSearch, hideBell, action, headerActions, className = '' }) {
   const items = headerActions || [
     action || (!hideSearch && { icon: 'search', label: tr('Search'), onClick: onSearch }),
     !hideBell && onBell && { icon: 'bell', label: tr('Notifications'), onClick: onBell, dot: unread },
     onSettings && { icon: 'gearSolid', label: tr('Settings'), onClick: onSettings },
   ];
-  return <header className={`screen-header root ${className}`.trim()}>
+  return <header className={`screen-header root ${onBack ? 'has-back ' : ''}${className}`.trim()}>
+    {onBack && <button type="button" className="back-button" aria-label={tr('Back')} onClick={onBack}><Icon name="back" size={22} /></button>}
     <div className="title-block"><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
     <div className="header-actions"><HeaderActions items={items} /></div>
   </header>;

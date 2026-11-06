@@ -35,3 +35,37 @@ test('page-specific wallet edit and quick action icons inherit adaptive currentC
   });
   act(() => root.unmount());
 });
+
+
+test('Cashback and Scheduled headers have a back action to their Menu parent', () => {
+  const fs = require('fs'); const path = require('path');
+  const cashback = fs.readFileSync(path.join(__dirname, '..', 'screens', 'Cashback.js'), 'utf8');
+  const scheduled = fs.readFileSync(path.join(__dirname, '..', 'screens', 'ScheduledTransactions.js'), 'utf8');
+  expect(cashback).toContain("onBack={() => c.go('Menu')}");
+  expect(scheduled).toContain("onBack={() => go('Menu')}");
+  expect(cashback).toContain('onSearch={c.openSearch}');
+  expect(scheduled).toContain("action={{icon:'plus'");
+});
+
+test('RootHeader Back retains title, utility actions and accessible callback', () => {
+  const onBack = jest.fn(), onSearch = jest.fn();
+  const target = document.createElement('div');
+  const root = createRoot(target);
+  act(() => root.render(<RootHeader title="Cashback" onBack={onBack} onSearch={onSearch} />));
+  const head = target.querySelector('header.screen-header.root.has-back');
+  expect(head.querySelector('.title-block h1').textContent).toBe('Cashback');
+  expect(head.querySelectorAll('.header-utility-group button')).toHaveLength(1);
+  const button = head.querySelector('button.back-button');
+  expect(button.getAttribute('aria-label')).toBe('Back');
+  act(() => button.click());
+  expect(onBack).toHaveBeenCalledTimes(1);
+  act(() => root.unmount());
+});
+
+test('RootHeader leaves unrelated root screens free of extra Back controls', () => {
+  const target = document.createElement('div');
+  const root = createRoot(target);
+  act(() => root.render(<RootHeader title="Home" />));
+  expect(target.querySelector('.back-button')).toBeNull();
+  act(() => root.unmount());
+});

@@ -37,6 +37,35 @@ test('all grouped utility actions have equal 45px touch targets and centered 22p
   expect(prop(icons, 'justify-self')).toBe('center');
 });
 
+test('every header control uses 0.5px padding without changing button or icon dimensions', () => {
+  const rule = rules.find(item => item.selector.includes('movo-app.movo-app.movo-app.movo-app.movo-app.movo-app') &&
+    item.selector.includes('.screen-header') && item.selector.includes('.sheet-header') &&
+    item.selector.includes('.modal-header') && item.selector.includes('input[type="reset"]') &&
+    prop(item, 'padding') === '0.5px');
+  expect(rule).toBeDefined();
+  expect(rule.nodes.find(node => node.prop === 'padding').important).toBe(true);
+  ['width', 'height', 'min-width', 'min-height', 'gap', 'font-size'].forEach(name => {
+    expect(prop(rule, name)).toBeUndefined();
+  });
+  const group = rules.find(item => item.selector.includes('.header-utility-group') &&
+    item.selector.includes('.home-utility-pill') && prop(item, 'padding') === '5px');
+  expect(group).toBeDefined();
+  const icons = rules.find(item => item.selector.includes('.header-utility-group > .round-button > :is('));
+  expect(prop(icons, 'width')).toBe('22px');
+  expect(prop(icons, 'height')).toBe('22px');
+});
+
+test('Cashback/Scheduled Back buttons wrap their utilities only below 360px', () => {
+  const rule = rules.find(item => item.parent?.type === 'atrule' &&
+    item.parent.params === '(max-width: 359px)' &&
+    item.selector === '.movo-app .screen-header.root.has-back');
+  expect(rule).toBeDefined();
+  expect(prop(rule, 'grid-template-columns')).toBe('45px minmax(0, 1fr)');
+  const button = rules.find(item => item.selector === '.movo-app .screen-header.root.has-back > .back-button');
+  expect(prop(button, 'width')).toBe('45px');
+  expect(prop(button, 'height')).toBe('45px');
+});
+
 test('narrow Home phones move only grouped utilities to a second grid row without shrinking targets', () => {
   const rule = rules.find(rule => rule.parent?.type === 'atrule' && rule.parent.params === '(max-width: 359px)' &&
     rule.selector === '.movo-app.movo-app.movo-app .screen-header.home-header');

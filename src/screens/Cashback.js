@@ -48,7 +48,7 @@ export default function Cashback({ c }) {
   const removeEntry = id => setPref('cashbackEntries', manual.filter(entry => entry.id !== id));
 
   return <>
-    <RootHeader title={tr('Cashback')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
+    <RootHeader title={tr('Cashback')} onBack={() => c.go('Menu')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
     <section className="card total-card cashback-total">
       <small>{tr('Cashback tracked')}</small>
       {formatTotals(totals).length ? formatTotals(totals).map(([currency, amount]) => <div className="balance-amount" key={currency}>{cash(amount, currency)}</div>) : <div className="balance-amount">{cash(0, c.base || 'PHP')}</div>}

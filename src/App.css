@@ -7359,7 +7359,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   a[class*="button"],
   a[class*="btn"]
 )::after {
-  border: 0 !important;
+  /* Keep borders used by CSS icons and switch indicators; suppress faux hairlines. */
   box-shadow: none !important;
 }
 
@@ -7392,4 +7392,61 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 ):focus-visible {
   outline: 2px solid var(--accent, #086b3a) !important;
   outline-offset: 2px;
+}
+
+
+/* MOVO header button interior and child navigation — 2026-11-07.
+   Exactly 0.5px of inner padding on each header action, without touching
+   the 45px touch target, 22px icons, capsule inset or inter-button gap. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  header,
+  .screen-header,
+  .sub-header,
+  .home-header,
+  .sheet-header,
+  .sheet-head,
+  .sheet-top,
+  .modal-header,
+  .modal-head,
+  .dialog-header,
+  .panel-header,
+  .header-actions,
+  .header-action-buttons
+) :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+) {
+  padding: 0.5px !important;
+}
+
+/* Cashback and Scheduled keep their root header typography and utilities.
+   Only those screens opt into an optional Back control. */
+.movo-app .screen-header.root.has-back {
+  align-items: center;
+  column-gap: 8px;
+}
+.movo-app .screen-header.root.has-back > .back-button {
+  flex: 0 0 45px;
+  width: 45px;
+  height: 45px;
+  margin: 0;
+}
+@media (max-width: 359px) {
+  .movo-app .screen-header.root.has-back {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+  .movo-app .screen-header.root.has-back > .header-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-left: 0;
+  }
 }
