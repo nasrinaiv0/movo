@@ -105,3 +105,21 @@ test('regular headers still keep creation buttons outside their utility group', 
   expect(click).toHaveBeenCalledTimes(2);
   act(() => root.unmount());
 });
+
+
+test('header back buttons never paint a background, including hover and focus states', () => {
+  const base = own('.movo-app.movo-app.movo-app .screen-header .back-button,\n.movo-app.movo-app.movo-app .screen-header .back-button:is(:hover, :active, :focus, :focus-visible)');
+  expect(base).toBeDefined();
+  expect(prop(base, 'background')).toBe('transparent');
+  expect(prop(base, 'background-image')).toBe('none');
+  expect(prop(base, 'box-shadow')).toBe('none');
+  ['background', 'background-image', 'box-shadow'].forEach(name => {
+    expect(base.nodes.find(node => node.prop === name)?.important).toBe(true);
+  });
+  const focus = own('.movo-app.movo-app.movo-app .screen-header .back-button:focus-visible');
+  expect(prop(focus, 'outline')).toContain('2px solid');
+  expect(focus.nodes.find(node => node.prop === 'outline')?.important).toBe(true);
+  const controls = rules.find(rule => rule.selector.includes('.screen-header :is(.round-button, .back-button)') &&
+    prop(rule, 'width') === '45px');
+  expect(controls).toBeDefined();
+});

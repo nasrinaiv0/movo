@@ -7620,3 +7620,27 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app .action-strip > button {
   gap: 5px;
 }
+
+
+/* Header navigation buttons: transparent at rest, hover, press, and focus.
+   RootHeader / SubHeader supply .back-button on all pages, including
+   Cashback and Scheduled. Keep 45px targets, currentColor icons and the
+   visible keyboard focus ring; do not alter other header actions. */
+.movo-app.movo-app.movo-app .screen-header .back-button,
+.movo-app.movo-app.movo-app .screen-header .back-button:is(:hover, :active, :focus, :focus-visible) {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.movo-app.movo-app.movo-app .screen-header .back-button::before,
+.movo-app.movo-app.movo-app .screen-header .back-button::after {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app .screen-header .back-button:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}

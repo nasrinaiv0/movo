@@ -15,3 +15,10 @@ Vercel Sandbox: `movo-header-group-zero-padding-20261107`, based on `main` at `d
 
 ## Release safety
 This change is CSS-only and has no intended effect on balances, transactions, authentication, privacy, RLS, or purchase validation. It does **not** constitute a security release. Security PR #227 remains a separate draft and must not be merged as part of this change.
+
+## 2026-11-07 follow-up — remove backgrounds of every header Back button
+- `src/App.css`: force transparent backgrounds on `.screen-header .back-button` in all interaction states and clear residual shadows/pseudo-element fills. Shared `RootHeader` and `SubHeader` serve root screens, sub-screens, Cashback and Scheduled.
+- No changes to button geometry, navigation handlers, icon accent color, plus actions or utility group capsules.
+- Restore a visible `:focus-visible` outline for keyboard accessibility independently from fill.
+- `src/components/HeaderButtonSpacing.test.js` checks the background-free CSS contract.
+- Changes verified in Vercel Sandbox: 13 focused tests passed, 692 tests / 123 suites passed, typecheck passed, production build compiled, and Chromium browser checks passed at 375px light, 320px dark and 1024px light. For both root and subheader Back buttons, computed background is transparent across idle/hover/focus, shadow is none, the hit target is 45x45px, and click handlers work. GitHub CI status belongs in the PR.
