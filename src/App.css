@@ -1266,7 +1266,10 @@ button.account-tile:active { transform: scale(.98); }
 .acct-toggle > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
 /* ===== Every border is a 0.25px hairline (functional rings excluded) ===== */
-*:not(.spinner):not(.scan-shutter):not(.scan-guide), *::before, *::after { border-width: var(--hair) !important; }
+/* Thin structural hairlines must never be forced onto interactive controls. */
+*:not(.spinner):not(.scan-shutter):not(.scan-guide):not(:is(button, [role="button"], [role="tab"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], a[class*="button"], a[class*="btn"])),
+*:not(:is(button, [role="button"], [role="tab"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], a[class*="button"], a[class*="btn"]))::before,
+*:not(:is(button, [role="button"], [role="tab"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], a[class*="button"], a[class*="btn"]))::after { border-width: var(--hair) !important; }
 .theme-segments button.selected, .style-tile.selected > .credit-card { box-shadow: 0 0 0 1.5px var(--accent); }
 .theme-segments button.selected { border-color: var(--accent); }
 
@@ -7304,4 +7307,89 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
    The rule is deliberately limited to wrappers containing an S2 image. */
 .movo-app.movo-app .catalog-row .sub-icon.has-logo:has(> img[src*="google.com/s2/favicons"]) {
   padding: 0 !important;
+}
+
+
+/* MOVO borderless control policy — 2026-11-07.
+   Every interactive control is borderless across themes and screens.
+   Cards, sheets, text fields, calendars, and other *containers* retain
+   their own borders. Keyboard focus remains visible (focus-visible outline).
+   This intentionally overrides legacy per-page button outlines. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  /* Shadows and resting outlines can create visual hairlines even with border: 0. */
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+/* Existing hairline rules paint a second border using ::after inset
+   shadows. Remove only control pseudo-element strokes, not the card,
+   sheet, grouped-tab container, search field, or calendar panel strokes. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+)::before,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+)::after {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* These clickable rows, chips, segmented items and navigation controls
+   have legacy inset shadows mimicking borders on the element itself.
+   Keep fill, selected states, radii, typography and outer panels intact. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  .sub-row,
+  .sub-cal-day,
+  .search-row,
+  .tx-row,
+  .nav-item,
+  .seg-control > button,
+  .theme-segments > button,
+  .chip-row > button,
+  .edit-tray-list > button
+) {
+  box-shadow: none !important;
+}
+
+/* Accessibility exception: a visible focus indicator is not a permanent
+   button border. Keep it in light/dark themes for keyboard navigation. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  a[class*="button"],
+  a[class*="btn"]
+):focus-visible {
+  outline: 2px solid var(--accent, #086b3a) !important;
+  outline-offset: 2px;
 }
