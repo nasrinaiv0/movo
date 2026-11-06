@@ -352,3 +352,11 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Replaced outlined More dots with three solid currentColor dots.
 - Eliminated CSS padding/percentage insets from Google S2 fetched favicons, scoped to true images and matching catalog wrapper; restored full logo area in account, transaction, subscriptions, crypto and stocks lists while leaving other images intact.
 - New ChatMoreFavicons.test.js regression coverage. Engineering update: docs/engineering/updates/2026-11-06-pr225-chat-more-favicons.md. Require full GitHub CI and sandbox build at this commit before merging.
+
+
+## PR #228 — Borderless controls across all MOVO screens (2026-11-07)
+- Eliminated visual borders and faux inset-shadow outlines on buttons, tabs, calendar days, clickable rows, action links, header controls and bottom navigation in light and dark appearances.
+- Corrected the global `border-width: var(--hair) !important` selector to exclude controls and their pseudo-elements. The final control policy outranks legacy high-specificity button border declarations; structural card/panel/field boundaries and keyboard focus-visible outlines are preserved.
+- Vercel Sandbox verification: 117 suites / 656 tests passing, TypeScript check and production React build successful; headless Chromium computed-style audits found zero button-border violations on Home (both themes), Wallet, Transactions, Menu, Subscriptions and its tabs, Cashback and Add form, Financial Planning, Limits and transaction search. Focus indicator remains 2px. No browser page errors on main navigation.
+- Implementation, automated regression checks, this PR progress entry, and `docs/engineering/updates/2026-11-07-borderless-controls.md` are included in the same commit to satisfy per-commit documentation gates.
+- Keep independent security PR #227 unchanged. Merge only after exact-head GitHub CI and deployment checks succeed.
