@@ -345,3 +345,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Separately grouped Plus controls stay outside their utility capsule with 8px header spacing. On screens narrower than 360px, the Home action pill moves to its own right-aligned grid row rather than clipping the greeting or shrinking 45px hit targets.
 - Additional regression coverage in src/components/HeaderButtonSpacing.test.js checks equal geometry, responsive grid and real button callbacks. No financial, legal or social-link runtime calculations change.
 - Previous Vercel env redeployment documentation correction and this change are documented in dated notes and verified against the exact PR head.
+
+
+## PR #225 — Chat status, solid More icon, and edge-to-edge Google favicons (2026-11-06)
+- Removed chat status pill and green badge background, leaving only the animated NasrinAI dot mark in adaptive accent and accessible progress text.
+- Replaced outlined More dots with three solid currentColor dots.
+- Eliminated CSS padding/percentage insets from Google S2 fetched favicons, scoped to true images and matching catalog wrapper; restored full logo area in account, transaction, subscriptions, crypto and stocks lists while leaving other images intact.
+- New ChatMoreFavicons.test.js regression coverage. Engineering update: docs/engineering/updates/2026-11-06-pr225-chat-more-favicons.md. Require full GitHub CI and sandbox build at this commit before merging.

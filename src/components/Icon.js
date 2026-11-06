@@ -37,7 +37,7 @@ const P = {
   bank: <><path d="m3.5 9.6 7.6-5.1a1.6 1.6 0 0 1 1.8 0l7.6 5.1" /><path d="M6.2 11.5v5.8M10.1 11.5v5.8M13.9 11.5v5.8M17.8 11.5v5.8M3.8 20h16.4" /></>,
   send: <path d="M20.6 3.4 3.8 9.9a.9.9 0 0 0 0 1.7l6.4 2.5 2.5 6.4a.9.9 0 0 0 1.7 0L20.9 4.5a.9.9 0 0 0-.3-1.1ZM10.2 14.1l5.6-5.6" />,
   transfer: <><path d="m16.5 4 3.5 3.5-3.5 3.5M20 7.5H8.5" /><path d="m7.5 20-3.5-3.5L7.5 13M4 16.5h11.5" /></>,
-  more: <><circle cx="5.5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18.5" cy="12" r="1.4" /></>,
+  more: <><circle cx="5" cy="12" r="2.15" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="2.15" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="2.15" fill="currentColor" stroke="none" /></>,
   spark: <path d="M12 3c.9 5.4 2.6 7.1 8 8-5.4.9-7.1 2.6-8 8-.9-5.4-2.6-7.1-8-8 5.4-.9 7.1-2.6 8-8Z" />,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2.8v2M12 19.2v2M2.8 12h2M19.2 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M5.5 18.5l1.4-1.4M17.1 6.9l1.4-1.4" /></>,
   moon: <path d="M20.2 14.4A8.4 8.4 0 0 1 9.6 3.8a8.4 8.4 0 1 0 10.6 10.6Z" />,

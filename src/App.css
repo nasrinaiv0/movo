@@ -7231,3 +7231,77 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
     margin: 0;
   }
 }
+
+
+/* PR #225 chat progress and edge-to-edge Google favicon polish.
+   The loading status is text plus NasrinAI's adaptive dot mark, not a bubble,
+   green icon disk, gradient or a clickable element. */
+.movo-app.movo-app.movo-app .movo-ai-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  min-width: 0;
+  padding: 4px 0;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--text);
+}
+.movo-app.movo-app.movo-app .movo-ai-thinking::before,
+.movo-app.movo-app.movo-app .movo-ai-thinking::after {
+  content: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app .movo-ai-thinking-orb {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-ink, var(--accent));
+}
+.movo-app.movo-app.movo-app .movo-ai-thinking-orb .nasrin-mark {
+  display: block;
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+/* Respect the entire requested 40px-style frame. Google S2 favicons are
+   square: keep the actual pixels undistorted, remove only CSS insets. This
+   deliberately does not affect MOVO fallback icons, uploaded QR codes,
+   custom sticker artwork or non-Google brand assets. */
+.movo-app.movo-app img[src*="google.com/s2/favicons"] {
+  display: block;
+  box-sizing: border-box;
+  padding: 0 !important;
+  margin: 0;
+  object-fit: contain !important;
+  max-width: 100%;
+  max-height: 100%;
+}
+/* Some page templates used percent-sized logos, even inside a full-size tile.
+   Expand only a Google fetched image to its existing parent frame. */
+.movo-app.movo-app :is(.crypto-logo, .wallet-brand-mark, .at-icon) > img[src*="google.com/s2/favicons"],
+.movo-app.movo-app .wallet-brand-mark-image[src*="google.com/s2/favicons"] {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+/* Catalog records previously added 3px of invisible inset to valid icons.
+   The rule is deliberately limited to wrappers containing an S2 image. */
+.movo-app.movo-app .catalog-row .sub-icon.has-logo:has(> img[src*="google.com/s2/favicons"]) {
+  padding: 0 !important;
+}
