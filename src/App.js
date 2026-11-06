@@ -1685,8 +1685,8 @@ function App() {
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
       {showTour && !locked && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {showPostTourDisclosure && !locked && <PostTourLegalDisclosure onReview={() => { setShowPostTourDisclosure(false); openLegal('TermsOfService'); }} onDismiss={() => setShowPostTourDisclosure(false)} />}
-      {locked && <LockScreen onUnlock={unlock} onForgot={() => {
-        // Never unlock on "forgot": the only way past the lock is erasing this device's MOVO data (and the lock).
+      {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => {
+        // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.
         if (!window.confirm(tr('Reset Movo on this device? This removes the lock and all Movo data stored here. Data saved to your account returns after you sign in.'))) return;
         const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
         wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());

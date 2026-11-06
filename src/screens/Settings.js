@@ -104,7 +104,7 @@ function LockSheet({ c, onClose }) {
     if (!validPasscode(pin)) { setError(tr('Use 4 to 6 digits.')); return; }
     if (step === 'new') { setFirst(pin); setPin(''); setStep('confirm'); return; }
     if (pin !== first) { setError(tr('The passcodes do not match.')); setPin(''); setStep('new'); return; }
-    await setPasscode(pin); c.notify(tr('App lock is on.')); onClose();
+    await setPasscode(pin, c.session?.user?.id); c.notify(tr('App lock is on.')); onClose();
   };
   if (step === 'manage') return <Sheet center title={tr('App Lock')} onClose={onClose} label={tr('App Lock')}>
     <div className="sheet-list">

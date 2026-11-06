@@ -294,6 +294,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const lastVoiceAtRef = useRef(0);
   const transcribingRef = useRef(false);
   const transcriptionQueueRef = useRef(Promise.resolve());
+  const finalSegmentRef = useRef(false);
+  const voiceMountedRef = useRef(true);
   const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_#>`|]/g, '').replace(/^\s*[-•]\s+/gm, '').replace(/\s+/g, ' ').trim();
 
   // Speech playback goes through the AudioContext that was created and resumed inside the mic tap, so iOS/Safari
@@ -380,6 +382,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   const stopVoice = () => {
+    // Keep the final clip eligible for STT even after the user taps Stop.
+    finalSegmentRef.current = recorderRef.current?.state === 'recording';
     voiceRef.current = false; setListening(false);
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
@@ -394,20 +398,22 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     spokenRef.current = '';
   };
 
-  const transcribeSegment = (blob) => {
-    if (!blob || blob.size < 120 || blob.size > 2_400_000 || !voiceRef.current) return;
+  const transcribeSegment = (blob, final = false) => {
+    if (!blob || blob.size < 120 || blob.size > 2_400_000 || (!voiceRef.current && !final)) return;
+    const accountEpoch = requestEpochRef.current;
     transcriptionQueueRef.current = transcriptionQueueRef.current
-      .then(() => transcribeSegmentNow(blob))
+      .then(() => transcribeSegmentNow(blob, final, accountEpoch))
       .catch(() => {});
   };
 
-  const transcribeSegmentNow = async (blob) => {
-    if (!voiceRef.current) return;
+  const transcribeSegmentNow = async (blob, final, accountEpoch) => {
+    if ((!voiceRef.current && !final) || !voiceMountedRef.current || accountEpoch !== requestEpochRef.current) return;
     transcribingRef.current = true;
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token || session?.access_token;
-      if (!token || !voiceRef.current) return;
+      if (!token) throw new Error('invalid_session');
+      if ((!voiceRef.current && !final) || !voiceMountedRef.current || accountEpoch !== requestEpochRef.current) return;
       const bytes = new Uint8Array(await blobBuffer(blob));
       let binary = '';
       for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
@@ -419,7 +425,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'transcription_unavailable');
       const text = String(result.text || '').trim();
-      if (text && voiceRef.current) {
+      if (text && (voiceRef.current || final) && voiceMountedRef.current && accountEpoch === requestEpochRef.current) {
         const spoken = spokenRef.current;
         const heard = text.toLowerCase().split(/\s+/).filter(Boolean);
         const echo = spoken && heard.length && heard.filter(word => spoken.includes(word)).length / heard.length >= 0.7;
@@ -433,7 +439,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         }
       }
     } catch {
-      if (voiceRef.current) setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
+      if (voiceMountedRef.current && accountEpoch === requestEpochRef.current && (voiceRef.current || final)) {
+        setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
+      }
     } finally { transcribingRef.current = false; }
   };
 
@@ -452,19 +460,28 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       let recorder = null;
       let chunks = [];
       let segmentStart = 0;
+      let peakRms = 0;
       const beginSegment = () => {
         if (!voiceRef.current || recorder?.state === 'recording') return;
         const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
         try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
         catch { recorder = new MediaRecorder(stream); }
-        chunks = []; segmentStart = Date.now();
-        recorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
-        recorder.onstop = () => {
-          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-          const hasSpeech = heardSpeechRef.current;
+        chunks = []; segmentStart = Date.now(); peakRms = 0;
+        const activeRecorder = recorder;
+        activeRecorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+        activeRecorder.onstop = () => {
+          const blob = new Blob(chunks, { type: activeRecorder.mimeType || 'audio/webm' });
+          const final = finalSegmentRef.current && !voiceRef.current;
+          finalSegmentRef.current = false;
+          const hasSpeech = heardSpeechRef.current || (final && Date.now() - segmentStart >= 600 && peakRms >= 0.006);
           heardSpeechRef.current = false;
-          if (hasSpeech) transcribeSegment(blob);
+          // When stopped manually, always check a sufficiently long final clip: quiet
+          // speech on iOS may fall below the visual voice-activity threshold.
+          if (hasSpeech || (final && Date.now() - segmentStart >= 600)) transcribeSegment(blob, final);
           if (voiceRef.current) setTimeout(beginSegment, 100);
+        };
+        activeRecorder.onerror = () => {
+          if (voiceRef.current && voiceMountedRef.current) setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
         };
         recorder.start();
         recorderRef.current = recorder;
@@ -476,6 +493,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         let sum = 0;
         for (let i = 0; i < samples.length; i += 1) { const v = (samples[i] - 128) / 128; sum += v * v; }
         const rms = Math.sqrt(sum / samples.length);
+        peakRms = Math.max(peakRms, rms);
         const now = Date.now();
         // A short burst during TTS may be speaker echo. Require sustained, louder
         // input before treating it as barge-in; then stop playback immediately.
@@ -487,7 +505,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
             heardSpeechRef.current = true;
             lastVoiceAtRef.current = now;
           }
-        } else if (rms > 0.025) {
+        } else if (rms > 0.01) {
           if (!heardSpeechRef.current) speechStartRef.current = now;
           heardSpeechRef.current = true; lastVoiceAtRef.current = now;
         }
@@ -528,10 +546,13 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       audioContextRef.current = context;
     } catch { setError(tr('Model-backed voice input is not supported in this browser.')); return; }
     try { const synth = window.speechSynthesis; if (synth && typeof SpeechSynthesisUtterance !== 'undefined') { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; synth.speak(u); } } catch { /* optional */ }
+    finalSegmentRef.current = false;
     setError(''); voiceRef.current = true; setListening(true);
     startVoice();
   };
   useEffect(() => () => {
+    voiceMountedRef.current = false;
+    finalSegmentRef.current = false;
     voiceRef.current = false;
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     try { recorderRef.current?.stop?.(); } catch { /* cleanup */ }

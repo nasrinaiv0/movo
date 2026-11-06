@@ -72,3 +72,33 @@ test('subscription renewals appear in Bills Due and route payment logging throug
 });
 
 
+
+test('upcoming and overdue use compact bill rows with aligned amounts and working payment/skip actions', async () => {
+  const app = document.createElement('div');
+  document.body.appendChild(app);
+  const root = createRoot(app);
+  try {
+    await act(async () => root.render(
+      <BillsPanel
+        c={{ base:'PHP', session:{user:{id:'u'}} }}
+        accounts={[{id:'acc1',name:'BPI',currency:'PHP'}]}
+      />
+    ));
+    const section=app.querySelector('section[aria-label="Upcoming and overdue bills"]');
+    expect(section).not.toBeNull();
+    const row=section.querySelector('.bill-row-compact');
+    expect(row).not.toBeNull();
+    expect(row.querySelector('.bill-row-copy strong').textContent).toBe('Electricity');
+    expect(row.querySelector('.bill-row-amount')).not.toBeNull();
+    expect(row.querySelector('.bill-row-meta').textContent).toContain('Due');
+    expect(row.querySelector('.bill-state')).not.toBeNull();
+    expect(row.querySelectorAll('.bill-actions button')).toHaveLength(2);
+    expect(row.querySelector('.bill-log-action').textContent).toBe('Log payment');
+    expect(row.querySelector('.bill-skip-action').textContent).toBe('Skip this one');
+    await act(async () => row.querySelector('.bill-log-action').click());
+    expect(app.querySelector('.bill-pay')).not.toBeNull();
+  } finally {
+    act(() => root.unmount());
+    app.remove();
+  }
+});

@@ -15,7 +15,7 @@ const unb64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch { return null; } };
 const write = (v) => { try { if (v) localStorage.setItem(KEY, JSON.stringify(v)); else localStorage.removeItem(KEY); return true; } catch { return false; } };
 
-export const lockState = () => { const s = read(); return { enabled: !!s?.hash, biometric: !!s?.bioId, length: s?.len || 6 }; };
+export const lockState = () => { const s = read(); return { enabled: !!s?.hash, biometric: !!s?.bioId, length: s?.len || 6, ownerId: s?.ownerId || null }; };
 export const validPasscode = (pin) => /^\d{4,6}$/.test(String(pin || ''));
 
 async function derive(pin, salt) {
@@ -23,11 +23,11 @@ async function derive(pin, salt) {
   return b64(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: ITERATIONS }, key, 256));
 }
 
-export async function setPasscode(pin) {
+export async function setPasscode(pin, ownerId) {
   if (!validPasscode(pin)) throw new Error('Use 4 to 6 digits.');
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const prev = read();
-  return write({ salt: b64(salt), hash: await derive(pin, salt), len: String(pin).length, bioId: prev?.bioId || '' });
+  return write({ salt: b64(salt), hash: await derive(pin, salt), len: String(pin).length, bioId: prev?.bioId || '', ownerId: typeof ownerId === 'string' && ownerId ? ownerId : prev?.ownerId || '' });
 }
 
 export async function verifyPasscode(pin) {

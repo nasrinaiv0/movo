@@ -93,10 +93,22 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
     <section className="card pad bills-list" aria-label={tr('Upcoming and overdue bills')}>
       
       {!shown.length && <p className="empty">{tr('Nothing due in the next 45 days.')}</p>}
-      {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); const subscription = o.source === 'subscription' ? subscriptions.find(item => item.id === o.subscription_id) : null; return <article className={`bill-row is-${state}`} key={o.id}>
-        <div className="detail-row"><span><strong>{bill?.name || tr('Bill')}</strong><small>{tr('Due {date}', { date: formatDate(o.due_date) })} · {o.source === 'subscription' ? tr('Subscription') : tr(bill?.category || 'Bill')} · <em className={`bill-state is-${state}`}>{tr(STATE_LABEL[state])}</em>{o.is_estimate && o.actual_amount == null ? ` · ${tr('Estimate')}` : ''}</small></span><b>{money(amountRemaining(o), o.currency)}</b></div>
+      {shown.map(o => { const state = occurrenceState(o, today); const bill = billOf(o); const subscription = o.source === 'subscription' ? subscriptions.find(item => item.id === o.subscription_id) : null; return <article className={`bill-row bill-row-compact is-${state}`} key={o.id}>
+        <div className="bill-row-main">
+          <span className="bill-row-copy">
+            <strong>{bill?.name || tr('Bill')}</strong>
+            <small className="bill-row-meta">
+              {tr('Due {date}', { date: formatDate(o.due_date) })} · {o.source === 'subscription' ? tr('Subscription') : tr(bill?.category || 'Bill')}
+              {o.is_estimate && o.actual_amount == null ? ' · ' + tr('Estimate') : ''}
+            </small>
+          </span>
+          <span className="bill-row-side">
+            <b className="bill-row-amount">{money(amountRemaining(o), o.currency)}</b>
+            <em className={'bill-state is-' + state}>{tr(STATE_LABEL[state])}</em>
+          </span>
+        </div>
         {Number(o.paid_amount) > 0 && <div className="progress-track" aria-label={tr('{paid} of {due} paid', { paid: money(Number(o.paid_amount), o.currency), due: money(amountDue(o), o.currency) })}><span style={{ width: `${Math.min(100, (Number(o.paid_amount) / amountDue(o)) * 100)}%` }} /></div>}
-        <div className="bill-actions"><button type="button" className="primary-button" disabled={o.source === 'subscription' && !subscription} onClick={() => subscription ? onLogSubscription?.(subscription) : openPay(o)}>{tr('Log payment')}</button>{o.source !== 'subscription' && !(Number(o.paid_amount) > 0) && <button type="button" className="link-button" disabled={busy} onClick={() => run(() => updateOccurrence(o.id, { cancel: true }), tr('This due date was skipped.'))}>{tr('Skip this one')}</button>}</div>
+        <div className="bill-actions"><button type="button" className="primary-button bill-log-action" disabled={o.source === 'subscription' && !subscription} onClick={() => subscription ? onLogSubscription?.(subscription) : openPay(o)}>{tr('Log payment')}</button>{o.source !== 'subscription' && !(Number(o.paid_amount) > 0) && <button type="button" className="link-button bill-skip-action" disabled={busy} onClick={() => run(() => updateOccurrence(o.id, { cancel: true }), tr('This due date was skipped.'))}>{tr('Skip this one')}</button>}</div>
       </article>; })}
     </section>
 
