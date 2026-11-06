@@ -513,3 +513,11 @@ For all four runs, the job logs show the full dependency install still reports *
 - Full evidence, risks, and rollback: docs/engineering/updates/2026-11-06-financial-commercial-remediation.md. Release remains blocked.
 
 - Terms and Privacy expanded for commercial release; canonical shared supplement and synchronization regression tests. See dated financial-commercial remediation update.
+
+## 2026-11-07 — Remove Transactions sort-filter edge shading
+- Scope: `src/App.css`, `src/screens/TransactionSortEdgeShadow.test.js` and same-commit engineering documentation.
+- Root cause: horizontal scrolling fade applied to the Transactions non-scrolling sort grid, producing grey shadows on either end of the selected Date/Amount/Account chip.
+- Fix: locally disable mask-image and -webkit-mask-image and selected-indicator box-shadow; preserve global scroller fades and all other UI states.
+- Security/accounting: no finance data, network, auth, persistence or backend modifications.
+- Evidence and rollback: `docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md`.
+- Vercel Sandbox completed: 694/694 tests (124 suites), typecheck/build green, browser computed CSS verified for selected sort pill in both appearances at 390px; GitHub CI remains an independent gate.

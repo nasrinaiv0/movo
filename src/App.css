@@ -7577,6 +7577,13 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   margin: 0;
   padding: 0;
   overflow: visible;
+  /* This grid does not scroll. The shared chip-row edge mask faded both
+     sides of the selected pill, giving it an unwanted grey "shadow". */
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row > .chip-ind {
+  box-shadow: none;
 }
 .movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
   width: 100%;

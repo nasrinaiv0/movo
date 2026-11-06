@@ -406,3 +406,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Owner-scoping, date validation, archive filtering and real UI callbacks have targeted regression tests. Internationalized UI copy is available in all 11 languages.
 - Detailed same-commit documentation: docs/engineering/updates/2026-11-07-pr229-receivable-actions.md. Existing Wallet four-action compact strip was committed already in a4a7a3e and is preserved here.
 - Require full Vercel Sandbox tests/build, GitHub exact-head CI and live mobile visual review before merge.
+
+## Transactions sort filter side-fade correction (2026-11-07)
+- Screenshot defect: the Date/Amount/Account sort buttons fade at the left and right edges due to the global `.chip-row` scroller mask.
+- Transactions sorting uses a fixed non-scrollable grid, so override only its mask to `none` (including WebKit); remove only the sort indicator's box shadow.
+- Preserve active pill appearance, gaps, 44px targets, arrow-free labels, sorting callbacks and the horizontal fades of genuinely scrolling rows. No change to financial records, auth or calculations.
+- Includes a focused regression test and the engineering record `docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md`. Require Vercel Sandbox checks and exact-head GitHub CI before merging.
+- Verification: focused Sandbox tests 18/18, full test suites 124/124 and 694/694 tests, TypeScript and optimized build passing. Chromium mobile-width computed-style checks confirmed both masks and indicator shadow are `none` in light and dark appearance; three options and 44px target intact.
