@@ -210,16 +210,27 @@ export function Legend({ data }) {
   return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{tr(d.key)}</span><b>{d.percent}%</b></li>)}</ul>;
 }
 
-export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly }) {
+export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly, afterBalances }) {
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
-  return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} onClick={() => onOpen?.(t)}>
+  const afterAccessible = show && Array.isArray(afterBalances) ? afterBalances.map(entry =>
+    tr(entry.label) + ' ' + entry.accountName + ': ' + money(entry.value, entry.currency)).join('; ') : '';
+  return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} aria-description={afterAccessible || undefined} onClick={() => onOpen?.(t)}>
     <span className="tx-logo">
       <BrandLogo src={t.type === 'transfer' ? null : merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />
       {(() => { const c = categoryOf(t.type === 'income' || t.type === 'transfer' ? t.type : t.categoryId || t.category); return <span className={`tx-cat-badge tone-${c.tone}`} title={tr(c.label)} aria-hidden="true"><Icon name={c.icon} size={11} strokeWidth={2.4} /></span>; })()}
     </span>
     <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
-    <span className="tx-side"><b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>{chip && <em className={`pill tone-${chipTone(t)}`}>{tr(chipLabel(t))}</em>}</span>
+    <span className="tx-side">
+      <b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>
+      {Array.isArray(afterBalances) && afterBalances.length > 0 && <span className="tx-after-balances">
+        {afterBalances.map((entry, i) => <span key={i} className="tx-after-balance" title={tr(entry.label) + ' · ' + entry.accountName}>
+          <span>{afterBalances.length > 1 ? entry.accountName : tr(entry.label)}:</span>
+          <span className="tx-after-amount">{shown(show, money(entry.value, entry.currency))}</span>
+        </span>)}
+      </span>}
+      {chip && <em className={'pill tone-' + chipTone(t)}>{tr(chipLabel(t))}</em>}
+    </span>
   </button>;
 }
 

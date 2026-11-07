@@ -172,7 +172,7 @@ export default function Wallet({ c }) {
     </section> },
     { id: 'recent', label: tr('Recent activity'), node: ({ size }) => <section aria-label={tr('Recent activity')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Activity')}</SectionTitle>
-      <div className="card list-card">{(size === 'M' ? recent : txs.slice(0, size === 'S' ? 2 : 8)).map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}</div>
+      <div className="card list-card">{(size === 'M' ? recent : txs.slice(0, size === 'S' ? 2 : 8)).map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={c.openTx} />)}</div>
     </section> },
   ];
 
@@ -219,7 +219,7 @@ export default function Wallet({ c }) {
         </button>;
       })()}
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
-      <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
+      <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
     </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p></div>)}
 
     {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets' || walletFilter === 'Others' || walletFilter === 'Cash & Other') && <>

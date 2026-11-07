@@ -69,6 +69,7 @@ import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { spendingLimitProgress } from './lib/spendingLimits';
 import { accountBalance, accountAvailableBalance, savingsBalance } from './lib/financeCalculations';
+import { buildTransactionRunningBalances } from './lib/transactionRunningBalances';
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
@@ -129,7 +130,7 @@ export function contrastTextForAccent(hex) {
 const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || '') || 0;
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
@@ -484,6 +485,13 @@ function App() {
       return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, cardNetwork: st.cardNetwork || a.cardNetwork || '', creditLimit: Number(st.creditLimit) || 0, issuerBankId: st.issuerBankId || '', mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, available_balance: ledgerBalances.available, recordedPaymentsApplied: adjusted.recordedPaymentsApplied, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
     });
   }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, prefs.creditCardPayments, rates]);
+  // Pure derived ledger display: does not write or modify any transaction rows.
+  const transactionBalances = useMemo(() => buildTransactionRunningBalances({
+    transactions: txs, postings: cloudMode ? cloudPostings : [], accounts: baseAccounts,
+    cardBankLinks: prefs.cardBankLinks || {}, accountStyles: prefs.accountStyles || {},
+    creditCardPayments: prefs.creditCardPayments || {},
+    convertAmount: (amount, from, to) => convert(amount, from, to, rates),
+  }), [txs, cloudMode, cloudPostings, baseAccounts, prefs.cardBankLinks, prefs.accountStyles, prefs.creditCardPayments, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -1564,7 +1572,7 @@ function App() {
     accountQrDisplay,
     fx,
     refreshFx,
-    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs, transactionBalances, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
@@ -1781,6 +1789,8 @@ function App() {
         account={accountChoice}
         accounts={accountsView}
         transactions={txs}
+        transactionBalances={transactionBalances}
+        showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false}
         prefs={prefs}
         subscriptions={subscriptions}
         plans={plans}
@@ -1814,7 +1824,7 @@ function App() {
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
       {sheet?.name === 'autolog' && can('automation') && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => { const oldKey = prefs.autoLogKey; if (oldKey) { try { const response = await fetch(apiUrl('/api/log'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${oldKey}` }, body: JSON.stringify({ action: 'revoke' }) }); if (!response.ok) throw new Error('revoke_failed'); } catch { notify(tr('Could not revoke the old key. No key was changed; try again.')); return; } } setPref('autoLogKey', newKey()); setAutomationStatus('registering'); notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.')); }} />}
-      {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
+      {sheet?.name === 'recentLogs' && <RecentLogsSheet transactionBalances={transactionBalances} showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false} logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
