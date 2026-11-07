@@ -26,3 +26,88 @@
 .wallet-loyalty-value small { display:block; font-size:11px; color:var(--muted,var(--text)); }
 .wallet-loyalty-empty { margin:8px 0 14px; font-size:13px; color:var(--muted,var(--text)); }
 .wallet-loyalty-add { border:0; background:transparent; font:inherit; color:var(--accent,#087646); font-weight:600; padding:8px 0; }
+
+/* Loyalty, membership, rewards, tokens and custom cards share the exact 856:540
+   viewport and Wallet grid sizing of the existing Cash/account CardArt. No gradients. */
+.movo-app .wallet-card-item > .loyalty-card-face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 856 / 540;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(11px, 4.6cqw, 19px);
+  border: 0;
+  border-radius: clamp(15px, 1.6vw, 22px);
+  background: var(--lc-bg, #105f47);
+  color: var(--lc-ink, #fff);
+  text-align: left;
+  box-shadow: 0 2px 5px rgba(16,24,40,.10), 0 8px 18px rgba(16,24,40,.14), 0 18px 30px rgba(16,24,40,.10);
+  container-type: inline-size;
+  isolation: isolate;
+}
+.movo-app .loyalty-card-face::before {
+  content: '';
+  position: absolute;
+  inset: auto -15% -58% auto;
+  width: 78%;
+  aspect-ratio: 1;
+  border: 1.5px solid var(--lc-trim, #bfa56c);
+  border-radius: 50%;
+  opacity: .48;
+  pointer-events: none;
+  z-index: -1;
+}
+.movo-app .loyalty-card-face::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--lc-trim, #bfa56c);
+  opacity: .9;
+  pointer-events: none;
+}
+.movo-app .loyalty-card-header,
+.movo-app .loyalty-card-identity,
+.movo-app .loyalty-card-footer,
+.movo-app .loyalty-card-points {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+.movo-app .loyalty-card-header { justify-content: space-between; align-items: flex-start; gap: 6px; }
+.movo-app .loyalty-card-identity { gap: 7px; flex: 1; }
+.movo-app .loyalty-card-logo {
+  display: grid;
+  place-items: center;
+  flex: 0 0 clamp(27px, 19cqw, 36px);
+  width: clamp(27px, 19cqw, 36px);
+  aspect-ratio: 1;
+  background: rgba(255,255,255,.96);
+  color: #17513d;
+  border-radius: 9px;
+  overflow: hidden;
+}
+.movo-app .loyalty-card-logo img { display: block; width: 84%; height: 84%; object-fit: contain; }
+.movo-app .loyalty-card-merchant { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(11px, 6.3cqw, 16px); line-height: 1.12; letter-spacing: -.025em; }
+.movo-app .loyalty-card-category { flex: 0 0 auto; max-width: 35%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(8px, 4cqw, 10px); font-weight: 600; line-height: 1.4; opacity: .91; }
+.movo-app .loyalty-card-details { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: auto; min-width: 0; }
+.movo-app .loyalty-card-program { max-width: 94%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(10px, 5.4cqw, 13px); font-weight: 600; }
+.movo-app .loyalty-card-mask { font-size: clamp(9px, 4.5cqw, 11px); letter-spacing: .09em; opacity: .82; }
+.movo-app .loyalty-card-footer { justify-content: space-between; align-items: flex-end; gap: 5px; margin-top: auto; }
+.movo-app .loyalty-card-points { align-items: baseline; gap: 4px; }
+.movo-app .loyalty-card-points strong { font-size: clamp(16px, 9cqw, 24px); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.movo-app .loyalty-card-points small, .movo-app .loyalty-card-estimate { font-size: clamp(8px, 4.5cqw, 11px); }
+.movo-app .loyalty-card-estimate { white-space: nowrap; opacity: .8; }
+@media (max-width: 390px) {
+  .movo-app .wallet-card-item > .loyalty-card-face { padding: 9px; }
+  .movo-app .loyalty-card-identity { gap: 5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .wallet-card-item > .loyalty-card-face { transition: none; }
+}

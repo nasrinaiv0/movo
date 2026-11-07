@@ -50,3 +50,14 @@ test('other merchant option reveals editable custom provider name', async () => 
   expect(ui.node.querySelector('select[aria-label="Brand / provider"]').value).toBe('Other');
   await ui.cleanup();
 });
+
+test('Other card type exposes required editable type and provider', async () => {
+  const ui = await setup('other');
+  const type = ui.node.querySelector('input[aria-label="Custom card type"]');
+  expect(type.required).toBe(true);
+  expect(type.placeholder).toContain('Enter card type if not listed');
+  expect(ui.node.querySelector('option[value="rewards"]')).not.toBeNull();
+  expect(ui.node.querySelector('option[value="loyalty"]')).not.toBeNull();
+  await act(async () => { type.value = 'Employee benefits'; type.dispatchEvent(new Event('input', { bubbles: true })); });
+  await ui.cleanup();
+});

@@ -2,7 +2,7 @@
  * Memberships and non-cash reward tokens are not financial accounts.
  * Keep them isolated from account balances, spendable funds and transaction/payment sources.
  */
-export const LOYALTY_TYPES = ['membership', 'tokens'];
+export const LOYALTY_TYPES = ['loyalty', 'membership', 'rewards', 'tokens', 'other'];
 export const isLoyaltyType = (type) => LOYALTY_TYPES.includes(type);
 
 export const LOYALTY_PROVIDERS = [
@@ -24,6 +24,8 @@ const validDate = (value) => {
 export function normalizeLoyaltyCard(input) {
   if (!isLoyaltyType(input?.type)) throw new Error('invalid_loyalty_type');
   const name = trimmed(input.name, 100);
+  const cardType = input.type === 'other' ? trimmed(input.cardType, 60) : '';
+  if (input.type === 'other' && !cardType) throw new Error('custom_card_type_required');
   if (!name) throw new Error('loyalty_provider_required');
   const pointsText = trimmed(input.points, 26);
   if (pointsText && (!/^\d{1,12}(?:\.\d{1,2})?$/.test(pointsText) || !Number.isFinite(Number(pointsText)))) {
@@ -33,6 +35,7 @@ export function normalizeLoyaltyCard(input) {
     id: trimmed(input.id, 100),
     type: input.type,
     name,
+    cardType,
     program: trimmed(input.program || name, 100),
     memberNumber: trimmed(input.memberNumber, 100),
     barcode: trimmed(input.barcode, 160),
