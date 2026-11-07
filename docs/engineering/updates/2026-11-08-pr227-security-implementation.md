@@ -31,3 +31,10 @@
 
 ## Rollback
 A rollback to older native versions may restore insecure plaintext token persistence. Prefer signed-out migration, device-key rotation and controlled rollout. Do not roll back to a vulnerable storage adapter without incident review. Live production auth, database data, RLS and billing entitlements were not changed.
+
+## Follow-up — account session self-service revocation
+
+- Added `revokeOtherSessions` repository method using the documented Supabase `auth.signOut({ scope: 'others' })` API. The Profile menu now offers a separately confirmed **Sign out of other devices** action and reports provider failure rather than claiming success. The active device stays signed in.
+- Existing `signOut()` behavior is Supabase **global** by default. Both scopes revoke refresh tokens, but already-issued JWT access tokens remain usable until their expiry; this is **not** instant revocation or a session-inventory dashboard.
+- Regression tests `src/lib/sessionRevocation.test.js` check the exact scope and provider error propagation. Existing authentication and financial APIs are unchanged.
+- No personal session data is exposed, stored or logged by this action. Requesting device names, IPs, and individual session revocation would need a separately reviewed server-side endpoint and user-visible consent.

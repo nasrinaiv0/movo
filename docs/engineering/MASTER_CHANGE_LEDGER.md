@@ -1,5 +1,12 @@
 # MOVO Master Change Ledger
 
+## 2026-11-08 — PR #227 user-triggered session safety
+
+- Added Profile action to sign out other devices using Supabase `scope: 'others'`, with confirmation and explicit failure handling. Active device remains signed in. Focused unit tests cover correct scope and provider errors.
+- This revokes refresh tokens, not currently issued JWT access tokens. Remote session dashboard, MFA and immediate revoke remain separate release gates.
+- Same-commit details: docs/engineering/updates/2026-11-08-pr227-security-implementation.md
+
+
 ## 2026-11-08 — PR #227 integrated native session hardening (code + tests)
 
 - Reconciled current main be7c3d9c with security PR: preserving newer MOVO UI/accounting. 143 suites / 814 tests and production CRA build passed in isolated Vercel Sandbox.

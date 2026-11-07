@@ -5,6 +5,8 @@
 
 ## Open pull requests
 
+**2026-11-08 — PR #227 session controls:** Added user-confirmed sign-out of other sessions via Supabase `scope: 'others'` while preserving the current session. Verified with focused tests; current access JWTs remain valid until expiry. See `docs/engineering/updates/2026-11-08-pr227-security-implementation.md`.
+
 **2026-11-08 — PR #227 native security remediation:** Secure legacy token deletion and logout tombstones are implemented; combined main/security Sandbox 814 tests passed. Preserve DRAFT until iOS/Android signed-device tests, 12 privileged RPC cross-user checks, and branch protection. See `docs/engineering/updates/2026-11-08-pr227-security-implementation.md`.
 
 **2026-11-08 — Transaction running balances (review, accessibility regression correction):** Add optional after-transaction balance/remaining credit history with paired transfer balances, cents accuracy, privacy masking and dedicated Settings toggle. Prepared in isolated Vercel Sandbox; verify exact-head CI and preview UI before merge. Details: docs/engineering/updates/2026-11-08-transaction-running-balances.md.
