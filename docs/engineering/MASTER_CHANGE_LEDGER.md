@@ -590,3 +590,6 @@ Import preview adds confirmable Discard records / Save records actions, local-on
 
 ### 2026-11-08 — Draft owner-scoped offline/online reconciliation
 Added owner-scoped device journal, pure 23-domain reconciliation inventory, safe two-domain account+transaction transport with verified write protections, complete account paging, stop-on-conflict semantics and visible sync status. First-run import now previews and confirms before local-only commit. No destructive LWW or production writes; remaining financial, device encryption and native release gates are documented at docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md.
+
+### 2026-11-08 — Offline retry financial-field equivalence
+Three-way reconciliation now safely handles a server-accepted local create whose success response is lost. Both the planner and mutation-confirmation layer compare the same exact-cents, owner-scoped financial fields while ignoring only known server-generated defaults and timestamps. Divergent amounts and accounts still conflict. Targeted Sandbox regression 55/55. Full production release remains blocked.

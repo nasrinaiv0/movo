@@ -477,3 +477,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - JSON/CSV and onboarding uploads require Save/Discard confirmation and local-only import; unsupported backed-up groups remain preview-only.
 - Not complete: linked transaction revisions/reversals, loans, obligations, allocations, schedules, attachments, owner-pref isolation, encrypted device storage, multi-device concurrency and real signed-device QA. Do not merge as full offline support.
 - Engineering evidence: docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md; GitHub exact-head CI and Vercel Sandbox QA required.
+
+### 2026-11-08 — Interrupted-upload reconciliation idempotency
+- Hardened three-way sync to recognize an already committed offline row after the network response was lost, comparing stable financial fields rather than remote-created timestamps/default values.
+- Same-ID rows with different amount, account, transfer, merchant or meaningful transaction data remain unresolved conflicts. No duplicate second upload and no silent last-write-wins.
+- Updated transport verification to use the same audited financial-field comparison as the pure planner; CI regression adds 3 retry/corruption cases.
+- Exact candidate Vercel Sandbox tree tests: 55/55 in 8 suites plus TypeScript passed; production merge remains blocked by broader accounting/multi-device/signed-device privacy requirements.
+- Engineering evidence: docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md.

@@ -1,4 +1,4 @@
-import { planOfflineReconciliation, sameFinanceRecord } from './offlineReconciliation';
+import { planOfflineReconciliation, sameFinanceRecord, sameSyncedFinanceFields } from './offlineReconciliation';
 
 /**
  * Apply additive/account-field changes after three-way comparison with the
@@ -33,22 +33,10 @@ function supportedAction(action){
    if(!updatedAccountFieldsChanged(action.expected,action.record))return;
  }
 }
-// Confirm relevant stable fields, not provider-populated timestamps.
-const ACCOUNT_FIELDS=['id','name','account_type','institution_name','currency','opening_balance','is_archived'];
-const TRANSACTION_FIELDS=['id','account_id','transfer_to_account_id','transaction_type','amount','currency','merchant','category','note','occurred_at'];
-function matchesSaved(local,remote,group){
- const fields=group==='financial_accounts'?ACCOUNT_FIELDS:TRANSACTION_FIELDS;
- const safe=(row)=>Object.fromEntries(fields.map(k=>{
-   let value=row?.[k];
-   if(k==='is_archived')value=value===true;
-   if(k==='institution_name'||k==='note'||k==='transfer_to_account_id')value=value||null;
-   if(k==='currency')value=value||'PHP';
-   if(k==='category')value=value||'Other';
-   if(k==='opening_balance')value=value??row?.balance??0;
-   return [k,value??null];
- }));
- return !!remote && sameFinanceRecord(safe(local),safe(remote));
-}
+// Verify the exact financial meaning after a remote mutation. This same
+// comparator is used to recognize a previously committed retry with a lost
+// acknowledgment (without using a clock or accepting changed money values).
+const matchesSaved = (local, remote, group) => sameSyncedFinanceFields(local, remote, group);
 function fromRemoteAfter(remote){
  return {financial_accounts:plain(remote.financial_accounts),transactions:plain(remote.transactions)};
 }

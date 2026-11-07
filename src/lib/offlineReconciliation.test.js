@@ -1,4 +1,4 @@
-import { planOfflineReconciliation, sameFinanceRecord, SYNC_GROUPS } from './offlineReconciliation';
+import { planOfflineReconciliation, sameFinanceRecord, sameSyncedFinanceFields, SYNC_GROUPS } from './offlineReconciliation';
 const OWNER='123e4567-e89b-42d3-a456-426614174000';
 const a={id:'a', user_id:OWNER, name:'Main', opening_balance:'125.00', currency:'PHP'};
 const t={id:'t', user_id:OWNER, account_id:'a', amount:20, merchant:'Food', transaction_type:'expense'};
@@ -75,4 +75,24 @@ test('planning never modifies financial snapshots',()=>{
   expect(b).toEqual(scope([a],[t]));
   expect(l).toEqual(scope([a],[t]));
   expect(c).toEqual(scope([a],[t]));
+});
+
+test('previously committed offline create is recognized on retry after lost network acknowledgment',()=>{
+ const device={...t,id:'retry',source:'Manual',amount:'12.34'};
+ const cloud={...device,source:'manual',amount:12.34,
+   transfer_to_account_id:null,is_pending:false,receipt_note:null,
+   receipt_path:null,payment_reference:null,external_reference:null,
+   schedule_id:null,updated_at:'2026-11-08T06:45:00Z'};
+ const result=plan(scope([a],[t]),scope([a],[t,device]),scope([a],[t,cloud]));
+ expect(result.ok).toBe(true);
+ expect(result.upload).toHaveLength(0);
+ expect(result.unchanged).toContainEqual({group:'transactions',id:'retry'});
+});
+test('a retry never mistakes conflicting money for successful synchronization',()=>{
+ const device={...t,id:'retry',amount:'12.34'};
+ const cloud={...device,amount:12.35};
+ expect(sameSyncedFinanceFields(device,cloud,'transactions')).toBe(false);
+ const result=plan(scope([a],[t]),scope([a],[t,device]),scope([a],[t,cloud]));
+ expect(result.ok).toBe(false);
+ expect(result.conflicts[0].reason).toBe('same_new_id_diverged');
 });

@@ -84,3 +84,17 @@ test('cloud switch-off during reconciliation stops remaining server writes',asyn
  expect(env.insertTransaction).toHaveBeenCalledTimes(1);
  expect(workspace.dirty).toBe(true);
 });
+
+test('lost response after server commit retries by matching stable fields without a second write',async()=>{
+ const pending={...tx,id:N,source:'Manual',amount:'12.34'};
+ const cloudAccepted={...pending,source:'manual',amount:12.34,
+   transfer_to_account_id:null,created_at:'2026-11-08T00:00:00Z'};
+ const env=deps(rows([account],[tx,cloudAccepted]));
+ const result=await reconcileAndCommitOfflineWorkspace({
+   ownerId:OWNER,workspace:ws(rows([account],[tx]),rows([account],[tx,pending])),...env,
+ });
+ expect(result.ok).toBe(true);
+ expect(result.uploaded).toBe(0);
+ expect(env.getCalls().created).not.toHaveBeenCalled();
+ expect(result.workspace.working.transactions).toHaveLength(2);
+});

@@ -46,6 +46,44 @@ export function sameFinanceRecord(a, b) {
   if (a === undefined || b === undefined) return a === b;
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 }
+/**
+ * Compare persisted financial meaning, not server-generated defaults or
+ * timestamps. Used only to confirm a same-ID new row after an interrupted
+ * network acknowledgment; an amount/account/merchant change is a conflict.
+ */
+const SYNCED_ACCOUNT_FIELDS = [
+ 'id','name','account_type','institution_name','currency',
+ 'opening_balance','is_archived','display_order',
+];
+const SYNCED_TX_FIELDS = [
+ 'id','account_id','transfer_to_account_id','transaction_type','amount',
+ 'currency','merchant','category','note','occurred_at','source',
+ 'external_reference','payment_reference','receipt_note','receipt_path',
+ 'schedule_id','is_pending',
+];
+const cleanSyncField=(value,field,row)=>{
+ if(field==='is_archived'||field==='is_pending')return value===true;
+ if(field==='display_order')return value??0;
+ if(field==='opening_balance')return value??row?.balance??0;
+ if(field==='currency')return value||'PHP';
+ if(field==='category')return value||'Other';
+ if(field==='source'){
+   if(!value||String(value).toLowerCase()==='manual')return 'manual';
+   if(value==='File Import'||value==='CSV Import')return 'csv_import';
+ }
+ if(field==='occurred_at'&&value&&Number.isFinite(Date.parse(value)))
+    return new Date(value).toISOString();
+ if(value===undefined||value==='')return null;
+ return value;
+};
+export function sameSyncedFinanceFields(a,b,group){
+ if(!a||!b)return a===b;
+ const fields=group==='financial_accounts'?SYNCED_ACCOUNT_FIELDS:
+   group==='transactions'?SYNCED_TX_FIELDS:null;
+ if(!fields)return sameFinanceRecord(a,b);
+ const project=row=>Object.fromEntries(fields.map(k=>[k,cleanSyncField(row?.[k],k,row)]));
+ return sameFinanceRecord(project(a),project(b));
+}
 const recordKey = (row, group) => String(row?.[GROUP_KEY[group] || 'id'] || '').trim();
 function mapRows(rows, group, ownerId, side, issues) {
   if (!Array.isArray(rows)) {
@@ -102,7 +140,7 @@ export function planOfflineReconciliation({
       }
       if (!existsInBase) {
         if (device && server) {
-          if (sameFinanceRecord(device,server)) unchanged.push({group,id});
+          if (sameSyncedFinanceFields(device,server,group)) unchanged.push({group,id});
           else conflicts.push({group,id,reason:'same_new_id_diverged',local:device,cloud:server});
         } else if (device) upload.push({group,id,change:'create',record:device});
         else if (server) download.push({group,id,change:'create',record:server});

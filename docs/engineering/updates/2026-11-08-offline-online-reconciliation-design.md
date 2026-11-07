@@ -49,3 +49,9 @@ Scope: Sandbox implementation; **not cleared for production or full offline supp
 - If device storage cannot preserve the cloud copy, offline transition is blocked with a visible warning; no claim of durable offline editing is made. A pending workspace from another tab is protected.
 - On enabling cloud, MOVO verifies an active paid entitlement before reading backed-up financial rows, not just before uploading dirty ones.
 - The browser's online/offline event is a hint; an unreachable Supabase service may not trigger an offline event. Signed-device network failure simulation is a required release test.
+
+## Interrupted acknowledgment and idempotent retry hardening (2026-11-08)
+- When MOVO inserts an owner-scoped transaction or account but loses the HTTP response, the next sync sees the matching stable UUID on both sides. Compare normalized, explicitly enumerated financial fields (including exact monetary cents, account links, amounts, source, merchant, and transaction date) rather than treating new server timestamps or default null/false fields as conflicting.
+- When all meaningful fields match, mark that record already synced without another INSERT; if the amount/account/description differs, require conflict review. This does not authorize automated correction, deletion or resurrection.
+- The same comparator is used during post-write refetch verification so sync does not falsely report failure due to server-assigned metadata.
+- Verification: exact candidate tree plus regression suites tested in Vercel Sandbox, 55/55 targeted tests across 8 suites plus TypeScript passed. This is not proof of store/device security or complete financial sync.
