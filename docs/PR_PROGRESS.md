@@ -448,3 +448,18 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - 2026-11-08 — PR #240 additional import accounting safeguards: fail closed for duplicate account labels, incompatible account type/currency, dangling account/transfer references, and incomplete transaction rows; regression tests and Vercel Sandbox evidence in dated engineering update.
 
 - 2026-11-08 — PR #240 CSV hardening: duplicate matching wallet account labels now require user correction; no accidental first-result posting. Added 11-language error message, focused tests, audit notes.
+
+
+### 2026-11-08 — Offline storage mode pauses plan-access features
+- Proposed policy: Cloud Sync off -> local features only; Pro/Pro+ effective access paused while existing verified subscription/billing remain unaffected.
+- Cloud Sync on -> verified, active, unexpired entitlements only; UI premium content and cloud sync writes are mode-gated.
+- UI explains offline mode and provides Cloud Sync settings action without encouraging duplicate plan purchases.
+- No cloud finance snapshot migration, backend plan change or production database mutation; blocked high-risk migration remains PR #241.
+- Evidence: docs/engineering/updates/2026-11-08-local-mode-plan-access-policy.md; Vercel Sandbox + GitHub exact-head CI required.
+
+### 2026-11-08 — Local CSV/JSON import: Discard or Save with confirmations
+- Uploaded files are preview-only until an explicit, separate confirmation. Discard removes preview only; Save commits validated local accounts and transactions.
+- No imported file is written to Supabase; active cloud mode blocks committing and prompts local-mode switch.
+- Wallet, Home and Transactions refresh from successfully saved device records. Invalid, duplicate, unsupported or stale records do not silently overwrite financial data.
+- Cloud plan access is paused in local mode without affecting store subscription. PR #241 full offline migration remains blocked.
+- Reference: docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md.

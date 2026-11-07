@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { createFinanceBackup, parseFinanceBackup } from '../lib/financeBackup';
-import { getLocalAttachment, putLocalAttachment } from '../lib/localAttachments';
 import { money } from '../lib/format';
 import './FinanceBackupSheet.css';
 
@@ -14,9 +13,11 @@ export default function FinanceBackupSheet({ c, onClose }) {
   const [limit, setLimit] = useState(12);
   const [selectedFile, setSelectedFile] = useState('');
   const [saved, setSaved] = useState(false);
-  useEffect(() => { let live = true; getLocalAttachment('finance-backup').then(async file => {
-    if (file) { const value = parseFinanceBackup(await file.text()); if (live) { setBackup(value); setSelectedFile('Previously uploaded backup'); } }
-  }).catch(() => {}); return () => { live = false; }; }, []);
+  const [confirmation, setConfirmation] = useState('');
+  const confirmationRef = useRef(null);
+  useEffect(() => { if (confirmation) confirmationRef.current?.focus(); }, [confirmation]);
+  // Uploaded previews are deliberately ephemeral; neither uploads nor discarded
+  // files may be persisted as financial records before explicit confirmation.
   const download = async () => {
     setBusy(true); setMessage('');
     try {
@@ -29,19 +30,18 @@ export default function FinanceBackupSheet({ c, onClose }) {
   };
   const upload = async event => {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
-    if (/\.csv$/i.test(file.name)) { c.openCsvImporter?.(file); return; }
-    setSelectedFile(file.name); setSaved(false); setBackup(null);
+    if (/\.csv$/i.test(file.name)) { setConfirmation(''); c.openCsvImporter?.(file); return; }
+    setSelectedFile(file.name); setSaved(false); setBackup(null); setConfirmation('');
     setBusy(true); setMessage('');
     try {
       if (file.size > 50 * 1024 * 1024) throw new Error('Backup must be 50 MB or smaller.');
       const data = parseFinanceBackup(await file.text());
-      await putLocalAttachment(new Blob([JSON.stringify(data)], { type: 'application/json' }), 'finance-backup');
-      setBackup(data); setSection('accounts'); setLimit(12); setMessage('File checked. Preview the records, then tap Save records to add new accounts and transactions.');
+      setBackup(data); setSection('accounts'); setLimit(12); setMessage('File checked. Review the preview, then choose Discard records or Save records. Nothing has been changed.');
     } catch (error) { setMessage(error.message || 'Could not read this backup.'); } finally { setBusy(false); }
   };
   const saveRecords = async () => {
-    if (!backup || busy || saved) return;
-    setBusy(true); setMessage('');
+    if (!backup || busy || saved || c.cloudMode || confirmation !== 'save') return;
+    setBusy(true); setConfirmation(''); setMessage('');
     try {
       const result = await c.saveFinanceBackupRecords(backup);
       const total = result.accounts + result.transactions;
@@ -53,6 +53,15 @@ export default function FinanceBackupSheet({ c, onClose }) {
     } catch (error) { setMessage(error?.message || 'Saving records failed. No further changes were attempted.'); }
     finally { setBusy(false); }
   };
+  const discardPreview = () => {
+    if (confirmation !== 'discard' || busy) return;
+    setBackup(null); setSelectedFile(''); setSection('accounts'); setLimit(12);
+    setSaved(false); setConfirmation('');
+    setMessage('Preview discarded. No records in MOVO were changed.');
+  };
+  const unsupportedGroups = backup ? Object.entries(backup.tables || {})
+    .filter(([key, rows]) => Array.isArray(rows) && rows.length && !['financial_accounts', 'transactions'].includes(key))
+    .map(([key]) => key.replaceAll('_',' ')) : [];
   const rows = backup ? (backup[section] || backup.tables[section] || []) : [];
   const sections = backup ? ['accounts','transactions', ...Object.keys(backup.tables).filter(key => !['accounts','transactions'].includes(key))] : [];
   const summaryAccounts = (backup?.tables?.financial_accounts?.length || backup?.accounts?.length || 0);
@@ -73,7 +82,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
           <input id="movo-backup-input" type="file" className="movo-native-file-input" accept=".json,application/json,.csv,text/csv" disabled={busy} onChange={upload} />
           <small className="movo-file-status" title={selectedFile}>{selectedFile || 'No file selected'}</small>
         </div>
-        <small className="movo-backup-subnote">The file is read on this device. JSON backups up to 50 MB. Imported records are never silently overwritten.</small>
+        <small className="movo-backup-subnote">Files are reviewed on this device, not uploaded. JSON backups up to 50 MB. Saving is local-only, never a cloud write.</small>
       </section>
       {message && <p className="movo-backup-status" role="status">{message}</p>}
       {backup && <section className="movo-backup-section" aria-label="Import preview">
@@ -96,12 +105,29 @@ export default function FinanceBackupSheet({ c, onClose }) {
           </details>)}
         </div>
         {rows.length > limit && <button type="button" className="secondary-button" onClick={() => setLimit(limit + 12)}>Show more</button>}
+        {unsupportedGroups.length > 0 && <p className="movo-backup-subnote" role="note">Other groups are preview-only and will not be applied: {unsupportedGroups.join(', ')}. Only supported accounts and transactions update MOVO locally.</p>}
+        {c.cloudMode && <p className="movo-backup-subnote" role="note">Cloud Sync is on. Turn it off in Settings and return to upload this file again. Saving cannot change cloud records.</p>}
         <div className="movo-backup-save-actions">
-          <button type="button" className="primary-button" disabled={busy || saved || (!summaryAccounts && !summaryTransactions)} onClick={saveRecords}>
+          <button type="button" className="secondary-button" disabled={busy || saved} onClick={() => setConfirmation('discard')}>
+            <Icon name="trash" size={17} /> Discard records
+          </button>
+          <button type="button" className="primary-button" disabled={busy || saved || !!c.cloudMode || (!summaryAccounts && !summaryTransactions)} onClick={() => setConfirmation('save')}>
             <Icon name="check" size={17} /> {busy ? 'Saving…' : saved ? 'Records saved' : 'Save records'}
           </button>
         </div>
-        <small className="movo-backup-subnote">Save adds valid new accounts and transactions to MOVO. Duplicates are skipped. Other backup groups, QR images, and receipts remain available in the preview; they are not replayed automatically.</small>
+        {confirmation && <section className="movo-backup-confirm" role="alertdialog" aria-label={confirmation === 'save' ? 'Confirm local record import' : 'Confirm discard preview'} aria-modal="false">
+          <strong>{confirmation === 'save' ? 'Save reviewed records to this device?' : 'Discard the uploaded preview?'}</strong>
+          <p>{confirmation === 'save'
+            ? 'Valid new accounts and transactions will be added to local MOVO records and reflected in Wallet, Home and Transactions. Cloud records will not change. Duplicates and unsupported groups remain untouched.'
+            : 'The uploaded preview will be removed without changing any existing MOVO records.'}</p>
+          <div className="movo-backup-confirm-actions">
+            <button type="button" className="secondary-button" onClick={() => setConfirmation('')} disabled={busy}>Keep preview</button>
+            <button type="button" ref={confirmationRef} className={confirmation === 'save' ? 'primary-button' : 'secondary-button'} disabled={busy} onClick={confirmation === 'save' ? saveRecords : discardPreview}>
+              {confirmation === 'save' ? 'Confirm save locally' : 'Confirm discard'}
+            </button>
+          </div>
+        </section>}
+        <small className="movo-backup-subnote">Import adds only validated, non-duplicate accounts and transactions to local MOVO. Additional financial groups, QR images, and receipts are preview-only; they are not automatically replayed.</small>
       </section>}
     </div>
   </Sheet>;

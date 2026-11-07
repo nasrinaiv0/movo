@@ -14,3 +14,12 @@ export function canUseFeature(entitlement, feature, now = Date.now()) {
   if (PRO_FEATURES.includes(feature)) return plan === 'pro' || plan === 'pro_plus';
   return false;
 }
+
+// Storage mode controls feature access, not the underlying paid subscription.
+// Local-only mode must never unlock Pro/Pro+ features using a cached entitlement.
+export function effectiveAccessPlan(entitlement, cloudMode, now = Date.now()) {
+  return cloudMode === true ? effectivePlan(entitlement, now) : 'free';
+}
+export function canUseFeatureInMode(entitlement, feature, cloudMode, now = Date.now()) {
+  return cloudMode === true && canUseFeature(entitlement, feature, now);
+}

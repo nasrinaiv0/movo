@@ -22,7 +22,7 @@ export function PlanComparison() {
   </div>;
 }
 
-export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, feature }) {
+export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, onOpenCloudSettings, cloudMode = true, feature }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [code, setCode] = useState('');
@@ -39,6 +39,11 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       await onRefresh(); onClose();
     } catch (cause) { setError(cause.message); } finally { setBusy(false); }
   };
+  if (feature && !cloudMode) return <Sheet title="Local mode active" label="Offline feature access" onClose={onClose}>
+    <p>Pro and Pro+ features are paused while Cloud Sync is off. You can still record transactions, manage local accounts and export your data on this device.</p>
+    <p>Switching to local storage does not cancel or refund an existing subscription. Turn on Cloud Sync to restore eligible plan access after verification.</p>
+    {onOpenCloudSettings && <button type="button" className="primary-button" onClick={onOpenCloudSettings}>Cloud Sync settings</button>}
+  </Sheet>;
   return <Sheet title={feature ? 'Unlock more with MOVO' : 'Your first month of Pro is free'} label="MOVO plans" className="plan-offer-sheet" onClose={onClose}>
     <div className="plan-offer-scroll">
     <p>Current plan: <strong>{PLAN_LABELS[effectivePlan(entitlement)]}</strong></p>
