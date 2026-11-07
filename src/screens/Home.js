@@ -137,7 +137,7 @@ export default function Home({ c }) {
     { id: 'recent', label: tr('Recent transactions'), node: ({ size }) => { const list = recentFor(size); return <section aria-label={tr('Recent transactions')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <div className="card list-card">
-        {list.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}
+        {list.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={c.openTx} />)}
         {!list.length && <p className="empty">{tr('No transactions yet. Add your first record from the Transactions tab.')}</p>}
       </div>
     </section>; } },

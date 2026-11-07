@@ -145,7 +145,7 @@ export default function Transactions({ c }) {
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
         {g.label && <div className="group-head"><span><b>{g.label}</b>{g.label !== g.date && <> · {g.date}</>}</span><span>{shown(show, `${txFilter === 'Transfers' ? '' : g.total < 0 ? '−' : '+'}${money(Math.abs(g.total))}`)}</span></div>}
-        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : t.type === 'allocation' ? t.accountName : undefined} onOpen={c.openTx} />)}</div>
+        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : t.type === 'allocation' ? t.accountName : undefined} onOpen={c.openTx} />)}</div>
       </section>)}
       {!monthTxs.length && <div className="card empty-card"><Icon name="list" size={28} /><h3>{tr('No transactions')}</h3><p>{tr('Nothing matches this view. Try another month or filter, or add a record.')}</p><button type="button" className="primary-button" onClick={() => c.setSheet({ name: 'transaction' })}><Icon name="plus" size={16} /> {tr('Add transaction')}</button></div>}
     </div>

@@ -59,7 +59,7 @@ function FailedRow({ item, accounts, show, onLog, onDismiss }) {
   </li>;
 }
 
-export default function RecentLogsSheet({ logs = [], failed = [], accounts = [], show = true, refDate, onLog, onDismiss, onOpen, onClose }) {
+export default function RecentLogsSheet({ logs = [], failed = [], accounts = [], show = true, refDate, onLog, onDismiss, onOpen, onClose, transactionBalances, showBalanceAfterTransaction = true }) {
   const counts = useMemo(() => {
     const c = { all: logs.length + failed.length, applepay: 0, googlepay: 0, auto: 0, manual: 0, failed: failed.length };
     logs.forEach(t => { c[kindOf(t.source)] += 1; });
@@ -82,7 +82,7 @@ export default function RecentLogsSheet({ logs = [], failed = [], accounts = [],
     </section>}
     {shownLogs.length > 0 && <section className="rl-section" aria-label={tr('Logged')}>
       {shownFailed.length > 0 && <h3 className="rl-head">{tr('Logged')}</h3>}
-      <div className="card rl-logged">{shownLogs.slice(0, 50).map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={onOpen} accountLabel={`${tr(SOURCE_LABEL[t.source] || 'Manual')} · ${t.accountName || t.method || ''}`} />)}</div>
+      <div className="card rl-logged">{shownLogs.slice(0, 50).map(t => <TransactionRow key={t.id} t={t} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={onOpen} accountLabel={`${tr(SOURCE_LABEL[t.source] || 'Manual')} · ${t.accountName || t.method || ''}`} />)}</div>
     </section>}
     {!shownFailed.length && !shownLogs.length && <p className="rl-empty">{tr('Nothing new while you were away.')}</p>}
     <button type="button" className="primary-button rl-done" onClick={onClose}>{tr('Done')}</button>

@@ -253,6 +253,11 @@ export default function Settings({ c }) {
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
       ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },
+    { title: tr('Transaction History'), rows: [
+      { icon: 'list', title: tr('Show balance after each transaction'),
+        sub: tr('Show the calculated account balance or remaining credit in transaction history. Logging always stays on.'),
+        toggle: 'showBalanceAfterTransaction' },
+    ] },
     { title: tr('Data & Sync'), rows: [
       { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : c.session?.user ? tr('Cloud sync is paused on this device.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
