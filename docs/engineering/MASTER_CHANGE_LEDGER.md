@@ -587,3 +587,6 @@ Storage-mode policy aligned with user request: local device recording stays avai
 
 ### 2026-11-08 — Confirmed local-only CSV/JSON import review flow
 Import preview adds confirmable Discard records / Save records actions, local-only writes and stale-ledger protection. Pro/Pro+ access pauses in local mode without purchase cancellation. See docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md. Full offline data migration remains blocked in PR #241.
+
+### 2026-11-08 — Draft owner-scoped offline/online reconciliation
+Added owner-scoped device journal, pure 23-domain reconciliation inventory, safe two-domain account+transaction transport with verified write protections, complete account paging, stop-on-conflict semantics and visible sync status. First-run import now previews and confirms before local-only commit. No destructive LWW or production writes; remaining financial, device encryption and native release gates are documented at docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md.

@@ -468,3 +468,12 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Added 67 missing English interface keys to the 11-language catalog, including local/cloud mode, save/discard confirmations and sync safeguards. Translations are machine-assisted and should be professionally reviewed before localization sign-off.
 - Verified `src/lib/i18n.test.js` in isolated Vercel Sandbox: 2/2 tests passing, 2,540 catalog strings and complete placeholder coverage; existing English source keys unchanged.
 - No finance code or subscription records changed in this CI-only patch. Full GitHub Phase 1 CI and signed-device audit are still release gates.
+
+### 2026-11-08 — Draft offline/online reconciliation foundation (NOT commercial release-ready)
+- Owner-scoped v2 device journal with last-confirmed snapshot; local offline writes marked pending, cloud download mirrored into device before switch.
+- Three-way baseline/local/cloud reconciliation, no clock-based last-write-wins, no silent deletion/resurrection or guest-to-account import.
+- Safe subset: account create/CAS-update and new simple transaction upload with owner/RLS checks, UUID/cents validation and cloud refetch; rollback preserves local unsynced queue.
+- Settings sync status and online-event reconnect retries; Pro/Pro+ still paused in offline local mode without cancelling store subscription.
+- JSON/CSV and onboarding uploads require Save/Discard confirmation and local-only import; unsupported backed-up groups remain preview-only.
+- Not complete: linked transaction revisions/reversals, loans, obligations, allocations, schedules, attachments, owner-pref isolation, encrypted device storage, multi-device concurrency and real signed-device QA. Do not merge as full offline support.
+- Engineering evidence: docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md; GitHub exact-head CI and Vercel Sandbox QA required.
