@@ -11,6 +11,7 @@ import BrandLogo from './BrandLogo';
 import { t as tr } from '../lib/i18n';
 import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLogoUrl } from '../lib/institutions';
 import { extractQrImage } from '../lib/qrImageProcessing';
+import { supportsAccountQr } from '../lib/accountQrEligibility';
 
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
@@ -22,6 +23,8 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
   const [manualInstitution, setManualInstitution] = useState(!!form.institution_name && !INSTITUTIONS.some(item => item.country === (INSTITUTION_COUNTRIES.includes(country) ? country : 'PH') && item.name.toLowerCase() === form.institution_name.toLowerCase()));
   const institutionOptions = useMemo(() => searchInstitutions(institutionCountry, institutionQuery, form.account_type), [institutionCountry, institutionQuery, form.account_type]);
   const hasNumber = form.account_type === 'card' || form.account_type === 'bank';
+  const qrEligible = supportsAccountQr(form.account_type);
+  const qrIsEwallet = form.account_type === 'e_wallet';
   const bankAccounts = accounts.filter(account => account.account_type === 'bank' && !account.is_archived);
   const ewalletAccounts = accounts.filter(account => account.account_type === 'e_wallet' && !account.is_archived);
   const debitCard = form.account_type === 'card' && form.cardKind !== 'credit';
@@ -94,11 +97,11 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
         {manualInstitution && <input className="acct-input" maxLength="100" value={form.institution_name} onChange={e => set({ institution_name: e.target.value, name: e.target.value })} placeholder={tr('Enter bank or provider name')} aria-label={tr('Manual institution name')} />}
       </div>}
 
-      {form.account_type === 'bank' && <div className="acct-qr-upload">
-        <div className="acct-qr-upload-copy"><strong>{tr('Bank QR code')}</strong><small>{tr('Add your bank QR code to display it on the account card.')}</small></div>
+      {qrEligible && <div className="acct-qr-upload">
+        <div className="acct-qr-upload-copy"><strong>{tr(qrIsEwallet ? 'E-wallet QR code' : 'Bank QR code')}</strong><small>{tr(qrIsEwallet ? 'Add your e-wallet QR code to display it on the account card.' : 'Add your bank QR code to display it on the account card.')}</small></div>
         <input id="acct-qr-file" className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={handleQrUpload} disabled={qrUploading} />
         <label className="acct-qr-pick" htmlFor="acct-qr-file"><Icon name="upload" size={16} />{qrUploading ? tr('Processing…') : currentQrCode ? tr('Replace QR code') : tr('Upload QR code')}</label>
-        {qrUploading && <p className="form-note" role="status">{tr('Processing QR image…')}</p>}{currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr('Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
+        {qrUploading && <p className="form-note" role="status">{tr('Processing QR image…')}</p>}{currentQrCode && <div className="acct-qr-selected"><img src={currentQrCode} alt={tr(qrIsEwallet ? 'E-wallet QR code preview' : 'Bank QR code preview')} /><button type="button" className="link-button danger" onClick={() => { set({ qrCode: '' }); setQrError(''); }}>{tr('Remove')}</button></div>}
         {qrError && <p className="form-error" role="alert">{qrError}</p>}
       </div>}
 

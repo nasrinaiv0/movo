@@ -1,5 +1,13 @@
 # MOVO Master Change Ledger
 
+## 2026-11-07 — E-wallet QR upload, display and removal
+
+- Enable payment QR upload in e-wallet add/edit using the same validated, private storage as bank accounts.
+- Preserve bank UI; prevent QR uploads on cards/cash; maintain local offline and signed-user persistence.
+- Add eleven-language UI strings and regression tests; Vercel Sandbox full 717/717 tests, optimized build, and Chromium mobile create/upload/reload/remove flow passed.
+- Engineering and security details: docs/engineering/updates/2026-11-07-ewallet-payment-qr-upload.md
+- No financial arithmetic, database migration, or RLS modification.
+
 ## 2026-11-07 — TTS and receipt-scanning reliability (repair PR)
 
 - Fix CSP permissions for local Tesseract WebAssembly without enabling arbitrary JS eval.
