@@ -22,8 +22,7 @@
 - Existing complex backup groups (loans, scheduled payments, receipts, QR and arbitrary metadata) remain view-only until a separate lossless restore design; never claim those are imported automatically.
 - No schema change or production data changed by this PR.
 
-## Additional mobile browser evidence (2026-11-08)
-- Vercel Sandbox optimized production build: 794/794 Jest tests across 142 suites, TypeScript check and build passed after fixing a tap interception issue in the import preview.
-- Chromium at 390×844 mobile viewport: Upload file trigger measured 42 px high with no visible button border, filename/empty-state beside the trigger. Valid JSON preview required explicit Save records; after saving sample account PHP 200.00 and expense PHP 20.00, Wallet displayed PHP 180.00, Transactions listed the expense, and Home displayed PHP 180.00.
-- Reuploading the same JSON and tapping Save records a second time produced No new accounts or transactions to save; the mobile Save control was tappable after shrinking the preview scroll region and using a sticky bottom action. No production data or deployment changed.
-- Native iPhone Safari signed-build QA and complex obligation/receipt restores remain required before release.
+## Accounting integrity hardening (2026-11-08)
+- JSON financial-backup Save now fails closed for missing/duplicate source account names, ambiguous matching names in the existing wallet, conflicts in account type/currency, transactions whose original account IDs cannot be mapped, missing transfer destinations and invalid transaction rows.
+- This protects multiple real bank accounts with the same display label from being silently merged and prevents imports of some records while omitting invalid ones without notice. The user receives an error before any write; original records are untouched.
+- Added five focused accounting regression cases including whitespace and case-insensitive name collisions. CSV preview and duplicate reimport remain independent and unchanged.

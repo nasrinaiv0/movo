@@ -576,3 +576,5 @@ For all four runs, the job logs show the full dependency install still reports *
 - Production migration and native billing activation are pending; no production financial writes. Release gates and rollback: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.
 
 - 2026-11-08 — Import & Export UI and additive JSON backup/CSV record preview and explicit Save; docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
+
+- 2026-11-08 — Import safety: reject ambiguous same-name account merges and silently lost backup transactions; see docs/engineering/updates/2026-11-08-import-export-preview-commit.md.

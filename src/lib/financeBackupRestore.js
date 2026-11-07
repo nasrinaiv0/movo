@@ -12,6 +12,26 @@ export function prepareFinanceBackupRestore(backup, existing, { base = 'PHP', ne
   const originalTransactions = Array.isArray(backup?.tables?.transactions) && backup.tables.transactions.length
     ? backup.tables.transactions : (backup?.transactions || []);
   if (originalAccounts.length > 20000 || originalTransactions.length > 20000) throw new Error('A single restore supports up to 20,000 accounts or transactions.');
+  // The generic planner maps transaction accounts by display name. Refuse an
+  // ambiguous name before any write so two different cards/banks cannot be
+  // silently combined into a single ledger.
+  const normalizedName = value => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
+  const sourceNames = new Set();
+  for (const account of originalAccounts) {
+    const name = normalizedName(account?.name);
+    if (!name || sourceNames.has(name)) throw new Error('This backup contains missing or duplicate account names. Rename each account uniquely before importing.');
+    sourceNames.add(name);
+    const matching = (existing?.accounts || []).filter(row => normalizedName(row?.name) === name);
+    if (matching.length > 1) throw new Error('Multiple existing accounts share a name. Resolve duplicate account names before importing.');
+    if (matching.length) {
+      const current = matching[0];
+      const expectedType = String(account.account_type || account.type || 'other').toLowerCase();
+      if ((current.account_type && expectedType !== 'other' && current.account_type !== expectedType)
+        || (current.currency && account.currency && String(current.currency).toUpperCase() !== String(account.currency).toUpperCase())) {
+        throw new Error('An existing account has the same name but a different type or currency. Rename the imported account before saving.');
+      }
+    }
+  }
   const names = new Map(originalAccounts.filter(a => a?.id && typeof a.name === 'string').map(a => [String(a.id), a.name]));
   const candidateAccounts = originalAccounts.map(account => {
     if (!account || typeof account !== 'object') return null;
@@ -28,8 +48,17 @@ export function prepareFinanceBackupRestore(backup, existing, { base = 'PHP', ne
       balance: opening, mask: account.mask || account.last4,
     });
   }).filter(Boolean);
+  if (candidateAccounts.length !== originalAccounts.length) throw new Error('Some accounts lack valid balances or identifiers. Import stopped without changes.');
   const candidateTransactions = originalTransactions.map(row => {
     if (!row || typeof row !== 'object') return null;
+    if (row.account_id && row.account_id !== 'local'
+        && !names.has(String(row.account_id)) && !row.account_name && !row.accountName) {
+      throw new Error('A transaction references an account not included in the backup. Import stopped without changes.');
+    }
+    if (row.transfer_to_account_id && !names.has(String(row.transfer_to_account_id))
+        && !row.to_account_name) {
+      throw new Error('A transfer references a missing destination account. Import stopped without changes.');
+    }
     const sourceName = names.get(String(row.account_id)) || row.account_name || row.accountName || '';
     const targetName = names.get(String(row.transfer_to_account_id)) || row.to_account_name || '';
     const value = normalizeTransaction({
@@ -46,6 +75,9 @@ export function prepareFinanceBackupRestore(backup, existing, { base = 'PHP', ne
     }
     return value;
   }).filter(Boolean);
+  if (candidateTransactions.length !== originalTransactions.length) {
+    throw new Error('Some transactions have missing amounts, dates or descriptions. No records were saved.');
+  }
   const planned = planImport({
     accounts: candidateAccounts, transactions: candidateTransactions,
     subscriptions: [], budgets: [], plans: [], loans: [], receivables: [], bills: [], skipped: 0, errors: [],

@@ -442,3 +442,5 @@ These are not resolved by a green frontend CI run or a READY deployment:
 ### 2026-11-08 — Import & Export preview/save PR
 - Compact Upload file, no-file status, JSON backup preview and explicit Save records. CSV selection routes to existing CSV importer. Restore add-only and tested; not a complete restoration of all backup tables.
 - See docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
+
+- 2026-11-08 — PR #240 additional import accounting safeguards: fail closed for duplicate account labels, incompatible account type/currency, dangling account/transfer references, and incomplete transaction rows; regression tests and Vercel Sandbox evidence in dated engineering update.

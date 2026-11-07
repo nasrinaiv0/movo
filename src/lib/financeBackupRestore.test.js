@@ -31,3 +31,48 @@ test('ignores foreign owner, subscriptions, and authenticated grants', () => {
   expect(planned.unsupported).toContain('movo_plan_grants');
   expect(planned.accounts[0].user_id).toBeUndefined();
 });
+
+
+test('rejects source accounts sharing the same name before any transaction can be assigned', () => {
+  const bad = { ...backup,
+    accounts: [backup.accounts[0], { ...backup.accounts[0], id:'another', currency:'USD' }],
+    transactions: [
+      backup.transactions[0],
+      { ...backup.transactions[0], id:'second', account_id:'another', amount:30 },
+    ],
+  };
+  expect(() => prepareFinanceBackupRestore(bad,{ accounts:[],transactions:[] },options)).toThrow(/duplicate account names/);
+});
+
+test('fails safely when an existing account with a matching name has an incompatible currency', () => {
+  expect(() => prepareFinanceBackupRestore(backup,{
+    accounts:[{id:'existing',name:'Savings',account_type:'bank',currency:'USD'}],transactions:[],
+  },options)).toThrow(/different type or currency/);
+});
+
+test('does not silently book a transaction referencing a missing source account as cash', () => {
+  const bad = { ...backup, transactions:[{ ...backup.transactions[0], account_id:'missing-account' }] };
+  expect(() => prepareFinanceBackupRestore(bad,{ accounts:[],transactions:[] },options)).toThrow(/not included in the backup/);
+});
+
+test('rejects invalid transaction rows instead of silently dropping them from a financial backup', () => {
+  const bad = { ...backup, transactions:[...backup.transactions,{id:'bad',amount:null,merchant:'Broken'}] };
+  expect(() => prepareFinanceBackupRestore(bad,{ accounts:[],transactions:[] },options)).toThrow(/missing amounts/);
+});
+
+test('rejects ambiguous destination account names in the live wallet', () => {
+  expect(() => prepareFinanceBackupRestore(backup,{
+    accounts:[
+      {id:'a',name:'Savings',account_type:'bank',currency:'PHP'},
+      {id:'b',name:'savings',account_type:'bank',currency:'PHP'},
+    ],transactions:[],
+  },options)).toThrow(/Multiple existing accounts share a name/);
+});
+
+
+test('rejects differently spaced duplicate account names before assigning imported payments', () => {
+  const bad = { ...backup,
+    accounts: [backup.accounts[0], { ...backup.accounts[0], id:'a-second', name:'  Savings  ' }],
+  };
+  expect(() => prepareFinanceBackupRestore(bad,{accounts:[],transactions:[]},options)).toThrow(/duplicate account names/);
+});
