@@ -21,7 +21,6 @@ const FILTERS = WALLET_FILTERS;
 const typeOf = WALLET_ACCOUNT_TYPES;
 /* Others includes cash, investments, miscellaneous accounts and non-cash loyalty/rewards cards. Older saved filter remains an alias. */
 const FILTER_LABEL = { 'Bank Accounts': 'Banks' };
-const ADD_TYPE = { Cards: 'card', 'Bank Accounts': 'bank', 'E-Wallets': 'e_wallet' };
 const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash', 'Cash on hand'], ['other', 'coin', 'Other', 'Investments and more'], ['membership', 'gift', 'Membership / loyalty', 'Petron, Seaoil, Starbucks and more'], ['tokens', 'star', 'Tokens / rewards', 'Points, stamps and vouchers']];
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
@@ -121,16 +120,14 @@ export default function Wallet({ c }) {
   const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
-  const loyaltySection = <section className="wallet-loyalty-section" aria-label={tr('Memberships & rewards')}>
-    <SectionTitle action={tr('Add')} onAction={() => setSheet({ name: 'loyalty', type: 'membership' })}>{tr('Memberships & rewards')}</SectionTitle>
-    {loyaltyCards.length ? <div className="wallet-loyalty-list">{loyaltyCards.map(card => <div className="wallet-loyalty-entry" key={card.id}>
-      <button type="button" className="wallet-loyalty-open" aria-label={card.name + ' · ' + tr(card.type === 'tokens' ? 'Tokens / rewards' : 'Membership / loyalty')} onClick={() => setSheet({ name: 'loyalty', id: card.id, type: card.type })}>
-        <span className="wallet-loyalty-icon"><Icon name={card.type === 'tokens' ? 'star' : 'gift'} size={22} /></span>
-        <span className="wallet-loyalty-info"><strong>{card.name}</strong><small>{tr(card.type === 'tokens' ? 'Tokens / rewards' : 'Membership / loyalty')}{card.memberNumber ? ' · ' + maskedMembershipNumber(card.memberNumber) : ''}</small></span>
-        <span className="wallet-loyalty-value"><strong>{safeLoyaltyPoints(card.points).toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong><small>{card.pointsUnit || (card.type === 'tokens' ? 'tokens' : 'points')}{loyaltyEstimates[card.id] ? ' · +' + loyaltyEstimates[card.id].toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' ' + tr('estimated') : ''}</small></span>
-        <Icon name="chevron" size={17} />
-      </button>
-    </div>)}</div> : <p className="wallet-loyalty-empty">{tr('Keep your membership cards, coffee stamps and reward tokens here—not in your money balance.')}</p>}
+  const loyaltySection = loyaltyCards.length > 0 && <section className="wallet-reward-grid" aria-label={tr('Memberships & rewards')}>
+    {loyaltyCards.map(card => <button type="button" className="wallet-reward-card" key={card.id} aria-label={card.name + ' · ' + tr(card.type === 'tokens' ? 'Tokens / rewards' : 'Membership / loyalty')} onClick={() => setSheet({ name:'loyalty', id:card.id, type:card.type })}>
+      <span className="reward-card-top"><Icon name={card.type === 'tokens' ? 'star' : 'gift'} size={24} /><span>{tr(card.type === 'tokens' ? 'Rewards' : 'Membership')}</span></span>
+      <strong className="reward-card-name">{card.name}</strong><small>{card.program !== card.name ? card.program : tr(card.type === 'tokens' ? 'Rewards' : 'Loyalty')}</small>
+      <span className="reward-card-number">{card.memberNumber ? maskedMembershipNumber(card.memberNumber) : '••••'}</span>
+      <span className="reward-card-bottom"><strong>{show ? safeLoyaltyPoints(card.points).toLocaleString(undefined, { maximumFractionDigits:2 }) : '••••'}</strong><span>{card.pointsUnit || (card.type === 'tokens' ? 'tokens' : 'points')}</span></span>
+      {!!loyaltyEstimates[card.id] && <small>{show ? '+' + loyaltyEstimates[card.id].toLocaleString(undefined, { maximumFractionDigits:2 }) : '••••'} {tr('estimated')}</small>}
+    </button>)}
   </section>;
   const groups = [['Bank Accounts', live.filter(a => a.account_type === 'bank'), 'bank'], ['Cash & Other', live.filter(a => typeOf['Cash & Other'].includes(a.account_type)), 'bank'], ['E-Wallets', live.filter(a => a.account_type === 'e_wallet'), 'wallet']];
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
@@ -142,7 +139,7 @@ export default function Wallet({ c }) {
     : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
         {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a, 'landscape')}</button>)}
       </section>);
-  const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], ['card', 'Add Card', () => setSheet({ name: 'account', type: 'card' })], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : ['bank', 'Add Account', () => setSheet({ name: 'account', type: 'bank' })]];
+  const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : null].filter(Boolean);
 
   const boxes = [
     { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <section className={`card balance-card compact size-${size}`} aria-label={tr('Total balance')}>
@@ -183,7 +180,7 @@ export default function Wallet({ c }) {
     <RootHeader title={tr('Wallet')} unread={c.unread} headerActions={[
       { icon: 'walletHeaderEdit', label: tr('Sort and view options'), onClick: () => setSheet({ name: 'walletView' }) },
       { icon: 'bell', label: tr('Notifications'), onClick: () => go('Notifications'), dot: c.unread },
-      { icon: 'plus', label: tr('New account'), onClick: () => (ADD_TYPE[walletFilter] ? setSheet({ name: walletFilter === 'Rewards' ? 'loyalty' : 'account', type: ADD_TYPE[walletFilter] }) : setAddPick(true)), className: 'accent' },
+      { icon: 'plus', label: tr('New account'), onClick: () => setAddPick(true), className: 'accent' },
     ]} />
     <div className="chip-bar wallet-chip-bar">
       <Chips label={tr('Filter wallet accounts')} items={FILTERS.map(key => ({ key, label: tr(FILTER_LABEL[key] || key) }))} value={walletFilter === 'Cash & Other' ? 'Others' : walletFilter} onChange={setWalletFilter} />
@@ -223,12 +220,12 @@ export default function Wallet({ c }) {
       })()}
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
       <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
-    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
+    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p></div>)}
 
     {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets' || walletFilter === 'Others' || walletFilter === 'Cash & Other') && <>
-      <SectionTitle>{tr(walletFilter === 'Cash & Other' ? 'Others' : walletFilter)}</SectionTitle>
+      {!['Others','Cash & Other'].includes(walletFilter) && <SectionTitle>{tr(walletFilter)}</SectionTitle>}
       {list.length > 0 && renderAccounts(list)}
-      {!list.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>{tr(`No ${walletFilter.toLowerCase()} yet`)}</h3><p>{tr('Add an account to start organizing your finances.')}</p><button type="button" className="primary-button" onClick={() => (walletFilter === 'Others' || walletFilter === 'Cash & Other') ? setAddPick(true) : setSheet({ name: 'account', type: walletFilter === 'Bank Accounts' ? 'bank' : 'e_wallet' })}>{tr('Add account')}</button></div>}
+      {!list.length && !loyaltyCards.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>{tr(`No ${walletFilter.toLowerCase()} yet`)}</h3><p>{tr('Add an account to start organizing your finances.')}</p></div>}
     </>}
 
     {walletFilter !== 'All' && includesWalletLoyalty(walletFilter) && loyaltySection}
@@ -258,7 +255,7 @@ export default function Wallet({ c }) {
       <div className="sheet-list">{cards.map(a => <button type="button" key={a.id} className={`sheet-card${a.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => { setSelectedCardId(a.id); setSheet(null); }}>
         <AccountBrandMark account={a} size={46} /><span className="account-main"><strong>{a.name}</strong><small>{mask(a)}</small></span><b>{shown(show, money(a.balance, a.currency))}</b>{a.id === selectedCard?.id && <Icon name="check" size={18} />}
       </button>)}</div>
-      <button type="button" className="manage-button" onClick={() => setSheet({ name: 'account', type: 'card' })}><Icon name="card" size={18} /> {tr('Manage Cards')}</button>
+
     </Sheet>}
     {addAmount && <Sheet title={tr('Add amount')} subtitle={tr('Record money coming into {name}.', { name: addAmount.name })} onClose={() => setAddAmount(null)} label={tr('Add amount')}>
       <div className="sheet-list">
