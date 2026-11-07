@@ -26,3 +26,10 @@
 - JSON financial-backup Save now fails closed for missing/duplicate source account names, ambiguous matching names in the existing wallet, conflicts in account type/currency, transactions whose original account IDs cannot be mapped, missing transfer destinations and invalid transaction rows.
 - This protects multiple real bank accounts with the same display label from being silently merged and prevents imports of some records while omitting invalid ones without notice. The user receives an error before any write; original records are untouched.
 - Added five focused accounting regression cases including whitespace and case-insensitive name collisions. CSV preview and duplicate reimport remain independent and unchanged.
+
+## CSV ambiguity guard (2026-11-08)
+- CSV source and destination account labels now resolve only when exactly one wallet account matches after normalizing whitespace and casing. An ambiguous label is skipped with a localized row-level warning rather than booking against the first result.
+- All 11 MOVO languages include the account ambiguity warning. Dedicated parser tests cover unique, missing and ambiguous matching account names. This is safety-critical when a user has two cards/accounts with identical labels.
+
+## Localization build consistency
+- The canonical 11-language catalogue is versioned. Added npm prestart and pretest hooks to regenerate localized JSON dictionaries before development or tests; prebuild already regenerates them for production. This prevents stale translations if a contributor runs npm test or npm start on a clean checkout before running npm run build.

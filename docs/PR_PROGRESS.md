@@ -444,3 +444,5 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - See docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
 
 - 2026-11-08 — PR #240 additional import accounting safeguards: fail closed for duplicate account labels, incompatible account type/currency, dangling account/transfer references, and incomplete transaction rows; regression tests and Vercel Sandbox evidence in dated engineering update.
+
+- 2026-11-08 — PR #240 CSV hardening: duplicate matching wallet account labels now require user correction; no accidental first-result posting. Added 11-language error message, focused tests, audit notes.

@@ -1,4 +1,4 @@
-import { parseCsvRows, parseCsvTransactions, transactionFingerprint } from './csvImport';
+import { parseCsvRows, parseCsvTransactions, transactionFingerprint, findUniqueCsvAccount } from './csvImport';
 
 describe('CSV transaction import parser', () => {
   test('parses quoted commas, escaped quotes and line breaks', () => {
@@ -31,5 +31,24 @@ describe('CSV transaction import parser', () => {
   test('fingerprints equivalent records consistently', () => {
     expect(transactionFingerprint({ account_id: 'a', transaction_type: 'expense', amount: 10, merchant: 'Coffee  Shop', occurred_at: '2026-10-01T12:00:00Z' }))
       .toBe(transactionFingerprint({ account_id: 'a', type: 'expense', amount: 10, merchant: 'coffee shop', date: '2026-10-01T08:00:00Z' }));
+  });
+});
+
+
+describe('CSV account disambiguation', () => {
+  const accounts = [
+    { id:'one', name:'Cash' },
+    { id:'two', name:'Travel Card' },
+    { id:'three', name:'  Travel   Card  ' },
+  ];
+  test('selects an account only when its name is unique', () => {
+    expect(findUniqueCsvAccount(accounts,'cAsH')).toEqual({ account: accounts[0], ambiguous: false });
+  });
+  test('rejects multiple matching accounts even with varied spaces and casing', () => {
+    expect(findUniqueCsvAccount(accounts,'travel card')).toEqual({ account:null, ambiguous:true });
+  });
+  test('does not treat an absent CSV account label as an ambiguous match', () => {
+    expect(findUniqueCsvAccount(accounts,'')).toEqual({ account:null, ambiguous:false });
+    expect(findUniqueCsvAccount(accounts,'Other')).toEqual({ account:null, ambiguous:false });
   });
 });

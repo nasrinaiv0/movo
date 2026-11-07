@@ -11,6 +11,16 @@ const aliases = {
 };
 const normalizeHeader = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
+/** Prevent a CSV row from silently choosing one of two identically named accounts. */
+export function findUniqueCsvAccount(accounts, accountName) {
+  const normalize = value => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const name = normalize(accountName);
+  if (!name) return { account: null, ambiguous: false };
+  const matches = (Array.isArray(accounts) ? accounts : []).filter(account => normalize(account?.name) === name);
+  return { account: matches.length === 1 ? matches[0] : null, ambiguous: matches.length > 1 };
+}
+
+
 export function parseCsvRows(input) {
   const text = String(input || '').replace(/^\uFEFF/, '');
   const rows = [];

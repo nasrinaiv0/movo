@@ -84,7 +84,7 @@ import { BudgetsSheet, SpendingLimitsSheet, budgetProgress } from './components/
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
-import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
+import { parseCsvTransactions, transactionFingerprint, findUniqueCsvAccount } from './lib/csvImport';
 import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
@@ -786,11 +786,19 @@ function App() {
     try {
       for (let i = 0; i < csvRows.length; i += 1) {
         const row = csvRows[i];
-        const matchingAccount = formAccounts.find(a => row.account_name && a.name.trim().toLowerCase() === row.account_name.trim().toLowerCase());
-        const accountId = matchingAccount?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
+        const matchingSource = findUniqueCsvAccount(formAccounts, row.account_name);
+        if (matchingSource.ambiguous) {
+          errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.account_name }) });
+          continue;
+        }
+        const accountId = matchingSource.account?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
         if (!accountId) { errors.push({ line: i + 2, message: tr('Choose a default account or match the account name for “{merchant}”.', { merchant: row.merchant }) }); continue; }
-        const matchingDestination = formAccounts.find(a => row.to_account_name && a.name.trim().toLowerCase() === row.to_account_name.trim().toLowerCase());
-        const destinationId = row.transaction_type === 'transfer' ? (matchingDestination?.id || '') : undefined;
+        const matchingDestination = findUniqueCsvAccount(formAccounts, row.to_account_name);
+        if (row.transaction_type === 'transfer' && matchingDestination.ambiguous) {
+          errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.to_account_name }) });
+          continue;
+        }
+        const destinationId = row.transaction_type === 'transfer' ? (matchingDestination.account?.id || '') : undefined;
         if (row.transaction_type === 'transfer' && (!destinationId || destinationId === accountId)) {
           errors.push({ line: i + 2, message: tr('Transfer “{merchant}” needs a different destination account that matches the CSV.', { merchant: row.merchant }) }); continue;
         }
