@@ -5,6 +5,8 @@
 
 ## Open pull requests
 
+**2026-11-07 — E-wallet QR upload:** Separate branch feat/ewallet-account-qr-20261107 extends Wallet account QR upload to e-wallet add/edit, preserving bank flow. Sandbox full tests 717/717, TypeScript, production build and Chromium mobile create/upload/reload/remove QA passed. Details: docs/engineering/updates/2026-11-07-ewallet-payment-qr-upload.md. Merge only after exact-head CI checks, no migration.
+
 **2026-11-07 — TTS / receipt scan repair:** Isolated branch, fixes local OCR contrast collapse, WASM CSP, iOS image decode fallback, scanner recovery, bounded SSE/NDJSON voice streaming and chunked TTS. Vercel Sandbox build: 712 tests pass; detailed manual/automated verification recorded in dated engineering update. Unmerged until exact-head CI review.
 
 **2026-11-07 — Follow-up on PR #230:** All shared RootHeader and SubHeader back-arrow buttons are now transparent across light/dark, hover, active and focus states (with accessible focus ring preserved). No changes to 45px hit targets or standalone controls; Vercel Sandbox browser QA (375px light, 320px dark, 1024px desktop) and 692 automated tests passed; GitHub CI to confirm. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.

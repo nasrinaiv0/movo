@@ -40,6 +40,7 @@ import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screen
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
+import { supportsAccountQr } from './lib/accountQrEligibility';
 import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
@@ -814,7 +815,7 @@ function App() {
     const saveQrCode = async (id) => {
       const next = { ...(prefs.accountQrCodes || {}) };
       const previous = next[id] || '';
-      let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
+      let value = supportsAccountQr(accountForm.account_type) ? (accountForm.qrCode || '') : '';
       if (value && isAccountQrDataUrl(value)) {
         const qrDataUrl = value;
         const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
@@ -830,7 +831,7 @@ function App() {
             value = previous || (localCached ? `localqr:${cacheKey}` : '');
             if (localCached) {
               setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
-              notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+              notify(tr('Account QR saved on this device. Cloud sync will retry when available.'));
             } else notify(tr('QR upload failed and offline storage is unavailable. Please retry while connected.'));
           }
           if (value && !isAccountQrDataUrl(value) && !value.startsWith('localqr:')) {
