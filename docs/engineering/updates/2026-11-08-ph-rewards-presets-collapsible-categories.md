@@ -6,7 +6,7 @@ Source: user's 13-page *Philippine Loyalty Programs, Cashback & Rewards Master D
 
 ## Changes
 - Compact 8-category directory in Cashback with searchable preset list, type filters (All / Points / Cashback / Miles / Offers), independent category expand/collapse and Expand all/Collapse all.
-- 64 reference programs across Retail, Grocery/Memberships, Health/Beauty, Fuel, Dining/Coffee/Cinema, Credit Card Cashback, Airline Miles and Digital Wallets.
+- 65 reference programs across Retail, Grocery/Memberships, Health/Beauty, Fuel, Dining/Coffee/Cinema, Credit Card Cashback, Airline Miles and Digital Wallets.
 - Presets include earning ratio, provider terms/redemption notes, source PDF page, and only mathematically representable default parameters. Special promotions, point vouchers, miles and fuel-litre rates are shown as manual/reference where transaction data cannot prove entitlement.
 - Applying a non-cash preset creates or reuses a Wallet loyalty card (initial recorded points = zero, never invented). It adds an editable rule under Cashback > Automatic membership points, initially disabled with a separate verified-terms toggle.
 - Applying cashback requires selection of an existing bank/credit card/e-wallet and attaches editable source rate, category, minimum receipt, full receipt increment, monthly cap, and merchant matching. Existing user overrides are retained, not forcibly reset. All source presets start disabled until reviewed.
@@ -43,3 +43,10 @@ Remove the Cashback directory and new preset library/rules within this PR. Exist
 - Vercel Sandbox mobile Chromium (390×844): eight collapsed category headers; retail SMAC preset creates one Wallet card with zero recorded points; EastWest Visa Platinum applied to selected card with 8.88% reference rate and 1,250 monthly cap, auto disabled and unverified.
 - Mobile follow-up: default expanded SMAC editor allows user to change threshold 200 to 250; applying the same preset again preserves the 250 override and keeps one Wallet card.
 - Generated 11-language dictionaries are reproducible from the canonical catalog. npm pretest/prestart and prebuild run i18n generation; generated locale JSON is not part of this stacked feature diff to avoid redundant multi-megabyte changes.
+
+## Consolidation QA — 2026-11-08
+- Retargeted from merged Wallet PR #239 onto main after Import & Export PR #240 and engineering-register restoration PR #243, retaining the whole code tree without overwriting newer features.
+- Vercel Sandbox exact integrated code tree `4693641820b02210999e03ace2d6269838f4b603`: 820/820 tests across 146 suites, TypeScript, optimized build succeeded.
+- GitHub implementation/documentation gate repaired by a lease-protected branch squash onto main; required same-commit PR register and dated engineering update preserved. GitHub Phase 1 CI passed on consolidated implementation commit `583e4fde788b424164d48c4f213f9bd30fc04ac8`.
+- Chromium 390px navigation from onboarding through Menu > Cashback displayed eight collapsible groups and 65 total reference entries (7+8+7+7+10+11+8+7) with editable/off-by-default estimates; no page JavaScript exceptions.
+- Still DRAFT pending signed-device/browser QA, provider-term review and cloud/local override merge verification. Financial rewards remain estimates, not money or confirmed points.
