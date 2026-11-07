@@ -439,6 +439,14 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Merge gate: full Vercel Sandbox install, test/typecheck/build, followed by same-commit PR CI and visual review. See docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md.
 - Verification: Vercel Sandbox targeted 20/20; full prebuild 701/701 tests / 124 suites; TypeScript and optimized build passed; 28/28 computed-style browser assertions on real built app for pastel pink and dark charcoal passed. PR checks and authenticated human visual review remain merge gates.
 
+### 2026-11-08 — Import & Export preview/save PR
+- Compact Upload file, no-file status, JSON backup preview and explicit Save records. CSV selection routes to existing CSV importer. Restore add-only and tested; not a complete restoration of all backup tables.
+- See docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
+
+- 2026-11-08 — PR #240 additional import accounting safeguards: fail closed for duplicate account labels, incompatible account type/currency, dangling account/transfer references, and incomplete transaction rows; regression tests and Vercel Sandbox evidence in dated engineering update.
+
+- 2026-11-08 — PR #240 CSV hardening: duplicate matching wallet account labels now require user correction; no accidental first-result posting. Added 11-language error message, focused tests, audit notes.
+
 ### 2026-11-08 — Cloud/offline and profile email privacy PR
 - Implemented account-scoped local browser workspace, complete-snapshot-gated cloud toggle, offline transaction support after verified Pro expiry, and masked email in Profile.
 - Production release blocked pending full offline record coverage, signed device and two-account security tests; see docs/security/2026-11-08-offline-cloud-handoff-and-email-masking.md.
