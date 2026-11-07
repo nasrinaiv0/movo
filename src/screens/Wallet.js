@@ -2,6 +2,7 @@ import { usePlan } from '../lib/PlanContext';
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
+import LoyaltyCardFace from '../components/LoyaltyCardFace';
 import CardDeck, { CardPile, LANDSCAPE_FX, PORTRAIT_FX } from '../components/CardDeck';
 import CardStyleSheet from '../components/CardStyleSheet';
 import { RootHeader, Chips, SectionTitle, Sparkline, MiniBars, Tile, TransactionRow, Sheet, Money, Trend } from '../components/ui';
@@ -12,16 +13,27 @@ import { money, shown } from '../lib/format';
 import { accountSpendingHistory } from '../lib/accountSpending';
 import { creditInfo } from '../lib/creditCard';
 import { walletAssetTotal, walletTypePercentage } from '../lib/walletTotals';
-import { visibleLoyaltyCards, maskedMembershipNumber, estimateLoyaltyRewards, estimatedLoyaltyTotals, safeLoyaltyPoints } from '../lib/loyaltyCards';
-import { WALLET_FILTERS, WALLET_ACCOUNT_TYPES, includesWalletLoyalty, matchesWalletAccountFilter } from '../lib/walletAccountFilters';
-import '../components/LoyaltySheet.css';
+import { visibleLoyaltyCards, estimateLoyaltyRewards, estimatedLoyaltyTotals } from '../lib/loyaltyCards';
+import { WALLET_FILTERS, WALLET_ACCOUNT_TYPES, matchesWalletAccountFilter } from '../lib/walletAccountFilters';
+import { loyaltyTypeLabel } from '../lib/loyaltyBranding';
 import { t as tr } from '../lib/i18n';
 
 const FILTERS = WALLET_FILTERS;
 const typeOf = WALLET_ACCOUNT_TYPES;
 /* Others includes cash, investments, miscellaneous accounts and non-cash loyalty/rewards cards. Older saved filter remains an alias. */
 const FILTER_LABEL = { 'Bank Accounts': 'Banks' };
-const ADD_CHOICES = [['card', 'card', 'Card', 'Credit or debit card'], ['bank', 'bank', 'Bank account', 'Savings or checking'], ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'], ['cash', 'coin', 'Cash', 'Cash on hand'], ['other', 'coin', 'Other', 'Investments and more'], ['membership', 'gift', 'Membership / loyalty', 'Petron, Seaoil, Starbucks and more'], ['tokens', 'star', 'Tokens / rewards', 'Points, stamps and vouchers']];
+const ADD_CHOICES = [
+  ['card', 'card', 'Card', 'Credit or debit card'],
+  ['bank', 'bank', 'Bank account', 'Savings or checking'],
+  ['e_wallet', 'wallet', 'E-wallet', 'GCash, Maya and others'],
+  ['cash', 'coin', 'Cash', 'Cash on hand'],
+  ['other', 'coin', 'Other asset', 'Investments and more'],
+  ['loyalty', 'gift', 'Loyalty', 'Store loyalty and stamps'],
+  ['membership', 'gift', 'Membership', 'Club and store memberships'],
+  ['rewards', 'star', 'Rewards', 'Rewards points and perks'],
+  ['tokens', 'star', 'Tokens', 'Tokens, stamps and vouchers'],
+  ['other_card', 'card', 'Other card type', 'Enter a custom card type'],
+];
 const SORTS = [['balance-desc', 'Highest balance'], ['balance-asc', 'Lowest balance'], ['name', 'Name (A–Z)'], ['type', 'Account type']];
 const VIEWS = [['list', 'rows', 'List'], ['tiles', 'card', 'Card'], ['grid', 'grid', 'Grid']];
 const FORMATS = [['landscape', 'Landscape'], ['portrait', 'Portrait']];
@@ -120,24 +132,24 @@ export default function Wallet({ c }) {
   const updateCardPreference = (key, value) => { if (!selectedCard) return; setPref(key, { ...(prefs[key] || {}), [selectedCard.id]: value }); };
   const holder = c.user?.name;
   const pickStyle = (id) => { if (!selectedCard) return; const next = { ...(prefs.cardStyles || {}) }; if (id) next[selectedCard.id] = id; else delete next[selectedCard.id]; setPref('cardStyles', next); };
-  const loyaltySection = loyaltyCards.length > 0 && <section className="wallet-reward-grid" aria-label={tr('Memberships & rewards')}>
-    {loyaltyCards.map(card => <button type="button" className="wallet-reward-card" key={card.id} aria-label={card.name + ' · ' + tr(card.type === 'tokens' ? 'Tokens / rewards' : 'Membership / loyalty')} onClick={() => setSheet({ name:'loyalty', id:card.id, type:card.type })}>
-      <span className="reward-card-top"><Icon name={card.type === 'tokens' ? 'star' : 'gift'} size={24} /><span>{tr(card.type === 'tokens' ? 'Rewards' : 'Membership')}</span></span>
-      <strong className="reward-card-name">{card.name}</strong><small>{card.program !== card.name ? card.program : tr(card.type === 'tokens' ? 'Rewards' : 'Loyalty')}</small>
-      <span className="reward-card-number">{card.memberNumber ? maskedMembershipNumber(card.memberNumber) : '••••'}</span>
-      <span className="reward-card-bottom"><strong>{show ? safeLoyaltyPoints(card.points).toLocaleString(undefined, { maximumFractionDigits:2 }) : '••••'}</strong><span>{card.pointsUnit || (card.type === 'tokens' ? 'tokens' : 'points')}</span></span>
-      {!!loyaltyEstimates[card.id] && <small>{show ? '+' + loyaltyEstimates[card.id].toLocaleString(undefined, { maximumFractionDigits:2 }) : '••••'} {tr('estimated')}</small>}
-    </button>)}
-  </section>;
   const groups = [['Bank Accounts', live.filter(a => a.account_type === 'bank'), 'bank'], ['Cash & Other', live.filter(a => typeOf['Cash & Other'].includes(a.account_type)), 'bank'], ['E-Wallets', live.filter(a => a.account_type === 'e_wallet'), 'wallet']];
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
   const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={c.accountQrDisplay?.[a.id] || ''} />;
-  const renderAccounts = (items) => (wv.view === 'list'
-    ? <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>
-    : <section className={`wallet-card-grid at-${wv.view}`} aria-label={tr('Wallet accounts')}>
+  const renderLoyaltyCards = () => loyaltyCards.map(card => <button
+    type="button" className="wallet-card-item loyalty-wallet-item" key={'loyalty-' + card.id}
+    aria-label={card.name + ' · ' + loyaltyTypeLabel(card)}
+    onClick={() => setSheet({ name: 'loyalty', id: card.id, type: card.type })}
+  ><LoyaltyCardFace card={card} show={show} estimate={loyaltyEstimates[card.id] || 0} /></button>);
+  const renderAccounts = (items, withLoyalty = false) => (wv.view === 'list'
+    ? <>
+        {!!items.length && <section className="account-list">{items.map(a => <AccountRow key={a.id} a={a} show={show} onClick={() => openAccount(a)} />)}</section>}
+        {withLoyalty && !!loyaltyCards.length && <section className="wallet-card-grid" aria-label={tr('Memberships & rewards')}>{renderLoyaltyCards()}</section>}
+      </>
+    : <section className={'wallet-card-grid at-' + wv.view} aria-label={tr('Wallet accounts')}>
         {items.map(a => <button type="button" className="wallet-card-item" key={a.id} aria-label={tr('Open {name}', { name: a.name })} onClick={() => openAccount(a)}>{cardVisual(a, 'landscape')}</button>)}
+        {withLoyalty && renderLoyaltyCards()}
       </section>);
   const actions = [['plus', 'Add Transaction', () => openForm('expense')], ['transfer', 'Record Transfer', () => openForm('transfer')], c.openScanner ? ['scan', 'Scan Receipt', c.openScanner] : null].filter(Boolean);
 
@@ -168,7 +180,7 @@ export default function Wallet({ c }) {
     </section> },
     { id: 'accounts', sizes: ['M'], label: tr('Accounts'), node: <section aria-label={tr('Accounts')}>
       <SectionTitle>{tr('Accounts')}</SectionTitle>
-      {list.filter(a => a.account_type !== 'card').length ? renderAccounts(list.filter(a => a.account_type !== 'card')) : <p className="empty">{tr('No bank, e-wallet or cash accounts yet.')}</p>}
+      {(list.some(a => a.account_type !== 'card') || loyaltyCards.length) ? renderAccounts(list.filter(a => a.account_type !== 'card'), true) : <p className="empty">{tr('No bank, e-wallet or cash accounts yet.')}</p>}
     </section> },
     { id: 'recent', label: tr('Recent activity'), node: ({ size }) => <section aria-label={tr('Recent activity')}>
       <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Activity')}</SectionTitle>
@@ -188,7 +200,6 @@ export default function Wallet({ c }) {
 
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
 
-    {walletFilter === 'All' && loyaltySection}
 
     {walletFilter === 'Cards' && (cards.length ? <>
       <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
@@ -224,11 +235,10 @@ export default function Wallet({ c }) {
 
     {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets' || walletFilter === 'Others' || walletFilter === 'Cash & Other') && <>
       {!['Others','Cash & Other'].includes(walletFilter) && <SectionTitle>{tr(walletFilter)}</SectionTitle>}
-      {list.length > 0 && renderAccounts(list)}
+      {(list.length > 0 || (['Others', 'Cash & Other'].includes(walletFilter) && loyaltyCards.length > 0)) && renderAccounts(list, ['Others', 'Cash & Other'].includes(walletFilter))}
       {!list.length && !loyaltyCards.length && <div className="card empty-card"><Icon name={walletFilter === 'Bank Accounts' ? 'bank' : 'wallet'} size={28} /><h3>{tr(`No ${walletFilter.toLowerCase()} yet`)}</h3><p>{tr('Add an account to start organizing your finances.')}</p></div>}
     </>}
 
-    {walletFilter !== 'All' && includesWalletLoyalty(walletFilter) && loyaltySection}
 
     {sheet?.name === 'walletView' && <Sheet title={tr('Sort & view')} subtitle={tr('Choose how accounts and cards appear in your wallet.')} onClose={() => setSheet(null)} label={tr('Sort and view')} className="wallet-menu-motion">
       <p className="mini-title wallet-sort-title">{tr('Sort accounts by')}</p>
@@ -265,7 +275,7 @@ export default function Wallet({ c }) {
       <p className="fineprint">{tr('MOVO records the amount; it does not move real money.')}</p>
     </Sheet>}
     {addPick && <Sheet title={tr('New account')} onClose={() => setAddPick(false)} label={tr('New account')}>
-      <div className="sheet-list">{ADD_CHOICES.map(([type, icon, title, sub]) => <button type="button" key={type} className="sheet-card" onClick={() => { setAddPick(false); setSheet({ name: type === 'membership' || type === 'tokens' ? 'loyalty' : 'account', type }); }}><Tile icon={icon} tone="blue" size={42} radius={13} /><span className="account-main"><strong>{tr(title)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}</div>
+      <div className="sheet-list">{ADD_CHOICES.map(([type, icon, title, sub]) => <button type="button" key={type} className="sheet-card" onClick={() => { setAddPick(false); setSheet({ name: ['loyalty', 'membership', 'rewards', 'tokens', 'other_card'].includes(type) ? 'loyalty' : 'account', type: type === 'other_card' ? 'other' : type }); }}><Tile icon={icon} tone="blue" size={42} radius={13} /><span className="account-main"><strong>{tr(title)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}</div>
     </Sheet>}
   </>;
 }
