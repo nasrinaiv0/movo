@@ -14,6 +14,21 @@ test('movo:// links: sign-in return and payment log links', () => {
   expect(readAppUrl('not a url')).toBeNull();
 });
 
+test('rejects spoofed, ambiguous or oversized native deep links', () => {
+  expect(readAppUrl('movo://attacker@auth-callback?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback:444?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback/evil?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=abc&code=def')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?access_token=secret')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=' + 'x'.repeat(2050))).toBeNull();
+  expect(readAppUrl('movo://log/extra?amount=10')).toBeNull();
+  expect(readAppUrl('movo://log?amount=10#ignored')).toBeNull();
+  expect(readAppUrl('movo://log?merchant=' + 'x'.repeat(5000))).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=abc&error=access_denied')).toEqual({
+    kind: 'auth', code: '', error: 'access_denied',
+  });
+});
+
 test('notification ids are stable, positive and differ by tag', () => {
   expect(notificationId('renewal:netflix')).toBe(notificationId('renewal:netflix'));
   expect(notificationId('renewal:netflix')).not.toBe(notificationId('limit:food'));
