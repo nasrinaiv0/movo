@@ -12,11 +12,12 @@ import { t as tr } from '../lib/i18n';
 import { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLogoUrl } from '../lib/institutions';
 import { extractQrImage } from '../lib/qrImageProcessing';
 import { supportsAccountQr } from '../lib/accountQrEligibility';
+import { isLoyaltyType } from '../lib/loyaltyCards';
 
 const PAD = ['7', '8', '9', '÷', '4', '5', '6', '×', '1', '2', '3', '−', '.', '0', '⌫', '+'];
 
 /** Full-height add/edit account screen with a live preview card, as in the account setup design. */
-export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = '', qrCodeDisplay = '', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank }) {
+export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = '', qrCodeDisplay = '', form, setForm, accounts = [], editing, cloudMode, busy, error, onSave, onClose, onAddBank, onSelectLoyalty }) {
   const [openMore, setOpenMore] = useState(!!form.institution_name);
   const [institutionQuery, setInstitutionQuery] = useState(form.institution_name || '');
   const [institutionCountry, setInstitutionCountry] = useState(INSTITUTION_COUNTRIES.includes(country) ? country : 'PH');
@@ -78,7 +79,7 @@ export default function AccountSheet({ base = 'PHP', country = 'PH', qrCode = ''
     <div className="acct-panel">
       <label className="acct-label" htmlFor="acct-type">{tr('Account type')}</label>
       <div className="acct-field select"><span><strong>{tr(meta.label)}</strong><small>{tr(meta.sub)}</small></span><span className="acct-field-icon" style={{ color }}><Icon name={meta.icon} size={18} /></span><Icon name="down" size={16} />
-        <select id="acct-type" aria-label={tr('Account type')} value={form.account_type} onChange={e => { const nextType = e.target.value; if (nextType === 'cash') { const previousInstitution = String(form.institution_name || ''); set({ account_type: nextType, institution_name: '', ...(form.name === previousInstitution ? { name: '' } : {}) }); } else set({ account_type: nextType }); }}>{ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{tr(t.label)}</option>)}</select></div>
+        <select id="acct-type" aria-label={tr('Account type')} value={form.account_type} onChange={e => { const nextType = e.target.value; if (isLoyaltyType(nextType)) { onSelectLoyalty?.(nextType); return; } if (nextType === 'cash') { const previousInstitution = String(form.institution_name || ''); set({ account_type: nextType, institution_name: '', ...(form.name === previousInstitution ? { name: '' } : {}) }); } else set({ account_type: nextType }); }}>{ACCOUNT_TYPES.map(t => <option key={t.value} value={t.value}>{tr(t.label)}</option>)}</select></div>
 
       {!['card', 'cash'].includes(form.account_type) && <div className="acct-institution">
         <label className="acct-label" htmlFor="acct-inst-search">{tr('Bank / institution')}</label>
