@@ -35,3 +35,7 @@ Absolute security cannot be certified. Device testing, adversarial permission te
 
 ## Additional device-key finding
 PR #227 originally protected Supabase refresh tokens but continued mirroring the phone-automation device credential in the general settings object. The follow-up moves this separate transaction-logging secret into the same native vault, removes it from general persisted preferences, and preserves the legacy key only until write-before-delete migration succeeds. Native executable and signed-device tests remain necessary; do not equate successful static tests with hardware-backed validation.
+
+## 2026-11-08 security re-audit addendum
+
+The original 22-point assessment above remains historical. For current severity, evidence and gating, see **`docs/security/PR227_GAP_AUDIT_2026-11-08.md`**. This follow-up confirms 28/28 public tables with RLS, 12 authenticated-executable privileged financial functions requiring real two-user negative tests, Android native compilation passed, iOS job canceled, an exact PR-head Sandbox pass (644 tests), and merge conflicts with the 34-commit-newer `main`. The native cleanup helper currently swallows legacy storage deletion errors; never assert guaranteed removal of plaintext copies. Branch protection is currently disabled on `main`. Release remains blocked.

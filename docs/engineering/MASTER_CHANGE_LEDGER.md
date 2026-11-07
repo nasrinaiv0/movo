@@ -1,5 +1,14 @@
 # MOVO Master Change Ledger
 
+## 2026-11-08 — PR #227 native security re-audit (documentation only)
+
+- Confirmed Android native compile, 644/644 isolated Vercel Sandbox tests/typecheck/build. iOS job remains canceled; device signing and real hardware tests pending.
+- Read-only live database security audit: 28/28 public tables with RLS, 12 authenticated-executable financial SECURITY DEFINER functions requiring two-user negative tests; auth.uid references alone do not prove ownership.
+- PR is 34 commits behind main, with merge conflicts in App.js and two shared docs. Main branch protection is disabled. No production mutation.
+- Native old-token deletion failures are not surfaced; plaintext cleanup remains an explicit unresolved gate.
+- Report: docs/security/PR227_GAP_AUDIT_2026-11-08.md
+
+
 ## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
 
 **This section supersedes older status rows below wherever they disagree.**
