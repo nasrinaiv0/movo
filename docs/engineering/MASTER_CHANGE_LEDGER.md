@@ -540,6 +540,20 @@ For all four runs, the job logs show the full dependency install still reports *
 
 - Terms and Privacy expanded for commercial release; canonical shared supplement and synchronization regression tests. See dated financial-commercial remediation update.
 
+## 2026-11-07 — Remove Transactions sort-filter edge shading
+- Scope: `src/App.css`, `src/screens/TransactionSortEdgeShadow.test.js` and same-commit engineering documentation.
+- Root cause: horizontal scrolling fade applied to the Transactions non-scrolling sort grid, producing grey shadows on either end of the selected Date/Amount/Account chip.
+- Fix: locally disable mask-image and -webkit-mask-image and selected-indicator box-shadow; preserve global scroller fades and all other UI states.
+- Security/accounting: no finance data, network, auth, persistence or backend modifications.
+- Evidence and rollback: `docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md`.
+- Vercel Sandbox completed: 694/694 tests (124 suites), typecheck/build green, browser computed CSS verified for selected sort pill in both appearances at 390px; GitHub CI remains an independent gate.
+
+## 2026-11-07 — 40px filter control standardization, Transactions + Wallet
+- Follow-up to open PR #232. Transactions type/sort/billing-cycle and Wallet category/sort/view filters now use 40px heights, including selected states and minimum heights; responsive widths, animations and accessibility preserved.
+- No changes to financial calculations, user balances, tables, session data, secrets or backend authorization. Regression tests and corresponding engineering update live in this same commit.
+- Details: docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md.
+- Final Vercel Sandbox evidence: 704/704 tests (125 suites), typecheck and optimized build green, browser 40px heights across Wallet/Transactions verified in light/dark at 320, 390 and 430px. Main and production unchanged until merge.
+
 ## 2026-11-07 — Adaptive contrast for five accent-filled financial summary cards
 - Branch: `fix/adaptive-summary-card-contrast-20261107` from main d31d73f.
 - All text and chart ink on Home balance, Transactions spent, Cashback, Subscription and Financial Planning summary surfaces now inherit preexisting WCAG-tested `--on-accent` (black on pale accents; white on dark accents).

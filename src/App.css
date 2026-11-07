@@ -3078,7 +3078,7 @@ button.account-tile:active { transform: scale(.98); }
 
 /* Sort & view: segmented pills, compact previews, aligned buttons. */
 .movo-app .wallet-sort-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
-.movo-app .wallet-sort-option { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background-color .2s ease-out, color .2s ease-out; }
+.movo-app .wallet-sort-option { display: inline-flex; align-items: center; gap: 6px; height: 40px; min-height: 40px; max-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background-color .2s ease-out, color .2s ease-out; }
 .movo-app .wallet-sort-option.selected { background: rgba(var(--accent-rgb), .14); color: var(--accent-ink, var(--accent)); }
 .movo-app .wallet-format-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
 .movo-app .wallet-format-pick > button { display: grid; justify-items: center; align-content: center; gap: 8px; height: 176px; padding: 12px; border-radius: 18px; }
@@ -3306,11 +3306,26 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-stack { margin-bottom: 20px; }
 .movo-app .card-stack-front { padding-bottom: 6px; }
 
+/* Wallet Sort & View option chips share the same 40px control height.
+   Scope to this sheet; other segmented controls and header buttons are unchanged. */
+.movo-app .wallet-sort-row > .wallet-sort-option {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+}
+.movo-app .wallet-view-control > button {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+}
+
 /* Wallet filters: All · Cards · Banks · E-Wallets · Others and the add button on one row, no scrolling. */
 .movo-app .wallet-chip-bar { gap: 6px; }
 .movo-app .wallet-chip-bar > .chip-row { display: flex; gap: 4px; overflow: visible; }
-.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
-.movo-app .wallet-chip-bar > .round-button { flex: 0 0 38px; width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
+.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 40px; min-height: 40px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
+.movo-app .wallet-chip-bar > .round-button { flex: 0 0 40px; width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
 @media (max-width: 380px) { .movo-app .wallet-chip-bar { gap: 4px; } .movo-app .wallet-chip-bar > .chip-row { gap: 2px; } .movo-app .wallet-chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
 
 /* Buttons: one soft shadow per button (no shadow strips). Chip rows keep room above and below so a row that
@@ -5161,7 +5176,7 @@ button.account-tile:active { transform: scale(.98); }
 /* Wallet account filters: fit all five categories in the available width on every phone. */
 .movo-app.movo-app .wallet-chip-bar { width:100%; min-width:0; gap:clamp(3px,1.2vw,6px); }
 .movo-app.movo-app .wallet-chip-bar > .chip-row { display:flex; flex:1 1 0; width:100%; min-width:0; gap:clamp(2px,.8vw,4px); overflow:visible; overflow-x:visible; padding:2px 0; margin:0; }
-.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { display:flex; flex:1 1 0; justify-content:center; align-items:center; width:0; min-width:0; max-width:none; height:44px; min-height:44px; padding-inline:clamp(2px,1.5vw,8px); font-size:clamp(10px,3vw,13px); line-height:1.1; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { display:flex; flex:1 1 0; justify-content:center; align-items:center; width:0; min-width:0; max-width:none; height:40px; min-height:40px; padding-inline:clamp(2px,1.5vw,8px); font-size:clamp(10px,3vw,13px); line-height:1.1; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip; }
 .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip]:focus-visible { outline:3px solid rgba(var(--accent-rgb),.38); outline-offset:2px; }
 @media(max-width:350px) {
   .movo-app.movo-app .wallet-chip-bar { gap:2px; }
@@ -7559,8 +7574,8 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
   flex: 1 1 0;
   min-width: 0;
-  height: 42px;
-  min-height: 42px;
+  height: 40px;
+  min-height: 40px;
   margin: 0;
   text-align: center;
 }
@@ -7569,7 +7584,8 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   width: 72px;
   min-width: 72px;
   max-width: 72px;
-  height: 42px;
+  height: 40px;
+  min-height: 40px;
   margin: 0;
 }
 /* Each sorting option shares the full row width, with consistent gaps.
@@ -7588,12 +7604,19 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   margin: 0;
   padding: 0;
   overflow: visible;
+  /* This grid does not scroll. The shared chip-row edge mask faded both
+     sides of the selected pill, giving it an unwanted grey "shadow". */
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row > .chip-ind {
+  box-shadow: none;
 }
 .movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
   width: 100%;
   min-width: 0;
-  height: 44px;
-  min-height: 44px;
+  height: 40px;
+  min-height: 40px;
   margin: 0;
   padding: 0 6px;
   font-size: clamp(11px, 3.2vw, 13px);

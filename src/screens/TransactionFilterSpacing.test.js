@@ -27,7 +27,7 @@ test('transaction type chips and billing-cycle selector share even horizontal sp
   expect(prop(selector, 'margin')).toBe('0');
   expect(prop(selector, 'width')).toBe('72px');
   const chips = rule('.movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip]');
-  expect(prop(chips, 'height')).toBe('42px');
+  expect(prop(chips, 'height')).toBe('40px');
   expect(prop(chips, 'flex')).toBe('1 1 0');
 });
 
@@ -43,7 +43,7 @@ test('sorting filters distribute evenly and leave space above list and group hea
   const button = rule('.movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip]');
   expect(prop(button, 'width')).toBe('100%');
   expect(prop(button, 'min-width')).toBe('0');
-  expect(prop(button, 'height')).toBe('44px');
+  expect(prop(button, 'height')).toBe('40px');
   const source = fs.readFileSync(path.join(__dirname, 'Transactions.js'), 'utf8');
   expect(source).toContain('className="tx-sort-bar"');
   expect(source).toContain("'--tx-sort-count': sorts.length");
