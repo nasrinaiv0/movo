@@ -574,3 +574,5 @@ For all four runs, the job logs show the full dependency install still reports *
 - Central expiring access model, API/database enforcement, native subscription products, one-month trial and verified ten-subscriber referral reward. Free local receipt attachments and read-only export/import remain available. Ram unchanged; Bronze/Silver/Gold badge labels.
 - Vercel Sandbox: 765 tests / 135 suites, TypeScript, production build and PostgreSQL adversarial access checks pass.
 - Production migration and native billing activation are pending; no production financial writes. Release gates and rollback: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.
+
+- 2026-11-08 — Pro+ Founder100 limited promotion enrollment (OFF by default); local PostgreSQL validation and store onboarding blockers: docs/engineering/updates/2026-11-08-proplus-founder100-launch.md.

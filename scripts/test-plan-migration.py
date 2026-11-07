@@ -9,7 +9,9 @@ import subprocess
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
-env = {**os.environ, 'PGHOST': '127.0.0.1', 'PGPORT': os.environ.get('PGPORT', '55432'), 'PGDATABASE': 'movo_plans_isolated_' + str(os.getpid())}
+host = '/var/run/postgresql' if os.environ.get('MOVO_PG_SOCKET') == '1' else '127.0.0.1'
+env = {**os.environ, 'PGHOST': host, 'PGPORT': os.environ.get('PGPORT', '55432'),
+       'PGDATABASE': 'movo_plans_isolated_' + str(os.getpid())}
 subprocess.run(['createdb', '-h', env['PGHOST'], '-p', env['PGPORT'], env['PGDATABASE']], check=True)
 
 def sql(content):

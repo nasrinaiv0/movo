@@ -438,3 +438,6 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Scope: stylesheet + dedicated regression tests + dated engineering record. No financial data, API, account, layout, theme preference or user interaction changes.
 - Merge gate: full Vercel Sandbox install, test/typecheck/build, followed by same-commit PR CI and visual review. See docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md.
 - Verification: Vercel Sandbox targeted 20/20; full prebuild 701/701 tests / 124 suites; TypeScript and optimized build passed; 28/28 computed-style browser assertions on real built app for pastel pink and dark charcoal passed. PR checks and authenticated human visual review remain merge gates.
+
+### 2026-11-08 — Founder100 Pro+ gated promotion PR
+- First-100 verified Pro+ reservation migration, OFF by default, one per user with advisory lock; server-only redemption after store evidence. Local PostgreSQL tests cover 103 users / 100 slots, RLS, idempotency and refunds. Launch blocked until Apple/Google 1-year-free offers and native receipt integration are configured and verified. Details: docs/engineering/updates/2026-11-08-proplus-founder100-launch.md.
