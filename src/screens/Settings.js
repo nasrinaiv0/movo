@@ -227,7 +227,7 @@ export default function Settings({ c }) {
   const sections = [
     { title: tr('Account'), rows: [
       { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('EditProfile') },
-      { icon: 'download', title: tr('Export & import'), sub: tr('Read and save your financial backup on any plan'), onClick: () => c.openBackup?.() },
+      { icon: 'download', title: tr('Import & Export'), sub: tr('Read and save your financial backup on any plan'), onClick: () => c.openBackup?.() },
       { icon: 'database', title: tr('Plan & Usage'), sub: tr('Free plan · see what you use'), onClick: () => setPanel('usage') },
       { icon: 'layout', title: tr('Connected Accounts'), sub: tr('Manually tracked accounts; no bank connection is active.'), onClick: () => go('Wallet') },
     ] },

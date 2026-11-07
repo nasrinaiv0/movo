@@ -24,12 +24,14 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --watchAll=false",
-    "prebuild": "npm run typecheck && react-scripts test --watchAll=false --runInBand",
+    "prebuild": "npm run i18n && npm run typecheck && react-scripts test --watchAll=false --runInBand",
     "typecheck": "tsc --noEmit",
     "audit:production": "npm audit --omit=dev",
     "i18n": "node scripts/i18n-build.js",
     "brands": "node scripts/fetch-brand-logos.mjs",
-    "ios:sync": "npm run build && cap sync ios"
+    "ios:sync": "npm run build && cap sync ios",
+    "prestart": "npm run i18n",
+    "pretest": "npm run i18n"
   },
   "browserslist": {
     "production": [

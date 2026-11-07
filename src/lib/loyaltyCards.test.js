@@ -55,3 +55,18 @@ test('rejects disabled rules, unsupported accounts, empty merchant match and inv
   expect(estimateLoyaltyRewards(transactions, accounts, cards, { 'petron-card': { ...rules['petron-card'], merchantContains: '' } })).toHaveLength(0);
   expect(estimateLoyaltyRewards(transactions, accounts, cards, { 'petron-card': { ...rules['petron-card'], pointsPer100: '100001' } })).toHaveLength(0);
 });
+
+test('five collectible card types retain their categories and a custom Other label', () => {
+  ['loyalty', 'membership', 'rewards', 'tokens'].forEach(type => {
+    const record = normalizeLoyaltyCard({ type, name: 'Starbucks', points: '12.50' });
+    expect(record.type).toBe(type);
+    expect(record.cardType).toBe('');
+    expect(record.account_type).toBeUndefined();
+  });
+  expect(normalizeLoyaltyCard({ type: 'other', name: 'Local store', cardType: '  Gift club  ' }).cardType).toBe('Gift club');
+  expect(() => normalizeLoyaltyCard({ type: 'other', name: 'Local store' })).toThrow('custom_card_type_required');
+  expect(visibleLoyaltyCards({ membershipCards: [
+    { id: 'loyal', name: '7-Eleven', type: 'loyalty' },
+    { id: 'custom', name: 'Local store', type: 'other', cardType: 'Fuel card' },
+  ] }).map(card => card.type)).toEqual(['loyalty', 'other']);
+});
