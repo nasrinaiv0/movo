@@ -600,6 +600,12 @@ For all four runs, the job logs show the full dependency install still reports *
 - Vercel Sandbox: 765 tests / 135 suites, TypeScript, production build and PostgreSQL adversarial access checks pass.
 - Production migration and native billing activation are pending; no production financial writes. Release gates and rollback: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.
 
+- 2026-11-08 — Import & Export UI and additive JSON backup/CSV record preview and explicit Save; docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
+
+- 2026-11-08 — Import safety: reject ambiguous same-name account merges and silently lost backup transactions; see docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
+
+- 2026-11-08 — CSV file importer rejects ambiguous account matches, with localized warnings and tests; see docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
+
 ## 2026-11-06 — Native session / privacy security pass
 - Device-only Keychain/Keystore auth, migration, backup and screenshot protections, R8, native CI, public security.txt. No production financial data or database mutations.
 - Evidence, open risks and rollback documented in docs/engineering/updates/2026-11-06-native-session-hardening.md. Release remains blocked for signed-device and authorization verification.
