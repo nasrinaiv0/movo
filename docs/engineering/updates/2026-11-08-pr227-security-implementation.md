@@ -38,3 +38,9 @@ A rollback to older native versions may restore insecure plaintext token persist
 - Existing `signOut()` behavior is Supabase **global** by default. Both scopes revoke refresh tokens, but already-issued JWT access tokens remain usable until their expiry; this is **not** instant revocation or a session-inventory dashboard.
 - Regression tests `src/lib/sessionRevocation.test.js` check the exact scope and provider error propagation. Existing authentication and financial APIs are unchanged.
 - No personal session data is exposed, stored or logged by this action. Requesting device names, IPs, and individual session revocation would need a separately reviewed server-side endpoint and user-visible consent.
+
+## Session revocation i18n regression follow-up
+
+- GitHub/Sandbox exact-head Jest suite identified five missing translated interface strings in Profile. Added `src/i18n/catalog/zzz-security-session-revocation.js` (English keys + 11 translations) and regenerated locale dictionaries and `src/i18n/locales/version.js` with `node scripts/i18n-build.js`.
+- Focused Jest `src/lib/i18n.test.js` and `src/lib/sessionRevocation.test.js` now pass, including localization completeness and the `scope: 'others'` API call. Full exact-head CI remains required.
+- The user-facing session-revocation flow remains conservative: explicit confirmation, no device IP/session metadata, no cookies or tokens exposed to UI. Access JWTs remain valid until expiry.
