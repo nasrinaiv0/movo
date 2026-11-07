@@ -215,7 +215,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
   const cls = t.type === 'income' ? 'pos' : '';
   const afterAccessible = show && Array.isArray(afterBalances) ? afterBalances.map(entry =>
     tr(entry.label) + ' ' + entry.accountName + ': ' + money(entry.value, entry.currency)).join('; ') : '';
-  return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? [t.merchant, signed(t.type, t.amount, t.currency), afterAccessible].filter(Boolean).join('; ') : t.merchant} onClick={() => onOpen?.(t)}>
+  return <button type="button" className={`tx-row${isFresh(t.id) ? ' tx-fresh' : ''}`} aria-label={show ? `${t.merchant}, ${signed(t.type, t.amount, t.currency)}` : t.merchant} aria-description={afterAccessible || undefined} onClick={() => onOpen?.(t)}>
     <span className="tx-logo">
       <BrandLogo src={t.type === 'transfer' ? null : merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />
       {(() => { const c = categoryOf(t.type === 'income' || t.type === 'transfer' ? t.type : t.categoryId || t.category); return <span className={`tx-cat-badge tone-${c.tone}`} title={tr(c.label)} aria-hidden="true"><Icon name={c.icon} size={11} strokeWidth={2.4} /></span>; })()}

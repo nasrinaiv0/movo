@@ -20,3 +20,7 @@
 - Verify tests for income, expense, transfers, linked cards, credit limit, cents, invalid FX, reversed activity, toggle privacy and responsive mobile styling.
 - Run all Jest suites, TypeScript and production build in Vercel Sandbox, then validate a deployment preview and light/dark mobile rendering.
 - Do not merge on passing unit tests alone; check exact commit GitHub Actions and Vercel preview status before release.
+
+## 2026-11-08 accessibility correction
+- Preserve the transaction button's established accessible name so existing app test flows and assistive interaction remain stable. Expose running-balance information separately via accessible description.
+- Confirm this change with exact-commit regression suite before marking the PR ready.
