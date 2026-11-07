@@ -1,4 +1,5 @@
 import FinanceBackupSheet from './components/FinanceBackupSheet';
+import { prepareFinanceBackupRestore } from './lib/financeBackupRestore';
 import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from './lib/localAttachments';
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
@@ -83,7 +84,7 @@ import { BudgetsSheet, SpendingLimitsSheet, budgetProgress } from './components/
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
-import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
+import { parseCsvTransactions, transactionFingerprint, findUniqueCsvAccount } from './lib/csvImport';
 import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
@@ -804,11 +805,19 @@ function App() {
     try {
       for (let i = 0; i < csvRows.length; i += 1) {
         const row = csvRows[i];
-        const matchingAccount = formAccounts.find(a => row.account_name && a.name.trim().toLowerCase() === row.account_name.trim().toLowerCase());
-        const accountId = matchingAccount?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
+        const matchingSource = findUniqueCsvAccount(formAccounts, row.account_name);
+        if (matchingSource.ambiguous) {
+          errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.account_name }) });
+          continue;
+        }
+        const accountId = matchingSource.account?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
         if (!accountId) { errors.push({ line: i + 2, message: tr('Choose a default account or match the account name for “{merchant}”.', { merchant: row.merchant }) }); continue; }
-        const matchingDestination = formAccounts.find(a => row.to_account_name && a.name.trim().toLowerCase() === row.to_account_name.trim().toLowerCase());
-        const destinationId = row.transaction_type === 'transfer' ? (matchingDestination?.id || '') : undefined;
+        const matchingDestination = findUniqueCsvAccount(formAccounts, row.to_account_name);
+        if (row.transaction_type === 'transfer' && matchingDestination.ambiguous) {
+          errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.to_account_name }) });
+          continue;
+        }
+        const destinationId = row.transaction_type === 'transfer' ? (matchingDestination.account?.id || '') : undefined;
         if (row.transaction_type === 'transfer' && (!destinationId || destinationId === accountId)) {
           errors.push({ line: i + 2, message: tr('Transfer “{merchant}” needs a different destination account that matches the CSV.', { merchant: row.merchant }) }); continue;
         }
@@ -1582,12 +1591,75 @@ function App() {
     } catch { notify(tr('Could not sign out. Please try again.')); }
   };
 
+  const saveFinanceBackupRecords = async (backup) => {
+    const existing = { accounts: cloudMode ? cloudAccounts : localAccounts, transactions: rawTxs };
+    const planned = prepareFinanceBackupRestore(backup, existing, {
+      base, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.(),
+    });
+    if (!planned.accounts.length && !planned.transactions.length) {
+      return { accounts: 0, transactions: 0, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
+    }
+    let addedAccounts = 0; let addedTransactions = 0; let failed = 0;
+    if (cloudMode) {
+      if (!session?.user?.id || !can('cloudWrite')) throw new Error('Cloud writes require an active subscription. Switch to local mode to save here.');
+      const idMap = new Map();
+      for (const item of planned.accounts) {
+        try {
+          const saved = await createAccount({
+            name: item.name, account_type: item.account_type, institution_name: item.institution_name,
+            currency: item.currency, opening_balance: item.opening_balance,
+          }, session.user.id);
+          idMap.set(item.id, saved.id); addedAccounts += 1;
+        } catch { failed += 1; }
+      }
+      for (const item of planned.transactions) {
+        const from = idMap.get(item.account_id) || (planned.accounts.some(a => a.id === item.account_id) ? '' : item.account_id);
+        const dest = item.transfer_to_account_id
+          ? (idMap.get(item.transfer_to_account_id) || (planned.accounts.some(a => a.id === item.transfer_to_account_id) ? '' : item.transfer_to_account_id))
+          : '';
+        if (!from || from === 'local' || (item.transaction_type === 'transfer' && (!dest || dest === from))) { failed += 1; continue; }
+        try {
+          await createTransaction({
+            merchant: item.merchant, amount: item.amount, currency: item.currency,
+            transaction_type: item.transaction_type, category: item.category, account_id: from,
+            ...(dest ? { transfer_to_account_id: dest } : {}),
+            occurred_at: item.occurred_at, note: item.note, source: 'File Import',
+            external_reference: item.external_reference,
+          }, session.user.id);
+          addedTransactions += 1;
+        } catch { failed += 1; }
+      }
+      await refreshCloud(session.user);
+    } else {
+      const nextAccounts = [...localAccounts, ...planned.accounts];
+      const nextTransactions = [...planned.transactions, ...rawTxs];
+      const beforeAccounts = loadLocalAccounts();
+      const beforeTransactions = loadLocalTransactions();
+      const accountsOk = saveLocalAccounts(nextAccounts);
+      const transactionsOk = accountsOk && saveLocalTransactions(nextTransactions, false);
+      if (!accountsOk || !transactionsOk) {
+        // Best-effort rollback; do not update the live UI with partially saved data.
+        saveLocalAccounts(beforeAccounts); saveLocalTransactions(beforeTransactions, false);
+        throw new Error('This device could not save the imported records. Free storage and retry.');
+      }
+      setLocalAccounts(nextAccounts); setRawTxs(nextTransactions);
+      addedAccounts = planned.accounts.length; addedTransactions = planned.transactions.length;
+    }
+    return { accounts: addedAccounts, transactions: addedTransactions, failed, skipped: planned.skipped, unsupported: planned.unsupported };
+  };
+
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
+    saveFinanceBackupRecords,
+    openCsvImporter: file => {
+      setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId('');
+      setSheet({ name: 'importCsv' });
+      if (file) handleCsvFile(file);
+    },
     accountQrDisplay,
     fx,
     refreshFx,
@@ -1776,14 +1848,18 @@ function App() {
 
       {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is parsed in this browser. Nothing is uploaded until you confirm the import.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>
         <div className="sheet-form">
-          <label>{tr('Choose CSV file')}<input type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); }} /></label>
+          <div className="movo-import-file-row">
+            <label htmlFor="movo-csv-file" className="movo-file-upload-button"><Icon name="upload" size={17} /> {tr('Upload file')}</label>
+            <input id="movo-csv-file" className="movo-native-file-input" type="file" accept=".csv,text/csv" onChange={e => { const file = e.target.files?.[0]; if (file) handleCsvFile(file); e.target.value = ''; }} />
+            <small className="movo-file-status">{csvFileName || tr('No file selected')}</small>
+          </div>
           <p className="form-note">{tr('Required columns: Date, Description, Type, Amount. Optional: Currency, Category, Account, To Account, Note. Review the preview before importing.')}</p>
-          {csvFileName && <p className="form-note">{tr('File: {name}', { name: csvFileName })}</p>}
+
           {formAccounts.length > 0 && <label>{tr('Default account (used when the CSV account name does not match)')}<select value={importAccountId} onChange={e => setImportAccountId(e.target.value)}><option value="">{tr('Choose account')}</option><AccountOptions accounts={formAccounts} /></select></label>}
           {csvRows.length > 0 && <section className="card pad" aria-label={tr('CSV import preview')}><strong>{tr('Preview · {n} valid row(s)', { n: csvRows.length })}</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{tr(row.transaction_type[0].toUpperCase() + row.transaction_type.slice(1))} · {tr(row.category)} · {row.account_name || tr('default account')}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">{tr('Showing the first 5 rows. All valid rows will be processed.')}</p>}</section>}
           {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
           {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>{tr('Rows needing attention')}</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>{tr('Row {line}: {message}', { line: item.line, message: tr(item.message, item.vars) })}</li>)}</ul>{csvErrors.length > 8 && <p>{tr('And {n} more row(s).', { n: csvErrors.length - 8 })}</p>}</div>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Close')}</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? tr('Importing…') : tr('Import {n} transaction(s)', { n: csvRows.length })}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Close')}</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? tr('Saving records…') : tr('Save records')}</button></div>
         </div>
       </Sheet>}
       {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} subtitle={tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
