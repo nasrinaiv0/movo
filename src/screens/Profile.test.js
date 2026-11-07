@@ -38,3 +38,11 @@ test('signed-in people, or builds without cloud, show no Sign in button', () => 
     act(() => root.unmount());
   }
 });
+
+test('signed-in account email is masked in the visible profile card', () => {
+  const c = makeContext({ cloudMode: true, user: { name: 'Friend', email: 'person.private@example.com', initial: 'F' }, session: { user: { email: 'person.private@example.com', app_metadata: { provider: 'google' } } } });
+  const { el, root } = render(c);
+  expect(el.textContent).toContain('pe••••@e••••.com');
+  expect(el.textContent).not.toContain('person.private@example.com');
+  act(() => root.unmount());
+});

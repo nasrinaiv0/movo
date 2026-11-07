@@ -82,7 +82,7 @@ import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, SpendingLimitsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
-import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
+import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData, loadUserLocalWorkspace, saveUserLocalWorkspace } from './lib/localFinanceStore';
 import { parseCsvTransactions, transactionFingerprint } from './lib/csvImport';
 import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
@@ -235,11 +235,16 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
 
 function App() {
   const [session, setSession] = useState(null);
-  const { entitlement, refreshEntitlement } = usePlanEntitlement(session);
+  const { entitlement, refreshEntitlement, entitlementReady } = usePlanEntitlement(session);
   const can = feature => canUseFeature(entitlement, feature);
   const plan = effectivePlan(entitlement);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
+  const [localWorkspaceOwner, setLocalWorkspaceOwner] = useState('');
+  const lastSyncedWorkspaceRef = useRef('');
+  const cloudRequestVersionRef = useRef(0);
+  const cloudSnapshotCompleteRef = useRef(false);
+  const expiryTransitionRef = useRef('');
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -325,63 +330,172 @@ function App() {
   const endBurst = useCallback(() => setBurst(null), []);
   const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
+  const localWorkspace = (accounts = localAccounts, transactions = rawTxs, dirty = true) => ({
+    accounts, transactions, postings: cloudPostings, activities: cloudActivities,
+    bills: cloudBills, billOccurrences: cloudBillOccurrences, budgets: cloudBudgets, dirty,
+  });
   useEffect(() => {
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
       return;
     }
-    const transactionsSaved = saveLocalTransactions(rawTxs, false);
-    const accountsSaved = saveLocalAccounts(localAccounts);
-    const saved = transactionsSaved && accountsSaved;
+    let saved;
+    let workspace;
+    if (localWorkspaceOwner && session?.user?.id === localWorkspaceOwner) {
+      const snapshot = localWorkspace();
+      const current = JSON.stringify({ accounts: snapshot.accounts, transactions: snapshot.transactions, postings: snapshot.postings, activities: snapshot.activities });
+      workspace = { ...snapshot, dirty: loadUserLocalWorkspace(localWorkspaceOwner)?.dirty === true || current !== lastSyncedWorkspaceRef.current };
+      saved = saveUserLocalWorkspace(localWorkspaceOwner, workspace);
+    } else {
+      saved = saveLocalTransactions(rawTxs, false) && saveLocalAccounts(localAccounts);
+    }
     if (saved) pendingLocalDataRef.current = null;
-    else pendingLocalDataRef.current = { transactions: rawTxs, accounts: localAccounts };
+    else pendingLocalDataRef.current = localWorkspaceOwner && session?.user?.id === localWorkspaceOwner
+      ? { ownerId:localWorkspaceOwner, workspace }
+      : { transactions:rawTxs, accounts:localAccounts };
     setLocalPersistenceWarning(!saved);
-  }, [rawTxs, localAccounts, cloudMode]);
+  }, [rawTxs, localAccounts, cloudMode, localWorkspaceOwner, session?.user?.id, cloudPostings, cloudActivities, cloudBills, cloudBillOccurrences, cloudBudgets]);
+
   const retryLocalPersistence = useCallback(() => {
     const pending = pendingLocalDataRef.current;
-    if (cloudMode && !pending) {
-      setLocalPersistenceWarning(false);
-      return;
-    }
-    const transactionsSaved = saveLocalTransactions(pending?.transactions || rawTxs, false);
-    const accountsSaved = saveLocalAccounts(pending?.accounts || localAccounts);
-    const saved = transactionsSaved && accountsSaved;
+    if (cloudMode && !pending) { setLocalPersistenceWarning(false); return; }
+    const saved = pending?.ownerId
+      ? saveUserLocalWorkspace(pending.ownerId, pending.workspace)
+      : localWorkspaceOwner && session?.user?.id === localWorkspaceOwner
+        ? saveUserLocalWorkspace(localWorkspaceOwner, localWorkspace(pending?.accounts, pending?.transactions, true))
+        : saveLocalTransactions(pending?.transactions || rawTxs, false) && saveLocalAccounts(pending?.accounts || localAccounts);
     if (saved) pendingLocalDataRef.current = null;
     setLocalPersistenceWarning(!saved);
-    notify(saved
-      ? (pending ? 'Your local-only records were saved on this device. They are not synced to your cloud account.' : 'Local records saved on this device.')
-      : 'Browser storage is still unavailable or full.');
-  }, [rawTxs, localAccounts, cloudMode, notify]);
+    notify(saved ? 'Local records saved on this device. They are not cloud-synced.' : 'Browser storage is still unavailable or full.');
+  }, [rawTxs, localAccounts, cloudMode, localWorkspaceOwner, session?.user?.id, notify, cloudPostings, cloudActivities, cloudBills, cloudBillOccurrences, cloudBudgets]);
+
+  const loadSignedInLocal = useCallback((user) => {
+    const saved = loadUserLocalWorkspace(user?.id);
+    cloudSnapshotCompleteRef.current = false;
+    setCloudMode(false); setLocalWorkspaceOwner(user?.id || '');
+    setCloudAccounts([]); setCloudPostings(saved?.postings || []); setCloudActivities(saved?.activities || []);
+    setCloudBudgets(saved?.budgets || []); setCloudBills(saved?.bills || []);
+    setCloudBillOccurrences(saved?.billOccurrences || []);
+    setLocalAccounts(saved?.accounts || []); setRawTxs(saved?.transactions || []);
+    lastSyncedWorkspaceRef.current = saved?.dirty
+      ? '' : JSON.stringify({ accounts:saved?.accounts || [], transactions:saved?.transactions || [],
+        postings:saved?.postings || [], activities:saved?.activities || [] });
+    return Boolean(saved);
+  }, []);
 
   const refreshCloud = useCallback(async (user) => {
     if (!user) return;
-    setBusy(true); setError('');
-    try {
-      const today = new Date();
-      const dateKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const until = new Date(today); until.setDate(until.getDate() + 30);
-      const [a, t, postings, activities, failed, bills, billOccurrences, budgets] = await Promise.all([
-        listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []),
-        Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
-        listBills().catch(() => []), listOccurrences(dateKey(until), dateKey(today)).catch(() => []), listBudgets().catch(() => []),
-      ]);
-      setInbox(failed || []);
-      setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
-      setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
-    } catch { setError(tr('Could not load cloud records. Check your connection and try again.')); setCloudMode(false); }
-    finally { setBusy(false); setAuthReady(true); }
-  }, []);
-  const setCloudSyncEnabled = useCallback(async (enabled) => {
-    setPref('cloudSyncEnabled', !!enabled);
-    if (enabled) {
-      if (session?.user) await refreshCloud(session.user);
+    const request = ++cloudRequestVersionRef.current;
+    if (loadUserLocalWorkspace(user.id)?.dirty) {
+      loadSignedInLocal(user);
+      setPref('cloudSyncEnabled', false);
+      notify('Unsynced local records were preserved. Export a backup before turning Cloud Sync back on.');
       return;
     }
+    setBusy(true); setError('');
+    let complete = true;
+    const preserveCompleteness = async (operation) => {
+      try { return await operation(); } catch { complete = false; return []; }
+    };
+    try {
+      const today = new Date();
+      const dateKey = d => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+      const until = new Date(today); until.setDate(until.getDate() + 30);
+      const [a, t, postings, activities, failed, bills, billOccurrences, budgets] = await Promise.all([
+        listAccounts(), listTransactions(), preserveCompleteness(listAccountingPostings), preserveCompleteness(listAccountingActivities),
+        Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
+        preserveCompleteness(listBills), preserveCompleteness(() => listOccurrences(dateKey(until), dateKey(today))),
+        preserveCompleteness(listBudgets),
+      ]);
+      if (request !== cloudRequestVersionRef.current) return;
+      cloudSnapshotCompleteRef.current = complete;
+      if (!complete) {
+        // A partial fetch must not replace the complete local snapshot or
+        // become the source for subsequent offline accounting.
+        loadSignedInLocal(user);
+        setPref('cloudSyncEnabled', false);
+        setError('Could not load cloud records. Check your connection and try again.');
+        return;
+      }
+      const snapshot = { accounts:a || [], transactions:t || [], postings:postings || [], activities:activities || [],
+        bills:bills || [], billOccurrences:billOccurrences || [], budgets:budgets || [], dirty:false };
+      if (complete) {
+        const saved = saveUserLocalWorkspace(user.id, snapshot);
+        pendingLocalDataRef.current = saved ? null : { ownerId:user.id, workspace:snapshot };
+        setLocalPersistenceWarning(!saved);
+        lastSyncedWorkspaceRef.current = JSON.stringify({ accounts:snapshot.accounts, transactions:snapshot.transactions,
+          postings:snapshot.postings, activities:snapshot.activities });
+      }
+      setInbox(failed || []);
+      setLocalWorkspaceOwner('');
+      setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
+      setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
+    } catch {
+      if (request !== cloudRequestVersionRef.current) return;
+      loadSignedInLocal(user);
+      setPref('cloudSyncEnabled', false);
+      setError(tr('Could not load cloud records. Check your connection and try again.'));
+    } finally { if (request === cloudRequestVersionRef.current) { setBusy(false); setAuthReady(true); } }
+  }, [loadSignedInLocal, notify, setPref]);
+
+  const setCloudSyncEnabled = useCallback(async (enabled) => {
+    if (enabled) {
+      if (!session?.user) return false;
+      if (!entitlementReady || !canUseFeature(entitlement, 'cloudWrite')) {
+        notify('Cloud Sync requires verified active Pro access. Your records remain on this device.');
+        return false;
+      }
+      if (loadUserLocalWorkspace(session.user.id)?.dirty) {
+        notify('Unsynced device records must be reconciled before Cloud Sync can resume. Export a backup first.');
+        return false;
+      }
+      setPref('cloudSyncEnabled', true);
+      await refreshCloud(session.user);
+      return true;
+    }
+    ++cloudRequestVersionRef.current;
+    if (cloudMode && session?.user?.id) {
+      if (!cloudSnapshotCompleteRef.current) {
+        notify('Some cloud records are unavailable. Retry syncing before switching to offline mode.');
+        return false;
+      }
+      const snapshot = localWorkspace(cloudAccounts, rawTxs, false);
+      if (!saveUserLocalWorkspace(session.user.id, snapshot)) {
+        pendingLocalDataRef.current = { ownerId:session.user.id, workspace:snapshot };
+        setLocalPersistenceWarning(true);
+        notify('Your cloud records could not fit in device storage. Cloud was not switched off.');
+        return false;
+      }
+      pendingLocalDataRef.current = null;
+      setLocalPersistenceWarning(false);
+      cloudSnapshotCompleteRef.current = false;
+      lastSyncedWorkspaceRef.current = JSON.stringify({ accounts:snapshot.accounts, transactions:snapshot.transactions,
+        postings:snapshot.postings, activities:snapshot.activities });
+      setLocalAccounts(snapshot.accounts); setRawTxs(snapshot.transactions);
+      setLocalWorkspaceOwner(session.user.id);
+      setCloudAccounts([]); setInbox([]);
+    } else if (session?.user?.id) {
+      loadSignedInLocal(session.user);
+    }
     setCloudMode(false);
-    setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]);
-    setInbox([]); setCloudPostings([]); setCloudActivities([]);
-    setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts());
-  }, [session, refreshCloud, setPref]);
+    setPref('cloudSyncEnabled', false);
+    return true;
+  }, [cloudMode, session, cloudAccounts, rawTxs, cloudPostings, cloudActivities, cloudBills, cloudBillOccurrences,
+    cloudBudgets, entitlement, entitlementReady, refreshCloud, loadSignedInLocal, setPref, notify]);
+
+  useEffect(() => {
+    if (!cloudMode || !entitlementReady || canUseFeature(entitlement, 'cloudWrite')) {
+      if (canUseFeature(entitlement, 'cloudWrite')) expiryTransitionRef.current = '';
+      return;
+    }
+    const key = String(session?.user?.id) + ':' + (entitlement?.expiresAt || 'inactive');
+    if (expiryTransitionRef.current === key) return;
+    expiryTransitionRef.current = key;
+    setCloudSyncEnabled(false).then(success => {
+      if (success) notify('Your plan ended. A device-only copy is active, so you can keep recording transactions.');
+    }).catch(() => notify('Offline transfer failed. Export your records before leaving Cloud Sync.'));
+  }, [cloudMode, entitlementReady, entitlement, session?.user?.id, setCloudSyncEnabled, notify]);
+
   useEffect(() => {
     if (sheet?.name === 'account' && sheet.type) setAccountForm(current => current.account_type === sheet.type ? current : { ...current, account_type: sheet.type });
     if (sheet?.name === 'transaction' && sheet.type) setForm(current => current.transaction_type === sheet.type ? current : { ...current, transaction_type: sheet.type });
@@ -417,21 +531,41 @@ function App() {
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
-    getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } }).catch(() => { if (mounted) setAuthReady(true); });
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
-      if (!mounted) return; setSession(s);
-      if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } else {
+    const enterSession = (s) => {
+      if (!s?.user) return;
+      const previousLocal = loadUserLocalWorkspace(s.user.id);
+      if (prefsRef.current.cloudSyncEnabled !== false && !previousLocal?.dirty) refreshCloud(s.user);
+      else {
+        loadSignedInLocal(s.user);
+        if (previousLocal?.dirty) setPref('cloudSyncEnabled', false);
+      }
+    };
+    getCurrentSession().then(s => {
+      if (!mounted) return;
+      setSession(s); setAuthReady(true);
+      enterSession(s);
+    }).catch(() => { if (mounted) setAuthReady(true); });
+    const { data } = supabase.auth.onAuthStateChange((event, s) => {
+      if (!mounted) return;
+      setSession(s);
+      if (s?.user) {
+        // Refreshing a token must never discard in-memory unsynced local transactions.
+        if (event !== 'TOKEN_REFRESHED') enterSession(s);
+      } else {
+        ++cloudRequestVersionRef.current;
+        cloudSnapshotCompleteRef.current = false;
         const pending = pendingLocalDataRef.current;
-        setCloudMode(false);
+        if (pending?.ownerId) pendingLocalDataRef.current = null;
+        setCloudMode(false); setLocalWorkspaceOwner('');
+        lastSyncedWorkspaceRef.current = '';
         setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
-        setCloudPostings([]);
-        setCloudActivities([]);
-        setRawTxs(pending?.transactions || loadLocalTransactions());
-        setLocalAccounts(pending?.accounts || loadLocalAccounts());
+        setCloudPostings([]); setCloudActivities([]);
+        setRawTxs(pending?.ownerId ? loadLocalTransactions() : pending?.transactions || loadLocalTransactions());
+        setLocalAccounts(pending?.ownerId ? loadLocalAccounts() : pending?.accounts || loadLocalAccounts());
       }
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
-  }, [refreshCloud]);
+  }, [refreshCloud, loadSignedInLocal, setPref]);
 
   /* ---------- derived data ---------- */
   const baseAccounts = cloudMode ? cloudAccounts : localAccounts;
@@ -451,7 +585,7 @@ function App() {
     return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [rawTxs, cloudActivities, baseAccounts, base, rates]);
   const accountsView = useMemo(() => {
-    const ledger = cloudMode ? [...txs, ...cloudPostings] : txs;
+    const ledger = [...txs, ...cloudPostings];
     const links = prefs.cardBankLinks || {};
     const cardKindOf = (account) => prefs.accountStyles?.[account.id]?.cardKind || account.cardKind || 'debit';
     const linkedDebitCardIds = (bankId) => baseAccounts.filter(item => item.account_type === 'card' && links[item.id] === bankId && cardKindOf(item) === 'debit').map(item => item.id);
@@ -487,7 +621,7 @@ function App() {
   }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, prefs.creditCardPayments, rates]);
   // Pure derived ledger display: does not write or modify any transaction rows.
   const transactionBalances = useMemo(() => buildTransactionRunningBalances({
-    transactions: txs, postings: cloudMode ? cloudPostings : [], accounts: baseAccounts,
+    transactions: txs, postings: cloudPostings, accounts: baseAccounts,
     cardBankLinks: prefs.cardBankLinks || {}, accountStyles: prefs.accountStyles || {},
     creditCardPayments: prefs.creditCardPayments || {},
     convertAmount: (amount, from, to) => convert(amount, from, to, rates),
@@ -547,7 +681,7 @@ function App() {
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer' || t.transaction_type === 'allocation').slice(0, 4), [homeStats]);
-  const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
+  const budgets = useMemo(() => ((cloudMode || localWorkspaceOwner) ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, localWorkspaceOwner, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   const spendingLimitList = useMemo(() => spendingLimitProgress((prefs.spendingLimits || []).map(l => ({ ...l, monthly_limit: toBase(Number(l.monthly_limit), l.currency || 'PHP'), currency: base })), homeStats.list, accountsView), [prefs.spendingLimits, homeStats, accountsView, toBase, base]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
@@ -592,7 +726,7 @@ function App() {
 
   const metaName = session?.user?.user_metadata?.full_name;
   const email = session?.user?.email || tr('Local-only session');
-  const defaultName = session?.user?.email ? session.user.email.split('@')[0] : tr('Friend');
+  const defaultName = tr('Friend');
   const name = prefs.profileName.trim() || metaName || defaultName;
   const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
 
@@ -981,13 +1115,16 @@ function App() {
       setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
     } else {
       const row = { id: id || window.crypto?.randomUUID?.() || `budget-${Date.now()}`, category, monthly_limit, currency: base };
-      setPref('budgets', [...(prefs.budgets || []).filter(b => b.id !== row.id), row]);
+      if (localWorkspaceOwner) setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
+      else setPref('budgets', [...(prefs.budgets || []).filter(b => b.id !== row.id), row]);
     }
     notify(tr('Budget saved.'));
   };
   const deleteBudget = async (id) => {
-    const row = (cloudMode ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
-    if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); } else setPref('budgets', (prefs.budgets || []).filter(b => b.id !== id));
+    const row = ((cloudMode || localWorkspaceOwner) ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
+    if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); }
+    else if (localWorkspaceOwner) setCloudBudgets(cur => cur.filter(b => b.id !== id));
+    else setPref('budgets', (prefs.budgets || []).filter(b => b.id !== id));
     if (row) archiveItem('budget', row);
     notify(tr('Moved to Archive. You can restore it for 90 days.'));
   };
@@ -1549,15 +1686,19 @@ function App() {
 
   const signOutNow = async () => {
     try {
+      ++cloudRequestVersionRef.current;
+      cloudSnapshotCompleteRef.current = false;
       await signOut();
       const pending = pendingLocalDataRef.current;
+      if (pending?.ownerId) pendingLocalDataRef.current = null;
+      setLocalWorkspaceOwner(''); lastSyncedWorkspaceRef.current = '';
       setSession(null);
       setCloudMode(false);
       setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
       setCloudPostings([]);
       setCloudActivities([]);
-      setRawTxs(pending?.transactions || loadLocalTransactions());
-      setLocalAccounts(pending?.accounts || loadLocalAccounts());
+      setRawTxs(pending?.ownerId ? loadLocalTransactions() : pending?.transactions || loadLocalTransactions());
+      setLocalAccounts(pending?.ownerId ? loadLocalAccounts() : pending?.accounts || loadLocalAccounts());
       go('Home');
       notify(tr('Signed out securely.'));
     } catch { notify(tr('Could not sign out. Please try again.')); }
