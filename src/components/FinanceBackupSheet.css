@@ -1,0 +1,33 @@
+/* Compact, borderless import/export UI using existing MOVO tokens. */
+.movo-import-export-sheet .sheet-content { padding-bottom: max(20px,env(safe-area-inset-bottom)); }
+.movo-backup-layout { display:grid; gap:12px; padding:1px 0 14px; }
+.movo-backup-section { display:grid; gap:11px; padding:14px; border-radius:17px; background:var(--surface-2,rgba(127,127,127,.07)); min-width:0; }
+.movo-backup-heading { display:grid; gap:3px; }
+.movo-backup-heading strong { font-size:14px; font-weight:750; color:var(--text); }
+.movo-backup-heading small,.movo-backup-subnote,.movo-file-status,.movo-backup-count { font-size:11px; color:var(--muted,var(--text)); line-height:1.5; }
+.movo-backup-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.movo-backup-actions button,.movo-backup-save-actions button { min-width:0; min-height:42px; padding:9px 10px; display:flex; align-items:center; justify-content:center; gap:7px; border:0; border-radius:13px; font-size:12px; }
+.movo-import-file-row { display:flex; align-items:center; min-width:0; gap:12px; }
+.movo-file-upload-button { display:inline-flex; flex-shrink:0; align-items:center; justify-content:center; gap:8px; border:0; border-radius:13px; background:var(--accent,#0b7547); color:var(--on-accent,#fff); min-height:42px; padding:9px 14px; cursor:pointer; font-size:13px; font-weight:700; }
+.movo-file-upload-button:focus-within { outline:2px solid var(--accent,#0b7547); outline-offset:3px; }
+.movo-native-file-input { position:absolute; width:1px; height:1px; opacity:0; overflow:hidden; clip-path:inset(50%); }
+.movo-file-status { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.movo-backup-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.movo-backup-stats > span { display:flex; flex-direction:column; gap:2px; padding:11px 7px; border-radius:11px; background:var(--surface,rgba(127,127,127,.09)); text-align:center; }
+.movo-backup-stats b { font-size:19px; font-variant-numeric:tabular-nums; color:var(--text); }
+.movo-backup-select-label { display:grid; gap:5px; font-size:11px; color:var(--muted,var(--text)); }
+.movo-backup-select-label select { width:100%; border:0; border-radius:12px; padding:10px 12px; min-height:42px; font:inherit; font-size:13px; color:var(--text); background:var(--surface,rgba(127,127,127,.12)); }
+.movo-backup-preview-list { display:grid; gap:6px; max-height:min(22dvh,220px); overflow:auto; overscroll-behavior:contain; }
+.movo-backup-preview-item { border:0; border-radius:11px; padding:10px 11px; background:var(--surface,rgba(127,127,127,.09)); overflow:hidden; }
+.movo-backup-preview-item summary { display:flex; justify-content:space-between; gap:8px; cursor:pointer; font-size:12px; }
+.movo-backup-preview-item summary span { overflow-wrap:anywhere; }
+.movo-backup-preview-item pre { max-height:180px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font-size:10px; }
+.movo-backup-save-actions {
+  display:flex; justify-content:stretch; margin-top:4px;
+  position:sticky; bottom:max(10px,env(safe-area-inset-bottom));
+  z-index:4; padding:8px 0 max(10px,env(safe-area-inset-bottom));
+  background:var(--surface-2,rgba(127,127,127,.07)); border-radius:12px;
+}
+.movo-backup-save-actions button { width:100%; }
+.movo-backup-status { font-size:12px; line-height:1.55; margin:0; padding:10px 12px; border-radius:12px; background:var(--surface-2,rgba(127,127,127,.09)); }
+@media (max-width:350px) { .movo-import-file-row { align-items:stretch; flex-direction:column; gap:5px; } .movo-file-status { max-width:100%; } }
