@@ -610,7 +610,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Import CSV');
     expect(container.querySelector('[role="dialog"][aria-label="Import transactions"]')).not.toBeNull();
     expect(container.querySelector('input[type="file"][accept=".csv,text/csv"]')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Import 0 transaction(s)') && button.disabled)).toBe(true);
+    expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent.includes('Save records') && button.disabled)).toBe(true);
   });
 
   test('Menu opens Profile, Subscriptions, Plans and Limits, and a subscription can be added', () => {
