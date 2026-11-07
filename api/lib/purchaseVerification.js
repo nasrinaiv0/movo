@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const products = require('../../src/lib/store-products.json');
 
 const BUNDLE_ID = 'com.nasrinai.movo';
-const PRODUCT_TIERS = Object.freeze({ pro: 1, max: 2, ultra: 3 });
+const PRODUCT_TIERS = Object.freeze({ pro: 1, pro_plus: 2 });
 
 function appAccountTokenForUser(userId) {
   const hex = crypto.createHash('sha256').update('movo-store-account:' + userId).digest('hex').slice(0, 32).split('');
@@ -101,6 +101,7 @@ async function verifyApple(jws, userId) {
   if (!transaction.transactionId || !transaction.originalTransactionId || !expiresAt) throw new Error('incomplete_apple_transaction');
   const status = transaction.revocationDate ? 'revoked' : (expiresAt.getTime() > Date.now() ? 'active' : 'expired');
   return {
+    paidVerified: transaction.offerDiscountType !== 'FREE_TRIAL' && Number(transaction.price) > 0,
     platform: 'apple',
     productId: transaction.productId,
     tier: product.tier,
@@ -148,7 +149,15 @@ async function verifyGoogle(purchaseToken, productId, userId) {
   };
   const status = statusMap[state] || 'pending';
   const purchaseTokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
+  let paidVerified = false;
+  if (!data.testPurchase && data.latestOrderId && publisher.orders?.get) {
+    // Only an actual positive, processed order qualifies; free trials do not.
+    const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }))?.data;
+    const purchasedLine = order?.lineItems?.find(item => item.productId === productId);
+    paidVerified = order?.state === 'PROCESSED' && !!purchasedLine && (Number(purchasedLine.total?.units || 0) > 0 || Number(purchasedLine.total?.nanos || 0) > 0);
+  }
   return {
+    paidVerified,
     platform: 'google',
     productId,
     tier: product.tier,

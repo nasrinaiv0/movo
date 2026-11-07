@@ -89,7 +89,7 @@ export async function getStoreProducts() {
       entry.productIdentifier === productIdentifier
       && (platform !== 'android' || entry.basePlanId === item.identifier)
     );
-    return configured ? { ...item, productIdentifier, basePlanId: configured.basePlanId } : null;
+    return configured ? { ...item, productIdentifier, basePlanId: configured.basePlanId, period: configured.period } : null;
   }).filter(Boolean);
 }
 

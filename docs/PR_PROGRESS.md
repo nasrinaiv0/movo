@@ -5,6 +5,8 @@
 
 ## Open pull requests
 
+**2026-11-07 — Pro / Pro+ trials and restrictions:** `feat/pro-plans-trial-restrictions` adds expiring plan gates, native-store product tiers, one-month Pro claim, verified referral rewards, cloud read-only transition and local backup access. Vercel Sandbox: 765 tests / 135 suites, TypeScript, production build and isolated PostgreSQL checks pass. Draft pending staging migration and signed-device store lifecycle checks. Details: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.
+
 **2026-11-07 — Membership, tokens, Cashback, and unified Others filter:** Branch feat/movo-others-membership-rewards-20261107 preserves five Wallet filters, puts cash/miscellaneous financial accounts plus membership/rewards into Others, adds secure non-cash provider cards, and introduces reversibly derived reward estimates from matching purchases in Cashback. Vercel Sandbox full build, Jest and Chromium QA; same-commit docs in docs/engineering/updates/2026-11-07-loyalty-membership-rewards-and-others-filter.md. Require exact-head CI before merge.
 
 **2026-11-07 — E-wallet QR upload:** Separate branch feat/ewallet-account-qr-20261107 extends Wallet account QR upload to e-wallet add/edit, preserving bank flow. Sandbox full tests 717/717, TypeScript, production build and Chromium mobile create/upload/reload/remove QA passed. Details: docs/engineering/updates/2026-11-07-ewallet-payment-qr-upload.md. Merge only after exact-head CI checks, no migration.

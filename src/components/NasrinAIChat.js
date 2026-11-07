@@ -1,4 +1,5 @@
 import { startDeviceSpeech } from '../lib/deviceSpeech';
+import { usePlan } from '../lib/PlanContext';
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
 import { categoryOf } from '../lib/categories';
@@ -82,6 +83,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const pendingVoiceTextsRef = useRef([]);
   busyRef.current = busy;
   const [error, setError] = useState('');
+  const { can, requireFeature } = usePlan();
   const [privacyAccepted, setPrivacyAccepted] = useState(() => readAck(session?.user?.id));
   const [consentOpen, setConsentOpen] = useState(false);
   const [listening, setListening] = useState(false);
@@ -142,8 +144,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const loadHistory = async () => {
       const accepted = readAck(session?.user?.id);
       setPrivacyAccepted(accepted);
-      setConsentOpen(!!session?.user && cloudMode && !accepted);
-      if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
+      setConsentOpen(can('fullAI') && !!session?.user && cloudMode && !accepted);
+    if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
       if (newConversationPending) { setMessages([]); setConversationId(null); return; }
       // One clean start per account after the MOVO-only change, so an older thread that quoted outside material is not
       // reopened (or fed back as context). Earlier chats stay in the account; they are just not reopened.
@@ -175,7 +177,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const message = String(spoken ?? draft).trim();
     if (!message || busy) return;
     // Logging is handled on this device and never sent to NasrinAI, so it needs no sign-in or AI consent.
-    const entries = onLog ? parseLogMessage(message) : [];
+    const entries = onLog && can('fullAI') ? parseLogMessage(message) : [];
     if (entries.length) {
       setError(''); setDraft('');
       setMessages((current) => [...current, { role: 'user', content: message, local: true }]);
@@ -197,6 +199,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError(''); setDraft('');
       setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', content: local, local: true }]);
       say(local);
+      return;
+    }
+    if (!can('fullAI')) {
+      setDraft('');
+      setMessages(current => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', local: true, content: 'Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.' }]);
       return;
     }
     if (!session?.user || !cloudMode || !supabase) {
@@ -256,6 +263,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   const logAnyway = async (index, row) => {
+    if (!requireFeature('fullAI')) return;
     try {
       const [added] = await onLog([row.entry], true);
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, items: m.items.map(x => (x.id === row.id ? added : x)) } : m)));
@@ -263,6 +271,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   const undo = async (index, id) => {
+    if (!requireFeature('fullAI')) return;
     try {
       await onUndoLog?.(id);
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, removed: [...m.removed, id] } : m)));
@@ -538,6 +547,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError(tr('Model-backed voice input is not supported in this browser.'));
       return;
     }
+    if (!requireFeature('fullAI')) return;
     if (!session?.user || !cloudMode || !privacyAccepted) {
       if (!privacyAccepted) setConsentOpen(true);
       else setError(tr('Sign in to MOVO to use voice chat.'));
@@ -600,6 +610,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   const attach = async (event) => {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    if (!requireFeature('fullAI')) return;
     setError(''); setAttaching(true);
     try {
       if (/^image\//.test(file.type)) {

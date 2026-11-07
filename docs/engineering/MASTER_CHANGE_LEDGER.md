@@ -546,3 +546,9 @@ For all four runs, the job logs show the full dependency install still reports *
 - SVG fills, billing-cycle bars, icon bubbles and summary separators follow the same foreground. Preserved geometry, financial calculations, data access, accessibility labels and behavior.
 - Regression tests and review gates: docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md. No persistent data operations or migrations.
 - Vercel Sandbox evidence: 701 tests / 124 suites passing, typecheck and optimized build passing, 28 browser-computed foreground/chart checks passing (5 fixtures × 2 accent cases). Same-commit documentation included.
+
+## 2026-11-07 — Pro / Pro+ plans, trial and referral restrictions
+- Branch `feat/pro-plans-trial-restrictions`, based on main `e8b7abc7`; preserves PRs #233–235.
+- Central expiring access model, API/database enforcement, native subscription products, one-month trial and verified ten-subscriber referral reward. Free local receipt attachments and read-only export/import remain available. Ram unchanged; Bronze/Silver/Gold badge labels.
+- Vercel Sandbox: 765 tests / 135 suites, TypeScript, production build and PostgreSQL adversarial access checks pass.
+- Production migration and native billing activation are pending; no production financial writes. Release gates and rollback: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.

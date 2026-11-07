@@ -1,3 +1,6 @@
+// Existing feature regression scenarios run with a verified Pro+ fixture.
+// Free/expiry behavior is covered independently by PlanRestrictions.test.js.
+jest.mock('./lib/usePlanEntitlement', () => ({ usePlanEntitlement: () => ({ entitlement: { tier:'pro_plus', active:true, expiresAt:'2099-01-01T00:00:00Z' }, refreshEntitlement: jest.fn() }) }));
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -62,6 +65,7 @@ describe('MOVO finance frontend', () => {
     };
     window.localStorage.clear();
     seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen:true }));
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -475,7 +479,7 @@ describe('MOVO finance frontend', () => {
     expect(plan.tagName).toBe('BUTTON');
     act(() => plan.click());
     const sheet = container.querySelector('[role="dialog"][aria-label="Plan & Usage"]');
-    expect(sheet.textContent).toContain('Quick · this device only');
+    expect(sheet.textContent).toContain('Free');
     expect(sheet.textContent).toMatch(/Transactions\d+/);
     expect(sheet.textContent).toContain('Store purchases and restore are available');
     clickButton(container, 'Close Plan & Usage');

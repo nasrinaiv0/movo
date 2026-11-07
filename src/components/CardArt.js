@@ -1,3 +1,4 @@
+import { usePlan } from '../lib/PlanContext';
 import React, { memo, useEffect, useId, useState } from 'react';
 import { W, H, rng, hash, defaultThemeFor, findSticker, useCustomStickers } from '../lib/stickers';
 import { money, shown } from '../lib/format';
@@ -217,12 +218,16 @@ const NETWORKS = { visa: 'Visa', mastercard: 'Mastercard', 'american express': '
  * Any sticker can sit behind it; with none, a palette matched to the institution is drawn.
  */
 export default function CardArt({ a, show, styleId, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape', qrCode = '', onQrClick }) {
+  const { can } = usePlan();
+  if (!can('portraitCards')) orientation = 'landscape';
+  if ((isStorageStickerId(styleId) && !can('premiumStickers')) || (String(styleId || '').startsWith('custom:') && !can('styleUploads'))) styleId = '';
+  if (!can('cardAnimations')) compact = true;
   const custom = useCustomStickers();
   const remoteSticker = isStorageStickerId(styleId);
   const [remoteUrl, setRemoteUrl] = useState('');
   useEffect(() => { let active = true; setRemoteUrl(''); if (remoteSticker) resolvePremiumStickerUrl(storageStickerPath(styleId)).then(url => { if (active) setRemoteUrl(url); }).catch(() => { if (active) setRemoteUrl(''); }); return () => { active = false; }; }, [styleId, remoteSticker]);
   const sticker = remoteSticker || finishOf(styleId) ? null : resolveSticker(styleId, custom);
-  const theme = sticker || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
+  const theme = (sticker?.custom && !can('styleUploads') ? null : sticker) || (!remoteSticker && preview ? defaultThemeFor(a.id) : null);
   const finish = finishOf(styleId);
   const face = finish || (theme || remoteSticker ? null : cardFaceFor(a));
   const ink = theme ? theme.ink : face ? face.ink : 'light';

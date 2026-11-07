@@ -59,7 +59,11 @@ module.exports = async function handler(req, res) {
 
     const subscriptionId = message.subscriptionNotification.subscriptionId || existing.product_id;
     const verified = await verifyGoogle(purchaseToken, subscriptionId, existing.user_id);
-    await persistStoreEntitlement(admin, existing.user_id, verified);
+    const entitlementId = await persistStoreEntitlement(admin, existing.user_id, verified);
+    if (verified.paidVerified && verified.environment === 'production' && !verified.needsAcknowledgement) {
+      const { error: referralError } = await admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: existing.user_id });
+      if (referralError) throw referralError;
+    }
     return json(res, 200, { received: true, processed: true });
   } catch (error) {
     console.error('[movo-purchases] Google notification rejected', { code: String(error?.message || 'unknown').slice(0, 80) });

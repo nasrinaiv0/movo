@@ -1,3 +1,4 @@
+import { usePlan } from '../lib/PlanContext';
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import CardArt from '../components/CardArt';
@@ -92,8 +93,13 @@ export default function Wallet({ c }) {
   const [addPick, setAddPick] = useState(false);
   const loyaltyCards = visibleLoyaltyCards(prefs).slice().sort((a, b) => a.name.localeCompare(b.name));
   const loyaltyEstimates = useMemo(() => estimatedLoyaltyTotals(estimateLoyaltyRewards(txs, accountsView, loyaltyCards, prefs.loyaltyRewardRules || {})), [txs, accountsView, prefs.membershipCards, prefs.loyaltyRewardRules]);
-  const wv = { ...WALLET_VIEW, ...(prefs.walletView || {}) };
-  const setWv = (patch) => setPref('walletView', { ...wv, ...patch });
+  const { can, requireFeature } = usePlan();
+  const wv = { ...WALLET_VIEW, ...(prefs.walletView || {}), ...(!can('portraitCards') ? { cardFormat: 'landscape', fxLandscape: 'slide' } : {}) };
+  const setWv = (patch) => {
+    if (patch.cardFormat === 'portrait' && !requireFeature('portraitCards')) return;
+    if ((patch.fxLandscape || patch.fxPortrait) && !requireFeature('cardAnimations')) return;
+    setPref('walletView', { ...wv, ...patch });
+  };
   const live = accountsView.filter(a => !a.is_archived);
   const sorted = [...live].sort(sorters[wv.sort] || sorters['balance-desc']);
   const list = sorted.filter(a => matchesWalletAccountFilter(a, walletFilter));

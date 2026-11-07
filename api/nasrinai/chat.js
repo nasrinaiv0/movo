@@ -1,3 +1,4 @@
+const { hasPlan } = require('../lib/planAccess');
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
@@ -251,6 +252,7 @@ module.exports = async function handler(req, res) {
     const { data: authData, error: authError } = await db.auth.getUser(token);
     if (authError || !authData?.user?.id) return json(res, 401, { error: 'invalid_session' });
     const userId = authData.user.id;
+    if (req.method === 'POST' && !(await hasPlan(db, userId))) return json(res, 403, { error: 'pro_required' });
 
     // Model-backed STT for MOVO hands-free chat. Audio is transient and is
     // forwarded only to the configured NasrinAI service; never persisted/logged.
