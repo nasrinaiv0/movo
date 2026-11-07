@@ -1,0 +1,28 @@
+/* Compact, borderless controls consistent with MOVO's account editor. */
+.loyalty-sheet .sheet-content { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+.loyalty-form { display: grid; gap: 14px; padding: 3px 0 16px; }
+.loyalty-info { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:16px; background:var(--surface-2,rgba(127,127,127,.09)); color:var(--muted,var(--text)); font-size:12px; line-height:1.5; }
+.loyalty-info svg { flex:0 0 auto; }
+.loyalty-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.loyalty-field > span { font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted,var(--text)); }
+.loyalty-field input,.loyalty-field select,.loyalty-field textarea { display:block; box-sizing:border-box; width:100%; min-width:0; min-height:48px; padding:12px 14px; border:0; outline-offset:2px; border-radius:14px; background:var(--surface-2,rgba(127,127,127,.09)); color:var(--text); font:inherit; font-size:15px; }
+.loyalty-field textarea { resize:vertical; }
+.loyalty-two { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+.loyalty-check { display:flex; align-items:center; gap:10px; font-size:13px; }
+.loyalty-check input { width:17px; height:17px; accent-color:var(--accent,#077645); }
+.loyalty-actions { display:flex; align-items:center; gap:10px; margin-top:5px; }
+.loyalty-actions .primary-button { flex:1; min-width:0; min-height:48px; }
+.loyalty-remove { flex-shrink:0; border:0; background:transparent; color:var(--danger,#b12e37); padding:12px; font:inherit; }
+.wallet-loyalty-section { padding:0 16px 16px; }
+.wallet-loyalty-list { display:grid; gap:10px; }
+.wallet-loyalty-entry { display:flex; align-items:center; gap:8px; border-radius:17px; padding:7px 12px 7px 8px; background:var(--surface-2,rgba(127,127,127,.08)); }
+.wallet-loyalty-open { flex:1; min-width:0; display:flex; align-items:center; gap:12px; padding:10px 2px; text-align:left; border:0; background:transparent; color:var(--text); font:inherit; }
+.wallet-loyalty-icon { width:42px; height:42px; display:grid; place-items:center; flex:0 0 auto; color:var(--accent,#087646); background:var(--surface,rgba(127,127,127,.08)); border-radius:14px; }
+.wallet-loyalty-info { min-width:0; flex:1; display:grid; gap:3px; }
+.wallet-loyalty-info strong { font-size:14px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.wallet-loyalty-info small { font-size:12px; color:var(--muted,var(--text)); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.wallet-loyalty-value { text-align:right; flex-shrink:0; }
+.wallet-loyalty-value strong { display:block; font-size:15px; }
+.wallet-loyalty-value small { display:block; font-size:11px; color:var(--muted,var(--text)); }
+.wallet-loyalty-empty { margin:8px 0 14px; font-size:13px; color:var(--muted,var(--text)); }
+.wallet-loyalty-add { border:0; background:transparent; font:inherit; color:var(--accent,#087646); font-weight:600; padding:8px 0; }

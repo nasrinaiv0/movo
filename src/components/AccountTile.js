@@ -23,11 +23,13 @@ export const ACCOUNT_TYPES = [
   { value: 'e_wallet', label: 'E-wallet', sub: 'GCash, Maya and others', icon: 'phone', color: '#0f8f84' },
   { value: 'cash', label: 'Cash', sub: 'Cash on hand', icon: 'wallet', color: '#5e8c61' },
   { value: 'investment', label: 'Investment', sub: 'Stocks, funds, crypto', icon: 'chart', color: '#7c4dff' },
+  { value: 'membership', label: 'Membership / loyalty', sub: 'Petron, Seaoil, Starbucks, Tim Hortons and more', icon: 'gift', color: '#087646' },
+  { value: 'tokens', label: 'Tokens / rewards', sub: 'Points, stamps, tokens and vouchers', icon: 'star', color: '#a26c21' },
   { value: 'other', label: 'Other', sub: 'Anything else you track', icon: 'coin', color: '#8a6d3b' },
 ];
 export const ACCOUNT_COLORS = ['#5e8c61', '#2f5fd0', '#0f8f84', '#7c4dff', '#c8323f', '#d97706', '#3b3f4a', '#0e7490', '#be185d', '#8a6d3b'];
 export const ACCOUNT_ICONS = ['wallet', 'bank', 'card', 'phone', 'coin', 'chart', 'briefcase', 'gift', 'diamond', 'star'];
-export const typeMeta = (type) => ACCOUNT_TYPES.find(t => t.value === type) || ACCOUNT_TYPES[5];
+export const typeMeta = (type) => ACCOUNT_TYPES.find(t => t.value === type) || ACCOUNT_TYPES[ACCOUNT_TYPES.length - 1];
 export const styleFor = (a, styles = {}) => ({ color: styles[a.id]?.color || typeMeta(a.account_type).color, icon: styles[a.id]?.icon || typeMeta(a.account_type).icon });
 
 /** Solid account card: icon, name, type and balance. Used for list tiles, grid tiles and the add-account preview. */
