@@ -76,7 +76,14 @@ export function estimateLoyaltyRewards(transactions = [], accounts = [], cards =
     if (!rule?.enabled || !rule?.accountId || !permittedAccounts.has(rule.accountId)) continue;
     const keyword = String(rule.merchantContains || '').trim().toLocaleLowerCase();
     const rate = Number(rule.pointsPer100);
-    if (keyword.length < 2 || keyword.length > 100 || !Number.isFinite(rate) || rate <= 0 || rate > 100000) continue;
+    const blockMode = rule.rateMode === 'perBlock';
+    const unit = Number(rule.spendUnit);
+    const perBlock = Number(rule.pointsPerBlock);
+    const validBlock = blockMode && Number.isFinite(unit) && unit > 0 && unit <= 10000000
+      && Number.isFinite(perBlock) && perBlock > 0 && perBlock <= 100000;
+    if (rule.presetId && (!rule.verified || rule.manualOnly)) continue;
+    if (keyword.length < 2 || keyword.length > 100 || (blockMode
+      ? !validBlock : (!Number.isFinite(rate) || rate <= 0 || rate > 100000))) continue;
     const currency = String(rule.currency || '').toUpperCase();
     if (!/^[A-Z]{3}$/.test(currency)) continue;
     for (const tx of transactions) {
@@ -85,7 +92,8 @@ export function estimateLoyaltyRewards(transactions = [], accounts = [], cards =
       if (String(tx.currency || currency).toUpperCase() !== currency) continue;
       const amount = Number(tx.amount);
       if (!Number.isFinite(amount) || amount <= 0) continue;
-      const earned = Math.floor((amount * rate / 100 + Number.EPSILON) * 100) / 100;
+      const earned = blockMode ? Math.floor((amount + 1e-8) / unit) * perBlock
+        : Math.floor((amount * rate / 100 + Number.EPSILON) * 100) / 100;
       if (earned <= 0 || earned > 1e12) continue;
       output.push({
         id: 'reward-' + card.id + '-' + tx.id, cardId: card.id, transactionId: tx.id,
