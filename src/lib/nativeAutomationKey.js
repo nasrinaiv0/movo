@@ -32,6 +32,10 @@ export function sanitizeNativePreferenceCache(prefs) {
 /** Called after restoreNativeStorage but before React mounts on native devices. */
 export async function restoreNativeAutomationKey(storage = typeof localStorage === 'undefined' ? null : localStorage) {
   if (!isNativeApp()) return;
+  // Subsequent retries must not expose a previously activated token after a
+  // failed cleanup or failed native-vault read.
+  ready = false;
+  cached = '';
   if (!storage) throw new Error('native_automation_storage_unavailable');
   // A native vault failure MUST NOT cause use of a credential found in plaintext.
   const { value } = await MovoNative.secureGet({ key: VAULT_KEY });

@@ -5,6 +5,24 @@
 
 ## Open pull requests
 
+**2026-11-08 — PR #227 native security remediation:** Secure legacy token deletion and logout tombstones are implemented; combined main/security Sandbox 814 tests passed. Preserve DRAFT until iOS/Android signed-device tests, 12 privileged RPC cross-user checks, and branch protection. See `docs/engineering/updates/2026-11-08-pr227-security-implementation.md`.
+
+**2026-11-08 — Transaction running balances (review, accessibility regression correction):** Add optional after-transaction balance/remaining credit history with paired transfer balances, cents accuracy, privacy masking and dedicated Settings toggle. Prepared in isolated Vercel Sandbox; verify exact-head CI and preview UI before merge. Details: docs/engineering/updates/2026-11-08-transaction-running-balances.md.
+
+**2026-11-07 — Plans and Wallet UI follow-up:** Removes cloud-read-only banner, adds swipeable plan cards with visible trial controls, and renders loyalty/rewards as cards with header-only creation. Badge hierarchy becomes Bronze/Silver/Gold/Platinum. Branch `fix/plans-wallet-ui-20261107`; details in `docs/engineering/updates/2026-11-07-plans-wallet-ui.md`.
+
+**2026-11-07 — Pro / Pro+ trials and restrictions:** `feat/pro-plans-trial-restrictions` adds expiring plan gates, native-store product tiers, one-month Pro claim, verified referral rewards, cloud read-only transition and local backup access. Vercel Sandbox: 765 tests / 135 suites, TypeScript, production build and isolated PostgreSQL checks pass. Draft pending staging migration and signed-device store lifecycle checks. Details: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.
+
+**2026-11-07 — Membership, tokens, Cashback, and unified Others filter:** Branch feat/movo-others-membership-rewards-20261107 preserves five Wallet filters, puts cash/miscellaneous financial accounts plus membership/rewards into Others, adds secure non-cash provider cards, and introduces reversibly derived reward estimates from matching purchases in Cashback. Vercel Sandbox full build, Jest and Chromium QA; same-commit docs in docs/engineering/updates/2026-11-07-loyalty-membership-rewards-and-others-filter.md. Require exact-head CI before merge.
+
+**2026-11-07 — E-wallet QR upload:** Separate branch feat/ewallet-account-qr-20261107 extends Wallet account QR upload to e-wallet add/edit, preserving bank flow. Sandbox full tests 717/717, TypeScript, production build and Chromium mobile create/upload/reload/remove QA passed. Details: docs/engineering/updates/2026-11-07-ewallet-payment-qr-upload.md. Merge only after exact-head CI checks, no migration.
+
+**2026-11-07 — TTS / receipt scan repair:** Isolated branch, fixes local OCR contrast collapse, WASM CSP, iOS image decode fallback, scanner recovery, bounded SSE/NDJSON voice streaming and chunked TTS. Vercel Sandbox build: 712 tests pass; detailed manual/automated verification recorded in dated engineering update. Unmerged until exact-head CI review.
+
+**2026-11-07 — Follow-up on PR #230:** All shared RootHeader and SubHeader back-arrow buttons are now transparent across light/dark, hover, active and focus states (with accessible focus ring preserved). No changes to 45px hit targets or standalone controls; Vercel Sandbox browser QA (375px light, 320px dark, 1024px desktop) and 692 automated tests passed; GitHub CI to confirm. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+**2026-11-07 — Grouped header zero-padding change:** `ui/header-group-zero-padding-20261107` removes utility capsule and grouped-button padding across MOVO, preserves icon geometry, and adds a CSS regression test. Vercel Sandbox validation and GitHub CI to be recorded in PR; no production merge implied. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
 **2026-11-08 — PR #227 updated security gap audit:** Review of exact security branch and live MOVO DB identified 12 privileged RPCs pending two-user negative tests, unprotected main, 34-commit divergence and three merge conflicts, native legacy secret cleanup caveat, and canceled iOS CI. Sandbox 644/644 tests and build passed. Audit: `docs/security/PR227_GAP_AUDIT_2026-11-08.md`. PR remains DRAFT.
 
 | PR | Scope | Current state | Next action |
@@ -311,6 +329,118 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - CI dependency follow-up (PR #226): the lockfile generated under npm 11 was rejected by the GitHub runner npm 10 because of an npm-version-specific optional yaml peer dependency. Pinned npm 11.19.1 for the CI install to match the validated lockfile; no dependency/lockfile change or financial-data write.
 
 - PR #226 exact-head CI caught a missing in-app Legal screen change in the initial Git tree; restored src/screens/Legal.js (November 6 effective date and canonical supplements) in the same commit as this update and the dated engineering note. Retest before merging.
+
+
+## PR #225 — Wallet/Transactions adaptive icons, compact summary and billing-cycle dues (2026-11-06)
+- Base: refreshed to main 9c423c71. Scope: Wallet edit and Transactions quick-action SVGs use adaptive accent ink; compact Total Spent card aligns comparison with month axis.
+- Bills/Financial Planning: overdue unpaid obligations plus one current billing cycle per bill; future periods are not counted as currently due; duplicate occurrences do not inflate totals. No ledger data is changed.
+- Regressions: cycle/deduplication/cents and icon rendering tests, plus all 11 locale outputs. Source documentation: docs/engineering/2026-11-06-wallet-transactions-compact-summary.md.
+- Validation: initial Vercel Sandbox 108 suites / 618 tests, typecheck, production build passed; deployment/preview requires separate verification. PR remains open.
+
+
+## PR #225 — Mascot bubble text-link border follow-up (2026-11-06)
+- In the Home header, exempt only `Change mascot` (`.ram-bubble-link`) from MOVO's global 0.25px button hairline; preserve accent color, callback, keyboard focus and card panels.
+- Added `RamMascot.test.js` regression and updated the detailed engineering documentation alongside this code change.
+- Vercel Sandbox: 108 suites / 619 tests, typecheck and build passed before rebasing. Live PR CI/preview must verify the rebased revision.
+
+
+## PR #225 — Empty-only record surfaces across MOVO (2026-11-06)
+- Removed decorative horizontal background/border/shadow on **empty-only** record lists: Scheduled payments/transfers, overdue obligations, reminders, Cashback lists and other empty-single-paragraph cards.
+- CSS limits selection to direct empty children or empty categories; populated cards, buttons, charts and onboarding CTAs retain their styling. Truly empty list cards render no blank capsule. No changes to financial calculations or storage.
+- Regression test: `EmptyRecordSurfaces.test.js`; full Vercel Sandbox 109 suites / 622 tests plus TypeScript check and production build passed. Rebased exact-head CI and preview validation remain the merge gates.
+
+
+## PR #225 — Consistent headers, legal spacing and Vercel-configured social profiles (2026-11-06)
+- Root and back-navigation headers use 10px upper/lower internal padding with 10px bottom separation. Home mascot/header row is more compact while retaining 45px actions and safe-area spacing.
+- Terms, Privacy and Help Center share 14px section gaps, including canonical supplemental policy sections; adjusted sticky fade and bottom scroll clearance for fixed navigation.
+- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through \`/api/social-links\`. No fake profiles or client-side embedded links.
+- Changed files, new security/API and rendering tests, translations and documentation are committed together with a dated engineering update, as required by MOVO CI. No finance/ledger or policy wording changes.
+- Sandbox tests and GitHub exact-head CI required before merging. Vercel preview can be canceled by ignored-build setting and must not be assumed verified.
+
+- Social-env deployment clarification: setting or editing MOVO social profile URLs in Vercel Project Settings requires a new deployment, because previously deployed functions retain their old environment. Links remain hidden until a valid URL is present in the running deployment. Cached public profile output may take up to five minutes to refresh.
+
+
+## PR #225 — Equal header button insets and responsive action groups (2026-11-06)
+- Home Search/Bell/Settings capsule and the shared root-screen utility capsule now use symmetric 5px interior padding, 4px inter-button gaps and 45px circles with centered 22px icons. This preserves theme-specific icon colors, notifications dots and selection backgrounds.
+- Separately grouped Plus controls stay outside their utility capsule with 8px header spacing. On screens narrower than 360px, the Home action pill moves to its own right-aligned grid row rather than clipping the greeting or shrinking 45px hit targets.
+- Additional regression coverage in src/components/HeaderButtonSpacing.test.js checks equal geometry, responsive grid and real button callbacks. No financial, legal or social-link runtime calculations change.
+- Previous Vercel env redeployment documentation correction and this change are documented in dated notes and verified against the exact PR head.
+
+
+## PR #225 — Chat status, solid More icon, and edge-to-edge Google favicons (2026-11-06)
+- Removed chat status pill and green badge background, leaving only the animated NasrinAI dot mark in adaptive accent and accessible progress text.
+- Replaced outlined More dots with three solid currentColor dots.
+- Eliminated CSS padding/percentage insets from Google S2 fetched favicons, scoped to true images and matching catalog wrapper; restored full logo area in account, transaction, subscriptions, crypto and stocks lists while leaving other images intact.
+- New ChatMoreFavicons.test.js regression coverage. Engineering update: docs/engineering/updates/2026-11-06-pr225-chat-more-favicons.md. Require full GitHub CI and sandbox build at this commit before merging.
+
+
+## PR #228 — Borderless controls across all MOVO screens (2026-11-07)
+- Eliminated visual borders and faux inset-shadow outlines on buttons, tabs, calendar days, clickable rows, action links, header controls and bottom navigation in light and dark appearances.
+- Corrected the global `border-width: var(--hair) !important` selector to exclude controls and their pseudo-elements. The final control policy outranks legacy high-specificity button border declarations; structural card/panel/field boundaries and keyboard focus-visible outlines are preserved.
+- Vercel Sandbox verification: 117 suites / 656 tests passing, TypeScript check and production React build successful; headless Chromium computed-style audits found zero button-border violations on Home (both themes), Wallet, Transactions, Menu, Subscriptions and its tabs, Cashback and Add form, Financial Planning, Limits and transaction search. Focus indicator remains 2px. No browser page errors on main navigation.
+- Implementation, automated regression checks, this PR progress entry, and `docs/engineering/updates/2026-11-07-borderless-controls.md` are included in the same commit to satisfy per-commit documentation gates.
+- Keep independent security PR #227 unchanged. Merge only after exact-head GitHub CI and deployment checks succeed.
+
+
+## Header 0.5px padding and back navigation — 2026-11-07
+- On latest merged main, use 0.5px internal padding for header buttons without changing the established 45px touch targets, 22px icons, utility group spacing, colors or states.
+- Cashback and Scheduled (entered from Menu) gain an optional Back button returning to Menu, while retaining original large titles and all actions, including Scheduled Plus. At narrow widths (<360px), only these pages' header utilities wrap to a second row.
+- Broad MOVO button border removal is already in main. Preserve CSS icon pseudo-element borders needed to draw indicators while removing decorative shadows.
+- Added navigation, responsive CSS, exact padding and icon safety tests; a dated engineering update accompanies this single code commit.
+
+
+## PR #229 — Unified Settings icon across MOVO (2026-11-07)
+- Profile header, Profile Financial Settings row and sidebar now use the same solid Settings gear already shown on Home and shared headers.
+- Per-context SVG sizes stay unchanged (Home 24px, shared header 23px, Profile header 19px, menu 20px, sidebar 22px). Theme-adaptive currentColor, 45px touch targets, 0.5px header padding and borderless controls are preserved.
+- The legacy gear icon name aliases to canonical gearSolid in the shared Icon component to prevent a second design recurring. Other icons such as shield and sliders remain distinct.
+- New SettingsIconConsistency.test.js covers matching SVG artwork, click routing and existing size contracts. Dated engineering documentation accompanies this commit.
+
+
+## PR #229 — Adaptive Financial Planning filters, 10px headers and scrolling mascot (2026-11-07)
+- Shared filter buttons now show the application's main foreground color when unselected; selected chips use contrast-safe white text on the light-mode dark sliding pill, or dark text on the dark-mode white pill. Preserve button sizes and tap behavior.
+- Standardized all direct root/sub/Home/Wallet/Transactions/Menu headers at exactly 10px top/bottom internal padding and 10px lower separation. Preserve the iPhone safe-area inset on screen, existing icon sizes and 0.5px button interior padding.
+- Home ram avatar slot compacted from 80px to 68px (60px on narrow phones). Animated artwork scales to 88% on scroll, photo mascot to 90%, while retaining the existing interaction target; reduced-motion disables transitions.
+- Added AdaptiveFilterHeaderMascot.test.js with CSS cascade, real tab-click, scroll integration, responsive and accessibility checks. Dated engineering documentation included. No financial/data logic changes.
+
+
+## PR #229 — Transactions filters spacing (2026-11-07)
+- Standardized Transactions type filters and billing selector onto one aligned row, with consistent gaps, no negative inherited margins, and clear 16px separation beneath the row.
+- Date / Amount / From-To / Account sort chips use equal-width 3- or 4-column layout, 8px gaps (6px narrow), and 16px of clear separation above transaction cards/date headings. No more active chip touching the card.
+- Narrow <=390px spacing retains click targets, accessible labels and no overlaps. Preserved existing theme, colors, selection indicator, filter/sort logic and all other pages.
+- Added TransactionFilterSpacing.test.js plus a dated engineering record in this same code commit. Gate on Vercel Sandbox full CI/build and exact-head GitHub CI before merging.
+
+
+## PR #229 — Compact Wallet card actions and enlarged icons (2026-11-07)
+- For View Details / Add amount / Limits / More beneath the selected card, decrease vertical bar padding from 14px to 8px, enlarge each icon from 20px to 26px and reduce icon/label gap from 7px to 5px. Keep the 4-column arrangement, horizontal padding, 11px labels and 44px minimum touch target.
+- No changes to click actions, labels, card boundaries, outline-free button styling, themes or financial functionality. Added WalletCardActionSpacing.test.js and dated engineering record. Require Vercel Sandbox test/build and GitHub CI before merging.
+
+
+## PR #229 — Financial Planning: Collect, Edit and Delete in Owed to you (2026-11-07)
+- Each receivable now uses the Loans & Debts three-action card, preserving compact layout and icons. Collect reuses the existing record_receivable_event SQL RPC (account- and owner-validated) and is disabled on settled or fully collected records.
+- Edit updates metadata only, leaving principal, currency, outstanding balances, account links and event history intact. Delete presents a confirmation and soft-archives the receivable without erasing collections or changing cash balances.
+- Owner-scoping, date validation, archive filtering and real UI callbacks have targeted regression tests. Internationalized UI copy is available in all 11 languages.
+- Detailed same-commit documentation: docs/engineering/updates/2026-11-07-pr229-receivable-actions.md. Existing Wallet four-action compact strip was committed already in a4a7a3e and is preserved here.
+- Require full Vercel Sandbox tests/build, GitHub exact-head CI and live mobile visual review before merge.
+
+## Transactions sort filter side-fade correction (2026-11-07)
+- Screenshot defect: the Date/Amount/Account sort buttons fade at the left and right edges due to the global `.chip-row` scroller mask.
+- Transactions sorting uses a fixed non-scrollable grid, so override only its mask to `none` (including WebKit); remove only the sort indicator's box shadow.
+- Preserve active pill appearance, gaps, 44px targets, arrow-free labels, sorting callbacks and the horizontal fades of genuinely scrolling rows. No change to financial records, auth or calculations.
+- Includes a focused regression test and the engineering record `docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md`. Require Vercel Sandbox checks and exact-head GitHub CI before merging.
+- Verification: focused Sandbox tests 18/18, full test suites 124/124 and 694/694 tests, TypeScript and optimized build passing. Chromium mobile-width computed-style checks confirmed both masks and indicator shadow are `none` in light and dark appearance; three options and 44px target intact.
+
+## Transactions and Wallet — exactly 40px filter heights (2026-11-07, PR #232 follow-up)
+- Align Transactions type/date-sort/account-sort filters and billing-cycle select to 40px, Wallet category filters and Wallet sort/layout selectors to 40px. Preserve all current horizontal spacing, responsive widths, selected-pill animation, semantic button labels, and existing side-shadow removal in PR #232.
+- Only filter controls are targeted; header actions and unrelated cards/navigation remain unchanged.
+- Added `TransactionWalletFilterHeight.test.js`, updated existing Transactions filter spacing / shadow regression expectations and extended dated engineering docs in the same commit. Vercel Sandbox and exact-head GitHub CI required before merge.
+- Follow-up final verification: isolated Vercel Sandbox 704/704 tests in 125 suites, TypeScript and build passed. Browser verified 36 40px controls per mobile width across light/dark at 320/390/430px; exact-head GitHub CI remains a separate merge gate.
+
+## Adaptive summary-card accent contrast (2026-11-07)
+- Correct five screenshot-referenced surfaces: Home Total Balance, Transactions Total Spent / billing cycle graph, Financial Planning Net worth, Cashback tracked, and Monthly subscriptions.
+- Reuse the existing WCAG black/white `--on-accent` algorithm for all summary-card text and SVG/bar graph colors; use subtle matching translucent chart backgrounds instead of fixed white. Accent fill and existing component layouts are preserved.
+- Scope: stylesheet + dedicated regression tests + dated engineering record. No financial data, API, account, layout, theme preference or user interaction changes.
+- Merge gate: full Vercel Sandbox install, test/typecheck/build, followed by same-commit PR CI and visual review. See docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md.
+- Verification: Vercel Sandbox targeted 20/20; full prebuild 701/701 tests / 124 suites; TypeScript and optimized build passed; 28/28 computed-style browser assertions on real built app for pastel pink and dark charcoal passed. PR checks and authenticated human visual review remain merge gates.
 
 ## 2026-11-06 — Native session vault and mobile safety PR
 - Branch security/native-auth-backup-privacy-20261106, base main 9c423c7. Open UI PR #225 preserved. Release NOT CERTIFIED.

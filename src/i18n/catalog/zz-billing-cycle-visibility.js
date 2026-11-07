@@ -1,0 +1,5 @@
+/* Current billing-cycle due presentation. English + 11 supported languages. */
+export default [
+  ["Nothing overdue or due in the current billing cycle.", "Walang overdue o dapat bayaran sa kasalukuyang billing cycle.", "لا توجد فواتير متأخرة أو مستحقة في دورة الفوترة الحالية.", "当前账单周期内没有逾期或到期的账单。", "No hay facturas vencidas ni por pagar en el ciclo de facturación actual.", "Nessuna fattura scaduta o in scadenza nel ciclo di fatturazione corrente.", "Keine überfälligen oder im aktuellen Abrechnungszeitraum fälligen Rechnungen.", "Aucune facture en retard ou à payer sur le cycle de facturation en cours.", "Não há contas vencidas ou a vencer no ciclo de faturamento atual.", "現在の請求期間に未払いの延滞請求や支払期日の請求はありません。", "현재 청구 주기에 연체되었거나 납부할 청구서가 없습니다.", "वर्तमान बिलिंग चक्र में कोई अतिदेय या देय बिल नहीं है।"],
+  ["Overdue + current cycle", "Lampas na sa due + kasalukuyang cycle", "المتأخر + الدورة الحالية", "逾期 + 当前周期", "Vencido + ciclo actual", "Scaduto + ciclo corrente", "Überfällig + aktueller Zeitraum", "En retard + cycle en cours", "Em atraso + ciclo atual", "延滞分 + 今期分", "연체분 + 현재 청구 주기", "अतिदेय + वर्तमान चक्र"],
+];

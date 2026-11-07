@@ -64,6 +64,10 @@ module.exports = async function handler(req, res) {
         throw ackError;
       }
     }
+    if (verified.paidVerified && verified.environment === 'production') {
+      const { error } = await api.admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: userId });
+      if (error) throw error;
+    }
     return json(res, 200, { verified: true, entitlementId, acknowledged: verified.platform === 'google', tier: verified.tier, status: verified.status, expiresAt: verified.expiresAt });
   } catch (cause) {
     const message = String(cause?.message || '');

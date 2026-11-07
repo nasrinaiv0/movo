@@ -119,14 +119,14 @@ describe('POST /api/log handler', () => {
     { id: 'acct-cash', name: 'Cash', account_type: 'cash', institution_name: null, currency: 'PHP', is_archived: false, display_order: 1 },
   ];
   const KEY = 'a'.repeat(32);
-  let calls; let rpcResult; let tokenRow;
+  let calls; let rpcResult; let tokenRow; let planTier;
   const fakeAdmin = () => ({
     from: (table) => {
       const q = { _table: table, select: () => q, eq: () => q, order: () => Promise.resolve({ data: ACCOUNTS, error: null }), maybeSingle: () => Promise.resolve({ data: tokenRow, error: null }), update: () => q, upsert: () => Promise.resolve({ error: null }) };
       q.then = (ok) => Promise.resolve({ error: null }).then(ok); // update(...).eq(...) awaited
       return q;
     },
-    rpc: (name, params) => { calls.push({ name, params }); return Promise.resolve(rpcResult); },
+    rpc: (name, params) => { if (name === 'movo_plan_status') return Promise.resolve({ data: { tier:planTier, active:true, expiresAt:'2099-01-01T00:00:00Z' }, error:null }); calls.push({ name, params }); return Promise.resolve(rpcResult); },
   });
   const load = () => {
     jest.resetModules();
@@ -139,8 +139,16 @@ describe('POST /api/log handler', () => {
     await handler({ method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-length': '200' }, body }, res);
     return res;
   };
-  beforeEach(() => { calls = []; rpcResult = { data: { duplicate: false, matched_by: null, transaction_id: 'tx-1' }, error: null }; tokenRow = { user_id: 'user-1', active: true }; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
+  beforeEach(() => { planTier = 'pro_plus'; calls = []; rpcResult = { data: { duplicate: false, matched_by: null, transaction_id: 'tx-1' }, error: null }; tokenRow = { user_id: 'user-1', active: true }; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
   afterEach(() => { jest.restoreAllMocks(); jest.dontMock('@supabase/supabase-js'); });
+
+  test.each(['free','pro'])('%s cannot log with a registered automation token', async tier => {
+    planTier = tier;
+    const response = await call(load(), { amount: 100, merchant: 'Test', source: 'applepay' });
+    expect(response.statusCode).toBe(403);
+    expect(response.body.error).toBe('pro_plus_required');
+    expect(calls).toEqual([]);
+  });
 
   test.each(['applepay', 'googlepay', 'bank', 'notification'])('%s keeps its source, amount, currency, time, merchant and account', async (source) => {
     const handler = load();
@@ -353,7 +361,7 @@ describe('POST /api/log safe migration handling', () => {
     const calls = [];
     jest.doMock('@supabase/supabase-js', () => ({ createClient: (url, key) => (key === 'service' ? {
       from: () => { const q = { select: () => q, eq: () => q, order: () => Promise.resolve({ data: [{ id: 'acct-cash', name: 'Cash', currency: 'PHP', is_archived: false }], error: null }), maybeSingle: () => Promise.resolve({ data: { user_id: 'u1', active: true }, error: null }), update: () => q }; q.then = (ok) => Promise.resolve({ error: null }).then(ok); return q; },
-      rpc: (name, params) => { calls.push({ name, params }); return Promise.resolve(name === 'log_automation_transaction_v2' ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.log_automation_transaction_v2' } } : { data: { duplicate: false, transaction_id: 't1' }, error: null }); },
+      rpc: (name, params) => { if (name === 'movo_plan_status') return Promise.resolve({ data: { tier:'pro_plus', active:true, expiresAt:'2099-01-01T00:00:00Z' }, error:null }); calls.push({ name, params }); return Promise.resolve(name === 'log_automation_transaction_v2' ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.log_automation_transaction_v2' } } : { data: { duplicate: false, transaction_id: 't1' }, error: null }); },
     } : {}) }));
     process.env.SUPABASE_URL = 'https://example.supabase.co'; process.env.SUPABASE_ANON_KEY = 'anon'; process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
     jest.spyOn(console, 'info').mockImplementation(() => {});

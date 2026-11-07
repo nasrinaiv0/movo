@@ -26,3 +26,21 @@ test('recognises money received and day-first dates', () => {
   const text = 'BPI\nYou received PHP 5,000.00\nReceived from: Maria Santos\nPurpose: Freelance payment\n01 Nov 2026 09:30';
   expect(parseReceipt(text)).toMatchObject({ amount: 5000, merchant: 'Maria Santos', reason: 'Freelance payment', bank: 'BPI', date: '2026-11-01', type: 'income' });
 });
+
+test('OCR enhancement preserves white paper when printed text occupies under five percent', () => {
+  const { enhance } = require('./ocr');
+  const pixels = new Uint8ClampedArray(100 * 4);
+  for (let i = 0; i < pixels.length; i += 4) {
+    const v = i < 2 * 4 ? 0 : 255;
+    pixels[i] = pixels[i + 1] = pixels[i + 2] = v; pixels[i + 3] = 255;
+  }
+  const output = { data: pixels };
+  const context = {
+    getImageData: () => output,
+    putImageData: jest.fn()
+  };
+  enhance({ width: 10, height: 10, getContext: () => context });
+  expect(output.data[0]).toBe(0);
+  expect(output.data[8]).toBe(255);
+  expect(context.putImageData).toHaveBeenCalled();
+});

@@ -7,7 +7,6 @@ const FILLED = {
   list: <path fillRule="evenodd" d="M8.2 2.6h7.6a4.1 4.1 0 0 1 4.1 4.1v10.6a4.1 4.1 0 0 1-4.1 4.1H8.2a4.1 4.1 0 0 1-4.1-4.1V6.7a4.1 4.1 0 0 1 4.1-4.1Zm.5 5.1a1 1 0 0 0 0 2h6.6a1 1 0 0 0 0-2Zm0 4.1a1 1 0 0 0 0 2h6.6a1 1 0 0 0 0-2Zm0 4.1a1 1 0 0 0 0 2h3.6a1 1 0 0 0 0-2Z" />,
   user: <><circle cx="12" cy="7.6" r="4.4" /><path d="M4 19.6C4 16.5 7.6 14.6 12 14.6s8 1.9 8 5a1.4 1.4 0 0 1-1.4 1.4H5.4A1.4 1.4 0 0 1 4 19.6Z" /></>,
   bell: <path d="M12 2.6a6.4 6.4 0 0 0-6.4 6.4c0 4.7-1.7 6.3-2.5 7a.9.9 0 0 0 .6 1.5h16.6a.9.9 0 0 0 .6-1.5c-.8-.7-2.5-2.3-2.5-7A6.4 6.4 0 0 0 12 2.6Zm-2.2 16.2a2.3 2.3 0 0 0 4.4 0Z" />,
-  gear: null,
 
 };
 // Vector traced from the user-provided Limits gauge, with transparent background.
@@ -22,7 +21,6 @@ const P = {
   gearSolid: <path fill="currentColor" stroke="none" fillRule="evenodd" d="M9.2 1.6C9.2.7 9.9 0 10.8 0h2.4c.9 0 1.6.7 1.6 1.6v1.5c1.2.4 2.2 1 3.1 1.8l1.4-.5c.8-.3 1.7 0 2.1.8l1.2 2.1c.5.8.2 1.7-.6 2.2l-1.3.8c.2 1.2.2 2.4 0 3.6l1.3.8c.8.5 1.1 1.4.6 2.2l-1.2 2.1c-.4.8-1.3 1.1-2.1.8l-1.4-.5c-.9.8-1.9 1.4-3.1 1.8v1.5c0 .9-.7 1.6-1.6 1.6h-2.4c-.9 0-1.6-.7-1.6-1.6v-1.5c-1.2-.4-2.2-1-3.1-1.8l-1.4.5c-.8.3-1.7 0-2.1-.8l-1.2-2.1c-.5-.8-.2-1.7.6-2.2l1.3-.8a10 10 0 0 1 0-3.6l-1.3-.8c-.8-.5-1.1-1.4-.6-2.2l1.2-2.1c.4-.8 1.3-1.1 2.1-.8l1.4.5c.9-.8 1.9-1.4 3.1-1.8V1.6ZM12 16.2a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Z" />,
   search: <><circle cx="10.6" cy="10.6" r="6.6" /><path d="m15.6 15.6 4.6 4.6" /></>,
   bell: <><path d="M6 10a6 6 0 0 1 12 0c0 4.2 1.2 5.6 2 6.4.5.5.1 1.4-.6 1.4H4.6c-.7 0-1.1-.9-.6-1.4.8-.8 2-2.2 2-6.4Z" /><path d="M9.8 20.4a2.4 2.4 0 0 0 4.4 0" /></>,
-  gear: <><circle cx="12" cy="12" r="3.1" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" /></>,
   chevron: <path d="m9.5 5.5 6.5 6.5-6.5 6.5" />,
   back: <path d="M14.5 5.5 8 12l6.5 6.5" />,
   down: <path d="m5.5 9.5 6.5 6.5 6.5-6.5" />,
@@ -37,7 +35,7 @@ const P = {
   bank: <><path d="m3.5 9.6 7.6-5.1a1.6 1.6 0 0 1 1.8 0l7.6 5.1" /><path d="M6.2 11.5v5.8M10.1 11.5v5.8M13.9 11.5v5.8M17.8 11.5v5.8M3.8 20h16.4" /></>,
   send: <path d="M20.6 3.4 3.8 9.9a.9.9 0 0 0 0 1.7l6.4 2.5 2.5 6.4a.9.9 0 0 0 1.7 0L20.9 4.5a.9.9 0 0 0-.3-1.1ZM10.2 14.1l5.6-5.6" />,
   transfer: <><path d="m16.5 4 3.5 3.5-3.5 3.5M20 7.5H8.5" /><path d="m7.5 20-3.5-3.5L7.5 13M4 16.5h11.5" /></>,
-  more: <><circle cx="5.5" cy="12" r="1.4" /><circle cx="12" cy="12" r="1.4" /><circle cx="18.5" cy="12" r="1.4" /></>,
+  more: <><circle cx="5" cy="12" r="2.15" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="2.15" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="2.15" fill="currentColor" stroke="none" /></>,
   spark: <path d="M12 3c.9 5.4 2.6 7.1 8 8-5.4.9-7.1 2.6-8 8-.9-5.4-2.6-7.1-8-8 5.4-.9 7.1-2.6 8-8Z" />,
   sun: <><circle cx="12" cy="12" r="4.2" /><path d="M12 2.8v2M12 19.2v2M2.8 12h2M19.2 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M5.5 18.5l1.4-1.4M17.1 6.9l1.4-1.4" /></>,
   moon: <path d="M20.2 14.4A8.4 8.4 0 0 1 9.6 3.8a8.4 8.4 0 1 0 10.6 10.6Z" />,
@@ -60,6 +58,15 @@ const P = {
   limits: <path d={LIMITS_GAUGE_PATH} fill="currentColor" fillRule="evenodd" stroke="none" />,
   sliders: <><path d="M3.5 5.2h17M3.5 12h17M3.5 18.8h17" /><circle cx="9" cy="5.2" r="2.4" /><circle cx="16" cy="12" r="2.4" /><circle cx="7" cy="18.8" r="2.4" /></>,
   transactionFilter: <><circle cx="12" cy="12" r="12" fill="#1e1e1e" stroke="none" /><g fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h11M18 4h3M3 12h7M14 12h7M3 20h13M20 20h1M14 1v6M10 9v6M16 17v6" /></g></>,
+  // Page-specific reference-matched header glyphs. currentColor inherits the accent/theme ink.
+  walletHeaderEdit: <>
+    <path d="M11.4 4.2H5.7a2.5 2.5 0 0 0-2.5 2.5v11.6a2.5 2.5 0 0 0 2.5 2.5h11.6a2.5 2.5 0 0 0 2.5-2.5v-6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m10.1 13.8 7.3-7.3 3.1 3.1-7.3 7.3-4.2 1.2c-.6.2-1.1-.3-.9-.9zM18.3 5.6l1.4-1.4a1.9 1.9 0 0 1 2.7 2.7L21 8.3Z" fill="currentColor" stroke="none" />
+  </>,
+  quickActionShare: <>
+    <path d="M5.2 4.1h5.5v2.7H6.5v11.6h11.4v-5.2h2.7v5.5a2.4 2.4 0 0 1-2.4 2.4H5.9a2.4 2.4 0 0 1-2.4-2.4V6a1.9 1.9 0 0 1 1.7-1.9Z" fill="currentColor" stroke="none" />
+    <path d="M9.1 16.5C9.1 9.6 13 5.7 18.4 5.7V3.4a1 1 0 0 1 1.7-.7l3.7 3.7a1.5 1.5 0 0 1 0 2.1l-3.7 3.7a1 1 0 0 1-1.7-.7V9.4c-4.6 0-7.1 2.1-8 7.2-.2 1-1.3 1-1.3-.1Z" fill="currentColor" stroke="none" />
+  </>,
   chart: <><rect x="4.4" y="11" width="3.6" height="8.6" rx="1.5" /><rect x="10.2" y="4.4" width="3.6" height="15.2" rx="1.5" /><rect x="16" y="8" width="3.6" height="11.6" rx="1.5" /></>,
   cart: <><path d="M3 4.2h2.2a1 1 0 0 1 1 .8l1.6 8.6a1.8 1.8 0 0 0 1.8 1.5h7.2a1.8 1.8 0 0 0 1.8-1.4l1.2-5.3H7" /><circle cx="9.6" cy="19" r="1.4" /><circle cx="17" cy="19" r="1.4" /></>,
   briefcase: <><rect x="3" y="7.5" width="18" height="12.5" rx="3.6" /><path d="M9 7.5V6.2A2.2 2.2 0 0 1 11.2 4h1.6A2.2 2.2 0 0 1 15 6.2v1.3M3 13h18" /></>,
@@ -107,11 +114,13 @@ const P = {
 };
 
 export default function Icon({ name, size = 20, strokeWidth = 1.7, filled = false, className = '' }) {
-  const solid = filled && FILLED[name];
+  // Keep legacy gear callers identical to the canonical solid Settings artwork.
+  const glyph = name === 'gear' ? 'gearSolid' : name;
+  const solid = filled && FILLED[glyph];
   return (
     <svg className={`movo-icon ${className}`.trim()} width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'}
       stroke={solid ? 'none' : 'currentColor'} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {solid || P[name] || P.spark}
+      {solid || P[glyph] || P.spark}
     </svg>
   );
 }

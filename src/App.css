@@ -144,6 +144,11 @@ h1, h2, h3, p { margin: 0; }
 .tx-side { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: none; }
 .tx-side b { font-size: 14.5px; font-weight: 600; letter-spacing: -.3px; }
 .tx-side b.pos { color: var(--green); }
+.tx-side { max-width: 53%; min-width: 0; }
+.tx-after-balances { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; max-width: 100%; }
+.tx-after-balance { display: flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; color: var(--muted); font-size: 10.5px; line-height: 1.2; text-align: right; overflow-wrap: anywhere; }
+.tx-after-balance .tx-after-amount { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 .pill { display: inline-block; padding: 3px 10px; border-radius: 8px; font-style: normal; font-size: 11px; font-weight: 500; }
 .no-category-colors .pill { background: rgba(120,128,145,.14); color: var(--muted); }
 .empty { padding: 20px 8px; text-align: center; color: var(--muted); font-size: 13px; }
@@ -1266,7 +1271,10 @@ button.account-tile:active { transform: scale(.98); }
 .acct-toggle > span:nth-child(2) { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
 /* ===== Every border is a 0.25px hairline (functional rings excluded) ===== */
-*:not(.spinner):not(.scan-shutter):not(.scan-guide), *::before, *::after { border-width: var(--hair) !important; }
+/* Thin structural hairlines must never be forced onto interactive controls. */
+*:not(.spinner):not(.scan-shutter):not(.scan-guide):not(:is(button, [role="button"], [role="tab"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], a[class*="button"], a[class*="btn"])),
+*:not(:is(button, [role="button"], [role="tab"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], a[class*="button"], a[class*="btn"]))::before,
+*:not(:is(button, [role="button"], [role="tab"], [role="switch"], input[type="button"], input[type="submit"], input[type="reset"], a[class*="button"], a[class*="btn"]))::after { border-width: var(--hair) !important; }
 .theme-segments button.selected, .style-tile.selected > .credit-card { box-shadow: 0 0 0 1.5px var(--accent); }
 .theme-segments button.selected { border-color: var(--accent); }
 
@@ -2916,18 +2924,19 @@ button.account-tile:active { transform: scale(.98); }
 }
 
 
-/* PR #121 follow-up: accent-filled balance/spending hero cards with adaptive white content.
+/* Accent-filled summary cards use the existing WCAG-checked --on-accent foreground.
+   This follows the *accent fill*, not the page appearance: pale pink = black, dark slate = white.
    The selected accent remains the source of the fill, so user accent/theme preferences still apply. */
 .movo-app {
-  --summary-card-ink: #fff;
-  --summary-card-chart-soft: rgba(255, 255, 255, .22);
+  --summary-card-ink: var(--on-accent, #ffffff);
+  --summary-card-chart-soft: color-mix(in srgb, var(--summary-card-ink) 22%, transparent);
 }
 .movo-app .balance-card,
 .movo-app .total-card {
   background: var(--accent) !important;
   color: var(--summary-card-ink);
   border-color: transparent;
-  color-scheme: dark;
+  /* Do not force dark native controls on light-colored accent cards. */
 }
 .movo-app .balance-card *,
 .movo-app .total-card * {
@@ -2946,6 +2955,16 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .total-card .balance-art .mini-bar {
   stroke: var(--summary-card-ink);
   color: var(--summary-card-ink);
+}
+/* SVG fills also need contrast: stroke-only overrides leave MiniBars and
+   the area below the sparkline invisible against an identical accent fill. */
+.movo-app .balance-card .balance-art .mini-bars rect,
+.movo-app .total-card .balance-art .mini-bars rect {
+  fill: var(--summary-card-ink);
+}
+.movo-app .balance-card .balance-art .sparkline path[fill]:not([fill="none"]),
+.movo-app .total-card .balance-art .sparkline path[fill]:not([fill="none"]) {
+  fill: var(--summary-card-ink);
 }
 .movo-app .balance-card .bars-plot span,
 .movo-app .total-card .bars-plot span {
@@ -3059,12 +3078,12 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .balance-card .balance-amount { font-size: 28px; line-height: 1.05; margin: 4px 0 8px; letter-spacing: -.5px; }
 .movo-app .balance-card .balance-art { position: absolute; right: 0; bottom: 0; width: 50%; height: 64%; margin: 0; pointer-events: none; }
 .movo-app .balance-card .balance-art svg { width: 100%; height: 100%; display: block; }
-.movo-app .balance-card .balance-go { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; min-width: 34px; min-height: 34px; border: 0; background: rgba(255,255,255,.18) !important; box-shadow: none !important; }
-.movo-app :is(.balance-card, .total-card) :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: rgba(255,255,255,.2) !important; font-size: 12px; font-weight: 600; }
+.movo-app .balance-card .balance-go { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; min-width: 34px; min-height: 34px; border: 0; background: color-mix(in srgb, var(--summary-card-ink) 18%, transparent) !important; box-shadow: none !important; }
+.movo-app :is(.balance-card, .total-card) :is(.chip-good, .chip-bad, .chip-flat, .chip-neutral) { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: color-mix(in srgb, var(--summary-card-ink) 16%, transparent) !important; font-size: 12px; font-weight: 600; }
 
 /* Sort & view: segmented pills, compact previews, aligned buttons. */
 .movo-app .wallet-sort-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 4px; }
-.movo-app .wallet-sort-option { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background-color .2s ease-out, color .2s ease-out; }
+.movo-app .wallet-sort-option { display: inline-flex; align-items: center; gap: 6px; height: 40px; min-height: 40px; max-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background-color .2s ease-out, color .2s ease-out; }
 .movo-app .wallet-sort-option.selected { background: rgba(var(--accent-rgb), .14); color: var(--accent-ink, var(--accent)); }
 .movo-app .wallet-format-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
 .movo-app .wallet-format-pick > button { display: grid; justify-items: center; align-content: center; gap: 8px; height: 176px; padding: 12px; border-radius: 18px; }
@@ -3292,11 +3311,26 @@ button.account-tile:active { transform: scale(.98); }
 .movo-app .card-stack { margin-bottom: 20px; }
 .movo-app .card-stack-front { padding-bottom: 6px; }
 
+/* Wallet Sort & View option chips share the same 40px control height.
+   Scope to this sheet; other segmented controls and header buttons are unchanged. */
+.movo-app .wallet-sort-row > .wallet-sort-option {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+}
+.movo-app .wallet-view-control > button {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+}
+
 /* Wallet filters: All · Cards · Banks · E-Wallets · Others and the add button on one row, no scrolling. */
 .movo-app .wallet-chip-bar { gap: 6px; }
 .movo-app .wallet-chip-bar > .chip-row { display: flex; gap: 4px; overflow: visible; }
-.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 38px; min-height: 38px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
-.movo-app .wallet-chip-bar > .round-button { flex: 0 0 38px; width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
+.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { flex: 1 1 auto; min-width: 0; height: 40px; min-height: 40px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
+.movo-app .wallet-chip-bar > .round-button { flex: 0 0 40px; width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
 @media (max-width: 380px) { .movo-app .wallet-chip-bar { gap: 4px; } .movo-app .wallet-chip-bar > .chip-row { gap: 2px; } .movo-app .wallet-chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
 
 /* Buttons: one soft shadow per button (no shadow strips). Chip rows keep room above and below so a row that
@@ -3322,11 +3356,11 @@ button.account-tile:active { transform: scale(.98); }
 @media (max-width: 380px) { .movo-app .chip-bar { gap: 4px; } .movo-app .chip-bar > .chip-row { gap: 2px; } .movo-app .chip-bar > .chip-row > button[data-chip] { padding: 0 6px; font-size: 12px; } }
 
 /* Subscriptions summary uses the accent hero style (same as Total Balance): accent fill, white text. */
-.movo-app.movo-app.movo-app.movo-app .sub-hero.card { background: var(--accent); color: #fff; border-color: transparent; padding: var(--box-pad, 16px); }
+.movo-app.movo-app.movo-app.movo-app .sub-hero.card { background: var(--accent); color: var(--on-accent, #ffffff); border-color: transparent; padding: var(--box-pad, 16px); }
 .movo-app.movo-app .sub-hero::after { box-shadow: none; }
-.movo-app.movo-app .sub-hero > small, .movo-app.movo-app .sub-hero-row small { color: rgba(255, 255, 255, .78); }
-.movo-app.movo-app .sub-hero .balance-amount, .movo-app.movo-app .sub-hero-row b { color: #fff; }
-.movo-app.movo-app .sub-hero-row { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18); }
+.movo-app.movo-app .sub-hero > small, .movo-app.movo-app .sub-hero-row small { color: var(--on-accent, #ffffff); opacity: .82; }
+.movo-app.movo-app .sub-hero .balance-amount, .movo-app.movo-app .sub-hero-row b { color: var(--on-accent, #ffffff); }
+.movo-app.movo-app .sub-hero-row { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--on-accent, #ffffff) 20%, transparent); }
 .movo-app :is(.back-button, .sub-header > button:first-child) { box-shadow: none; }
 
 /* Profile: the card holds the profile row and, when signed out, a Sign in button. */
@@ -5147,7 +5181,7 @@ button.account-tile:active { transform: scale(.98); }
 /* Wallet account filters: fit all five categories in the available width on every phone. */
 .movo-app.movo-app .wallet-chip-bar { width:100%; min-width:0; gap:clamp(3px,1.2vw,6px); }
 .movo-app.movo-app .wallet-chip-bar > .chip-row { display:flex; flex:1 1 0; width:100%; min-width:0; gap:clamp(2px,.8vw,4px); overflow:visible; overflow-x:visible; padding:2px 0; margin:0; }
-.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { display:flex; flex:1 1 0; justify-content:center; align-items:center; width:0; min-width:0; max-width:none; height:44px; min-height:44px; padding-inline:clamp(2px,1.5vw,8px); font-size:clamp(10px,3vw,13px); line-height:1.1; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip; }
+.movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip] { display:flex; flex:1 1 0; justify-content:center; align-items:center; width:0; min-width:0; max-width:none; height:40px; min-height:40px; padding-inline:clamp(2px,1.5vw,8px); font-size:clamp(10px,3vw,13px); line-height:1.1; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:clip; }
 .movo-app.movo-app .wallet-chip-bar > .chip-row > button[data-chip]:focus-visible { outline:3px solid rgba(var(--accent-rgb),.38); outline-offset:2px; }
 @media(max-width:350px) {
   .movo-app.movo-app .wallet-chip-bar { gap:2px; }
@@ -5947,8 +5981,8 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 
 /* Unified hairline: every ordinary MOVO button has a 0.25px outline.
    Current text color supplies a subtle surface-aware edge for dark/light/brand fills.
-   Scrims and the animated mascot are not visible button surfaces. */
-.movo-app.movo-app button:not(.search-scrim):not(.ram-stage) {
+   Scrims, the animated mascot and the borderless mascot text action are excluded. */
+.movo-app.movo-app button:not(.search-scrim):not(.ram-stage):not(.ram-bubble-link) {
   border-width: 0.25px !important;
   border-style: solid !important;
   border-color: color-mix(in srgb, currentColor 16%, transparent) !important;
@@ -6325,10 +6359,10 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   align-items: stretch;
   column-gap: 12px;
   box-sizing: border-box;
-  height: 162px;
-  min-height: 162px;
+  height: 136px;
+  min-height: 136px;
   max-height: none;
-  padding: 14px 16px 13px;
+  padding: 12px 16px 12px;
   overflow: hidden;
 }
 .movo-app .total-card.billing-cycle-summary .billing-cycle-summary-head {
@@ -6368,9 +6402,10 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   gap: 4px;
   min-height: 20px;
   max-width: 100%;
+  margin-top: auto; /* Align the comparison with the chart's month-axis row. */
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,.14);
+  background: color-mix(in srgb, var(--summary-card-ink) 14%, transparent);
   color: var(--summary-card-ink, #fff);
   font-size: 10px;
   line-height: 1.25;
@@ -6385,7 +6420,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   width: 100%;
   height: 100%;
   min-height: 0;
-  padding-top: 31px;
+  padding-top: 13px;
   box-sizing: border-box;
   align-self: stretch;
   gap: 4px;
@@ -6429,8 +6464,10 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .billing-cycle-chart .billing-cycle-chart-axis {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   flex: 0 0 auto;
   min-width: 0;
+  min-height: 24px;
   gap: 12px;
   color: var(--summary-card-ink, #fff);
   opacity: .82;
@@ -6439,13 +6476,13 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 @media(max-width: 360px) {
   .movo-app .total-card.billing-cycle-summary {
-    height: 162px;
-    min-height: 162px;
+    height: 140px;
+    min-height: 140px;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
     column-gap: 8px;
     padding-inline: 13px;
   }
-  .movo-app .total-card.billing-cycle-summary .billing-cycle-chart { padding-top: 36px; }
+  .movo-app .total-card.billing-cycle-summary .billing-cycle-chart { padding-top: 14px; }
   .movo-app .total-card.billing-cycle-summary .billing-cycle-summary-compare {
     padding: 2px 5px;
     font-size: 9px;
@@ -6991,3 +7028,658 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .bill-payment-sheet .form-note { margin: 0; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .movo-app .bill-payment-sheet .sheet-actions { gap: 8px; margin-top: 4px; }
 .movo-app .bill-payment-sheet .sheet-actions > button { min-width: 0; min-height: 44px; padding: 10px 8px; border-radius: 14px; font-size: 13px; }
+
+
+/* Empty-only list surfaces: no decorative horizontal capsule when there are
+   no records. Guard with :has() so populated lists, forms, charts, controls,
+   and intentional onboarding/CTA cards keep their existing backgrounds.
+   The ::after override also removes the shared 0.25px card hairline. */
+.movo-app.movo-app :is(
+  .card.list-card:has(> p.form-note:only-child),
+  .card:has(> p.empty:only-child),
+  .card.pad:has(> ul:empty + p.empty:last-child)
+) {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 4px 2px 8px;
+  overflow: visible;
+}
+.movo-app.movo-app :is(
+  .card.list-card:has(> p.form-note:only-child),
+  .card:has(> p.empty:only-child),
+  .card.pad:has(> ul:empty + p.empty:last-child)
+)::after {
+  content: none !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app .card.list-card:empty {
+  display: none; /* Truly empty lists must not leave a blank horizontal bar. */
+}
+.movo-app.movo-app :is(.card.list-card, .card.pad):has(> p:only-child:is(.form-note, .empty)) > p {
+  margin: 2px 0 6px;
+  padding: 4px 2px;
+  text-align: start;
+  background: transparent;
+  box-shadow: none;
+}
+
+
+/* PR #225 shared header and legal rhythm.
+   Keep the iOS safe-area on .screen; the 10px is inside the header, never
+   a replacement for the device's safe area or the 45px button hit targets. */
+.movo-app.movo-app .screen > .screen-header {
+  align-items: center;
+  padding-block: 10px;
+  margin-bottom: 10px;
+}
+.movo-app.movo-app .screen > .screen-header.root {
+  padding-top: 10px;
+}
+.movo-app.movo-app .screen > .screen-header.home-header {
+  align-items: center;
+  min-height: 0;
+  padding-block: 10px;
+  margin-bottom: 10px;
+  row-gap: 6px;
+}
+.movo-app.movo-app .home-header > .ram-mascot {
+  height: 80px;
+}
+.movo-app.movo-app .home-header .ram-stage {
+  width: 96px;
+  height: 96px;
+  left: -10px;
+}
+/* The compact mascot must not crowd greeting text on small phones. */
+@media (max-width: 359px) {
+  .movo-app.movo-app .home-header > .ram-mascot { width: 48px; height: 64px; }
+  .movo-app.movo-app .home-header .ram-stage { width: 80px; height: 80px; left: -14px; }
+}
+
+/* Terms and Privacy share identical section spacing, including the later
+   supplemental sections nested in [data-legal-supplement]. The original
+   flex gap on .legal-page applies only to direct children, not those cards. */
+.movo-app.movo-app .legal-page {
+  gap: 14px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+.movo-app.movo-app .legal-page > [data-legal-supplement] {
+  display: grid;
+  gap: 14px;
+}
+.movo-app.movo-app .legal-page :is(.legal-intro, .legal-section, .legal-contact) {
+  padding: 16px;
+  margin: 0;
+}
+.movo-app.movo-app .legal-page :is(.legal-section, .legal-contact) h2 {
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+.movo-app.movo-app .legal-page :is(.legal-section, .legal-contact) p {
+  margin: 0 0 12px;
+  line-height: 1.65;
+}
+.movo-app.movo-app .legal-page :is(.legal-section, .legal-contact) p:last-child {
+  margin-bottom: 0;
+}
+.movo-app.movo-app .legal-page .legal-section li {
+  line-height: 1.65;
+}
+.movo-app.movo-app .screen:has(> .legal-page) {
+  padding-bottom: calc(160px + env(safe-area-inset-bottom));
+}
+/* Shorten the sticky-header fade so it doesn't wash out legal content. */
+.movo-app.movo-app .screen:has(> .legal-page).is-scrolled > .screen-header::after {
+  height: 10px;
+}
+\n
+/* MOVO social footer from server-side Vercel configuration.
+   It is deliberately not a card or an extra header; no border/pill shadows. */
+.movo-app.movo-app .legal-page > .movo-social-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  padding: 8px 2px 4px;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.movo-app .movo-social-caption {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.movo-app .movo-social-icons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+.movo-app.movo-app .movo-social-link {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-ink, var(--text));
+  text-decoration: none;
+}
+.movo-app .movo-social-link svg { display: block; width: 22px; height: 22px; }
+.movo-app .movo-social-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .movo-app .movo-social-link:hover { background: var(--field); }
+}
+
+
+/* Shared grouped header capsule geometry: no outside inset on any edge.
+   Keep existing 45px button targets, 22px icons and 4px inter-button gap;
+   creation actions remain separate from the capsule. */
+.movo-app.movo-app.movo-app .screen-header .header-utility-group,
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  min-height: 45px;
+  min-width: max-content;
+  border-radius: 999px;
+}
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
+  display: grid;
+  grid-template-columns: repeat(3, 45px);
+  justify-self: end;
+  width: max-content;
+  max-width: 100%;
+}
+/* Equal-sized icon cells: 45px target, centered 22px glyph, 11.5px
+   optical inset on each edge. Avoid shifting controls with margins. */
+.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button,
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill > .home-header-action {
+  display: grid !important;
+  place-items: center;
+  flex: 0 0 45px !important;
+  box-sizing: border-box;
+  width: 45px !important;
+  height: 45px !important;
+  min-width: 45px !important;
+  min-height: 45px !important;
+  max-width: 45px;
+  max-height: 45px;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button > :is(.movo-icon, svg),
+.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill > .home-header-action > :is(.movo-icon, svg) {
+  display: block;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px;
+  min-height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  margin: 0;
+  padding: 0;
+  justify-self: center;
+  align-self: center;
+}
+/* Other page headers share equal space between the utility capsule and
+   a separate Plus action; existing theme/focus/button fill styles remain. */
+.movo-app.movo-app.movo-app .screen-header .header-actions {
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* The 45px touch targets must never shrink to make the header fit.
+   Below 360px, move the Home utility pill to its own right-aligned row. */
+@media (max-width: 359px) {
+  .movo-app.movo-app.movo-app .screen-header.home-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "avatar hello hello" "actions actions actions";
+    row-gap: 4px;
+    column-gap: 8px;
+  }
+  .movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill {
+    grid-area: actions;
+    justify-self: end;
+    margin: 0;
+  }
+}
+
+
+/* PR #225 chat progress and edge-to-edge Google favicon polish.
+   The loading status is text plus NasrinAI's adaptive dot mark, not a bubble,
+   green icon disk, gradient or a clickable element. */
+.movo-app.movo-app.movo-app .movo-ai-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  min-width: 0;
+  padding: 4px 0;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--text);
+}
+.movo-app.movo-app.movo-app .movo-ai-thinking::before,
+.movo-app.movo-app.movo-app .movo-ai-thinking::after {
+  content: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app .movo-ai-thinking-orb {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent-ink, var(--accent));
+}
+.movo-app.movo-app.movo-app .movo-ai-thinking-orb .nasrin-mark {
+  display: block;
+  width: 30px;
+  height: 30px;
+  fill: currentColor;
+}
+/* Respect the entire requested 40px-style frame. Google S2 favicons are
+   square: keep the actual pixels undistorted, remove only CSS insets. This
+   deliberately does not affect MOVO fallback icons, uploaded QR codes,
+   custom sticker artwork or non-Google brand assets. */
+.movo-app.movo-app img[src*="google.com/s2/favicons"] {
+  display: block;
+  box-sizing: border-box;
+  padding: 0 !important;
+  margin: 0;
+  object-fit: contain !important;
+  max-width: 100%;
+  max-height: 100%;
+}
+/* Some page templates used percent-sized logos, even inside a full-size tile.
+   Expand only a Google fetched image to its existing parent frame. */
+.movo-app.movo-app :is(.crypto-logo, .wallet-brand-mark, .at-icon) > img[src*="google.com/s2/favicons"],
+.movo-app.movo-app .wallet-brand-mark-image[src*="google.com/s2/favicons"] {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+/* Catalog records previously added 3px of invisible inset to valid icons.
+   The rule is deliberately limited to wrappers containing an S2 image. */
+.movo-app.movo-app .catalog-row .sub-icon.has-logo:has(> img[src*="google.com/s2/favicons"]) {
+  padding: 0 !important;
+}
+
+
+/* MOVO borderless control policy — 2026-11-07.
+   Every interactive control is borderless across themes and screens.
+   Cards, sheets, text fields, calendars, and other *containers* retain
+   their own borders. Keyboard focus remains visible (focus-visible outline).
+   This intentionally overrides legacy per-page button outlines. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  /* Shadows and resting outlines can create visual hairlines even with border: 0. */
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+/* Existing hairline rules paint a second border using ::after inset
+   shadows. Remove only control pseudo-element strokes, not the card,
+   sheet, grouped-tab container, search field, or calendar panel strokes. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+)::before,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+)::after {
+  /* Keep borders used by CSS icons and switch indicators; suppress faux hairlines. */
+  box-shadow: none !important;
+}
+
+/* These clickable rows, chips, segmented items and navigation controls
+   have legacy inset shadows mimicking borders on the element itself.
+   Keep fill, selected states, radii, typography and outer panels intact. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  .sub-row,
+  .sub-cal-day,
+  .search-row,
+  .tx-row,
+  .nav-item,
+  .seg-control > button,
+  .theme-segments > button,
+  .chip-row > button,
+  .edit-tray-list > button
+) {
+  box-shadow: none !important;
+}
+
+/* Accessibility exception: a visible focus indicator is not a permanent
+   button border. Keep it in light/dark themes for keyboard navigation. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  a[class*="button"],
+  a[class*="btn"]
+):focus-visible {
+  outline: 2px solid var(--accent, #086b3a) !important;
+  outline-offset: 2px;
+}
+
+
+/* MOVO header button interior and child navigation — 2026-11-07.
+   Exactly 0.5px of inner padding on each header action, without touching
+   the 45px touch target, 22px icons, capsule inset or inter-button gap. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(
+  header,
+  .screen-header,
+  .sub-header,
+  .home-header,
+  .sheet-header,
+  .sheet-head,
+  .sheet-top,
+  .modal-header,
+  .modal-head,
+  .dialog-header,
+  .panel-header,
+  .header-actions,
+  .header-action-buttons
+) :is(
+  button,
+  [role="button"],
+  [role="tab"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a[class*="button"],
+  a[class*="btn"]
+) {
+  padding: 0.5px !important;
+}
+
+/* Grouped header controls are edge-to-edge on every side. The generic 0.5px
+   header-control rule above still applies to standalone actions. Match its
+   specificity for grouped controls so their actual padding stays zero. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen-header .header-utility-group > .round-button,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen-header.home-header .home-utility-pill > .home-header-action {
+  padding: 0 !important;
+}
+
+/* Cashback and Scheduled keep their root header typography and utilities.
+   Only those screens opt into an optional Back control. */
+.movo-app .screen-header.root.has-back {
+  align-items: center;
+  column-gap: 8px;
+}
+.movo-app .screen-header.root.has-back > .back-button {
+  flex: 0 0 45px;
+  width: 45px;
+  height: 45px;
+  margin: 0;
+}
+@media (max-width: 359px) {
+  .movo-app .screen-header.root.has-back {
+    display: grid;
+    grid-template-columns: 45px minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 4px;
+  }
+  .movo-app .screen-header.root.has-back > .header-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+    margin-left: 0;
+  }
+}
+
+
+/* PR #229 adaptive chip typography and compact scroll headers.
+   The screen container already handles iPhone safe-area spacing; only the
+   header itself receives 10px top/bottom, preserving 45px actions. */
+.movo-app.movo-app.movo-app .screen > .screen-header {
+  box-sizing: border-box;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+/* Filters are neutral to the selected accent; the moving dark/light pill
+   requires white/dark ink over its own opposite-colored fill. */
+.movo-app.movo-app.movo-app .chip-row > button[data-chip]:not(.selected) {
+  color: var(--text) !important;
+}
+.movo-app.movo-app.movo-app:not(.theme-dark) .chip-row > button[data-chip].selected {
+  color: #fff !important;
+}
+.movo-app.movo-app.movo-app.theme-dark .chip-row > button[data-chip].selected {
+  color: #14161f !important;
+}
+/* Only the mascot artwork changes: compact the ram slot without touching
+   the greeting/header buttons or the 3D mascot's tap target. */
+.movo-app.movo-app.movo-app .screen > .screen-header.home-header > .ram-mascot {
+  height: 68px;
+}
+.movo-app.movo-app.movo-app .screen > .screen-header.home-header .ram-stage {
+  width: 88px;
+  height: 88px;
+  left: -10px;
+  top: 50%;
+  transition: transform .28s ease;
+}
+/* is-scrolled already toggles from the existing App scroll listener. */
+.movo-app.movo-app.movo-app .screen.is-scrolled > .screen-header.home-header .ram-stage {
+  transform: translateY(-50%) scale(.88);
+}
+.movo-app.movo-app.movo-app .screen > .screen-header.home-header > .mascot {
+  transform-origin: center left;
+  transition: transform .28s ease;
+}
+.movo-app.movo-app.movo-app .screen.is-scrolled > .screen-header.home-header > .mascot {
+  transform: scale(.9);
+}
+@media (max-width: 359px) {
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header > .ram-mascot {
+    height: 60px;
+  }
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header .ram-stage {
+    width: 76px;
+    height: 76px;
+    left: -14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header .ram-stage,
+  .movo-app.movo-app.movo-app .screen > .screen-header.home-header > .mascot {
+    transition: none;
+  }
+}
+
+
+/* PR #229 — Transaction filter and sort rhythm (2026-11-07).
+   Scope to Transactions: the generic chip rows across Wallet, Planning,
+   Subscriptions, etc. retain their existing spacing and behavior. */
+.movo-app.movo-app .tx-chip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 16px;
+}
+.movo-app.movo-app .tx-chip-bar > .chip-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  text-align: center;
+}
+.movo-app.movo-app .tx-chip-bar > .tx-period-filter {
+  flex: 0 0 72px;
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+}
+/* Each sorting option shares the full row width, with consistent gaps.
+   Clear the area directly above the next date heading or transaction card. */
+.movo-app.movo-app .tx-sort-bar {
+  min-width: 0;
+  margin: 0 0 16px;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row {
+  display: grid;
+  grid-template-columns: repeat(var(--tx-sort-count, 4), minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  /* This grid does not scroll. The shared chip-row edge mask faded both
+     sides of the selected pill, giving it an unwanted grey "shadow". */
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row > .chip-ind {
+  box-shadow: none;
+}
+.movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 6px;
+  font-size: clamp(11px, 3.2vw, 13px);
+  text-align: center;
+  white-space: nowrap;
+}
+/* Ensure that the one-row filters fit narrow screens without clipping the
+   right billing-cycle control or truncating the accessible sort labels. */
+@media (max-width: 390px) {
+  .movo-app.movo-app .tx-chip-bar { gap: 6px; }
+  .movo-app.movo-app .tx-chip-bar > .chip-row { gap: 4px; }
+  .movo-app.movo-app .tx-chip-bar > .tx-period-filter {
+    flex-basis: 60px;
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    height: 40px;
+  }
+  .movo-app.movo-app .tx-chip-bar > .chip-row > button[data-chip] {
+    height: 40px;
+    min-height: 40px;
+  }
+  .movo-app.movo-app .tx-sort-bar > .chip-row { gap: 6px; }
+  .movo-app.movo-app .tx-sort-bar > .chip-row > button[data-chip] {
+    padding-inline: 3px;
+  }
+}
+
+
+/* PR #229 — Wallet card actions: compact vertical padding and larger icons.
+   Keep the existing four-column grid and 44px minimum tap targets. */
+.movo-app.movo-app .action-strip {
+  padding-block: 8px;
+}
+.movo-app.movo-app .action-strip > button {
+  gap: 5px;
+}
+
+
+/* Header navigation buttons: transparent at rest, hover, press, and focus.
+   RootHeader / SubHeader supply .back-button on all pages, including
+   Cashback and Scheduled. Keep 45px targets, currentColor icons and the
+   visible keyboard focus ring; do not alter other header actions. */
+.movo-app.movo-app.movo-app .screen-header .back-button,
+.movo-app.movo-app.movo-app .screen-header .back-button:is(:hover, :active, :focus, :focus-visible) {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.movo-app.movo-app.movo-app .screen-header .back-button::before,
+.movo-app.movo-app.movo-app .screen-header .back-button::after {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app .screen-header .back-button:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}

@@ -1,7 +1,7 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
-const { PRODUCT_TIERS } = require('../lib/purchaseVerification');
+const { getPlan } = require('../lib/planAccess');
 
 const json = (res, status, body) => {
   res.setHeader('Cache-Control', 'no-store, private');
@@ -29,19 +29,17 @@ module.exports = async function handler(req, res) {
       .select('platform,product_id,tier,status,expires_at,environment,verified_at')
       .eq('user_id', userId).order('expires_at', { ascending: false });
     if (error) throw error;
-    const now = Date.now();
-    const allowSandbox = String(process.env.MOVO_STORE_TEST_USER_IDS || '').split(',').map(value => value.trim()).includes(userId);
-    const eligible = (data || []).filter(item => item.environment === 'production' || allowSandbox);
-    const active = eligible.filter((item) =>
-      ['active', 'grace_period', 'canceled'].includes(item.status) && Date.parse(item.expires_at) > now
-    );
-    const tier = active.reduce((best, item) =>
-      (PRODUCT_TIERS[item.tier] || 0) > (PRODUCT_TIERS[best] || 0) ? item.tier : best, 'quick');
-    const latestExpiry = active.reduce((latest, item) => Math.max(latest, Date.parse(item.expires_at)), 0);
+    const { error: grantError } = await admin.from('movo_plan_grants').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
+    if (grantError) throw grantError;
+    const testUser = String(process.env.MOVO_STORE_TEST_USER_IDS || '').split(',').map(value => value.trim()).includes(userId);
+    const testAccess = testUser
+      ? await admin.from('movo_store_test_users').upsert({ user_id:userId }, { onConflict:'user_id' })
+      : await admin.from('movo_store_test_users').delete().eq('user_id',userId);
+    if (testAccess.error) throw testAccess.error;
+    const plan = await getPlan(admin, userId);
+    const eligible = (data || []).filter(item => item.environment === 'production' || testUser);
     return json(res, 200, {
-      tier,
-      active: active.length > 0,
-      expiresAt: latestExpiry ? new Date(latestExpiry).toISOString() : null,
+      ...plan,
       entitlements: eligible.map(({ platform, product_id, tier: itemTier, status, expires_at, environment, verified_at }) => ({
         platform, productId: product_id, tier: itemTier, status, expiresAt: expires_at, environment, verifiedAt: verified_at,
       })),

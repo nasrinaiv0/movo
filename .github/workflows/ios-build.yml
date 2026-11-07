@@ -9,12 +9,22 @@ on:
     paths:
       - "ios/**"
       - "capacitor.config.json"
+      - "src/lib/nativeSecureAuthStorage.js"
+      - "src/lib/nativeAutomationKey.js"
+      - "src/lib/native.js"
+      - "src/lib/supabaseClient.js"
+      - "src/index.tsx"
       - "package.json"
   push:
     branches: [main]
     paths:
       - "ios/**"
       - "capacitor.config.json"
+      - "src/lib/nativeSecureAuthStorage.js"
+      - "src/lib/nativeAutomationKey.js"
+      - "src/lib/native.js"
+      - "src/lib/supabaseClient.js"
+      - "src/index.tsx"
       - "package.json"
 
 permissions:

@@ -49,3 +49,11 @@ test('large local QR data URLs are excluded from cloud preferences while private
 test('keeps cloud sync pause preference local to this device', () => {
   expect(cloudSafePreferences({ cloudSyncEnabled: false, profilePhoto: 'data:image/jpeg;base64,abc', theme: 'dark' })).toEqual({ theme: 'dark' });
 });
+
+test('membership cards and per-card reward rules survive sign-in preference merging', () => {
+  const local = { membershipCards: [{ id: 'petron-id', name: 'Petron', points: '30' }], loyaltyRewardRules: { 'petron-id': { enabled: true, pointsPer100: '2' } } };
+  const cloud = { membershipCards: [{ id: 'starbucks-id', name: 'Starbucks', points: '5' }], loyaltyRewardRules: { 'starbucks-id': { enabled: true, pointsPer100: '1' } } };
+  const merged = mergePreferences({ ...D, membershipCards: [], loyaltyRewardRules: {} }, local, cloud);
+  expect(merged.membershipCards.map(card => card.id)).toEqual(['starbucks-id', 'petron-id']);
+  expect(merged.loyaltyRewardRules).toEqual({ 'petron-id': local.loyaltyRewardRules['petron-id'], 'starbucks-id': cloud.loyaltyRewardRules['starbucks-id'] });
+});

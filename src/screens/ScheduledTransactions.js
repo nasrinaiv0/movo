@@ -69,7 +69,7 @@ export default function ScheduledTransactions({ c }) {
   const days=Array.from({length:new Date(month.getFullYear(),month.getMonth()+1,0).getDate()},(_,i)=>i+1);
   const monthKey=`${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}-`;
   return <>
-    <RootHeader title={tr('Scheduled')} onSearch={c.openSearch} onBell={()=>go('Notifications')} onSettings={()=>go('Settings')} unread={c.unread} action={{icon:'plus',label:tr('Schedule transaction'),onClick:startCreate}}/>
+    <RootHeader title={tr('Scheduled')} onBack={() => go('Menu')} onSearch={c.openSearch} onBell={()=>go('Notifications')} onSettings={()=>go('Settings')} unread={c.unread} action={{icon:'plus',label:tr('Schedule transaction'),onClick:startCreate}}/>
     <section className="card scheduled-hero" aria-label={tr('Due to log')}><div className="scheduled-hero-count"><span>{tr('Due to log')}</span><strong>{due.length+obligations.filter(x=>x.date<=day()).length}</strong></div><p>{tr('Review and confirm each due item. MOVO never initiates a payment or transfer.')}</p></section>
     <div className="scheduled-toolbar"><div className="scheduled-tabs" role="tablist" aria-label={tr('Scheduled')}><button type="button" role="tab" aria-selected={calendar} className={calendar?'is-active':''} onClick={()=>setCalendar(true)}>{tr('Calendar')}</button><button type="button" role="tab" aria-selected={!calendar} className={!calendar?'is-active':''} onClick={()=>setCalendar(false)}>{tr('List')}</button></div><button type="button" className="scheduled-reminder-button" onClick={()=>setSheet({kind:'reminders'})}><Icon name="bell" size={15}/><span>{tr('Reminder settings')}</span></button></div>
     {calendar&&<section className="card pad">

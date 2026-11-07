@@ -181,3 +181,23 @@ test('connected items load cloud goal allocations and include linked bank alloca
   act(() => root.unmount());
   el.remove();
 });
+
+test('an e-wallet account shows its payment QR and opens the enlarge preview', async () => {
+  const el = document.createElement('div');
+  document.body.appendChild(el);
+  const root = createRoot(el);
+  await act(async () => {
+    root.render(<AccountDetailsSheet
+      account={{ id: 'wallet-qr-1', name: 'GCash', account_type: 'e_wallet', currency: 'PHP', balance: 250 }}
+      accounts={[]} transactions={[]} prefs={{}} subscriptions={[]} show
+      qrCodeDisplay="https://storage.example/ewallet-signed-qr"
+      canEdit onClose={jest.fn()} onEdit={jest.fn()} onArchive={jest.fn()}
+      onAddTransaction={jest.fn()} onOpenTransaction={jest.fn()} onOpenAccount={jest.fn()} />);
+    await Promise.resolve();
+  });
+  expect(el.querySelector('[data-testid="card-art"]')?.getAttribute('data-qr')).toBe('https://storage.example/ewallet-signed-qr');
+  expect(el.querySelector('[data-testid="card-art"]')?.getAttribute('data-account-type')).toBe('e_wallet');
+  await act(async () => el.querySelector('button[aria-label="Enlarge QR code"]').click());
+  expect(el.querySelector('[role="dialog"][aria-modal="true"]')).not.toBeNull();
+  act(() => root.unmount()); el.remove();
+});

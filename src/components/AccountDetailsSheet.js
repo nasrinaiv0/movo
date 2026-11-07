@@ -12,7 +12,7 @@ import { t as tr } from '../lib/i18n';
 
 const TABS = [['overview', 'Account overview'], ['activity', 'Transactions'], ['connected', 'Connected items'], ['more', 'More']];
 
-export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], plans = [], cloudMode = false, toBase, show = true, holder, base = 'PHP', qrCodeDisplay = '', canEdit = true, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount }) {
+export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], plans = [], cloudMode = false, toBase, show = true, holder, base = 'PHP', qrCodeDisplay = '', canEdit = true, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount, transactionBalances, showBalanceAfterTransaction = true }) {
   const [tab, setTab] = useState('overview');
   const [qrOpen, setQrOpen] = useState(false);
   const [scheduled, setScheduled] = useState([]);
@@ -100,13 +100,13 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         </div>
         <div className="account-hub-section">
           <h3>{tr('Recent account activity')}</h3>
-          {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
+          {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(item.id) : undefined} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
           {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
         </div>
       </>}
       {tab === 'activity' && <div className="account-hub-section">
         <h3>{tr('Account transaction history')}</h3>
-        {recentTransactions.map(item => <TransactionRow key={item.id} t={item} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
+        {recentTransactions.map(item => <TransactionRow key={item.id} t={item} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(item.id) : undefined} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
         {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
       </div>}
       {tab === 'connected' && <>

@@ -1,3 +1,11 @@
+import FinanceBackupSheet from './components/FinanceBackupSheet';
+import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from './lib/localAttachments';
+import { PlanProvider } from './lib/PlanContext';
+import { usePlanEntitlement } from './lib/usePlanEntitlement';
+import { canUseFeature, effectivePlan } from './lib/planAccess';
+import PlanOffer from './components/PlanOffer';
+import { UsageSheet } from './screens/Settings';
+import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccountOptions } from './components/AccountPicker';
@@ -40,6 +48,9 @@ import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screen
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
 import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
+import { supportsAccountQr } from './lib/accountQrEligibility';
+import LoyaltySheet from './components/LoyaltySheet';
+import { isLoyaltyType, normalizeLoyaltyCard, visibleLoyaltyCards } from './lib/loyaltyCards';
 import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
 import { revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
@@ -58,6 +69,7 @@ import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
 import { evaluate } from './lib/calc';
 import { spendingLimitProgress } from './lib/spendingLimits';
 import { accountBalance, accountAvailableBalance, savingsBalance } from './lib/financeCalculations';
+import { buildTransactionRunningBalances } from './lib/transactionRunningBalances';
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
@@ -119,10 +131,10 @@ export function contrastTextForAccent(hex) {
 const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || '') || 0;
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -213,7 +225,7 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
         <ol className="legal-disclosure-points legal-disclosure-numbered">
           <li>{tr('Logos are for identification only. They help users recognize their cards, bank accounts, e-wallets, subscriptions, and track their financial activity.')}</li>
           <li>{tr('MOVO does not connect to your banks or financial accounts. Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
-          <li>{tr('PayMongo is MOVO’s designated payment gateway. Third-party logos are not payment gateways and must not imply that a bank or other institution has partnered with MOVO.')}</li>
+          <li>{tr('MOVO digital subscriptions use Apple In-App Purchase on iOS and Google Play Billing on Android. Third-party bank logos identify recorded accounts and do not imply a partnership.')}</li>
         </ol>
       </div>
       <div className="legal-disclosure-footer">
@@ -229,6 +241,9 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
 
 function App() {
   const [session, setSession] = useState(null);
+  const { entitlement, refreshEntitlement } = usePlanEntitlement(session);
+  const can = feature => canUseFeature(entitlement, feature);
+  const plan = effectivePlan(entitlement);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
   const [view, setView] = useState('Home');
@@ -489,6 +504,13 @@ function App() {
       return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, cardNetwork: st.cardNetwork || a.cardNetwork || '', creditLimit: Number(st.creditLimit) || 0, issuerBankId: st.issuerBankId || '', mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, available_balance: ledgerBalances.available, recordedPaymentsApplied: adjusted.recordedPaymentsApplied, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
     });
   }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, prefs.creditCardPayments, rates]);
+  // Pure derived ledger display: does not write or modify any transaction rows.
+  const transactionBalances = useMemo(() => buildTransactionRunningBalances({
+    transactions: txs, postings: cloudMode ? cloudPostings : [], accounts: baseAccounts,
+    cardBankLinks: prefs.cardBankLinks || {}, accountStyles: prefs.accountStyles || {},
+    creditCardPayments: prefs.creditCardPayments || {},
+    convertAmount: (amount, from, to) => convert(amount, from, to, rates),
+  }), [txs, cloudMode, cloudPostings, baseAccounts, prefs.cardBankLinks, prefs.accountStyles, prefs.creditCardPayments, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -556,8 +578,8 @@ function App() {
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
-  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, spendingLimits: spendingLimitList, bills: cloudBills, billOccurrences: cloudBillOccurrences, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, spendingLimitList, cloudBills, cloudBillOccurrences, briefing.tips, prefs.devices, deviceId]);
-  const allNotifications = useMemo(() => buildNotifications(txs, systemNotices), [txs, systemNotices]);
+  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, spendingLimits: spendingLimitList, bills: cloudBills, billOccurrences: cloudBillOccurrences, tips: can('insights') ? briefing.tips : [], devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, spendingLimitList, cloudBills, cloudBillOccurrences, briefing.tips, prefs.devices, deviceId, plan]);
+  const allNotifications = useMemo(() => buildNotifications(txs, systemNotices.filter(n => can('insights') || !['catReports','catAi'].includes(n.cat))), [txs, systemNotices]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
     return allNotifications.filter(n => {
@@ -643,6 +665,7 @@ function App() {
 
   const saveTransaction = async (e) => {
     e.preventDefault(); setError('');
+    if (cloudMode && !can('cloudWrite')) { setError('Cloud records are read-only. Use local mode or upgrade to Pro.'); return; }
     const amount = Number(form.amount); const type = form.transaction_type;
     if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return; }
     // Every record belongs to an account: nothing is logged until an account or card exists.
@@ -668,14 +691,16 @@ function App() {
     try {
       let receiptPath = form.receipt_path || null;
       if (form.receipt_file) {
-        if (!cloudMode || !session?.user?.id || !supabase) throw new Error(tr('Sign in to attach a receipt securely to your MOVO account.'));
         const file = form.receipt_file;
         if (file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) throw new Error(tr('Use a JPG, PNG, WebP or PDF receipt smaller than 10 MB.'));
+        if (!cloudMode) { receiptPath = await putLocalAttachment(file); } else {
+        if (!can('cloudWrite')) throw new Error('Cloud records are read-only. Use local mode to attach a receipt.');
         const extension = ({'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'})[file.type];
         uploadedReceiptPath = `${session.user.id}/${window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}.${extension}`;
         const upload = await supabase.storage.from('movo-receipts').upload(uploadedReceiptPath,file,{contentType:file.type,upsert:false});
         if (upload.error) throw upload.error;
         receiptPath = uploadedReceiptPath;
+        }
       }
       const paidSub = !editingId && type === 'expense' && form.subscriptionPaymentId
         ? subscriptions.find(item => item.id === form.subscriptionPaymentId) : null;
@@ -717,7 +742,7 @@ function App() {
         notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
         if (!editingId) celebrate();
       } else {
-        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, external_reference: subscriptionReference, source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
+        const row = { id: editingId || window.crypto?.randomUUID?.() || String(Date.now()), merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, external_reference: subscriptionReference, source: !editingId && AUTOMATION_SOURCES.includes(form.source) ? form.source : 'Manual' };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
         savedTransaction = transactionRow;
         if (!editingId) markFresh(row.id);
@@ -833,7 +858,7 @@ function App() {
     const saveQrCode = async (id) => {
       const next = { ...(prefs.accountQrCodes || {}) };
       const previous = next[id] || '';
-      let value = accountForm.account_type === 'bank' ? (accountForm.qrCode || '') : '';
+      let value = supportsAccountQr(accountForm.account_type) ? (accountForm.qrCode || '') : '';
       if (value && isAccountQrDataUrl(value)) {
         const qrDataUrl = value;
         const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${id}` : `local:${id}`;
@@ -849,7 +874,7 @@ function App() {
             value = previous || (localCached ? `localqr:${cacheKey}` : '');
             if (localCached) {
               setPref('accountQrPending', { ...(prefs.accountQrPending || {}), [id]: true });
-              notify(tr('Bank QR saved on this device. Cloud sync will retry when available.'));
+              notify(tr('Account QR saved on this device. Cloud sync will retry when available.'));
             } else notify(tr('QR upload failed and offline storage is unavailable. Please retry while connected.'));
           }
           if (value && !isAccountQrDataUrl(value) && !value.startsWith('localqr:')) {
@@ -1024,7 +1049,7 @@ function App() {
     setBusy(true); setError('');
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
-      const qrCleanup = clearLocalAccountQr().catch(() => {});
+      const qrCleanup = Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
@@ -1040,7 +1065,7 @@ function App() {
     setBusy(true); setError('');
     try {
       await deleteMyAccount();
-      await clearLocalAccountQr().catch(() => {});
+      await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
@@ -1132,7 +1157,7 @@ function App() {
     { id: 'expense', icon: 'minus', label: 'Expense', run: () => openForm('expense') },
     { id: 'income', icon: 'plus', label: 'Income', run: () => openForm('income') },
     { id: 'transfer', icon: 'transfer', label: 'Transfer', run: () => openForm('transfer') },
-    { id: 'scan', icon: 'scan', label: 'Scan receipt', run: () => setSheet({ name: 'scanner' }) },
+    { id: 'scan', icon: 'scan', label: 'Scan receipt', run: () => setSheet({ name: can('receiptScan') ? 'scanner' : 'planOffer', feature: 'receiptScan' }) },
     { id: 'today', icon: 'calendar', label: 'Today', say: () => chatSummary('today') },
     { id: 'month', icon: 'chart', label: 'This month', say: () => chatSummary('month') },
     { id: 'budgets', icon: 'target', label: 'Budgets', run: () => setSheet({ name: 'budgets', tab: 'budgets' }) },
@@ -1203,7 +1228,7 @@ function App() {
     return () => { live = false; };
   }, [userId]);
   useEffect(() => {
-    if (!userId || !prefsSync.current.ready || !prefs.accountQrCodes) return;
+    if (!userId || !canUseFeature(entitlement, 'cloudWrite') || !prefsSync.current.ready || !prefs.accountQrCodes) return;
     const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
     Object.keys(prefs.accountQrPending || {}).forEach(id => pendingMap.set(id, { cacheKey: `${userId}:${id}` }));
     Object.entries(prefs.accountQrCodes).forEach(([id, value]) => {
@@ -1239,10 +1264,10 @@ function App() {
       migrated.forEach(([id]) => qrMigrationRef.current.delete(`${userId}:${id}`));
     });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick]);
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, entitlement]);
   useEffect(() => {
     const sync = prefsSync.current;
-    if (!sync.ready || !sync.user) return undefined;
+    if (!sync.ready || !sync.user || !canUseFeature(entitlement, 'cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
     clearTimeout(sync.timer);
     sync.timer = setTimeout(() => {
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
@@ -1253,7 +1278,7 @@ function App() {
       savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
     return () => clearTimeout(sync.timer);
-  }, [prefs, stickerTick]);
+  }, [prefs, stickerTick, entitlement]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
@@ -1473,7 +1498,7 @@ function App() {
   }, [authReady, todayKey, celebrate]);
   useEffect(() => {
     if (sheet?.name !== 'autolog') return undefined;
-    if (!cloudMode || !session?.access_token || !prefs.autoLogKey) {
+    if (!canUseFeature(entitlement, 'automation') || !cloudMode || !session?.access_token || !prefs.autoLogKey) {
       setAutomationStatus('needs-signin');
       return undefined;
     }
@@ -1492,7 +1517,7 @@ function App() {
       if (!cancelled) setAutomationStatus('error');
     });
     return () => { cancelled = true; };
-  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey, prefs.autoLogAccount]);
+  }, [sheet?.name, cloudMode, session?.access_token, prefs.autoLogKey, prefs.autoLogAccount, entitlement]);
 
   const handledLink = useRef('');
   const recordsRef = useRef(rawTxs);
@@ -1502,6 +1527,7 @@ function App() {
     const handle = () => {
       const hash = window.location.hash;
       const entry = readLogLink(hash);
+      if (entry && !canUseFeature(entitlement, 'automation')) { setSheet({ name: 'planOffer', feature: 'automation' }); return; }
       if (!entry || handledLink.current === hash) return;
       handledLink.current = hash;
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
@@ -1516,14 +1542,14 @@ function App() {
     handle();
     window.addEventListener('hashchange', handle);
     return () => window.removeEventListener('hashchange', handle);
-  }, [authReady, session, cloudMode, prefs.autoLog, prefs.autoLogKey, autoLogFor, notify]);
+  }, [authReady, session, cloudMode, prefs.autoLog, prefs.autoLogKey, autoLogFor, notify, entitlement]);
   /*
    * NasrinAI's briefing opens once a day (not in unit tests). It never opens over another sheet: when
    * "While you were away" (or anything else) is showing, it waits and opens once that is closed, e.g. after Done.
    * It also waits for the unlock screen and for the launch check for new logs, so the logs come first.
    */
   const briefingShownDay = useRef('');
-  const briefingDue = authReady && !locked && !logsCheck && prefs.onboarded && prefs.briefing !== false && prefs.briefingDay !== todayKey
+  const briefingDue = can('insights') && authReady && !locked && !logsCheck && prefs.onboarded && prefs.briefing !== false && prefs.briefingDay !== todayKey
     && briefingShownDay.current !== todayKey && process.env.NODE_ENV !== 'test';
   useEffect(() => {
     if (!briefingDue || sheet) return undefined;
@@ -1560,11 +1586,12 @@ function App() {
 
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
+    entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
     accountQrDisplay,
     fx,
     refreshFx,
-    show, setShow, prefs, setPref, stats, deltas, txs, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs, transactionBalances, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
@@ -1572,7 +1599,7 @@ function App() {
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
     planTab, budgetList, spendingLimitList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
-    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
+    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing: can('insights') ? briefing : null, openBriefing: () => setSheet({ name: can('insights') ? 'briefing' : 'planOffer', feature: 'insights' }), openScanner: () => setSheet({ name: can('receiptScan') ? 'scanner' : 'planOffer', feature: 'receiptScan' }), openAutoLog: () => { if (!can('automation')) { setSheet({ name: 'planOffer', feature: 'automation' }); return; } if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -1583,7 +1610,7 @@ function App() {
   const accentName = prefs.accent === 'custom' ? 'custom' : prefs.accent;
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
-  const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
+  const scenery = scenerySrc(prefs.scenery === 'photo' && !can('styleUploads') ? '' : prefs.scenery, sceneryPhoto);
   const accentHex = accentName === 'custom' ? prefs.customColor : (ACCENTS.find(([n]) => n === accentName)?.[1] || '#086b3a');
   /* Text: size scales every font-size through --font-scale (see lib/fontPrefs.js); the style swaps the font stack. */
   const fontScale = fontScaleOf(prefs.fontSize);
@@ -1596,7 +1623,7 @@ function App() {
     root.setProperty('--app-font', fontStack);
   }, [fontScale, fontStack, prefs.fontStyle]);
   const rootStyle = { ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
+  const rootClass = `movo-app plan-${plan} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -1613,7 +1640,7 @@ function App() {
       case 'Wallet': return <Wallet c={c} />;
       case 'FinancialPlanning': return <FinancialPlanning c={c} />;
       case 'Cashback': return <Cashback c={c} />;
-      case 'ScheduledTransactions': return <ScheduledTransactions c={c} />;
+      case 'ScheduledTransactions': return can('automation') ? <ScheduledTransactions c={c} /> : <div className="card pad"><h2>Scheduled automation · Pro+</h2><p>Pro+ unlocks scheduled logging and device automations.</p><button type="button" className="primary-button" onClick={c.openPlans}>View plans</button></div>;
       case 'ExchangeRates': return <ExchangeRates c={c} />;
       case 'CryptoMarket': return <CryptoMarket c={c} />;
       case 'StocksMarket': return <StocksMarket c={c} />;
@@ -1631,13 +1658,13 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
   })();
 
-  return <div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+  return <PlanProvider entitlement={entitlement} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
@@ -1647,7 +1674,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
-        <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />
+        {can('automation') && <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />}
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
@@ -1671,12 +1698,12 @@ function App() {
         })}
         <span className="side-spacer" />
         <button type="button" className="side-item side-add" onClick={() => openForm('expense')} title={tr('Add transaction')}><span className="side-icon"><Icon name="plus" size={22} strokeWidth={2} /></span><span className="side-label">{tr('Add transaction')}</span></button>
-        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gear" size={22} strokeWidth={1.8} /></span><span className="side-label">{tr('Settings')}</span></button>
+        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gearSolid" size={22} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
-      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
-      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
+      {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : c.openScanner} />}
+      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
         const type = f.type === 'income' ? 'income' : 'expense';
         // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
         const live = accountsView.filter(a => !a.is_archived); const bank = String(f.bank || '').toLowerCase();
@@ -1687,14 +1714,38 @@ function App() {
         setSheet({ name: 'transaction', type });
       }} />}
 
-      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} qrCodeDisplay={accountQrDisplay[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
+      {sheet?.name === 'loyalty' && <LoyaltySheet
+        key={sheet.id || sheet.type}
+        existing={visibleLoyaltyCards(prefs).find(card => card.id === sheet.id)}
+        initialType={isLoyaltyType(sheet.type) ? sheet.type : 'membership'}
+        onClose={() => setSheet(null)}
+        onSave={entry => {
+          const safe = normalizeLoyaltyCard(entry);
+          const cards = visibleLoyaltyCards(prefs);
+          const id = safe.id || window.crypto?.randomUUID?.();
+          if (!id) { notify(tr('Could not create a secure identifier. Please try again.')); return; }
+          const record = { ...safe, id };
+          setPref('membershipCards', cards.some(card => card.id === id) ? cards.map(card => card.id === id ? record : card) : [...cards, record]);
+          setSheet(null);
+          notify(tr('Membership or rewards saved.'));
+        }}
+        onRemove={id => {
+          setPref('membershipCards', visibleLoyaltyCards(prefs).filter(card => card.id !== id));
+          const nextRules = { ...(prefs.loyaltyRewardRules || {}) };
+          delete nextRules[id];
+          setPref('loyaltyRewardRules', nextRules);
+          setSheet(null);
+          notify(tr('Membership or rewards removed.'));
+        }}
+      />}
+
+      {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} qrCodeDisplay={accountQrDisplay[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onSelectLoyalty={type => { setAccountForm(BLANK_ACCOUNT); setSheet({ name: 'loyalty', type }); }} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 
       {sheet?.name === 'actions' && <Sheet title={tr('Quick actions')} onClose={() => setSheet(null)}>
         <div className="sheet-menu">
           <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />{tr('Add transaction')}</button>
           <button type="button" onClick={() => setSheet({ name: 'grocery' })}><Icon name="shopping-basket" size={20} />{tr('Add grocery items')}</button>
-          <button type="button" onClick={() => setSheet({ name: 'scanner' })}><Icon name="scan" size={20} />{tr('Scan receipt')}</button>
-          <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />{tr('Add account')}</button>
+          <button type="button" onClick={() => setSheet({ name: can('receiptScan') ? 'scanner' : 'planOffer', feature: 'receiptScan' })}><Icon name="scan" size={20} />{tr('Scan receipt')}</button>
           <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />{tr('Import CSV')}</button>
           <button type="button" onClick={exportCsv}><Icon name="download" size={20} />{tr('Export CSV')}</button>
           <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />{tr('Choose theme')}</button>
@@ -1707,7 +1758,10 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {showTour && !locked && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
+      {(sheet?.name === 'planOffer' || (authReady && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked)) && <PlanOffer session={session} entitlement={entitlement} feature={sheet?.feature} onRefresh={refreshEntitlement} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
+      {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
+      {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
+      {showTour && !locked && prefs.planWelcomeSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {showPostTourDisclosure && !locked && <PostTourLegalDisclosure onReview={() => { setShowPostTourDisclosure(false); openLegal('TermsOfService'); }} onDismiss={() => setShowPostTourDisclosure(false)} />}
       {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => {
         // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.
@@ -1715,7 +1769,7 @@ function App() {
         const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
         wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
       }} />}
-      {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
+      {sheet?.name === 'briefing' && can('insights') && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
       {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onOpenLimits={() => setSheet({ name: 'spendingLimits' })} onClose={() => setSheet(null)} />}
       {sheet?.name === 'spendingLimits' && <SpendingLimitsSheet limits={spendingLimitList} accounts={accountsView} show={show} onSave={saveSpendingLimit} onDelete={deleteSpendingLimit} onClose={() => setSheet({ name: 'budgets', tab: 'budgets' })} />}
 
@@ -1754,6 +1808,8 @@ function App() {
         account={accountChoice}
         accounts={accountsView}
         transactions={txs}
+        transactionBalances={transactionBalances}
+        showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false}
         prefs={prefs}
         subscriptions={subscriptions}
         plans={plans}
@@ -1774,7 +1830,7 @@ function App() {
 
       {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
         <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}{detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}{detailTx.receipt_note && <div><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}</dl>
-        {detailTx.receipt_path && <button type="button" className="secondary-button" onClick={async()=>{const popup=window.open('about:blank','_blank');try{const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}>{tr('View receipt')}</button>}
+        {detailTx.receipt_path && <button type="button" className="secondary-button" onClick={async()=>{const popup=window.open('about:blank','_blank');try{if(detailTx.receipt_path.startsWith('localreceipt:')){const file=await getLocalAttachment(detailTx.receipt_path);if(!file)throw new Error('missing');const url=URL.createObjectURL(file);if(popup)popup.location.href=url;else window.location.assign(url);setTimeout(()=>URL.revokeObjectURL(url),60000);return;}const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}>{tr('View receipt')}</button>}
         {detailTx.source === 'allocation_event'
           ? detailTx.can_reverse && <div className="sheet-actions"><button type="button" className="danger-button" aria-label={tr('Reverse')} onClick={() => removeTransaction(detailTx)}><Icon name="undo-2" size={16} /> {tr('Reverse')}</button></div>
           : detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
@@ -1786,7 +1842,7 @@ function App() {
         <button type="button" className="secondary-button" onClick={() => setPendingLog(null)} aria-label={tr('Dismiss payment')}>{tr('Skip')}</button>
         <button type="button" className="primary-button" onClick={reviewPending}>{tr('Log')}</button>
       </div>}
-      {sheet?.name === 'autolog' && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => {
+      {sheet?.name === 'autolog' && can('automation') && <AutoLogSheet showBalance={show} prefs={prefs} setPref={setPref} status={automationStatus} accounts={formAccounts} cloudMode={cloudMode} notify={notify} onClose={() => setSheet(null)} onResetKey={async () => {
         const oldKey = prefs.autoLogKey;
         const replacement = newKey();
         // Persist the replacement BEFORE revoking the old automation device.
@@ -1819,13 +1875,13 @@ function App() {
         setAutomationStatus('registering');
         notify(tr('New device key created. Keep this screen open to register it, then update your Shortcut.'));
       }} />}
-      {sheet?.name === 'recentLogs' && <RecentLogsSheet logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
+      {sheet?.name === 'recentLogs' && <RecentLogsSheet transactionBalances={transactionBalances} showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false} logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
-  </div>;
+  </div></PlanProvider>;
 }
 export default App;
 

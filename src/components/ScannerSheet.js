@@ -74,7 +74,7 @@ export default function ScannerSheet({ show, onLog, onClose }) {
     const k = Math.min(1, 1600 / Math.max(v.videoWidth, v.videoHeight));
     const c = document.createElement('canvas'); c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
     c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-    c.toBlob(b => b && process(b), 'image/jpeg', 0.9);
+    c.toBlob(b => { if (b) process(b); else { stopCamera(); setMode('home'); setError(tr('Could not capture that photo. Try uploading it instead.')); } }, 'image/jpeg', 0.9);
   };
   const choose = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) process(f); };
   const log = () => {

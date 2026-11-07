@@ -1,3 +1,5 @@
+import { startDeviceSpeech } from '../lib/deviceSpeech';
+import { usePlan } from '../lib/PlanContext';
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
 import { categoryOf } from '../lib/categories';
@@ -81,6 +83,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const pendingVoiceTextsRef = useRef([]);
   busyRef.current = busy;
   const [error, setError] = useState('');
+  const { can, requireFeature } = usePlan();
   const [privacyAccepted, setPrivacyAccepted] = useState(() => readAck(session?.user?.id));
   const [consentOpen, setConsentOpen] = useState(false);
   const [listening, setListening] = useState(false);
@@ -141,8 +144,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const loadHistory = async () => {
       const accepted = readAck(session?.user?.id);
       setPrivacyAccepted(accepted);
-      setConsentOpen(!!session?.user && cloudMode && !accepted);
-      if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
+      setConsentOpen(can('fullAI') && !!session?.user && cloudMode && !accepted);
+    if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
       if (newConversationPending) { setMessages([]); setConversationId(null); return; }
       // One clean start per account after the MOVO-only change, so an older thread that quoted outside material is not
       // reopened (or fed back as context). Earlier chats stay in the account; they are just not reopened.
@@ -174,7 +177,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const message = String(spoken ?? draft).trim();
     if (!message || busy) return;
     // Logging is handled on this device and never sent to NasrinAI, so it needs no sign-in or AI consent.
-    const entries = onLog ? parseLogMessage(message) : [];
+    const entries = onLog && can('fullAI') ? parseLogMessage(message) : [];
     if (entries.length) {
       setError(''); setDraft('');
       setMessages((current) => [...current, { role: 'user', content: message, local: true }]);
@@ -196,6 +199,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError(''); setDraft('');
       setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', content: local, local: true }]);
       say(local);
+      return;
+    }
+    if (!can('fullAI')) {
+      setDraft('');
+      setMessages(current => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', local: true, content: 'Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.' }]);
       return;
     }
     if (!session?.user || !cloudMode || !supabase) {
@@ -255,6 +263,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   const logAnyway = async (index, row) => {
+    if (!requireFeature('fullAI')) return;
     try {
       const [added] = await onLog([row.entry], true);
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, items: m.items.map(x => (x.id === row.id ? added : x)) } : m)));
@@ -262,6 +271,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   const undo = async (index, id) => {
+    if (!requireFeature('fullAI')) return;
     try {
       await onUndoLog?.(id);
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, removed: [...m.removed, id] } : m)));
@@ -284,6 +294,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const audioPlayingRef = useRef(false);
   const currentAudioRef = useRef(null);
   const deviceSpeechRef = useRef(null);
+  const listenSpeechRef = useRef(null);
   const speechStartRef = useRef(0);
   const loudFramesRef = useRef(0);
   const streamRef = useRef(null);
@@ -353,16 +364,20 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   function speakWithDevice(text) {
-    const synth = window.speechSynthesis;
-    if (!synth || typeof SpeechSynthesisUtterance === 'undefined') { spokenRef.current = ''; return; }
-    const words = plain(text).slice(0, 600); if (!words) return;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(words); u.lang = getLanguage().code || navigator.language || 'en-US';
-    // While the device voice talks, the mic treats input like playback echo (louder, sustained sound to interrupt).
-    const end = () => { if (deviceSpeechRef.current === u) { deviceSpeechRef.current = null; audioPlayingRef.current = false; } spokenRef.current = ''; };
-    u.onend = end; u.onerror = end;
-    deviceSpeechRef.current = u; audioPlayingRef.current = true;
-    synth.speak(u);
+    deviceSpeechRef.current?.cancel?.();
+    const end = () => {
+      deviceSpeechRef.current = null;
+      audioPlayingRef.current = false;
+      spokenRef.current = '';
+    };
+    const controller = startDeviceSpeech(plain(text).slice(0, 1800), {
+      language: getLanguage().code || navigator.language || 'en-US',
+      onEnd: end,
+      onError: () => { end(); setError(tr('Speech playback was blocked. Tap Listen to try again.')); }
+    });
+    if (!controller) { end(); setError(tr('Speech playback is not available on this device.')); return; }
+    deviceSpeechRef.current = controller;
+    audioPlayingRef.current = true;
   }
 
   function say(text, audioParts) {
@@ -376,7 +391,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     audioQueueRef.current = [];
     try { currentAudioRef.current?.stop?.(); } catch { /* already stopped */ }
     currentAudioRef.current = null;
+    deviceSpeechRef.current?.cancel?.();
     deviceSpeechRef.current = null;
+    listenSpeechRef.current?.cancel?.();
+    listenSpeechRef.current = null;
     audioPlayingRef.current = false;
     window.speechSynthesis?.cancel();
   };
@@ -529,6 +547,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       setError(tr('Model-backed voice input is not supported in this browser.'));
       return;
     }
+    if (!requireFeature('fullAI')) return;
     if (!session?.user || !cloudMode || !privacyAccepted) {
       if (!privacyAccepted) setConsentOpen(true);
       else setError(tr('Sign in to MOVO to use voice chat.'));
@@ -558,19 +577,40 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     try { recorderRef.current?.stop?.(); } catch { /* cleanup */ }
     streamRef.current?.getTracks?.().forEach(track => track.stop());
     audioContextRef.current?.close?.().catch(() => {});
+    listenSpeechRef.current?.cancel?.();
+    deviceSpeechRef.current?.cancel?.();
     window.speechSynthesis?.cancel();
   }, []);
 
   const speak = (text, index) => {
-    const synth = window.speechSynthesis; if (!synth) return;
-    if (speaking === index) { synth.cancel(); setSpeaking(-1); return; }
-    synth.cancel(); const u = new SpeechSynthesisUtterance(text);
-    u.onend = () => setSpeaking(-1); u.onerror = () => setSpeaking(-1);
-    setSpeaking(index); synth.speak(u);
+    if (speaking === index) {
+      listenSpeechRef.current?.cancel?.();
+      listenSpeechRef.current = null;
+      setSpeaking(-1);
+      return;
+    }
+    listenSpeechRef.current?.cancel?.();
+    setError('');
+    const controller = startDeviceSpeech(text, {
+      language: getLanguage().code || navigator.language || 'en-US',
+      onEnd: () => { listenSpeechRef.current = null; setSpeaking(-1); },
+      onError: () => {
+        listenSpeechRef.current = null; setSpeaking(-1);
+        setError(tr('Speech playback was blocked. Check your device volume and tap Listen again.'));
+      }
+    });
+    if (!controller) {
+      setSpeaking(-1);
+      setError(tr('Speech playback is not available on this device.'));
+      return;
+    }
+    listenSpeechRef.current = controller;
+    setSpeaking(index);
   };
 
   const attach = async (event) => {
     const file = event.target.files?.[0]; event.target.value = ''; if (!file) return;
+    if (!requireFeature('fullAI')) return;
     setError(''); setAttaching(true);
     try {
       if (/^image\//.test(file.type)) {

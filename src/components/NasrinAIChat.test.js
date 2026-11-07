@@ -1,3 +1,5 @@
+// Existing remote AI regressions exercise paid access.
+jest.mock('../lib/PlanContext', () => ({ usePlan: () => ({ can: () => true, requireFeature: () => true }) }));
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import NasrinAIChat from './NasrinAIChat';

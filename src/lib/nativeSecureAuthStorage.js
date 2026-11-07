@@ -17,12 +17,25 @@ const LEGACY_PREFIX = /^sb-/;
 function isAuthKey(key) {
   return typeof key === 'string' && LEGACY_AUTH_KEY.test(key);
 }
-function removeWebLegacy(key) {
-  try { if (typeof localStorage !== 'undefined') localStorage.removeItem(key); } catch { /* secondary cleanup only */ }
-}
+// The tombstone prevents a failed sign-out scrub from re-importing a stale
+// plaintext session on the next launch. It stays in the encrypted native vault
+// until both old storage locations have been cleared successfully.
+const REVOKED = '__movo_auth_revoked_v1__';
+
 async function removeLegacy(key) {
-  removeWebLegacy(key);
-  try { await Preferences.remove({ key }); } catch { /* native vault is authoritative */ }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(key);
+      if (localStorage.getItem(key) !== null) throw new Error('web_copy_present');
+    }
+    await Preferences.remove({ key });
+    const { value } = await Preferences.get({ key });
+    if (value !== null && value !== undefined) throw new Error('native_preferences_copy_present');
+  } catch {
+    // Never return a token while its recoverable legacy copy may still exist.
+    // The next native auth access will retry the cleanup.
+    throw new Error('secure_auth_legacy_cleanup_failed');
+  }
 }
 function requireNative() {
   if (!isNativeApp()) throw new Error('secure_auth_storage_native_only');
@@ -33,12 +46,22 @@ export const nativeSecureAuthStorage = {
     if (!isAuthKey(key)) throw new Error('invalid_auth_storage_key');
     // Never expose the stored credential through a browser-accessible mirror.
     const { value } = await MovoNative.secureGet({ key });
+    if (value === REVOKED) {
+      // A previous logout was interrupted during legacy storage scrubbing.
+      await removeLegacy(key);
+      await MovoNative.secureRemove({ key });
+      return null;
+    }
     if (value !== null && value !== undefined) {
       await removeLegacy(key);
       return String(value);
     }
     let legacy = null;
-    try { legacy = localStorage.getItem(key); } catch { /* legacy storage unavailable */ }
+    try {
+      legacy = typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
+    } catch {
+      throw new Error('secure_auth_legacy_read_failed');
+    }
     if (legacy === null) {
       // Native app versions before this update mirrored auth keys into Preferences.
       const old = await Preferences.get({ key });
@@ -61,8 +84,11 @@ export const nativeSecureAuthStorage = {
   async removeItem(key) {
     requireNative();
     if (!isAuthKey(key)) throw new Error('invalid_auth_storage_key');
-    await MovoNative.secureRemove({ key });
+    // Write a vault tombstone *before* clearing old copies. A failed cleanup
+    // must not allow an obsolete plaintext token to be migrated on next login.
+    await MovoNative.secureSet({ key, value: REVOKED });
     await removeLegacy(key);
+    await MovoNative.secureRemove({ key });
   },
 };
 

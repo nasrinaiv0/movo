@@ -33,7 +33,11 @@ module.exports = async function handler(req, res) {
     if (error) throw error;
     if (!existing?.user_id) return json(res, 200, { received: true, processed: false });
     const verified = await verifyApple(signedTransaction, existing.user_id);
-    await persistStoreEntitlement(admin, existing.user_id, verified);
+    const entitlementId = await persistStoreEntitlement(admin, existing.user_id, verified);
+    if (verified.paidVerified && verified.environment === 'production' && !verified.needsAcknowledgement) {
+      const { error: referralError } = await admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: existing.user_id });
+      if (referralError) throw referralError;
+    }
     return json(res, 200, { received: true, processed: true });
   } catch (error) {
     console.error('[movo-purchases] Apple notification rejected', { code: String(error?.message || 'unknown').slice(0, 80) });

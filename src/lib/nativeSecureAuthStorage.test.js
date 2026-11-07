@@ -39,7 +39,7 @@ test('reads an existing Keychain/Keystore token and scrubs stale plaintext copie
   expect(MovoNative.secureSet).not.toHaveBeenCalled();
 });
 test('migrates an old Capacitor Preferences session only after the device vault persists it', async () => {
-  Preferences.get.mockResolvedValue({ value: '{"access_token":"legacy"}' });
+  Preferences.get.mockResolvedValueOnce({ value: '{"access_token":"legacy"}' });
   expect(await nativeSecureAuthStorage.getItem(KEY)).toBe('{"access_token":"legacy"}');
   expect(MovoNative.secureSet).toHaveBeenCalledWith({ key: KEY, value: '{"access_token":"legacy"}' });
   expect(Preferences.remove).toHaveBeenCalledWith({ key: KEY });
@@ -79,4 +79,38 @@ test('invalid keys cannot use sensitive native storage; native vault is never en
   await expect(nativeSecureAuthStorage.setItem('movo.preferences.v3', 'x')).rejects.toThrow('invalid_auth_storage');
   jest.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(false);
   await expect(nativeSecureAuthStorage.getItem(KEY)).rejects.toThrow('native_only');
+});
+
+test('a failed Preferences scrub blocks a migrated secure session until cleanup succeeds', async () => {
+  MovoNative.secureGet.mockResolvedValue({ value: 'vault-session' });
+  localStorage.setItem(KEY, 'old-plaintext');
+  Preferences.remove.mockRejectedValueOnce(new Error('storage_locked'));
+  await expect(nativeSecureAuthStorage.getItem(KEY)).rejects.toThrow('secure_auth_legacy_cleanup_failed');
+  expect(MovoNative.secureRemove).not.toHaveBeenCalled();
+  // A later load retries cleanup; no plaintext fallback or forced logout.
+  await expect(nativeSecureAuthStorage.getItem(KEY)).resolves.toBe('vault-session');
+  expect(localStorage.getItem(KEY)).toBeNull();
+});
+
+test('a failed browser legacy scrub fails closed and retries without exposing the token', async () => {
+  MovoNative.secureGet.mockResolvedValue({ value: 'vault-session' });
+  const proto = Object.getPrototypeOf(localStorage);
+  const getItem = jest.spyOn(proto, 'getItem');
+  getItem.mockImplementationOnce(() => 'unremoved-secret');
+  await expect(nativeSecureAuthStorage.getItem(KEY)).rejects.toThrow('secure_auth_legacy_cleanup_failed');
+  getItem.mockRestore();
+  await expect(nativeSecureAuthStorage.getItem(KEY)).resolves.toBe('vault-session');
+});
+
+test('failed logout cleanup retains a secure tombstone so old plaintext cannot reauthenticate', async () => {
+  localStorage.setItem(KEY, 'old-login');
+  Preferences.remove.mockRejectedValueOnce(new Error('read_only'));
+  await expect(nativeSecureAuthStorage.removeItem(KEY)).rejects.toThrow('secure_auth_legacy_cleanup_failed');
+  expect(MovoNative.secureSet).toHaveBeenCalledWith({
+    key: KEY, value: '__movo_auth_revoked_v1__',
+  });
+  expect(MovoNative.secureRemove).not.toHaveBeenCalled();
+  MovoNative.secureGet.mockResolvedValue({ value: '__movo_auth_revoked_v1__' });
+  await expect(nativeSecureAuthStorage.getItem(KEY)).resolves.toBeNull();
+  expect(MovoNative.secureRemove).toHaveBeenCalledWith({ key: KEY });
 });

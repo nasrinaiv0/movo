@@ -4,6 +4,7 @@ import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { cashbackTotals, estimateCashback } from '../lib/cashback';
+import { visibleLoyaltyCards, estimateLoyaltyRewards, estimatedLoyaltyTotals, safeLoyaltyPoints } from '../lib/loyaltyCards';
 
 const today = () => new Date().toLocaleDateString('en-CA');
 const round = n => Math.round((Number(n) || 0) * 100) / 100;
@@ -19,6 +20,13 @@ export default function Cashback({ c }) {
   const auto = useMemo(() => estimateCashback(txs, accountsView, rules), [txs, accountsView, rules]);
   const totals = cashbackTotals(manual.filter(x => x.status !== 'Redeemed'));
   const estimatedTotals = cashbackTotals(auto);
+  const loyaltyCards = visibleLoyaltyCards(prefs);
+  const loyaltyRules = prefs.loyaltyRewardRules || {};
+  const eligiblePaymentAccounts = accountsView.filter(a => !a.is_archived && ['bank', 'card', 'e_wallet', 'cash'].includes(a.account_type));
+  const rewardEstimates = useMemo(() => estimateLoyaltyRewards(txs, accountsView, loyaltyCards, loyaltyRules), [txs, accountsView, prefs.membershipCards, loyaltyRules]);
+  const rewardTotals = estimatedLoyaltyTotals(rewardEstimates);
+  const updateRewardRule = (cardId, patch) => setPref('loyaltyRewardRules', { ...loyaltyRules, [cardId]: { ...(loyaltyRules[cardId] || {}), ...patch } });
+
   const formatTotals = values => Object.entries(values);
   const cash = (value, currency = 'PHP') => shown(show, money(value, currency));
   const saveRules = next => setPref('cashbackRules', next);
@@ -48,7 +56,7 @@ export default function Cashback({ c }) {
   const removeEntry = id => setPref('cashbackEntries', manual.filter(entry => entry.id !== id));
 
   return <>
-    <RootHeader title={tr('Cashback')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
+    <RootHeader title={tr('Cashback')} onBack={() => c.go('Menu')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />
     <section className="card total-card cashback-total">
       <small>{tr('Cashback tracked')}</small>
       {formatTotals(totals).length ? formatTotals(totals).map(([currency, amount]) => <div className="balance-amount" key={currency}>{cash(amount, currency)}</div>) : <div className="balance-amount">{cash(0, c.base || 'PHP')}</div>}
@@ -83,6 +91,43 @@ export default function Cashback({ c }) {
         <small className="form-note cashback-hint">{tr('Estimate only · based on logged purchases')}</small>
       </article>;
     })}
+    </div>
+
+    <SectionTitle>{tr('Automatic membership points & rewards')}</SectionTitle>
+    <p className="form-note cashback-intro">{tr('Match purchases by payment account and merchant to estimate points. These are estimates only: actual rewards must be confirmed with the provider. No money moves.')}</p>
+    <div className="cashback-rule-list">
+      {loyaltyCards.length ? loyaltyCards.map(card => {
+        const rule = loyaltyRules[card.id] || {};
+        const selected = eligiblePaymentAccounts.find(account => account.id === rule.accountId);
+        const unit = card.pointsUnit || (card.type === 'tokens' ? 'tokens' : 'points');
+        return <article className="card fp-goal cashback-rule" key={card.id}>
+          <div className="fp-goal-head">
+            <span className="stat-icon tone-green"><Icon name={card.type === 'tokens' ? 'star' : 'gift'} size={17} /></span>
+            <span className="fp-main"><strong>{card.name}</strong><small>{safeLoyaltyPoints(card.points).toLocaleString()} {unit} · {tr('Recorded balance')} {rewardTotals[card.id] ? ' · +' + rewardTotals[card.id].toLocaleString() + ' ' + tr('estimated') : ''}</small></span>
+            <label className="legal-disclosure-check"><input type="checkbox" aria-label={tr('Automatically estimate rewards for {name}', { name: card.name })} checked={!!rule.enabled} onChange={event => updateRewardRule(card.id, { enabled: event.target.checked, merchantContains: rule.merchantContains ?? card.name })} /><span>{tr('Auto')}</span></label>
+          </div>
+          <div className="cashback-rule-fields">
+            <label className="cashback-field"><span>{tr('Payment account')}</span><select className="cashback-input" aria-label={tr('Payment account for {name}', { name: card.name })} value={rule.accountId || ''} onChange={event => {
+              const account = eligiblePaymentAccounts.find(item => item.id === event.target.value);
+              updateRewardRule(card.id, { accountId: event.target.value, currency: account?.currency || '' });
+            }}><option value="">{tr('Select payment account')}</option>{eligiblePaymentAccounts.map(account => <option key={account.id} value={account.id}>{account.institution_name || account.name}</option>)}</select></label>
+            <label className="cashback-field"><span>{tr('Merchant name contains')}</span><input className="cashback-input" aria-label={tr('Merchant name contains for {name}', { name: card.name })} maxLength={100} placeholder={card.name} value={rule.merchantContains ?? card.name} onChange={event => updateRewardRule(card.id, { merchantContains: event.target.value })} /></label>
+          </div>
+          <div className="cashback-rule-fields">
+            <label className="cashback-field"><span>{tr('Rewards per 100 spent')}</span><input className="cashback-input" aria-label={tr('Rewards per 100 spent for {name}', { name: card.name })} type="number" inputMode="decimal" min="0" max="100000" step="0.01" placeholder="1" value={rule.pointsPer100 ?? ''} onChange={event => updateRewardRule(card.id, { pointsPer100: event.target.value })} /></label>
+            <label className="cashback-field"><span>{tr('Transaction currency')}</span><input className="cashback-input" value={selected?.currency || ''} readOnly aria-label={tr('Transaction currency')} /></label>
+          </div>
+          <small className="form-note cashback-hint">{tr('Only matching logged expenses earn estimated rewards. Deleting an expense reverses its estimate automatically.')}</small>
+        </article>;
+      }) : <p className="form-note">{tr('Add a membership or rewards card in Wallet to configure automatic points.')}</p>}
+    </div>
+    <SectionTitle>{tr('Estimated automatic reward points')}</SectionTitle>
+    <div className="card list-card">
+      {rewardEstimates.length ? rewardEstimates.map(entry => <div className="fp-row" key={entry.id}>
+        <span className="stat-icon tone-green"><Icon name="star" size={17} /></span>
+        <span className="fp-main"><strong>{entry.merchant}</strong><small>{entry.date} · {loyaltyCards.find(card => card.id === entry.cardId)?.name || ''} · {tr('Estimated')}</small></span>
+        <span className="fp-amount"><b>+{entry.points.toLocaleString(undefined, { maximumFractionDigits: 2 })}</b><small>{entry.unit}</small></span>
+      </div>) : <p className="form-note">{tr('No matching purchases have earned estimated reward points yet.')}</p>}
     </div>
 
     <SectionTitle>{tr('Estimated automatic cashback')}</SectionTitle>

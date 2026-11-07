@@ -1,3 +1,6 @@
+import { usePlan } from '../lib/PlanContext';
+import { PlanComparison } from '../components/PlanOffer';
+import { PLAN_LABELS } from '../lib/planAccess';
 import React, { useEffect, useRef, useState } from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
@@ -123,7 +126,7 @@ function LockSheet({ c, onClose }) {
 }
 
 /** Store purchases are verified server-side; the store supplies localized price metadata. */
-function UsageSheet({ c, onClose }) {
+export function UsageSheet({ c, onClose }) {
   const [storeProducts, setStoreProducts] = useState([]);
   const [storeEntitlement, setStoreEntitlement] = useState(null);
   const [purchaseBusy, setPurchaseBusy] = useState(false);
@@ -146,7 +149,7 @@ function UsageSheet({ c, onClose }) {
     setPurchaseBusy(true); setPurchaseMessage('');
     try {
       const result = await restoreStorePurchases(c.session);
-      setStoreEntitlement(result.entitlement);
+      setStoreEntitlement(result.entitlement); await c.refreshEntitlement?.();
       setPurchaseMessage(result.restoredCount
         ? tr('Your purchases were restored and verified.')
         : tr('No active MOVO subscription was found for this store account.'));
@@ -160,7 +163,7 @@ function UsageSheet({ c, onClose }) {
     try {
       await purchaseStoreProduct(productIdentifier, c.session);
       const value = await getStoreEntitlements(c.session);
-      setStoreEntitlement(value);
+      setStoreEntitlement(value); await c.refreshEntitlement?.();
       setPurchaseMessage(tr('Your subscription is active.'));
     } catch (error) {
       setPurchaseMessage(error.message || tr('Purchase could not be verified.'));
@@ -168,7 +171,7 @@ function UsageSheet({ c, onClose }) {
   };
 
   const rows = [
-    [tr('Plan'), storeEntitlement?.tier ? storeEntitlement.tier.toUpperCase() : (c.cloudMode ? tr('Quick · cloud sync') : tr('Quick · this device only'))],
+    [tr('Plan'), storeEntitlement?.tier ? (PLAN_LABELS[storeEntitlement.tier] || 'Free') : tr('Free')],
     [tr('Transactions'), String(c.txs?.length || 0)],
     [tr('Accounts'), String(c.accountsView?.length || 0)],
     [tr('Subscriptions tracked'), String(c.subscriptions?.length || 0)],
@@ -176,22 +179,24 @@ function UsageSheet({ c, onClose }) {
   ];
 
   return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Manage your MOVO subscription and restore purchases from the store.')} onClose={onClose} label={tr('Plan & Usage')}>
+    <PlanComparison />
+    <button type="button" className="secondary-button" onClick={() => { onClose(); c.openPlans?.(); }}>Free trial & referrals</button>
     <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
     {storeEntitlement?.active && <p className="form-hint">{tr('Your verified {tier} subscription is active until {date}.', { tier: storeEntitlement.tier, date: storeEntitlement.expiresAt ? longDate(storeEntitlement.expiresAt) : tr('the current period ends') })}</p>}
     {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}
     {nativePurchases && <>
-      {!storeEntitlement?.active && <>
+      {storeEntitlement?.source !== 'store' && <>
         <h3 className="group-title">{tr('Available plans')}</h3>
         <div className="card pad">
           {storeProducts.length ? storeProducts.map((product) => <div className="settings-row" key={product.productIdentifier}>
-            <div className="settings-row-main"><strong>{product.title}</strong><small>{product.priceString}</small></div>
+            <div className="settings-row-main"><strong>{product.title}</strong><small>{product.priceString} · {product.period}</small></div>
             <button type="button" className="primary-button" disabled={purchaseBusy || !c.session?.access_token} onClick={() => runPurchase(product.productIdentifier)}>{tr('Subscribe')}</button>
           </div>) : <p className="form-hint">{tr('Store subscription products are not available yet.')}</p>}
         </div>
       </>}
       <div className="sheet-actions">
         <button type="button" className="secondary-button" disabled={purchaseBusy || !c.session?.access_token} onClick={runRestore}>{purchaseBusy ? tr('Please wait…') : tr('Restore purchases')}</button>
-        <button type="button" className="secondary-button" disabled={purchaseBusy || !storeEntitlement?.active} onClick={() => manageStoreSubscriptions().catch((error) => setPurchaseMessage(error.message || tr('Could not open subscription management.')))}>{tr('Manage subscription')}</button>
+        <button type="button" className="secondary-button" disabled={purchaseBusy || storeEntitlement?.source !== 'store'} onClick={() => manageStoreSubscriptions().catch((error) => setPurchaseMessage(error.message || tr('Could not open subscription management.')))}>{tr('Manage subscription')}</button>
       </div>
     </>}
     {!nativePurchases && <p className="form-hint">{tr('Store purchases and restore are available in the MOVO iOS and Android apps.')}</p>}
@@ -222,6 +227,7 @@ export default function Settings({ c }) {
   const sections = [
     { title: tr('Account'), rows: [
       { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('EditProfile') },
+      { icon: 'download', title: tr('Export & import'), sub: tr('Read and save your financial backup on any plan'), onClick: () => c.openBackup?.() },
       { icon: 'database', title: tr('Plan & Usage'), sub: tr('Free plan · see what you use'), onClick: () => setPanel('usage') },
       { icon: 'layout', title: tr('Connected Accounts'), sub: tr('Manually tracked accounts; no bank connection is active.'), onClick: () => go('Wallet') },
     ] },
@@ -246,6 +252,11 @@ export default function Settings({ c }) {
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
       ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
+    ] },
+    { title: tr('Transaction History'), rows: [
+      { icon: 'list', title: tr('Show balance after each transaction'),
+        sub: tr('Show the calculated account balance or remaining credit in transaction history. Logging always stays on.'),
+        toggle: 'showBalanceAfterTransaction' },
     ] },
     { title: tr('Data & Sync'), rows: [
       { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : c.session?.user ? tr('Cloud sync is paused on this device.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
@@ -282,13 +293,15 @@ const PICKS = 11;
 
 /** Background scenery: plain, one of the Scenery wallpapers, or your own photo, with a visibility slider. */
 function SceneryPicker({ c }) {
+  const { requireFeature } = usePlan();
   const { prefs, setPref, sceneryPhoto, setSceneryPhoto } = c;
   const [all, setAll] = useState(false);
   const [error, setError] = useState('');
   const file = useRef(null);
   const current = prefs.scenery || '';
-  const pick = (id) => { setError(''); setPref('scenery', id); };
+  const pick = (id) => { if (id === PHOTO && !requireFeature('styleUploads')) return; setError(''); setPref('scenery', id); };
   const upload = async (e) => {
+    if (!requireFeature('styleUploads')) return;
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     setError('');
     try {
@@ -304,7 +317,7 @@ function SceneryPicker({ c }) {
   return <section className="card pad scenery-settings">
     <div className="scenery-row" role="group" aria-label={tr('Background scenery')}>
       <button type="button" className={`scenery-tile plain${current ? '' : ' selected'}`} aria-pressed={!current} aria-label={tr('Plain background')} onClick={() => pick('')}><span>{tr('None')}</span></button>
-      <button type="button" className={`scenery-tile photo${current === PHOTO ? ' selected' : ''}`} aria-pressed={current === PHOTO} aria-label={sceneryPhoto ? tr('Your photo') : tr('Upload your own background')} onClick={() => (sceneryPhoto ? pick(PHOTO) : file.current?.click())}>
+      <button type="button" className={`scenery-tile photo${current === PHOTO ? ' selected' : ''}`} aria-pressed={current === PHOTO} aria-label={sceneryPhoto ? tr('Your photo') : tr('Upload your own background')} onClick={() => { if (requireFeature('styleUploads')) { if (sceneryPhoto) pick(PHOTO); else file.current?.click(); } }}>
         {sceneryPhoto ? <img src={sceneryPhoto} alt="" /> : <span><Icon name="upload" size={18} />{tr('Your photo')}</span>}
       </button>
       {shortList.map(tile)}

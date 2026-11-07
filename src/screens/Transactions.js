@@ -93,7 +93,7 @@ export default function Transactions({ c }) {
   return <>
     <RootHeader title={tr('Transactions')} className="transactions-header" headerActions={[
       { icon: 'search', label: tr('Search'), onClick: c.openSearch, size: 21, className: 'transaction-header-search' },
-      { icon: 'transactionFilter', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }), size: 21, className: 'transaction-header-filter' },
+      { icon: 'quickActionShare', label: tr('Quick actions'), onClick: () => c.setSheet({ name: 'actions' }), size: 21, className: 'transaction-header-filter' },
       { icon: 'plus', label: tr('Add transaction'), onClick: () => c.openForm('expense'), size: 23, className: 'transaction-header-add' },
     ]} />
     <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
@@ -136,14 +136,16 @@ export default function Transactions({ c }) {
       <div><small>{tr('Total Income')}</small><div className="balance-amount md">{shown(show, money(monthStats.income))}</div><small>{monthStats.incomeCount} transactions</small></div>
     </section>}
 
-    {txFilter !== 'All' && <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />}
+    {txFilter !== 'All' && <div className="tx-sort-bar" style={{ '--tx-sort-count': sorts.length }}>
+      <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />
+    </div>}
     {txFilter === 'All' ? <SectionTitle action={expanded ? tr('Show less') : tr('See All')} onAction={() => setExpanded(!expanded)}>{tr('Recent Transactions')}</SectionTitle>
       : sort === 'Date' && <div className="month-total"><span>{month === 'all' ? tr('All billing cycles') : (!month || month === currentCycle) ? tr('Present') : monthLabel(month)}</span><b>{shown(show, (txFilter === 'Expenses' ? '−' : '') + money(txFilter === 'Expenses' ? monthStats.expenses : txFilter === 'Income' ? monthStats.income : monthStats.transfers))}</b></div>}
 
     <div className="tx-groups">
       {visibleGroups.map(g => <section key={g.key}>
         {g.label && <div className="group-head"><span><b>{g.label}</b>{g.label !== g.date && <> · {g.date}</>}</span><span>{shown(show, `${txFilter === 'Transfers' ? '' : g.total < 0 ? '−' : '+'}${money(Math.abs(g.total))}`)}</span></div>}
-        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : t.type === 'allocation' ? t.accountName : undefined} onOpen={c.openTx} />)}</div>
+        <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : t.type === 'allocation' ? t.accountName : undefined} onOpen={c.openTx} />)}</div>
       </section>)}
       {!monthTxs.length && <div className="card empty-card"><Icon name="list" size={28} /><h3>{tr('No transactions')}</h3><p>{tr('Nothing matches this view. Try another month or filter, or add a record.')}</p><button type="button" className="primary-button" onClick={() => c.setSheet({ name: 'transaction' })}><Icon name="plus" size={16} /> {tr('Add transaction')}</button></div>}
     </div>

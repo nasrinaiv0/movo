@@ -5,7 +5,7 @@ import AccountPicker, { accountName, accountKind } from '../components/AccountPi
 import { Chips, Money, SectionTitle, Sheet, SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, createReceivable, updateLoan, deleteLoan, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
+import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, createReceivable, updateLoan, deleteLoan, updateReceivable, deleteReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
 import { creditCardPlanningMetrics, creditRepaymentEstimate } from '../lib/creditCard';
@@ -96,13 +96,13 @@ export default function FinancialPlanning({ c }) {
     <button type="button" className="budget-empty" onClick={() => c.go('Sign in')}><Icon name="lock" size={20} /><span><strong>{tr('Sign in to manage your financial records')}</strong><small>{tr('Bills, loans, debts, receivables and goal allocations use secure cloud records so balances stay consistent across your devices.')}</small></span></button>
   </>;
 
-  const loans = p.loans.filter(loan => loan.status !== 'archived' && !loan.is_archived); const receivables = p.receivables; const goals = p.goals;
+  const loans = p.loans.filter(loan => loan.status !== 'archived' && !loan.is_archived); const receivables = p.receivables.filter(item => item.status !== 'archived' && !item.is_archived); const goals = p.goals;
   const plans = p.plans;
   const creditCardDebts = p.accounts.filter(a => creditCardOutstanding(a) > 0);
   const live = p.allocations.filter(a => a.status === 'allocated');
   const bills = summary.bills;
   const glance = [
-    { key: 'bills', icon: 'receipt', tone: 'orange', title: 'Bills', sub: bills.overdueCount ? tr('{n} overdue', { n: bills.overdueCount }) : bills.next ? tr('Next due {date}', { date: formatDate(bills.next.due_date) }) : tr('Nothing due in the next 45 days.'), amount: bills.dueThisMonth, note: tr('Due this month'), alert: bills.overdueCount > 0 },
+    { key: 'bills', icon: 'receipt', tone: 'orange', title: 'Bills', sub: bills.overdueCount ? tr('{n} overdue', { n: bills.overdueCount }) : bills.next ? tr('Next due {date}', { date: formatDate(bills.next.due_date) }) : tr('Nothing overdue or due in the current billing cycle.'), amount: bills.totalDue, note: tr('Overdue + current cycle'), alert: bills.overdueCount > 0 },
     { key: 'loans', icon: 'bank', tone: 'red', title: 'Loans & debts', sub: summary.loans.count ? tr('{n} active', { n: summary.loans.count }) : tr('No loans or debts recorded yet.'), amount: summary.loans.total, note: tr('Outstanding') },
     { key: 'owed', icon: 'user', tone: 'green', title: 'Owed to you', sub: summary.receivables.count ? tr('{n} active', { n: summary.receivables.count }) : tr('No one currently owes you money in MOVO.'), amount: summary.receivables.total, note: tr('To collect') },
     { key: 'goals', icon: 'target', tone: 'blue', title: 'Goals & Plans', sub: summary.goals.count ? tr('{n}% saved', { n: Math.round(summary.goals.percent) }) : tr('No goals or plans yet.'), amount: summary.goals.saved, note: tr('Saved') },
@@ -212,12 +212,29 @@ export default function FinancialPlanning({ c }) {
 
     {tab === 'owed' && <>
       <SectionTitle action={tr('Add')} onAction={() => open('receivable', blankReceivable(base))}>{tr('Owed to you')}</SectionTitle>
-      {receivables.length ? <div className="card list-card">{receivables.map(r => { const opening = Number(r.opening_amount) || 0; const left = Number(r.outstanding_amount) || 0; return <button type="button" className="fp-row" key={r.id} onClick={() => open('event', { target: 'receivable', item: r, event_type: 'collected', amount: '', account_id: r.account_id && inCurrency(r.currency).some(a => a.id === r.account_id) ? r.account_id : (inCurrency(r.currency)[0]?.id || ''), note: '' })}>
-        <span className="stat-icon tone-green"><Icon name="user" size={17} strokeWidth={2} /></span>
-        <span className="fp-main"><strong>{r.name}</strong><small>{r.counterparty || tr('Person not set')} · {due(r.due_date)}</small>
-          {opening > 0 && <span className="progress-track" aria-label={tr('{n}% collected', { n: Math.round(pct(opening - left, opening)) })}><span style={{ width: `${pct(opening - left, opening)}%` }} /></span>}</span>
-        <span className="fp-amount"><b>{cash(left, r.currency)}</b>{statusChip(r.status)}</span>
-      </button>; })}</div>
+      {receivables.length ? <div className="fp-loan-list">{receivables.map(r => {
+        const opening = Number(r.opening_amount) || 0;
+        const left = Number(r.outstanding_amount) || 0;
+        const canCollect = r.status === 'active' && left > 0;
+        const collect = () => open('event', {
+          target: 'receivable', item: r, event_type: 'collected', amount: '',
+          account_id: r.account_id && inCurrency(r.currency).some(a => a.id === r.account_id)
+            ? r.account_id : (inCurrency(r.currency)[0]?.id || ''), note: '',
+        });
+        return <article className="card fp-loan-card" key={r.id}>
+          <button type="button" className="fp-row" disabled={busy || !canCollect} onClick={collect}>
+            <span className="stat-icon tone-green"><Icon name="user" size={17} strokeWidth={2} /></span>
+            <span className="fp-main"><strong>{r.name}</strong><small>{r.counterparty || tr('Person not set')} · {due(r.due_date)}</small>
+              {opening > 0 && <span className="progress-track" aria-label={tr('{n}% collected', { n: Math.round(pct(opening - left, opening)) })}><span style={{ width: pct(opening - left, opening) + '%' }} /></span>}</span>
+            <span className="fp-amount"><b>{cash(left, r.currency)}</b>{statusChip(r.status)}</span>
+          </button>
+          <div className="fp-loan-actions" role="group" aria-label={tr('Actions for {name}', { name: r.name })}>
+            <button type="button" className="primary-button" disabled={busy || !canCollect} onClick={collect}><Icon name="wallet" size={16}/>{tr('Collect')}</button>
+            <button type="button" className="secondary-button" disabled={busy} onClick={() => open('edit-receivable', { ...r, due_date: r.due_date || '' })}><Icon name="edit" size={16}/>{tr('Edit')}</button>
+            <button type="button" className="secondary-button" disabled={busy} onClick={() => open('delete-receivable', r)}><Icon name="trash" size={16}/>{tr('Delete')}</button>
+          </div>
+        </article>;
+      })}</div>
         : <button type="button" className="budget-empty" onClick={() => open('receivable', blankReceivable(base))}><Icon name="plus" size={20} /><span><strong>{tr('Record money owed to you')}</strong><small>{tr('No one currently owes you money in MOVO.')}</small></span></button>}
     </>}
 
@@ -358,6 +375,25 @@ export default function FinancialPlanning({ c }) {
         <AccountPicker id="receivable-account" label={tr('Deposit / collection account')} accounts={inCurrency(form.currency)} value={form.account_id} onChange={v => set({ account_id: v })} showBalance={show} required={form.new_lending} placeholder={tr('Choose account (optional)')} />
         <button className="primary-button" disabled={busy}>{tr('Save receivable')}</button>
       </form>
+    </Sheet>}
+
+    {sheet?.kind === 'edit-receivable' && <Sheet title={tr('Edit receivable')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Edit receivable')}>
+      <form className="sheet-form" onSubmit={e => { e.preventDefault(); if (!busy) run(() => updateReceivable(form.id, form, c.session?.user?.id), 'Receivable updated.'); }}>
+        {error && <p className="app-alert" role="alert">{error}</p>}
+        <label>{tr('Description')}<input required maxLength={120} value={form.name || ''} onChange={e => set({ name: e.target.value })} /></label>
+        <label>{tr('Person / organization')}<input maxLength={120} value={form.counterparty || ''} onChange={e => set({ counterparty: e.target.value })} /></label>
+        <label>{tr('Reason')}<input maxLength={500} value={form.reason || ''} onChange={e => set({ reason: e.target.value })} /></label>
+        <label>{tr('Due date')}<input type="date" value={form.due_date || ''} onChange={e => set({ due_date: e.target.value })} /></label>
+        <label>{tr('Notes')}<textarea rows={2} maxLength={2000} value={form.notes || ''} onChange={e => set({ notes: e.target.value })} /></label>
+        <p className="form-note">{tr('Original amount and recorded collections cannot be changed here.')}</p>
+        <button type="submit" className="primary-button" disabled={busy}>{busy ? tr('Saving…') : tr('Save changes')}</button>
+      </form>
+    </Sheet>}
+    {sheet?.kind === 'delete-receivable' && <Sheet title={tr('Delete receivable')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Delete receivable')}>
+      <p className="form-note">{tr('Archive this receivable? Recorded collections and account balances will remain unchanged. This does not forgive or cancel a real-world debt.')}</p>
+      {error && <p className="app-alert" role="alert">{error}</p>}
+      <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => setSheet(null)}>{tr('Cancel')}</button>
+      <button type="button" className="danger-button" disabled={busy} onClick={() => run(() => deleteReceivable(form.id, c.session?.user?.id), 'Receivable deleted.')}>{busy ? tr('Saving…') : tr('Delete')}</button></div>
     </Sheet>}
 
     {sheet?.kind === 'goal' && <Sheet title={tr('Create a savings goal')} onClose={() => setSheet(null)} label={tr('Create a savings goal')}>

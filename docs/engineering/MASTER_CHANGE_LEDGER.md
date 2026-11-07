@@ -1,5 +1,61 @@
 # MOVO Master Change Ledger
 
+## 2026-11-08 — PR #227 integrated native session hardening (code + tests)
+
+- Reconciled current main be7c3d9c with security PR: preserving newer MOVO UI/accounting. 143 suites / 814 tests and production CRA build passed in isolated Vercel Sandbox.
+- Strict verify-after-delete for browser/Capacitor auth-token copies; secure logout tombstone blocks stale plaintext token resurrection when cleanup fails; automation token cache reset on failed restore.
+- iOS CI trigger scope expanded for bridge/auth JS, but signed-device and simulator verification remains open.
+- Live Supabase privileged-RPC 2-user tests, branch protection, web sessions, OAuth App Links, MFA and operational security controls remain release blockers.
+- Details: docs/engineering/updates/2026-11-08-pr227-security-implementation.md
+
+
+## 2026-11-08 — Optional account balances after each transaction
+
+- Ledger-derived, account-currency running balances in transaction history; paired source and destination for transfers.
+- On/off Settings preference is display-only; hide-balances privacy mask remains active and cents remain precise.
+- Linked debit and credit-card handling; unknown FX and missing financial history are not represented as valid balances.
+- No production persistence or database schema change; isolated Vercel Sandbox and PR review required.
+- Detailed record: docs/engineering/updates/2026-11-08-transaction-running-balances.md
+
+## 2026-11-07 — Unified Others filter, memberships and rewards cashback estimates
+
+- Five Wallet filters: All, Cards, Banks, E-Wallets and Others. Others includes cash, other financial accounts and non-cash memberships, loyalty and tokens.
+- Dedicated provider-specific membership/reward editor; points, stamps and tokens instead of currency; initial providers include Petron, Seaoil, Starbucks and Tim Hortons.
+- Cashback now supports per-card automatic **estimates** by matching existing logged expenses to payment account, merchant and currency. Source deletion reverses estimates; no cash ledger changes.
+- Existing member cards and cloud preferences are merged safely; translated user-facing labels in all 11 languages.
+- Vercel Sandbox full Jest, optimized React bundle, and mobile browser create/reload/Cashback rule UI QA. No database or RLS migrations.
+- Detailed record: docs/engineering/updates/2026-11-07-loyalty-membership-rewards-and-others-filter.md
+
+## 2026-11-07 — E-wallet QR upload, display and removal
+
+- Enable payment QR upload in e-wallet add/edit using the same validated, private storage as bank accounts.
+- Preserve bank UI; prevent QR uploads on cards/cash; maintain local offline and signed-user persistence.
+- Add eleven-language UI strings and regression tests; Vercel Sandbox full 717/717 tests, optimized build, and Chromium mobile create/upload/reload/remove flow passed.
+- Engineering and security details: docs/engineering/updates/2026-11-07-ewallet-payment-qr-upload.md
+- No financial arithmetic, database migration, or RLS modification.
+
+## 2026-11-07 — TTS and receipt-scanning reliability (repair PR)
+
+- Fix CSP permissions for local Tesseract WebAssembly without enabling arbitrary JS eval.
+- Preserve sparse black text on white receipts instead of converting entire images black, support iOS image decode fallback, surface camera failures.
+- TTS now speaks short utterance segments with robust Stop/Listen and Safari audio-failure handling; server supports bounded SSE/NDJSON/JSON voice response formats, retaining user-only context verification.
+- Vercel Sandbox production build: 712/712 tests and 127/127 suites; typecheck and optimized bundle pass.
+- Details: docs/engineering/updates/2026-11-07-tts-receipt-scanner-repair.md
+- No schema, accounting, financial or auth changes. Production deployment waits for merge.
+
+## 2026-11-07 — Header Back button visual cleanup (PR #230 follow-up)
+
+- All shared RootHeader/SubHeader back buttons use transparent fill (idle/hover/press/focus), no background-image or box-shadow, while retaining their 45px button area and accessible focus ring.
+- Only shared header back buttons are targeted: separate Plus and utility capsules are unaffected.
+- Verification and safety context: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+## 2026-11-07 — Proposed grouped header capsule padding removal
+
+- Scope: 0 padding on all four capsule edges and interior grouped-header action buttons, with existing 45px targets, 22px icons, 4px gap, 1px container border and independent Plus actions retained.
+- Validation: added tests in `src/components/HeaderButtonSpacing.test.js`; results documented in change PR, verified in Vercel Sandbox before merging.
+- Security/financial runtime untouched. Separate draft native-auth hardening PR #227 remains independent.
+- Engineering details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
 ## 2026-11-08 — PR #227 native security re-audit (documentation only)
 
 - Confirmed Android native compile, 644/644 isolated Vercel Sandbox tests/typecheck/build. iOS job remains canceled; device signing and real hardware tests pending.
@@ -509,6 +565,33 @@ For all four runs, the job logs show the full dependency install still reports *
 - Full evidence, risks, and rollback: docs/engineering/updates/2026-11-06-financial-commercial-remediation.md. Release remains blocked.
 
 - Terms and Privacy expanded for commercial release; canonical shared supplement and synchronization regression tests. See dated financial-commercial remediation update.
+
+## 2026-11-07 — Remove Transactions sort-filter edge shading
+- Scope: `src/App.css`, `src/screens/TransactionSortEdgeShadow.test.js` and same-commit engineering documentation.
+- Root cause: horizontal scrolling fade applied to the Transactions non-scrolling sort grid, producing grey shadows on either end of the selected Date/Amount/Account chip.
+- Fix: locally disable mask-image and -webkit-mask-image and selected-indicator box-shadow; preserve global scroller fades and all other UI states.
+- Security/accounting: no finance data, network, auth, persistence or backend modifications.
+- Evidence and rollback: `docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md`.
+- Vercel Sandbox completed: 694/694 tests (124 suites), typecheck/build green, browser computed CSS verified for selected sort pill in both appearances at 390px; GitHub CI remains an independent gate.
+
+## 2026-11-07 — 40px filter control standardization, Transactions + Wallet
+- Follow-up to open PR #232. Transactions type/sort/billing-cycle and Wallet category/sort/view filters now use 40px heights, including selected states and minimum heights; responsive widths, animations and accessibility preserved.
+- No changes to financial calculations, user balances, tables, session data, secrets or backend authorization. Regression tests and corresponding engineering update live in this same commit.
+- Details: docs/engineering/updates/2026-11-07-transactions-sort-edge-shadows.md.
+- Final Vercel Sandbox evidence: 704/704 tests (125 suites), typecheck and optimized build green, browser 40px heights across Wallet/Transactions verified in light/dark at 320, 390 and 430px. Main and production unchanged until merge.
+
+## 2026-11-07 — Adaptive contrast for five accent-filled financial summary cards
+- Branch: `fix/adaptive-summary-card-contrast-20261107` from main d31d73f.
+- All text and chart ink on Home balance, Transactions spent, Cashback, Subscription and Financial Planning summary surfaces now inherit preexisting WCAG-tested `--on-accent` (black on pale accents; white on dark accents).
+- SVG fills, billing-cycle bars, icon bubbles and summary separators follow the same foreground. Preserved geometry, financial calculations, data access, accessibility labels and behavior.
+- Regression tests and review gates: docs/engineering/updates/2026-11-07-adaptive-financial-summary-contrast.md. No persistent data operations or migrations.
+- Vercel Sandbox evidence: 701 tests / 124 suites passing, typecheck and optimized build passing, 28 browser-computed foreground/chart checks passing (5 fixtures × 2 accent cases). Same-commit documentation included.
+
+## 2026-11-07 — Pro / Pro+ plans, trial and referral restrictions
+- Branch `feat/pro-plans-trial-restrictions`, based on main `e8b7abc7`; preserves PRs #233–235.
+- Central expiring access model, API/database enforcement, native subscription products, one-month trial and verified ten-subscriber referral reward. Free local receipt attachments and read-only export/import remain available. Ram unchanged; Bronze/Silver/Gold badge labels.
+- Vercel Sandbox: 765 tests / 135 suites, TypeScript, production build and PostgreSQL adversarial access checks pass.
+- Production migration and native billing activation are pending; no production financial writes. Release gates and rollback: `docs/engineering/updates/2026-11-07-pro-plans-trials-referrals.md`.
 
 ## 2026-11-06 — Native session / privacy security pass
 - Device-only Keychain/Keystore auth, migration, backup and screenshot protections, R8, native CI, public security.txt. No production financial data or database mutations.

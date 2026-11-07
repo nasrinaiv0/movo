@@ -114,3 +114,12 @@ test('secure copy survives interrupted plaintext Preferences cleanup', async () 
   expect(vault.nativeAutomationKey()).toBe(DEVICE_KEY);
   expect(JSON.parse(localStorage.getItem(PREF)).autoLogKey).toBeUndefined();
 });
+
+test('a later vault read failure deactivates a previously restored automation key', async () => {
+  MovoNative.secureGet.mockResolvedValue({ value: DEVICE_KEY });
+  await vault.restoreNativeAutomationKey();
+  expect(vault.nativeAutomationKey()).toBe(DEVICE_KEY);
+  MovoNative.secureGet.mockRejectedValueOnce(new Error('keychain_locked'));
+  await expect(vault.restoreNativeAutomationKey()).rejects.toThrow('keychain_locked');
+  expect(vault.nativeAutomationKey()).toBe('');
+});
