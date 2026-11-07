@@ -15,9 +15,10 @@ export const MERCHANT_FAVICONS = {
   // Food and delivery
   Grab: { domain: 'grab.com' }, 'GrabFood': { domain: 'grab.com' }, Foodpanda: { domain: 'foodpanda.ph' },
   Jollibee: { domain: 'jollibee.com.ph' }, "McDonald's": { domain: 'mcdonalds.com.ph' }, McDonalds: { domain: 'mcdonalds.com.ph' },
-  Starbucks: { domain: 'starbucks.ph' }, KFC: { domain: 'kfc.com.ph' }, Chowking: { domain: 'chowking.com' },
+  Starbucks: { domain: 'starbucks.ph' }, 'Tim Hortons': { domain: 'timhortons.com' }, 'Coffee Bean & Tea Leaf': { domain: 'coffeebean.com' }, KFC: { domain: 'kfc.com.ph' }, Chowking: { domain: 'chowking.com' },
   'Mang Inasal': { domain: 'manginasal.com' }, Greenwich: { domain: 'greenwich.com.ph' },
   // Shopping and groceries
+  'Watsons': { domain: 'watsons.com.ph' }, 'Landers': { domain: 'landers.ph' }, 'SM Advantage': { domain: 'smadvantage.com' },
   '7-Eleven': { domain: '7-eleven.com.ph' }, '7 Eleven': { domain: '7-eleven.com.ph' }, Shopee: { domain: 'shopee.ph' },
   Lazada: { domain: 'lazada.com.ph' }, Puregold: { domain: 'puregold.com.ph' }, 'Mercury Drug': { domain: 'mercurydrug.com' },
   Uniqlo: { domain: 'uniqlo.com' }, IKEA: { domain: 'ikea.com' }, Amazon: { domain: 'amazon.com' }, Apple: { domain: 'apple.com' },
@@ -26,7 +27,7 @@ export const MERCHANT_FAVICONS = {
   PLDT: { domain: 'pldthome.com' }, Converge: { domain: 'convergeict.com' }, Maynilad: { domain: 'mayniladwater.com.ph' },
   'Manila Water': { domain: 'manilawater.com' },
   // Transport, fuel and travel
-  Angkas: { domain: 'angkas.com' }, Uber: { domain: 'uber.com' }, Shell: { domain: 'shell.com.ph' }, Petron: { domain: 'petron.com' },
+  Angkas: { domain: 'angkas.com' }, Uber: { domain: 'uber.com' }, Shell: { domain: 'shell.com.ph' }, Petron: { domain: 'petron.com' }, Seaoil: { domain: 'seaoil.com.ph' }, Caltex: { domain: 'caltex.com' },
   Caltex: { domain: 'caltex.com' }, 'Cebu Pacific': { domain: 'cebupacificair.com' }, 'Philippine Airlines': { domain: 'philippineairlines.com' },
   Airbnb: { domain: 'airbnb.com' }, Agoda: { domain: 'agoda.com' }, 'Booking.com': { domain: 'booking.com' },
 };

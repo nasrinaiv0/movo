@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import Icon from './Icon';
 import { Sheet } from './ui';
-import { LOYALTY_PROVIDERS, normalizeLoyaltyCard } from '../lib/loyaltyCards';
+import { LOYALTY_PROVIDERS, isLoyaltyType, normalizeLoyaltyCard } from '../lib/loyaltyCards';
 import { t as tr } from '../lib/i18n';
 import './LoyaltySheet.css';
 
 export default function LoyaltySheet({ existing, initialType = 'membership', onSave, onRemove, onClose }) {
   const [form, setForm] = useState(() => ({
-    id: existing?.id || '', type: existing?.type === 'tokens' ? 'tokens' : initialType,
-    name: existing?.name || '', program: existing?.program || '',
+    id: existing?.id || '', type: isLoyaltyType(existing?.type) ? existing.type : initialType,
+    name: existing?.name || '', program: existing?.program || '', cardType: existing?.cardType || '',
     memberNumber: existing?.memberNumber || '', barcode: existing?.barcode || '',
     points: existing?.points == null ? '' : String(existing.points),
     pointsUnit: existing?.pointsUnit || (initialType === 'tokens' ? 'tokens' : 'points'),
@@ -24,14 +24,20 @@ export default function LoyaltySheet({ existing, initialType = 'membership', onS
   const save = (event) => {
     event.preventDefault();
     try { onSave(normalizeLoyaltyCard(form)); }
-    catch (err) { setError(err?.message === 'invalid_loyalty_points' ? tr('Enter valid points or tokens (up to 2 decimal places).') : tr('Choose a provider.')); }
+    catch (err) { setError(err?.message === 'invalid_loyalty_points' ? tr('Enter valid points or tokens (up to 2 decimal places).')
+      : err?.message === 'custom_card_type_required' ? tr('Enter the card type for Other.') : tr('Choose a provider.')); }
   };
   return <Sheet title={tr(existing ? 'Edit membership or rewards' : 'Add membership or rewards')} onClose={onClose} className="loyalty-sheet">
     <form className="loyalty-form" onSubmit={save}>
       <div className="loyalty-info"><Icon name="gift" size={20} /><span>{tr('Memberships, stamps and reward tokens are not money. They never increase your wallet balance.')}</span></div>
       <label className="loyalty-field"><span>{tr('Account type')}</span><select value={form.type} onChange={e => set({ type: e.target.value, pointsUnit: e.target.value === 'tokens' ? 'tokens' : 'points' })}>
-        <option value="membership">{tr('Membership / loyalty')}</option><option value="tokens">{tr('Tokens / rewards')}</option>
+        <option value="loyalty">{tr('Loyalty')}</option>
+        <option value="membership">{tr('Membership')}</option>
+        <option value="rewards">{tr('Rewards')}</option>
+        <option value="tokens">{tr('Tokens')}</option>
+        <option value="other">{tr('Other')}</option>
       </select></label>
+      {form.type === 'other' && <label className="loyalty-field"><span>{tr('Custom card type')}</span><input aria-label={tr('Custom card type')} required value={form.cardType} maxLength={60} placeholder={tr('Enter card type if not listed')} onChange={e => set({ cardType: e.target.value })} /></label>}
       <label className="loyalty-field"><span>{tr('Brand / provider')}</span><select aria-label={tr('Brand / provider')} value={provider} onChange={e => { setCustomProvider(e.target.value === 'Other'); set({ name: e.target.value === 'Other' ? '' : e.target.value, program: e.target.value === 'Other' ? '' : e.target.value }); }} required={false}>
         <option value="">{tr('Choose a provider')}</option>
         {LOYALTY_PROVIDERS.map(name => <option key={name} value={name}>{name === 'Other' ? tr('Other / custom brand') : name}</option>)}
