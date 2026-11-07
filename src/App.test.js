@@ -514,7 +514,8 @@ describe('MOVO finance frontend', () => {
   test('creates, edits and archives a local-only account across reloads', () => {
     window.confirm = jest.fn(() => true);
     nav(container, 'Wallet');
-    clickButton(container, 'Add Card');
+    clickButton(container, 'New account');
+    act(() => Array.from(container.querySelectorAll('.sheet-card')).find(b => b.textContent.includes('Credit or debit card')).click());
     // A credit card is named after its issuing bank (there is no separate name field).
     clickButton(container, 'Credit');
     setInputValue(container.querySelector('#acct-linked-bank'), 'demo-gotyme');

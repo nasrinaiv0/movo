@@ -1646,7 +1646,6 @@ function App() {
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
-        {cloudMode && !can('cloudWrite') && <div className="app-alert" role="status"><span>Cloud records are read-only. Export your data or use local mode to keep tracking on this device.</span><button type="button" onClick={c.openPlans}>View plans</button><button type="button" onClick={() => setCloudSyncEnabled(false)}>Use local mode</button></div>}
         {screen}
         {can('automation') && <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />}
       </main>
@@ -1720,7 +1719,6 @@ function App() {
           <button type="button" onClick={() => openForm('expense')}><Icon name="plus" size={20} />{tr('Add transaction')}</button>
           <button type="button" onClick={() => setSheet({ name: 'grocery' })}><Icon name="shopping-basket" size={20} />{tr('Add grocery items')}</button>
           <button type="button" onClick={() => setSheet({ name: can('receiptScan') ? 'scanner' : 'planOffer', feature: 'receiptScan' })}><Icon name="scan" size={20} />{tr('Scan receipt')}</button>
-          <button type="button" onClick={() => setSheet({ name: 'account', type: 'bank' })}><Icon name="wallet" size={20} />{tr('Add account')}</button>
           <button type="button" onClick={() => { setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setSheet({ name: 'importCsv' }); }}><Icon name="upload" size={20} />{tr('Import CSV')}</button>
           <button type="button" onClick={exportCsv}><Icon name="download" size={20} />{tr('Export CSV')}</button>
           <button type="button" onClick={() => setSheet({ name: 'themes' })}><Icon name="palette" size={20} />{tr('Choose theme')}</button>
