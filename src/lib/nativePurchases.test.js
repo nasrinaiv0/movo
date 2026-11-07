@@ -77,14 +77,14 @@ describe('native store purchase lifecycle', () => {
     Capacitor.getPlatform.mockReturnValue('android');
     NativePurchases.getProducts.mockResolvedValue({ products: [{
       identifier: 'annual',
-      planIdentifier: 'com.nasrinai.movo.max.annual',
+      planIdentifier: 'com.nasrinai.movo.proplus.annual',
       title: 'MOVO Max Annual',
       priceString: '1999.00',
     }] });
     const products = await getStoreProducts();
     expect(products).toHaveLength(1);
     expect(products[0]).toMatchObject({
-      productIdentifier: 'com.nasrinai.movo.max.annual',
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
       basePlanId: 'annual',
       priceString: '1999.00',
     });
@@ -97,24 +97,24 @@ describe('native store purchase lifecycle', () => {
       value: { subtle: { digest: async () => new Uint8Array(32).buffer } },
     });
     NativePurchases.purchaseProduct.mockResolvedValue({
-      productIdentifier: 'com.nasrinai.movo.max.annual',
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
       purchaseToken: 'google-private-token',
       isAcknowledged: false,
     });
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ enabled: true }) }).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ verified: true, acknowledged: true, tier: 'max', status: 'active' }),
+      json: async () => ({ verified: true, acknowledged: true, tier: 'pro_plus', status: 'active' }),
     });
 
-    const result = await purchaseStoreProduct('com.nasrinai.movo.max.annual', session);
+    const result = await purchaseStoreProduct('com.nasrinai.movo.proplus.annual', session);
     expect(NativePurchases.purchaseProduct).toHaveBeenCalledWith(expect.objectContaining({
-      productIdentifier: 'com.nasrinai.movo.max.annual',
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
       productType: 'subs',
       planIdentifier: 'annual',
       autoAcknowledgePurchases: false,
     }));
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(NativePurchases.acknowledgePurchase).not.toHaveBeenCalled();
-    expect(result.tier).toBe('max');
+    expect(result.tier).toBe('pro_plus');
   });
 });

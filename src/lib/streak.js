@@ -2,7 +2,7 @@
  * Usage streak: consecutive days on which the person opened Movo. Badges unlock at milestones and stay earned
  * (best streak), even after a streak resets. Stored in preferences, so it follows a signed-in person across devices.
  */
-// tier: standard badges, then Pro (30, 60 days), Max (100) and Ultra (365) with their own premium finish.
+// tier: standard badges, then Bronze (30, 60 days), Silver (100) and Gold (365) with their own premium finish.
 export const BADGES = [
   { days: 3, id: 'b3', name: 'Getting started', color: '#2fa36b', tier: 'standard' },
   { days: 7, id: 'b7', name: 'One-week streak', color: '#f0743a', tier: 'standard' },
@@ -12,7 +12,7 @@ export const BADGES = [
   { days: 100, id: 'b100', name: '100-day streak', color: '#c8951f', tier: 'max' },
   { days: 365, id: 'b365', name: 'A year with Movo', color: '#7c4dff', tier: 'ultra' },
 ];
-export const TIER_LABEL = { pro: 'Pro', max: 'Max', ultra: 'Ultra' };
+export const TIER_LABEL = { pro: 'Bronze', max: 'Silver', ultra: 'Gold' };
 
 const prevDay = (key) => { const d = new Date(`${key}T12:00:00`); d.setDate(d.getDate() - 1); return d.toLocaleDateString('en-CA'); };
 const valid = (s) => s && typeof s === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(s.last || '') && Number.isFinite(s.count) && s.count > 0;

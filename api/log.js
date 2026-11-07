@@ -1,3 +1,4 @@
+const { hasPlan } = require('./lib/planAccess');
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 
@@ -134,6 +135,7 @@ module.exports = async function handler(req, res) {
       if (!token || !KEY_RE.test(deviceKey)) return json(res, 400, { error: 'invalid_registration' });
       const { data: authData, error: authError } = await api.auth.auth.getUser(token);
       if (authError || !authData?.user?.id) return json(res, 401, { error: 'sign_in_required' });
+      if (!(await hasPlan(api.admin, authData.user.id, 'pro_plus'))) return json(res, 403, { error: 'pro_plus_required' });
       const tokenHash = sha256(deviceKey);
       const { data: existing, error: lookupError } = await api.admin.from('movo_automation_tokens').select('user_id').eq('token_hash', tokenHash).maybeSingle();
       if (lookupError) throw lookupError;
@@ -165,6 +167,7 @@ module.exports = async function handler(req, res) {
     const { data: registered, error: tokenError } = await api.admin.from('movo_automation_tokens').select('user_id,active,default_account_id').eq('token_hash', tokenHash).maybeSingle();
     if (tokenError) throw tokenError;
     if (!registered?.active) return json(res, 401, { error: 'device_not_registered' });
+    if (!(await hasPlan(api.admin, registered.user_id, 'pro_plus'))) return json(res, 403, { error: 'pro_plus_required' });
     stage = 'validate_transaction';
     const source = SOURCES.has(body.source) ? body.source : 'notification';
     review = { tokenHash, userId: registered.user_id, source, type: body.type === 'income' ? 'income' : 'expense', text: cleanText(body.text, 300), amount: amountValue(body.amount), merchant: cleanText(body.merchant, 160), card: cleanText(body.card || body.account, 100), reference: cleanText(body.reference, 120) };

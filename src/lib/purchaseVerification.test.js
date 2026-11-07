@@ -4,6 +4,7 @@ describe('MOVO store purchase verification', () => {
   let verifyGoogle;
   let appAccountTokenForUser;
   let applePayload;
+  let googleOrder;
 
   beforeEach(() => {
     jest.resetModules();
@@ -11,6 +12,7 @@ describe('MOVO store purchase verification', () => {
     process.env.APPLE_APP_ID = '123456789';
     process.env.APPLE_IAP_SIGNING_KEY='test-key'; process.env.APPLE_IAP_KEY_ID='test-id'; process.env.APPLE_IAP_ISSUER_ID='test-issuer';
     process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON = JSON.stringify({ client_email: 'test@example.iam.gserviceaccount.com', private_key: 'test-key' });
+    googleOrder = { state:'PROCESSED', lineItems:[{productId:'com.nasrinai.movo.proplus.monthly', total:{units:'1'}}] };
     applePayload = {
       bundleId: 'com.nasrinai.movo',
       productId: 'com.nasrinai.movo.pro.monthly',
@@ -32,6 +34,7 @@ describe('MOVO store purchase verification', () => {
       google: {
         auth: { GoogleAuth: class {} },
         androidpublisher: () => ({
+          orders: { get: async () => ({data:googleOrder}) },
           purchases: {
             subscriptionsv2: {
               get: async () => ({ data: {
@@ -39,7 +42,7 @@ describe('MOVO store purchase verification', () => {
                 latestOrderId: 'GPA.1234-5678-9012-34567',
                 acknowledgementState: 'ACKNOWLEDGEMENT_STATE_PENDING',
                 externalAccountIdentifiers: { obfuscatedExternalAccountId: appAccountTokenForUser(userId) },
-                lineItems: [{ productId: 'com.nasrinai.movo.max.monthly', expiryTime: new Date(Date.now() + 86400000).toISOString() }],
+                lineItems: [{ productId: 'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() + 86400000).toISOString() }],
               } }),
             },
           },
@@ -97,17 +100,35 @@ describe('MOVO store purchase verification', () => {
   });
 
   test('verifies Google subscription token and hashes the token before persistence', async () => {
-    const result = await verifyGoogle('private-google-token', 'com.nasrinai.movo.max.monthly', userId);
+    const result = await verifyGoogle('private-google-token', 'com.nasrinai.movo.proplus.monthly', userId);
     expect(result).toMatchObject({
       platform: 'google',
-      productId: 'com.nasrinai.movo.max.monthly',
-      tier: 'max',
+      productId: 'com.nasrinai.movo.proplus.monthly',
+      tier: 'pro_plus',
       status: 'active',
       needsAcknowledgement: true,
       environment: 'production',
     });
     expect(result.purchaseTokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.purchaseTokenHash).not.toBe('private-google-token');
+  });
+
+  test('Apple free trials never qualify for paid referrals', async () => {
+    applePayload.appAccountToken = appAccountTokenForUser(userId);
+    applePayload.price = 1000; applePayload.offerDiscountType = 'FREE_TRIAL';
+    expect((await verifyApple('signed',userId)).paidVerified).toBe(false);
+    applePayload.offerDiscountType = undefined;
+    expect((await verifyApple('signed',userId)).paidVerified).toBe(true);
+  });
+  test('Google zero-price, refunded and unrelated order items never qualify', async () => {
+    const verify = () => verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
+    expect((await verify()).paidVerified).toBe(true);
+    googleOrder.lineItems[0].total.units='0';
+    expect((await verify()).paidVerified).toBe(false);
+    googleOrder.lineItems[0].total.units='1'; googleOrder.state='REFUNDED';
+    expect((await verify()).paidVerified).toBe(false);
+    googleOrder.state='PROCESSED'; googleOrder.lineItems[0].productId='unrelated';
+    expect((await verify()).paidVerified).toBe(false);
   });
 
   test('rejects unknown store products', async () => {

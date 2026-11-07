@@ -1,0 +1,14 @@
+.plan-comparison { display:grid; gap:10px; margin:12px 0; }
+.plan-comparison h3 { margin:0 0 6px; }
+.plan-comparison p { margin:0; font-size:13px; line-height:1.5; }
+.plan-comparison small { display:block; margin-top:8px; line-height:1.4; }
+.plan-referral-label { display:grid; gap:6px; margin:12px 0; }
+.plan-plus-preview { box-shadow:0 0 14px color-mix(in srgb,var(--accent) 18%,transparent); }
+.plan-pro_plus .balance-card { box-shadow:0 0 22px color-mix(in srgb,var(--accent) 22%,transparent); }
+.plan-pro_plus .orb { box-shadow:0 0 15px color-mix(in srgb,var(--accent) 32%,transparent); }
+@media (prefers-reduced-motion:no-preference) {
+  .plan-pro_plus .balance-art { animation:plan-soft-arrival .5s ease-out; }
+  @keyframes plan-soft-arrival { from { opacity:.6; transform:translateY(3px); } to { opacity:1; transform:none; } }
+}
+
+.plan-free .credit-card, .plan-free .credit-card * { animation:none !important; }

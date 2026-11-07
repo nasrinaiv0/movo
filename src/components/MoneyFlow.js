@@ -1,3 +1,4 @@
+import { usePlan } from '../lib/PlanContext';
 import React, { useMemo, useState } from 'react';
 import { Money } from './ui';
 import Icon from './Icon';
@@ -57,8 +58,10 @@ function DateField({ label, value, min, max, onChange }) {
 }
 
 /** Money in and out over time, drawn as paired bars, two lines, or one net bar per period (`variant`). */
-export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
-  const [range, setRange] = useState('day');
+export default function MoneyFlow({ txs, refDate, show, variant = 'bars', restrictCustom = false }) {
+  const { can, requireFeature } = usePlan();
+  const [selectedRange, setRange] = useState('day');
+  const range = selectedRange === 'custom' && restrictCustom && !can('customMoneyFlow') ? 'day' : selectedRange;
   const [custom, setCustom] = useState({ from: '', to: '' });
   const [pick, setPick] = useState(-1);
   const data = useMemo(() => buildFlow(txs, range, refDate, custom), [txs, range, refDate, custom]);
@@ -74,7 +77,7 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
       <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
     </div>
-    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}</button>)}</div>
+    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { if (k === 'custom' && restrictCustom && !requireFeature('customMoneyFlow')) return; setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}</button>)}</div>
     {range === 'custom' && <div className="flow-custom">
       <DateField label={tr('From')} value={custom.from} max={custom.to || undefined} onChange={v => { setCustom({ ...custom, from: v }); setPick(-1); }} />
       <DateField label={tr('To')} value={custom.to} min={custom.from || undefined} onChange={v => { setCustom({ ...custom, to: v }); setPick(-1); }} />
