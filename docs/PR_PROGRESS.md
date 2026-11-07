@@ -463,3 +463,8 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Wallet, Home and Transactions refresh from successfully saved device records. Invalid, duplicate, unsupported or stale records do not silently overwrite financial data.
 - Cloud plan access is paused in local mode without affecting store subscription. PR #241 full offline migration remains blocked.
 - Reference: docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md.
+
+### 2026-11-08 — Translation-catalog coverage fix for PR #245
+- Added 67 missing English interface keys to the 11-language catalog, including local/cloud mode, save/discard confirmations and sync safeguards. Translations are machine-assisted and should be professionally reviewed before localization sign-off.
+- Verified `src/lib/i18n.test.js` in isolated Vercel Sandbox: 2/2 tests passing, 2,540 catalog strings and complete placeholder coverage; existing English source keys unchanged.
+- No finance code or subscription records changed in this CI-only patch. Full GitHub Phase 1 CI and signed-device audit are still release gates.
