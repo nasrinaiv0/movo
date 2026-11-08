@@ -263,6 +263,7 @@ export default function Settings({ c }) {
     { title: tr('Data & Sync'), rows: [
       { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
+      { icon: 'refresh', title: tr('Offline & online sync'), sub: c.syncState?.message || tr('Changes are kept on this device until safely reconciled.'), onClick: c.session?.user ? () => c.retrySync?.() : undefined },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },
     ] },
     { title: tr('Automatic Logging'), rows: [

@@ -84,6 +84,13 @@ import { BudgetsSheet, SpendingLimitsSheet, budgetProgress } from './components/
 import { monthOverMonth } from './lib/trend';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
+import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace } from './lib/offlineWorkspaceStore';
+import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
+import { readRequiredFinancialCloudViews } from './lib/cloudFinancialReadGate';
+import { matchesConfirmedOfflineHandoff, planOfflineNetworkTransition } from './lib/offlineHandoffSafety';
+import { assertOfflineSyncOwner, fetchOfflineSyncCloud, insertOfflineAccount, updateOfflineAccountCAS, insertOfflineTransaction } from './lib/offlineSyncCloudAdapter';
+import { canUseFeature } from './lib/planAccess';
+import { planOfflineReconciliation } from './lib/offlineReconciliation';
 import { parseCsvTransactions, transactionFingerprint, findUniqueCsvAccount } from './lib/csvImport';
 import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
@@ -245,8 +252,12 @@ function App() {
   const { entitlement, refreshEntitlement } = usePlanEntitlement(session);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
-  const can = feature => canUseFeatureInMode(entitlement, feature, cloudMode);
-  const plan = effectiveAccessPlan(entitlement, cloudMode);
+  const [offlineOwnerId, setOfflineOwnerId] = useState(null);
+  const [syncState, setSyncState] = useState({status:'idle',message:'',uploaded:0,downloaded:0});
+  const syncActiveRef = useRef(false);
+  const safeCloudAccess = cloudMode && syncState.status !== 'blocked';
+  const can = feature => canUseFeatureInMode(entitlement, feature, safeCloudAccess);
+  const plan = effectiveAccessPlan(entitlement, safeCloudAccess);
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -258,7 +269,7 @@ function App() {
   const prefsRef = useRef(prefs);
   const cloudSyncRequestedRef = useRef(prefs.cloudSyncEnabled !== false);
   const cloudLoadEpochRef = useRef(0);
-  useEffect(() => { prefsRef.current = prefs; cloudSyncRequestedRef.current = prefs.cloudSyncEnabled !== false; }, [prefs]);
+  useEffect(() => { prefsRef.current = prefs; }, [prefs]);
   const [accountQrDisplay, setAccountQrDisplay] = useState({});
   const [qrRetryTick, setQrRetryTick] = useState(0);
   const [fx, setFx] = useState(loadRates);
@@ -351,73 +362,267 @@ function App() {
   const endBurst = useCallback(() => setBurst(null), []);
   const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
+  const loadOwnedLocal = useCallback((ownerId) => {
+    const stored=loadOfflineWorkspace(ownerId);
+    if (!stored) {
+      // A new signed-in owner starts with a separate empty workspace. Never
+      // silently attach guest records to this account.
+      const empty={financial_accounts:[],transactions:[]};
+      if (!saveOfflineWorkspace(ownerId,{version:2,owner:ownerId,baseline:empty,working:empty,dirty:false}))
+        return false;
+    }
+    const next=loadOfflineWorkspace(ownerId);
+    if (!next) return false;
+    setOfflineOwnerId(ownerId);
+    setLocalAccounts(next.working.financial_accounts);
+    setRawTxs(next.working.transactions);
+    setCloudMode(false);
+    return true;
+  }, []);
   useEffect(() => {
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
       return;
     }
-    const transactionsSaved = saveLocalTransactions(rawTxs, false);
-    const accountsSaved = saveLocalAccounts(localAccounts);
-    const saved = transactionsSaved && accountsSaved;
-    if (saved) pendingLocalDataRef.current = null;
-    else pendingLocalDataRef.current = { transactions: rawTxs, accounts: localAccounts };
-    setLocalPersistenceWarning(!saved);
-  }, [rawTxs, localAccounts, cloudMode]);
-  const retryLocalPersistence = useCallback(() => {
-    const pending = pendingLocalDataRef.current;
-    if (cloudMode && !pending) {
-      setLocalPersistenceWarning(false);
-      return;
+    let saved=false;
+    const ownerId=session?.user?.id;
+    if (ownerId) {
+      if (offlineOwnerId!==ownerId) return; // auth-transition guard
+      const stored=loadOfflineWorkspace(ownerId);
+      const data={...(stored?.working||{}),financial_accounts:localAccounts,transactions:rawTxs};
+      if (stored) {
+        const unchanged=JSON.stringify(data)===JSON.stringify(stored.working);
+        saved=unchanged||updateOfflineWorking(ownerId,data);
+      }
+    } else {
+      const transactionsSaved=saveLocalTransactions(rawTxs,false);
+      const accountsSaved=saveLocalAccounts(localAccounts);
+      saved=transactionsSaved&&accountsSaved;
     }
-    const transactionsSaved = saveLocalTransactions(pending?.transactions || rawTxs, false);
-    const accountsSaved = saveLocalAccounts(pending?.accounts || localAccounts);
-    const saved = transactionsSaved && accountsSaved;
-    if (saved) pendingLocalDataRef.current = null;
+    if (saved) pendingLocalDataRef.current=null;
+    else pendingLocalDataRef.current={ownerId:ownerId||null,transactions:rawTxs,accounts:localAccounts};
     setLocalPersistenceWarning(!saved);
-    notify(saved
-      ? (pending ? 'Your local-only records were saved on this device. They are not synced to your cloud account.' : 'Local records saved on this device.')
-      : 'Browser storage is still unavailable or full.');
-  }, [rawTxs, localAccounts, cloudMode, notify]);
+  }, [rawTxs,localAccounts,cloudMode,session?.user?.id,offlineOwnerId]);
+  const retryLocalPersistence = useCallback(() => {
+    const pending=pendingLocalDataRef.current;
+    if(cloudMode&&!pending){setLocalPersistenceWarning(false);return;}
+    const ownerId=session?.user?.id;
+    let saved=false;
+    if(ownerId){
+      const previous=loadOfflineWorkspace(ownerId);
+      saved=!!previous&&updateOfflineWorking(ownerId,{...previous.working,
+        financial_accounts:pending?.accounts||localAccounts,transactions:pending?.transactions||rawTxs});
+    }else{
+      const txSaved=saveLocalTransactions(pending?.transactions||rawTxs,false);
+      saved=txSaved&&saveLocalAccounts(pending?.accounts||localAccounts);
+    }
+    if(saved)pendingLocalDataRef.current=null;
+    setLocalPersistenceWarning(!saved);
+    notify(saved?'Local records saved on this device. Pending changes will sync after verification.':
+      'Browser storage is unavailable or full. Export your records and retry.');
+  }, [rawTxs,localAccounts,cloudMode,session?.user?.id,notify]);
 
   const refreshCloud = useCallback(async (user) => {
-    if (!user || !cloudSyncRequestedRef.current) return;
-    const loadEpoch = ++cloudLoadEpochRef.current;
-    setBusy(true); setError('');
+    if (!user || !cloudSyncRequestedRef.current || syncActiveRef.current) return false;
+    syncActiveRef.current=true;
+    const ownerId=user.id;
+    const loadEpoch=++cloudLoadEpochRef.current;
+    setBusy(true);setError('');
+    setSyncState({status:'checking',message:'Checking offline and cloud changes…',uploaded:0,downloaded:0});
     try {
-      const today = new Date();
-      const dateKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const until = new Date(today); until.setDate(until.getDate() + 30);
-      const [a, t, postings, activities, failed, bills, billOccurrences, budgets] = await Promise.all([
-        listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []),
-        Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
-        listBills().catch(() => []), listOccurrences(dateKey(until), dateKey(today)).catch(() => []), listBudgets().catch(() => []),
-      ]);
-      // Ignore responses after sign-out, an account switch, or a switch to local mode.
-      if (cloudAuthUserRef.current !== user.id || !cloudSyncRequestedRef.current || loadEpoch !== cloudLoadEpochRef.current) return;
-      setInbox(failed || []);
-      setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
-      setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
-    } catch {
-      if (cloudAuthUserRef.current === user.id && cloudSyncRequestedRef.current && loadEpoch === cloudLoadEpochRef.current) {
-        setError(tr('Could not load cloud records. Check your connection and try again.'));
+      // A signed-in browser session alone is never a paid cloud entitlement.
+      // Verify before reading or copying a cloud-backed finance workspace.
+      const verified=await refreshEntitlement();
+      if(!canUseFeature(verified,'cloudWrite'))
+        throw Error('Cloud Sync requires verified active access. Local records remain on this device.');
+      if(cloudAuthUserRef.current!==ownerId||!cloudSyncRequestedRef.current||loadEpoch!==cloudLoadEpochRef.current)return false;
+      const today=new Date();
+      const dateKey=d=>String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const until=new Date(today);until.setDate(until.getDate()+30);
+      // Never convert a failed financial read into an empty collection. That
+      // would falsely certify a partial device fallback as complete.
+      const {accountsTransactions:rawCloud,postings,activities,inbox:failed,bills,
+        billOccurrences,budgets}=await readRequiredFinancialCloudViews({
+        accountsTransactions:()=>fetchOfflineSyncCloud(ownerId),
+        postings:()=>listAccountingPostings(),
+        activities:()=>listAccountingActivities(),
+        inbox:()=>listAutomationInbox(),
+        bills:()=>listBills(),
+        billOccurrences:()=>listOccurrences(dateKey(until),dateKey(today)),
+        budgets:()=>listBudgets(),
+      });
+      if (cloudAuthUserRef.current!==ownerId || !cloudSyncRequestedRef.current || loadEpoch!==cloudLoadEpochRef.current) return false;
+      let confirmed=rawCloud;
+      let status={status:'synced',message:'Cloud and device account/transaction rows match.',uploaded:0,downloaded:0};
+      const previous=loadOfflineWorkspace(ownerId);
+      if(previous && !previous.dirty){
+        // Never treat an unexplained missing server row as a safe deletion.
+        // Partial reads, server-side removals, and corruption must not silently
+        // erase the device's last confirmed financial history.
+        const check=planOfflineReconciliation({ownerId,base:previous.baseline,
+          local:previous.working,cloud:rawCloud,groups:['financial_accounts','transactions'],
+          localDeletions:previous.pendingDeletions});
+        if(!check.ok || check.upload.length)
+          throw Error('Cloud and device history differ unexpectedly. Existing offline records were preserved for review.');
+        status={...status,downloaded:check.download.length};
+      }
+      if(previous?.dirty){
+        // This same owner-specific entitlement was verified before the read.
+        if (!canUseFeature(verified,'cloudWrite'))
+          throw Error('Offline changes are saved. Active cloud-write plan verification is required to upload them.');
+        const result=await reconcileAndCommitOfflineWorkspace({
+          ownerId,workspace:previous,fetchRemote:fetchOfflineSyncCloud,
+          insertAccount:insertOfflineAccount,updateAccountCAS:updateOfflineAccountCAS,
+          insertTransaction:insertOfflineTransaction,assertOwner:assertOfflineSyncOwner,
+          shouldContinue:()=>cloudSyncRequestedRef.current && loadEpoch===cloudLoadEpochRef.current,
+        });
+        if(!result.ok){
+          const reasons=result.plan?.counts||{};
+          throw Error('Offline and cloud data need review ('+
+            (reasons.conflicts||0)+' conflicts, '+(reasons.unresolvedDeletes||0)+
+            ' pending deletions, '+(reasons.invalid||0)+' invalid groups). Nothing was discarded.');
+        }
+        // User may have edited another tab while network calls ran.
+        const latest=loadOfflineWorkspace(ownerId);
+        if(!latest||JSON.stringify(latest.working)!==JSON.stringify(previous.working))
+          throw Error('Device records changed during reconciliation. Recheck before enabling cloud.');
+        confirmed={financial_accounts:result.workspace.working.financial_accounts,
+          transactions:result.workspace.working.transactions};
+        status={status:'synced',message:'Account and transaction changes reconciled.',uploaded:result.uploaded,downloaded:result.downloaded};
+      }
+      if(cloudAuthUserRef.current!==ownerId||!cloudSyncRequestedRef.current||loadEpoch!==cloudLoadEpochRef.current)return false;
+      const verifiedCopy=loadOfflineWorkspace(ownerId);
+      const shared={...verifiedCopy?.working,...confirmed};
+      const synced={version:2,owner:ownerId,baseline:shared,working:shared,dirty:false,
+        lastConfirmedAt:new Date().toISOString(),pendingDeletions:{}};
+      if(!saveOfflineWorkspace(ownerId,synced))
+        throw Error('Device storage could not hold the reconciled copy. Cloud was not enabled; export records and free space.');
+      setOfflineOwnerId(ownerId);setLocalAccounts(shared.financial_accounts);setRawTxs(shared.transactions);
+      setCloudAccounts(confirmed.financial_accounts);setCloudPostings(postings||[]);
+      setCloudActivities(activities||[]);setCloudBills(bills||[]);
+      setCloudBillOccurrences(billOccurrences||[]);setCloudBudgets(budgets||[]);
+      setInbox(failed||[]);setCloudMode(true);setSyncState(status);
+      return true;
+    }catch(cause){
+      const message=cause?.message||'Cloud is unavailable. Device changes remain queued.';
+      setSyncState({status:'pending',message,uploaded:0,downloaded:0});
+      if(cloudAuthUserRef.current===ownerId&&cloudSyncRequestedRef.current&&loadEpoch===cloudLoadEpochRef.current){
+        setError(message);
+        const restored=loadOwnedLocal(ownerId);
+        if(!restored) setLocalPersistenceWarning(true);
         setCloudMode(false);
       }
+      return false;
+    }finally{syncActiveRef.current=false;setBusy(false);setAuthReady(true);}
+  },[loadOwnedLocal,refreshEntitlement]);
+
+  const setCloudSyncEnabled=useCallback(async (enabled)=>{
+    if(!enabled){
+      // Persist the latest confirmed account/transaction copy BEFORE hiding
+      // cloud records. Decline switch if browser quota prevents the copy.
+      if(session?.user?.id&&cloudMode){
+        const ownerId=session.user.id;
+        const rows={financial_accounts:cloudAccounts,transactions:rawTxs};
+        const previous=loadOfflineWorkspace(ownerId);
+        if(!matchesConfirmedOfflineHandoff(ownerId,previous,rows)){
+          notify('Cloud and device history differ unexpectedly. Existing offline records were preserved for review.');
+          return false;
+        }
+        // Reuse the last VERIFIED baseline instead of certifying possibly
+        // stale in-memory UI rows as a fresh cloud backup. Preserve extras.
+        if(!saveOfflineWorkspace(ownerId,previous)){
+          notify('Device storage is full. Cloud Sync remains on; export a backup before trying again.');
+          return false;
+        }
+        setOfflineOwnerId(ownerId);
+        setLocalAccounts(previous.working.financial_accounts);
+        setRawTxs(previous.working.transactions);
+      }else if(session?.user?.id&&offlineOwnerId!==session.user.id&&!loadOwnedLocal(session.user.id)){
+        notify('Unable to open this account’s offline workspace. Cloud settings were not changed.');
+        return false;
+      }
+      cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
+      setPref('cloudSyncEnabled',false);
+      setCloudMode(false);setCloudAccounts([]);setCloudBudgets([]);
+      setCloudBills([]);setCloudBillOccurrences([]);setInbox([]);
+      setCloudPostings([]);setCloudActivities([]);
+      setSyncState({status:'offline',message:'Offline mode. Local changes will be reconciled after reconnecting.',uploaded:0,downloaded:0});
+      return true;
     }
-    finally { setBusy(false); setAuthReady(true); }
-  }, []);
-  const setCloudSyncEnabled = useCallback(async (enabled) => {
-    cloudSyncRequestedRef.current = !!enabled;
-    ++cloudLoadEpochRef.current;
-    setPref('cloudSyncEnabled', !!enabled);
-    if (enabled) {
-      if (session?.user) await refreshCloud(session.user);
-      return;
+    if(!session?.user?.id){notify('Sign in before enabling Cloud Sync. Guest records stay on this device.');return false;}
+    const verified=await refreshEntitlement();
+    if(!canUseFeature(verified,'cloudWrite')){
+      notify('Cloud Sync requires an active verified cloud plan. Local records are preserved.');
+      return false;
     }
-    setCloudMode(false);
-    setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]);
-    setInbox([]); setCloudPostings([]); setCloudActivities([]);
-    setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts());
-  }, [session, refreshCloud, setPref]);
+    cloudSyncRequestedRef.current=true;++cloudLoadEpochRef.current;
+    // Reconciliation determines if cloud can be enabled. A failed sync cannot
+    // overwrite the dirty working set or falsely mark it as uploaded.
+    const ok=await refreshCloud(session.user);
+    setPref('cloudSyncEnabled',!!ok);
+    cloudSyncRequestedRef.current=!!ok;
+    return ok;
+  },[session,cloudMode,cloudAccounts,rawTxs,offlineOwnerId,refreshCloud,refreshEntitlement,loadOwnedLocal,setPref,notify]);
+
+  useEffect(() => {
+    const wentOffline=()=>{
+      // Browser network loss must not discard a confirmed owner-specific
+      // cloud copy, enable another person's records, or cancel a subscription.
+      if(!cloudMode||!session?.user?.id||prefsRef.current.cloudSyncEnabled===false)return;
+      const ownerId=session.user.id,previous=loadOfflineWorkspace(ownerId);
+      const rows={financial_accounts:cloudAccounts,transactions:rawTxs};
+      const choice=planOfflineNetworkTransition(ownerId,previous,rows);
+      const block = message => {
+        cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
+        setLocalPersistenceWarning(true);
+        setSyncState({status:'blocked',message,uploaded:0,downloaded:0});
+        notify(message);
+      };
+      if(choice==='blocked'){
+        // Never turn an unverified empty device cache into an apparent copy of
+        // live cloud finances. Pause paid UI until safe cloud access returns.
+        block('Signed-in account workspace is unavailable. No records were changed.');
+        return;
+      }
+      if(choice==='reuse_confirmed'){
+        if(!saveOfflineWorkspace(ownerId,previous)){
+          block('Offline switch stopped: device storage is full. Export your records before editing.');
+          return;
+        }
+        setOfflineOwnerId(ownerId);
+        setLocalAccounts(previous.working.financial_accounts);
+        setRawTxs(previous.working.transactions);
+        setCloudMode(false);
+      }else{
+        // Restoring a previously verified device copy preserves both the
+        // owner journal and newer cloud rows for a future reviewed reconnect.
+        if(!loadOwnedLocal(ownerId)){
+          block('Signed-in account workspace is unavailable. No records were changed.');
+          return;
+        }
+        if(choice==='restore_stale')
+          notify('Cloud and device history differ unexpectedly. Existing offline records were preserved for review.');
+      }
+      cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
+      setSyncState({status:choice==='restore_stale'?'pending':'offline',
+        message:choice==='restore_stale'
+          ? 'Cloud and device history differ unexpectedly. Existing offline records were preserved for review.'
+          : 'No internet. Showing saved device records; pending changes will reconcile on reconnect.',
+        uploaded:0,downloaded:0});
+    };
+    const cameOnline=()=>{
+      if(prefsRef.current.cloudSyncEnabled===false||!session?.user?.id)return;
+      cloudSyncRequestedRef.current=true;
+      refreshCloud(session.user).catch(()=>{});
+    };
+    window.addEventListener('offline',wentOffline);
+    window.addEventListener('online',cameOnline);
+    return ()=>{
+      window.removeEventListener('offline',wentOffline);
+      window.removeEventListener('online',cameOnline);
+    };
+  },[cloudMode,cloudAccounts,rawTxs,session?.user?.id,refreshCloud,loadOwnedLocal,notify]);
+
   useEffect(() => {
     if (sheet?.name === 'account' && sheet.type) setAccountForm(current => current.account_type === sheet.type ? current : { ...current, account_type: sheet.type });
     if (sheet?.name === 'transaction' && sheet.type) setForm(current => current.transaction_type === sheet.type ? current : { ...current, transaction_type: sheet.type });
@@ -466,17 +671,19 @@ function App() {
       if (nextSession?.user && prefsRef.current.cloudSyncEnabled !== false) {
         refreshCloud(nextSession.user);
       } else if (nextSession?.user) {
+        // Local mode for a signed-in owner: that owner's own device workspace (#246), never guest records.
         setCloudMode(false);
-        setRawTxs(loadLocalTransactions());
-        setLocalAccounts(loadLocalAccounts());
+        if (!loadOwnedLocal(nextSession.user.id)) setLocalPersistenceWarning(true);
       } else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
         setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
         setCloudPostings([]);
         setCloudActivities([]);
-        setRawTxs(pending?.transactions || loadLocalTransactions());
-        setLocalAccounts(pending?.accounts || loadLocalAccounts());
+        setOfflineOwnerId(null);
+        setRawTxs(!pending?.ownerId&&pending?.transactions ? pending.transactions:loadLocalTransactions());
+        setLocalAccounts(!pending?.ownerId&&pending?.accounts ? pending.accounts:loadLocalAccounts());
+        pendingLocalDataRef.current=null;
       }
     };
     getCurrentSession().then((s) => {
@@ -488,7 +695,7 @@ function App() {
       applySession(nextSession);
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
-  }, [refreshCloud]);
+  }, [refreshCloud,loadOwnedLocal]);
 
   /* ---------- derived data ---------- */
   const baseAccounts = cloudMode ? cloudAccounts : localAccounts;
@@ -853,7 +1060,11 @@ function App() {
     setBusy(true); setCsvConfirmAction(''); setCsvImportSummary('');
     const created = []; const errors = [...csvErrors];
     const fingerprints = new Set(rawTxs.map(t => transactionFingerprint(t)));
-    const persistedBefore = loadLocalTransactions();
+    const signedOwner=session?.user?.id;
+    const ownerSnapshot=signedOwner?loadOfflineWorkspace(signedOwner):null;
+    const persistedBefore=signedOwner?ownerSnapshot?.working.transactions:loadLocalTransactions();
+    if(signedOwner&&(!ownerSnapshot||offlineOwnerId!==signedOwner))
+      {setCsvImportSummary('Unable to access the signed-in account’s local workspace. Nothing was imported.');return;}
     try {
       for (let i = 0; i < csvRows.length; i += 1) {
         const row = csvRows[i];
@@ -885,13 +1096,18 @@ function App() {
       if (created.length) {
         // Prevent another browser tab or interrupted persistence effect from
         // being overwritten by an import based on an outdated local snapshot.
-        if (JSON.stringify(loadLocalTransactions()) !== JSON.stringify(persistedBefore)
+        const currentStored=signedOwner?loadOfflineWorkspace(signedOwner)?.working.transactions:loadLocalTransactions();
+        if (JSON.stringify(currentStored) !== JSON.stringify(persistedBefore)
           || JSON.stringify(persistedBefore) !== JSON.stringify(rawTxs)) {
           throw new Error('Local financial records changed during import. Reopen the file and review the latest records before saving.');
         }
         // Commit before the React render changes; a failed localStorage write
         // never announces success or alters the visible financial ledger.
-        if (!saveLocalTransactions([...created, ...rawTxs], false)) {
+        const next=[...created,...rawTxs];
+        const saved=signedOwner
+          ? updateOfflineWorking(signedOwner,{...loadOfflineWorkspace(signedOwner).working,transactions:next})
+          : saveLocalTransactions(next,false);
+        if (!saved) {
           throw new Error('This device could not save the imported records. Free storage and retry; your preview is still available.');
         }
         setRawTxs(cur => [...created, ...cur]);
@@ -1513,20 +1729,9 @@ function App() {
     const hasOtherRecords = parsed.accounts.length || parsed.transactions.length || parsed.subscriptions.length || parsed.budgets.length || parsed.plans.length;
     if (hasObligations && hasOtherRecords) return { ok: false, message: tr('Import loans, receivables and bills in a separate file from accounts, transactions and plans.') };
     if (hasObligations && !cloudMode) return { ok: false, message: tr('Sign in to MOVO to import loans, receivables and bills securely.') };
-    if (cloudMode) {
-      if (!session?.user?.id || !hasObligations) return { ok: false, message: tr('You are signed in. Use Import CSV to add transactions to your account.') };
-      const [existingLoans, existingReceivables, existingBills] = await Promise.all([listLoans(), listReceivables(), listBills()]);
-      const plan = planImport(parsed, { accounts: [], transactions: [], subscriptions: [], budgets: [], plans: [], loans: existingLoans || [], receivables: existingReceivables || [], bills: existingBills || [] },
-        { base, batchId: `import-${Date.now().toString(36)}`, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
-      let added = 0; let failed = 0;
-      for (const item of plan.loans) { try { await createLoan(item, session.user.id); added += 1; } catch { failed += 1; } }
-      for (const item of plan.receivables) { try { await createReceivable(item, session.user.id); added += 1; } catch { failed += 1; } }
-      for (const item of plan.bills) { try { await createBill(item, session.user.id); added += 1; } catch { failed += 1; } }
-      if (added) await refreshCloud(session.user);
-      if (!added && !failed) return { ok: false, message: tr('Nothing new to add: everything in this file is already in MOVO.') };
-      const skipped = plan.skipped.duplicates + plan.skipped.invalid + failed;
-      return { ok: added > 0, message: `${tr('Imported {n} financial planning item(s).', { n: added })}${skipped ? ` ${tr('{n} rows were skipped as duplicates, invalid or failed.', { n: skipped })}` : ''}` };
-    }
+    if(cloudMode)return {ok:false,message:'Turn Cloud Sync off before importing. File uploads never update cloud records.'};
+    // First-run onboarding import never inserts loan/bill/receivable rows in
+    // cloud without complete reversible-accounting verification.
     const batchId = `import-${Date.now().toString(36)}`;
     const plan = planImport(parsed, { accounts: localAccounts, transactions: rawTxs, subscriptions, budgets: prefs.budgets || [], plans: prefs.plans || [] },
       { base, batchId, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.() });
@@ -1633,13 +1838,21 @@ function App() {
     try {
       await signOut();
       const pending = pendingLocalDataRef.current;
+      if(pending?.ownerId){
+        const workspace=loadOfflineWorkspace(pending.ownerId);
+        if(!workspace||!updateOfflineWorking(pending.ownerId,{...workspace.working,
+          financial_accounts:pending.accounts,transactions:pending.transactions}))
+          throw new Error('Offline changes are not saved. Export records or retry before signing out.');
+      }
+      setOfflineOwnerId(null);
       setSession(null);
       setCloudMode(false);
       setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
       setCloudPostings([]);
       setCloudActivities([]);
-      setRawTxs(pending?.transactions || loadLocalTransactions());
-      setLocalAccounts(pending?.accounts || loadLocalAccounts());
+      setRawTxs(!pending?.ownerId&&pending?.transactions ? pending.transactions:loadLocalTransactions());
+      setLocalAccounts(!pending?.ownerId&&pending?.accounts ? pending.accounts:loadLocalAccounts());
+      pendingLocalDataRef.current=null;
       go('Home');
       notify(tr('Signed out securely.'));
     } catch { notify(tr('Could not sign out. Please try again.')); }
@@ -1658,11 +1871,21 @@ function App() {
     }
     const nextAccounts = [...localAccounts, ...planned.accounts];
     const nextTransactions = [...planned.transactions, ...rawTxs];
-    const beforeAccounts = loadLocalAccounts();
-    const beforeTransactions = loadLocalTransactions();
-    if (JSON.stringify(beforeAccounts) !== JSON.stringify(localAccounts)
-      || JSON.stringify(beforeTransactions) !== JSON.stringify(rawTxs)) {
+    const signedOwner=session?.user?.id;
+    const priorWorkspace=signedOwner?loadOfflineWorkspace(signedOwner):null;
+    if(signedOwner && (offlineOwnerId!==signedOwner||!priorWorkspace))
+      throw new Error('Signed-in account workspace is unavailable. No records were changed.');
+    const beforeAccounts=signedOwner?priorWorkspace.working.financial_accounts:loadLocalAccounts();
+    const beforeTransactions=signedOwner?priorWorkspace.working.transactions:loadLocalTransactions();
+    if (JSON.stringify(beforeAccounts)!==JSON.stringify(localAccounts)
+      || JSON.stringify(beforeTransactions)!==JSON.stringify(rawTxs))
       throw new Error('Local records changed in another tab or are still saving. Reopen the backup and review before importing.');
+    if(signedOwner){
+      if(!updateOfflineWorking(signedOwner,{...priorWorkspace.working,financial_accounts:nextAccounts,transactions:nextTransactions}))
+        throw new Error('Device storage could not save the imported records; no visible records were changed.');
+      setLocalAccounts(nextAccounts);setRawTxs(nextTransactions);
+      return {accounts:planned.accounts.length,transactions:planned.transactions.length,
+        failed:0,skipped:planned.skipped,unsupported:planned.unsupported};
     }
     const accountsOk = saveLocalAccounts(nextAccounts);
     const transactionsOk = accountsOk && saveLocalTransactions(nextTransactions, false);
@@ -1685,6 +1908,8 @@ function App() {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
+    syncState,
+    retrySync: () => setCloudSyncEnabled(true),
     saveFinanceBackupRecords,
     openCsvImporter: file => {
       setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setCsvConfirmAction('');

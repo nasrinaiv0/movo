@@ -623,11 +623,32 @@ Storage-mode policy aligned with user request: local device recording stays avai
 ### 2026-11-08 — Confirmed local-only CSV/JSON import review flow
 Import preview adds confirmable Discard records / Save records actions, local-only writes and stale-ledger protection. Pro/Pro+ access pauses in local mode without purchase cancellation. See docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md. Full offline data migration remains blocked in PR #241.
 
+### 2026-11-08 — Draft owner-scoped offline/online reconciliation
+Added owner-scoped device journal, pure 23-domain reconciliation inventory, safe two-domain account+transaction transport with verified write protections, complete account paging, stop-on-conflict semantics and visible sync status. First-run import now previews and confirms before local-only commit. No destructive LWW or production writes; remaining financial, device encryption and native release gates are documented at docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md.
+
+### 2026-11-08 — Offline retry financial-field equivalence
+Three-way reconciliation now safely handles a server-accepted local create whose success response is lost. Both the planner and mutation-confirmation layer compare the same exact-cents, owner-scoped financial fields while ignoring only known server-generated defaults and timestamps. Divergent amounts and accounts still conflict. Targeted Sandbox regression 55/55. Full production release remains blocked.
+
+
+### 2026-11-09 | PR #246 | Offline snapshot read + handoff integrity guard
+- Application: `src/App.js`, `src/lib/cloudFinancialReadGate.js`, `src/lib/offlineHandoffSafety.js`. Regression: both corresponding `.test.js` files.
+- Safety: failed/malformed finance reads cannot masquerade as empty rows; cloud-off keeps the last verified owner-scoped baseline and rejects mismatched visible records.
+- Scope: draft only; separate cloud table reads are not an atomic snapshot and broader accounting/media synchronization is still blocked. No production data/schema or plan grants modified.
+- Evidence: `docs/engineering/updates/2026-11-09-offline-snapshot-read-and-handoff-guard.md`.
+
+
+### 2026-11-09 | PR #246 | Locale catalog repair for cloud/offline reconciliation
+- Rebuilt all 11 JSON dictionaries and version.js from new and inherited source catalogs with exact Sandbox blob-SHA parity (2,543 keys/language).
+- Translation coverage remains subject to exact-head CI. Does not modify production DB, live finance rows or store grants.
+
 
 ### 2026-11-09 | PR #245 | Generated locale coverage for local import/plan UI
 - All 11 `src/i18n/locales/*.json` catalogs and `version.js` regenerated from the branch's 2,540 source strings. No financial code or customer records changed.
 - Sandbox evidence: 2 i18n and 15 component tests passing; full new-head CI and real-device QA pending.
 - Report: `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
+
+### 2026-11-09 — PR #246 network-loss guard
+A second network-offline transition now checks the last confirmed owner-scoped baseline rather than overwriting it with UI rows. Dirty local journals restore device mode; stale views show the last confirmed local copy; missing/unsafe caches block local editing and pause paid UI. Focused regression and exact-head verification required; release remains blocked.
 
 ## 2026-11-06 — Native session / privacy security pass
 - Device-only Keychain/Keystore auth, migration, backup and screenshot protections, R8, native CI, public security.txt. No production financial data or database mutations.
