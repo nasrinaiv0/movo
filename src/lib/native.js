@@ -115,3 +115,22 @@ export async function nativeBiometricStatus() {
 export async function nativeAuthenticate(reason) {
   try { const { success } = await MovoNative.authenticate({ reason }); return !!success; } catch { return false; }
 }
+
+
+// Keychain-backed device credential helpers. Server/RLS authorization remains mandatory.
+// Only the allowlisted automationKey is accepted by the Swift implementation.
+// Never call these in browsers: an absent native plugin is NOT a secure-storage fallback.
+export async function setNativeAutomationKey(value) {
+  if (!isNativeApp()) throw new Error('Native secure storage is unavailable on the web.');
+  if (typeof value !== 'string' || !/^[a-f0-9]{32}$/i.test(value)) throw new Error('Invalid device key.');
+  await MovoNative.secureSet({ key: 'automationKey', value });
+}
+export async function getNativeAutomationKey() {
+  if (!isNativeApp()) return null;
+  const result = await MovoNative.secureGet({ key: 'automationKey' });
+  return result?.value ?? null;
+}
+export async function removeNativeAutomationKey() {
+  if (!isNativeApp()) throw new Error('Native secure storage is unavailable on the web.');
+  await MovoNative.secureRemove({ key: 'automationKey' });
+}

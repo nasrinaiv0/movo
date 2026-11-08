@@ -113,3 +113,11 @@ describe('iPhone Shortcuts recipes and prompts', () => {
   });
 });
 
+
+
+test('Siri App Intent links create a reviewable, untrusted expense', () => {
+  const entry = readLogLink('#/log?src=siri_shortcut&amount=250.50&merchant=Groceries');
+  expect(entry).toMatchObject({ amount: 250.5, merchant: 'Groceries', src: 'siri_shortcut', source: 'Siri', key: '' });
+  expect(sameKey(entry.key, '')).toBe(false);
+  expect(readLogLink('#/log?src=siri_shortcut&amount=0&merchant=Groceries')).toEqual({ invalid: true });
+});
