@@ -616,6 +616,8 @@ For all four runs, the job logs show the full dependency install still reports *
 
 - 2026-11-08 — CSV file importer rejects ambiguous account matches, with localized warnings and tests; see docs/engineering/updates/2026-11-08-import-export-preview-commit.md.
 
+- 2026-11-08 — Draft cloud-to-local, per-user workspace/expiry handoff, and masked frontend emails. Security/release caveats: docs/security/2026-11-08-offline-cloud-handoff-and-email-masking.md.
+
 
 ### 2026-11-08 — Paid-feature suspension in local-only storage mode
 Storage-mode policy aligned with user request: local device recording stays available, Pro/Pro+ usage paused when Cloud Sync disabled, entitlement preserved, verified access returned only with Cloud Sync on. See docs/engineering/updates/2026-11-08-local-mode-plan-access-policy.md. PR #241 migration remains blocked pending finance and security validation.

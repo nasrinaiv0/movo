@@ -4,6 +4,7 @@ import { SubHeader, SectionTitle, Trend } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
+import { maskEmail } from '../lib/emailPrivacy';
 import { revokeOtherSessions } from '../lib/financeRepository';
 
 
@@ -31,7 +32,7 @@ export default function Profile({ c }) {
     <div className="card profile-card-wrap">
       <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
         <span className="avatar big">{c.prefs?.profilePhoto ? <img className="avatar-photo" src={c.prefs.profilePhoto} alt="" /> : user.initial}<i><Icon name="camera" size={13} /></i></span>
-        <span className="profile-text"><strong>{user.name}</strong><small>{user.email}</small>{c.cloudMode && <em className="plan-pill"><Icon name="info" size={13} /> {tr('Plan details unavailable')}</em>}</span>
+        <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{c.cloudMode && <em className="plan-pill"><Icon name="info" size={13} /> {tr('Plan details unavailable')}</em>}</span>
         <Icon name="chevron" size={18} />
       </button>
       {!c.cloudMode && c.supabaseConfigured && <button type="button" className="primary-button profile-signin" onClick={() => go('Sign in')}><Icon name="user" size={18} /> {tr('Sign in')}</button>}
@@ -145,7 +146,7 @@ export function EditProfile({ c }) {
     <span className="ep-value">{extra}<input aria-label={label} value={value} readOnly={readOnly} maxLength={maxLength} onChange={e => setDraft(current => ({ ...current, [key]: e.target.value }))} /></span></label>;
   const google = session?.user?.app_metadata?.provider === 'google';
   const providers = [
-    ['mail', 'Google', google ? session.user.email : c.supabaseConfigured ? tr('Google sign-in is available') : tr('Google sign-in is not configured'), google ? 'on' : 'off'],
+    ['mail', 'Google', google ? maskEmail(session.user.email) : c.supabaseConfigured ? tr('Google sign-in is available') : tr('Google sign-in is not configured'), google ? 'on' : 'off'],
     ['phone', 'Apple', tr('Apple sign-in is not available in MOVO yet'), 'na'],
     ['message', 'Facebook', tr('Facebook sign-in is not available in MOVO yet'), 'na'],
   ];
@@ -158,13 +159,13 @@ export function EditProfile({ c }) {
         <input ref={photoInput} type="file" accept="image/*" hidden onChange={handlePhotoFile} />
         {photoError && <p className="form-error" role="alert">{photoError}</p>}
         <strong>{draft.profileName.trim() || user.name}</strong>
-        <small>{user.email}</small>
+        <small>{maskEmail(user.email)}</small>
       </header>
 
       <SectionTitle>{tr('Personal details')}</SectionTitle>
       <form id="movo-profile-form" className="card ep-card" onSubmit={saveProfile} noValidate>
         {field('Full Name', 'profileName', draft.profileName, false, undefined, 100)}
-        {field('Email', 'email', user.email, true)}
+        {field('Email', 'email', maskEmail(user.email), true)}
         {field('Phone Number', 'phone', draft.phone, false, <span className="flag">🇵🇭</span>, 40)}
         {field('Location', 'location', draft.location, false, <Icon name="pin" size={17} />, 100)}
       </form>

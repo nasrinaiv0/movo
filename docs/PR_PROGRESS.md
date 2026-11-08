@@ -15,6 +15,8 @@ See [dated audit](engineering/updates/2026-11-09-access-finance-ui-audit.md).
 
 ## Open pull requests
 
+**2026-11-09 — PR #241 consolidated:** keeps masked emails and the network-failure-safe entitlement refresh; its separate offline workspace is dropped in favour of #250's. See `docs/engineering/updates/2026-11-09-pr241-consolidated.md`.
+
 **2026-11-09 — PR #246 alignment:** inherits #245's payment-link render-loop fix; App test updated to #246's storage-retry wording. Jest 926/926, TypeScript and strict build pass locally. See `docs/engineering/updates/2026-11-09-pr246-test-alignment.md`.
 
 **2026-11-09 — PR #245 render-loop fix:** the payment-link effect re-opened the plans sheet on every render in local mode (App tests hung). Links are now marked handled and cleared before the Pro+ check. App tests 49/49. See `docs/engineering/updates/2026-11-09-pr245-payment-link-loop-fix.md`.
@@ -472,6 +474,10 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - 2026-11-08 — PR #240 additional import accounting safeguards: fail closed for duplicate account labels, incompatible account type/currency, dangling account/transfer references, and incomplete transaction rows; regression tests and Vercel Sandbox evidence in dated engineering update.
 
 - 2026-11-08 — PR #240 CSV hardening: duplicate matching wallet account labels now require user correction; no accidental first-result posting. Added 11-language error message, focused tests, audit notes.
+
+### 2026-11-08 — Cloud/offline and profile email privacy PR
+- Implemented account-scoped local browser workspace, complete-snapshot-gated cloud toggle, offline transaction support after verified Pro expiry, and masked email in Profile.
+- Production release blocked pending full offline record coverage, signed device and two-account security tests; see docs/security/2026-11-08-offline-cloud-handoff-and-email-masking.md.
 
 
 ### 2026-11-08 — Offline storage mode pauses plan-access features
