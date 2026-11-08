@@ -124,7 +124,15 @@ async function handler(req,res) {
     }
     if(view==='overview'||view==='analytics'||view==='billing'){
       const metrics=await collect(admin);
-      return reply(res,200,{metrics,
+      let storeRecords;
+      if(view==='billing'){
+        const {data,error}=await admin.from('movo_store_entitlements')
+          .select('id,user_id,platform,product_id,tier,status,expires_at,verified_at')
+          .order('verified_at',{ascending:false}).limit(100);
+        if(error) throw Error('billing_records_unavailable');
+        storeRecords=data||[];
+      }
+      return reply(res,200,{metrics,...(view==='billing'?{storeRecords,limitedTo:100}:{}),
         revenue:{status:'not_integrated'},retention:{status:'not_integrated'},
         storeSettlements:{status:'not_integrated'},currency:'PHP',
         message:'Only database-backed counts are shown. Revenue and retention require verified integrations.'});
