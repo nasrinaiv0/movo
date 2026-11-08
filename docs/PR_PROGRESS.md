@@ -15,6 +15,8 @@ See [dated audit](engineering/updates/2026-11-09-access-finance-ui-audit.md).
 
 ## Open pull requests
 
+**2026-11-09 — PR #246 alignment:** inherits #245's payment-link render-loop fix; App test updated to #246's storage-retry wording. Jest 926/926, TypeScript and strict build pass locally. See `docs/engineering/updates/2026-11-09-pr246-test-alignment.md`.
+
 **2026-11-09 — PR #245 render-loop fix:** the payment-link effect re-opened the plans sheet on every render in local mode (App tests hung). Links are now marked handled and cleared before the Pro+ check. App tests 49/49. See `docs/engineering/updates/2026-11-09-pr245-payment-link-loop-fix.md`.
 
 **2026-11-08 — PR #227 free security hardening:** New disposable-local PostgreSQL 18 runner applied all 28 MOVO migrations, verified all 12 privileged finance RPCs with two synthetic users and successful owner-only controls; no paid Supabase branch or production mutations. Added PR CI job, strict localhost-only runner and native OAuth/deep-link URL validation. See `docs/engineering/updates/2026-11-08-pr227-free-local-security.md`; remain DRAFT pending exact-head CI and signed-device checks.
