@@ -38,7 +38,7 @@ test('compact upload label replaces native file chooser, with useful empty place
   expect(ui.node.querySelector('button[class="primary-button"]').textContent).toContain('Export backup');
   await ui.cleanup();
 });
-test('JSON backup must be previewed and Save records clicked before any active data is written', async () => {
+test('JSON upload stays preview-only until Save and a second explicit confirmation', async () => {
   const ui = await setup();
   const file = { name:'wallet.json', size:1000, text: async () => JSON.stringify(sample) };
   const input = ui.node.querySelector('input[type="file"]');
@@ -46,12 +46,60 @@ test('JSON backup must be previewed and Save records clicked before any active d
   await act(async () => input.dispatchEvent(new Event('change', { bubbles:true })));
   expect(ui.node.textContent).toContain('wallet.json');
   expect(ui.node.textContent).toContain('Preview records');
+  expect(require('../lib/localAttachments').putLocalAttachment).not.toHaveBeenCalled();
   expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
-  const save = [...ui.node.querySelectorAll('button')].find(button => button.textContent.includes('Save records'));
-  expect(save).toBeDefined();
-  await act(async () => save.dispatchEvent(new MouseEvent('click', { bubbles:true })));
+  const click = async text => {
+    const button=[...ui.node.querySelectorAll('button')].find(item=>item.textContent.trim()===text);
+    expect(button).toBeDefined();
+    await act(async () => button.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  };
+  await click('Save records');
+  expect(ui.node.textContent).toContain('Save reviewed records to this device?');
+  expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
+  await click('Keep preview');
+  expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
+  await click('Save records');
+  await click('Confirm save locally');
+  expect(ui.c.saveFinanceBackupRecords).toHaveBeenCalledTimes(1);
   expect(ui.c.saveFinanceBackupRecords).toHaveBeenCalledWith(sample);
   expect(ui.node.textContent).toContain('Records saved');
+  await ui.cleanup();
+});
+test('Discard requires confirmation and removes only the unsaved uploaded preview', async () => {
+  const ui = await setup();
+  const file = { name:'wallet.json', size:1000, text: async () => JSON.stringify(sample) };
+  const input=ui.node.querySelector('input[type="file"]');
+  Object.defineProperty(input,'files',{value:[file],configurable:true});
+  await act(async () => input.dispatchEvent(new Event('change',{bubbles:true})));
+  const click=async label => {
+    const el=[...ui.node.querySelectorAll('button')].find(button=>button.textContent.trim()===label);
+    expect(el).toBeDefined();await act(async () => el.click());
+  };
+  await click('Discard records');
+  expect(ui.node.textContent).toContain('Discard the uploaded preview?');
+  await click('Keep preview');
+  expect(ui.node.textContent).toContain('Preview records');
+  await click('Discard records');
+  await click('Confirm discard');
+  expect(ui.node.textContent).toContain('No file selected');
+  expect(ui.node.textContent).not.toContain('Preview records');
+  expect(ui.node.textContent).toContain('No records in MOVO were changed.');
+  expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
+  await ui.cleanup();
+});
+test('Cloud Sync active blocks JSON import and explains local-only requirement', async () => {
+  const ui = await setup();
+  ui.c.cloudMode = true;
+  await act(async () => { /* let mocked context update via force rerender below */ });
+  const file = { name:'wallet.json', size:1000, text: async () => JSON.stringify(sample) };
+  const input=ui.node.querySelector('input[type="file"]');
+  Object.defineProperty(input,'files',{value:[file],configurable:true});
+  await act(async () => input.dispatchEvent(new Event('change',{bubbles:true})));
+  // cloudMode is checked on every render, so the asynchronous upload refreshes the UI.
+  const save=[...ui.node.querySelectorAll('button')].find(b=>b.textContent.trim()==='Save records');
+  expect(save.disabled).toBe(true);
+  expect(ui.node.textContent).toContain('Saving cannot change cloud records.');
+  expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
   await ui.cleanup();
 });
 test('CSV file routes into the existing CSV preview without silently recording it', async () => {

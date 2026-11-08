@@ -3,7 +3,7 @@ import { prepareFinanceBackupRestore } from './lib/financeBackupRestore';
 import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from './lib/localAttachments';
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
-import { canUseFeature, effectivePlan } from './lib/planAccess';
+import { canUseFeatureInMode, effectiveAccessPlan } from './lib/planAccess';
 import PlanOffer from './components/PlanOffer';
 import { UsageSheet } from './screens/Settings';
 import './components/Plans.css';
@@ -243,10 +243,10 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
 function App() {
   const [session, setSession] = useState(null);
   const { entitlement, refreshEntitlement } = usePlanEntitlement(session);
-  const can = feature => canUseFeature(entitlement, feature);
-  const plan = effectivePlan(entitlement);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
+  const can = feature => canUseFeatureInMode(entitlement, feature, cloudMode);
+  const plan = effectiveAccessPlan(entitlement, cloudMode);
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -256,7 +256,9 @@ function App() {
   const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
   const prefsRef = useRef(prefs);
-  useEffect(() => { prefsRef.current = prefs; }, [prefs]);
+  const cloudSyncRequestedRef = useRef(prefs.cloudSyncEnabled !== false);
+  const cloudLoadEpochRef = useRef(0);
+  useEffect(() => { prefsRef.current = prefs; cloudSyncRequestedRef.current = prefs.cloudSyncEnabled !== false; }, [prefs]);
   const [accountQrDisplay, setAccountQrDisplay] = useState({});
   const [qrRetryTick, setQrRetryTick] = useState(0);
   const [fx, setFx] = useState(loadRates);
@@ -301,6 +303,7 @@ function App() {
   const [csvFileName, setCsvFileName] = useState('');
   const [importAccountId, setImportAccountId] = useState('');
   const [csvImportSummary, setCsvImportSummary] = useState('');
+  const [csvConfirmAction, setCsvConfirmAction] = useState('');
   const systemDark = useSystemDark();
 
   useEffect(() => {
@@ -377,7 +380,8 @@ function App() {
   }, [rawTxs, localAccounts, cloudMode, notify]);
 
   const refreshCloud = useCallback(async (user) => {
-    if (!user) return;
+    if (!user || !cloudSyncRequestedRef.current) return;
+    const loadEpoch = ++cloudLoadEpochRef.current;
     setBusy(true); setError('');
     try {
       const today = new Date();
@@ -388,13 +392,13 @@ function App() {
         Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
         listBills().catch(() => []), listOccurrences(dateKey(until), dateKey(today)).catch(() => []), listBudgets().catch(() => []),
       ]);
-      // Sign-out/account switch during a pending request must never display stale user data.
-      if (cloudAuthUserRef.current !== user.id) return;
+      // Ignore responses after sign-out, an account switch, or a switch to local mode.
+      if (cloudAuthUserRef.current !== user.id || !cloudSyncRequestedRef.current || loadEpoch !== cloudLoadEpochRef.current) return;
       setInbox(failed || []);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
       setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
     } catch {
-      if (cloudAuthUserRef.current === user.id) {
+      if (cloudAuthUserRef.current === user.id && cloudSyncRequestedRef.current && loadEpoch === cloudLoadEpochRef.current) {
         setError(tr('Could not load cloud records. Check your connection and try again.'));
         setCloudMode(false);
       }
@@ -402,6 +406,8 @@ function App() {
     finally { setBusy(false); setAuthReady(true); }
   }, []);
   const setCloudSyncEnabled = useCallback(async (enabled) => {
+    cloudSyncRequestedRef.current = !!enabled;
+    ++cloudLoadEpochRef.current;
     setPref('cloudSyncEnabled', !!enabled);
     if (enabled) {
       if (session?.user) await refreshCloud(session.user);
@@ -450,6 +456,8 @@ function App() {
     const applySession = (nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
+      // Signing out invalidates any cloud load still in flight (#245).
+      if (!nextSession?.user) ++cloudLoadEpochRef.current;
       const nextUserId = nextSession?.user?.id || null;
       // Supabase can emit SIGNED_IN repeatedly (including on tab focus). Refresh
       // finance records only when the authenticated identity actually changes.
@@ -805,6 +813,7 @@ function App() {
   };
   const handleCsvFile = (file) => {
     if (!file) return;
+    setCsvConfirmAction('');
     setCsvFileName(file.name || 'transactions.csv');
     setCsvRows([]); setCsvErrors([]); setCsvImportSummary('');
     if (file.size > 5 * 1024 * 1024) { setCsvErrors([{ line: 1, message: tr('CSV file must be 5 MB or smaller.') }]); return; }
@@ -826,11 +835,25 @@ function App() {
     reader.readAsText(file);
   };
 
+  const discardCsvPreview = () => {
+    if (busy || csvConfirmAction !== 'discard') return;
+    setCsvRows([]); setCsvErrors([]); setCsvImportSummary('');
+    setCsvFileName(''); setImportAccountId(''); setCsvConfirmAction('');
+    notify('Uploaded preview discarded. Existing local records were not changed.');
+  };
   const confirmCsvImport = async () => {
-    if (!csvRows.length) return;
-    setBusy(true); setCsvImportSummary('');
+    if (busy || !csvRows.length || csvConfirmAction !== 'save') return;
+    // CSV and backup imports are deliberately device-only. Never send an
+    // imported file to createTransaction or any cloud API.
+    if (cloudMode) {
+      setCsvImportSummary('Cloud Sync is on. Switch to local mode before saving; your cloud records have not changed.');
+      setCsvConfirmAction('');
+      return;
+    }
+    setBusy(true); setCsvConfirmAction(''); setCsvImportSummary('');
     const created = []; const errors = [...csvErrors];
-    const fingerprints = new Set(txs.map(t => transactionFingerprint(t)));
+    const fingerprints = new Set(rawTxs.map(t => transactionFingerprint(t)));
+    const persistedBefore = loadLocalTransactions();
     try {
       for (let i = 0; i < csvRows.length; i += 1) {
         const row = csvRows[i];
@@ -839,12 +862,11 @@ function App() {
           errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.account_name }) });
           continue;
         }
-        const accountId = matchingSource.account?.id || importAccountId || (!cloudMode && formAccounts.length === 0 ? 'local' : '');
+        const accountId = matchingSource.account?.id || importAccountId || (formAccounts.length === 0 ? 'local' : '');
         if (!accountId) { errors.push({ line: i + 2, message: tr('Choose a default account or match the account name for “{merchant}”.', { merchant: row.merchant }) }); continue; }
         const matchingDestination = findUniqueCsvAccount(formAccounts, row.to_account_name);
         if (row.transaction_type === 'transfer' && matchingDestination.ambiguous) {
-          errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.to_account_name }) });
-          continue;
+          errors.push({ line: i + 2, message: tr('Multiple wallet accounts match “{name}”. Rename them before importing.', { name: row.to_account_name }) }); continue;
         }
         const destinationId = row.transaction_type === 'transfer' ? (matchingDestination.account?.id || '') : undefined;
         if (row.transaction_type === 'transfer' && (!destinationId || destinationId === accountId)) {
@@ -852,33 +874,34 @@ function App() {
         }
         const fingerprint = transactionFingerprint({ ...row, account_id: accountId });
         if (fingerprints.has(fingerprint)) { errors.push({ line: i + 2, message: tr('Possible duplicate skipped: “{merchant}”.', { merchant: row.merchant }) }); continue; }
-        try {
-          if (cloudMode) {
-            const saved = await createTransaction({
-              merchant: row.merchant, amount: row.amount, transaction_type: row.transaction_type, category: row.category,
-              account_id: accountId, transfer_to_account_id: destinationId, currency: row.currency,
-              occurred_at: row.occurred_at, note: row.note, source: 'csv_import', external_reference: fingerprint,
-            }, session.user.id);
-            created.push(saved);
-          } else {
-            created.push({
-              id: window.crypto?.randomUUID?.() || `csv-${Date.now()}-${i}`,
-              merchant: row.merchant, amount: row.amount, transaction_type: row.transaction_type, category: row.category,
-              account_id: accountId, transfer_to_account_id: destinationId, currency: row.currency,
-              occurred_at: row.occurred_at, note: row.note, source: 'CSV Import', external_reference: fingerprint,
-            });
-          }
-          fingerprints.add(fingerprint);
-        } catch {
-          errors.push({ line: i + 2, message: tr('Could not save “{merchant}”. It was not added.', { merchant: row.merchant }) });
-        }
+        created.push({
+          id: window.crypto?.randomUUID?.() || `csv-${Date.now()}-${i}`,
+          merchant: row.merchant, amount: row.amount, transaction_type: row.transaction_type, category: row.category,
+          account_id: accountId, transfer_to_account_id: destinationId, currency: row.currency,
+          occurred_at: row.occurred_at, note: row.note, source: 'CSV Import', external_reference: fingerprint,
+        });
+        fingerprints.add(fingerprint);
       }
-      if (created.length) setRawTxs(cur => [...created, ...cur]);
-      setCsvRows([]);
-      setCsvErrors(errors);
-      const summary = `Imported ${created.length} transaction(s). ${errors.length} row(s) skipped or need attention.`;
+      if (created.length) {
+        // Prevent another browser tab or interrupted persistence effect from
+        // being overwritten by an import based on an outdated local snapshot.
+        if (JSON.stringify(loadLocalTransactions()) !== JSON.stringify(persistedBefore)
+          || JSON.stringify(persistedBefore) !== JSON.stringify(rawTxs)) {
+          throw new Error('Local financial records changed during import. Reopen the file and review the latest records before saving.');
+        }
+        // Commit before the React render changes; a failed localStorage write
+        // never announces success or alters the visible financial ledger.
+        if (!saveLocalTransactions([...created, ...rawTxs], false)) {
+          throw new Error('This device could not save the imported records. Free storage and retry; your preview is still available.');
+        }
+        setRawTxs(cur => [...created, ...cur]);
+      }
+      setCsvRows([]); setCsvErrors(errors);
+      const summary = `Saved ${created.length} transaction(s) locally. ${errors.length} row(s) skipped or needing review. Cloud data was not changed.`;
       setCsvImportSummary(summary);
       notify(summary);
+    } catch (cause) {
+      setCsvImportSummary(cause?.message || 'Could not save locally. Review your file and retry.');
     } finally { setBusy(false); }
   };
 
@@ -1266,7 +1289,7 @@ function App() {
     return () => { live = false; };
   }, [userId]);
   useEffect(() => {
-    if (!userId || !canUseFeature(entitlement, 'cloudWrite') || !prefsSync.current.ready || !prefs.accountQrCodes) return;
+    if (!userId || !can('cloudWrite') || !prefsSync.current.ready || !prefs.accountQrCodes) return;
     const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
     Object.keys(prefs.accountQrPending || {}).forEach(id => pendingMap.set(id, { cacheKey: `${userId}:${id}` }));
     Object.entries(prefs.accountQrCodes).forEach(([id, value]) => {
@@ -1302,10 +1325,10 @@ function App() {
       migrated.forEach(([id]) => qrMigrationRef.current.delete(`${userId}:${id}`));
     });
     return () => { live = false; };
-  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, entitlement]);
+  }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, entitlement, cloudMode]);
   useEffect(() => {
     const sync = prefsSync.current;
-    if (!sync.ready || !sync.user || !canUseFeature(entitlement, 'cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
+    if (!sync.ready || !sync.user || !can('cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
     clearTimeout(sync.timer);
     sync.timer = setTimeout(() => {
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
@@ -1316,7 +1339,7 @@ function App() {
       savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
     return () => clearTimeout(sync.timer);
-  }, [prefs, stickerTick, entitlement]);
+  }, [prefs, stickerTick, entitlement, cloudMode]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
@@ -1536,7 +1559,7 @@ function App() {
   }, [authReady, todayKey, celebrate]);
   useEffect(() => {
     if (sheet?.name !== 'autolog') return undefined;
-    if (!canUseFeature(entitlement, 'automation') || !cloudMode || !session?.access_token || !prefs.autoLogKey) {
+    if (!can('automation') || !session?.access_token || !prefs.autoLogKey) {
       setAutomationStatus('needs-signin');
       return undefined;
     }
@@ -1565,10 +1588,12 @@ function App() {
     const handle = () => {
       const hash = window.location.hash;
       const entry = readLogLink(hash);
-      if (entry && !canUseFeature(entitlement, 'automation')) { setSheet({ name: 'planOffer', feature: 'automation' }); return; }
       if (!entry || handledLink.current === hash) return;
       handledLink.current = hash;
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      // Handle each link once: a link that needs Pro+ opens the plans sheet a single time (it used to re-open on
+      // every render while the link stayed in the address bar, which looped).
+      if (!can('automation')) { setSheet({ name: 'planOffer', feature: 'automation' }); return; }
       if (entry.invalid) { notify(tr('That payment link had no valid amount, so nothing was logged.')); return; }
       if (isRepeat(entry)) return;
       const dup = findDuplicate({ merchant: entry.merchant, amount: entry.amount, type: 'expense', ref: entry.ref, date: entry.at || new Date().toISOString() }, recordsRef.current);
@@ -1621,60 +1646,37 @@ function App() {
   };
 
   const saveFinanceBackupRecords = async (backup) => {
-    const existing = { accounts: cloudMode ? cloudAccounts : localAccounts, transactions: rawTxs };
+    // Fail closed if the user has cloud mode active. A file import is never a
+    // server-side operation and must not be mixed with cloud account records.
+    if (cloudMode) throw new Error('Switch Cloud Sync off before saving a file to this device. Cloud records remain unchanged.');
+    const existing = { accounts: localAccounts, transactions: rawTxs };
     const planned = prepareFinanceBackupRestore(backup, existing, {
       base, fingerprint: transactionFingerprint, newId: () => window.crypto?.randomUUID?.(),
     });
     if (!planned.accounts.length && !planned.transactions.length) {
       return { accounts: 0, transactions: 0, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
     }
-    let addedAccounts = 0; let addedTransactions = 0; let failed = 0;
-    if (cloudMode) {
-      if (!session?.user?.id || !can('cloudWrite')) throw new Error('Cloud writes require an active subscription. Switch to local mode to save here.');
-      const idMap = new Map();
-      for (const item of planned.accounts) {
-        try {
-          const saved = await createAccount({
-            name: item.name, account_type: item.account_type, institution_name: item.institution_name,
-            currency: item.currency, opening_balance: item.opening_balance,
-          }, session.user.id);
-          idMap.set(item.id, saved.id); addedAccounts += 1;
-        } catch { failed += 1; }
-      }
-      for (const item of planned.transactions) {
-        const from = idMap.get(item.account_id) || (planned.accounts.some(a => a.id === item.account_id) ? '' : item.account_id);
-        const dest = item.transfer_to_account_id
-          ? (idMap.get(item.transfer_to_account_id) || (planned.accounts.some(a => a.id === item.transfer_to_account_id) ? '' : item.transfer_to_account_id))
-          : '';
-        if (!from || from === 'local' || (item.transaction_type === 'transfer' && (!dest || dest === from))) { failed += 1; continue; }
-        try {
-          await createTransaction({
-            merchant: item.merchant, amount: item.amount, currency: item.currency,
-            transaction_type: item.transaction_type, category: item.category, account_id: from,
-            ...(dest ? { transfer_to_account_id: dest } : {}),
-            occurred_at: item.occurred_at, note: item.note, source: 'File Import',
-            external_reference: item.external_reference,
-          }, session.user.id);
-          addedTransactions += 1;
-        } catch { failed += 1; }
-      }
-      await refreshCloud(session.user);
-    } else {
-      const nextAccounts = [...localAccounts, ...planned.accounts];
-      const nextTransactions = [...planned.transactions, ...rawTxs];
-      const beforeAccounts = loadLocalAccounts();
-      const beforeTransactions = loadLocalTransactions();
-      const accountsOk = saveLocalAccounts(nextAccounts);
-      const transactionsOk = accountsOk && saveLocalTransactions(nextTransactions, false);
-      if (!accountsOk || !transactionsOk) {
-        // Best-effort rollback; do not update the live UI with partially saved data.
-        saveLocalAccounts(beforeAccounts); saveLocalTransactions(beforeTransactions, false);
-        throw new Error('This device could not save the imported records. Free storage and retry.');
-      }
-      setLocalAccounts(nextAccounts); setRawTxs(nextTransactions);
-      addedAccounts = planned.accounts.length; addedTransactions = planned.transactions.length;
+    const nextAccounts = [...localAccounts, ...planned.accounts];
+    const nextTransactions = [...planned.transactions, ...rawTxs];
+    const beforeAccounts = loadLocalAccounts();
+    const beforeTransactions = loadLocalTransactions();
+    if (JSON.stringify(beforeAccounts) !== JSON.stringify(localAccounts)
+      || JSON.stringify(beforeTransactions) !== JSON.stringify(rawTxs)) {
+      throw new Error('Local records changed in another tab or are still saving. Reopen the backup and review before importing.');
     }
-    return { accounts: addedAccounts, transactions: addedTransactions, failed, skipped: planned.skipped, unsupported: planned.unsupported };
+    const accountsOk = saveLocalAccounts(nextAccounts);
+    const transactionsOk = accountsOk && saveLocalTransactions(nextTransactions, false);
+    if (!accountsOk || !transactionsOk) {
+      // Best-effort rollback; never update the live UI with partially saved data.
+      const accountsReverted = saveLocalAccounts(beforeAccounts);
+      const transactionsReverted = saveLocalTransactions(beforeTransactions, false);
+      if (!accountsReverted || !transactionsReverted) {
+        throw new Error('Storage failed and recovery could not be verified. Do not import again until you export and inspect existing local records.');
+      }
+      throw new Error('This device could not save the imported records. Free storage and retry.');
+    }
+    setLocalAccounts(nextAccounts); setRawTxs(nextTransactions);
+    return { accounts: planned.accounts.length, transactions: planned.transactions.length, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
   };
 
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
@@ -1685,7 +1687,7 @@ function App() {
     setCloudSyncEnabled,
     saveFinanceBackupRecords,
     openCsvImporter: file => {
-      setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId('');
+      setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setCsvConfirmAction('');
       setSheet({ name: 'importCsv' });
       if (file) handleCsvFile(file);
     },
@@ -1765,7 +1767,7 @@ function App() {
     }
   })();
 
-  return <PlanProvider entitlement={entitlement} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+  return <PlanProvider entitlement={entitlement} cloudMode={cloudMode} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
@@ -1859,7 +1861,7 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {(sheet?.name === 'planOffer' || (authReady && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked)) && <PlanOffer session={session} entitlement={entitlement} feature={sheet?.feature} onRefresh={refreshEntitlement} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
+      {(sheet?.name === 'planOffer' || (authReady && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={cloudMode} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
       {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
       {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
       {showTour && !locked && prefs.planWelcomeSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
@@ -1875,7 +1877,7 @@ function App() {
       {sheet?.name === 'spendingLimits' && <SpendingLimitsSheet limits={spendingLimitList} accounts={accountsView} show={show} onSave={saveSpendingLimit} onDelete={deleteSpendingLimit} onClose={() => setSheet({ name: 'budgets', tab: 'budgets' })} />}
 
 
-      {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is parsed in this browser. Nothing is uploaded until you confirm the import.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>
+      {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is previewed here. Nothing changes until you confirm a local-only save.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>
         <div className="sheet-form">
           <div className="movo-import-file-row">
             <label htmlFor="movo-csv-file" className="movo-file-upload-button"><Icon name="upload" size={17} /> {tr('Upload file')}</label>
@@ -1888,7 +1890,22 @@ function App() {
           {csvRows.length > 0 && <section className="card pad" aria-label={tr('CSV import preview')}><strong>{tr('Preview · {n} valid row(s)', { n: csvRows.length })}</strong>{csvRows.slice(0, 5).map((row, i) => <div className="detail-row" key={`${row.occurred_at}-${row.merchant}-${i}`}><span className="menu-main"><strong>{row.merchant}</strong><small>{tr(row.transaction_type[0].toUpperCase() + row.transaction_type.slice(1))} · {tr(row.category)} · {row.account_name || tr('default account')}</small></span><b>{money(row.amount, row.currency)}</b></div>)}{csvRows.length > 5 && <p className="form-note">{tr('Showing the first 5 rows. All valid rows will be processed.')}</p>}</section>}
           {csvImportSummary && <p className="form-note" role="status">{csvImportSummary}</p>}
           {csvErrors.length > 0 && <div className="form-error" role="alert"><strong>{tr('Rows needing attention')}</strong><ul>{csvErrors.slice(0, 8).map((item, i) => <li key={`${item.line}-${i}`}>{tr('Row {line}: {message}', { line: item.line, message: tr(item.message, item.vars) })}</li>)}</ul>{csvErrors.length > 8 && <p>{tr('And {n} more row(s).', { n: csvErrors.length - 8 })}</p>}</div>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Close')}</button><button type="button" className="primary-button" onClick={confirmCsvImport} disabled={busy || !csvRows.length}>{busy ? tr('Saving records…') : tr('Save records')}</button></div>
+          {cloudMode && <p className="form-note" role="note">Cloud Sync is active. Turn it off in Settings before saving file records locally. Cloud data will never be changed by an import.</p>}
+          <div className="sheet-actions">
+            <button type="button" className="secondary-button" onClick={() => setCsvConfirmAction('discard')} disabled={busy || (!csvRows.length && !csvFileName)}>{tr('Discard records')}</button>
+            <button type="button" className="primary-button" onClick={() => setCsvConfirmAction('save')} disabled={busy || cloudMode || !csvRows.length}>{busy ? tr('Saving records…') : tr('Save records')}</button>
+          </div>
+          {csvConfirmAction && <section className="movo-backup-confirm" role="alertdialog" aria-label={csvConfirmAction === 'save' ? 'Confirm local CSV import' : 'Confirm CSV discard'} aria-modal="false">
+            <strong>{csvConfirmAction === 'save' ? 'Save these transactions to this device?' : 'Discard the uploaded CSV preview?'}</strong>
+            <p>{csvConfirmAction === 'save'
+              ? 'MOVO will add valid non-duplicate transactions to local storage. Home, Wallet and Transactions will recalculate. Cloud records stay unchanged.'
+              : 'No financial transactions or accounts will be deleted. Only this uploaded preview will be cleared.'}</p>
+            <div className="sheet-actions">
+              <button type="button" className="secondary-button" disabled={busy} onClick={() => setCsvConfirmAction('')}>Keep preview</button>
+              <button type="button" className={csvConfirmAction === 'save' ? 'primary-button' : 'secondary-button'} disabled={busy} onClick={csvConfirmAction === 'save' ? confirmCsvImport : discardCsvPreview}>{csvConfirmAction === 'save' ? 'Confirm save locally' : 'Confirm discard'}</button>
+            </div>
+          </section>}
+
         </div>
       </Sheet>}
       {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} subtitle={tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>

@@ -15,6 +15,8 @@ See [dated audit](engineering/updates/2026-11-09-access-finance-ui-audit.md).
 
 ## Open pull requests
 
+**2026-11-09 — PR #245 render-loop fix:** the payment-link effect re-opened the plans sheet on every render in local mode (App tests hung). Links are now marked handled and cleared before the Pro+ check. App tests 49/49. See `docs/engineering/updates/2026-11-09-pr245-payment-link-loop-fix.md`.
+
 **2026-11-08 — PR #227 free security hardening:** New disposable-local PostgreSQL 18 runner applied all 28 MOVO migrations, verified all 12 privileged finance RPCs with two synthetic users and successful owner-only controls; no paid Supabase branch or production mutations. Added PR CI job, strict localhost-only runner and native OAuth/deep-link URL validation. See `docs/engineering/updates/2026-11-08-pr227-free-local-security.md`; remain DRAFT pending exact-head CI and signed-device checks.
 
 
@@ -469,6 +471,29 @@ These are not resolved by a green frontend CI run or a READY deployment:
 
 - 2026-11-08 — PR #240 CSV hardening: duplicate matching wallet account labels now require user correction; no accidental first-result posting. Added 11-language error message, focused tests, audit notes.
 
+
+### 2026-11-08 — Offline storage mode pauses plan-access features
+- Proposed policy: Cloud Sync off -> local features only; Pro/Pro+ effective access paused while existing verified subscription/billing remain unaffected.
+- Cloud Sync on -> verified, active, unexpired entitlements only; UI premium content and cloud sync writes are mode-gated.
+- UI explains offline mode and provides Cloud Sync settings action without encouraging duplicate plan purchases.
+- No cloud finance snapshot migration, backend plan change or production database mutation; blocked high-risk migration remains PR #241.
+- Evidence: docs/engineering/updates/2026-11-08-local-mode-plan-access-policy.md; Vercel Sandbox + GitHub exact-head CI required.
+
+### 2026-11-08 — Local CSV/JSON import: Discard or Save with confirmations
+- Uploaded files are preview-only until an explicit, separate confirmation. Discard removes preview only; Save commits validated local accounts and transactions.
+- No imported file is written to Supabase; active cloud mode blocks committing and prompts local-mode switch.
+- Wallet, Home and Transactions refresh from successfully saved device records. Invalid, duplicate, unsupported or stale records do not silently overwrite financial data.
+- Cloud plan access is paused in local mode without affecting store subscription. PR #241 full offline migration remains blocked.
+- Reference: docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md.
+
+### 2026-11-08 — Translation-catalog coverage fix for PR #245
+- Added 67 missing English interface keys to the 11-language catalog, including local/cloud mode, save/discard confirmations and sync safeguards. Translations are machine-assisted and should be professionally reviewed before localization sign-off.
+- Verified `src/lib/i18n.test.js` in isolated Vercel Sandbox: 2/2 tests passing, 2,540 catalog strings and complete placeholder coverage; existing English source keys unchanged.
+- No finance code or subscription records changed in this CI-only patch. Full GitHub Phase 1 CI and signed-device audit are still release gates.
+
+
+### 2026-11-09 — PR #245 localization CI repair
+Regenerated all 11 locale catalogs + version from branch source (2,540 strings). Focused i18n (2) and import/plan/walkthrough (15) tests pass in Vercel Sandbox. Exact new-head CI and device verification still required; PR #246 remains separate draft synchronization work. See `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
 
 **2026-11-09 — PR #248 Apple SDK & native simulator validation:** Consolidated Siri App Intents expense-review flow, native Keychain bridge, authenticated cloud-load guard, verified StoreKit/Google Play environment names, and simulator-install/deep-link test workflow. Native Xcode Simulator compile succeeded on run #119; additional simulator smoke test pending exact-head result. The simulator stage was time-bounded to fail diagnostically instead of hang. The PR remains draft until true native smoke, full CI, and real-device verification are green. Details: `docs/engineering/updates/2026-11-09-apple-sdk-native-build-ci.md` and `docs/APPLE_SDK_INTEGRATION.md`.
 
