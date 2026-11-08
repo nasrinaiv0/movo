@@ -40,7 +40,7 @@ export default function Menu({ c }) {
         <small className="streak-best">{tr('Best: {n}', { n: streak.best || 0 })}</small>
       </div>
       <ul className="streak-badges">
-        {BADGES.map(b => { const earned = (streak.best || 0) >= b.days; const tier = TIER_LABEL[b.tier]; return <li key={b.id} title={tier ? `${tr(b.name)} · ${tier}` : tr(b.name)} className={`tier-${b.tier}`}>
+        {BADGES.map(b => { const earned = (streak.best || 0) >= b.days; const tier = TIER_LABEL[b.tier] ? tr(TIER_LABEL[b.tier]) : ''; return <li key={b.id} title={tier ? `${tr(b.name)} · ${tier}` : tr(b.name)} className={`tier-${b.tier}`}>
           <span className={`streak-badge tier-${b.tier}${earned ? ' earned' : ''}`} style={{ '--badge': b.color }} aria-hidden="true"><MovoMark size={24} tone={earned ? 'white' : 'mono'} /></span>
           {tier && <i className="badge-tier" aria-hidden="true">{tier}</i>}
           <small>{tr('{n}d', { n: b.days })}</small>

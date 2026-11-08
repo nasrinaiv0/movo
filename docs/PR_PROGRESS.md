@@ -47,6 +47,8 @@ match production, and the SQL test suites passed there. A production read-back c
 
 **Bank-app notification logging (`feat/notification-logging`, 2026-11-03):** Automatic logging now opens on **Bank notifications** (iOS 27 Notification trigger, one automation per app) and no longer offers the text-message recipe. `/api/log` replies carry `notice` (left out for duplicates and ignored promos/OTPs) so background shortcuts need one "has any value" check. The parser reads push wording ("You've paid", "card … was used for", "PHPx" without a space) and ignores offers and statements. Prompts were rewritten per mode; they can't be tested on an iPhone from CI.
 
+**Plans: Free, Pro, Pro+ (`feat/paid-plans`, 2026-11-03):** migration `20261104010000_plans_entitlements` (server-written plan grants, one-month trial once per account and device, referral codes with a one-time 3-month Pro reward at 10 subscribed referrals, cloud-write guard for Free, paid-only premium-stickers Storage policy, existing cloud users start the trial). Server checks in `api/log.js` (automation is Pro+) and `api/nasrinai/chat.js` (model is Pro). App: first-launch plans sheet, Settings → MOVO plans, locked portrait cards, card animations (Free gets a crossfade), insights and briefings, Money flow Custom, uploads, premium styles, camera scanning; NasrinAI on Free answers from saved records; Pro+ glow finish; streak tiers renamed Bronze/Silver/Gold; Terms and Privacy updated (effective 2026-11-04). **Not applied to production; billing (App Store / Google Play) is the next PR.**
+
 ## Recent merged implementation
 
 | PR | Result | Validation / notes |

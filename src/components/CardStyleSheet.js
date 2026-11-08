@@ -13,10 +13,18 @@ const PAGE = 18;
 /* Display names follow the app language: collection names and palette/motif words are translated. */
 const nameOf = (t) => (t.storage || t.custom || t.video ? t.name : t.wallpaper ? `${tr(t.genre)} ${t.name.split(' ').pop()}` : `${tr(t.palette.n)} ${tr(t.motif.n)}`);
 
-export default function CardStyleSheet({ account, show, holder, current, onPick, onClose }) {
+/*
+ * Plans (lib/plans.js): the premium-stickers collection is Pro and Pro+ (Storage only serves it to paid plans), and
+ * uploading your own sticker is Pro. On Free both show locked and open the plans sheet (`onLocked`); every built-in
+ * style stays available.
+ */
+export default function CardStyleSheet({ account, show, holder, current, onPick, onClose, canPremium = true, canUpload = true, onLocked }) {
   const custom = useCustomStickers();
   const [remote, setRemote] = useState([]);
-  useEffect(() => { let active = true; listPremiumStickers().then(items => { if (active) setRemote(items); }).catch(() => { if (active) setRemote([]); }); return () => { active = false; }; }, []);
+  useEffect(() => {
+    if (!canPremium) { setRemote([]); return undefined; }
+    let active = true; listPremiumStickers().then(items => { if (active) setRemote(items); }).catch(() => { if (active) setRemote([]); }); return () => { active = false; };
+  }, [canPremium]);
   const [genre, setGenre] = useState('All');
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);
@@ -46,9 +54,12 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
       {Object.entries(FINISHES).map(([key, f]) => { const id = `${FINISH_PREFIX}${key}`; return <button type="button" role="listitem" key={id} className={`style-tile${current === id ? ' selected' : ''}`} onClick={() => onPick(id)} aria-label={tr('{name} finish', { name: tr(f.name) })} aria-pressed={current === id}>
         <CardArt a={account} show={show} styleId={id} compact /><span>{tr(f.name)}</span>{current === id && <i className="style-check"><Icon name="check" size={14} strokeWidth={2.6} /></i>}
       </button>; })}
-      <button type="button" role="listitem" className="style-tile upload" onClick={() => file.current?.click()} aria-label={tr('Upload your own sticker')}>
-        <span className="upload-box"><Icon name="plus" size={26} /></span><span>{tr('Upload yours')}</span>
+      <button type="button" role="listitem" className={`style-tile upload${canUpload ? '' : ' is-locked'}`} onClick={() => (canUpload ? file.current?.click() : onLocked?.('uploads'))} aria-label={tr('Upload your own sticker')}>
+        <span className="upload-box"><Icon name={canUpload ? 'plus' : 'lock'} size={26} /></span><span>{tr('Upload yours')}{!canUpload && ` · Pro`}</span>
       </button>
+      {!canPremium && <button type="button" role="listitem" className="style-tile upload is-locked" onClick={() => onLocked?.('premiumStyles')} aria-label={tr('Premium card styles')}>
+        <span className="upload-box"><Icon name="diamond" size={26} /></span><span>{tr('Premium card styles')} · Pro</span>
+      </button>}
       {list.slice(0, limit).map(t => <div className="style-cell" role="listitem" key={t.id}>
         <button type="button" className={`style-tile${current === t.id ? ' selected' : ''}`} onClick={() => onPick(t.id)} aria-label={tr('{name} sticker', { name: nameOf(t) })} aria-pressed={current === t.id}>
           <CardArt a={account} show={show} styleId={t.id} compact /><span>{nameOf(t)}</span>{current === t.id && <i className="style-check"><Icon name="check" size={14} strokeWidth={2.6} /></i>}

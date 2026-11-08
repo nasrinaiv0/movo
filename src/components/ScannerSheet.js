@@ -24,7 +24,8 @@ async function thumb(blob) {
  * Receipt and payment-screenshot scanner. Photos are read on this device (no upload); the result is reviewed,
  * then opens the add-transaction sheet pre-filled. Every scan is kept in a tappable log.
  */
-export default function ScannerSheet({ show, onLog, onClose }) {
+/* Plans: scanning with the camera is Pro (`canScan`); uploading a photo, screenshot or PDF stays free. */
+export default function ScannerSheet({ show, onLog, onClose, canScan = true, onLocked }) {
   const [scans, setScans] = useState(loadScans);
   const [mode, setMode] = useState('home');
   const [status, setStatus] = useState('');
@@ -87,7 +88,7 @@ export default function ScannerSheet({ show, onLog, onClose }) {
     <input ref={photoRef} type="file" accept="image/*" hidden onChange={choose} aria-label={tr('Upload a photo or screenshot')} />
     <input ref={docRef} type="file" accept="image/*,application/pdf,.pdf" hidden onChange={choose} aria-label={tr('Upload a receipt or invoice')} />
     {mode === 'home' && <div className="scan-start">
-      <button type="button" className="scan-hero" onClick={startCamera}><span className="scan-frame"><Icon name="camera" size={30} /></span><strong>{tr('Take a photo')}</strong><small>{tr('Best in good light, receipt filling the frame')}</small></button>
+      <button type="button" className={`scan-hero${canScan ? '' : ' is-locked'}`} onClick={canScan ? startCamera : onLocked}><span className="scan-frame"><Icon name={canScan ? 'camera' : 'lock'} size={30} /></span><strong>{tr('Take a photo')}{!canScan && ` · Pro`}</strong><small>{tr('Best in good light, receipt filling the frame')}</small></button>
       <div className="scan-uploads">
         <button type="button" className="sheet-card" onClick={() => photoRef.current?.click()}><span className="scan-up-icon"><Icon name="upload" size={18} /></span><span className="account-main"><strong>{tr('Upload photo')}</strong><small>{tr('Photo or payment screenshot')}</small></span></button>
         <button type="button" className="sheet-card" onClick={() => docRef.current?.click()}><span className="scan-up-icon"><Icon name="doc" size={18} /></span><span className="account-main"><strong>{tr('Upload receipt or invoice')}</strong><small>{tr('Image or PDF, up to 15 MB')}</small></span></button>

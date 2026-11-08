@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { planAwareError } from './plans';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
@@ -9,7 +10,7 @@ const requireClient = () => {
 };
 /** PostgREST / Postgres "relation does not exist" errors. */
 export const isMissingTable = (e) => ['PGRST205', 'PGRST204', '42P01'].includes(e?.code) || e?.status === 404;
-const unwrap = ({ data, error }) => { if (error) throw error; return data; };
+const unwrap = ({ data, error }) => { if (error) throw planAwareError(error); return data; };
 
 export async function getCurrentSession() {
   return unwrap(await requireClient().auth.getSession())?.session ?? null;

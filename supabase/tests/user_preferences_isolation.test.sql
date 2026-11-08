@@ -23,6 +23,8 @@ begin
 
   -- Two users: each sees only their own row.
   insert into auth.users (id, email) values (a, a || '@example.test'), (b, b || '@example.test');
+  -- Cloud records need Pro or Pro+ (20261104010000_plans_entitlements).
+  insert into public.movo_plan_grants (user_id, plan, source, ends_at) values (a, 'pro', 'trial', now() + interval '1 day'), (b, 'pro', 'trial', now() + interval '1 day');
   insert into public.user_preferences (user_id, prefs) values (a, '{"theme":"dark"}'), (b, '{"theme":"light"}');
   perform set_config('request.jwt.claims', json_build_object('sub', a, 'role', 'authenticated')::text, true);
   set local role authenticated;

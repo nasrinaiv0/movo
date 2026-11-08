@@ -57,7 +57,8 @@ function DateField({ label, value, min, max, onChange }) {
 }
 
 /** Money in and out over time, drawn as paired bars, two lines, or one net bar per period (`variant`). */
-export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
+/* `canCustom` false (Free plan): the Custom range is shown locked and opens the plans sheet (`onLocked`). */
+export default function MoneyFlow({ txs, refDate, show, variant = 'bars', canCustom = true, onLocked }) {
   const [range, setRange] = useState('day');
   const [custom, setCustom] = useState({ from: '', to: '' });
   const [pick, setPick] = useState(-1);
@@ -74,7 +75,7 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars' }) {
       <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
       <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
     </div>
-    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}</button>)}</div>
+    <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} className={k === 'custom' && !canCustom ? 'is-locked' : undefined} onClick={() => { if (k === 'custom' && !canCustom) { onLocked?.(); return; } setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}{k === 'custom' && !canCustom && <Icon name="lock" size={11} strokeWidth={2.4} />}</button>)}</div>
     {range === 'custom' && <div className="flow-custom">
       <DateField label={tr('From')} value={custom.from} max={custom.to || undefined} onChange={v => { setCustom({ ...custom, from: v }); setPick(-1); }} />
       <DateField label={tr('To')} value={custom.to} min={custom.from || undefined} onChange={v => { setCustom({ ...custom, to: v }); setPick(-1); }} />

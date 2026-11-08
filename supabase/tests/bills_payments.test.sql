@@ -22,6 +22,8 @@ begin
   end if;
 
   insert into auth.users (id, email) values (a, a || '@example.test'), (b, b || '@example.test');
+  -- Cloud records need Pro or Pro+ (20261104010000_plans_entitlements).
+  insert into public.movo_plan_grants (user_id, plan, source, ends_at) values (a, 'pro', 'trial', now() + interval '1 day'), (b, 'pro', 'trial', now() + interval '1 day');
   insert into public.financial_accounts (user_id, name, account_type, currency, opening_balance) values (a, 'Bank', 'bank', 'PHP', 10000) returning id into acct;
   insert into public.financial_accounts (user_id, name, account_type, currency, opening_balance) values (a, 'USD', 'bank', 'USD', 100) returning id into usd_acct;
   insert into public.financial_accounts (user_id, name, account_type, currency, opening_balance) values (b, 'B bank', 'bank', 'PHP', 500) returning id into card;

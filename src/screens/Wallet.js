@@ -61,8 +61,13 @@ export default function Wallet({ c }) {
   const [editing, setEditing] = useState(false);
   const [addAmount, setAddAmount] = useState(null);
   const [addPick, setAddPick] = useState(false);
-  const wv = { ...WALLET_VIEW, ...(prefs.walletView || {}) };
-  const setWv = (patch) => setPref('walletView', { ...wv, ...patch });
+  const saved = { ...WALLET_VIEW, ...(prefs.walletView || {}) };
+  // Free plan: landscape cards only, without card effects (lib/plans.js). The saved choice comes back with Pro.
+  const allows = c.allows || (() => true);
+  const portraitOk = allows('portraitCards');
+  const animated = allows('cardAnimations');
+  const wv = { ...saved, cardFormat: portraitOk ? saved.cardFormat : 'landscape' };
+  const setWv = (patch) => setPref('walletView', { ...saved, ...patch });
   const live = accountsView.filter(a => !a.is_archived);
   const sorted = [...live].sort(sorters[wv.sort] || sorters['balance-desc']);
   const list = walletFilter === 'All' ? sorted : sorted.filter(a => (typeOf[walletFilter] || []).includes(a.account_type));
@@ -133,7 +138,7 @@ export default function Wallet({ c }) {
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
 
     {walletFilter === 'Cards' && (cards.length ? <>
-      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
+      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} animated={animated} />
       <section className="card action-strip">
         {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['sliders', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
           <button type="button" key={label} onClick={fn}><Icon name={icon} size={20} />{tr(label)}</button>)}
@@ -160,9 +165,10 @@ export default function Wallet({ c }) {
       <p className="mini-title wallet-view-title">{tr('Layout')}</p>
       <div className="seg-control wallet-view-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={17} /><span>{tr(label)}</span></button>)}</div>
       <p className="mini-title wallet-format-title">{tr('Card format')}</p>
-      <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
-        <ScaledCard orientation={key}>{selectedCard ? cardVisual(selectedCard, key) : <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" />}</ScaledCard><span>{tr(label)}</span></button>)}</div>
-      {[['fxLandscape', 'Landscape animation', LANDSCAPE_FX], ['fxPortrait', 'Portrait animation', PORTRAIT_FX]].map(([key, title, list]) => <React.Fragment key={key}>
+      <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={`${wv.cardFormat === key ? 'selected' : ''}${key === 'portrait' && !portraitOk ? ' is-locked' : ''}`} aria-pressed={wv.cardFormat === key} onClick={() => (key === 'portrait' && !portraitOk ? c.openPlans?.('portraitCards') : setWv({ cardFormat: key }))}>
+        <ScaledCard orientation={key}>{selectedCard ? cardVisual(selectedCard, key) : <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" />}</ScaledCard><span>{tr(label)}{key === 'portrait' && !portraitOk && <Icon name="lock" size={12} strokeWidth={2.4} />}</span></button>)}</div>
+      {!animated && <button type="button" className="manage-button wallet-fx-locked" onClick={() => c.openPlans?.('cardAnimations')}><Icon name="lock" size={16} /> {tr('Card animations')} · Pro</button>}
+      {animated && [['fxLandscape', 'Landscape animation', LANDSCAPE_FX], ['fxPortrait', 'Portrait animation', PORTRAIT_FX]].map(([key, title, list]) => <React.Fragment key={key}>
         <p className="mini-title wallet-fx-title">{tr(title)}</p>
         <div className="wallet-fx-row" role="group" aria-label={tr(title)}>{list.map(([fx, label]) => <button type="button" key={fx} className={`wallet-fx-option fx-${fx}${wv[key] === fx ? ' selected' : ''}`} aria-pressed={wv[key] === fx} onClick={() => setWv({ [key]: fx })}><span className="fx-glyph" aria-hidden="true"><i /><i /><i /></span><span>{tr(label)}</span></button>)}</div>
       </React.Fragment>)}
@@ -170,7 +176,7 @@ export default function Wallet({ c }) {
       <button type="button" className="manage-button wallet-edit-layout" onClick={() => { setEditing(true); setSheet(null); }}><Icon name="edit" size={18} /> {tr('Customize wallet')}</button>
     </Sheet>}
 
-    {sheet?.name === 'cardStyle' && selectedCard && <CardStyleSheet account={selectedCard} show={show} holder={holder} current={styleOf(selectedCard)} onPick={pickStyle} onClose={() => setSheet(null)} />}
+    {sheet?.name === 'cardStyle' && selectedCard && <CardStyleSheet account={selectedCard} show={show} holder={holder} current={styleOf(selectedCard)} onPick={pickStyle} onClose={() => setSheet(null)} canPremium={allows('premiumStyles')} canUpload={allows('uploads')} onLocked={(feature) => c.openPlans?.(feature)} />}
 
     {sheet?.name === 'cards' && <Sheet title={tr('Your Cards')} onClose={() => setSheet(null)}>
       <div className="sheet-list">{cards.map(a => <button type="button" key={a.id} className={`sheet-card${a.id === selectedCard?.id ? ' selected' : ''}`} onClick={() => { setSelectedCardId(a.id); setSheet(null); }}>

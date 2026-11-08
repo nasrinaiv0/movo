@@ -234,7 +234,7 @@ export default function Subscriptions({ c }) {
         <span><b>{summary.dueSoon.length}</b><small>{tr('due in 7 days')}</small></span>
       </div>
     </section>
-    <div className="seg-control three" role="group" aria-label={tr('Subscription view')}>{TABS.map(([k, l]) => <button type="button" key={k} className={tab === k ? 'selected' : ''} aria-pressed={tab === k} onClick={() => setTab(k)}>{tr(l)}</button>)}</div>
+    <div className="seg-control three" role="group" aria-label={tr('Subscription view')}>{TABS.map(([k, l]) => { const locked = k === 'insights' && c.allows && !c.allows('insights'); return <button type="button" key={k} className={`${tab === k ? 'selected' : ''}${locked ? ' is-locked' : ''}`} aria-pressed={tab === k} onClick={() => (locked ? c.openPlans?.('insights') : setTab(k))}>{tr(l)}{locked && <Icon name="lock" size={11} strokeWidth={2.4} />}</button>; })}</div>
     {!subs.length ? <button type="button" className="budget-empty sub-empty" onClick={() => setCatalog(true)}><Icon name="plus" size={20} /><span><strong>{tr('Track your first subscription')}</strong><small>{tr('Netflix, Spotify, Claude, ChatGPT and more. See every renewal before it charges.')}</small></span></button>
       : tab === 'upcoming' ? <>
         <UpcomingList upcoming={summary.upcoming} show={show} today={today} onOpen={open} />

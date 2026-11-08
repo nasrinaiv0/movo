@@ -251,6 +251,18 @@ module.exports = async function handler(req, res) {
     if (authError || !authData?.user?.id) return json(res, 401, { error: 'invalid_session' });
     const userId = authData.user.id;
 
+    // Full NasrinAI (the model, voice transcription) is part of Pro and Pro+. Free users get answers from their own
+    // stored records, computed in the app; reading saved conversations (GET) stays open. Before the plans migration
+    // (20261104010000) the plan function does not exist yet and chat works as before.
+    if (req.method === 'POST') {
+      const { data: plan, error: planError } = await db.rpc('movo_current_plan');
+      const missing = planError && (planError.code === 'PGRST202' || /could not find the function/i.test(String(planError.message || '')));
+      if (planError && !missing) return json(res, 503, { error: 'plan_check_failed', message: 'NasrinAI could not check your plan. Please try again.' });
+      if (!missing && plan !== 'pro' && plan !== 'pro_plus') {
+        return json(res, 403, { error: 'plan_required', plan: 'free', message: 'Full NasrinAI is part of MOVO Pro and Pro+. On Free, NasrinAI answers from your saved records.' });
+      }
+    }
+
     // Model-backed STT for MOVO hands-free chat. Audio is transient and is
     // forwarded only to the configured NasrinAI service; never persisted/logged.
     if (req.method === 'POST' && req.body?.action === 'transcribe') {

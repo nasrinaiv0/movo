@@ -1,10 +1,11 @@
 import { supabase } from './supabaseClient';
+import { planAwareError } from './plans';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured.');
   return supabase;
 };
-const unwrap = ({ data, error }) => { if (error) throw error; return data; };
+const unwrap = ({ data, error }) => { if (error) throw planAwareError(error); return data; };
 const validName = value => {
   const name = typeof value === 'string' ? value.trim() : '';
   if (!name || name.length > 120) throw new Error('Name must be between 1 and 120 characters.');

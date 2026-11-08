@@ -4,8 +4,8 @@ import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
 import { MovoMark } from '../components/MovoLogo';
 
-const TERMS_EFFECTIVE_DATE = '2026-11-03T12:00:00Z';
-const PRIVACY_EFFECTIVE_DATE = '2026-11-03T12:00:00Z';
+const TERMS_EFFECTIVE_DATE = '2026-11-04T00:00:00Z';
+const PRIVACY_EFFECTIVE_DATE = '2026-11-04T00:00:00Z';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label={tr('Legal documents')}>
@@ -62,10 +62,14 @@ export function TermsOfService({ c }) {
       <p>{tr('Local mode stores manually entered financial records and accounts in this browser\'s local storage. They persist across page reloads in the same browser profile, but they are not synced to another device and can be removed by clearing browser data or using Clear All Data. Browser storage is not encrypted by MOVO itself. Keep a separate copy of important records.')}</p>
       <p>{tr('Custom card-sticker artwork is cropped in your browser and saved in browser storage on this device. MOVO does not send that artwork to its cloud database or sync it to another device. Clear All Data removes custom sticker artwork as well as local financial records.')}</p>
       <p>{tr('When cloud features are available and you sign in, records are stored in MOVO\'s configured cloud database and access is restricted by account-scoped authorization controls. Keep your own records where needed. CSV exports are generated from the records currently available to your session and may contain sensitive financial information; store and share them carefully.')}</p>
+      <p>{tr('MOVO offers Free, Pro and Pro+ plans. On Free, records stay on your device and you can export and import them; cloud storage is part of Pro and Pro+. If a paid plan ends, records already in your MOVO account stay available to view, export and delete, but cannot be added to or changed until you choose a paid plan again. MOVO does not delete them because a plan ended.')}</p>
+      <p>{tr('New members can claim one free month of Pro, once per account and once per device. The free month needs no payment and does not renew by itself. When 10 people who used your referral code subscribe to Pro or Pro+, your account receives three extra months of Pro, once. A referral code can only be used before a person\'s first subscription and may not be used for your own accounts.')}</p>
+      <p>{tr('Paid subscriptions, when offered, are bought through in-app purchase on Apple\'s App Store or Google Play and are billed, renewed, cancelled and refunded under that store\'s terms.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('4. NasrinAI features')}</h2>
       <p>{tr('If you choose to use the NasrinAI financial copilot and affirm its consent checkbox, MOVO may send your question and a limited, user-scoped snapshot of relevant financial records to NasrinAI to generate a response. You can decline consent and continue using other MOVO features. Chat responses may be inaccurate, incomplete, or outdated and are for informational assistance only.')}</p>
+      <p>{tr('On Free, NasrinAI answers from the records already stored and does not send your question to the NasrinAI model; the full assistant, chat history and voice are part of Pro and Pro+.')}</p>
       <p>{rich('NasrinAI does not execute financial transactions for you through MOVO chat. You remain responsible for checking calculations and making financial decisions. See the {privacy} for details about data handling.', { privacy: <button type="button" className="inline-legal-link" onClick={() => c.openLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button> })}</p>
     </section>
     <section className="legal-section">
@@ -114,6 +118,7 @@ export function PrivacyPolicy({ c }) {
         <li><strong>{tr('Financial records:')}</strong> {tr('account labels and types, institution names, opening balances, transaction descriptions, amounts, dates, categories, notes, and other details you manually enter or import.')}</li>
         <li><strong>{tr('Preferences and artwork:')}</strong> {tr('theme, accent color, display choices, notification read-state or settings, card-style selections, and custom card-sticker artwork saved in browser storage.')} {tr('When you are signed in, preferences (but not sticker artwork or scenery photos) are also saved to your account so they follow you across devices.')}</li>
         <li><strong>{tr('Phone automations:')}</strong> {tr('payment and bank-notification details that shortcuts you set up send to MOVO (amount, merchant, card or account), and records of automations that could not be logged until you log or archive them.')}</li>
+        <li><strong>{tr('Plans:')}</strong> {tr('your plan and when it ends, whether you claimed the free month, your referral code, who referred you (if anyone), and how many people you referred have subscribed. To allow one free month per device, MOVO also keeps a one-way hash of a random identifier created by this installation; it is kept after account deletion so the free month cannot be claimed again on the same device, and it does not contain your name, email or device details.')}</li>
         <li><strong>{tr('Voice chat:')}</strong> {tr('when you talk with NasrinAI, short audio clips are sent for transcription and spoken replies are generated; MOVO does not store the audio.')}</li>
         <li><strong>{tr('NasrinAI chat:')}</strong> {tr('your message, conversation identifier, assistant reply, and—only after you affirm the relevant consent—the limited financial context needed for the request.')}</li>
         <li><strong>{tr('Technical information:')}</strong> {tr('basic request and error metadata needed to operate and protect the service. MOVO\'s chat error logging is designed to avoid recording prompts, financial records, or secret values.')}</li>

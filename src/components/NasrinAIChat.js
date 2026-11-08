@@ -66,7 +66,11 @@ const blobBuffer = (blob) => (typeof blob.arrayBuffer === 'function' ? blob.arra
   reader.readAsArrayBuffer(blob);
 }));
 
-export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, shortcuts = [], show = true }) {
+export default function NasrinAIChat({ session, cloudMode: cloudSignedIn, fullAccess = true, onPlans, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, shortcuts = [], show = true }) {
+  // Free plan: NasrinAI answers only from the records already stored (on the device, or read-only in the cloud); the
+  // model, history and voice chat are Pro and Pro+. The server enforces the same rule (api/nasrinai/chat).
+  const cloudMode = cloudSignedIn && fullAccess;
+  const freePlan = !!session?.user && !fullAccess;
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const requestEpochRef = useRef(0);
@@ -200,7 +204,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     }
     if (!session?.user || !cloudMode || !supabase) {
       setDraft('');
-      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', local: true, content: tr('I can log records here on this device. Try “Spent 250 on Grab”, “Salary 50000”, or several lines at once. Sign in to ask me questions about your money.') }]);
+      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', local: true, content: freePlan
+        ? tr('On Free, I answer from your saved records: try “How much did I spend this month?” or “What is my balance?”. Full NasrinAI is part of Pro and Pro+.')
+        : tr('I can log records here on this device. Try “Spent 250 on Grab”, “Salary 50000”, or several lines at once. Sign in to ask me questions about your money.') }]);
       return;
     }
     if (!privacyAccepted) {
@@ -513,7 +519,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     }
     if (!session?.user || !cloudMode || !privacyAccepted) {
       if (!privacyAccepted) setConsentOpen(true);
-      else setError(tr('Sign in to MOVO to use voice chat.'));
+      else setError(freePlan ? tr('Voice chat is part of Pro and Pro+.') : tr('Sign in to MOVO to use voice chat.'));
       return;
     }
     // iOS/Safari only allow sound that starts inside a tap: create and resume the audio context here, and prime the
@@ -608,7 +614,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       <div ref={endRef} />
     </div>
     {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label={tr('Dismiss message')} onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}
-    {!session?.user || !cloudMode
+    {freePlan
+      ? <div className="movo-ai-signin compact"><p>{tr('On Free, NasrinAI answers from your saved records.')}</p>{onPlans && <button type="button" className="link-button" onClick={onPlans}>{tr('See plans')}</button>}</div>
+      : !session?.user || !cloudMode
       ? <div className="movo-ai-signin compact"><p>{tr('Logging works on this device. Sign in to ask NasrinAI about your money.')}</p><button type="button" className="link-button" onClick={onSignIn}>{tr('Sign in to MOVO')}</button></div>
       : !privacyAccepted && <button type="button" className="movo-ai-review" onClick={() => setConsentOpen(true)}><Icon name="lock" size={16} strokeWidth={2} />{tr('Review and accept to start chatting')}</button>}
           <form className="movo-ai-composer" ref={composerRef} onSubmit={send}>

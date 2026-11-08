@@ -26,6 +26,11 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - `ios/`, `capacitor.config.json` — the iOS app (Capacitor, SPM). Use `apiUrl()` / `appOrigin()` from `src/lib/platform.js` for API calls and public links, never relative `/api` or `window.location.origin`. See `docs/IOS_APP.md`.
 - `src/App.css` — all app styling. Later blocks intentionally override earlier ones (glass, motion, icons, stickers, consistency, borders); append new blocks at the end with a comment header rather than editing scattered rules.
 
+## Plans (owner spec 2026-11-03)
+- Free, Pro and Pro+. The plan comes only from `public.movo_plan_grants` (written by the server: the one-month trial `claim_pro_trial`, the referral reward, store purchases); migration `20261104010000_plans_entitlements`, test `supabase/tests/plans.test.sql`.
+- Gate the interface with `c.allows(feature)` and `FEATURES` in `lib/plans.js`; open `c.openPlans(feature)` instead of hiding a locked control. Enforce anything that protects data or costs money on the server too: cloud writes (trigger `movo_require_cloud_plan`), the `premium-stickers` Storage policy, phone automation (Pro+, `api/log.js`) and full NasrinAI (Pro, `api/nasrinai/chat.js`). The cached plan is for display only.
+- Free keeps records on the device with export/import; a Free account with cloud records can view, export and delete them, never loses them. Subscriptions are sold only through Apple / Google in-app purchase (not built yet). Keep the Terms and Privacy plan paragraphs in step with behaviour.
+
 ## Preferences and data
 - UI preferences live in `localStorage` key `movo.preferences.v3` (`DEFAULTS` in `App.js`; v2 is migrated). Add new keys to `DEFAULTS`.
 - Custom sticker uploads: `movo.customStickers.v1` (device only).
@@ -51,7 +56,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Card stickers are original, procedurally generated vector art (`stickers.js`). Do not add third-party characters, franchise art or logos; users may upload their own images.
 - Card faces (owner spec 2026-11-02, last blocks of `App.css`): landscape padding 15/15/15/20px, bank name 20px beside a 40×40px favicon with no tile, chip at the ISO 7816 contact position; portrait follows the vertical BPI reference (padding 20/15/20/15px, logo + name on top, upright chip centred with contactless at the right, card type in the middle, number + amount bottom-left, network bottom-right). Avoid `calc()` mixing `var()` and `cqw` (the CSS minifier rejects it).
 - Home ram mascot (`RamMascot` + `lib/ramScene.js`, assets in `public/mascot/`, mood rules in `lib/mascotMood.js`): the user's own 3D model; moods smile/cute/sad/angry follow budgets (income when there are none). Arms, legs, head, ears and cape bend from per-vertex weights packed in `ram.bin`; the left arm is a rigid piece. Keep three.js lazily imported.
-- The MOVO mark (`MovoMark`) is the fallback for any bank/e-wallet/merchant logo (`BrandLogo` default) and the emblem on streak badges; show it without a frame or tile. Badge tiers Pro/Max/Ultra are visual only and imply no paid plan.
+- The MOVO mark (`MovoMark`) is the fallback for any bank/e-wallet/merchant logo (`BrandLogo` default) and the emblem on streak badges; show it without a frame or tile. Streak badge tiers read Bronze/Silver/Gold (keys `pro`/`max`/`ultra` are CSS only) so they never look like a paid plan.
 
 ## Security (non-negotiable)
 - Quality and security over speed. Never weaken Supabase RLS, policies or grants; schema changes go in a new migration with tests.

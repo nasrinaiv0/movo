@@ -1,8 +1,9 @@
 import { supabase } from './supabaseClient';
+import { planAwareError } from './plans';
 import { BILL_CATEGORIES, BILL_FREQUENCIES } from './bills';
 
 const requireClient = () => { if (!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
-const unwrap = ({ data, error }) => { if (error) throw error; return data; };
+const unwrap = ({ data, error }) => { if (error) throw planAwareError(error); return data; };
 const FREQ = BILL_FREQUENCIES.map(([k]) => k);
 
 export function validateBill(input) {

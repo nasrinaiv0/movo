@@ -248,11 +248,11 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: November 3, 2026');
+    expect(container.textContent).toContain('Effective date: November 4, 2026');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: November 3, 2026');
+    expect(container.textContent).toContain('Effective date: November 4, 2026');
     expect(container.textContent).not.toContain('not yet been published');
     expect(container.textContent).toContain('Things you delete in MOVO stay in the Archive for 90 days');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
@@ -620,14 +620,20 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   });
 
-  test('NasrinAI briefing lives in Notifications, not Home, and opens on tap', () => {
+  test('Free plan (signed out): no briefing or insights; a locked feature opens MOVO plans with the free month', () => {
     expect(container.querySelector('.brief-note')).toBeNull();
     clickButton(container, 'Notifications');
-    const note = container.querySelector('.brief-note');
-    expect(note).not.toBeNull();
-    act(() => note.click());
-    expect(container.querySelector('[role="dialog"][aria-label="Your daily briefing"]')).not.toBeNull();
-    expect(container.textContent).toContain('Tips for you');
+    expect(container.querySelector('.brief-note')).toBeNull();
+    nav(container, 'Home');
+    const custom = [...container.querySelectorAll('.flow-ranges button')].find(b => b.textContent.includes('Custom'));
+    expect(custom.className).toContain('is-locked');
+    act(() => custom.click());
+    const sheet = container.querySelector('[role="dialog"][aria-label="MOVO plans"]');
+    expect(sheet).not.toBeNull();
+    expect(sheet.textContent).toContain('Custom range in Money flow is part of Pro.');
+    expect(sheet.textContent).toContain('Claim your free month of Pro');
+    expect(sheet.textContent).toContain('Sign in to claim');
+    expect(container.querySelector('.flow-custom')).toBeNull();
   });
 
   test('red dots clear once notifications have been seen, and row dots clear when each is opened', () => {

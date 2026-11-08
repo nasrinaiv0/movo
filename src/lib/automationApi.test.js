@@ -119,14 +119,14 @@ describe('POST /api/log handler', () => {
     { id: 'acct-cash', name: 'Cash', account_type: 'cash', institution_name: null, currency: 'PHP', is_archived: false, display_order: 1 },
   ];
   const KEY = 'a'.repeat(32);
-  let calls; let rpcResult; let tokenRow;
+  let calls; let rpcResult; let tokenRow; let planResult; let planCalls;
   const fakeAdmin = () => ({
     from: (table) => {
       const q = { _table: table, select: () => q, eq: () => q, order: () => Promise.resolve({ data: ACCOUNTS, error: null }), maybeSingle: () => Promise.resolve({ data: tokenRow, error: null }), update: () => q, upsert: () => Promise.resolve({ error: null }) };
       q.then = (ok) => Promise.resolve({ error: null }).then(ok); // update(...).eq(...) awaited
       return q;
     },
-    rpc: (name, params) => { calls.push({ name, params }); return Promise.resolve(rpcResult); },
+    rpc: (name, params) => { if (name === 'movo_active_plan') { planCalls.push(params); return Promise.resolve(planResult); } calls.push({ name, params }); return Promise.resolve(rpcResult); },
   });
   const load = () => {
     jest.resetModules();
@@ -139,7 +139,7 @@ describe('POST /api/log handler', () => {
     await handler({ method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-length': '200' }, body }, res);
     return res;
   };
-  beforeEach(() => { calls = []; rpcResult = { data: { duplicate: false, matched_by: null, transaction_id: 'tx-1' }, error: null }; tokenRow = { user_id: 'user-1', active: true }; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
+  beforeEach(() => { planCalls = []; planResult = { data: 'pro_plus', error: null }; calls = []; rpcResult = { data: { duplicate: false, matched_by: null, transaction_id: 'tx-1' }, error: null }; tokenRow = { user_id: 'user-1', active: true }; jest.spyOn(console, 'info').mockImplementation(() => {}); jest.spyOn(console, 'error').mockImplementation(() => {}); });
   afterEach(() => { jest.restoreAllMocks(); jest.dontMock('@supabase/supabase-js'); });
 
   test.each(['applepay', 'googlepay', 'bank', 'notification'])('%s keeps its source, amount, currency, time, merchant and account', async (source) => {
@@ -166,6 +166,32 @@ describe('POST /api/log handler', () => {
     expect(unclear.body.success).toBe(false);
     expect(unclear.body.notice).toBe(unclear.body.message);
     expect(unclear.body.notice).not.toBe('');
+  });
+
+  test('automatic logging needs Pro+: Free and Pro are refused before anything is read or stored', async () => {
+    const handler = load();
+    for (const plan of ['free', 'pro']) {
+      planResult = { data: plan, error: null };
+      const res = await call(handler, { text: 'You have paid PHP 250.00 to MERALCO.', app: 'BPI', source: 'notification' });
+      expect(res.statusCode).toBe(403);
+      expect(res.body).toMatchObject({ success: false, error: 'plan_required', plan });
+      expect(res.body.savedForReview).toBeUndefined();
+      expect(res.body.notice).toMatch(/Pro\+/);
+    }
+    expect(calls).toEqual([]);
+    expect(planCalls[0]).toEqual({ p_user: 'user-1' });
+    planResult = { data: 'pro_plus', error: null };
+    expect((await call(handler, { text: 'You have paid PHP 250.00 to MERALCO.', app: 'BPI', source: 'notification' })).statusCode).toBe(200);
+  });
+
+  test('before the plans migration automation keeps working; other plan lookup errors fail safely', async () => {
+    const handler = load();
+    planResult = { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.movo_active_plan' } };
+    expect((await call(handler, { amount: 10, merchant: 'X', card: 'Cash', source: 'applepay' })).statusCode).toBe(200);
+    planResult = { data: null, error: { code: '57014', message: 'canceling statement' } };
+    const res = await call(handler, { amount: 10, merchant: 'X', card: 'Cash', source: 'applepay' });
+    expect(res.statusCode).toBeGreaterThanOrEqual(500);
+    expect(res.body.success).toBe(false);
   });
 
   test('unknown sources are stored as generic notifications, never trusted as given', async () => {
@@ -353,7 +379,7 @@ describe('POST /api/log rollout fallback', () => {
     const calls = [];
     jest.doMock('@supabase/supabase-js', () => ({ createClient: (url, key) => (key === 'service' ? {
       from: () => { const q = { select: () => q, eq: () => q, order: () => Promise.resolve({ data: [{ id: 'acct-cash', name: 'Cash', currency: 'PHP', is_archived: false }], error: null }), maybeSingle: () => Promise.resolve({ data: { user_id: 'u1', active: true }, error: null }), update: () => q }; q.then = (ok) => Promise.resolve({ error: null }).then(ok); return q; },
-      rpc: (name, params) => { calls.push({ name, params }); return Promise.resolve(name === 'log_automation_transaction_v2' ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.log_automation_transaction_v2' } } : { data: { duplicate: false, transaction_id: 't1' }, error: null }); },
+      rpc: (name, params) => { if (name === 'movo_active_plan') return Promise.resolve({ data: 'pro_plus', error: null }); calls.push({ name, params }); return Promise.resolve(name === 'log_automation_transaction_v2' ? { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.log_automation_transaction_v2' } } : { data: { duplicate: false, transaction_id: 't1' }, error: null }); },
     } : {}) }));
     process.env.SUPABASE_URL = 'https://example.supabase.co'; process.env.SUPABASE_ANON_KEY = 'anon'; process.env.SUPABASE_SERVICE_ROLE_KEY = 'service';
     jest.spyOn(console, 'info').mockImplementation(() => {});

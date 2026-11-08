@@ -14,7 +14,12 @@ const pickFx = (list, fx) => (list.some(([k]) => k === fx) ? fx : list[0][0]);
  * - Portrait: a 3D cylinder. Cards sit on a curved surface and turn as the row is swiped; the centred card faces you.
  * Motion is transform/opacity only (GPU-composited) and is skipped for reduced-motion users and in tests.
  */
-export default function CardDeck({ cards, selectedId, onSelect, renderCard, orientation = 'landscape', effect }) {
+/*
+ * `animated` false (Free plan): no card effects, only a short crossfade between cards (opacity only, ~180ms), the
+ * cheapest motion that still shows the change. Card effects are a Pro feature (lib/plans.js `cardAnimations`).
+ */
+export default function CardDeck({ cards, selectedId, onSelect, renderCard, orientation = 'landscape', effect, animated = true }) {
+  if (!animated) return <CardStack cards={cards} selectedId={selectedId} onSelect={onSelect} renderCard={renderCard} effect="fade" />;
   return orientation === 'portrait'
     ? <CardCylinder cards={cards} selectedId={selectedId} onSelect={onSelect} renderCard={renderCard} effect={pickFx(PORTRAIT_FX, effect)} />
     : <CardStack cards={cards} selectedId={selectedId} onSelect={onSelect} renderCard={renderCard} effect={pickFx(LANDSCAPE_FX, effect)} />;

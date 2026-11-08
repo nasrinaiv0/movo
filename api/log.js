@@ -35,7 +35,18 @@ const ERROR_MESSAGES = {
   transfer_unavailable: 'Transfers from Siri are not switched on for MOVO yet. Log this transfer in the app.',
   rate_limited: 'Too many payments in a short time. MOVO will accept more in a minute.',
   automation_request_failed: 'MOVO could not log this payment. Open MOVO to add it.',
+  plan_required: 'Automatic logging is part of MOVO Pro+. Open MOVO to see plans.',
 };
+// Phone automation is a Pro+ feature (migration 20261104010000_plans_entitlements). Before that migration is
+// applied the plan function does not exist yet, and automation keeps working as it did.
+async function planOf(api, userId) {
+  const { data, error } = await api.admin.rpc('movo_active_plan', { p_user: userId });
+  if (error) {
+    if (error.code === 'PGRST202' || /could not find the function/i.test(String(error.message || ''))) return 'unchecked';
+    throw error;
+  }
+  return typeof data === 'string' ? data : 'free';
+}
 function json(res, status, body) {
   res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Content-Type-Options', 'nosniff');
   const out = body && body.error ? { ...body, success: false, message: body.message || ERROR_MESSAGES[body.error] || ERROR_MESSAGES.automation_request_failed } : body;
@@ -165,6 +176,9 @@ module.exports = async function handler(req, res) {
     const { data: registered, error: tokenError } = await api.admin.from('movo_automation_tokens').select('user_id,active,default_account_id').eq('token_hash', tokenHash).maybeSingle();
     if (tokenError) throw tokenError;
     if (!registered?.active) return json(res, 401, { error: 'device_not_registered' });
+    stage = 'check_plan';
+    const plan = await planOf(api, registered.user_id);
+    if (plan !== 'pro_plus' && plan !== 'unchecked') return json(res, 403, { error: 'plan_required', plan });
     stage = 'validate_transaction';
     const source = SOURCES.has(body.source) ? body.source : 'notification';
     review = { tokenHash, userId: registered.user_id, source, type: body.type === 'income' ? 'income' : 'expense', text: cleanText(body.text, 300), amount: amountValue(body.amount), merchant: cleanText(body.merchant, 160), card: cleanText(body.card || body.account, 100), reference: cleanText(body.reference, 120) };

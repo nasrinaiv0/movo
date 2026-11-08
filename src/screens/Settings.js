@@ -157,7 +157,8 @@ export default function Settings({ c }) {
   const sections = [
     { title: tr('Account'), rows: [
       { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('EditProfile') },
-      { icon: 'database', title: tr('Plan & Usage'), sub: tr('Free plan · see what you use'), onClick: () => setPanel('usage') },
+      { icon: 'star', title: tr('MOVO plans'), sub: c.tier === 'pro_plus' || c.tier === 'legacy' ? `Pro+` : c.tier === 'pro' ? `Pro` : tr('Free · claim a free month of Pro'), onClick: () => c.openPlans?.() },
+      { icon: 'database', title: tr('Plan & Usage'), sub: tr('See what you use on this device'), onClick: () => setPanel('usage') },
       { icon: 'layout', title: tr('Connected Accounts'), sub: tr('Manually tracked accounts; no bank connection is active.'), onClick: () => go('Wallet') },
     ] },
     { title: tr('Appearance'), rows: [
@@ -183,13 +184,15 @@ export default function Settings({ c }) {
       ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },
     { title: tr('Data & Sync'), rows: [
-      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : tr('Sign in to enable secure cloud sync.'), onClick: c.cloudMode ? undefined : () => go('Sign in'), status: c.cloudMode ? undefined : tr('Sign in required') },
+      c.session?.user && c.allows && !c.allows('cloud')
+        ? { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudReadOnly ? tr('Your cloud records are read-only on Free.') : tr('Cloud sync is part of Pro and Pro+. On Free, records stay on this device.'), onClick: () => c.openPlans?.('cloud'), status: `Pro` }
+        : { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active for your signed-in account.') : tr('Sign in to enable secure cloud sync.'), onClick: c.cloudMode ? undefined : () => go('Sign in'), status: c.cloudMode ? undefined : tr('Sign in required') },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },
     ] },
     { title: tr('Automatic Logging'), rows: [
       { icon: 'refresh', title: tr('Auto-log Apple Pay & Google Pay'), sub: tr('When on, payments from your phone automation are logged instantly; when off, MOVO asks you to confirm each one.'), toggle: 'autoLog' },
-      { icon: 'link', title: tr('Set Up Phone Automation'), sub: tr('Connect an iPhone Shortcuts or Android automation to MOVO'), onClick: () => c.openAutoLog?.() },
+      { icon: 'link', title: tr('Set Up Phone Automation'), sub: tr('Connect an iPhone Shortcuts or Android automation to MOVO'), onClick: () => c.openAutoLog?.(), status: c.allows && !c.allows('automation') ? `Pro+` : undefined },
       { icon: 'scan', title: tr('Receipt Scanner'), sub: tr('Scan receipts and payment screenshots; see your scan log'), onClick: () => c.openScanner?.() },
     ] },
     { title: tr('Help & Support'), rows: [
@@ -218,6 +221,9 @@ const PICKS = 11;
 /** Background scenery: plain, one of the Scenery wallpapers, or your own photo, with a visibility slider. */
 function SceneryPicker({ c }) {
   const { prefs, setPref, sceneryPhoto, setSceneryPhoto } = c;
+  // Your own photo is a Pro upload (lib/plans.js); the built-in sceneries are free.
+  const canUpload = c.allows ? c.allows('uploads') : true;
+  const choosePhoto = () => (canUpload ? file.current?.click() : c.openPlans?.('uploads'));
   const [all, setAll] = useState(false);
   const [error, setError] = useState('');
   const file = useRef(null);
@@ -239,14 +245,14 @@ function SceneryPicker({ c }) {
   return <section className="card pad scenery-settings">
     <div className="scenery-row" role="group" aria-label={tr('Background scenery')}>
       <button type="button" className={`scenery-tile plain${current ? '' : ' selected'}`} aria-pressed={!current} aria-label={tr('Plain background')} onClick={() => pick('')}><span>{tr('None')}</span></button>
-      <button type="button" className={`scenery-tile photo${current === PHOTO ? ' selected' : ''}`} aria-pressed={current === PHOTO} aria-label={sceneryPhoto ? tr('Your photo') : tr('Upload your own background')} onClick={() => (sceneryPhoto ? pick(PHOTO) : file.current?.click())}>
-        {sceneryPhoto ? <img src={sceneryPhoto} alt="" /> : <span><Icon name="upload" size={18} />{tr('Your photo')}</span>}
+      <button type="button" className={`scenery-tile photo${current === PHOTO ? ' selected' : ''}`} aria-pressed={current === PHOTO} aria-label={sceneryPhoto ? tr('Your photo') : tr('Upload your own background')} onClick={() => (sceneryPhoto && canUpload ? pick(PHOTO) : choosePhoto())}>
+        {sceneryPhoto && canUpload ? <img src={sceneryPhoto} alt="" /> : <span><Icon name={canUpload ? 'upload' : 'lock'} size={18} />{tr('Your photo')}</span>}
       </button>
       {shortList.map(tile)}
       <button type="button" className="scenery-tile more" onClick={() => setAll(true)}><span>{tr('All')}<small>{SCENERIES.length}</small></span></button>
     </div>
     <input ref={file} type="file" accept="image/*" hidden onChange={upload} aria-label={tr('Choose a background photo')} />
-    {sceneryPhoto && <button type="button" className="link-button" onClick={() => file.current?.click()}>{tr('Change photo')}</button>}
+    {sceneryPhoto && canUpload && <button type="button" className="link-button" onClick={choosePhoto}>{tr('Change photo')}</button>}
     {error && <p className="form-error" role="alert">{error}</p>}
     <label className="clarity"><span className="clarity-top"><b>{tr('Scenery visibility')}</b><em>{prefs.sceneryVisibility <= 33 ? tr('Subtle') : prefs.sceneryVisibility >= 67 ? tr('Vivid') : tr('Balanced')} · {prefs.sceneryVisibility}%</em></span>
       <input type="range" min="0" max="100" step="1" value={prefs.sceneryVisibility} disabled={!current} aria-label={tr('Scenery visibility')} onChange={e => setPref('sceneryVisibility', Number(e.target.value))} style={{ '--fill': `${prefs.sceneryVisibility}%` }} />

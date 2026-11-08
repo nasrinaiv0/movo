@@ -31,7 +31,7 @@ export default function Notifications({ c }) {
   return <>
     <RootHeader title={tr('Notifications')} onSearch={c.openSearch} onSettings={() => go('NotificationSettings')} unread={false} hideBell />
     <Chips label={tr('Filter notifications')} items={FILTERS.map(f => ({ ...f, label: tr(f.label), dot: f.dot && notifications.some(n => !readIds.includes(n.id)) }))} value={nFilter} onChange={setNFilter} />
-    {c.briefing && (nFilter === 'All' || nFilter === 'System') && <BriefingNote briefing={c.briefing} show={show} onOpen={c.openBriefing} />}
+    {c.briefing && (!c.allows || c.allows('insights')) && (nFilter === 'All' || nFilter === 'System') && <BriefingNote briefing={c.briefing} show={show} onOpen={c.openBriefing} />}
     {groups.map((g, i) => <section key={g.label}>
       <div className="section-title"><h2>{g.label}</h2>{i === 0 && <button type="button" className="link-button" onClick={markAllRead}>{tr('Mark all as read')}</button>}</div>
       <div className="card list-card">{g.items.map(n => <button type="button" key={n.id} className="note-row" onClick={() => openNotification(n)}>

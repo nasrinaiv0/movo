@@ -65,6 +65,8 @@ import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport'
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import NasrinAIChat from './components/NasrinAIChat';
+import PlanSheet from './components/PlanSheet';
+import { can, fetchPlan, cachedPlan, claimTrial, applyReferral } from './lib/plans';
 import { TermsOfService, PrivacyPolicy } from './screens/Legal';
 import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
@@ -93,7 +95,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
+  accountStyles: {}, layouts: {}, budgets: [], plans: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, planOfferSeen: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '',
 };
 const ROOT_FOR = { Archive: 'Menu', FinancialPlanning: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { Archive: 1, FinancialPlanning: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -197,6 +199,11 @@ function App() {
   const [session, setSession] = useState(null);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
+  // Plan (lib/plans.js): from the server when signed in; signed out is Free. `cloudReadOnly`: a Free account that
+  // still has records in the cloud can view, export and delete them, not add or change them.
+  const [membership, setMembership] = useState({ plan: 'free' });
+  const [cloudReadOnly, setCloudReadOnly] = useState(false);
+  const reopenPlans = useRef(false);
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -267,6 +274,9 @@ function App() {
     refreshRates(fx).then(next => { if (live && next) setFx(next); }).catch(() => { /* offline: keep cached or built-in rates */ });
     return () => { live = false; };
   }, []);
+  const tier = session?.user ? membership.plan || 'free' : 'free';
+  const allows = useCallback((feature) => can(tier, feature), [tier]);
+  const openPlans = useCallback((feature) => setSheet({ name: 'plans', feature }), []);
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch { /* storage unavailable */ } }, [prefs]);
@@ -308,7 +318,17 @@ function App() {
     if (!user) return;
     setBusy(true); setError('');
     try {
-      const [a, t, postings, activities, failed] = await Promise.all([listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []), Promise.resolve().then(() => listAutomationInbox()).catch(() => [])]);
+      const [info, a, t, postings, activities, failed] = await Promise.all([fetchPlan(user.id).catch(() => cachedPlan(user.id) || { plan: 'free' }), listAccounts(), listTransactions(), listAccountingPostings().catch(() => []), listAccountingActivities().catch(() => []), Promise.resolve().then(() => listAutomationInbox()).catch(() => [])]);
+      setMembership(info);
+      if (reopenPlans.current) { reopenPlans.current = false; setSheet({ name: 'plans' }); }
+      const cloudAllowed = can(info.plan, 'cloud');
+      if (!cloudAllowed && !(a || []).length && !(t || []).length) {
+        // Free with nothing in the cloud: records stay on this device, as when signed out.
+        setCloudReadOnly(false); setInbox([]); setCloudAccounts([]); setCloudPostings([]); setCloudActivities([]); setCloudBudgets([]); setCloudMode(false);
+        setRawTxs(pendingLocalDataRef.current?.transactions || loadLocalTransactions()); setLocalAccounts(pendingLocalDataRef.current?.accounts || loadLocalAccounts());
+        return;
+      }
+      setCloudReadOnly(!cloudAllowed);
       setInbox(failed || []);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
       listBudgets().then(b => setCloudBudgets(b || [])).catch(() => setCloudBudgets([]));
@@ -355,7 +375,7 @@ function App() {
       if (!mounted) return; setSession(s);
       if (s?.user) refreshCloud(s.user); else {
         const pending = pendingLocalDataRef.current;
-        setCloudMode(false);
+        setCloudMode(false); setCloudReadOnly(false); setMembership({ plan: 'free' });
         setCloudAccounts([]); setInbox([]);
         setCloudPostings([]);
         setCloudActivities([]);
@@ -463,7 +483,7 @@ function App() {
   const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
 
   const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
-  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, tips: briefing.tips, devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, briefing.tips, prefs.devices, deviceId]);
+  const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, tips: allows('insights') ? briefing.tips : [], devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, briefing.tips, prefs.devices, deviceId, allows]);
   const allNotifications = useMemo(() => buildNotifications(txs, systemNotices), [txs, systemNotices]);
   const notifications = useMemo(() => {
     if (!prefs.notifications || !prefs.inapp) return [];
@@ -911,7 +931,8 @@ function App() {
   }, [userId]);
   useEffect(() => {
     const sync = prefsSync.current;
-    if (!sync.ready || !sync.user) return undefined;
+    // Preferences sync is part of cloud storage (Pro and Pro+); on Free they stay on this device.
+    if (!sync.ready || !sync.user || !allows('cloud')) return undefined;
     clearTimeout(sync.timer);
     sync.timer = setTimeout(() => {
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
@@ -922,7 +943,7 @@ function App() {
       savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
     return () => clearTimeout(sync.timer);
-  }, [prefs, stickerTick]);
+  }, [prefs, stickerTick, allows]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
@@ -1162,7 +1183,7 @@ function App() {
    * It also waits for the unlock screen and for the launch check for new logs, so the logs come first.
    */
   const briefingShownDay = useRef('');
-  const briefingDue = authReady && !locked && !logsCheck && prefs.onboarded && prefs.briefing !== false && prefs.briefingDay !== todayKey
+  const briefingDue = authReady && !locked && !logsCheck && prefs.onboarded && prefs.briefing !== false && prefs.briefingDay !== todayKey && allows('insights')
     && briefingShownDay.current !== todayKey && process.env.NODE_ENV !== 'test';
   useEffect(() => {
     if (!briefingDue || sheet) return undefined;
@@ -1173,6 +1194,30 @@ function App() {
     }), 700);
     return () => clearTimeout(timer);
   }, [briefingDue, sheet, todayKey]);
+  /*
+   * First launch (and once for people who had MOVO before plans): offer the free month of Pro after the tour and
+   * the Terms notice, never over another sheet, and not in tests. Closing it marks it seen.
+   */
+  const planOfferDue = authReady && !locked && prefs.onboarded && !prefs.planOfferSeen && !showTour && !showPostTourDisclosure
+    && tier === 'free' && !logsCheck && process.env.NODE_ENV !== 'test';
+  useEffect(() => {
+    if (!planOfferDue || sheet) return undefined;
+    const timer = setTimeout(() => setSheet(cur => cur || { name: 'plans', welcome: true }), 900);
+    return () => clearTimeout(timer);
+  }, [planOfferDue, sheet]);
+  const closePlans = () => { if (!prefs.planOfferSeen) setPref('planOfferSeen', true); setSheet(null); };
+  const claimFreeMonth = async () => {
+    const info = await claimTrial(session.user.id);
+    setMembership(info);
+    setPref('planOfferSeen', true);
+    notify(tr('Your free month of Pro has started.'));
+    refreshCloud(session.user);
+  };
+  const redeemReferral = async (code) => {
+    const info = await applyReferral(code, session.user.id);
+    setMembership(info);
+    notify(tr('Referral code applied.'));
+  };
   const reviewPending = () => {
     const e = pendingLog; setPendingLog(null); setError('');
     setForm(cur => ({ ...cur, transaction_type: 'expense', merchant: e.merchant, amount: String(e.amount), category: guessCategory(e.merchant), occurred_at: e.at ? new Date(e.at).toLocaleDateString('en-CA') : today(), time: e.at ? new Date(e.at).toTimeString().slice(0, 8) : '', note: `${tr('From {source}', { source: e.source })}${e.card ? ` · ${e.card}` : ''}${e.ref ? ` · Ref ${e.ref}` : ''}`, account_id: matchAccount(e.card, formAccounts)?.id || cur.account_id, source: e.src, ref: e.ref || '' }));
@@ -1184,7 +1229,7 @@ function App() {
       await signOut();
       const pending = pendingLocalDataRef.current;
       setSession(null);
-      setCloudMode(false);
+      setCloudMode(false); setCloudReadOnly(false); setMembership({ plan: 'free' });
       setCloudAccounts([]); setInbox([]);
       setCloudPostings([]);
       setCloudActivities([]);
@@ -1205,7 +1250,8 @@ function App() {
     sceneryPhoto, setSceneryPhoto,
     toBase, base, lang, country: prefs.country, openCountry: () => setSheet({ name: 'country' }), openLanguage: () => setSheet({ name: 'language' }), openCurrency: () => setSheet({ name: 'currency' }),
     planTab, budgetList, plans, openBudgets: (tab = 'budgets') => setSheet({ name: 'budgets', tab }),
-    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing, openBriefing: () => setSheet({ name: 'briefing' }), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
+    subscriptions, subSummary, subsBadge, saveSubscription, deleteSubscription, logSubscription, archive: prefs.archive || [], archivedAutomations, loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, briefing, openBriefing: () => (allows('insights') ? setSheet({ name: 'briefing' }) : openPlans('insights')), openScanner: () => setSheet({ name: 'scanner' }), openAutoLog: () => { if (!allows('automation')) { openPlans('automation'); return; } if (!prefs.autoLogKey) setPref('autoLogKey', newKey()); setSheet({ name: 'autolog' }); },
+    membership, tier, allows, openPlans, cloudReadOnly,
   };
   c.txBreakdown = txBreakdown;
   const txScreen = { ...c, breakdown: txBreakdown };
@@ -1216,7 +1262,8 @@ function App() {
   const accentName = prefs.accent === 'custom' ? 'custom' : prefs.accent;
   const clarity = Math.min(100, Math.max(0, Number(prefs.clarity) || 0)) / 100; const dark = resolved === 'dark';
   const glassVars = prefs.glass ? { '--glass-blur': `${Math.round(34 - 30 * clarity)}px`, '--glass-fill': (dark ? 0.6 - 0.48 * clarity : 0.78 - 0.64 * clarity).toFixed(2), '--glass-sheet-fill': (dark ? 0.92 - 0.4 * clarity : 0.94 - 0.42 * clarity).toFixed(2), '--glass-edge': (0.16 + 0.18 * clarity).toFixed(2) } : {};
-  const scenery = scenerySrc(prefs.scenery, sceneryPhoto);
+  // Your own scenery photo is a Pro upload; on Free the saved photo stays on the device but is not shown.
+  const scenery = scenerySrc(prefs.scenery === 'photo' && !allows('uploads') ? '' : prefs.scenery, sceneryPhoto);
   const accentHex = accentName === 'custom' ? prefs.customColor : (ACCENTS.find(([n]) => n === accentName)?.[1] || '#13b45f');
   /* Text: size scales every font-size through --font-scale (see lib/fontPrefs.js); the style swaps the font stack. */
   const fontScale = fontScaleOf(prefs.fontSize);
@@ -1229,7 +1276,7 @@ function App() {
     root.setProperty('--app-font', fontStack);
   }, [fontScale, fontStack, prefs.fontStyle]);
   const rootStyle = { ...glassVars, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
+  const rootClass = `movo-app theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''} plan-${tier === 'legacy' ? 'pro_plus' : tier}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -1259,7 +1306,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode} fullAccess={allows('nasrinaiFull')} onPlans={() => openPlans('nasrinaiFull')} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={logFromChat} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -1272,6 +1319,10 @@ function App() {
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
+        </div>}
+        {cloudReadOnly && view === 'Home' && <div className="app-alert plan-readonly" role="status">
+          <span><strong>{tr('Your cloud records are read-only on Free.')}</strong> {tr('You can still view, export and delete them. Choose Pro to add and change records again.')}</span>
+          <span className="plan-readonly-actions"><button type="button" className="link-button" onClick={exportCsv}>{tr('Export')}</button><button type="button" className="link-button" onClick={() => openPlans('cloud')}>{tr('See plans')}</button></span>
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
@@ -1302,7 +1353,7 @@ function App() {
       </nav>}
 
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : () => setSheet({ name: 'scanner' })} />}
-      {sheet?.name === 'scanner' && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
+      {sheet?.name === 'scanner' && <ScannerSheet show={show} canScan={allows('receiptScan')} onLocked={() => openPlans('receiptScan')} onClose={() => setSheet(null)} onLog={(f) => {
         const type = f.type === 'income' ? 'income' : 'expense';
         // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
         const live = accountsView.filter(a => !a.is_archived); const bank = String(f.bank || '').toLowerCase();
@@ -1340,6 +1391,9 @@ function App() {
         const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
         wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
       }} />}
+      {sheet?.name === 'plans' && <PlanSheet membership={membership} signedIn={!!session?.user} feature={sheet.feature} welcome={!!sheet.welcome} notify={notify}
+        onSignIn={() => { reopenPlans.current = true; setPref('planOfferSeen', true); setSheet(null); setAuthMode('signin'); go('Sign in'); }}
+        onClaim={claimFreeMonth} onApplyReferral={redeemReferral} onClose={closePlans} />}
       {sheet?.name === 'briefing' && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
       {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onClose={() => setSheet(null)} />}
 
