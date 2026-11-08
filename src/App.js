@@ -1902,7 +1902,7 @@ function App() {
       const verifiedWorkspace=loadOfflineWorkspace(signedOwner);
       if(JSON.stringify(verifiedWorkspace?.working?.financial_accounts)!==JSON.stringify(nextAccounts)
         ||JSON.stringify(verifiedWorkspace?.working?.transactions)!==JSON.stringify(nextTransactions))
-        throw new Error('Imported records could not be verified on this device. Export a backup before retrying.');
+        throw new Error('This device could not save the imported records. Free storage and retry.');
       setLocalAccounts(nextAccounts);setRawTxs(nextTransactions);
       return {accounts:planned.accounts.length,transactions:planned.transactions.length,
         failed:0,skipped:planned.skipped,unsupported:planned.unsupported};
@@ -1920,7 +1920,7 @@ function App() {
     }
     if(JSON.stringify(loadLocalAccounts())!==JSON.stringify(nextAccounts)
       ||JSON.stringify(loadLocalTransactions())!==JSON.stringify(nextTransactions))
-      throw new Error('Imported records could not be verified on this device. Export a backup before retrying.');
+      throw new Error('This device could not save the imported records. Free storage and retry.');
     setLocalAccounts(nextAccounts); setRawTxs(nextTransactions);
     return { accounts: planned.accounts.length, transactions: planned.transactions.length, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
   };
