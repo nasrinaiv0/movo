@@ -65,3 +65,12 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   window.localStorage.removeItem('movo.local.accounts.v1');
   expect(remove).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
 });
+
+
+test('Siri expense deep links are parsed as review requests', () => {
+  expect(readAppUrl('movo://log?src=siri_shortcut&amount=250.50&merchant=Groceries')).toEqual({
+    kind: 'log', hash: '#/log?src=siri_shortcut&amount=250.50&merchant=Groceries',
+  });
+  // URLs from other apps never become MOVO commands.
+  expect(readAppUrl('https://untrusted.example/log?amount=250')).toBeNull();
+});

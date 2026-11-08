@@ -123,3 +123,7 @@ export async function nativeBiometricStatus() {
 export async function nativeAuthenticate(reason) {
   try { const { success } = await MovoNative.authenticate({ reason }); return !!success; } catch { return false; }
 }
+
+
+// Keychain access for the automation device key lives in lib/nativeAutomationKey.js (one vault, key
+// movo-autolog-key, allowlisted by MovoNativePlugin.swift); auth tokens in lib/nativeSecureAuthStorage.js.

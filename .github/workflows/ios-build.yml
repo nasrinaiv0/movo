@@ -15,6 +15,7 @@ on:
       - "src/lib/supabaseClient.js"
       - "src/index.tsx"
       - "package.json"
+      - ".github/workflows/ios-build.yml"
   push:
     branches: [main]
     paths:
@@ -37,7 +38,7 @@ concurrency:
 jobs:
   build-ios:
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,5 +63,38 @@ jobs:
             -configuration Debug \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/movo-derived-data" \
             CODE_SIGNING_ALLOWED=NO \
             build | tail -n 200
+      - name: Boot iPhone Simulator and launch MOVO
+        run: |
+          set -euo pipefail
+          # Select a locally available iPhone simulator, never pretend a device ran.
+          DEVICE_ID="$(xcrun simctl list devices available --json | python3 -c 'import sys,json; data=json.load(sys.stdin); devices=[d for arr in data["devices"].values() for d in arr if d.get("isAvailable") and "iPhone" in d.get("name","")]; print(devices[0]["udid"] if devices else "")')"
+          if [[ -z "$DEVICE_ID" ]]; then
+            echo "::error::No available iPhone Simulator is installed on the macOS runner."
+            exit 1
+          fi
+          echo "Simulator selected: $DEVICE_ID"
+          # Prevent a missing or unhealthy CoreSimulator runtime from hanging this job.
+          python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","boot",sys.argv[1]], check=True, timeout=90)' "$DEVICE_ID"
+          python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"], check=True, timeout=600)' "$DEVICE_ID"
+          APP="$RUNNER_TEMP/movo-derived-data/Build/Products/Debug-iphonesimulator/App.app"
+          test -d "$APP" || { echo "::error::Simulator app binary not found."; exit 1; }
+          python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","install",sys.argv[1],sys.argv[2]], check=True, timeout=90)' "$DEVICE_ID" "$APP"
+          python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","launch",sys.argv[1],"com.nasrinai.movo"], check=True, timeout=90)' "$DEVICE_ID"
+          sleep 5
+          # Tests native URL routing without financial accounts or payment credentials.
+          xcrun simctl openurl "$DEVICE_ID" 'movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test'
+          sleep 3
+          mkdir -p "$RUNNER_TEMP/movo-ios-smoke"
+          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/movo-ios-smoke/iphone-simulator-smoke.png"
+          echo "Native app installed, launched, and received an App Intents-style URL."
+      - name: Upload simulator smoke-test screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: movo-iphone-simulator-smoke
+          path: ${{ runner.temp }}/movo-ios-smoke/
+          if-no-files-found: ignore
+          retention-days: 7

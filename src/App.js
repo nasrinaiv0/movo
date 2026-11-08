@@ -291,6 +291,9 @@ function App() {
   const [toast, setToast] = useState('');
   const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
   const pendingLocalDataRef = useRef(null);
+  // Prevent duplicate cloud loads on INITIAL_SESSION, SIGNED_IN and TOKEN_REFRESHED.
+  // This guard also prevents an older user's cloud response from replacing local records.
+  const cloudAuthUserRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
@@ -389,13 +392,13 @@ function App() {
         Promise.resolve().then(() => listAutomationInbox()).catch(() => []),
         listBills().catch(() => []), listOccurrences(dateKey(until), dateKey(today)).catch(() => []), listBudgets().catch(() => []),
       ]);
-      // Ignore cloud responses that finish after the user selected local mode.
-      if (!cloudSyncRequestedRef.current || loadEpoch !== cloudLoadEpochRef.current) return;
+      // Ignore responses after sign-out, an account switch, or a switch to local mode.
+      if (cloudAuthUserRef.current !== user.id || !cloudSyncRequestedRef.current || loadEpoch !== cloudLoadEpochRef.current) return;
       setInbox(failed || []);
       setCloudAccounts(a || []); setRawTxs(t || []); setCloudPostings(postings || []); setCloudActivities(activities || []); setCloudMode(true);
       setCloudBills(bills || []); setCloudBillOccurrences(billOccurrences || []); setCloudBudgets(budgets || []);
     } catch {
-      if (cloudSyncRequestedRef.current && loadEpoch === cloudLoadEpochRef.current) {
+      if (cloudAuthUserRef.current === user.id && cloudSyncRequestedRef.current && loadEpoch === cloudLoadEpochRef.current) {
         setError(tr('Could not load cloud records. Check your connection and try again.'));
         setCloudMode(false);
       }
@@ -450,12 +453,23 @@ function App() {
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
-    getCurrentSession().then(s => { if (!mounted) return; setSession(s); setAuthReady(true); if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } }).catch(() => { if (mounted) setAuthReady(true); });
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+    const applySession = (nextSession) => {
       if (!mounted) return;
-      if (!s?.user) ++cloudLoadEpochRef.current;
-      setSession(s);
-      if (s?.user && prefsRef.current.cloudSyncEnabled !== false) refreshCloud(s.user); else if (s?.user) { setCloudMode(false); setRawTxs(loadLocalTransactions()); setLocalAccounts(loadLocalAccounts()); } else {
+      setSession(nextSession);
+      // Signing out invalidates any cloud load still in flight (#245).
+      if (!nextSession?.user) ++cloudLoadEpochRef.current;
+      const nextUserId = nextSession?.user?.id || null;
+      // Supabase can emit SIGNED_IN repeatedly (including on tab focus). Refresh
+      // finance records only when the authenticated identity actually changes.
+      if (cloudAuthUserRef.current === nextUserId) return;
+      cloudAuthUserRef.current = nextUserId;
+      if (nextSession?.user && prefsRef.current.cloudSyncEnabled !== false) {
+        refreshCloud(nextSession.user);
+      } else if (nextSession?.user) {
+        setCloudMode(false);
+        setRawTxs(loadLocalTransactions());
+        setLocalAccounts(loadLocalAccounts());
+      } else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
         setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
@@ -464,6 +478,14 @@ function App() {
         setRawTxs(pending?.transactions || loadLocalTransactions());
         setLocalAccounts(pending?.accounts || loadLocalAccounts());
       }
+    };
+    getCurrentSession().then((s) => {
+      applySession(s);
+      if (mounted) setAuthReady(true);
+    }).catch(() => { if (mounted) setAuthReady(true); });
+    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      // No Supabase query or other awaited operation inside this callback.
+      applySession(nextSession);
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud]);

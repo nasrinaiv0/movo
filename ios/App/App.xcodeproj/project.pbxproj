@@ -19,6 +19,7 @@
 		A1B2C3D4E5F6071829304001 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304011 /* MainViewController.swift */; };
 		A1B2C3D4E5F6071829304002 /* MovoNativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304012 /* MovoNativePlugin.swift */; };
 		A1B2C3D4E5F6071829304003 /* GlassChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304013 /* GlassChrome.swift */; };
+		A1B2C3D4E5F6071829304004 /* MOVOAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		A1B2C3D4E5F6071829304011 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304012 /* MovoNativePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovoNativePlugin.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304013 /* GlassChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassChrome.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOVOAppIntents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +76,7 @@
 				A1B2C3D4E5F6071829304011 /* MainViewController.swift */,
 				A1B2C3D4E5F6071829304012 /* MovoNativePlugin.swift */,
 				A1B2C3D4E5F6071829304013 /* GlassChrome.swift */,
+				A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -172,6 +175,7 @@
 				A1B2C3D4E5F6071829304001 /* MainViewController.swift in Sources */,
 				A1B2C3D4E5F6071829304002 /* MovoNativePlugin.swift in Sources */,
 				A1B2C3D4E5F6071829304003 /* GlassChrome.swift in Sources */,
+				A1B2C3D4E5F6071829304004 /* MOVOAppIntents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
