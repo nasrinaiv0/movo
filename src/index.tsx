@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+const OwnerConsole = React.lazy(() => import('./owner/OwnerConsole'));
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
 
@@ -13,7 +14,9 @@ if (!container) {
 const root = createRoot(container);
 const render = () => root.render(
   <React.StrictMode>
-    <App />
+    {typeof window !== 'undefined' && /^\/owner(?:\/|$)/.test(window.location.pathname)
+      ? <React.Suspense fallback={<div style={{ padding: 32 }}>Loading protected owner access…</div>}><OwnerConsole /></React.Suspense>
+      : <App />}
   </React.StrictMode>
 );
 
