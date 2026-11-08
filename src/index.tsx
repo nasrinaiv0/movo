@@ -13,7 +13,7 @@ if (!container) {
 
 // The customer splash is dismissed by App. The owner portal does not render App,
 // so remove it here before it can cover or intercept owner controls.
-const ownerRoute = /^\\/owner(?:\\/|$)/.test(window.location.pathname);
+const ownerRoute = window.location.pathname === '/owner' || window.location.pathname.startsWith('/owner/');
 if (ownerRoute) document.getElementById('movo-splash')?.remove();
 
 const root = createRoot(container);
