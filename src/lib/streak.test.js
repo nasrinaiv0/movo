@@ -26,3 +26,18 @@ test('merging keeps the latest day and the higher best', () => {
   expect(mergeStreak(null, { last: '2026-10-29', count: 5, best: 5 })).toEqual({ last: '2026-10-29', count: 5, best: 5 });
   expect(mergeStreak({ last: 'x' }, null)).toBeNull();
 });
+
+test('Pro unlocks every badge up to Gold and Pro+ unlocks Platinum, whatever the streak', () => {
+  const { badgeEarned, BADGES } = require('./streak');
+  const fresh = { count: 1, best: 1 };
+  const earned = (plan) => BADGES.filter(b => badgeEarned(b, fresh, plan)).map(b => b.days);
+  expect(earned('free')).toEqual([]);
+  expect(earned(undefined)).toEqual([]);
+  expect(earned('pro')).toEqual([3, 7, 14, 30, 60, 100]);
+  expect(earned('pro_plus')).toEqual([3, 7, 14, 30, 60, 100, 365]);
+  // The next goal skips badges the plan already gives.
+  expect(nextBadge(fresh, 'pro').days).toBe(365);
+  expect(nextBadge(fresh, 'pro_plus')).toBeNull();
+  // A real streak still earns badges on Free.
+  expect(BADGES.filter(b => badgeEarned(b, { count: 1, best: 30 }, 'free')).map(b => b.days)).toEqual([3, 7, 14, 30]);
+});

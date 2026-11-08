@@ -3,27 +3,27 @@ import Icon from '../components/Icon';
 import { RootHeader } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
-import { BADGES, TIER_LABEL, nextBadge } from '../lib/streak';
+import { BADGES, TIER_LABEL, nextBadge, badgeEarned, badgeByPlan } from '../lib/streak';
 import { MovoMark } from '../components/MovoLogo';
 
 /** The fifth tab: profile, subscriptions, savings plans and spending limits in one place. */
 export default function Menu({ c }) {
   const { user, go, show, subSummary, plans = [], budgetList = [], prefs } = c;
   const streak = prefs?.streak || { count: 0, best: 0 };
-  const next = nextBadge(streak);
+  const next = nextBadge(streak, c.plan);
   const over = budgetList.filter(b => b.level === 'over').length;
   const items = [
 
     { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
-    { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals with a target date'), onClick: () => c.openBudgets('plans') },
-    { icon: 'gift', tone: 'green', title: 'Cashback', sub: tr('Track bank and e-wallet rewards automatically or manually'), onClick: () => go('Cashback') },
-    { icon: 'calendar-clock', tone: 'orange', title: 'Scheduled', sub: tr('Plan payments and transfers, then log them when due'), onClick: () => go('ScheduledTransactions') },
-    { icon: 'bank', tone: 'blue', title: 'Financial planning', sub: tr('Bills, loans, debts and money owed to you'), onClick: () => go('FinancialPlanning') },
-    { icon: 'globe', tone: 'teal', title: 'Exchange rates', sub: tr('Convert currencies and track reference rates'), onClick: () => go('ExchangeRates') },
-    { icon: 'chart', tone: 'green', title: 'Crypto market', sub: tr('Explore cryptocurrency prices and watchlist'), onClick: () => go('CryptoMarket') },
-    { icon: 'chart', tone: 'blue', title: 'Stocks market', sub: tr('Track global stocks and build watchlists'), onClick: () => go('StocksMarket') },
+    { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals'), onClick: () => c.openBudgets('plans') },
+    { icon: 'gift', tone: 'green', title: 'Cashback', sub: tr('Rewards and cashback'), onClick: () => go('Cashback') },
+    { icon: 'calendar-clock', tone: 'orange', title: 'Scheduled', sub: tr('Upcoming payments'), onClick: () => go('ScheduledTransactions') },
+    { icon: 'bank', tone: 'blue', title: 'Financial planning', sub: tr('Bills, loans and debts'), onClick: () => go('FinancialPlanning') },
+    { icon: 'globe', tone: 'teal', title: 'Exchange rates', sub: tr('Convert currencies'), onClick: () => go('ExchangeRates') },
+    { icon: 'chart', tone: 'green', title: 'Crypto market', sub: tr('Prices and watchlist'), onClick: () => go('CryptoMarket') },
+    { icon: 'chart', tone: 'blue', title: 'Stocks market', sub: tr('Prices and watchlist'), onClick: () => go('StocksMarket') },
     { icon: 'archive', tone: 'gray', title: 'Archive', sub: (c.archive || []).length ? tr('{n} item(s) · kept 90 days', { n: (c.archive || []).length }) : tr('Removed items, kept 90 days'), onClick: () => go('Archive') },
-    { icon: 'limits', tone: 'orange', title: 'Limits', sub: budgetList.length ? (over ? tr('{n} over the limit', { n: over }) : tr('{n} monthly limit(s), all on track', { n: budgetList.length })) : tr('Monthly spending limits per category'), onClick: () => c.openBudgets('budgets') },
+    { icon: 'limits', tone: 'orange', title: 'Limits', sub: budgetList.length ? (over ? tr('{n} over the limit', { n: over }) : tr('{n} monthly limit(s), all on track', { n: budgetList.length })) : tr('Monthly spending limits'), onClick: () => c.openBudgets('budgets') },
   ];
   return <>
     <RootHeader title={tr('Menu')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
@@ -45,10 +45,10 @@ export default function Menu({ c }) {
         <small className="streak-best">{tr('Best: {n}', { n: streak.best || 0 })}</small>
       </div>
       <ul className="streak-badges">
-        {BADGES.map(b => { const earned = (streak.best || 0) >= b.days; const tier = TIER_LABEL[b.tier]; return <li key={b.id} title={tier ? `${tr(b.name)} · ${tier}` : tr(b.name)} className={`tier-${b.tier}`}>
+        {BADGES.map(b => { const earned = badgeEarned(b, streak, c.plan); const byPlan = badgeByPlan(b, c.plan) && (streak.best || 0) < b.days; const tier = TIER_LABEL[b.tier]; return <li key={b.id} title={tier ? `${tr(b.name)} · ${tier}` : tr(b.name)} className={`tier-${b.tier}`}>
           <span className={`streak-badge tier-${b.tier}${earned ? ' earned' : ''}`} style={{ '--badge': b.color }} aria-hidden="true"><MovoMark size={24} tone={earned ? 'white' : 'mono'} /></span>
           {tier && <i className="badge-tier" aria-hidden="true">{tier}</i>}
-          <small>{tr('{n}d', { n: b.days })}</small>
+          <small>{byPlan ? (c.plan === 'pro_plus' ? `Pro+` : `Pro`) : tr('{n}d', { n: b.days })}</small>
           <span className="sr-only">{tr(b.name)}{tier ? ` (${tier})` : ''}: {earned ? tr('Earned') : tr('Locked')}</span>
         </li>; })}
       </ul>

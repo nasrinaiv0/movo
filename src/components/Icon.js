@@ -86,6 +86,8 @@ const P = {
   mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></>,
   speaker: <><path d="M4 9.5h3l4.5-4v13L7 14.5H4z" /><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></>,
   stop: <rect x="7" y="7" width="10" height="10" rx="2.5" />,
+  play: <path d="M8.5 6.2v11.6a1 1 0 0 0 1.5.86l9.2-5.8a1 1 0 0 0 0-1.72L10 5.34a1 1 0 0 0-1.5.86Z" />,
+  pause: <path d="M8.5 6v12M15.5 6v12" />,
   scan: <><path d="M4 8V6.5A2.5 2.5 0 0 1 6.5 4H8M16 4h1.5A2.5 2.5 0 0 1 20 6.5V8M20 16v1.5a2.5 2.5 0 0 1-2.5 2.5H16M8 20H6.5A2.5 2.5 0 0 1 4 17.5V16M7.5 12h9" /></>,
   grid: <><rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" /></>,
   rows: <><rect x="4" y="4.5" width="16" height="6" rx="2" /><rect x="4" y="13.5" width="16" height="6" rx="2" /></>,

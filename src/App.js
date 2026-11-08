@@ -30,6 +30,7 @@ import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
+import TutorialVideo from './components/TutorialVideo';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
 import AccountTile from './components/AccountTile';
@@ -142,7 +143,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -379,6 +380,20 @@ function App() {
     setCloudMode(false);
     return true;
   }, []);
+  /*
+   * Every verified first-time account gets one month of Pro (owner, 2026-11-09). After the plans sheet has been seen
+   * (where a referral code can be entered), an eligible signed-in person who did not start it there gets it started
+   * automatically. The server alone decides eligibility (claim_movo_trial); a refusal is retried on a later launch.
+   */
+  const trialAutoRef = useRef('');
+  useEffect(() => {
+    const id = session?.user?.id;
+    if (!id || !session?.access_token || !prefs.planWelcomeSeen || !entitlement?.trialEligible || trialAutoRef.current === id) return;
+    trialAutoRef.current = id;
+    fetch(apiUrl('/api/purchases/trial'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: '{}' })
+      .then(response => { if (response.ok) { refreshEntitlement(); notify(tr('Your free month of Pro has started.')); } })
+      .catch(() => { trialAutoRef.current = ''; });
+  }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement?.trialEligible, refreshEntitlement, notify]);
   useEffect(() => {
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
@@ -1715,6 +1730,7 @@ function App() {
   }, [todayKey]);
   /* Welcome choices: sign in or sign up skips the tour and opens the account page in that mode. */
   const [authMode, setAuthMode] = useState('signin');
+  const [guideOpen, setGuideOpen] = useState(false); // replay of the video guide from Settings
   const startAccount = useCallback((mode) => {
     setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey }));
     setAuthMode(mode); go('Sign in');
@@ -1906,7 +1922,7 @@ function App() {
 
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
-    entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openBackup: () => setSheet({ name: 'financeBackup' }),
+    entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
     syncState,
     retrySync: () => setCloudSyncEnabled(true),
@@ -2086,10 +2102,13 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {(sheet?.name === 'planOffer' || (authReady && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={cloudMode} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
+      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked && view !== 'Sign in' && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={cloudMode} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
       {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
       {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
-      {showTour && !locked && prefs.planWelcomeSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
+      {/* First run: the video guide, then (skipped or finished) the spotlight walkthrough, then the free month of Pro. */}
+      {showTour && !locked && !prefs.tutorialSeen && <TutorialVideo onDone={() => setPref('tutorialSeen', true)} />}
+      {showTour && !locked && prefs.tutorialSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
+      {guideOpen && !locked && <TutorialVideo onDone={() => setGuideOpen(false)} />}
       {showPostTourDisclosure && !locked && <PostTourLegalDisclosure onReview={() => { setShowPostTourDisclosure(false); openLegal('TermsOfService'); }} onDismiss={() => setShowPostTourDisclosure(false)} />}
       {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => {
         // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.

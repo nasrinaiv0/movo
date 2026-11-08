@@ -25,8 +25,19 @@ export function updateStreak(streak, todayKey) {
   return { last: todayKey, count, best: Math.max(count, Number(streak?.best) || 0) };
 }
 
-export const earnedBadges = (streak) => BADGES.filter(b => (Number(streak?.best) || 0) >= b.days);
-export const nextBadge = (streak) => BADGES.find(b => (Number(streak?.count) || 0) < b.days) || null;
+/*
+ * Plan badges (owner spec 2026-11-09): Pro unlocks every badge up to Gold and Pro+ unlocks Platinum too, whatever
+ * the streak. The streak still counts and shows; a plan only lifts the badges it covers.
+ */
+const PLAN_TIER_LIMIT = { pro: 'max', pro_plus: 'ultra' };
+const TIER_ORDER = ['standard', 'pro', 'max', 'ultra'];
+export const badgeByPlan = (badge, plan) => {
+  const limit = PLAN_TIER_LIMIT[plan];
+  return !!limit && TIER_ORDER.indexOf(badge.tier) <= TIER_ORDER.indexOf(limit);
+};
+export const badgeEarned = (badge, streak, plan) => (Number(streak?.best) || 0) >= badge.days || badgeByPlan(badge, plan);
+export const earnedBadges = (streak, plan) => BADGES.filter(b => badgeEarned(b, streak, plan));
+export const nextBadge = (streak, plan) => BADGES.find(b => (Number(streak?.count) || 0) < b.days && !badgeByPlan(b, plan)) || null;
 /** The badge unlocked by moving from `before` to `after`, if any. */
 export const newlyEarned = (before, after) => BADGES.filter(b => (Number(before?.best) || 0) < b.days && (Number(after?.best) || 0) >= b.days).pop() || null;
 

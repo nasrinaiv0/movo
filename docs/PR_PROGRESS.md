@@ -15,6 +15,8 @@ See [dated audit](engineering/updates/2026-11-09-access-finance-ui-audit.md).
 
 ## Open pull requests
 
+**2026-11-09 — Video guide, plan badges, free month, polish:** first-run video guide then walkthrough then plans; automatic free month for eligible first-time accounts; Pro = Gold badges, Pro+ = Platinum; compact translated plans sheet; Add Card back under Wallet → All; shorter Menu copy. See `docs/engineering/updates/2026-11-09-guide-badges-polish.md`.
+
 **2026-11-09 — PR #241 consolidated:** keeps masked emails and the network-failure-safe entitlement refresh; its separate offline workspace is dropped in favour of #250's. See `docs/engineering/updates/2026-11-09-pr241-consolidated.md`.
 
 **2026-11-09 — PR #246 alignment:** inherits #245's payment-link render-loop fix; App test updated to #246's storage-retry wording. Jest 926/926, TypeScript and strict build pass locally. See `docs/engineering/updates/2026-11-09-pr246-test-alignment.md`.

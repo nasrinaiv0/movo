@@ -38,6 +38,8 @@ test('future mascots and native widgets are not advertised as available', () => 
   act(()=>root.render(<PlanComparison />));
   expect(host.textContent).toContain('future release');
   expect(host.textContent).toContain('current ram stays the same');
+  expect(host.textContent).toContain('Gold badges');
+  expect(host.textContent).toContain('Platinum badges');
 });
 
 test('switching cloud to local suspends premium card UI and restores it without touching subscription', () => {
