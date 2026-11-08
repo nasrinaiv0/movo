@@ -469,6 +469,12 @@ These are not resolved by a green frontend CI run or a READY deployment:
 
 - 2026-11-08 — PR #240 CSV hardening: duplicate matching wallet account labels now require user correction; no accidental first-result posting. Added 11-language error message, focused tests, audit notes.
 
+
+**2026-11-09 — PR #248 Apple SDK & native simulator validation:** Consolidated Siri App Intents expense-review flow, native Keychain bridge, authenticated cloud-load guard, verified StoreKit/Google Play environment names, and simulator-install/deep-link test workflow. Native Xcode Simulator compile succeeded on run #119; additional simulator smoke test pending exact-head result. The simulator stage was time-bounded to fail diagnostically instead of hang. The PR remains draft until true native smoke, full CI, and real-device verification are green. Details: `docs/engineering/updates/2026-11-09-apple-sdk-native-build-ci.md` and `docs/APPLE_SDK_INTEGRATION.md`.
+
+
+**2026-11-09 simulator CI correction:** Exact-head iOS run #122 failed in the macOS runner's first-boot CoreSimulator migration (`com.apple.locationd.migrator`), with `simctl bootstatus` exceeding 180 seconds; all Xcode compilation had passed. The workflow allows a bounded 600-second boot initialization for cold runners, retaining installation/launch timeouts and a mandatory smoke-test pass. See the engineering update; exact-head rerun remains required.
+
 ## 2026-11-06 — Native session vault and mobile safety PR
 - Branch security/native-auth-backup-privacy-20261106, base main 9c423c7. Open UI PR #225 preserved. Release NOT CERTIFIED.
 - Native Supabase sessions migrated to iOS Keychain/AndroidKeyStore vaults; legacy session and PKCE verifier copies purged only after successful secure storage.
