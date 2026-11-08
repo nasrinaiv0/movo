@@ -112,3 +112,31 @@ test('CSV file routes into the existing CSV preview without silently recording i
   expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
   await ui.cleanup();
 });
+
+test('a zero-write confirmation keeps the preview and does not falsely mark the import saved', async () => {
+  const ui = await setup();
+  ui.c.saveFinanceBackupRecords.mockResolvedValueOnce({
+    accounts: 0, transactions: 0, failed: 0,
+    skipped: { duplicates: 2, conflicts: 0 }, unsupported: ['financial_loans'],
+  });
+  const input = ui.node.querySelector('input[type="file"]');
+  Object.defineProperty(input, 'files', {
+    value: [{ name: 'duplicate.json', size: 100, text: async () => JSON.stringify(sample) }],
+    configurable: true,
+  });
+  await act(async () => input.dispatchEvent(new Event('change', { bubbles: true })));
+  const click = async label => {
+    const button = [...ui.node.querySelectorAll('button')].find(el => el.textContent.trim() === label);
+    expect(button).toBeDefined();
+    await act(async () => button.click());
+  };
+  await click('Save records');
+  await click('Confirm save locally');
+  expect(ui.node.textContent).toContain('No new accounts or transactions were applied');
+  expect(ui.node.textContent).toContain('Other financial groups');
+  expect(ui.node.textContent).not.toContain('Records saved');
+  expect(ui.node.textContent).toContain('Preview records');
+  await click('Save records');
+  expect(ui.node.textContent).toContain('Save reviewed records to this device?');
+  await ui.cleanup();
+});
