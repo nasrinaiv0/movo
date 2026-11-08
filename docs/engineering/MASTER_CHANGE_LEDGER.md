@@ -1,5 +1,31 @@
 # MOVO Master Change Ledger
 
+## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
+
+820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.
+
+## 2026-11-09 — Access audit and replacement welcome offer
+
+First-100 Pro+ promotion superseded: one calendar month of Pro for every eligible first-time verified account, using the existing uncapped claim flow. Live plan RPCs/triggers are missing; cloud/local races, incomplete balance inputs and precision gaps require resolution. Vercel Sandbox authorization is blocked (403), so interactive validation and release remain pending. No production changes.
+
+See [dated audit](updates/2026-11-09-access-finance-ui-audit.md).
+
+## 2026-11-08 — PR #227 user-triggered session safety
+
+- Added Profile action to sign out other devices using Supabase `scope: 'others'`, with confirmation and explicit failure handling. Active device remains signed in. Focused unit tests cover correct scope and provider errors.
+- This revokes refresh tokens, not currently issued JWT access tokens. Remote session dashboard, MFA and immediate revoke remain separate release gates.
+- Same-commit details: docs/engineering/updates/2026-11-08-pr227-security-implementation.md
+
+
+## 2026-11-08 — PR #227 integrated native session hardening (code + tests)
+
+- Reconciled current main be7c3d9c with security PR: preserving newer MOVO UI/accounting. 143 suites / 814 tests and production CRA build passed in isolated Vercel Sandbox.
+- Strict verify-after-delete for browser/Capacitor auth-token copies; secure logout tombstone blocks stale plaintext token resurrection when cleanup fails; automation token cache reset on failed restore.
+- iOS CI trigger scope expanded for bridge/auth JS, but signed-device and simulator verification remains open.
+- Live Supabase privileged-RPC 2-user tests, branch protection, web sessions, OAuth App Links, MFA and operational security controls remain release blockers.
+- Details: docs/engineering/updates/2026-11-08-pr227-security-implementation.md
+
+
 ## 2026-11-08 — Optional account balances after each transaction
 
 - Ledger-derived, account-currency running balances in transaction history; paired source and destination for transfers.
@@ -46,6 +72,15 @@
 - Validation: added tests in `src/components/HeaderButtonSpacing.test.js`; results documented in change PR, verified in Vercel Sandbox before merging.
 - Security/financial runtime untouched. Separate draft native-auth hardening PR #227 remains independent.
 - Engineering details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
+
+## 2026-11-08 — PR #227 native security re-audit (documentation only)
+
+- Confirmed Android native compile, 644/644 isolated Vercel Sandbox tests/typecheck/build. iOS job remains canceled; device signing and real hardware tests pending.
+- Read-only live database security audit: 28/28 public tables with RLS, 12 authenticated-executable financial SECURITY DEFINER functions requiring two-user negative tests; auth.uid references alone do not prove ownership.
+- PR is 34 commits behind main, with merge conflicts in App.js and two shared docs. Main branch protection is disabled. No production mutation.
+- Native old-token deletion failures are not surfaced; plaintext cleanup remains an explicit unresolved gate.
+- Report: docs/security/PR227_GAP_AUDIT_2026-11-08.md
+
 
 ## Latest audit snapshot — 2026-10-30 09:20 Asia/Manila (01:20 UTC)
 
@@ -593,3 +628,9 @@ Import preview adds confirmable Discard records / Save records actions, local-on
 - All 11 `src/i18n/locales/*.json` catalogs and `version.js` regenerated from the branch's 2,540 source strings. No financial code or customer records changed.
 - Sandbox evidence: 2 i18n and 15 component tests passing; full new-head CI and real-device QA pending.
 - Report: `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
+
+## 2026-11-06 — Native session / privacy security pass
+- Device-only Keychain/Keystore auth, migration, backup and screenshot protections, R8, native CI, public security.txt. No production financial data or database mutations.
+- Evidence, open risks and rollback documented in docs/engineering/updates/2026-11-06-native-session-hardening.md. Release remains blocked for signed-device and authorization verification.
+
+- PR #227 follow-up: native phone-automation API device key moved out of the mirrored general preferences JSON into device-only Keychain/Keystore, with write-before-delete migration, failed-vault protections, safe rotation and regression tests. Documentation: docs/engineering/updates/2026-11-06-native-session-hardening.md
