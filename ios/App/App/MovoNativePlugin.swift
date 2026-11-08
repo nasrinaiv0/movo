@@ -19,6 +19,83 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise)
     ]
 
+
+    // Auth credentials are persisted only in the device-bound Keychain and
+    // unavailable until the device is unlocked. No iCloud Keychain/backup sync.
+    private let authService = "com.nasrinai.movo.auth.v1"
+
+    private func authQuery(_ key: String) -> [String: Any] {
+        return [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: authService,
+            kSecAttrAccount as String: key
+        ]
+    }
+
+    private func authKey(_ call: CAPPluginCall) -> String? {
+        guard let key = call.getString("key"),
+              (key == "movo-autolog-key" || (key.hasPrefix("sb-") && key.contains("-auth-token"))),
+              key.count < 128 else {
+            call.reject("invalid_secure_auth_key")
+            return nil
+        }
+        return key
+    }
+
+    @objc func secureGet(_ call: CAPPluginCall) {
+        guard let key = authKey(call) else { return }
+        var query = authQuery(key)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        if status == errSecItemNotFound {
+            call.resolve(["value": NSNull()])
+        } else if status == errSecSuccess, let data = item as? Data,
+                  let value = String(data: data, encoding: .utf8) {
+            call.resolve(["value": value])
+        } else {
+            call.reject("secure_auth_read_failed")
+        }
+    }
+
+    @objc func secureSet(_ call: CAPPluginCall) {
+        guard let key = authKey(call) else { return }
+        guard let value = call.getString("value") else {
+            call.reject("invalid_secure_auth_value")
+            return
+        }
+        var add = authQuery(key)
+        let valueData = Data(value.utf8)
+        add[kSecValueData as String] = valueData
+        add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        let result = SecItemAdd(add as CFDictionary, nil)
+        if result == errSecDuplicateItem {
+            let updated: [String: Any] = [
+                kSecValueData as String: valueData,
+                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            ]
+            if SecItemUpdate(authQuery(key) as CFDictionary, updated as CFDictionary) != errSecSuccess {
+                call.reject("secure_auth_write_failed")
+                return
+            }
+        } else if result != errSecSuccess {
+            call.reject("secure_auth_write_failed")
+            return
+        }
+        call.resolve()
+    }
+
+    @objc func secureRemove(_ call: CAPPluginCall) {
+        guard let key = authKey(call) else { return }
+        let status = SecItemDelete(authQuery(key) as CFDictionary)
+        if status == errSecSuccess || status == errSecItemNotFound {
+            call.resolve()
+        } else {
+            call.reject("secure_auth_delete_failed")
+        }
+    }
+
     private var chrome: GlassChrome?
 
     @objc func biometricStatus(_ call: CAPPluginCall) {
@@ -40,81 +117,6 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         let reason = call.getString("reason") ?? "Unlock MOVO"
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, _ in
             call.resolve(["success": success])
-        }
-    }
-
-    // Keychain is intentionally a narrow device vault, not a general database.
-    // Values are accessible only while the device is unlocked and never sync
-    // to iCloud. A compromised WebView can still invoke the bridge: keep CSP
-    // and content-injection protections; do not treat this as an XSS defense.
-    private let secureService = "com.nasrinai.movo.device"
-    private let allowedSecureKeys: Set<String> = ["automationKey"]
-
-    private func secureAccount(_ call: CAPPluginCall) -> String? {
-        guard let key = call.getString("key"), allowedSecureKeys.contains(key) else {
-            call.reject("Unsupported secure storage key.")
-            return nil
-        }
-        return key
-    }
-
-    private func baseQuery(_ account: String) -> [String: Any] {
-        [kSecClass as String: kSecClassGenericPassword,
-         kSecAttrService as String: secureService,
-         kSecAttrAccount as String: account]
-    }
-
-    @objc func secureSet(_ call: CAPPluginCall) {
-        guard let account = secureAccount(call), let value = call.getString("value"),
-              !value.isEmpty, value.utf8.count <= 4096 else {
-            call.reject("A non-empty value (up to 4096 bytes) is required.")
-            return
-        }
-        DispatchQueue.global(qos: .userInitiated).async {
-            let query = self.baseQuery(account)
-            let data = Data(value.utf8)
-            let attributes: [String: Any] = [
-                kSecValueData as String: data,
-                kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-            ]
-            let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-            let status: OSStatus
-            if updateStatus == errSecItemNotFound {
-                var insert = query
-                attributes.forEach { insert[$0.key] = $0.value }
-                status = SecItemAdd(insert as CFDictionary, nil)
-            } else {
-                status = updateStatus
-            }
-            if status == errSecSuccess { call.resolve() }
-            else { call.reject("Secure storage unavailable (\(status)).") }
-        }
-    }
-
-    @objc func secureGet(_ call: CAPPluginCall) {
-        guard let account = secureAccount(call) else { return }
-        DispatchQueue.global(qos: .userInitiated).async {
-            var query = self.baseQuery(account)
-            query[kSecReturnData as String] = kCFBooleanTrue
-            query[kSecMatchLimit as String] = kSecMatchLimitOne
-            var result: CFTypeRef?
-            let status = SecItemCopyMatching(query as CFDictionary, &result)
-            if status == errSecItemNotFound { call.resolve(["value": NSNull()]); return }
-            guard status == errSecSuccess, let data = result as? Data,
-                  let value = String(data: data, encoding: .utf8) else {
-                call.reject("Secure storage unavailable (\(status)).")
-                return
-            }
-            call.resolve(["value": value])
-        }
-    }
-
-    @objc func secureRemove(_ call: CAPPluginCall) {
-        guard let account = secureAccount(call) else { return }
-        DispatchQueue.global(qos: .userInitiated).async {
-            let status = SecItemDelete(self.baseQuery(account) as CFDictionary)
-            if status == errSecSuccess || status == errSecItemNotFound { call.resolve() }
-            else { call.reject("Secure storage unavailable (\(status)).") }
         }
     }
 

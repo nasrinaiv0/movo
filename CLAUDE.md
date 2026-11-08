@@ -2,6 +2,8 @@
 
 Guidance for Claude Code in this repository. Read this first, then `README.md`, `docs/PR_WORKFLOW.md` and `docs/PR_PROGRESS.md`.
 
+**2026-11-09 continuation handover:** Before touching offline/cloud, import, security, trial, or iOS branches, read [docs/engineering/handovers/2026-11-09-claude-post-commit-handover.md](docs/engineering/handovers/2026-11-09-claude-post-commit-handover.md). This dated post-commit snapshot lists the six open draft PRs, the #245→#246 dependency, follow-on safety commits, test boundaries, and unresolved release blockers. Recheck live PR statuses; do not interpret it as merge approval.
+
 ## What MOVO is
 A mobile-first personal finance tracker (React 18, Create React App) with an optional Supabase cloud mode and an in-app NasrinAI chat. It records money; it does **not** connect to banks, move money, or control cards. Live site: movo.nasrinai.com (Vercel). Repo: `nasrinaiv0/movo`, default branch `main`.
 

@@ -9,7 +9,7 @@ Scope: iOS Capacitor 8, Swift, React, Supabase/Vercel. No production deployment 
 |---|---|---|---|
 | LocalAuthentication (Face ID / Touch ID) | Already implemented and retained | `ios/App/App/MovoNativePlugin.swift`, `src/lib/appLock.js` | Device test: opt-in, cancel, biometric reset, passcode fallback, background re-lock |
 | App Intents / Siri | NEW: native expense review intent, Xcode target registration, React deep-link source recognition and tests | `ios/App/App/MOVOAppIntents.swift`, `ios/App/App.xcodeproj/project.pbxproj`, `src/lib/autoLog.js` | Xcode build and on-device Siri discovery + confirmation; no unattended transaction creation |
-| Keychain Services | NEW: restricted native storage bridge with `automationKey` allowlist | `ios/App/App/MovoNativePlugin.swift`, `src/lib/native.js` | Wire into device-key lifecycle only with an atomic migration + recovery tests. Existing device keys and Supabase tokens are NOT yet migrated |
+| Keychain Services | One device-only vault (from #227): allowlisted `movo-autolog-key` and Supabase `sb-*-auth-token` entries | `ios/App/App/MovoNativePlugin.swift`, `src/lib/nativeAutomationKey.js`, `src/lib/nativeSecureAuthStorage.js` | #248's separate `automationKey` bridge was folded into #227's vault at merge (2026-11-09) so the plugin defines each method once |
 | Sign in with Apple | Existing Supabase OAuth code, not verified end-to-end | `src/lib/financeRepository.js`, `src/lib/native.js` | Configure Apple provider in Supabase, Apple Developer Services ID/Key, native callback; verify session restores and cloud RLS |
 | StoreKit / StoreKit 2 via Capgo Native Purchases | Existing purchase/restore flow, server-side Apple signed-data verifier | `src/lib/nativePurchases.js`, `api/lib/purchaseVerification.js`, `api/purchases/*.js` | Apple Store product setup, root certs, signing API credentials, entitlement schema, sandbox/production purchase tests. Billing MUST remain disabled |
 | PassKit / Wallet | Not integrated; MOVO's membership cards are internal representations | None | Only offer Apple Wallet passes if issuer authorization, Apple pass signing certificate, supported pass fields and user consent are in place. No bank-card export |
@@ -27,7 +27,7 @@ Scope: iOS Capacitor 8, Swift, React, Supabase/Vercel. No production deployment 
 ### Security constraints
 
 - The Siri deep link is not a payment receipt or authorization and is never accepted as verified bank data.
-- Keychain uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, an allowlisted key name, a 4 KiB limit and the device's own Keychain; secret values never appear in Vercel env templates.
+- Keychain uses `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`, allowlisted key names and the device's own Keychain; secret values never appear in Vercel env templates.
 - Keychain is not a defense against malicious JavaScript running inside MOVO's WebView. Maintain Content Security Policy, dependency review, RLS and backend authorization.
 - No code in this PR migrates finance records, alters cloud/local reconciliation, enables subscriptions, or bypasses plan restrictions.
 - Native Apple OAuth and StoreKit events must be authenticated/verified server side; purchase UI alone is not proof of entitlement.
@@ -64,6 +64,6 @@ These are **store purchase verification credentials**, not Apple/Google OAuth cr
 - Added `MOVOAppIntents.swift` and linked it into the app Xcode target.
 - Mapped `siri_shortcut` deep-link source to a clearly labelled review prompt.
 - Added unit tests for Siri expense URLs and untrusted-key behavior.
-- Added narrow Keychain plugin methods and JS wrappers, **not yet called from the active sign-in/storage flow**.
+- Keychain: uses the #227 vault (automation key and auth tokens); #248's duplicate wrappers were removed when the two PRs were combined.
 - Updated the example env list and Vercel placeholder registry for verified Apple/Google store verification names.
 - Inherited the separate auth/cloud-load deduplication fix from `fix/web-auth-session-cloud-load-20261109`. Its production behavior still requires a signed-in end-to-end test.
