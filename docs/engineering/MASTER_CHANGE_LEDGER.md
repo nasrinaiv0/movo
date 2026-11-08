@@ -587,3 +587,9 @@ Storage-mode policy aligned with user request: local device recording stays avai
 
 ### 2026-11-08 — Confirmed local-only CSV/JSON import review flow
 Import preview adds confirmable Discard records / Save records actions, local-only writes and stale-ledger protection. Pro/Pro+ access pauses in local mode without purchase cancellation. See docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md. Full offline data migration remains blocked in PR #241.
+
+
+### 2026-11-09 | PR #245 | Generated locale coverage for local import/plan UI
+- All 11 `src/i18n/locales/*.json` catalogs and `version.js` regenerated from the branch's 2,540 source strings. No financial code or customer records changed.
+- Sandbox evidence: 2 i18n and 15 component tests passing; full new-head CI and real-device QA pending.
+- Report: `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
