@@ -52,3 +52,11 @@ Vercel environment variables **cannot independently grant secure MOVO access**: 
 - SQL: added isolated `manual_plan_grants.test.sql` and integrated into `scripts/test-plan-migration.py`. Run against disposable PostgreSQL first.
 - Pending: exact-head full CI/build; real iPhone Safari and signed devices; full JSON multi-domain restore; verification against actual deployed DB schema. Do not merge or deploy until release checks and migration rehearsal pass.
 - No live customer records, production SQL, or production environment variables were modified.
+
+## Final isolated verification (2026-11-09)
+- Verified exact branch at `cff0e8c89c0e8b6f6f7196068b1bfdafca00d618` in Vercel Sandbox `movo-import-persist-20261109`.
+- TypeScript typecheck passed.
+- Full frontend suite passed: **158 / 158 suites, 936 / 936 tests**, including import confirmation and i18n tests.
+- Disposable PostgreSQL 18.6 on sandbox localhost 127.0.0.1:55432 passed `scripts/test-plan-migration.py` with owner manual grant integration tests. No live database touched.
+- Optimized CRA compile passed: `GENERATE_SOURCEMAP=false NODE_OPTIONS=--max-old-space-size=2800 CI=true ./node_modules/.bin/react-scripts build`. The one-step `npm run build` with 1536 MB heap previously failed at prebuild due to sandbox Node heap OOM. The full tests were run and passed separately; this does not certify an unmodified CI build invocation.
+- Explicit remaining release gates: production SQL migration drift, multi-domain backup import, signed-in Safari import and cold reload, owner allowlist API and App Store/Play Store entitlement reconciliation. No deployment or merge.
