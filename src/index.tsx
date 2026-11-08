@@ -11,10 +11,15 @@ if (!container) {
   throw new Error('MOVO could not start because the root element is missing.');
 }
 
+// The customer splash is dismissed by App. The owner portal does not render App,
+// so remove it here before it can cover or intercept owner controls.
+const ownerRoute = /^\\/owner(?:\\/|$)/.test(window.location.pathname);
+if (ownerRoute) document.getElementById('movo-splash')?.remove();
+
 const root = createRoot(container);
 const render = () => root.render(
   <React.StrictMode>
-    {typeof window !== 'undefined' && /^\/owner(?:\/|$)/.test(window.location.pathname)
+    {ownerRoute
       ? <React.Suspense fallback={<div style={{ padding: 32 }}>Loading protected owner access…</div>}><OwnerConsole /></React.Suspense>
       : <App />}
   </React.StrictMode>
