@@ -1,5 +1,11 @@
 # MOVO Master Change Ledger
 
+## 2026-11-09 — Access audit and replacement welcome offer
+
+First-100 Pro+ promotion superseded: one calendar month of Pro for every eligible first-time verified account, using the existing uncapped claim flow. Live plan RPCs/triggers are missing; cloud/local races, incomplete balance inputs and precision gaps require resolution. Vercel Sandbox authorization is blocked (403), so interactive validation and release remain pending. No production changes.
+
+See [dated audit](updates/2026-11-09-access-finance-ui-audit.md).
+
 ## 2026-11-08 — Optional account balances after each transaction
 
 - Ledger-derived, account-currency running balances in transaction history; paired source and destination for transfers.
