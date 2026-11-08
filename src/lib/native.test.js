@@ -14,6 +14,21 @@ test('movo:// links: sign-in return and payment log links', () => {
   expect(readAppUrl('not a url')).toBeNull();
 });
 
+test('rejects spoofed, ambiguous or oversized native deep links', () => {
+  expect(readAppUrl('movo://attacker@auth-callback?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback:444?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback/evil?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=abc&code=def')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?access_token=secret')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=' + 'x'.repeat(2050))).toBeNull();
+  expect(readAppUrl('movo://log/extra?amount=10')).toBeNull();
+  expect(readAppUrl('movo://log?amount=10#ignored')).toBeNull();
+  expect(readAppUrl('movo://log?merchant=' + 'x'.repeat(5000))).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=abc&error=access_denied')).toEqual({
+    kind: 'auth', code: '', error: 'access_denied',
+  });
+});
+
 test('notification ids are stable, positive and differ by tag', () => {
   expect(notificationId('renewal:netflix')).toBe(notificationId('renewal:netflix'));
   expect(notificationId('renewal:netflix')).not.toBe(notificationId('limit:food'));
@@ -36,8 +51,12 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   window.localStorage.clear();
   await restoreNativeStorage(window.localStorage);
   expect(window.localStorage.getItem('movo.preferences.v3')).toBe('{"theme":"dark"}');
-  expect(window.localStorage.getItem('sb-x-auth-token')).toBe('tok');
+  expect(window.localStorage.getItem('sb-x-auth-token')).toBeNull();
   expect(window.localStorage.getItem('other.key')).toBeNull();
+  expect(Preferences.get).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token' });
+  expect(Preferences.set).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token', value: 'tok' });
+  // Non-secret Preferences may be mirrored, but never Supabase auth tokens.
+  expect(Preferences.set).not.toHaveBeenCalledWith({ key: 'sb-x-auth-token', value: 'tok' });
   set.mockClear();
   window.localStorage.setItem('movo.local.accounts.v1', '[]');
   window.localStorage.setItem('unrelated', '1');
@@ -45,4 +64,13 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   expect(set).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1', value: '[]' });
   window.localStorage.removeItem('movo.local.accounts.v1');
   expect(remove).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
+});
+
+
+test('Siri expense deep links are parsed as review requests', () => {
+  expect(readAppUrl('movo://log?src=siri_shortcut&amount=250.50&merchant=Groceries')).toEqual({
+    kind: 'log', hash: '#/log?src=siri_shortcut&amount=250.50&merchant=Groceries',
+  });
+  // URLs from other apps never become MOVO commands.
+  expect(readAppUrl('https://untrusted.example/log?amount=250')).toBeNull();
 });

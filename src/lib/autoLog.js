@@ -7,7 +7,7 @@ import { findReference } from './ocr';
  * A link only logs automatically when its key matches the secret generated on this device and auto-log is on;
  * anything else is shown as a prompt, so a link from a website or message can never add records by itself.
  */
-const SOURCES = { applepay: 'Apple Pay', googlepay: 'Google Pay', notification: 'Notification', bank: 'Bank alert' };
+const SOURCES = { applepay: 'Apple Pay', googlepay: 'Google Pay', notification: 'Notification', bank: 'Bank alert', siri_shortcut: 'Siri' };
 const SEEN = 'movo.autolog.seen.v1';
 
 export const newKey = () => {

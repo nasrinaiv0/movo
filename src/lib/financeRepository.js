@@ -50,11 +50,14 @@ export async function finishOAuth(code) {
 export async function signInWithGoogle() { return signInWithProvider('google', { prompt: 'select_account' }); }
 export async function signInWithApple() { return signInWithProvider('apple'); }
 export async function signOut() { return unwrap(await requireClient().auth.signOut()); }
+/** Revoke refresh tokens for every other session without logging out this device. */
+export async function revokeOtherSessions() { return unwrap(await requireClient().auth.signOut({ scope: 'others' })); }
 
 export async function listAccounts() {
-  return unwrap(await requireClient().from('financial_accounts')
-    .select('id,name,account_type,institution_name,currency,opening_balance,is_archived,display_order,created_at')
-    .order('display_order', { ascending: true }).order('created_at', { ascending: true }));
+  // Stable full pagination is required for accurate offline reconciliation.
+  return fetchAllRows(() => requireClient().from('financial_accounts')
+    .select('id,name,account_type,institution_name,currency,opening_balance,is_archived,display_order,created_at,updated_at')
+    .order('display_order', { ascending: true }).order('created_at', { ascending: true }).order('id', { ascending: true }));
 }
 export async function createAccount(account, userId) {
   if (!userId) throw new Error('A signed-in user is required.');

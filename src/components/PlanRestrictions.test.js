@@ -39,3 +39,28 @@ test('future mascots and native widgets are not advertised as available', () => 
   expect(host.textContent).toContain('future release');
   expect(host.textContent).toContain('current ram stays the same');
 });
+
+test('switching cloud to local suspends premium card UI and restores it without touching subscription', () => {
+  const subscription = paid('pro_plus');
+  const show = cloudMode => <PlanProvider entitlement={subscription} cloudMode={cloudMode}>
+    <CardArt a={{id:'card',name:'Offline tester',balance:0}} orientation="portrait" show />
+  </PlanProvider>;
+  act(()=>root.render(show(true)));
+  expect(host.querySelector('.orientation-portrait')).toBeTruthy();
+  act(()=>root.render(show(false)));
+  expect(host.querySelector('.orientation-portrait')).toBeNull();
+  expect(host.querySelector('.orientation-landscape')).toBeTruthy();
+  expect(subscription.active).toBe(true);
+  act(()=>root.render(show(true)));
+  expect(host.querySelector('.orientation-portrait')).toBeTruthy();
+});
+test('offline feature requests explain paused access instead of encouraging a second purchase', () => {
+  const open=jest.fn(), signin=jest.fn();
+  act(()=>root.render(<PlanOffer cloudMode={false} feature="receiptScan" entitlement={paid('pro')} onClose={()=>{}} onOpenCloudSettings={open} onSignIn={signin} />));
+  expect(host.textContent).toContain('Pro and Pro+ features are paused');
+  expect(host.textContent).toContain('does not cancel or refund');
+  act(()=>[...host.querySelectorAll('button')].find(x=>x.textContent==='Cloud Sync settings').click());
+  expect(open).toHaveBeenCalledTimes(1);
+  expect(signin).not.toHaveBeenCalled();
+  expect(host.textContent).not.toContain('Claim my free month');
+});

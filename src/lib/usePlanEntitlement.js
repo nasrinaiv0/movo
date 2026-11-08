@@ -4,22 +4,23 @@ import { getStoreEntitlements, isNativePurchasePlatform, syncStorePurchases } fr
 export function usePlanEntitlement(session) {
   const [state, setState] = useState(null);
   const [checkedOwner, setCheckedOwner] = useState(null);
+  const checkedRef = useRef(null); // read inside refresh without making refresh change identity
   const owner = useRef(session?.user?.id);
   owner.current = session?.user?.id;
   const refresh = useCallback(async () => {
     const id = session?.user?.id;
-    if (!id || !session?.access_token) { setCheckedOwner(null); return null; }
+    if (!id || !session?.access_token) { checkedRef.current = null; setCheckedOwner(null); return null; }
     try {
       const value = await getStoreEntitlements(session);
-      if (owner.current === id) { setState({ ...value, owner: id }); setCheckedOwner(id); }
+      if (owner.current === id) { setState({ ...value, owner: id }); checkedRef.current = id; setCheckedOwner(id); }
       return value;
     } catch {
       // A temporary network failure must not erase the last verified expiry.
       // effectivePlan will still expire it locally; an unknown new session remains unverified.
-      if (owner.current === id && checkedOwner !== id) setState(null);
+      if (owner.current === id && checkedRef.current !== id) setState(null);
       return null;
     }
-  }, [session?.user?.id, session?.access_token, checkedOwner]);
+  }, [session?.user?.id, session?.access_token]);
   useEffect(() => {
     refresh();
     if (session?.access_token && isNativePurchasePlatform()) syncStorePurchases(session).then(refresh).catch(() => {});

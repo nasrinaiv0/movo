@@ -1,9 +1,36 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
+
+820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.
+
+## 2026-11-09 — Access audit and replacement welcome offer
+
+First-100 Pro+ promotion superseded: one calendar month of Pro for every eligible first-time verified account, using the existing uncapped claim flow. Live plan RPCs/triggers are missing; cloud/local races, incomplete balance inputs and precision gaps require resolution. Vercel Sandbox authorization is blocked (403), so interactive validation and release remain pending. No production changes.
+
+See [dated audit](engineering/updates/2026-11-09-access-finance-ui-audit.md).
+
 **Last reconciled:** 2026-11-05  
 **Source of truth:** GitHub PR pages, commit SHAs, Actions runs, and Vercel deployment records. This register is a concise operational index, not a substitute for those records.
 
 ## Open pull requests
+
+**2026-11-09 — PR #241 consolidated:** keeps masked emails and the network-failure-safe entitlement refresh; its separate offline workspace is dropped in favour of #250's. See `docs/engineering/updates/2026-11-09-pr241-consolidated.md`.
+
+**2026-11-09 — PR #246 alignment:** inherits #245's payment-link render-loop fix; App test updated to #246's storage-retry wording. Jest 926/926, TypeScript and strict build pass locally. See `docs/engineering/updates/2026-11-09-pr246-test-alignment.md`.
+
+**2026-11-09 — PR #245 render-loop fix:** the payment-link effect re-opened the plans sheet on every render in local mode (App tests hung). Links are now marked handled and cleared before the Pro+ check. App tests 49/49. See `docs/engineering/updates/2026-11-09-pr245-payment-link-loop-fix.md`.
+
+**2026-11-08 — PR #227 free security hardening:** New disposable-local PostgreSQL 18 runner applied all 28 MOVO migrations, verified all 12 privileged finance RPCs with two synthetic users and successful owner-only controls; no paid Supabase branch or production mutations. Added PR CI job, strict localhost-only runner and native OAuth/deep-link URL validation. See `docs/engineering/updates/2026-11-08-pr227-free-local-security.md`; remain DRAFT pending exact-head CI and signed-device checks.
+
+
+**2026-11-08 — PR #227 localization CI correction:** Restored translation-catalog completeness for the new Profile remote-session-revocation controls: five strings in all 11 MOVO locales, regenerated locale dictionaries and version. Isolated Vercel Sandbox i18n and scope tests pass; require complete final-head CI before merger. See dated PR227 security implementation note.
+
+**2026-11-08 — PR #227 session controls:** Added user-confirmed sign-out of other sessions via Supabase `scope: 'others'` while preserving the current session. Verified with focused tests; current access JWTs remain valid until expiry. See `docs/engineering/updates/2026-11-08-pr227-security-implementation.md`.
+
+**2026-11-08 — PR #227 native security remediation:** Secure legacy token deletion and logout tombstones are implemented; combined main/security Sandbox 814 tests passed. Preserve DRAFT until iOS/Android signed-device tests, 12 privileged RPC cross-user checks, and branch protection. See `docs/engineering/updates/2026-11-08-pr227-security-implementation.md`.
+
+**2026-11-08 — PR #244 Philippine rewards reference presets (draft):** Reconciled against main after #239 and #240 and restored full engineering registers; compact eight-category collapse/expand, editable OFF-by-default cashback/points suggestions, and accounting-safe calculations. Exact combined tree Vercel Sandbox: 820/820 Jest tests across 146 suites, TypeScript, optimized build PASS. GitHub documentation-gate repair squashes the original implementation and dated engineering update into one reviewable commit, preserving all code; branch remains DRAFT pending provider terms verification, native/signed-device UI checks, and cloud/local override validation. Details: `docs/engineering/updates/2026-11-08-ph-rewards-presets-collapsible-categories.md`.
 
 **2026-11-08 — Transaction running balances (review, accessibility regression correction):** Add optional after-transaction balance/remaining credit history with paired transfer balances, cents accuracy, privacy masking and dedicated Settings toggle. Prepared in isolated Vercel Sandbox; verify exact-head CI and preview UI before merge. Details: docs/engineering/updates/2026-11-08-transaction-running-balances.md.
 
@@ -21,6 +48,7 @@
 
 **2026-11-07 — Grouped header zero-padding change:** `ui/header-group-zero-padding-20261107` removes utility capsule and grouped-button padding across MOVO, preserves icon geometry, and adds a CSS regression test. Vercel Sandbox validation and GitHub CI to be recorded in PR; no production merge implied. Details: `docs/engineering/updates/2026-11-07-grouped-header-zero-padding.md`.
 
+**2026-11-08 — PR #227 updated security gap audit:** Review of exact security branch and live MOVO DB identified 12 privileged RPCs pending two-user negative tests, unprotected main, 34-commit divergence and three merge conflicts, native legacy secret cleanup caveat, and canceled iOS CI. Sandbox 644/644 tests and build passed. Audit: `docs/security/PR227_GAP_AUDIT_2026-11-08.md`. PR remains DRAFT.
 
 | PR | Scope | Current state | Next action |
 |---|---|---|---|
@@ -450,3 +478,73 @@ These are not resolved by a green frontend CI run or a READY deployment:
 ### 2026-11-08 — Cloud/offline and profile email privacy PR
 - Implemented account-scoped local browser workspace, complete-snapshot-gated cloud toggle, offline transaction support after verified Pro expiry, and masked email in Profile.
 - Production release blocked pending full offline record coverage, signed device and two-account security tests; see docs/security/2026-11-08-offline-cloud-handoff-and-email-masking.md.
+
+
+### 2026-11-08 — Offline storage mode pauses plan-access features
+- Proposed policy: Cloud Sync off -> local features only; Pro/Pro+ effective access paused while existing verified subscription/billing remain unaffected.
+- Cloud Sync on -> verified, active, unexpired entitlements only; UI premium content and cloud sync writes are mode-gated.
+- UI explains offline mode and provides Cloud Sync settings action without encouraging duplicate plan purchases.
+- No cloud finance snapshot migration, backend plan change or production database mutation; blocked high-risk migration remains PR #241.
+- Evidence: docs/engineering/updates/2026-11-08-local-mode-plan-access-policy.md; Vercel Sandbox + GitHub exact-head CI required.
+
+### 2026-11-08 — Local CSV/JSON import: Discard or Save with confirmations
+- Uploaded files are preview-only until an explicit, separate confirmation. Discard removes preview only; Save commits validated local accounts and transactions.
+- No imported file is written to Supabase; active cloud mode blocks committing and prompts local-mode switch.
+- Wallet, Home and Transactions refresh from successfully saved device records. Invalid, duplicate, unsupported or stale records do not silently overwrite financial data.
+- Cloud plan access is paused in local mode without affecting store subscription. PR #241 full offline migration remains blocked.
+- Reference: docs/engineering/updates/2026-11-08-local-import-discard-save-confirmation.md.
+
+### 2026-11-08 — Translation-catalog coverage fix for PR #245
+- Added 67 missing English interface keys to the 11-language catalog, including local/cloud mode, save/discard confirmations and sync safeguards. Translations are machine-assisted and should be professionally reviewed before localization sign-off.
+- Verified `src/lib/i18n.test.js` in isolated Vercel Sandbox: 2/2 tests passing, 2,540 catalog strings and complete placeholder coverage; existing English source keys unchanged.
+- No finance code or subscription records changed in this CI-only patch. Full GitHub Phase 1 CI and signed-device audit are still release gates.
+
+### 2026-11-08 — Draft offline/online reconciliation foundation (NOT commercial release-ready)
+- Owner-scoped v2 device journal with last-confirmed snapshot; local offline writes marked pending, cloud download mirrored into device before switch.
+- Three-way baseline/local/cloud reconciliation, no clock-based last-write-wins, no silent deletion/resurrection or guest-to-account import.
+- Safe subset: account create/CAS-update and new simple transaction upload with owner/RLS checks, UUID/cents validation and cloud refetch; rollback preserves local unsynced queue.
+- Settings sync status and online-event reconnect retries; Pro/Pro+ still paused in offline local mode without cancelling store subscription.
+- JSON/CSV and onboarding uploads require Save/Discard confirmation and local-only import; unsupported backed-up groups remain preview-only.
+- Not complete: linked transaction revisions/reversals, loans, obligations, allocations, schedules, attachments, owner-pref isolation, encrypted device storage, multi-device concurrency and real signed-device QA. Do not merge as full offline support.
+- Engineering evidence: docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md; GitHub exact-head CI and Vercel Sandbox QA required.
+
+### 2026-11-08 — Interrupted-upload reconciliation idempotency
+- Hardened three-way sync to recognize an already committed offline row after the network response was lost, comparing stable financial fields rather than remote-created timestamps/default values.
+- Same-ID rows with different amount, account, transfer, merchant or meaningful transaction data remain unresolved conflicts. No duplicate second upload and no silent last-write-wins.
+- Updated transport verification to use the same audited financial-field comparison as the pure planner; CI regression adds 3 retry/corruption cases.
+- Exact candidate Vercel Sandbox tree tests: 55/55 in 8 suites plus TypeScript passed; production merge remains blocked by broader accounting/multi-device/signed-device privacy requirements.
+- Engineering evidence: docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md.
+
+
+### 2026-11-09 — PR #246 cloud/offline guard (still draft)
+Required financial cloud reads now fail closed rather than silently returning empty records, and Cloud Sync off requires a last-confirmed matching device workspace. See `docs/engineering/updates/2026-11-09-offline-snapshot-read-and-handoff-guard.md`. Incomplete domain coverage, non-atomic cloud snapshots and signed-device verification remain blockers; no production release authorized.
+
+
+### 2026-11-09 — PR #246 translation catalog release gate
+Regenerated 11 language catalogs (2,543 keys each) and catalog version with exact byte-for-byte SHA parity to Vercel Sandbox. Restores release-gate coverage for the three sync reconnect strings and the 67 inherited local-mode/import strings. See the 2026-11-09 sync guard evidence; full new-head CI and device QA remain mandatory.
+
+
+### 2026-11-09 — PR #245 localization CI repair
+Regenerated all 11 locale catalogs + version from branch source (2,540 strings). Focused i18n (2) and import/plan/walkthrough (15) tests pass in Vercel Sandbox. Exact new-head CI and device verification still required; PR #246 remains separate draft synchronization work. See `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
+
+### 2026-11-09 — PR #246 network-loss guard
+A second network-offline transition now checks the last confirmed owner-scoped baseline rather than overwriting it with UI rows. Dirty local journals restore device mode; stale views show the last confirmed local copy; missing/unsafe caches block local editing and pause paid UI. Focused regression and exact-head verification required; release remains blocked.
+
+**2026-11-09 — PR #248 Apple SDK & native simulator validation:** Consolidated Siri App Intents expense-review flow, native Keychain bridge, authenticated cloud-load guard, verified StoreKit/Google Play environment names, and simulator-install/deep-link test workflow. Native Xcode Simulator compile succeeded on run #119; additional simulator smoke test pending exact-head result. The simulator stage was time-bounded to fail diagnostically instead of hang. The PR remains draft until true native smoke, full CI, and real-device verification are green. Details: `docs/engineering/updates/2026-11-09-apple-sdk-native-build-ci.md` and `docs/APPLE_SDK_INTEGRATION.md`.
+
+
+**2026-11-09 simulator CI correction:** Exact-head iOS run #122 failed in the macOS runner's first-boot CoreSimulator migration (`com.apple.locationd.migrator`), with `simctl bootstatus` exceeding 180 seconds; all Xcode compilation had passed. The workflow allows a bounded 600-second boot initialization for cold runners, retaining installation/launch timeouts and a mandatory smoke-test pass. See the engineering update; exact-head rerun remains required.
+
+## 2026-11-06 — Native session vault and mobile safety PR
+- Branch security/native-auth-backup-privacy-20261106, base main 9c423c7. Open UI PR #225 preserved. Release NOT CERTIFIED.
+- Native Supabase sessions migrated to iOS Keychain/AndroidKeyStore vaults; legacy session and PKCE verifier copies purged only after successful secure storage.
+- Android backup and device transfer disabled, privacy screenshots restricted, iOS switcher snapshot cover; Android R8 and native CI added. Public security.txt.
+- Source and tests: 17 focused tests passed initially. Require full suite, production build and Apple/Android simulator compile before merging. Signed physical device tests remain mandatory for app stores.
+- Not addressed: web cookie sessions, passwordless MFA/passkeys, verified deep links, app attestation, 12 privileged-RPC cross-user tests, login alerts, active device controls and comprehensive rate limiting.
+- Detailed dated update: docs/engineering/updates/2026-11-06-native-session-hardening.md. Full 22-control matrix: docs/security/SECURITY_HARDENING_22_POINT_2026-11-06.md.
+
+- PR #227 Android CI first attempt stopped before compilation in android-actions/setup-android@v3 because sdkmanager rejected obsolete package 'tools'. Removed the action and used the preinstalled ubuntu-latest SDK command-line tools with explicit API 36 packages. Native compilation still needs a passing rerun; this follow-up modifies the workflow and same-commit docs only.
+
+- PR #227 second Android CI attempt found sdkmanager present under the hosted Android SDK but absent from PATH. The workflow now discovers its absolute executable location under ANDROID_HOME/cmdline-tools, rather than assuming PATH. Compiling the app remains a separate verification step.
+
+- PR #227 follow-up: automation device secret had remained embedded in native general preferences; now stored only in the platform vault after write-first migration, scrubbed from mirrored preferences, and safely rotated before old-token revocation. Native/browser behavior covered by additional unit and source contract tests. Native CI and physical-device validation still required.

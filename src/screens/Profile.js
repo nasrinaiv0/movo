@@ -5,10 +5,25 @@ import { money, shown } from '../lib/format';
 import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
 import { maskEmail } from '../lib/emailPrivacy';
+import { revokeOtherSessions } from '../lib/financeRepository';
 
 
 export default function Profile({ c }) {
   const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
+  const [revokingOtherSessions, setRevokingOtherSessions] = useState(false);
+  const revokeOtherDevices = async () => {
+    if (revokingOtherSessions || !window.confirm(tr('Sign out of other devices?'))) return;
+    setRevokingOtherSessions(true);
+    try {
+      await revokeOtherSessions();
+      c.notify(tr('Other devices will need to sign in again after their current session expires.'));
+    } catch {
+      c.notify(tr('Could not revoke other sessions. Please try again.'));
+    } finally {
+      setRevokingOtherSessions(false);
+    }
+  };
+
   const sum = (arr) => arr.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gearSolid', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
@@ -61,6 +76,11 @@ export default function Profile({ c }) {
     </section>
     <section className="card menu-card gap">
       <button type="button" className="menu-row" onClick={exportCsv}><span className="menu-icon bare"><Icon name="download" size={20} /></span><span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
+      {session && <button type="button" className="menu-row" onClick={revokeOtherDevices} disabled={revokingOtherSessions} aria-busy={revokingOtherSessions}>
+        <span className="menu-icon bare"><Icon name="shield" size={20} /></span>
+        <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
+        <Icon name="chevron" size={16} />
+      </button>}
       {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Sign out')}</strong></span></button>
         : c.supabaseConfigured && <button type="button" className="menu-row" onClick={() => go('Sign in')}><span className="menu-icon bare"><Icon name="user" size={20} /></span><span className="menu-main"><strong>{tr('Sign in / create account')}</strong></span><Icon name="chevron" size={16} /></button>}
     </section>

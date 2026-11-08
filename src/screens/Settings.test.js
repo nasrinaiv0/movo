@@ -85,7 +85,8 @@ describe('Cloud Sync setting semantics', () => {
 
     const row = findCloudSyncRow(container);
     expect(row).toBeTruthy();
-    expect(row.textContent).toContain('Cloud sync is active for your signed-in account.');
+    expect(row.textContent).toContain('Turning it off pauses paid features');
+    expect(row.textContent).toContain('cloud-only records are not copied automatically');
     const toggle = row.querySelector('[role="switch"]');
     expect(toggle).toBeTruthy();
     expect(toggle.getAttribute('aria-checked')).toBe('true');
@@ -103,7 +104,8 @@ describe('Cloud Sync setting semantics', () => {
     act(() => root.render(<Settings c={context} />));
 
     const row = findCloudSyncRow(container);
-    expect(row.textContent).toContain('Cloud sync is paused on this device.');
+    expect(row.textContent).toContain('paid features paused');
+    expect(row.textContent).toContain('cloud records remain stored in your account');
     const toggle = row.querySelector('[role="switch"]');
     expect(toggle).toBeTruthy();
     expect(toggle.getAttribute('aria-checked')).toBe('false');
