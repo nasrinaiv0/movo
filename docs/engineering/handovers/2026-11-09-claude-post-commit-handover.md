@@ -1,9 +1,9 @@
 # MOVO — Claude Engineering Handover After Follow-on Commits
 
-**Snapshot taken:** 2026-11-09 (Philippine time)  
-**Repository:** https://github.com/nasrinaiv0/movo  
-**Main HEAD observed:** b3c21b75d4a388a2b20611ebff1a991c829d85ad  
-**Purpose:** Give Claude enough verified context to pick up MOVO after subsequent changes without duplicating work, overwriting financial data, or treating draft code as released.  
+**Snapshot taken:** 2026-11-09 (Philippine time)
+**Repository:** https://github.com/nasrinaiv0/movo
+**Main HEAD observed:** b3c21b75d4a388a2b20611ebff1a991c829d85ad
+**Purpose:** Give Claude enough verified context to pick up MOVO after subsequent changes without duplicating work, overwriting financial data, or treating draft code as released.
 **Status:** HANDOVER / NOT A RELEASE CERTIFICATION. This file is intentionally on a documentation-only PR. Review live GitHub PR status and CI again before making changes.
 
 ## 0. Instructions to Claude: read in this order
