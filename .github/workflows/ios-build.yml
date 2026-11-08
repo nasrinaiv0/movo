@@ -68,7 +68,7 @@ jobs:
           echo "Simulator selected: $DEVICE_ID"
           # Prevent a missing or unhealthy CoreSimulator runtime from hanging this job.
           python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","boot",sys.argv[1]], check=True, timeout=90)' "$DEVICE_ID"
-          python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"], check=True, timeout=180)' "$DEVICE_ID"
+          python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"], check=True, timeout=600)' "$DEVICE_ID"
           APP="$RUNNER_TEMP/movo-derived-data/Build/Products/Debug-iphonesimulator/App.app"
           test -d "$APP" || { echo "::error::Simulator app binary not found."; exit 1; }
           python3 -c 'import subprocess,sys;subprocess.run(["xcrun","simctl","install",sys.argv[1],sys.argv[2]], check=True, timeout=90)' "$DEVICE_ID" "$APP"

@@ -9,3 +9,8 @@ PR #248 (`feat/apple-sdk-foundations-20261109`) consolidates the native Apple SD
 **Still blocked:** physical-device Face ID/Keychain and iPhone Siri phrase tests, production OAuth, StoreKit payment validation, account cloud synchronization after login, real WidgetKit/PassKit/BackgroundTasks targets. No production merge or deployment. For details see `docs/APPLE_SDK_INTEGRATION.md`.
 
 **Release rule:** Never mark simulator smoke tests or App Store readiness passed without completed run evidence; never treat an unsigned simulator compile as a signed device test.
+
+
+## 2026-11-09 — simulator runner boot migration failure
+
+Run [#122](https://github.com/nasrinaiv0/movo/actions/runs/42507263975) compiled the app but failed at `xcrun simctl bootstatus` because CoreSimulator spent over 180 seconds in `com.apple.locationd.migrator` data migration. This is macOS runner initialization, not a demonstrated MOVO compile failure. Increased bootstatus timeout to 600 seconds (finite), with existing 90-second install and launch limits intact; rerun required. No app code, authentication, user records or secrets changed.
