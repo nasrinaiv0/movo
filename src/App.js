@@ -86,6 +86,8 @@ import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/s
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
 import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace } from './lib/offlineWorkspaceStore';
 import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
+import { readRequiredFinancialCloudViews } from './lib/cloudFinancialReadGate';
+import { matchesConfirmedOfflineHandoff } from './lib/offlineHandoffSafety';
 import { assertOfflineSyncOwner, fetchOfflineSyncCloud, insertOfflineAccount, updateOfflineAccountCAS, insertOfflineTransaction } from './lib/offlineSyncCloudAdapter';
 import { canUseFeature } from './lib/planAccess';
 import { planOfflineReconciliation } from './lib/offlineReconciliation';
@@ -414,11 +416,18 @@ function App() {
       const today=new Date();
       const dateKey=d=>String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const until=new Date(today);until.setDate(until.getDate()+30);
-      const [rawCloud,postings,activities,failed,bills,billOccurrences,budgets]=await Promise.all([
-        fetchOfflineSyncCloud(ownerId),listAccountingPostings().catch(()=>[]),listAccountingActivities().catch(()=>[]),
-        Promise.resolve().then(()=>listAutomationInbox()).catch(()=>[]),
-        listBills().catch(()=>[]),listOccurrences(dateKey(until),dateKey(today)).catch(()=>[]),listBudgets().catch(()=>[]),
-      ]);
+      // Never convert a failed financial read into an empty collection. That
+      // would falsely certify a partial device fallback as complete.
+      const {accountsTransactions:rawCloud,postings,activities,inbox:failed,bills,
+        billOccurrences,budgets}=await readRequiredFinancialCloudViews({
+        accountsTransactions:()=>fetchOfflineSyncCloud(ownerId),
+        postings:()=>listAccountingPostings(),
+        activities:()=>listAccountingActivities(),
+        inbox:()=>listAutomationInbox(),
+        bills:()=>listBills(),
+        billOccurrences:()=>listOccurrences(dateKey(until),dateKey(today)),
+        budgets:()=>listBudgets(),
+      });
       if (!cloudSyncRequestedRef.current || loadEpoch!==cloudLoadEpochRef.current) return false;
       let confirmed=rawCloud;
       let status={status:'synced',message:'Cloud and device account/transaction rows match.',uploaded:0,downloaded:0};
@@ -492,18 +501,19 @@ function App() {
         const ownerId=session.user.id;
         const rows={financial_accounts:cloudAccounts,transactions:rawTxs};
         const previous=loadOfflineWorkspace(ownerId);
-        if(previous?.dirty){
-          notify('Unreconciled offline records exist. Review them before switching storage modes.');
+        if(!matchesConfirmedOfflineHandoff(ownerId,previous,rows)){
+          notify('Cloud and device records are not a matching confirmed snapshot. Refresh/reconcile before switching off Cloud Sync.');
           return false;
         }
-        if(!saveOfflineWorkspace(ownerId,{version:2,owner:ownerId,
-          baseline:rows,working:rows,dirty:false,
-          lastConfirmedAt:new Date().toISOString()})){
+        // Reuse the last VERIFIED baseline instead of certifying possibly
+        // stale in-memory UI rows as a fresh cloud backup. Preserve extras.
+        if(!saveOfflineWorkspace(ownerId,previous)){
           notify('Device storage is full. Cloud Sync remains on; export a backup before trying again.');
           return false;
         }
         setOfflineOwnerId(ownerId);
-        setLocalAccounts(rows.financial_accounts);setRawTxs(rows.transactions);
+        setLocalAccounts(previous.working.financial_accounts);
+        setRawTxs(previous.working.transactions);
       }else if(session?.user?.id&&offlineOwnerId!==session.user.id&&!loadOwnedLocal(session.user.id)){
         notify('Unable to open this account’s offline workspace. Cloud settings were not changed.');
         return false;

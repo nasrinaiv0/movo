@@ -484,3 +484,7 @@ These are not resolved by a green frontend CI run or a READY deployment:
 - Updated transport verification to use the same audited financial-field comparison as the pure planner; CI regression adds 3 retry/corruption cases.
 - Exact candidate Vercel Sandbox tree tests: 55/55 in 8 suites plus TypeScript passed; production merge remains blocked by broader accounting/multi-device/signed-device privacy requirements.
 - Engineering evidence: docs/engineering/updates/2026-11-08-offline-online-reconciliation-design.md.
+
+
+### 2026-11-09 — PR #246 cloud/offline guard (still draft)
+Required financial cloud reads now fail closed rather than silently returning empty records, and Cloud Sync off requires a last-confirmed matching device workspace. See `docs/engineering/updates/2026-11-09-offline-snapshot-read-and-handoff-guard.md`. Incomplete domain coverage, non-atomic cloud snapshots and signed-device verification remain blockers; no production release authorized.

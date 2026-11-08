@@ -593,3 +593,10 @@ Added owner-scoped device journal, pure 23-domain reconciliation inventory, safe
 
 ### 2026-11-08 — Offline retry financial-field equivalence
 Three-way reconciliation now safely handles a server-accepted local create whose success response is lost. Both the planner and mutation-confirmation layer compare the same exact-cents, owner-scoped financial fields while ignoring only known server-generated defaults and timestamps. Divergent amounts and accounts still conflict. Targeted Sandbox regression 55/55. Full production release remains blocked.
+
+
+### 2026-11-09 | PR #246 | Offline snapshot read + handoff integrity guard
+- Application: `src/App.js`, `src/lib/cloudFinancialReadGate.js`, `src/lib/offlineHandoffSafety.js`. Regression: both corresponding `.test.js` files.
+- Safety: failed/malformed finance reads cannot masquerade as empty rows; cloud-off keeps the last verified owner-scoped baseline and rejects mismatched visible records.
+- Scope: draft only; separate cloud table reads are not an atomic snapshot and broader accounting/media synchronization is still blocked. No production data/schema or plan grants modified.
+- Evidence: `docs/engineering/updates/2026-11-09-offline-snapshot-read-and-handoff-guard.md`.
