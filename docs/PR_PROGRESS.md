@@ -492,3 +492,7 @@ Required financial cloud reads now fail closed rather than silently returning em
 
 ### 2026-11-09 — PR #246 translation catalog release gate
 Regenerated 11 language catalogs (2,543 keys each) and catalog version with exact byte-for-byte SHA parity to Vercel Sandbox. Restores release-gate coverage for the three sync reconnect strings and the 67 inherited local-mode/import strings. See the 2026-11-09 sync guard evidence; full new-head CI and device QA remain mandatory.
+
+
+### 2026-11-09 — PR #245 localization CI repair
+Regenerated all 11 locale catalogs + version from branch source (2,540 strings). Focused i18n (2) and import/plan/walkthrough (15) tests pass in Vercel Sandbox. Exact new-head CI and device verification still required; PR #246 remains separate draft synchronization work. See `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.

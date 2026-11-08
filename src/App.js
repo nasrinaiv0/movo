@@ -502,7 +502,7 @@ function App() {
         const rows={financial_accounts:cloudAccounts,transactions:rawTxs};
         const previous=loadOfflineWorkspace(ownerId);
         if(!matchesConfirmedOfflineHandoff(ownerId,previous,rows)){
-          notify('Cloud and device records are not a matching confirmed snapshot. Refresh/reconcile before switching off Cloud Sync.');
+          notify('Cloud and device history differ unexpectedly. Existing offline records were preserved for review.');
           return false;
         }
         // Reuse the last VERIFIED baseline instead of certifying possibly

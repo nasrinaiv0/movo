@@ -605,3 +605,9 @@ Three-way reconciliation now safely handles a server-accepted local create whose
 ### 2026-11-09 | PR #246 | Locale catalog repair for cloud/offline reconciliation
 - Rebuilt all 11 JSON dictionaries and version.js from new and inherited source catalogs with exact Sandbox blob-SHA parity (2,543 keys/language).
 - Translation coverage remains subject to exact-head CI. Does not modify production DB, live finance rows or store grants.
+
+
+### 2026-11-09 | PR #245 | Generated locale coverage for local import/plan UI
+- All 11 `src/i18n/locales/*.json` catalogs and `version.js` regenerated from the branch's 2,540 source strings. No financial code or customer records changed.
+- Sandbox evidence: 2 i18n and 15 component tests passing; full new-head CI and real-device QA pending.
+- Report: `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
