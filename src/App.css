@@ -7683,3 +7683,76 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px;
 }
+
+/* ===================================================================================================================
+ * Video guide (components/TutorialVideo.js), 2026-11-09: a calm story-style player. Scenes fade and rise in
+ * (ease-out only), the progress bar fills per scene; reduced motion shows still scenes.
+ * =================================================================================================================== */
+.movo-app .tv-backdrop { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)); background: rgba(8, 10, 16, .62); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); }
+.movo-app .tv-player { position: relative; width: min(100%, 400px); height: min(720px, calc(100dvh - 24px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 28px; padding: 14px 16px 16px; color: #fff;
+  background: radial-gradient(120% 70% at 50% 0%, rgba(var(--accent-rgb, 47,127,240), .55), transparent 70%), linear-gradient(180deg, #151a24, #0c0f16); box-shadow: 0 30px 80px -30px rgba(0,0,0,.7); }
+.movo-app .tv-progress { display: flex; gap: 4px; }
+.movo-app .tv-progress span { flex: 1; height: 3px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; }
+.movo-app .tv-progress i { display: block; height: 100%; background: #fff; border-radius: inherit; }
+.movo-app .tv-top { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.movo-app .tv-count { flex: 1; font-size: 12px; font-weight: 600; opacity: .7; }
+.movo-app .tv-icon, .movo-app .tv-skip { min-height: 34px; border: 0; border-radius: 99px; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 13px; font-weight: 600; }
+.movo-app .tv-icon { width: 34px; display: grid; place-items: center; padding: 0; }
+.movo-app .tv-skip { padding: 0 14px; }
+.movo-app .tv-stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 8px 6px; animation: tv-in .5s ease-out both; }
+.movo-app .tv-stage h2 { margin: 18px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -.01em; }
+.movo-app .tv-stage p { margin: 0; max-width: 300px; font-size: 15px; line-height: 1.45; opacity: .78; }
+.movo-app .tv-tap { position: absolute; top: 64px; bottom: 84px; width: 34%; border: 0; background: transparent; z-index: 1; cursor: pointer; }
+.movo-app .tv-prev { left: 0; } .movo-app .tv-next { right: 0; }
+.movo-app .tv-tap:disabled { pointer-events: none; }
+.movo-app .tv-actions { position: relative; z-index: 2; display: grid; }
+.movo-app .tv-actions .secondary-button { background: rgba(255,255,255,.14); color: #fff; border: 0; }
+.movo-app .tv-art { position: relative; width: 210px; height: 170px; display: grid; place-items: center; }
+.movo-app .tv-logo { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 34%; background: rgba(255,255,255,.1); animation: tv-rise .7s ease-out both; }
+.movo-app .tv-ring { position: absolute; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); animation: tv-fade 1.2s ease-out both; }
+.movo-app .tv-card { position: absolute; width: 170px; height: 104px; border-radius: 16px; background: linear-gradient(135deg, var(--a, #3a7bfd), var(--b, #1b3fa8)); box-shadow: 0 14px 30px -12px rgba(0,0,0,.6); transform: translateY(calc(var(--i) * 22px - 22px)) scale(calc(1 - (2 - var(--i)) * .06)); animation: tv-rise .6s ease-out both; animation-delay: calc(var(--i) * .15s); }
+.movo-app .tv-card i { position: absolute; left: 14px; top: 16px; width: 26px; height: 20px; border-radius: 5px; background: rgba(255,255,255,.55); }
+.movo-app .tv-card b { position: absolute; left: 14px; bottom: 16px; width: 70px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.6); }
+.movo-app .tv-c1 { --a: #8b5cf6; --b: #4c1d95; } .movo-app .tv-c2 { --a: #10b981; --b: #065f46; } .movo-app .tv-c3 { --a: #3a7bfd; --b: #1b3fa8; }
+.movo-app .tv-chat { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: 230px; }
+.movo-app .tv-bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; font-weight: 600; animation: tv-rise .5s ease-out both; }
+.movo-app .tv-bubble.me { align-self: flex-end; background: var(--accent, #2f7ff0); border-bottom-right-radius: 6px; }
+.movo-app .tv-bubble.bot { align-self: flex-start; display: inline-flex; gap: 6px; align-items: center; background: rgba(255,255,255,.14); border-bottom-left-radius: 6px; animation-delay: .7s; }
+.movo-app .tv-bars { display: flex; align-items: flex-end; gap: 10px; height: 130px; }
+.movo-app .tv-bars span { width: 20px; height: var(--h); border-radius: 8px 8px 4px 4px; background: linear-gradient(180deg, #fff, rgba(255,255,255,.35)); transform-origin: bottom; animation: tv-grow .6s ease-out both; animation-delay: calc(var(--i) * .08s); }
+.movo-app .tv-plans { display: grid; gap: 10px; width: 220px; }
+.movo-app .tv-plan { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.1); animation: tv-rise .5s ease-out both; animation-delay: calc(var(--i) * .12s); }
+.movo-app .tv-plan i { flex: 1; height: 6px; border-radius: 99px; background: linear-gradient(90deg, #fff var(--p), rgba(255,255,255,.2) var(--p)); }
+.movo-app .tv-pro { display: grid; justify-items: center; gap: 14px; }
+.movo-app .tv-badge { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 30%; color: #1d1405; background: linear-gradient(140deg, #fde68a, #d4a017); box-shadow: 0 16px 40px -14px rgba(212,160,23,.8); animation: tv-rise .6s ease-out both; }
+.movo-app .tv-chip { padding: 6px 14px; border-radius: 99px; background: rgba(255,255,255,.16); font-size: 13px; font-weight: 700; animation: tv-fade .8s ease-out .3s both; }
+.movo-app .tv-stage.is-still, .movo-app .tv-stage.is-still * { animation: none !important; }
+@keyframes tv-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes tv-rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes tv-fade { from { opacity: 0; } }
+@keyframes tv-grow { from { transform: scaleY(.1); opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .movo-app .tv-stage, .movo-app .tv-stage * { animation: none !important; } }
+
+/* Plans sheet (components/PlanOffer.js), compact pass 2026-11-09. */
+.movo-app .plan-current { display: flex; justify-content: space-between; align-items: center; margin: 0 0 4px; font-size: 14px; }
+.movo-app .plan-detail-card { padding: 18px; border-radius: 22px; border: 0; background: rgba(128,128,128,.08); }
+.movo-app .plan-detail-card h3 { font-size: 24px; margin: 0; }
+.movo-app .plan-detail-card .plan-tagline { margin: 2px 0 0; font-size: 13px; opacity: .65; }
+.movo-app .plan-detail-card ul { margin: 12px 0 0; display: grid; gap: 8px; }
+.movo-app .plan-detail-card li { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; line-height: 1.3; min-width: 0; }
+.movo-app .plan-detail-card li svg { flex: none; color: var(--accent); }
+.movo-app .plan-detail-card.plan-pro { background: linear-gradient(160deg, rgba(var(--accent-rgb, 47,127,240), .14), rgba(128,128,128,.06)); }
+.movo-app .plan-detail-card.plan-plus { background: linear-gradient(160deg, rgba(212,160,23,.16), rgba(128,128,128,.06)); }
+.movo-app .plan-referral-line { display: flex; align-items: center; gap: 8px; margin: 12px 2px 0; font-size: 13px; opacity: .8; }
+.movo-app .plan-code-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.movo-app .plan-code-row input { flex: 1; min-width: 0; font-weight: 700; letter-spacing: .08em; }
+.movo-app .plan-fine { font-size: 12px; opacity: .7; }
+.movo-app .plan-trial-note { margin: 0 0 6px; text-align: center; font-size: 13px; font-weight: 600; opacity: .75; }
+.movo-app .plan-referral-toggle { display: block; margin: 0 auto 8px; font-size: 13px; }
+.movo-app .plan-referral-input { width: 100%; margin-bottom: 8px; }
+/* Plan cards sit on a solid surface so the page behind never shows through (2026-11-09). */
+.movo-app .plan-detail-card { background: var(--card); box-shadow: inset 0 0 0 1px rgba(128,128,128,.12); }
+.movo-app .plan-detail-card.plan-pro { background: linear-gradient(160deg, rgba(var(--accent-rgb, 47,127,240), .12), transparent 60%), var(--card); }
+.movo-app .plan-detail-card.plan-plus { background: linear-gradient(160deg, rgba(212,160,23,.16), transparent 60%), var(--card); }
+/* Dark mode: the plans sheet's secondary actions sit on a soft tint, not a white slab (2026-11-09). */
+.movo-app.movo-app.theme-dark .plan-offer-footer .secondary-button { background: #2b2f37; color: #f2f4f7 !important; box-shadow: none; opacity: 1; backdrop-filter: none; }
