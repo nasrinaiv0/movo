@@ -27,3 +27,20 @@ export function matchesConfirmedOfflineHandoff(ownerId, workspace, rendered) {
     return true;
   });
 }
+
+/**
+ * Automatic network-loss handoff must not bless the UI as a new cloud
+ * baseline. Restore only an already-confirmed, owner-scoped workspace.
+ * Unknown or corrupt caches block edits rather than inventing an empty ledger.
+ */
+export function planOfflineNetworkTransition(ownerId, workspace, rendered) {
+  const complete = groups => ['financial_accounts','transactions'].every(group =>
+    Array.isArray(groups?.[group]) && groups[group].every(row =>
+      row && typeof row === 'object' && (!row.user_id || row.user_id === ownerId)));
+  if (!ownerId || workspace?.version !== 2 || workspace?.owner !== ownerId ||
+      !workspace.lastConfirmedAt || !complete(workspace.baseline) ||
+      !complete(workspace.working)) return 'blocked';
+  if (workspace.dirty === true) return 'restore_pending';
+  return matchesConfirmedOfflineHandoff(ownerId, workspace, rendered)
+    ? 'reuse_confirmed' : 'restore_stale';
+}

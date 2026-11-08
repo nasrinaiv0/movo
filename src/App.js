@@ -87,7 +87,7 @@ import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLo
 import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace } from './lib/offlineWorkspaceStore';
 import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
 import { readRequiredFinancialCloudViews } from './lib/cloudFinancialReadGate';
-import { matchesConfirmedOfflineHandoff } from './lib/offlineHandoffSafety';
+import { matchesConfirmedOfflineHandoff, planOfflineNetworkTransition } from './lib/offlineHandoffSafety';
 import { assertOfflineSyncOwner, fetchOfflineSyncCloud, insertOfflineAccount, updateOfflineAccountCAS, insertOfflineTransaction } from './lib/offlineSyncCloudAdapter';
 import { canUseFeature } from './lib/planAccess';
 import { planOfflineReconciliation } from './lib/offlineReconciliation';
@@ -249,8 +249,9 @@ function App() {
   const [offlineOwnerId, setOfflineOwnerId] = useState(null);
   const [syncState, setSyncState] = useState({status:'idle',message:'',uploaded:0,downloaded:0});
   const syncActiveRef = useRef(false);
-  const can = feature => canUseFeatureInMode(entitlement, feature, cloudMode);
-  const plan = effectiveAccessPlan(entitlement, cloudMode);
+  const safeCloudAccess = cloudMode && syncState.status !== 'blocked';
+  const can = feature => canUseFeatureInMode(entitlement, feature, safeCloudAccess);
+  const plan = effectiveAccessPlan(entitlement, safeCloudAccess);
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -548,24 +549,44 @@ function App() {
       if(!cloudMode||!session?.user?.id||prefsRef.current.cloudSyncEnabled===false)return;
       const ownerId=session.user.id,previous=loadOfflineWorkspace(ownerId);
       const rows={financial_accounts:cloudAccounts,transactions:rawTxs};
-      if(previous?.dirty){
-        // Another tab already has pending offline edits. Preserve those first.
-        if(!loadOwnedLocal(ownerId))setLocalPersistenceWarning(true);
-      }else{
-        const saved=saveOfflineWorkspace(ownerId,{
-          version:2,owner:ownerId,baseline:rows,working:rows,dirty:false,
-          lastConfirmedAt:new Date().toISOString(),
-        });
-        if(!saved){
-          setLocalPersistenceWarning(true);
-          notify('Offline switch stopped: device storage is full. Export your records before editing.');
+      const choice=planOfflineNetworkTransition(ownerId,previous,rows);
+      const block = message => {
+        cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
+        setLocalPersistenceWarning(true);
+        setSyncState({status:'blocked',message,uploaded:0,downloaded:0});
+        notify(message);
+      };
+      if(choice==='blocked'){
+        // Never turn an unverified empty device cache into an apparent copy of
+        // live cloud finances. Pause paid UI until safe cloud access returns.
+        block('Signed-in account workspace is unavailable. No records were changed.');
+        return;
+      }
+      if(choice==='reuse_confirmed'){
+        if(!saveOfflineWorkspace(ownerId,previous)){
+          block('Offline switch stopped: device storage is full. Export your records before editing.');
           return;
         }
-        setOfflineOwnerId(ownerId);setLocalAccounts(rows.financial_accounts);setRawTxs(rows.transactions);
+        setOfflineOwnerId(ownerId);
+        setLocalAccounts(previous.working.financial_accounts);
+        setRawTxs(previous.working.transactions);
         setCloudMode(false);
+      }else{
+        // Restoring a previously verified device copy preserves both the
+        // owner journal and newer cloud rows for a future reviewed reconnect.
+        if(!loadOwnedLocal(ownerId)){
+          block('Signed-in account workspace is unavailable. No records were changed.');
+          return;
+        }
+        if(choice==='restore_stale')
+          notify('Cloud and device history differ unexpectedly. Existing offline records were preserved for review.');
       }
       cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
-      setSyncState({status:'offline',message:'No internet. Showing saved device records; pending changes will reconcile on reconnect.',uploaded:0,downloaded:0});
+      setSyncState({status:choice==='restore_stale'?'pending':'offline',
+        message:choice==='restore_stale'
+          ? 'Cloud and device history differ unexpectedly. Existing offline records were preserved for review.'
+          : 'No internet. Showing saved device records; pending changes will reconcile on reconnect.',
+        uploaded:0,downloaded:0});
     };
     const cameOnline=()=>{
       if(prefsRef.current.cloudSyncEnabled===false||!session?.user?.id)return;

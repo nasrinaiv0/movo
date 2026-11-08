@@ -16,3 +16,14 @@ Native signed-device QA, iPhone Safari offline/reconnect testing, multi-user iso
 
 ## Rollback
 Revert these client-side checks only after confirming no customer data is removed. Keep owner-scoped local backups intact; do not clear pending journals or reverse valid cloud records automatically.
+
+## Network-loss event follow-up
+The browser `offline` event previously bypassed the manual handoff guard:
+it could overwrite the verified baseline with possibly stale rendered rows,
+and a dirty journal could leave cloud-mode UI active after restoring the device
+copy. Added `planOfflineNetworkTransition` to fail closed for missing,
+unverified, partial or foreign caches; reuse a confirmed matching snapshot;
+restore a dirty/stale owner-specific device copy without overwriting the
+baseline; and explicitly pause paid UI if fallback has no verified device copy.
+Cloud-only rows remain on the server for reviewed reconciliation. Network
+connectivity alone is not proof that an entitlement expired.

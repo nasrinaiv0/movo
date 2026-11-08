@@ -611,3 +611,6 @@ Three-way reconciliation now safely handles a server-accepted local create whose
 - All 11 `src/i18n/locales/*.json` catalogs and `version.js` regenerated from the branch's 2,540 source strings. No financial code or customer records changed.
 - Sandbox evidence: 2 i18n and 15 component tests passing; full new-head CI and real-device QA pending.
 - Report: `docs/engineering/updates/2026-11-09-pr245-localization-gate.md`.
+
+### 2026-11-09 — PR #246 network-loss guard
+A second network-offline transition now checks the last confirmed owner-scoped baseline rather than overwriting it with UI rows. Dirty local journals restore device mode; stale views show the last confirmed local copy; missing/unsafe caches block local editing and pause paid UI. Focused regression and exact-head verification required; release remains blocked.

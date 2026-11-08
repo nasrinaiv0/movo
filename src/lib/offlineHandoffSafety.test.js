@@ -1,4 +1,4 @@
-import { matchesConfirmedOfflineHandoff } from './offlineHandoffSafety';
+import { matchesConfirmedOfflineHandoff, planOfflineNetworkTransition } from './offlineHandoffSafety';
 const OWNER='123e4567-e89b-42d3-a456-426614174000';
 const OTHER='123e4567-e89b-42d3-a456-426614174001';
 const A='123e4567-e89b-42d3-a456-426614174002';
@@ -26,4 +26,19 @@ test('requires confirmed owner baseline with no outstanding offline changes',()=
   expect(matchesConfirmedOfflineHandoff(OWNER,{...ws,dirty:true},rows)).toBe(false);
   expect(matchesConfirmedOfflineHandoff(OWNER,{...ws,lastConfirmedAt:''},rows)).toBe(false);
   expect(matchesConfirmedOfflineHandoff(OWNER,null,rows)).toBe(false);
+});
+
+test('network loss reuses only the verified exact last-confirmed snapshot', () => {
+  expect(planOfflineNetworkTransition(OWNER,ws,rows)).toBe('reuse_confirmed');
+  expect(planOfflineNetworkTransition(OWNER,ws,{...rows,transactions:[]})).toBe('restore_stale');
+});
+test('network loss preserves dirty owner journal instead of rewriting its baseline', () => {
+  expect(planOfflineNetworkTransition(OWNER,{...ws,dirty:true},rows)).toBe('restore_pending');
+});
+test('network loss blocks empty, unverified, partial and foreign caches', () => {
+  expect(planOfflineNetworkTransition(OWNER,null,rows)).toBe('blocked');
+  expect(planOfflineNetworkTransition(OWNER,{...ws,lastConfirmedAt:''},rows)).toBe('blocked');
+  expect(planOfflineNetworkTransition(OTHER,ws,rows)).toBe('blocked');
+  expect(planOfflineNetworkTransition(OWNER,{...ws,baseline:{financial_accounts:[]}},rows)).toBe('blocked');
+  expect(planOfflineNetworkTransition(OWNER,{...ws,working:{...rows,transactions:[{...tx,user_id:OTHER}]}},rows)).toBe('blocked');
 });
