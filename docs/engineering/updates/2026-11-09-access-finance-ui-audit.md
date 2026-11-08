@@ -1,6 +1,6 @@
 # MOVO access, finance and UI audit — 2026-11-09 (Asia/Manila)
 
-Status: NOT CLEARED FOR RELEASE. This is a source review plus read-only production catalog/advisor inspection, not a completed interactive penetration or device test.
+Status: NOT CLEARED FOR RELEASE. This includes source review, read-only production catalog/advisor inspection and isolated Vercel Sandbox verification. It is not a completed penetration or signed-device test.
 Reviewed main: bf19aa7c0f83f8dd8215b4e0644a5b63f98aac45.
 Production database: cjsjmorqvuvvwbfyztiz. No production rows, migrations, settings or deployment changed.
 
@@ -24,7 +24,7 @@ Do not describe the replacement as live until the existing plan migration and en
 | Medium | Shared local storage | localFinanceStore uses global account/transaction keys; preferences are also device-wide. | Audit signed-user versus guest isolation, logout/account switch and all sensitive domains; localStorage is not encrypted. |
 | Review required | RLS / privileged functions | Live 28/28 public tables have RLS. Advisor flags 12 authenticated SECURITY DEFINER finance RPCs. | Inspect actual live definitions and run owner/non-owner/replay tests against an isolated copy. RLS alone does not prove privileged-function isolation. No confirmed cross-tenant exploit is asserted. |
 | Review required | Auth | Main uses persisted Supabase client sessions. #227 native vault changes remain draft/conflicted. Advisor reports leaked-password protection disabled. | Resolve security branch, verify native vault migration and signed devices; review OTP/OAuth-only applicability of password warning. |
-| Unverified | Vulnerability scan | No fresh dependency install/advisory scan was run this turn. | Run full dependency and runtime audits on exact candidate revision. Do not reuse historical zero-vulnerability claims. |
+| Open | Dependency scan | Fresh locked install: runtime audit 0; full tree 34 advisories (16 low, 5 moderate, 13 high), in build/test dependencies. | Remediate toolchain advisories; do not claim zero vulnerabilities across the full tree. |
 | Unverified | Buttons/layout/routing | Shared controls expose labels/switch state; plan carousel and footer CSS exist; App route switch gates scheduled automation. Static review cannot establish all click targets, keyboard behavior, overflow or native callbacks. | Execute matrix below in Vercel Sandbox and then real signed devices. |
 
 The upstream-conversation table's RLS-with-no-policy advisor finding is consistent with server-only access; it is not by itself a vulnerability and must not be “fixed” by adding a public policy.
@@ -39,9 +39,23 @@ The upstream-conversation table's RLS-with-no-policy advisor finding is consiste
 - Route reload/back/native OAuth and automation deep links; forged callback parameters and unauthorized direct API/RPC access.
 - Full application tests, typecheck, build, translations, dependency audit and isolated SQL/RLS tests against the exact final tree.
 
-## Current verification blocker
-Vercel project prj_JKxkOXrw6QfADt4ZF32bdjUAY1LH belongs to team_dhqSa2tKK2L6WuWKmVZDKKRl (nasrin-ai1). Sandbox access returned HTTP 403 requiring team authorization. A consent link was requested and supplied to the owner. No Sandbox test was run in this turn.
-No paid Supabase branch was created. Existing PR descriptions are historical evidence only, not new test results.
+## Vercel Sandbox verification completed
+Team access was granted. Sandbox `movo-access-audit-20261109`, session `sbx_GfbpEi0LtM7knDOf2SdBiTxWpIi8`, tested application main `bf19aa7c0f83f8dd8215b4e0644a5b63f98aac45`.
+- Locked npm ci completed. TypeScript passed. 820/820 application tests in 146 suites passed.
+- Initial optimized build received SIGKILL. Retry passed using GENERATE_SOURCEMAP=false and NODE_OPTIONS=--max-old-space-size=1536; source-map-enabled build is not certified.
+- Disposable PostgreSQL 18 on 127.0.0.1:55432 passed existing plan/RLS tests: expiry, read-only owner access, forged grants, cross-user plan reads, automation restrictions, refunds and referrals.
+- Added first_time_trial.test.sql: 150 verified first-time accounts all received Pro for exactly one calendar month; repeat claims did not extend grants; own-grant isolation and unverified/anonymous rejection passed. This explicitly verifies no first-100 limit.
+- 36 component UI checks: 320/390/430 widths, light/dark, green/orange, cryptocurrency/planning/reminder layouts. Zero page JS errors reported.
+- 6 production-app checks: same widths and light/dark, visible free-month CTA, no-auto-charge text, Pro carousel selection, Continue dismissal and Home/Wallet/Transactions/Menu navigation.
+- 30 production header geometry cases, independent Plus dialogs, crypto refresh busy state, failure preserving prior timestamp, Manila time and reduced motion passed. Free users hit the scheduled-automation upgrade gate.
+- Existing header test's zero-padding assertion failed: some buttons retain 0.5px. The continuing audit recorded padding and checked other geometry without claiming zero-padding compliance.
+- Initial navigation overflow assertion sampled a transition; recheck after a 500ms settling interval passed. This does not certify animation frames never overflow.
+- Free local flow: create PHP100.25 cash, save PHP12.34 expense, verify PHP87.91 account and settled total, reload and dismiss recent-logs prompt, verify one saved account/transaction and zero cloud writes.
+- Money animation displays intermediate values before settling; the balance assertion waited for completion.
+- Fresh npm audit: runtime 0; full tree 34 advisories (16 low, 5 moderate, 13 high).
+- Synthetic fixtures only; no production mutation, paid Supabase branch, real customer session, StoreKit/Play purchase, Safari or signed-device verification.
+
+Reproducible additions: `supabase/tests/first_time_trial.test.sql`, `scripts/ui-qa/plan-access.cjs`, `scripts/ui-qa/free-local-flow.cjs`, and `scripts/ui-qa/headers-access-audit.cjs`. Playwright comes from a separate tooling prefix; serve the compiled app on localhost:4174. SQL runner creates only a localhost disposable fixture database. These fixtures do not reproduce every live schema/RPC, and do not clear the production migration drift.
 
 ## Existing branches
 - #242: obsolete first-100 promotion; superseded by the policy above.
