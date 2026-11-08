@@ -600,3 +600,8 @@ Three-way reconciliation now safely handles a server-accepted local create whose
 - Safety: failed/malformed finance reads cannot masquerade as empty rows; cloud-off keeps the last verified owner-scoped baseline and rejects mismatched visible records.
 - Scope: draft only; separate cloud table reads are not an atomic snapshot and broader accounting/media synchronization is still blocked. No production data/schema or plan grants modified.
 - Evidence: `docs/engineering/updates/2026-11-09-offline-snapshot-read-and-handoff-guard.md`.
+
+
+### 2026-11-09 | PR #246 | Locale catalog repair for cloud/offline reconciliation
+- Rebuilt all 11 JSON dictionaries and version.js from new and inherited source catalogs with exact Sandbox blob-SHA parity (2,543 keys/language).
+- Translation coverage remains subject to exact-head CI. Does not modify production DB, live finance rows or store grants.
