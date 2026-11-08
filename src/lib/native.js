@@ -12,8 +12,8 @@ import { isNativeApp } from './platform';
 export const MovoNative = registerPlugin('MovoNative');
 export const AUTH_CALLBACK = 'movo://auth-callback';
 
-/* ---------- Storage: iOS may clear a web view's storage, so MOVO's keys are mirrored to native Preferences. ---------- */
-const KEEP = /^(movo\.|sb-)/;
+/* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
+const KEEP = /^movo\.(?!lock\.)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */
@@ -48,17 +48,25 @@ export async function restoreNativeStorage(storage = typeof window !== 'undefine
 
 /** Parse a movo:// URL into what the app should do with it. Pure, so it is unit-tested. */
 export function readAppUrl(url) {
+  // Custom-scheme links may be sent by other installed apps. Only process the
+  // exact callbacks we register, with no userinfo/port/path or ambiguous codes.
+  if (typeof url !== 'string' || url.length > 4096) return null;
   let parsed;
   try { parsed = new URL(url); } catch { return null; }
-  if (parsed.protocol !== 'movo:') return null;
-  const route = `${parsed.hostname}${parsed.pathname}`.replace(/\/+$/, '');
+  if (parsed.protocol !== 'movo:' || parsed.username || parsed.password || parsed.port) return null;
+  if (parsed.pathname && parsed.pathname !== '/') return null;
   const params = new URLSearchParams(parsed.search || '');
   const hash = new URLSearchParams((parsed.hash || '').replace(/^#/, ''));
-  if (route === 'auth-callback') {
+  if (parsed.hostname === 'auth-callback') {
+    const codes = params.getAll('code');
+    if (codes.length > 1 || hash.has('code') || params.has('access_token') || params.has('refresh_token')
+      || codes.some(code => !code || code.length > 2048 || /[\x00-\x1F\x7F]/.test(code))) return null;
     const error = params.get('error_description') || params.get('error') || hash.get('error_description') || hash.get('error');
-    return { kind: 'auth', code: params.get('code') || '', error: error || '' };
+    return { kind: 'auth', code: error ? '' : (codes[0] || ''), error: error || '' };
   }
-  if (route === 'log') return { kind: 'log', hash: `#/log?${params.toString()}` };
+  if (parsed.hostname === 'log' && !parsed.hash) {
+    return { kind: 'log', hash: `#/log?${params.toString()}` };
+  }
   return null;
 }
 

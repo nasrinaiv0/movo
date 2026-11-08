@@ -9,12 +9,22 @@ on:
     paths:
       - "ios/**"
       - "capacitor.config.json"
+      - "src/lib/nativeSecureAuthStorage.js"
+      - "src/lib/nativeAutomationKey.js"
+      - "src/lib/native.js"
+      - "src/lib/supabaseClient.js"
+      - "src/index.tsx"
       - "package.json"
   push:
     branches: [main]
     paths:
       - "ios/**"
       - "capacitor.config.json"
+      - "src/lib/nativeSecureAuthStorage.js"
+      - "src/lib/nativeAutomationKey.js"
+      - "src/lib/native.js"
+      - "src/lib/supabaseClient.js"
+      - "src/index.tsx"
       - "package.json"
 
 permissions:
@@ -36,7 +46,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: npm install
+        run: npx --yes npm@11.19.1 ci
       - name: Build the web app
         run: CI=true npx react-scripts build
       - name: Copy the web app into the iOS project

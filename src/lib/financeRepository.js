@@ -50,6 +50,8 @@ export async function finishOAuth(code) {
 export async function signInWithGoogle() { return signInWithProvider('google', { prompt: 'select_account' }); }
 export async function signInWithApple() { return signInWithProvider('apple'); }
 export async function signOut() { return unwrap(await requireClient().auth.signOut()); }
+/** Revoke refresh tokens for every other session without logging out this device. */
+export async function revokeOtherSessions() { return unwrap(await requireClient().auth.signOut({ scope: 'others' })); }
 
 export async function listAccounts() {
   return unwrap(await requireClient().from('financial_accounts')
