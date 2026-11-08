@@ -1,5 +1,10 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — PR #252 documented import verification and manual plan grants
+
+Confirmed local backups are read back from device storage before Home/Wallet/Transactions show success; zero-row imports keep a retryable preview. New administrator-only, expiring and revocable Pro/Pro+ grants integrate into server-side status, with disposable PostgreSQL tests and no purchase fabrication. Vercel Sandbox previously passed 936/936 frontend tests, TypeScript and isolated SQL. The earlier incremental implementation commits omitted per-commit register/dated updates, so this PR is consolidated into one documented implementation commit rather than weakening the guard. Exact rewritten-head CI, real-device tests and deployment-schema rehearsal remain required. No production data or billing configuration changed. Details: `docs/engineering/updates/2026-11-09-confirmed-import-and-owner-plan-grants.md`.
+
+
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
 820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.

@@ -45,11 +45,13 @@ export default function FinanceBackupSheet({ c, onClose }) {
     try {
       const result = await c.saveFinanceBackupRecords(backup);
       const total = result.accounts + result.transactions;
-      setSaved(true);
       const skipped = (result.skipped?.duplicates || 0) + (result.skipped?.conflicts || 0) + (result.failed || 0);
+      // A confirmation is not a successful import when every supported row was
+      // skipped. Keep the preview so the person can investigate or try again.
+      setSaved(total > 0);
       setMessage(total
-        ? 'Saved ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s). ' + skipped + ' skipped or needing review. Wallet, Home and transaction views now use the saved records.'
-        : 'No new accounts or transactions to save. Existing records were preserved.');
+        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device. ' + skipped + ' skipped or needing review. Wallet, Home and Transactions now use the saved records.'
+        : 'No new accounts or transactions were applied. ' + skipped + ' row(s) were skipped or already existed. Other financial groups in this backup are preview-only. The existing records were preserved.');
     } catch (error) { setMessage(error?.message || 'Saving records failed. No further changes were attempted.'); }
     finally { setBusy(false); }
   };
