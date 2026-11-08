@@ -57,3 +57,11 @@ test('membership cards and per-card reward rules survive sign-in preference merg
   expect(merged.membershipCards.map(card => card.id)).toEqual(['starbucks-id', 'petron-id']);
   expect(merged.loyaltyRewardRules).toEqual({ 'petron-id': local.loyaltyRewardRules['petron-id'], 'starbucks-id': cloud.loyaltyRewardRules['starbucks-id'] });
 });
+
+test('merges separate per-account cashback edits without losing either account', () => {
+  const local = { cashbackRules: { 'bank-1': { enabled: false, rate: '4', presetId:'bpi-amore' } } };
+  const cloud = { cashbackRules: { 'card-2': { enabled: false, rate: '8.88', presetId:'eastwest-visa' } } };
+  const result = mergePreferences(D,local,cloud);
+  expect(result.cashbackRules['bank-1']).toEqual(local.cashbackRules['bank-1']);
+  expect(result.cashbackRules['card-2']).toEqual(cloud.cashbackRules['card-2']);
+});
