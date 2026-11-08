@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import Icon from './Icon';
 import { MovoMark } from './MovoLogo';
 import { t as tr } from '../lib/i18n';
+import { parseImportFile, IMPORT_MAX_BYTES } from '../lib/dataImport';
 
 /* First-run welcome: sign in, sign up, or continue on this device (optionally importing a CSV or
  * JSON file), then a few tour steps that each spotlight one part of the app. */
@@ -24,6 +25,8 @@ export default function Walkthrough({ steps = TOUR_STEPS, onDone, onAccount, onI
   const [stage, setStage] = useState(-1); // -1 = welcome card, -2 = continue locally
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [pendingChoice, setPendingChoice] = useState('');
   const fileRef = useRef(null);
   const [rect, setRect] = useState(null);
   const step = stage >= 0 ? steps[stage] : null;
@@ -46,11 +49,31 @@ export default function Walkthrough({ steps = TOUR_STEPS, onDone, onAccount, onI
   const next = () => (stage < steps.length - 1 ? setStage(stage + 1) : onDone());
 
   const pickFile = async (e) => {
-    const file = e.target.files?.[0]; e.target.value = '';
-    if (!file || !onImport) return;
-    setImporting(true); setResult(null);
-    try { setResult(await onImport(file)); } catch { setResult({ ok: false, message: tr('Could not read this file. Please try another CSV or JSON file.') }); }
-    finally { setImporting(false); }
+    const file=e.target.files?.[0];e.target.value='';
+    if(!file||!onImport)return;
+    setImporting(true);setResult(null);setPreview(null);setPendingChoice('');
+    try{
+      if(file.size>IMPORT_MAX_BYTES)throw Error('The file must be 5 MB or smaller.');
+      const parsed=parseImportFile(file.name,await file.text());
+      if(parsed.errors?.length)throw Error(parsed.errors[0]);
+      const counts=Object.fromEntries(['accounts','transactions','subscriptions','budgets','plans','loans','receivables','bills']
+        .map(key=>[key,Array.isArray(parsed[key])?parsed[key].length:0]));
+      if(!Object.values(counts).some(Boolean))throw Error('No supported records found in the file.');
+      setPreview({file,counts});
+    }catch(cause){setResult({ok:false,message:cause.message||'Could not review this file.'});}
+    finally{setImporting(false);}
+  };
+  const decide = async () => {
+    if(!preview||!pendingChoice||importing)return;
+    if(pendingChoice==='discard'){
+      setPreview(null);setPendingChoice('');
+      setResult({ok:true,message:'File preview discarded. No existing MOVO records changed.'});
+      return;
+    }
+    setImporting(true);setPendingChoice('');
+    try{setResult(await onImport(preview.file));}
+    catch{setResult({ok:false,message:'Could not save these local records. Please retry.'});}
+    finally{setImporting(false);setPreview(null);}
   };
 
   if (stage === -2) {
@@ -63,6 +86,22 @@ export default function Walkthrough({ steps = TOUR_STEPS, onDone, onAccount, onI
         <button type="button" className="welcome-drop" onClick={() => fileRef.current?.click()} disabled={importing} aria-busy={importing}>
           <Icon name="upload" size={20} /><span><strong>{importing ? tr('Reading your file…') : tr('Choose a CSV or JSON file')}</strong><small>{tr('Up to 5 MB')}</small></span>
         </button>
+        {preview && <section role="region" aria-label="Uploaded file preview" className="movo-backup-confirm">
+          <strong>{preview.file.name}</strong>
+          <p>{Object.entries(preview.counts).filter(([,n])=>n).map(([name,n])=>String(n)+' '+name).join(' · ')}</p>
+          <small>Preview only. No data has been saved. Unsupported cloud-linked records will not be automatically imported.</small>
+          <div className="sheet-actions">
+            <button type="button" className="secondary-button" onClick={()=>setPendingChoice('discard')}>Discard records</button>
+            <button type="button" className="primary-button" onClick={()=>setPendingChoice('save')}>Save records</button>
+          </div>
+          {pendingChoice && <div role="alertdialog" aria-label={pendingChoice==='save'?'Confirm local onboarding import':'Confirm onboarding discard'}>
+            <p>{pendingChoice==='save'?'Save the selected supported records to this device only?':'Discard this file preview? Your saved MOVO data will remain untouched.'}</p>
+            <div className="sheet-actions">
+              <button type="button" className="secondary-button" onClick={()=>setPendingChoice('')}>Keep preview</button>
+              <button type="button" className="primary-button" disabled={importing} onClick={decide}>{pendingChoice==='save'?'Confirm save locally':'Confirm discard'}</button>
+            </div>
+          </div>}
+        </section>}
         {result && <p className={`welcome-result${result.ok ? ' is-ok' : ' is-error'}`} role="status">{result.message}</p>}
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setStage(-1); setResult(null); }}>{tr('Back')}</button><button type="button" className="primary-button" onClick={() => setStage(0)} disabled={importing} autoFocus>{result?.ok ? tr('Continue') : tr('Start without a file')}</button></div>
       </div>

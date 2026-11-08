@@ -609,7 +609,7 @@ describe('MOVO finance frontend', () => {
       expect(container.textContent).toContain('Local changes may not be saved.');
       expect(container.textContent).toContain('Important records may not survive a reload.');
       clickButton(container, 'Retry save');
-      expect(container.textContent).toContain('Browser storage is still unavailable or full.');
+      expect(container.textContent).toContain('Browser storage is unavailable or full. Export your records and retry.');
     } finally {
       spy.mockRestore();
     }
