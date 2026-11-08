@@ -1547,10 +1547,12 @@ function App() {
     const handle = () => {
       const hash = window.location.hash;
       const entry = readLogLink(hash);
-      if (entry && !can('automation')) { setSheet({ name: 'planOffer', feature: 'automation' }); return; }
       if (!entry || handledLink.current === hash) return;
       handledLink.current = hash;
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+      // Handle each link once: a link that needs Pro+ opens the plans sheet a single time (it used to re-open on
+      // every render while the link stayed in the address bar, which looped).
+      if (!can('automation')) { setSheet({ name: 'planOffer', feature: 'automation' }); return; }
       if (entry.invalid) { notify(tr('That payment link had no valid amount, so nothing was logged.')); return; }
       if (isRepeat(entry)) return;
       const dup = findDuplicate({ merchant: entry.merchant, amount: entry.amount, type: 'expense', ref: entry.ref, date: entry.at || new Date().toISOString() }, recordsRef.current);

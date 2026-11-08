@@ -1,6 +1,21 @@
 // Existing feature regression scenarios run with a verified Pro+ fixture.
 // Free/expiry behavior is covered independently by PlanRestrictions.test.js.
-jest.mock('./lib/usePlanEntitlement', () => ({ usePlanEntitlement: () => ({ entitlement: { tier:'pro_plus', active:true, expiresAt:'2099-01-01T00:00:00Z' }, refreshEntitlement: jest.fn() }) }));
+// The fixture is one stable object, like the real hook's state, so effects that depend on it do not re-run on
+// every render.
+jest.mock('./lib/usePlanEntitlement', () => {
+  const entitlement = { tier:'pro_plus', active:true, expiresAt:'2099-01-01T00:00:00Z' };
+  const refreshEntitlement = jest.fn();
+  return { usePlanEntitlement: () => ({ entitlement, refreshEntitlement }) };
+});
+// These UI tests run without Supabase, i.e. in local mode, where #245 pauses paid features. Feature scenarios use
+// plain plan rules; set global.__movoPauseLocalPlans to test the local-mode pause itself (planAccess.test.js
+// covers the rule).
+jest.mock('./lib/planAccess', () => {
+  const actual = jest.requireActual('./lib/planAccess');
+  return { ...actual,
+    canUseFeatureInMode: (e, f, cloud, now) => (global.__movoPauseLocalPlans ? actual.canUseFeatureInMode(e, f, cloud, now) : actual.canUseFeature(e, f, now)),
+    effectiveAccessPlan: (e, cloud, now) => (global.__movoPauseLocalPlans ? actual.effectiveAccessPlan(e, cloud, now) : actual.effectivePlan(e, now)) };
+});
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -665,6 +680,18 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Mark all as read');
     expect(container.querySelectorAll('.note-row .red-dot').length).toBe(0);
     expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
+  });
+
+test('in local mode a payment link opens MOVO plans once and is cleared, instead of re-opening on every render', async () => {
+    global.__movoPauseLocalPlans = true;
+    try {
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+      window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';
+      act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
+      expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).toBeNull();
+      expect(document.querySelectorAll('[role="dialog"][aria-label="Offline feature access"]')).toHaveLength(1);
+      expect(window.location.hash).toBe('');
+    } finally { global.__movoPauseLocalPlans = false; }
   });
 
 test('Apple Pay payment prompt Log button opens a prefilled expense form', async () => {
