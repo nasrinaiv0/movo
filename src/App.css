@@ -8074,3 +8074,12 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 @media (prefers-reduced-motion: reduce) { .movo-app .skeleton { animation: none; } }
 /* Progressive list: the Show more control under long transaction lists (performance phase 7). */
 .movo-app .tx-more { display: flex; justify-content: center; padding: 8px 0 4px; }
+/* Month pill on the balance card: the long month normally; on phones under 360px the short month and no calendar
+   tile, so the pill (and the notch it cuts) never covers "Total Balance" and its eye button. */
+.movo-app .home-period-current .period-short { display: none; }
+@media (max-width: 359px) {
+  .movo-app .home-period-filter.in-notch .home-period-current .period-long { display: none; }
+  .movo-app .home-period-filter.in-notch .home-period-current .period-short { display: inline; }
+  .movo-app.movo-app .home-period-filter.in-notch .home-period-icon { display: none; }
+  .movo-app.movo-app .home-period-filter.in-notch { padding-left: 12px; }
+}

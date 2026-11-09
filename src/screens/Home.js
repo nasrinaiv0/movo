@@ -10,7 +10,7 @@ import { BudgetsCard } from '../components/Budgets';
 import PlanningCard from '../components/PlanningCard';
 import RamMascot from '../components/RamMascot';
 import { mascotMood, moodMessage } from '../lib/mascotMood';
-import { dayKey, money, shown } from '../lib/format';
+import { dayKey, money, monthLabel, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
@@ -67,7 +67,8 @@ export default function Home({ c }) {
   const balanceShown = !(prefs.layouts?.home?.hidden || []).includes('balance');
   const periodPill = (inBox) => <button type="button" className={`home-period-filter${inBox ? ' in-notch' : showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!inBox && !showPeriodOnTop} tabIndex={inBox || showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
     <span className="home-period-icon"><Icon name="calendar" size={15} /></span>
-    <span className="home-period-current">{monthName(homeMonthKey)}</span>
+    {/* Small phones get the short month ("Nov 2026") so the pill never covers the balance's eye button. */}
+    <span className="home-period-current"><span className="period-long">{monthName(homeMonthKey)}</span><span className="period-short">{monthLabel(homeMonthKey)}</span></span>
     <Icon name="chevron" size={13} className="home-period-chevron" />
   </button>;
   const file = useRef(null);

@@ -89,6 +89,13 @@ may stay whole); only functional gradients stay (content fades, sticker scrims, 
 - `ButtonBorderPolicy.test.js` now scopes its checks to the policy block itself. It used to assume that block was the
   last in `App.css`, so the phase 3 motion rules (which set sheet timing after it) tripped it.
 
+## Small phones
+
+- On phones narrower than 360px the "November 2026" month pill (and the notch it cuts into the balance card) covered
+  the balance's show/hide eye completely, so it could not be tapped. There the pill now shows the short month
+  ("Nov 2026", locale-aware) without the calendar tile. Measured at 320×640 and 390×844: no overflow, and no control
+  under 44×44 on Home, Wallet, Transactions, Menu or Settings.
+
 ## Data and security
 
 No schema, API, RLS or entitlement change. Totals can differ from before by at most a cent when foreign balances
