@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Owner Command Center consolidated from #253, with live analytics (review)
+
+#253 failed the per-commit docs gate; its net change is carried in one documented commit on PR #255. Fixes the strict-build import order, plans in the user directory (trials/referrals showed "Not verified"), and entitlement-row counts shown as plans. New aggregate-only `movo_owner_kpis` / `movo_owner_user_plans` (service_role only, isolated SQL tests pass). Key figures, 30-day activity, plan mix, capture channels, user plan filter and last sign-in. Production migrations need owner approval. See `docs/engineering/updates/2026-11-09-owner-console-analytics.md`.
+
 ## 2026-11-09 — Offline-first saving, automatic upload, imports under Cloud Sync, plan badges (review)
 
 With Cloud Sync on, saves that cannot reach the cloud (offline or >12 s) land on the account's device copy and upload automatically on reconnect, on foreground and every minute; offline transaction edits (CAS), deletions (revision-checked server procedure) and device receipts now sync. CSV/backup "Save locally" works under Cloud Sync and refreshes every page, then uploads. Pro features stay on during an outage with the last verified plan. Fixes main's online-delete drop to local mode. Gold (Pro) / Platinum (Pro+) plan badge. No migration or production change. See `docs/engineering/updates/2026-11-09-offline-first-autosync-plan-badges.md`.

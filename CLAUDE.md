@@ -24,6 +24,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - `src/components/` — `ui.js` (Sheet, Chips, Toggle, Money…), `Icon.js` (single icon set + `NasrinMark`), `CardArt.js` / `CardStyleSheet.js` (card stickers), `NasrinAIChat.js`, `AuthPanel.*`.
 - `src/lib/` — `financeRepository.js` (cloud), `localFinanceStore.js` (browser), CSV import/export, `format.js`, `demoData.js`, `motion.js`, `stickers.js`, `supabaseClient.js`.
 - `api/nasrinai/` — Vercel serverless chat proxy (server-only secrets).
+- `/owner` → `src/owner/` + `api/owner/` — owner console (lazy-loaded; allowlisted UID + MFA aal2; aggregate-only analytics via service-role SQL functions).
 - `supabase/migrations/` — schema, RLS, grants; `supabase/tests/` — isolation tests.
 - `ios/`, `capacitor.config.json` — the iOS app (Capacitor, SPM). Use `apiUrl()` / `appOrigin()` from `src/lib/platform.js` for API calls and public links, never relative `/api` or `window.location.origin`. See `docs/IOS_APP.md`.
 - `src/App.css` — all app styling. Later blocks intentionally override earlier ones (glass, motion, icons, stickers, consistency, borders); append new blocks at the end with a comment header rather than editing scattered rules.
@@ -58,7 +59,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 
 ## Security (non-negotiable)
 - Quality and security over speed. Never weaken Supabase RLS, policies or grants; schema changes go in a new migration with tests.
-- Never commit, print or log secrets or real financial data. Server-only env: `SUPABASE_SERVICE_ROLE_KEY`, `NASRINAI_API_KEY`, `NASRINAI_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `MOVO_ALLOWED_ORIGINS`. Browser env: `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY` only.
+- Never commit, print or log secrets or real financial data. Server-only env: `SUPABASE_SERVICE_ROLE_KEY`, `NASRINAI_API_KEY`, `NASRINAI_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `MOVO_ALLOWED_ORIGINS`, `MOVO_OWNER_USER_IDS` (owner console allowlist of auth UUIDs; empty = disabled). Browser env: `REACT_APP_SUPABASE_URL`, `REACT_APP_SUPABASE_ANON_KEY` only.
 - NasrinAI chat sends only the user's message plus a limited user-scoped snapshot, after explicit consent.
 - Legal pages are final (owner, 2026-11-03): the operator is "the MOVO service team" reachable at support@nasrinai.com. Do not invent a legal name, address, retention periods or providers; when behaviour changes, update the matching legal text and bump its effective date.
 

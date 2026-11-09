@@ -54,6 +54,14 @@
   ],
   "rewrites": [
     {
+      "source": "/owner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/owner/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },
