@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Profile: signed-in people see no Sign in button (review)
+
+The Profile Sign in button and the Cloud Sync row now follow the signed-in session, not cloud mode, so a signed-in person in local/offline mode no longer sees "Sign in". Account rows on Profile add up like Total Balance (linked debit cards once, archived out). See `docs/engineering/updates/2026-11-09-profile-signed-in-state.md`.
+
 ## 2026-11-09 — Total balance fixes and complete device-transfer backup (review)
 
 Total balance no longer rises with card payments that moved no money (new "Paid from" records a real transfer), excludes archived and unconvertible accounts, follows the Home month filter, and month-over-month compares like periods. Backup export/restore now carries subscriptions, plans, budgets, limits, card styles/payments, loyalty, archive, settings, receipts, QR, scenery and stickers, re-linked to the restored accounts; CSV keeps transfers, notes and categories. No migration or production change. See `docs/engineering/updates/2026-11-09-total-balance-and-full-backup.md`.

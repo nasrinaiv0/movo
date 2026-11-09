@@ -7,6 +7,7 @@ import { t as tr } from '../lib/i18n';
 import { maskEmail } from '../lib/emailPrivacy';
 import { revokeOtherSessions } from '../lib/financeRepository';
 import PlanBadge from '../components/PlanBadge';
+import { totalBalance } from '../lib/totalBalance';
 
 
 export default function Profile({ c }) {
@@ -25,7 +26,10 @@ export default function Profile({ c }) {
     }
   };
 
-  const sum = (arr) => arr.reduce((s, a) => s + (c.toBase ? c.toBase(a.balance, a.currency) : a.balance), 0);
+  // Each row follows the Total Balance rules (lib/totalBalance.js): open accounts only, a debit card linked to its bank
+  // counted once (through the bank), card payments that moved no money left out. The rows then add up to the total.
+  const sum = (arr) => totalBalance(arr, c.toBase || (v => v), c.prefs?.creditCardPayments || {}).total;
+  const open = (arr) => arr.filter(a => !a.is_archived);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
   const menu = [['gearSolid', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
   return <>
@@ -36,7 +40,8 @@ export default function Profile({ c }) {
         <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{(c.plan === 'pro' || c.plan === 'pro_plus') && <em className="plan-pill"><PlanBadge plan={c.plan} size={18} label /></em>}</span>
         <Icon name="chevron" size={18} />
       </button>
-      {!c.cloudMode && c.supabaseConfigured && <button type="button" className="primary-button profile-signin" onClick={() => go('Sign in')}><Icon name="user" size={18} /> {tr('Sign in')}</button>}
+      {/* Only for someone not signed in: a signed-in person in local or offline mode is still signed in. */}
+      {!session?.user && c.supabaseConfigured && <button type="button" className="primary-button profile-signin" onClick={() => go('Sign in')}><Icon name="user" size={18} /> {tr('Sign in')}</button>}
     </div>
     <section className="stat-grid" aria-label={tr('Profile summary')}>
       {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance], ['Total Income', 'arrowDown', 'green', stats.income, deltas.income], ['Total Expense', 'arrowUp', 'red', stats.expenses, deltas.expenses]].map(([label, icon, tone, value, d]) =>
@@ -46,7 +51,7 @@ export default function Profile({ c }) {
     <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
     <section className="card menu-card">
       {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong><small>{list.length === 1 ? tr('1 account') : tr('{n} accounts', { n: list.length })}</small></span><b>{shown(show, money(sum(list)))}</b><Icon name="chevron" size={16} />
+        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list)))}</b><Icon name="chevron" size={16} />
       </button>)}
     </section>
     <section className="card menu-card gap">
@@ -58,8 +63,8 @@ export default function Profile({ c }) {
 
     <SectionTitle>{tr('Data & Sync')}</SectionTitle>
     <section className="card menu-card">
-      <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go('Sign in')}>
-        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : tr('Sign in')}</span><Icon name="chevron" size={16} />
+      <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
+        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
       </button>
       <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Manually entered records persist across reloads in this browser; they are not synced to other devices or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
       <div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Auto Categorization')}</strong><small>{tr('Automatic categorization is not implemented yet.')}</small></span><span className="pill tone-gray">{tr('Unavailable')}</span></div>
