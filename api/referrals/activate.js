@@ -4,7 +4,7 @@ const {send,gate,clients}=require('../lib/referralAuth');
 const {verify}=require('../lib/verifyReferralIntegrity');
 const uuid=s=>typeof s==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(s);
 module.exports=async function handler(req,res){
- if(!gate(req,res,'POST'))return;
+ if(!gate(req,res,'POST',{points:true}))return;
  try {
   const session=await clients(req);
   if(session.error)return send(res,session.status,{error:session.error});

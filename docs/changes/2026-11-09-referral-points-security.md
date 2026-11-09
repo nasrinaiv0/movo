@@ -1,18 +1,19 @@
 # MOVO native-verified referral points — security and release
 
 ## User rules
-- 5 points after a new, verified account redeems a **single-use** invite and the genuine native MOVO app passes server-side Apple App Attest or Google Play Integrity.
+- Everyone has one short, reusable referral code: `M` + five digits (e.g. `M78038`). A new account enters it within 7 days of sign-up (Refer MOVO, the free-month panel, or automatically filled in from a friend's download link).
+- 5 points after a new, verified account enters a friend's code and the genuine native MOVO app passes server-side Apple App Attest or Google Play Integrity.
 - An additional **100 points once per referred account** after its first **verified production** Pro or Pro+ paid purchase. StoreKit/Google Play notifications and purchase verification update the ledger idempotently.
 - Points have **no cash value**, are not billing credits, savings, cashback, loyalty points, or finance data. Existing 10 qualified paid referrals → 3-month Pro reward remains separate and unchanged.
 - Payment refund/chargeback creates a single **−100 points** compensation event if no eligible verified paid entitlement remains. Renewals/plan changes never re-award the same 100.
-- The user supplies an invite code during onboarding or in Profile within 7 days of account creation; merely downloading from an app store cannot safely attribute a referral without an invitation.
+- The user supplies the code during onboarding or in Profile within 7 days of account creation; merely downloading from an app store cannot attribute a referral. Download QR codes (iPhone and Android) carry the code to the web app, which fills it in.
 
 ## Abuse controls
-- Unique 256-bit secret invitation generated in server memory; only SHA-256 hash stored in database; each invite can be redeemed only once; expires in 30 days.
-- Per-invite UUID, per-claim UUID, one claim per referred account, and unique constraint per (claim, event_kind) to prevent replay/race duplicate awards.
-- Verified email/phone, no self-referrals by account ID, no attaching an invite to previously paid or already-referred accounts, and invitation window ≤7 days.
+- Short codes are public by design (people share them); guessing is limited to 10 code entries per account per hour, recorded even when the code is wrong.
+- One referral per referred account (`referred_by` is set once, never cleared), and unique constraint per (claim, event_kind) to prevent replay/race duplicate awards.
+- Verified email/phone, no self-referrals by account ID, no attaching a code to previously paid or already-referred accounts, and a 7-day window after sign-up.
 - Server-only RPCs run SECURITY INVOKER, check service role, fully schema qualify objects; RLS enabled; no client table writes/points credit endpoint.
-- Sign-in bonus requires a **single-use five-minute challenge**, verified App Attest or Play Integrity, production app identity/certificate, nonce/timestamp verification and server consume. Challenge issuance capped at 10/hour/account; invite issuance capped at 20/day; more than 10 new verified signup awards/day/referrer held for manual fraud review (no points posted).
+- Sign-in bonus requires a **single-use five-minute challenge**, verified App Attest or Play Integrity, production app identity/certificate, nonce/timestamp verification and server consume. Challenge issuance capped at 10/hour/account; code entry capped at 10/hour/account; more than 10 new verified signup awards/day/referrer held for manual fraud review (no points posted).
 - Native App Attest / Play Integrity **do not prove a unique human**; iOS key rotation and Android device farming remain possible. Explicit review and velocity controls mitigate but cannot eliminate Sybil fraud.
 - No device fingerprint/advertising ID is collected. iOS App Attest key hash and Android signed token hash are limited to anti-replay. Do not turn on points redemption until privacy/legal and fraud review are complete.
 

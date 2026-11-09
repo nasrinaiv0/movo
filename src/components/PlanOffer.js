@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import Icon from './Icon';
-import { claimReferralInvite, activateNativeReferral } from '../lib/referrals';
+import { clearPendingReferralCode, pendingReferralCode, trialReferralCode } from '../lib/referrals';
 import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
 import PlanBadge from './PlanBadge';
@@ -38,26 +38,25 @@ export function PlanComparison() {
 export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, onOpenCloudSettings, cloudMode = true, feature }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [code, setCode] = useState('');
-  const [showCode, setShowCode] = useState(false);
+  // A friend's code from a download link (?ref=M78038) is filled in, ready to use.
+  const [code, setCode] = useState(() => pendingReferralCode());
+  const [showCode, setShowCode] = useState(() => Boolean(pendingReferralCode()));
   const eligible = !entitlement || entitlement.trialEligible;
   const plan = effectivePlan(entitlement);
   const claim = async () => {
     if (!session?.access_token) { onSignIn(); return; }
     setBusy(true); setError('');
     try {
-      const entered = code.trim().toLowerCase();
-      if (entered && /^[a-f0-9]{64}$/.test(entered)) {
-        await claimReferralInvite(session, entered);
-        activateNativeReferral(session).catch(() => {});
-      } else if (entered && !/^[a-f0-9]{24}$/.test(entered)) {
-        throw new Error(tr('Could not start the free month. Check the referral code, then try again.'));
-      }
+      // Short codes such as M78038 (any case, spaces ignored); older 24-character codes still work.
+      const entered = trialReferralCode(code);
+      if (entered === null) throw new Error(tr('Could not start the free month. Check the referral code, then try again.'));
       const response = await fetch(apiUrl('/api/purchases/trial'), {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token },
-        body: JSON.stringify({ ...(entered.length === 24 ? { referralCode: entered } : {}) }),
+        body: JSON.stringify({ ...(entered ? { referralCode: entered } : {}) }),
       });
+      if (response.status === 429) throw new Error(tr('Too many tries. Try the code again in an hour.'));
       if (!response.ok) throw new Error(tr('Could not start the free month. Check the referral code, then try again.'));
+      if (entered) clearPendingReferralCode();
       await onRefresh(); onClose();
     } catch (cause) { setError(cause.message); } finally { setBusy(false); }
   };
@@ -65,7 +64,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   if (feature && !cloudMode) return <Sheet title={tr('Local mode active')} label={tr('Offline feature access')} className="local-mode-sheet" onClose={onClose}>
     <div className="local-mode-content">
       <p>{tr('Pro and Pro+ features are paused while Cloud Sync is off. You can still record transactions, manage local accounts and export your data on this device.')}</p>
-      <div className="local-mode-detail"><Icon name="check" size={18} /><span>{tr('Local Storage')} — Records stay on this device.</span></div>
+      <div className="local-mode-detail"><Icon name="check" size={18} /><span>{tr('Local Storage: records stay on this device.')}</span></div>
       <div className="local-mode-detail"><Icon name="shield" size={18} /><span>{tr('Switching to local storage does not cancel or refund an existing subscription. Turn on Cloud Sync to restore eligible plan access after verification.')}</span></div>
       {onOpenCloudSettings && <button type="button" className="primary-button local-mode-action" onClick={onOpenCloudSettings}>{tr('Cloud Sync settings')}</button>}
     </div>
@@ -82,7 +81,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       {eligible && <>
         <p className="plan-trial-note">{tr('1 month free · no payment, no automatic charge')}</p>
         {session?.access_token && (showCode
-          ? <input className="plan-referral-input" maxLength={64} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code')} aria-label={tr('Referral code')} autoCapitalize="none" autoComplete="off" />
+          ? <input className="plan-referral-input" maxLength={24} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code, e.g. M78038')} aria-label={tr('Referral code')} autoCapitalize="characters" autoComplete="off" spellCheck={false} />
           : <button type="button" className="link-button plan-referral-toggle" onClick={() => setShowCode(true)}>{tr('Have a referral code?')}</button>)}
         <button type="button" className="primary-button" disabled={busy} onClick={claim}>{busy ? tr('Starting…') : session?.access_token ? tr('Start my free month') : tr('Sign in to claim my free month')}</button>
       </>}

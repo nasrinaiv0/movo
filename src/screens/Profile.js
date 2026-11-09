@@ -48,7 +48,7 @@ export default function Profile({ c }) {
     <section className="card menu-card profile-refer-card">
       <button type="button" className="menu-row" onClick={() => setReferralOpen(true)}>
         <span className="menu-icon bare"><Icon name="gift" size={20} /></span>
-        <span className="menu-main"><strong>Refer MOVO</strong><small>QR invite, referral points and rewards</small></span>
+        <span className="menu-main"><strong>{tr('Refer MOVO')}</strong><small>{tr('Your code and download QR codes')}</small></span>
         <Icon name="chevron" size={16} />
       </button>
     </section>
@@ -99,7 +99,7 @@ export default function Profile({ c }) {
       {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Sign out')}</strong></span></button>
         : c.supabaseConfigured && <button type="button" className="menu-row" onClick={() => go('Sign in')}><span className="menu-icon bare"><Icon name="user" size={20} /></span><span className="menu-main"><strong>{tr('Sign in / create account')}</strong></span><Icon name="chevron" size={16} /></button>}
     </section>
-    {referralOpen && <ReferralSheet session={session} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
+    {referralOpen && <ReferralSheet session={session} entitlement={c.entitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
     <p className="fineprint">{tr('MOVO does not connect to your bank or read private Apple Pay history automatically. Only add records you choose to provide.')}</p>
   </>;
 }

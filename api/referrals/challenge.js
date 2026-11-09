@@ -2,7 +2,7 @@
 const crypto=require('crypto');
 const {send,gate,clients}=require('../lib/referralAuth');
 module.exports=async function handler(req,res){
- if(!gate(req,res,'POST'))return;
+ if(!gate(req,res,'POST',{points:true}))return;
  try{
   const session=await clients(req);
   if(session.error)return send(res,session.status,{error:session.error});
