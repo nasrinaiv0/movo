@@ -7,7 +7,8 @@ export function canAnimate() {
 }
 
 /** Eases a number toward `target` (ease-out quart). First paint counts up from zero. */
-export function useCountUp(target, duration = 950) {
+/** Balances ease between values in 400ms (chart range of the motion system); the value shown at rest is always exact. */
+export function useCountUp(target, duration = 400) {
   const animate = canAnimate();
   const [value, setValue] = useState(animate ? 0 : target);
   const from = useRef(animate ? 0 : target);
@@ -16,7 +17,7 @@ export function useCountUp(target, duration = 950) {
     const start = performance.now(); const origin = from.current; let raf;
     const tick = (now) => {
       const t = Math.min(1, (now - start) / duration); const eased = 1 - (1 - t) ** 4;
-      const next = origin + (target - origin) * eased; from.current = next; setValue(next);
+      const next = t >= 1 ? target : origin + (target - origin) * eased; from.current = next; setValue(next);
       if (t < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

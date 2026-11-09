@@ -7981,3 +7981,105 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 /* While the dialog closes it no longer takes taps, so nothing can be pressed twice. */
 .movo-app .confirm-layer.closing { pointer-events: none; }
+
+/* ---------- Touch targets and overflow (2026-11-09, audit phase 2) ----------
+   Every small control gets an invisible 44×44 hit area centred on it, so taps land without changing how anything looks
+   (Apple HIG / WCAG 2.5.5). ::before is free on these controls (the hairline uses ::after). Screens never scroll
+   sideways: a decorative layer (badge shine/sparkle) could leave the page 18px wider after a tab change. */
+.movo-app .screen { overflow-x: clip; }
+.movo-app :is(.plain-icon, .ram-bubble-link, .balance-go, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle) { position: relative; }
+.movo-app :is(.plain-icon, .ram-bubble-link, .balance-go, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle)::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+/* The billing-cycle picker is a 40px filter like its neighbours; its native select stays invisible and borderless. */
+.movo-app.movo-app .tx-period-filter select { border: 0; }
+/* The eye sits just above the balance figure: its hit area stays on top. The wallet arrow sits at the card's left edge,
+   which clips: its hit area grows to the right instead. Money-flow ranges are filters: 40px like every other filter. */
+.movo-app :is(.plain-icon, .balance-go) { z-index: 2; }
+.movo-app.movo-app :is(.balance-card, .total-card) .balance-label { z-index: 2; }
+.movo-app.movo-app .balance-go::before { left: 0; transform: translateY(-50%); }
+.movo-app.movo-app[dir="rtl"] .balance-go::before { left: auto; right: 0; }
+.movo-app.movo-app .flow-ranges button { min-height: 40px; overflow: visible; }
+
+/* ---------- Motion system (2026-11-09, audit phase 3) ----------
+   One set of durations for the whole app, on transform/opacity, eased out with no overshoot:
+   press 120ms · modal 220ms · page 260ms · chart 380ms. Longer entrances (0.5–1.2s) and long start delays made the app
+   feel slow; they now land inside these ranges. Reduced motion still turns them off (earlier blocks). Celebrations
+   (badge unlock, the tutorial video) keep their own timing. */
+:root { --dur-press: 120ms; --dur-modal: 220ms; --dur-page: 260ms; --dur-chart: 380ms; --ease-out: cubic-bezier(.22, 1, .36, 1); }
+
+/* Pages and lists */
+.movo-app.movo-app .screen > *,
+.movo-app.movo-app :is(.list-card > .tx-row, .list-card > .note-row, .list-card > .menu-row, .account-list > .account-row, .sheet-list > .sheet-card),
+.movo-app.movo-app :is(.tx-groups section, .legend li, .cat-bars li, .sync-indicator, .ai-panel > *, .movo-ai-message, .detail-card-view > *),
+.movo-app.movo-app :is(.scenery, .money) { animation-duration: var(--dur-page); }
+.movo-app.movo-app .bottom-nav { animation-duration: var(--dur-page); animation-delay: 40ms; }
+.movo-app.movo-app .ai-panel .orb.big { animation: item-in var(--dur-page) var(--ease-out) both; }
+.movo-app.movo-app .hero-badge { animation: pop-in var(--dur-page) var(--ease-out) 40ms both; }
+.movo-app.movo-app .tx-row.tx-fresh { animation: tx-arrive var(--dur-page) var(--ease-out) both, tx-glow 1.6s ease-out .1s both; }
+.movo-app.movo-app :is(.card-scroller > .card-slide > :is(.credit-card, .account-tile), .card-pile-item.front) { animation-duration: var(--dur-page); }
+.movo-app.movo-app :is(.card-stack-card.entering, .card-stack-leaving) { animation-duration: 300ms; animation-delay: 0s; }
+.movo-app.movo-app .nav-item.nav-active:not(.nav-center) .nav-icon { animation-duration: 220ms; }
+.movo-app.movo-app :is(.nav-pill, .chip-ind.ready, .box-slot, .card-stack-peek, .ram-stage, .ram-bubble, .ram-poster, .ram-canvas, .scan-view video) { transition-duration: var(--dur-page); }
+
+/* Sheets and dialogs */
+.movo-app.movo-app .sheet { animation-duration: var(--dur-modal); }
+.movo-app.movo-app .sheet.sheet-center { animation-duration: var(--dur-modal); }
+.movo-app.movo-app .sheet > :nth-child(n+3) { animation-duration: var(--dur-modal); }
+.movo-app.movo-app .sheet > :nth-child(3) { animation-delay: 30ms; }
+.movo-app.movo-app .sheet > :nth-child(4) { animation-delay: 60ms; }
+.movo-app.movo-app .sheet > :nth-child(5) { animation-delay: 90ms; }
+.movo-app.movo-app .sheet > :nth-child(n+6) { animation-delay: 120ms; }
+
+/* Charts: draw in 380ms, starting almost at once */
+.movo-app.movo-app :is(.balance-art svg, .donut-ring, .meter i) { animation-duration: var(--dur-chart); animation-delay: 80ms; }
+.movo-app.movo-app :is(.bars-plot span, .budget-meter i, .cat-bars-track i, .flow-bars i, .mini-bars rect, .flow-value-bar) { animation-duration: var(--dur-chart); }
+.movo-app.movo-app .donut-hole { animation-duration: var(--dur-page); animation-delay: 120ms; }
+.movo-app.movo-app .progress-track > span { transition-duration: var(--dur-chart); }
+
+/* ---------- Solid surfaces (2026-11-09, audit phase 4) ----------
+   No decorative gradients: badges, ribbons, plan cards, the tutorial video and card sheens use solid colours.
+   Kept on purpose, because they do a job: scroll-edge masks, the content fades under headers and the bottom bar, the
+   scrims that keep text readable on sticker cards, the split theme swatches, the clarity slider's fill, the EMV chip
+   contacts, the scanner line and the donut chart's own segments. The badge shine and sparkle loops (every 4–7s,
+   forever) stop too. */
+.movo-app.movo-app .streak-badge.earned { background: var(--badge); }
+.movo-app.movo-app .streak-badge.tier-pro { --ring: #9aa4b2; }
+.movo-app.movo-app .streak-badge.tier-max { --ring: #d9a521; }
+.movo-app.movo-app .streak-badge.tier-ultra { --ring: #8b6cff; }
+.movo-app.movo-app .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) { background: var(--card-solid); border-color: var(--ring); background-clip: padding-box; }
+.movo-app.movo-app .streak-badge:not(.earned):is(.tier-pro, .tier-max, .tier-ultra) { background: var(--field); }
+.movo-app.movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra) { background: var(--badge); }
+.movo-app.movo-app .streak-badge.earned::after, .movo-app.movo-app .streak-badges li.tier-ultra::after { content: none; animation: none; }
+.movo-app.movo-app .streak-badges .badge-tier { background: #d5dbe3; color: #1d2330; }
+.movo-app.movo-app .streak-badges li.tier-max .badge-tier { background: #e2b23a; color: #3b2803; }
+.movo-app.movo-app .streak-badges li.tier-ultra .badge-tier { background: #7a5cf0; color: #fff; text-shadow: none; }
+.movo-app.movo-app .ram-glow { display: none; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait::after { background: none; }
+.movo-app.movo-app :is(.balance-card, .stat-card, .spending-card, .total-card)::after { background: rgba(var(--accent-rgb), .5); }
+.movo-app.movo-app .plan-detail-card.plan-pro { background: color-mix(in srgb, var(--accent) 10%, var(--card-solid)); }
+.movo-app.movo-app .plan-detail-card.plan-plus { background: color-mix(in srgb, #d4a017 12%, var(--card-solid)); }
+.movo-app.movo-app .tv-card { background: var(--a, #3a7bfd); }
+.movo-app.movo-app .tv-bars span { background: rgba(255, 255, 255, .85); }
+.movo-app.movo-app .tv-badge { background: #f2c14e; }
+.movo-app.movo-app .tv-player { background: #121722; }
+
+/* ---------- Loading placeholders (2026-11-09, audit phase 6) ----------
+   Shown only while cloud records load (Financial planning, Bills, crypto market). Static blocks that fade in once:
+   no shimmer loop, no fake progress. */
+.movo-app .skeleton { display: grid; gap: 10px; padding: 4px 0; animation: fade var(--dur-page) ease-out both; }
+.movo-app .skeleton-figure { width: 58%; height: 30px; border-radius: 10px; background: var(--field); }
+.movo-app .skeleton-line { width: var(--w, 80%); height: 13px; border-radius: 7px; background: var(--field); }
+.movo-app .sub-hero .skeleton :is(.skeleton-figure, .skeleton-line) { background: rgba(255, 255, 255, .22); }
+@media (prefers-reduced-motion: reduce) { .movo-app .skeleton { animation: none; } }
+/* Progressive list: the Show more control under long transaction lists (performance phase 7). */
+.movo-app .tx-more { display: flex; justify-content: center; padding: 8px 0 4px; }
+/* Month pill on the balance card: the long month normally; on phones under 360px the short month and no calendar
+   tile, so the pill (and the notch it cuts) never covers "Total Balance" and its eye button. */
+.movo-app .home-period-current .period-short { display: none; }
+@media (max-width: 359px) {
+  .movo-app .home-period-filter.in-notch .home-period-current .period-long { display: none; }
+  .movo-app .home-period-filter.in-notch .home-period-current .period-short { display: inline; }
+  .movo-app.movo-app .home-period-filter.in-notch .home-period-icon { display: none; }
+  .movo-app.movo-app .home-period-filter.in-notch { padding-left: 12px; }
+}

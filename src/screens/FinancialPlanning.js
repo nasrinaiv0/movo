@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
 import AccountPicker, { accountName, accountKind } from '../components/AccountPicker';
-import { Chips, Money, SectionTitle, Sheet, SubHeader } from '../components/ui';
+import { Chips, Money, SectionTitle, Sheet, Skeleton, SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { deleteRecord, useConfirm } from '../components/ConfirmDialog';
@@ -102,9 +102,9 @@ export default function FinancialPlanning({ c }) {
     <small>{tr('Net worth')}</small>
     <div className="balance-amount"><Money value={summary.position.netWorth} show={show} currency={base} /></div>
     <div className="sub-hero-row">
-      <span><b><Money value={summary.position.assets} show={show} digits={0} currency={base} /></b><small>{tr('Assets')}</small></span>
-      <span><b><Money value={summary.position.liabilities} show={show} digits={0} currency={base} /></b><small>{tr('Liabilities')}</small></span>
-      <span><b><Money value={summary.position.availableMoney} show={show} digits={0} currency={base} /></b><small>{tr('Available money')}</small></span>
+      <span><b><Money value={summary.position.assets} show={show} currency={base} /></b><small>{tr('Assets')}</small></span>
+      <span><b><Money value={summary.position.liabilities} show={show} currency={base} /></b><small>{tr('Liabilities')}</small></span>
+      <span><b><Money value={summary.position.availableMoney} show={show} currency={base} /></b><small>{tr('Available money')}</small></span>
     </div>
   </section>;
 
@@ -129,6 +129,12 @@ export default function FinancialPlanning({ c }) {
   const statusChip = (s) => <em className={`fp-status is-${s}`}>{tr(STATUS[s] || s)}</em>;
   const due = (d) => (d ? tr('Due {date}', { date: formatDate(d) }) : tr('No due date set'));
 
+  // Until the cloud records arrive, show their shape rather than a ₱0.00 net worth.
+  if (!p.loaded && !p.error) return <>
+    {header}
+    <section className="card sub-hero fp-hero"><Skeleton figure lines={2} /></section>
+    <section className="card pad"><Skeleton lines={4} /></section>
+  </>;
   return <>
     {header}
     {hero}

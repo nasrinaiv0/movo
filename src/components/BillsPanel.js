@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AccountPicker from './AccountPicker';
 import Icon from './Icon';
-import { SectionTitle, Sheet } from './ui';
+import { SectionTitle, Sheet, Skeleton } from './ui';
 import { formatDate } from '../lib/format';
 import { money } from '../lib/format';
 import { t as tr } from '../lib/i18n';
@@ -27,6 +27,7 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
   const [pay, setPay] = useState(null); // { occ, amount, account_id, paid_at, actual, nonce }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loaded, setLoaded] = useState(false);
   const [notice, setNotice] = useState('');
 
   const reload = useCallback(async () => {
@@ -34,7 +35,7 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
     const [b, o, p] = await Promise.all([listBills(), listOccurrences(shift(today, 62), since), listBillPayments(`${shift(today, -62)}T00:00:00Z`)]);
     setBills(b || []); setOccurrences(o || []); setPayments(p || []);
   }, [today]);
-  useEffect(() => { let live = true; reload().catch(e => { if (live) setError(e?.message || tr('Could not load your bills.')); }); return () => { live = false; }; }, [reload]);
+  useEffect(() => { let live = true; reload().catch(e => { if (live) setError(e?.message || tr('Could not load your bills.')); }).finally(() => { if (live) setLoaded(true); }); return () => { live = false; }; }, [reload]);
 
   const run = async (fn, success) => {
     setBusy(true); setError(''); setNotice('');
@@ -80,6 +81,8 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
     }
   }, method === 'recorded' ? tr('Payment recorded.') : tr('Marked as paid elsewhere. No account was charged.')).then(ok => { if (ok) setPay(null); });
 
+  // Until the bills arrive, show their shape rather than ₱0.00 totals and an empty list.
+  if (!loaded) return <section className="card pad bills-list"><Skeleton figure lines={3} label={tr('Loading your bills…')} /></section>;
   return <>
     {error && <p className="app-alert" role="alert">{error}</p>}{notice && <p className="form-note" role="status">{notice}</p>}
     <section className="stat-grid two fp-bill-stats" aria-label={tr('Bills this month')}>

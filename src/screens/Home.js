@@ -10,7 +10,7 @@ import { BudgetsCard } from '../components/Budgets';
 import PlanningCard from '../components/PlanningCard';
 import RamMascot from '../components/RamMascot';
 import { mascotMood, moodMessage } from '../lib/mascotMood';
-import { dayKey, money, shown } from '../lib/format';
+import { dayKey, money, monthLabel, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 
 const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
@@ -21,7 +21,7 @@ const SPENDING_STYLES = [['ring', 'Ring'], ['bars', 'Bars']];
 function CategoryBars({ data, show }) {
   const top = Math.max(1, ...data.map(d => d.amount));
   return <ul className="cat-bars">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}>
-    <span className="cat-bars-head"><span><i style={{ background: d.color }} />{tr(d.key)}</span><b><Money value={d.amount} show={show} digits={0} /> · {d.percent}%</b></span>
+    <span className="cat-bars-head"><span><i style={{ background: d.color }} />{tr(d.key)}</span><b><Money value={d.amount} show={show} /> · {d.percent}%</b></span>
     <span className="cat-bars-track"><i style={{ width: `${(d.amount / top) * 100}%`, background: d.color }} /></span>
   </li>)}</ul>;
 }
@@ -67,7 +67,8 @@ export default function Home({ c }) {
   const balanceShown = !(prefs.layouts?.home?.hidden || []).includes('balance');
   const periodPill = (inBox) => <button type="button" className={`home-period-filter${inBox ? ' in-notch' : showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!inBox && !showPeriodOnTop} tabIndex={inBox || showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
     <span className="home-period-icon"><Icon name="calendar" size={15} /></span>
-    <span className="home-period-current">{monthName(homeMonthKey)}</span>
+    {/* Small phones get the short month ("Nov 2026") so the pill never covers the balance's eye button. */}
+    <span className="home-period-current"><span className="period-long">{monthName(homeMonthKey)}</span><span className="period-short">{monthLabel(homeMonthKey)}</span></span>
     <Icon name="chevron" size={13} className="home-period-chevron" />
   </button>;
   const file = useRef(null);
@@ -112,7 +113,7 @@ export default function Home({ c }) {
     { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
       {tiles.map(t => <button type="button" className={`card stat-card is-link tint-${t.tone}`} key={t.label} onClick={t.open} aria-label={tr('Open {label}', { label: t.label })}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
-        <strong><Money value={t.value} show={show} digits={0} /></strong>
+        <strong><Money value={t.value} show={show} /></strong>
         {size !== 'S' && <Trend value={t.delta} />}
       </button>)}
     </section> },

@@ -48,3 +48,14 @@ test('month-over-month for a past month only undoes what happened up to that mon
   expect(delta.balance.direction).toBe('down');
   expect(Math.round(delta.balance.percent * 100) / 100).toBe(Math.round((1200 / 16500) * 10000) / 100);
 });
+
+test('the total is the sum of the cent-rounded balances people see, with no float drift', () => {
+  // Three foreign balances that each convert to a fractional cent: each shows ₱0.34, so the total shows ₱1.02.
+  const accounts = [1, 2, 3].map(i => ({ id: 'u' + i, balance: 1, currency: 'USD' }));
+  expect(totalBalance(accounts, amount => amount * 0.335).total).toBe(1.02);
+  // Many small amounts add up exactly.
+  const many = Array.from({ length: 1000 }, (_, i) => ({ id: 'a' + i, balance: 0.1, currency: 'PHP' }));
+  expect(totalBalance(many).total).toBe(100);
+  expect(netAfter(Array.from({ length: 10 }, (_, i) => ({ id: 't' + i, type: i % 2 ? 'income' : 'expense', amount: 0.1, date: '2026-11-09' })), '2026-11-01')).toBe(0);
+  expect(balanceAsOf(0.3, [{ id: 'x', type: 'income', amount: 0.1, date: '2026-11-09' }], '2026-11-01')).toBe(0.2);
+});

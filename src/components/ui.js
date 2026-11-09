@@ -9,12 +9,23 @@ import BrandLogo from './BrandLogo';
 import { categoryOf } from '../lib/categories';
 import { merchantLogoUrl } from '../lib/merchantFavicons';
 
-/** Animated currency amount: counts up when it appears and eases between values. */
-export function Money({ value, show, digits = 2, currency }) {
+/**
+ * Placeholder shaped like the content it stands for, shown only while cloud data is genuinely loading, so a screen
+ * never shows ₱0.00 or "nothing here" before its records arrive. No fake progress and no looping shimmer.
+ */
+export function Skeleton({ lines = 3, figure = false, className = '', label }) {
+  return <div className={`skeleton${figure ? ' has-figure' : ''} ${className}`.trim()} role="status" aria-live="polite" aria-busy="true" aria-label={label || tr('Loading your records…')}>
+    {figure && <span className="skeleton-figure" />}
+    {Array.from({ length: lines }, (_, i) => <span key={i} className="skeleton-line" style={{ '--w': `${[92, 68, 84, 56][i % 4]}%` }} />)}
+  </div>;
+}
+
+/** Animated currency amount: counts up when it appears and eases between values. Always two decimals (lib/format.js). */
+export function Money({ value, show, currency }) {
   const v = useCountUp(Number(value) || 0);
   // --len (characters of the final figure) lets small boxes shrink the amount to fit instead of cutting it off.
-  const len = show ? money(Number(value) || 0, currency, digits).length : HIDDEN.length;
-  return <span key={show ? 'on' : 'off'} className="money" style={{ '--len': len }}>{show ? money(v, currency, digits) : HIDDEN}</span>;
+  const len = show ? money(Number(value) || 0, currency).length : HIDDEN.length;
+  return <span key={show ? 'on' : 'off'} className="money" style={{ '--len': len }}>{show ? money(v, currency) : HIDDEN}</span>;
 }
 
 export function Toggle({ checked, onChange, label, disabled = false, reason, describedBy }) {
@@ -202,7 +213,7 @@ export function Donut({ data, total, caption, show, size = 132 }) {
   const stops = data.length ? data.map(d => { const from = acc; acc += d.percent; return `${d.color} ${from}% ${acc}%`; }).join(',') : '#d7dbe6 0 100%';
   return <div className="donut" style={{ width: size, height: size }}>
     <i className="donut-ring" style={{ background: `conic-gradient(${stops})` }} />
-    <div className="donut-hole"><strong><Money value={total} show={show} digits={0} /></strong><span>{caption}</span></div>
+    <div className="donut-hole"><strong><Money value={total} show={show} /></strong><span>{caption}</span></div>
   </div>;
 }
 
