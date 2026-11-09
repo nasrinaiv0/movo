@@ -121,7 +121,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
         {confirmation && <section className="movo-backup-confirm" role="alertdialog" aria-label={confirmation === 'save' ? 'Confirm local record import' : 'Confirm discard preview'} aria-modal="false">
           <strong>{confirmation === 'save' ? 'Save reviewed records to this device?' : 'Discard the uploaded preview?'}</strong>
           <p>{confirmation === 'save'
-            ? 'Valid new accounts and transactions will be saved locally and reflected in Home, Wallet, Transactions and related Menu views. Cloud records will not change. Duplicates and unsupported groups remain untouched.'
+            ? 'Valid new accounts and transactions will be added to local MOVO records and reflected in Wallet, Home and Transactions. Cloud records will not change. Duplicates and unsupported groups remain untouched.'
             : 'The uploaded preview will be removed without changing any existing MOVO records.'}</p>
           <div className="movo-backup-confirm-actions">
             <button type="button" className="secondary-button" onClick={() => setConfirmation('')} disabled={busy}>Keep preview</button>

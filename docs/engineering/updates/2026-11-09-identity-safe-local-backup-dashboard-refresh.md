@@ -21,3 +21,6 @@ Local mode never writes financial records to Supabase. Signed-in offline mode re
 - React import-sheet test verifies success dispatch and zero-write no-dispatch.
 - React app integration test confirms the modal closes, Home summary changes immediately, Wallet and Transactions show imported records, Menu remains navigable, and cold reload preserves the imported rows.
 - Must pass exact-head full tests, typecheck, build, isolated SQL CI, preview deployment and interactive iPhone checks before release. No production access or schema change was performed to implement this fix.
+
+## Localization CI follow-up
+The exact-head GitHub i18n check detected a newly authored static confirmation sentence that was not in the 11-language catalogue. Reverted that sentence to the existing translated copy rather than bypassing the completeness gate. Import behavior, save/read-back, screen refresh, and financial calculations are unchanged. Require fresh exact-head CI and Vercel preview verification.
