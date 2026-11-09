@@ -33,15 +33,26 @@ test('ignores foreign owner, subscriptions, and authenticated grants', () => {
 });
 
 
-test('rejects source accounts sharing the same name before any transaction can be assigned', () => {
-  const bad = { ...backup,
+test('restores same-name bank accounts separately and routes each payment by source ID', () => {
+  const source = { ...backup,
     accounts: [backup.accounts[0], { ...backup.accounts[0], id:'another', currency:'USD' }],
     transactions: [
       backup.transactions[0],
       { ...backup.transactions[0], id:'second', account_id:'another', amount:30 },
     ],
   };
-  expect(() => prepareFinanceBackupRestore(bad,{ accounts:[],transactions:[] },options)).toThrow(/duplicate account names/);
+  const first = prepareFinanceBackupRestore(source, { accounts:[], transactions:[] }, options);
+  expect(first.accounts).toHaveLength(2);
+  expect(first.accounts.map(a => a.name)).toEqual(['Savings','Savings']);
+  expect(first.transactions).toHaveLength(2);
+  expect(first.transactions[0].account_id).toBe(first.accounts[0].id);
+  expect(first.transactions[1].account_id).toBe(first.accounts[1].id);
+  expect(first.transactions[0].account_id).not.toBe(first.transactions[1].account_id);
+  const second = prepareFinanceBackupRestore(source, {
+    accounts:first.accounts, transactions:first.transactions,
+  }, options);
+  expect(second.accounts).toHaveLength(0);
+  expect(second.transactions).toHaveLength(0);
 });
 
 test('fails safely when an existing account with a matching name has an incompatible currency', () => {
@@ -70,9 +81,31 @@ test('rejects ambiguous destination account names in the live wallet', () => {
 });
 
 
-test('rejects differently spaced duplicate account names before assigning imported payments', () => {
+test('rejects repeated names without distinct identifiers rather than silently misrouting payments', () => {
   const bad = { ...backup,
-    accounts: [backup.accounts[0], { ...backup.accounts[0], id:'a-second', name:'  Savings  ' }],
+    accounts: [backup.accounts[0], { ...backup.accounts[0], id:null, name:'  Savings  ' }],
   };
-  expect(() => prepareFinanceBackupRestore(bad,{accounts:[],transactions:[]},options)).toThrow(/duplicate account names/);
+  expect(() => prepareFinanceBackupRestore(bad,{accounts:[],transactions:[]},options)).toThrow(/distinct identifiers/);
+});
+
+test('rejects repeated source identifiers and ambiguous name-only transaction routing', () => {
+  const badAccounts = { ...backup, accounts:[backup.accounts[0], {...backup.accounts[0],name:'Secondary'}] };
+  expect(() => prepareFinanceBackupRestore(badAccounts,{accounts:[],transactions:[]},options)).toThrow(/duplicate account identifiers/);
+  const unnamedTransaction = { ...backup,
+    accounts: [backup.accounts[0], { ...backup.accounts[0], id:'other', name:'Savings' }],
+    transactions: [{ ...backup.transactions[0], account_id:null, account_name:'Savings' }],
+  };
+  expect(() => prepareFinanceBackupRestore(unnamedTransaction,{accounts:[],transactions:[]},options)).toThrow(/ambiguous account name/);
+});
+
+test('preserves account-specific transfers between same-name accounts', () => {
+  const source = { ...backup, accounts:[backup.accounts[0], {...backup.accounts[0], id:'other'}],
+    transactions:[{ id:'transfer', account_id:'old', transfer_to_account_id:'other',
+      merchant:'Transfer', type:'transfer', amount:12.34, date:'2026-11-03' }],
+  };
+  const result = prepareFinanceBackupRestore(source,{accounts:[],transactions:[]},options);
+  expect(result.transactions).toHaveLength(1);
+  expect(result.transactions[0].account_id).toBe(result.accounts[0].id);
+  expect(result.transactions[0].transfer_to_account_id).toBe(result.accounts[1].id);
+  expect(result.transactions[0].amount).toBe(12.34);
 });
