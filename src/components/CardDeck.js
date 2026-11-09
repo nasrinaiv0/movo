@@ -37,7 +37,8 @@ function CardStack({ cards, selectedId, onSelect, renderCard, effect }) {
     const from = cards.indexOf(old); const to = cards.indexOf(front); const n = cards.length;
     setDir(((to - from + n) % n) <= n / 2 ? 1 : -1);
     setLeaving(old); setEntering(true);
-    const t = setTimeout(() => { setLeaving(null); setEntering(false); }, 560);
+    // Matches the 300ms card-stack animation in App.css (motion system), plus a frame of margin.
+    const t = setTimeout(() => { setLeaving(null); setEntering(false); }, 320);
     return () => clearTimeout(t);
   }, [front, cards]);
 

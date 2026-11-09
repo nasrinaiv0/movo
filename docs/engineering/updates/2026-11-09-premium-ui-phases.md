@@ -22,6 +22,22 @@ may stay whole); only functional gradients stay (content fades, sticker scrims, 
   each and total ₱1.02; the old float sum gave ₱1.01).
 - The billing-cycle select (invisible, inside its 40px filter) loses its default browser border.
 
+## Phase 3 — motion system
+
+- **Tokens** (`App.css`, end): press 120ms, modal 220ms, page 260ms, chart 380ms, one ease-out curve with no
+  overshoot. Measured in the running app before: the donut sweep and balance art took 1.2s, the bottom-nav entrance
+  0.7s, bar growth and the donut centre 0.6s, list rows 0.5–0.55s, page sections 0.38s, sheets 0.4s with children at
+  0.32s and up to 0.23s of stagger. They now fall inside the brief's ranges (buttons 100–160, modals 180–250, pages
+  180–300, charts 250–450ms), with start delays cut to 40–120ms.
+- **Balance count-up** 950ms → 400ms, and it now ends on the exact value (no float a hair off the target).
+- **Card stack** animations 0.52–0.72s → 300ms; `CardDeck.js` clears the leaving card after 320ms (was 560ms) to match.
+- The hero badge no longer pulses twice after appearing; the NasrinAI orb no longer has a breathing loop listed.
+- Correction to audit finding 1.4: `--spring-bounce` was already redefined without overshoot (`App.css` line 853),
+  so no animation overshoots; the token block keeps it that way.
+- Press feedback already exists on every button family (41 `:active` rules, scale .92–.985 or opacity); unchanged.
+- Reduced motion still switches these animations off (existing blocks), and celebrations (badge unlock, tutorial
+  video) keep their own timing.
+
 ## Data and security
 
 No schema, API, RLS or entitlement change. Totals can differ from before by at most a cent when foreign balances
