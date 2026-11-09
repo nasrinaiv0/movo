@@ -18,6 +18,13 @@ begin
  where action in ('work_create','work_update') and (details->>'id')=v_id::text;
  if v_count <> 2 then raise exception 'Missing or duplicate audit events: %',v_count; end if;
 end $$;
+do $
+declare v_points jsonb;
+begin
+ v_points:=public.movo_owner_weekly_signups();
+ if jsonb_array_length(v_points)<>12 then raise exception 'Missing weekly signup points'; end if;
+ if (v_points->11->>'count') is null then raise exception 'Signup count missing'; end if;
+end $;
 select set_config('request.jwt.claim.role','authenticated',false);
 set role authenticated;
 do $$
@@ -26,6 +33,11 @@ begin
   insert into public.movo_owner_work_items(area,title,created_by,updated_by)
   values('support','Client forged owner task','00000000-0000-0000-0000-000000000002'::uuid,'00000000-0000-0000-0000-000000000002'::uuid);
   raise exception 'Authenticated client wrote owner work';
+ exception when insufficient_privilege then null;
+ end;
+ begin
+  perform public.movo_owner_weekly_signups();
+  raise exception 'Client called privileged signup analytics';
  exception when insufficient_privilege then null;
  end;
  begin
