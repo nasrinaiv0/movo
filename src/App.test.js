@@ -100,6 +100,70 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelectorAll('.bottom-nav .nav-item')).toHaveLength(5);
   });
 
+  test('confirmed local backup refreshes Home, Wallet, Transactions and Menu with durable account-specific data', async () => {
+    const initialSummary = container.querySelector('[aria-label="Financial summary"]')?.textContent;
+    clickButton(container, 'Settings');
+    const importRow = [...container.querySelectorAll('button')].find(button => button.textContent.includes('Import & Export'));
+    expect(importRow).toBeDefined();
+    act(() => importRow.click());
+
+    const input = container.querySelector('#movo-backup-input');
+    expect(input).not.toBeNull();
+    const imported = {
+      format:'movo-finance-backup', version:1, tables:{},
+      accounts:[
+        { id:'source-import-bank-1', name:'Imported BPI', account_type:'bank', currency:'PHP', opening_balance:1000 },
+        { id:'source-import-bank-2', name:'Imported BPI', account_type:'bank', currency:'PHP', opening_balance:500 },
+      ],
+      transactions:[
+        { id:'source-import-payment-1', account_id:'source-import-bank-1', merchant:'Imported coffee',
+          amount:125.35, transaction_type:'expense', currency:'PHP', occurred_at:'2026-10-29T02:00:00Z' },
+        { id:'source-import-payment-2', account_id:'source-import-bank-2', merchant:'Imported commute',
+          amount:35.20, transaction_type:'expense', currency:'PHP', occurred_at:'2026-10-29T03:00:00Z' },
+      ],
+    };
+    Object.defineProperty(input, 'files', {
+      value:[{name:'movo-restore.json',size:2048,text:async () => JSON.stringify(imported)}],configurable:true,
+    });
+    await act(async () => input.dispatchEvent(new Event('change', {bubbles:true})));
+    const confirm = async label => {
+      const button = [...container.querySelectorAll('button')].find(item => item.textContent.trim() === label);
+      expect(button).toBeDefined();
+      await act(async () => button.click());
+    };
+    await confirm('Save records');
+    expect(container.textContent).toContain('Save reviewed records to this device?');
+    await confirm('Confirm save locally');
+    expect(container.querySelector('#movo-backup-input')).toBeNull();
+    expect(container.querySelector('h1')?.textContent).not.toBe('Settings');
+    expect(container.querySelector('[aria-label="Financial summary"]')?.textContent).not.toEqual(initialSummary);
+
+    const savedAccounts = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'));
+    const savedTransactions = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    const newAccounts = savedAccounts.filter(account => account.name === 'Imported BPI');
+    expect(newAccounts).toHaveLength(2);
+    expect(newAccounts[0].id).not.toBe(newAccounts[1].id);
+    expect(savedTransactions.find(t => t.merchant === 'Imported coffee')?.account_id).toBe(newAccounts[0].id);
+    expect(savedTransactions.find(t => t.merchant === 'Imported commute')?.account_id).toBe(newAccounts[1].id);
+
+    nav(container, 'Wallet');
+    expect(container.textContent).toContain('Imported BPI');
+    nav(container, 'Transactions');
+    expect(container.textContent).toContain('Imported coffee');
+    expect(container.textContent).toContain('Imported commute');
+    nav(container, 'Menu');
+    expect(container.textContent).toContain('Financial planning');
+
+    // Cold reload must use the same saved snapshot, not the pre-import dashboard state.
+    act(() => root.unmount());
+    root = createRoot(container);
+    await act(async () => root.render(<App />));
+    nav(container, 'Wallet');
+    expect(container.textContent).toContain('Imported BPI');
+    nav(container, 'Transactions');
+    expect(container.textContent).toContain('Imported coffee');
+  });
+
   test('Home greeting is unboxed and its three utility buttons remain accessible', () => {
     const header = container.querySelector('.screen-header.home-header');
     const greeting = header.querySelector('.home-greeting');

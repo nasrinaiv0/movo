@@ -1,5 +1,10 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Confirmed local backup immediately refreshes financial views (review)
+
+Restores same-name accounts by stable source identifiers rather than rejecting multiple BPI/GoTyme accounts or connecting payments to the first matching name. Guest and signed-in offline saves read back persisted accounts/transactions, then refresh Home, Wallet, Transactions and Menu-derived financial state and return to Home. Cloud accounting rows no longer leak into local transactions. Import preview rows use content-height grid tracks to avoid overlapping on small screens. Added malicious/ambiguous ID, idempotency, transfer and end-to-end reload regression coverage. No cloud writes or production migration. See docs/engineering/updates/2026-11-09-identity-safe-local-backup-dashboard-refresh.md. Full CI/preview and signed iPhone verification remain release gates. The follow-up CI localization correction restores the existing 11-language-confirmed confirmation copy; import behavior is unchanged.
+
+
 ## 2026-11-09 — PR #252 documented import verification and manual plan grants
 
 Confirmed local backups are read back from device storage before Home/Wallet/Transactions show success; zero-row imports keep a retryable preview. New administrator-only, expiring and revocable Pro/Pro+ grants integrate into server-side status, with disposable PostgreSQL tests and no purchase fabrication. Vercel Sandbox previously passed 936/936 frontend tests, TypeScript and isolated SQL. The earlier incremental implementation commits omitted per-commit register/dated updates, so this PR is consolidated into one documented implementation commit rather than weakening the guard. Exact rewritten-head CI, real-device tests and deployment-schema rehearsal remain required. No production data or billing configuration changed. Details: `docs/engineering/updates/2026-11-09-confirmed-import-and-owner-plan-grants.md`.

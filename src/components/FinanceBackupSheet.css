@@ -17,9 +17,9 @@
 .movo-backup-stats b { font-size:19px; font-variant-numeric:tabular-nums; color:var(--text); }
 .movo-backup-select-label { display:grid; gap:5px; font-size:11px; color:var(--muted,var(--text)); }
 .movo-backup-select-label select { width:100%; border:0; border-radius:12px; padding:10px 12px; min-height:42px; font:inherit; font-size:13px; color:var(--text); background:var(--surface,rgba(127,127,127,.12)); }
-.movo-backup-preview-list { display:grid; gap:6px; max-height:min(22dvh,220px); overflow:auto; overscroll-behavior:contain; }
-.movo-backup-preview-item { border:0; border-radius:11px; padding:10px 11px; background:var(--surface,rgba(127,127,127,.09)); overflow:hidden; }
-.movo-backup-preview-item summary { display:flex; justify-content:space-between; gap:8px; cursor:pointer; font-size:12px; }
+.movo-backup-preview-list { display:grid; grid-auto-rows:max-content; align-content:start; gap:6px; max-height:min(25dvh,260px); overflow-y:auto; overscroll-behavior:contain; min-height:0; }
+.movo-backup-preview-item { align-self:start; min-height:42px; border:0; border-radius:11px; padding:10px 11px; background:var(--surface,rgba(127,127,127,.09)); overflow:hidden; }
+.movo-backup-preview-item summary { display:flex; min-height:22px; align-items:center; justify-content:space-between; gap:8px; cursor:pointer; font-size:12px; line-height:1.4; }
 .movo-backup-preview-item summary span { overflow-wrap:anywhere; }
 .movo-backup-preview-item pre { max-height:180px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font-size:10px; }
 .movo-backup-save-actions {
@@ -40,3 +40,5 @@
 .movo-backup-confirm-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .movo-backup-confirm-actions button { border:0; border-radius:12px; padding:9px 8px; min-height:42px; min-width:0; font-size:12px; }
 @media (max-width:350px) { .movo-backup-save-actions,.movo-backup-confirm-actions { grid-template-columns:1fr; } }
+
+.movo-backup-preview-item summary b { flex-shrink:0; white-space:nowrap; font-variant-numeric:tabular-nums; }
