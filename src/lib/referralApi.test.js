@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const claim = require('../../api/referrals/claim');
 const status = require('../../api/referrals/status');
 const challenge = require('../../api/referrals/challenge');
+const redeem = require('../../api/referrals/redeem');
 const trial = require('../../api/purchases/trial');
 const download = require('../../api/download');
 const { normalizeReferralCode, normalizeTrialCode } = require('../../api/lib/referralCode');
@@ -137,4 +138,27 @@ test('download: never redirects to an unexpected address and ignores bad input',
   expect(r.headers.Location).toBe('/');
   r = res(); download({ method: 'POST', query: {} }, r);
   expect(r.statusCode).toBe(405);
+});
+
+test('redeem: closed until points are on, months must be 1-12, only the verified user and the server decide', async () => {
+  let r = res(); await redeem(post({ months: 1 }), r);
+  expect(r.statusCode).toBe(503);
+  process.env.MOVO_REFERRAL_POINTS_ENABLED = 'true';
+  for (const months of [0, 13, 1.5, '1', null]) {
+    r = res(); await redeem(post({ months }), r);
+    expect(r.statusCode).toBe(400);
+  }
+  expect(rpc).not.toHaveBeenCalled();
+  rpc.mockResolvedValueOnce({ data: { redeemedMonths: 2, points: 40 }, error: null });
+  r = res(); await redeem(post({ months: 2, userId: 'someone-else', points: 99999 }), r);
+  expect(rpc).toHaveBeenCalledWith('movo_redeem_referral_points', { p_user_id: USER, p_months: 2 });
+  expect(r.body).toEqual({ redeemedMonths: 2, points: 40 });
+  rpc.mockResolvedValueOnce({ data: null, error: { message: 'not_enough_points' } });
+  r = res(); await redeem(post({ months: 1 }), r);
+  expect(r.statusCode).toBe(409);
+  expect(r.body).toEqual({ error: 'not_enough_points' });
+  rpc.mockResolvedValueOnce({ data: null, error: { message: 'connection reset' } });
+  r = res(); await redeem(post({ months: 1 }), r);
+  expect(r.statusCode).toBe(503);
+  expect(r.body).toEqual({ error: 'redeem_unavailable' });
 });

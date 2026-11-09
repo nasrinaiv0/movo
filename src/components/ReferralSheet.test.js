@@ -37,12 +37,13 @@ afterEach(() => { delete global.fetch; window.localStorage.clear(); });
 test('shows the short code, the 10-friend progress and one download QR code per platform', async () => {
   serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: false, canClaim: false } });
   const { el, cleanup } = await render({ session, entitlement: { referralCode: 'M78038', qualifiedReferrals: 3 } });
+  expect(el.textContent).not.toContain('iPhone');
   expect(el.querySelector('.referral-code').textContent).toBe('M78038');
   expect(el.textContent).toContain('3 of 10 friends subscribed. At 10, you get 3 months of Pro.');
   const qrs = Array.from(el.querySelectorAll('.referral-qr-code'));
-  expect(qrs.map(q => q.getAttribute('aria-label'))).toEqual(['QR code to get MOVO on iPhone', 'QR code to get MOVO on Android']);
+  expect(qrs.map(q => q.getAttribute('aria-label'))).toEqual(['QR code to get MOVO on iOS', 'QR code to get MOVO on Android']);
   expect(qrs.every(q => q.querySelector('svg path'))).toBe(true);
-  expect(Array.from(el.querySelectorAll('.referral-qr figcaption')).map(f => f.textContent)).toEqual(['iPhoneApp Store', 'AndroidGoogle Play']);
+  expect(Array.from(el.querySelectorAll('.referral-qr figcaption')).map(f => f.textContent)).toEqual(['iOSApp Store', 'AndroidGoogle Play']);
   expect(calls.map(c => c[0])).toEqual(['/api/referrals/status']);
   // Points are switched off on the server and this account cannot add a code: neither is shown.
   expect(el.querySelector('.referral-stats')).toBeNull();
@@ -67,7 +68,8 @@ test('share sends the code with both download links', async () => {
   await act(async () => { button(el, 'Share').click(); });
   const text = share.mock.calls[0][0].text;
   expect(text).toContain('M78038');
-  expect(text).toContain('iPhone: https://movo.nasrinai.com/api/download?platform=ios&ref=M78038');
+  expect(text).toContain('iOS: https://movo.nasrinai.com/api/download?platform=ios&ref=M78038');
+  expect(text).not.toContain('iPhone');
   expect(text).toContain('Android: https://movo.nasrinai.com/api/download?platform=android&ref=M78038');
   delete navigator.share;
   cleanup();
@@ -122,4 +124,43 @@ test('signed out: download QR codes still show, with a sign-in prompt instead of
   expect(onSignIn).toHaveBeenCalled();
   expect(calls).toHaveLength(0);
   cleanup();
+});
+
+test('every 500 points become a month of Pro: confirmed, spent by the server, then the plan refreshes', async () => {
+  let points = 620;
+  serve({
+    '/api/referrals/status': () => reply({ referralCode: 'M78038', pointsEnabled: true, points, canClaim: false, pointsProUntil: points < 500 ? '2026-12-09T00:00:00Z' : null }),
+    '/api/referrals/redeem': init => { expect(JSON.parse(init.body)).toEqual({ months: 1 }); points -= 500; return reply({ redeemedMonths: 1, expiresAt: '2026-12-09T00:00:00Z', points }); },
+  });
+  const confirm = jest.spyOn(window, 'confirm').mockImplementation(() => true);
+  const onPlanChanged = jest.fn();
+  const { el, cleanup } = await render({ session, entitlement: { referralCode: 'M78038' }, onPlanChanged });
+  expect(el.querySelector('.referral-points-redeem').textContent).toContain('500 points = 1 month of Pro');
+  expect(el.querySelector('.referral-points-redeem').textContent).toContain('1 month ready to use');
+  await act(async () => { button(el, 'Use 500 points').click(); });
+  await flush();
+  expect(confirm).toHaveBeenCalled();
+  expect(onPlanChanged).toHaveBeenCalled();
+  expect(el.textContent).toContain('1 month of Pro added. It runs until');
+  // 120 points left: the button waits for the next 500, and the Pro date shows.
+  expect(button(el, 'Use 500 points').disabled).toBe(true);
+  expect(el.querySelector('.referral-points-redeem').textContent).toContain('Pro from points until');
+  confirm.mockRestore();
+  cleanup();
+});
+
+test('below 500 points nothing can be redeemed, and a cancelled confirmation spends nothing', async () => {
+  serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: true, points: 499 } });
+  const { el, cleanup } = await render({ session, entitlement: {} });
+  expect(button(el, 'Use 500 points').disabled).toBe(true);
+  expect(el.textContent).toContain('499 of 500 points for your next month');
+  cleanup();
+  serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: true, points: 1000 } });
+  const confirm = jest.spyOn(window, 'confirm').mockImplementation(() => false);
+  const second = await render({ session, entitlement: {} });
+  expect(second.el.textContent).toContain('2 months ready to use');
+  await act(async () => { button(second.el, 'Use 500 points').click(); });
+  expect(calls.some(([url]) => url === '/api/referrals/redeem')).toBe(false);
+  confirm.mockRestore();
+  second.cleanup();
 });

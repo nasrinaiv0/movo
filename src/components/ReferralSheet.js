@@ -4,18 +4,20 @@ import Icon from './Icon';
 import { Sheet } from './ui';
 import { t as tr } from '../lib/i18n';
 import { isNativeApp } from '../lib/platform';
+import { formatDate } from '../lib/format';
 import {
-  activateNativeReferral, claimReferralCode, clearPendingReferralCode, downloadUrl, getReferralStatus,
-  normalizeReferralCode, pendingReferralCode,
+  POINTS_PER_MONTH, activateNativeReferral, claimReferralCode, clearPendingReferralCode, downloadUrl, getReferralStatus,
+  normalizeReferralCode, pendingReferralCode, redeemReferralPoints,
 } from '../lib/referrals';
 
 /*
  * Refer MOVO, on one compact panel: your short code (M78038) with Copy and Share, progress toward the
- * 10-friend reward, points when the server has them switched on, one download QR code for iPhone and one for
- * Android, and a field for a friend's code. The server decides every link and reward; nothing here grants one.
+ * 10-friend reward, points when the server has them switched on (every 500 points become one month of Pro), one
+ * download QR code for iOS and one for Android, and a field for a friend's code. The server decides every link,
+ * reward and redemption; nothing here grants one.
  */
 const PLATFORMS = [
-  { id: 'ios', label: 'iPhone', store: 'App Store' },
+  { id: 'ios', label: 'iOS', store: 'App Store' },
   { id: 'android', label: 'Android', store: 'Google Play' },
 ];
 const CLAIM_MESSAGES = {
@@ -28,7 +30,9 @@ const CLAIM_MESSAGES = {
   verified_account_required: 'Verify your email address first, then add the code.',
 };
 
-export default function ReferralSheet({ session, entitlement, onClose, onSignIn, notify }) {
+const longDate = value => formatDate(value, { year: 'numeric', month: 'short', day: 'numeric' });
+
+export default function ReferralSheet({ session, entitlement, onClose, onSignIn, notify, onPlanChanged }) {
   const signedIn = Boolean(session?.user?.id && session?.access_token);
   const [status, setStatus] = useState(null);
   const [claim, setClaim] = useState(() => pendingReferralCode());
@@ -84,6 +88,27 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
     } finally { setBusy(false); }
   }
 
+  // Months ready to use; otherwise how long Pro from points runs; otherwise progress toward the next 500.
+  const points = Math.max(0, Number(status?.points) || 0);
+  const ready = Math.floor(points / POINTS_PER_MONTH);
+  const pointsLine = ready > 0 ? (ready === 1 ? tr('1 month ready to use') : tr('{n} months ready to use', { n: ready }))
+    : status?.pointsProUntil ? tr('Pro from points until {date}', { date: longDate(status.pointsProUntil) })
+      : tr('{n} of 500 points for your next month', { n: points });
+
+  async function usePoints() {
+    if (busy || !signedIn || ready < 1) return;
+    if (!window.confirm(tr('Use 500 points for 1 month of Pro? It starts when your current plan ends.'))) return;
+    setBusy(true); setNotice('');
+    try {
+      const result = await redeemReferralPoints(session, 1);
+      setStatus(await getReferralStatus(session).catch(() => status));
+      onPlanChanged?.();
+      setNotice(tr('1 month of Pro added. It runs until {date}.', { date: longDate(result.expiresAt) }));
+    } catch (error) {
+      setNotice(tr(error?.code === 'not_enough_points' ? 'You need 500 points for a month of Pro.' : 'Could not use your points. Try again.'));
+    } finally { setBusy(false); }
+  }
+
   return <Sheet title={tr('Refer MOVO')} className="referral-sheet" label={tr('Refer MOVO')} onClose={onClose}>
     <div className="referral-content">
       {signedIn ? <section className="referral-code-card" aria-label={tr('Your referral code')}>
@@ -105,6 +130,13 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
         <span><strong>{Number(status.points || 0).toLocaleString()}</strong><small>{tr('Points')}</small></span>
         <span><strong>{Number(status.referredUsers || 0)}</strong><small>{tr('Friends joined')}</small></span>
         <span><strong>{Number(status.paidUpgrades || 0)}</strong><small>{tr('Subscribed')}</small></span>
+      </div>}
+      {pointsOn && <div className="referral-points-redeem">
+        <span>
+          <strong>{tr('500 points = 1 month of Pro')}</strong>
+          <small>{pointsLine}</small>
+        </span>
+        <button type="button" disabled={busy || ready < 1} onClick={usePoints}>{tr('Use 500 points')}</button>
       </div>}
       {pointsOn && <p className="referral-note">{tr('5 points when a friend joins in the MOVO app, 100 more when they first subscribe. Points have no cash value.')}</p>}
       {pointsOn && Number(status.pendingReview || 0) > 0 && <p className="referral-note">{tr('Some referrals are waiting for a security review.')}</p>}

@@ -1,6 +1,6 @@
 import {
   activateNativeReferral, captureReferralFromUrl, claimReferralCode, clearPendingReferralCode, downloadUrl,
-  normalizeReferralCode, pendingReferralCode, trialReferralCode,
+  normalizeReferralCode, pendingReferralCode, redeemReferralPoints, trialReferralCode,
 } from './referrals';
 import { AppAttest } from '@capgo/capacitor-app-attest';
 import { isNativeApp } from './platform';
@@ -100,4 +100,12 @@ test('the server verifier refuses web tokens and unsigned client declarations', 
   const { verify } = require('../../api/lib/verifyReferralIntegrity');
   await expect(verify({ platform: 'web', format: 'web-fallback', token: 'x'.repeat(90), challenge: 'a' })).rejects.toThrow('unsupported_attestation');
   await expect(verify({ platform: 'ios', format: 'apple-app-attest', token: 'x'.repeat(90), challenge: 'a', keyId: 'fake' })).rejects.toThrow('attestation_not_configured');
+});
+
+test('redeeming sends only how many months; the server checks and spends the points', async () => {
+  global.fetch = jest.fn().mockResolvedValue(ok({ redeemedMonths: 1 }));
+  await redeemReferralPoints(session);
+  const [url, request] = global.fetch.mock.calls[0];
+  expect(url).toBe('/api/referrals/redeem');
+  expect(JSON.parse(request.body)).toEqual({ months: 1 });
 });

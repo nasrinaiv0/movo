@@ -263,13 +263,103 @@ end $$;
 revoke all on function public.movo_reverse_referral_upgrade(uuid) from public,anon,authenticated;
 grant execute on function public.movo_reverse_referral_upgrade(uuid) to service_role;
 
+-- Points to Pro: every 500 points convert to one month of Pro, chosen by the person (owner rule, 2026-11-09).
+-- A redemption is its own row; the ledger is never edited. Months queue after any current trial, reward, manual or
+-- store period so none is wasted, and back-to-back redemptions follow each other.
+create table public.movo_referral_point_redemptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  months integer not null check (months between 1 and 12),
+  points integer not null check (points = months * 500),
+  starts_at timestamptz not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  check (expires_at > starts_at)
+);
+create index movo_referral_point_redemptions_user_idx on public.movo_referral_point_redemptions(user_id, expires_at desc);
+alter table public.movo_referral_point_redemptions enable row level security;
+revoke all on public.movo_referral_point_redemptions from public, anon, authenticated;
+grant all on public.movo_referral_point_redemptions to service_role;
+
+-- Internal: points earned minus points spent. A refund after a redemption can take it below zero.
+create function public.movo_referral_points_balance(p_user_id uuid) returns integer
+language sql stable security definer set search_path = '' as $$
+  select (coalesce((select sum(points) from public.movo_referral_points_ledger where referrer_id = p_user_id), 0)
+    - coalesce((select sum(points) from public.movo_referral_point_redemptions where user_id = p_user_id), 0))::integer
+$$;
+revoke all on function public.movo_referral_points_balance(uuid) from public, anon, authenticated;
+grant execute on function public.movo_referral_points_balance(uuid) to service_role;
+
+create function public.movo_redeem_referral_points(p_user_id uuid, p_months integer)
+returns jsonb language plpgsql security invoker set search_path='' as $$
+declare v_balance integer; v_starts timestamptz; v_expires timestamptz;
+begin
+  if auth.jwt()->>'role' is distinct from 'service_role' then raise exception 'service_role_required' using errcode='42501'; end if;
+  if p_months is null or p_months < 1 or p_months > 12 then raise exception 'invalid_months'; end if;
+  -- The same per-person lock as the signup award, so two redemptions cannot spend the same points.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('movo-points-owner:'||p_user_id::text,0));
+  if not exists(select 1 from auth.users where id=p_user_id and (email_confirmed_at is not null or phone_confirmed_at is not null))
+    then raise exception 'verified_account_required'; end if;
+  v_balance := public.movo_referral_points_balance(p_user_id);
+  if v_balance < p_months * 500 then raise exception 'not_enough_points'; end if;
+  select greatest(now(),
+    (select max(expires_at) from public.movo_referral_point_redemptions where user_id = p_user_id),
+    (select trial_expires_at from public.movo_plan_grants where user_id = p_user_id and trial_expires_at > now()),
+    (select reward_expires_at from public.movo_plan_grants where user_id = p_user_id and reward_started_at <= now() and reward_expires_at > now()),
+    (select max(expires_at) from public.movo_manual_plan_grants where user_id = p_user_id and revoked_at is null and expires_at > now()),
+    (select max(expires_at) from public.movo_store_entitlements where user_id = p_user_id and environment = 'production'
+      and status in ('active','canceled','grace_period') and expires_at > now()))
+  into v_starts;
+  v_expires := v_starts + pg_catalog.make_interval(months => p_months);
+  insert into public.movo_referral_point_redemptions(user_id, months, points, starts_at, expires_at)
+  values (p_user_id, p_months, p_months * 500, v_starts, v_expires);
+  return jsonb_build_object('redeemedMonths', p_months, 'startsAt', v_starts, 'expiresAt', v_expires,
+    'points', public.movo_referral_points_balance(p_user_id));
+end $$;
+revoke all on function public.movo_redeem_referral_points(uuid, integer) from public, anon, authenticated;
+grant execute on function public.movo_redeem_referral_points(uuid, integer) to service_role;
+
+-- Plan status gains the points months (source 'points'); everything else is unchanged from
+-- 20261108230330_owner_manual_plan_grants.sql (also the definition live in production on 2026-11-09).
+create or replace function public.movo_plan_status(p_user_id uuid default auth.uid()) returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+declare g public.movo_plan_grants; v_tier text; v_expiry timestamptz; v_source text; v_count integer;
+begin
+  if p_user_id is null or ((select auth.jwt()->>'role') is distinct from 'service_role' and p_user_id is distinct from (select auth.uid())) then
+    raise exception 'sign_in_required' using errcode = '42501';
+  end if;
+  select * into g from public.movo_plan_grants where user_id = p_user_id;
+  select count(*) into v_count from public.movo_plan_grants r where r.referred_by = p_user_id
+    and exists(select 1 from public.movo_store_entitlements e where e.user_id = r.user_id
+      and e.environment = 'production' and e.paid_verified and e.status <> 'revoked');
+  select tier, expires_at, source into v_tier, v_expiry, v_source from (
+    select case when e.tier in ('max','ultra') then 'pro_plus' else e.tier end as tier, e.expires_at, 'store'::text as source
+      from public.movo_store_entitlements e where e.user_id = p_user_id and (e.environment = 'production' or exists(select 1 from public.movo_store_test_users where user_id=p_user_id))
+      and e.status in ('active','canceled','grace_period') and e.expires_at > now()
+    union all select mg.tier, mg.expires_at, 'manual'::text from public.movo_manual_plan_grants mg
+      where mg.user_id = p_user_id and mg.revoked_at is null and mg.expires_at > now()
+    union all select 'pro', g.trial_expires_at, 'trial' where g.trial_expires_at > now()
+    union all select 'pro', g.reward_expires_at, 'referral' where g.reward_started_at <= now() and g.reward_expires_at > now() and v_count >= 10
+    union all select 'pro', pr.expires_at, 'points' from public.movo_referral_point_redemptions pr
+      where pr.user_id = p_user_id and pr.starts_at <= now() and pr.expires_at > now()
+  ) a order by (tier = 'pro_plus') desc, expires_at desc limit 1;
+  return jsonb_build_object('tier',coalesce(v_tier,'free'),'active',v_tier is not null,'expiresAt',v_expiry,'source',v_source,
+    'trialEligible',g.trial_started_at is null and not exists(select 1 from public.movo_store_entitlements where user_id=p_user_id and environment='production'),
+    'trialExpiresAt',g.trial_expires_at,'referralCode',g.referral_code,'qualifiedReferrals',v_count,
+    'rewardStartsAt',g.reward_started_at,'rewardExpiresAt',g.reward_expires_at);
+end $$;
+revoke all on function public.movo_plan_status(uuid) from public, anon;
+grant execute on function public.movo_plan_status(uuid) to authenticated, service_role;
+
 create function public.movo_referral_points_status(p_user_id uuid)
 returns jsonb language plpgsql stable security invoker set search_path='' as $$
 begin
  if auth.jwt()->>'role' is distinct from 'service_role' then raise exception 'service_role_required' using errcode='42501'; end if;
  return jsonb_build_object(
  'referralCode',(select referral_code from public.movo_plan_grants where user_id=p_user_id),
- 'points',(select coalesce(sum(points),0) from public.movo_referral_points_ledger where referrer_id=p_user_id),
+ 'points',public.movo_referral_points_balance(p_user_id),
+ 'monthsAvailable',greatest(0, public.movo_referral_points_balance(p_user_id) / 500),
+ 'pointsProUntil',(select max(expires_at) from public.movo_referral_point_redemptions where user_id=p_user_id and expires_at>now()),
  'referredUsers',(select count(*) from public.movo_plan_grants where referred_by=p_user_id),
  'paidUpgrades',(select count(*) from public.movo_referral_points_ledger where referrer_id=p_user_id and event_kind='paid_upgrade'),
  'pendingReview',(select count(*) from public.movo_referral_claims where referrer_id=p_user_id and review_required),

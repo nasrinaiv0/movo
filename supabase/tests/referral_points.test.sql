@@ -160,8 +160,76 @@ begin
     then raise exception 'Ledger must contain exactly signup, upgrade and reversal'; end if;
 end $$;
 
+-- Points to Pro: every 500 points convert to one month of Pro, queued after any current plan.
+create function pg_temp.give_points(p_referrer uuid, p_friends int) returns void language plpgsql as $$
+declare v_user uuid; v_claim uuid; i int; begin
+  for i in 1..p_friends loop
+    v_user := gen_random_uuid();
+    insert into auth.users(id,email_confirmed_at,phone_confirmed_at,created_at) values (v_user, now(), null, now());
+    insert into public.movo_referral_claims(referrer_id,referred_id,native_verified_at,platform) values (p_referrer, v_user, now(), 'ios') returning id into v_claim;
+    insert into public.movo_referral_points_ledger(claim_id,referrer_id,referred_id,event_kind,points) values
+      (v_claim, p_referrer, v_user, 'native_signup', 5), (v_claim, p_referrer, v_user, 'paid_upgrade', 100);
+  end loop;
+end $$;
+do $$
+declare
+  saver constant uuid := '00000000-0000-0000-0000-000000000012';
+  on_trial constant uuid := '00000000-0000-0000-0000-000000000010';
+  first jsonb; second jsonb; status jsonb; v_trial timestamptz;
+begin
+  perform pg_temp.give_points(saver, 5); -- 525 points
+  if (public.movo_referral_points_status(saver)->>'monthsAvailable')::int <> 1 then raise exception 'Months available miscounted'; end if;
+  begin perform public.movo_redeem_referral_points(saver, 2); raise exception 'Redeemed more than the balance';
+  exception when raise_exception then if SQLERRM <> 'not_enough_points' then raise; end if; end;
+  begin perform public.movo_redeem_referral_points(saver, 0); raise exception 'Zero months accepted';
+  exception when raise_exception then if SQLERRM <> 'invalid_months' then raise; end if; end;
+  begin perform public.movo_redeem_referral_points(saver, 13); raise exception 'Thirteen months accepted';
+  exception when raise_exception then if SQLERRM <> 'invalid_months' then raise; end if; end;
+  begin perform public.movo_redeem_referral_points('00000000-0000-0000-0000-000000000008', 1); raise exception 'Unverified account redeemed';
+  exception when raise_exception then if SQLERRM <> 'verified_account_required' then raise; end if; end;
+
+  first := public.movo_redeem_referral_points(saver, 1);
+  if (first->>'points')::int <> 25 then raise exception 'Redemption did not spend 500 points: %', first; end if;
+  if (first->>'startsAt')::timestamptz > now() + interval '1 second' then raise exception 'First month did not start now'; end if;
+  if (first->>'expiresAt')::timestamptz <> (first->>'startsAt')::timestamptz + interval '1 month' then raise exception 'Not one calendar month'; end if;
+  status := public.movo_plan_status(saver);
+  if status->>'tier' <> 'pro' or status->>'source' <> 'points' then raise exception 'Points did not give Pro: %', status; end if;
+  begin perform public.movo_redeem_referral_points(saver, 1); raise exception 'Spent the same points twice';
+  exception when raise_exception then if SQLERRM <> 'not_enough_points' then raise; end if; end;
+
+  perform pg_temp.give_points(saver, 5); -- 550 points
+  second := public.movo_redeem_referral_points(saver, 1);
+  if (second->>'startsAt')::timestamptz <> (first->>'expiresAt')::timestamptz then raise exception 'Second month did not queue after the first'; end if;
+  if (public.movo_plan_status(saver)->>'expiresAt')::timestamptz <> (first->>'expiresAt')::timestamptz then raise exception 'Queued month counted early'; end if;
+  if (public.movo_referral_points_status(saver)->>'pointsProUntil')::timestamptz <> (second->>'expiresAt')::timestamptz then raise exception 'Pro-until date wrong'; end if;
+  if (select count(*) from public.movo_referral_points_ledger where referrer_id = saver) <> 20 then raise exception 'Redemption edited the ledger'; end if;
+
+  -- During the free month, points start when the free month ends.
+  select trial_expires_at into v_trial from public.movo_plan_grants where user_id = on_trial;
+  if v_trial is null or v_trial <= now() then raise exception 'Fixture trial missing'; end if;
+  perform pg_temp.give_points(on_trial, 5);
+  first := public.movo_redeem_referral_points(on_trial, 1);
+  if (first->>'startsAt')::timestamptz <> v_trial then raise exception 'Points month overlapped the free month'; end if;
+  if public.movo_plan_status(on_trial)->>'source' <> 'trial' then raise exception 'Trial replaced early'; end if;
+
+  -- A refund after a redemption takes the balance down; nothing more can be redeemed until it is positive again.
+  insert into public.movo_referral_points_ledger(claim_id,referrer_id,referred_id,event_kind,points)
+  select claim_id, referrer_id, referred_id, 'paid_reversal', -100 from public.movo_referral_points_ledger
+   where referrer_id = saver and event_kind = 'paid_upgrade' limit 1;
+  if (public.movo_referral_points_status(saver)->>'points')::int <> -50 then raise exception 'Clawback not applied'; end if;
+  if (public.movo_referral_points_status(saver)->>'monthsAvailable')::int <> 0 then raise exception 'Negative balance offers months'; end if;
+end $$;
+
 -- Signed-in and anonymous clients cannot read, write or call any of it.
 set role authenticated;
+do $$ begin
+  begin perform public.movo_redeem_referral_points('00000000-0000-0000-0000-000000000012', 1); raise exception 'Client redeemed points';
+  exception when insufficient_privilege then null; end;
+  begin perform public.movo_referral_points_balance('00000000-0000-0000-0000-000000000012'); raise exception 'Client read a balance';
+  exception when insufficient_privilege then null; end;
+  begin perform 1 from public.movo_referral_point_redemptions limit 1; raise exception 'Client read redemptions';
+  exception when insufficient_privilege then null; end;
+end $$;
 do $$
 begin
   begin
@@ -203,4 +271,4 @@ do $$ begin
   exception when insufficient_privilege then null; end;
 end $$;
 reset role;
-select 'PASS: short codes, attempt limit, self/old/paid/unverified referrals, trial keeps referral, native proof replay, +5, production verified +100 once, refund -100 and client isolation';
+select 'PASS: short codes, attempt limit, self/old/paid/unverified referrals, trial keeps referral, native proof replay, +5, production verified +100 once, refund -100, 500 points to 1 month of Pro (queued, no double spend) and client isolation';

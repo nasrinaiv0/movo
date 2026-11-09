@@ -71,6 +71,9 @@ async function request(path, token, method = 'GET', body) {
 }
 export const getReferralStatus = session => request('/api/referrals/status', session.access_token);
 export const claimReferralCode = (session, code) => request('/api/referrals/claim', session.access_token, 'POST', { code });
+/** Every 500 points become one month of Pro; the server checks the balance and queues the months. */
+export const POINTS_PER_MONTH = 500;
+export const redeemReferralPoints = (session, months = 1) => request('/api/referrals/redeem', session.access_token, 'POST', { months });
 
 /** Native-only: fail closed unless Apple/Google can verify a signed, challenge-bound proof.
  * This is best-effort from app startup; the server alone awards points.

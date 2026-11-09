@@ -4,6 +4,7 @@
 - Everyone has one short, reusable referral code: `M` + five digits (e.g. `M78038`). A new account enters it within 7 days of sign-up (Refer MOVO, the free-month panel, or automatically filled in from a friend's download link).
 - 5 points after a new, verified account enters a friend's code and the genuine native MOVO app passes server-side Apple App Attest or Google Play Integrity.
 - An additional **100 points once per referred account** after its first **verified production** Pro or Pro+ paid purchase. StoreKit/Google Play notifications and purchase verification update the ledger idempotently.
+- Every **500 points convert to 1 month of Pro** when the person chooses (1–12 months at a time). The server checks the balance under the same per-person lock as awards, records the redemption separately (the ledger is never edited) and queues the months after any current plan.
 - Points have **no cash value**, are not billing credits, savings, cashback, loyalty points, or finance data. Existing 10 qualified paid referrals → 3-month Pro reward remains separate and unchanged.
 - Payment refund/chargeback creates a single **−100 points** compensation event if no eligible verified paid entitlement remains. Renewals/plan changes never re-award the same 100.
 - The user supplies the code during onboarding or in Profile within 7 days of account creation; merely downloading from an app store cannot attribute a referral. Download QR codes (iPhone and Android) carry the code to the web app, which fills it in.
