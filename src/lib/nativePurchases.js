@@ -54,9 +54,8 @@ async function finishVerifiedTransaction(transaction, verified) {
     if (!transaction.transactionId) throw new Error('The App Store transaction could not be finished. Restore purchases to retry.');
     await NativePurchases.finishTransaction({ transactionId: String(transaction.transactionId) });
   }
-  if (platform === 'android' && verified?.acknowledged !== true && transaction.isAcknowledged !== true) {
-    if (!transaction.purchaseToken) throw new Error('Google Play acknowledgement is pending. Restore purchases to retry.');
-    await NativePurchases.acknowledgePurchase({ purchaseToken: transaction.purchaseToken });
+  if (platform === 'android' && verified?.acknowledged !== true) {
+    throw new Error('Google Play acknowledgement is pending. Restore purchases to retry.');
   }
 }
 

@@ -24,7 +24,7 @@ Prices are loaded from the stores and must not be hardcoded in the app. Configur
 - SUPABASE_URL
 - SUPABASE_ANON_KEY
 - SUPABASE_SERVICE_ROLE_KEY (server-only; never REACT_APP_ prefixed)
-- APPLE_ROOT_CERTS_BASE64 — comma-separated base64-encoded DER Apple Root CA certificates from Apple PKI.
+- Apple Root CA G3 is pinned in `api/lib/certs/apple-root-g3.json`. Environment variables cannot replace the trust anchor.
 - APPLE_APP_ID — numeric App Store app ID; required for production JWS verification.
 - APPLE_IAP_SIGNING_KEY / APPLE_IAP_KEY_ID / APPLE_IAP_ISSUER_ID — App Store Connect In-App Purchase server API credentials for current transaction status.
 - GOOGLE_PLAY_PACKAGE_NAME — com.nasrinai.movo.
@@ -72,6 +72,18 @@ This code implements purchase verification and restoration foundations. It is no
 Apple notifications are verified as signed JWS payloads. Google RTDN push requests are verified using Google's OIDC token and configured audience before the purchase token is queried against the Play Developer API.
 
 ## Release gate (6 November 2026)
-`MOVO_STORE_BILLING_ENABLED` defaults to disabled. The app checks `/api/purchases/config` before opening native checkout. Keep it disabled until signed iOS/Android builds pass purchase, restoration, refund, revocation and renewal tests. The store-entitlements migration must be deployed first. `MOVO_STORE_TEST_USER_IDS` is a comma-separated server-only allowlist for sandbox entitlement access; sandbox receipts must not grant production access to other users.
+`MOVO_STORE_BILLING_ENABLED` defaults to disabled. The app checks `/api/purchases/config` before opening native checkout. Keep it disabled until signed iOS/Android builds pass purchase, restoration, refund, revocation and renewal tests. The store-entitlements migration must be deployed first. `MOVO_STORE_TEST_USER_IDS` is legacy and no longer enables sandbox access on production. Use a separate backend/database for store testing.
 
 Before enabling checkout, test the fresh Apple Server API transaction status lookup, webhook retries and delayed delivery, and obtain native-language review of the new release copy. The restored implementation is not a certification of store approval.
+
+## Hardened billing deployment (2026-11-09)
+
+Apply `20261109160000_iap_integrity.sql` before deploying these handlers. Keep billing disabled during this coordinated rollout: the migration disables the legacy write RPC. Configure `GOOGLE_PLAY_RTDN_SUBSCRIPTION` (full Pub/Sub resource), `MOVO_IAP_TOKEN_ENCRYPTION_KEY` (64 random hex characters), and `CRON_SECRET` (at least 32 random characters). None are client-side variables. Retain the encryption key until all old acknowledgment jobs have completed; rotate via a controlled decrypt/re-encrypt procedure. The cron runs every 10 minutes; monitor its 503 responses and oldest outstanding job age, alerting well before Google's acknowledgment deadline.
+
+Production purchase and notification endpoints now reject all sandbox/test purchases. The production plan RPC ignores historical sandbox rows even for test users. TestFlight/Play license testing needs a separate backend/database and explicit sandbox verifier implementation; there is no insecure production fallback.
+
+Per the owner's requested policy, Google CANCELED states no longer grant access even if their paid expiry is in the future. This is stricter than the normal Play cancellation lifecycle. Communicate this product behavior before rollout. Manual grants, trials, and other independent valid purchases remain independent sources of access; refunding one receipt revokes that receipt.
+
+Subscriptions only: MOVO has no one-time-product catalog. An unrecognized positive subscription notification returns a retryable response until client verification establishes ownership. Authenticated revocations are recorded even before ownership is established. Monitor unknown-owner failures and provider dead-letter queues. The server checks Apple's app account UUID and Google's actual `obfuscatedExternalAccountId` field against MOVO's existing deterministic per-user UUID mapping. Changing that mapping would orphan existing receipts.
+
+The encrypted acknowledgment outbox is committed with entitlements. Retries never downgrade a newer revocation to pending. Public error responses and logs exclude raw SDK error messages, tokens, and stack traces. Event IDs and revocation tombstones must not be pruned while receipts remain replayable.

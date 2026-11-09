@@ -21,7 +21,8 @@
     "three": "0.170.0",
     "@capgo/capacitor-app-attest": "8.2.16",
     "appattest-checker-node": "1.0.3",
-    "qrcode.react": "4.2.0"
+    "qrcode.react": "4.2.0",
+    "zod": "4.6.7"
   },
   "scripts": {
     "start": "react-scripts start",

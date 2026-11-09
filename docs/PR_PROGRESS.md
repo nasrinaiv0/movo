@@ -4,6 +4,12 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — PR #260 billing audit follow-up (review; production rollout pending)
+
+Pinned Zod 4.6.7 to clear the production dependency vulnerability, updated bounded Pub/Sub record validation, made checkout fail closed on incomplete server configuration, and removed optional payment-history lookup from Google revocation processing. Added isolated PostgreSQL billing CI. Backend JavaScript IAP tests remain in all Jest/prebuild runs; only the frontend TypeScript 4.9 program excludes those two Node-only files.
+
+Vercel Sandbox: zero production dependency vulnerabilities; 174 suites / 1,068 tests, typecheck, production build, real forged-JWS rejection and database replay/refund/concurrency checks passed. Mobile guest accounting flow retains the correct balance across reload with no cloud writes. Required secrets, coordinated database migration and real store purchase/refund delivery remain release prerequisites. No production changes. Details: `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
+
 ## 2026-11-09 — Plans offer on one panel, Gold/Platinum MOVO logos, badge app icons
 
 The plans offer is one compact dark panel (fits 375×667 without scrolling): Monthly/Annual, Free (green MOVO), Pro (gold MOVO), Pro+ (platinum MOVO) — no "Gold/Platinum MOVO" labels on the tiles, store prices only, the free month with the white MOVO mark and no renewal line. Plan badges use the same tier logos. Subscribers can switch the home-screen icon to a badge icon (Settings → Appearance → App icon): Pro unlocks Bronze–Gold right after payment, Pro+ all four; iOS uses alternate app icons. See `docs/engineering/updates/2026-11-09-plans-panel-app-icons.md`.
@@ -616,3 +622,9 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - Run #42546337168: native simulator Xcode build passed, while CoreSimulator first-boot migrations took 7+ minutes and `simctl launch` timed out after 90 s; the smoke test, not the compilation, failed.
 - iOS CI now exercises a separately unit-tested launch script: deterministic iPhone choice, bounded 600 s cold boot, 180 s install/launch, exactly one retry **only** for launch timeouts after cold boot, and mandatory deep-link plus screenshot success. Nonzero launch errors and repeat timeouts remain hard failures.
 - Local/Vercel Sandbox Python unit tests are NOT evidence of native simulator success. Await exact-head GitHub macOS runner smoke and full regression gate before merging. See `docs/engineering/updates/2026-11-09-pr255-ios-simulator-launch.md`.
+
+## 2026-11-09 — Mobile subscription integrity
+
+Implemented production-only Apple/Google verification, pinned Apple trust root, strict OIDC/schema validation, fenced atomic state transitions, revocation tombstones, event deduplication, predecessor cleanup and encrypted server-acknowledgment retries. Includes a source-level hostile audit, deployable SQL, setup changes and regression tests. Vercel Sandbox: integrated build/typecheck and 170 suites/1,036 tests passed; final focused 33 tests passed; PostgreSQL behavioral and separate-connection concurrency tests passed; mobile browser render smoke passed. Migration and three new server settings are required before deployment; no production migration performed. See `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
+
+- PR #260 integration with PR #258: 173 suites / 1,063 tests, typecheck and build passed in Vercel Sandbox. Atomic referral awards/refund reversals and points-to-Pro plan access passed PostgreSQL regressions. The GitHub source tree matches the tested Sandbox tree. No production changes.

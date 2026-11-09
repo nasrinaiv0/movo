@@ -24,10 +24,11 @@ function safeDate(value) {
 }
 
 function appleVerifierConfig() {
-  const rootCerts = String(process.env.APPLE_ROOT_CERTS_BASE64 || '')
-    .split(',').map((part) => part.trim()).filter(Boolean).map((part) => Buffer.from(part, 'base64'));
-  if (!rootCerts.length) throw new Error('apple_verification_not_configured');
+  const root = Buffer.from(require('./certs/apple-root-g3.json').der, 'base64');
+  if (crypto.createHash('sha256').update(root).digest('hex') !== '63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179') throw new Error('apple_root_invalid');
+  const rootCerts = [root];
   const appAppleId = Number(process.env.APPLE_APP_ID);
+  if (!Number.isSafeInteger(appAppleId) || appAppleId <= 0) throw new Error('apple_verification_not_configured');
   const { Environment, SignedDataVerifier } = require('@apple/app-store-server-library');
   return { rootCerts, appAppleId, Environment, SignedDataVerifier };
 }
@@ -35,7 +36,7 @@ function appleVerifierConfig() {
 async function decodeAppleTransaction(jws) {
   if (!jws || typeof jws !== 'string' || jws.length > 20000) throw new Error('invalid_apple_transaction');
   const config = appleVerifierConfig();
-  for (const candidate of [config.Environment.PRODUCTION, config.Environment.SANDBOX]) {
+  for (const candidate of [config.Environment.PRODUCTION]) {
     if (candidate === config.Environment.PRODUCTION && (!Number.isFinite(config.appAppleId) || config.appAppleId <= 0)) continue;
     try {
       const verifier = new config.SignedDataVerifier(
@@ -58,7 +59,7 @@ async function decodeAppleTransaction(jws) {
 async function verifyAppleNotification(signedPayload) {
   if (!signedPayload || typeof signedPayload !== 'string' || signedPayload.length > 100000) throw new Error('invalid_apple_notification');
   const config = appleVerifierConfig();
-  for (const candidate of [config.Environment.PRODUCTION, config.Environment.SANDBOX]) {
+  for (const candidate of [config.Environment.PRODUCTION]) {
     if (candidate === config.Environment.PRODUCTION && (!Number.isFinite(config.appAppleId) || config.appAppleId <= 0)) continue;
     try {
       const verifier = new config.SignedDataVerifier(
@@ -69,7 +70,12 @@ async function verifyAppleNotification(signedPayload) {
         candidate === config.Environment.PRODUCTION ? config.appAppleId : undefined,
       );
       const notification = await verifier.verifyAndDecodeNotification(signedPayload);
-      if (notification.data?.bundleId && notification.data.bundleId !== BUNDLE_ID) throw new Error('apple_bundle_mismatch');
+      if (notification.data && notification.data.bundleId !== BUNDLE_ID) throw new Error('apple_bundle_mismatch');
+      if (notification.data?.signedRenewalInfo) {
+        const renewal = await verifier.verifyAndDecodeRenewalInfo(notification.data.signedRenewalInfo);
+        const tx = await verifier.verifyAndDecodeTransaction(notification.data.signedTransactionInfo);
+        if (renewal.originalTransactionId !== tx.originalTransactionId) throw new Error('apple_renewal_mismatch');
+      }
       return notification;
     } catch (error) {
       if (error?.message === 'apple_bundle_mismatch') throw error;
@@ -90,6 +96,10 @@ async function verifyApple(jws, userId) {
   const current = await client.getTransactionInfo(String(submitted.transaction.transactionId));
   const { transaction, environment } = await decodeAppleTransaction(current.signedTransactionInfo);
   if (transaction.transactionId !== submitted.transaction.transactionId || environment !== submitted.environment) throw new Error('invalid_apple_transaction');
+  return appleEntitlement(transaction, environment, userId);
+}
+
+function appleEntitlement(transaction, environment, userId) {
   if (transaction.type !== 'Auto-Renewable Subscription') throw new Error('unsupported_apple_product_type');
   const product = getProduct(transaction.productId);
   if (!product) throw new Error('unknown_store_product');
@@ -101,6 +111,8 @@ async function verifyApple(jws, userId) {
   if (!transaction.transactionId || !transaction.originalTransactionId || !expiresAt) throw new Error('incomplete_apple_transaction');
   const status = transaction.revocationDate ? 'revoked' : (expiresAt.getTime() > Date.now() ? 'active' : 'expired');
   return {
+    eventAt: new Date(transaction.signedDate).toISOString(),
+    purchasedAt: new Date(transaction.purchaseDate).toISOString(),
     paidVerified: transaction.offerDiscountType !== 'FREE_TRIAL' && Number(transaction.price) > 0,
     platform: 'apple',
     productId: transaction.productId,
@@ -115,11 +127,10 @@ async function verifyApple(jws, userId) {
   };
 }
 
-async function verifyGoogle(purchaseToken, productId, userId) {
+async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck = false } = {}) {
   if (!purchaseToken || typeof purchaseToken !== 'string' || purchaseToken.length > 4096) throw new Error('invalid_google_purchase_token');
-  const product = getProduct(productId);
-  if (!product) throw new Error('unknown_store_product');
-  const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || BUNDLE_ID;
+  if (productId && !getProduct(productId)) throw new Error('unknown_store_product');
+  const packageName = BUNDLE_ID;
   const serviceAccountRaw = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON;
   if (!serviceAccountRaw) throw new Error('google_play_verification_not_configured');
   let credentials;
@@ -127,10 +138,14 @@ async function verifyGoogle(purchaseToken, productId, userId) {
   const { google } = require('googleapis');
   const auth = new google.auth.GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/androidpublisher'] });
   const publisher = google.androidpublisher({ version: 'v3', auth });
-  const response = await publisher.purchases.subscriptionsv2.get({ packageName, token: purchaseToken });
+  const response = await publisher.purchases.subscriptionsv2.get({ packageName, token: purchaseToken }, { timeout: 15000 });
   const data = response?.data || {};
-  const lineItem = (data.lineItems || []).find((item) => item.productId === productId);
+  if (data.testPurchase) throw new Error('sandbox_purchase_rejected');
+  const lineItem = (data.lineItems || []).filter(item => productId ? item.productId === productId : !!getProduct(item.productId))
+    .sort((a,b) => Date.parse(b.expiryTime)-Date.parse(a.expiryTime))[0];
   if (!lineItem) throw new Error('google_product_mismatch');
+  productId = lineItem.productId;
+  const product = getProduct(productId);
   const expectedAccount = appAccountTokenForUser(userId);
   const linkedAccount = data.externalAccountIdentifiers?.obfuscatedExternalAccountId;
   if (typeof linkedAccount !== 'string' || linkedAccount.toLowerCase() !== expectedAccount.toLowerCase()) throw new Error('purchase_account_mismatch');
@@ -140,7 +155,7 @@ async function verifyGoogle(purchaseToken, productId, userId) {
   const statusMap = {
     SUBSCRIPTION_STATE_ACTIVE: 'active',
     SUBSCRIPTION_STATE_IN_GRACE_PERIOD: 'grace_period',
-    SUBSCRIPTION_STATE_CANCELED: expiresAt.getTime() > Date.now() ? 'canceled' : 'expired',
+    SUBSCRIPTION_STATE_CANCELED: 'expired',
     SUBSCRIPTION_STATE_PAUSED: 'paused',
     SUBSCRIPTION_STATE_ON_HOLD: 'on_hold',
     SUBSCRIPTION_STATE_EXPIRED: 'expired',
@@ -150,13 +165,17 @@ async function verifyGoogle(purchaseToken, productId, userId) {
   const status = statusMap[state] || 'pending';
   const purchaseTokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
   let paidVerified = false;
-  if (!data.testPurchase && data.latestOrderId && publisher.orders?.get) {
+  if (!skipPaymentCheck && ['active', 'grace_period'].includes(status) && data.latestOrderId && publisher.orders?.get) {
     // Only an actual positive, processed order qualifies; free trials do not.
-    const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }))?.data;
+    const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }, { timeout: 15000 }))?.data;
     const purchasedLine = order?.lineItems?.find(item => item.productId === productId);
     paidVerified = order?.state === 'PROCESSED' && !!purchasedLine && (Number(purchasedLine.total?.units || 0) > 0 || Number(purchasedLine.total?.nanos || 0) > 0);
   }
   return {
+    replaceLinked: ['SUBSCRIPTION_STATE_ACTIVE','SUBSCRIPTION_STATE_IN_GRACE_PERIOD','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_CANCELED','SUBSCRIPTION_STATE_EXPIRED'].includes(state),
+    linkedPurchaseTokenHash: data.linkedPurchaseToken ? crypto.createHash('sha256').update(data.linkedPurchaseToken).digest('hex') : null,
+    eventAt: new Date().toISOString(),
+    purchasedAt: null,
     paidVerified,
     platform: 'google',
     productId,
@@ -179,6 +198,7 @@ module.exports = {
   decodeAppleTransaction,
   verifyAppleNotification,
   verifyApple,
+  appleEntitlement,
   verifyGoogle,
   PRODUCT_TIERS,
 };
