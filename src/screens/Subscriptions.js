@@ -111,14 +111,14 @@ function Insights({ summary, show, income }) {
   const priciest = summary.upcoming.slice().sort((a, b) => b.monthlyHome - a.monthlyHome)[0];
   return <>
     <section className="stat-grid two">
-      <article className="card stat-card"><small>{tr('Per month')}</small><strong><Money value={summary.monthly} show={show} digits={0} /></strong></article>
-      <article className="card stat-card"><small>{tr('Per year')}</small><strong><Money value={summary.annual} show={show} digits={0} /></strong></article>
+      <article className="card stat-card"><small>{tr('Per month')}</small><strong><Money value={summary.monthly} show={show} /></strong></article>
+      <article className="card stat-card"><small>{tr('Per year')}</small><strong><Money value={summary.annual} show={show} /></strong></article>
     </section>
     {income > 0 && <p className="sub-note">{tr('Subscriptions use {pct} of this month’s income.', { pct: `${Math.round((summary.monthly / income) * 100)}%` })}</p>}
     {priciest && <p className="sub-note">{tr('Most expensive: {name}, {amount} a month.', { name: priciest.name, amount: shown(show, money(priciest.monthlyHome, undefined, 0)) })}</p>}
     <h2 className="group-title">{tr('By category')}</h2>
     <section className="card pad"><ul className="cat-bars">{summary.byCategory.map((c, i) => <li key={c.category} style={{ '--i': i }}>
-      <span className="cat-bars-head"><span>{tr(c.category)}</span><b><Money value={c.amount} show={show} digits={0} /> {tr('/month')}</b></span>
+      <span className="cat-bars-head"><span>{tr(c.category)}</span><b><Money value={c.amount} show={show} /> {tr('/month')}</b></span>
       <span className="cat-bars-track"><i style={{ width: `${(c.amount / top) * 100}%`, background: 'var(--accent)' }} /></span>
     </li>)}</ul>{!summary.byCategory.length && <p className="empty">{tr('Add subscriptions to see where the money goes.')}</p>}</section>
   </>;
@@ -229,7 +229,7 @@ export default function Subscriptions({ c }) {
       <small>{tr('Monthly subscriptions')}</small>
       <div className="balance-amount"><Money value={summary.monthly} show={show} /></div>
       <div className="sub-hero-row">
-        <span><b><Money value={summary.annual} show={show} digits={0} /></b><small>{tr('per year')}</small></span>
+        <span><b><Money value={summary.annual} show={show} /></b><small>{tr('per year')}</small></span>
         <span><b>{summary.activeCount}</b><small>{summary.activeCount === 1 ? tr('active plan') : tr('active plans')}</small></span>
         <span><b>{summary.dueSoon.length}</b><small>{tr('due in 7 days')}</small></span>
       </div>

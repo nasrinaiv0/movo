@@ -35,12 +35,12 @@ export function BudgetsCard({ progress, plans, show, onOpen, size = 'M' }) {
     {!progress.length && !plans.length && <button type="button" className="budget-empty" onClick={onOpen}><Icon name="target" size={20} /><span><strong>{tr('Set a monthly limit')}</strong><small>{tr('Get a heads-up before a category runs over, and plan savings goals.')}</small></span></button>}
     {watch.map(b => { const [, name, icon, tone] = iconFor(b.category); return <div className={`budget-row ${b.level}`} key={b.id}>
       <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
-      <span className="budget-main"><span><strong>{tr(name)}</strong><small>{b.level === 'over' ? `${tr('Over by')} ` : ''}<Money value={Math.abs(b.left)} show={show} digits={0} />{b.level === 'over' ? '' : ` ${tr('left')}`}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
+      <span className="budget-main"><span><strong>{tr(name)}</strong><small>{b.level === 'over' ? `${tr('Over by')} ` : ''}<Money value={Math.abs(b.left)} show={show} />{b.level === 'over' ? '' : ` ${tr('left')}`}</small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
       <b>{b.percent}%</b>
     </div>; })}
     {planList.map(p => <div className="budget-row plan" key={p.id}>
       <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
-      <span className="budget-main"><span><strong>{p.name}</strong><small><Money value={p.saved} show={show} digits={0} /> {tr('of')} <Money value={p.target} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
+      <span className="budget-main"><span><strong>{p.name}</strong><small><Money value={p.saved} show={show} /> {tr('of')} <Money value={p.target} show={show} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
       <b>{pct(p.saved, p.target)}%</b>
     </div>)}
   </section>;
@@ -73,11 +73,11 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
     {!draft && <div className="sheet-list">
       {tab === 'budgets' && progress.map(b => { const [, name, icon, tone] = iconFor(b.category); return <button type="button" key={b.id} className={`sheet-card budget-item ${b.level}`} onClick={() => setDraft({ id: b.id, category: b.category, limit: String(b.monthly_limit) })}>
         <span className={`tx-chip-icon tone-${tone}`}><Icon name={icon} size={14} strokeWidth={2} /></span>
-        <span className="budget-main"><span><strong>{tr(name)}</strong><small><Money value={b.spent} show={show} digits={0} /> {tr('of')} <Money value={b.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{tr(name)}</strong><small><Money value={b.spent} show={show} /> {tr('of')} <Money value={b.monthly_limit} show={show} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, b.percent)}%` }} /></span></span>
         <b>{b.percent}%</b></button>; })}
       {tab === 'plans' && plans.map(p => { const need = Math.max(0, p.target - p.saved); const m = monthsLeft(p.due); const horizon = m || 12; const projection = Number(p.annual_rate) > 0 ? estimateSavingsGrowth(p.saved, need / horizon, p.annual_rate, horizon, p.compounding || 'monthly') : null; return <button type="button" key={p.id} className="sheet-card budget-item" onClick={() => setDraft({ ...p, target: String(p.target), saved: String(p.saved), annual_rate: String(p.annual_rate || ''), compounding: p.compounding || 'monthly' })}>
         <span className="tx-chip-icon tone-blue"><Icon name="target" size={14} strokeWidth={2} /></span>
-        <span className="budget-main"><span><strong>{p.name}</strong><small>{need ? (m ? rich('Save {amount}/month to reach it', { amount: <Money value={need / m} show={show} digits={0} /> }) : <><Money value={need} show={show} digits={0} /> {tr('to go')}</>) : tr('Goal reached')}</small>{projection && <small>{rich('Estimated interest over {months} months: {amount}', { months: horizon, amount: <Money value={projection.interestEarned} show={show} digits={0} /> })}</small>}</span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{p.name}</strong><small>{need ? (m ? rich('Save {amount}/month to reach it', { amount: <Money value={need / m} show={show} /> }) : <><Money value={need} show={show} /> {tr('to go')}</>) : tr('Goal reached')}</small>{projection && <small>{rich('Estimated interest over {months} months: {amount}', { months: horizon, amount: <Money value={projection.interestEarned} show={show} /> })}</small>}</span><span className="budget-meter"><i style={{ width: `${Math.min(100, pct(p.saved, p.target))}%` }} /></span></span>
         <b>{pct(p.saved, p.target)}%</b></button>; })}
       <button type="button" className="manage-button" onClick={() => setDraft(tab === 'budgets' ? { category: CATEGORY_ICONS.find(c => !used.has(c[0]))?.[0] || 'Other', limit: '' }  : { name: '', target: '', saved: '', due: '', annual_rate: '', compounding: 'monthly' })}><Icon name="plus" size={18} /> {tab === 'budgets' ? tr('Add budget') : tr('Add plan')}</button>
     </div>}
@@ -126,7 +126,7 @@ export function SpendingLimitsSheet({ limits = [], accounts = [], show, onSave, 
     {!draft && <div className="sheet-list">
       {limits.map(limit => <button type="button" key={limit.id} className={`sheet-card budget-item ${limit.level}`} onClick={() => startDraft(limit)}>
         <span className="tx-chip-icon tone-blue"><Icon name="limits" size={14} /></span>
-        <span className="budget-main"><span><strong>{limit.scope === 'account' ? (limit.account_name || tr('Account')) : limit.merchant}</strong><small><Money value={limit.spent} show={show} digits={0} /> {tr('of')} <Money value={limit.monthly_limit} show={show} digits={0} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, limit.percent)}%` }} /></span></span>
+        <span className="budget-main"><span><strong>{limit.scope === 'account' ? (limit.account_name || tr('Account')) : limit.merchant}</strong><small><Money value={limit.spent} show={show} /> {tr('of')} <Money value={limit.monthly_limit} show={show} /></small></span><span className="budget-meter"><i style={{ width: `${Math.min(100, limit.percent)}%` }} /></span></span>
         <b>{limit.percent}%</b>
       </button>)}
       {!limits.length && <p className="empty-state">{tr('No spending limits yet.')}</p>}

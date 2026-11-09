@@ -102,9 +102,9 @@ export default function FinancialPlanning({ c }) {
     <small>{tr('Net worth')}</small>
     <div className="balance-amount"><Money value={summary.position.netWorth} show={show} currency={base} /></div>
     <div className="sub-hero-row">
-      <span><b><Money value={summary.position.assets} show={show} digits={0} currency={base} /></b><small>{tr('Assets')}</small></span>
-      <span><b><Money value={summary.position.liabilities} show={show} digits={0} currency={base} /></b><small>{tr('Liabilities')}</small></span>
-      <span><b><Money value={summary.position.availableMoney} show={show} digits={0} currency={base} /></b><small>{tr('Available money')}</small></span>
+      <span><b><Money value={summary.position.assets} show={show} currency={base} /></b><small>{tr('Assets')}</small></span>
+      <span><b><Money value={summary.position.liabilities} show={show} currency={base} /></b><small>{tr('Liabilities')}</small></span>
+      <span><b><Money value={summary.position.availableMoney} show={show} currency={base} /></b><small>{tr('Available money')}</small></span>
     </div>
   </section>;
 

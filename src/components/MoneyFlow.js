@@ -75,14 +75,14 @@ export default function MoneyFlow({ txs, refDate, show, variant = 'bars', restri
   return <section className={'card flow-card' + (variant === 'bars' ? ' flow-card-bars' : '')} aria-label={tr('Money flow')}>
     <div className="flow-head">
       <div><h2>{tr('Money Flow')}</h2><small>{sel ? sel.title : `${data[0]?.title || ''} – ${data[data.length - 1]?.title || ''}`}</small></div>
-      <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} digits={0} /></span>
+      <span className={`flow-net ${net >= 0 ? 'up' : 'down'}`}>{net >= 0 ? '+' : '−'}<Money value={Math.abs(net)} show={show} /></span>
     </div>
     <div className="flow-ranges" role="group" aria-label={tr('Money flow range')}>{RANGES.map(([k, l]) => <button type="button" key={k} aria-pressed={range === k} onClick={() => { if (k === 'custom' && restrictCustom && !requireFeature('customMoneyFlow')) return; setRange(k); setPick(-1); if (k === 'custom' && !custom.from && !custom.to) setCustom(defaultCustom(refDate)); }}>{tr(l)}</button>)}</div>
     {range === 'custom' && <div className="flow-custom">
       <DateField label={tr('From')} value={custom.from} max={custom.to || undefined} onChange={v => { setCustom({ ...custom, from: v }); setPick(-1); }} />
       <DateField label={tr('To')} value={custom.to} min={custom.from || undefined} onChange={v => { setCustom({ ...custom, to: v }); setPick(-1); }} />
     </div>}
-    <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} digits={0} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} digits={0} /></b></span></div>
+    <div className="flow-legend"><span><i className="in" />{tr('In')} <b><Money value={totals.income} show={show} /></b></span><span><i className="out" />{tr('Out')} <b><Money value={totals.expense} show={show} /></b></span></div>
     <div className={`flow-plot is-${variant}`} role="list">
       {variant === 'lines' && data.length > 1 && <svg className="flow-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d={line('income')} className="in-line" /><path d={line('expense')} className="out-line" /></svg>}
       {data.map((b, i) => <button type="button" role="listitem" key={b.key} className={`flow-col${pick === i ? ' on' : ''}`} style={{ '--i': i }} onClick={() => setPick(pick === i ? -1 : i)} aria-label={tr('{period}: in {income}, out {expense}', { period: b.title, income: Math.round(b.income), expense: Math.round(b.expense) })}>

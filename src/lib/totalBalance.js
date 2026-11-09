@@ -1,4 +1,4 @@
-import { roundMoney } from './moneyMath';
+import { sumMoney } from './moneyMath';
 import { isCreditCard, unpostedCardPayments } from './creditCard';
 import { dayKey } from './format';
 
@@ -14,7 +14,8 @@ import { dayKey } from './format';
  *   whole total into NaN.
  */
 export function totalBalance(accounts, toBase = amount => amount, cardPayments = {}) {
-  let total = 0;
+  // Each converted balance is rounded to cents and summed as whole cents, so float drift never reaches the total.
+  const parts = [];
   const excluded = [];
   for (const account of Array.isArray(accounts) ? accounts : []) {
     if (!account || account.is_archived || account.linkedAccountId) continue;
@@ -22,23 +23,23 @@ export function totalBalance(accounts, toBase = amount => amount, cardPayments =
     if (account.recordedPaymentsApplied && isCreditCard(account)) balance -= unpostedCardPayments(cardPayments?.[account.id] || []);
     const converted = Number.isFinite(balance) ? Number(toBase(balance, account.currency || 'PHP')) : NaN;
     if (!Number.isFinite(converted)) { excluded.push(account.id); continue; }
-    total += converted;
+    parts.push(converted);
   }
-  return { total: roundMoney(total), excluded };
+  return { total: sumMoney(parts), excluded };
 }
 
 /** Income minus expenses (home currency) recorded after `endDay` (YYYY-MM-DD); transfers stay inside the total. */
 export function netAfter(transactions, endDay) {
-  let net = 0;
+  const parts = [];
   for (const t of Array.isArray(transactions) ? transactions : []) {
     if (!t || dayKey(t.date) <= endDay) continue;
     const amount = Number(t.amount);
     if (!Number.isFinite(amount)) continue;
-    if (t.type === 'income') net += amount;
-    else if (t.type === 'expense') net -= amount;
+    if (t.type === 'income') parts.push(amount);
+    else if (t.type === 'expense') parts.push(-amount);
   }
-  return roundMoney(net);
+  return sumMoney(parts);
 }
 
 /** The total at the end of a past day: today's total with everything recorded after that day undone. */
-export const balanceAsOf = (currentTotal, transactions, endDay) => roundMoney(currentTotal - netAfter(transactions, endDay));
+export const balanceAsOf = (currentTotal, transactions, endDay) => sumMoney([currentTotal, -netAfter(transactions, endDay)]);

@@ -7981,3 +7981,22 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 }
 /* While the dialog closes it no longer takes taps, so nothing can be pressed twice. */
 .movo-app .confirm-layer.closing { pointer-events: none; }
+
+/* ---------- Touch targets and overflow (2026-11-09, audit phase 2) ----------
+   Every small control gets an invisible 44×44 hit area centred on it, so taps land without changing how anything looks
+   (Apple HIG / WCAG 2.5.5). ::before is free on these controls (the hairline uses ::after). Screens never scroll
+   sideways: a decorative layer (badge shine/sparkle) could leave the page 18px wider after a tab change. */
+.movo-app .screen { overflow-x: clip; }
+.movo-app :is(.plain-icon, .ram-bubble-link, .balance-go, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle) { position: relative; }
+.movo-app :is(.plain-icon, .ram-bubble-link, .balance-go, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle)::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+/* The billing-cycle picker is a 40px filter like its neighbours; its native select stays invisible and borderless. */
+.movo-app.movo-app .tx-period-filter select { border: 0; }
+/* The eye sits just above the balance figure: its hit area stays on top. The wallet arrow sits at the card's left edge,
+   which clips: its hit area grows to the right instead. Money-flow ranges are filters: 40px like every other filter. */
+.movo-app :is(.plain-icon, .balance-go) { z-index: 2; }
+.movo-app.movo-app :is(.balance-card, .total-card) .balance-label { z-index: 2; }
+.movo-app.movo-app .balance-go::before { left: 0; transform: translateY(-50%); }
+.movo-app.movo-app[dir="rtl"] .balance-go::before { left: auto; right: 0; }
+.movo-app.movo-app .flow-ranges button { min-height: 40px; overflow: visible; }

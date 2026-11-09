@@ -21,7 +21,7 @@ const SPENDING_STYLES = [['ring', 'Ring'], ['bars', 'Bars']];
 function CategoryBars({ data, show }) {
   const top = Math.max(1, ...data.map(d => d.amount));
   return <ul className="cat-bars">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}>
-    <span className="cat-bars-head"><span><i style={{ background: d.color }} />{tr(d.key)}</span><b><Money value={d.amount} show={show} digits={0} /> · {d.percent}%</b></span>
+    <span className="cat-bars-head"><span><i style={{ background: d.color }} />{tr(d.key)}</span><b><Money value={d.amount} show={show} /> · {d.percent}%</b></span>
     <span className="cat-bars-track"><i style={{ width: `${(d.amount / top) * 100}%`, background: d.color }} /></span>
   </li>)}</ul>;
 }
@@ -112,7 +112,7 @@ export default function Home({ c }) {
     { id: 'summary', label: tr('Income, expenses & savings'), sizes: ['S', 'M'], node: ({ size }) => <section className={`stat-grid size-${size}`} aria-label={tr('Financial summary')}>
       {tiles.map(t => <button type="button" className={`card stat-card is-link tint-${t.tone}`} key={t.label} onClick={t.open} aria-label={tr('Open {label}', { label: t.label })}>
         <div className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={15} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></div>
-        <strong><Money value={t.value} show={show} digits={0} /></strong>
+        <strong><Money value={t.value} show={show} /></strong>
         {size !== 'S' && <Trend value={t.delta} />}
       </button>)}
     </section> },

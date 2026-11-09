@@ -23,13 +23,13 @@ export default function PlanningCard({ c, size = 'M' }) {
       <button type="button" className="fp-home-top" onClick={() => open()} aria-label={tr('Open {label}', { label: tr('Net worth') })}>
         <span><small>{tr('Net worth')}</small><strong><Money value={summary.position.netWorth} show={show} currency={base} /></strong></span>
         <span className="fp-home-split">
-          <span><small>{tr('Assets')}</small><b><Money value={summary.position.assets} show={show} digits={0} currency={base} /></b></span>
-          <span><small>{tr('Liabilities')}</small><b><Money value={summary.position.liabilities} show={show} digits={0} currency={base} /></b></span>
+          <span><small>{tr('Assets')}</small><b><Money value={summary.position.assets} show={show} currency={base} /></b></span>
+          <span><small>{tr('Liabilities')}</small><b><Money value={summary.position.liabilities} show={show} currency={base} /></b></span>
         </span>
       </button>
       {cloud ? size !== 'S' && <div className="fp-home-grid">{tiles.map(t => <button type="button" key={t.key} className="fp-home-tile" onClick={() => open(t.key)}>
         <span className="stat-head"><span className={`stat-icon tone-${t.tone}`}><Icon name={t.icon} size={14} strokeWidth={2.2} /></span><span>{tr(t.label)}</span></span>
-        <b><Money value={t.value} show={show} digits={0} currency={base} /></b>
+        <b><Money value={t.value} show={show} currency={base} /></b>
         <small className={t.alert ? 'is-alert' : ''}>{t.sub}</small>
       </button>)}</div>
         : <p className="form-note fp-home-note">{tr('Sign in to track bills, loans, money owed to you and goals here.')}</p>}

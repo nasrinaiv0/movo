@@ -116,7 +116,7 @@ export default function Transactions({ c }) {
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
           <button type="button" className={`card stat-card is-link tint-${tone}${txFilter === label ? ' is-active' : ''}`} key={label} aria-pressed={txFilter === label} aria-label={tr('Show {label}', { label: tr(label) })} onClick={() => setTxFilter(label)}><div className="stat-head"><span className={`stat-icon tone-${tone}`}><Icon name={icon} size={15} strokeWidth={2.2} /></span><span>{tr(label)}</span></div>
-            <strong><Money value={value} show={show} digits={0} /></strong>{isCurrent && <Trend value={d} />}</button>)}
+            <strong><Money value={value} show={show} /></strong>{isCurrent && <Trend value={d} />}</button>)}
       </section>
     </>}
 

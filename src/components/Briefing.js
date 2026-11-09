@@ -7,7 +7,7 @@ import { t as tr } from '../lib/i18n';
 /** Fills a briefing line's template: money is formatted (and hidden when balances are hidden), categories translated. */
 export function lineText(line, show) {
   const vars = { ...(line.vars || {}) };
-  Object.entries(line.money || {}).forEach(([k, v]) => { vars[k] = shown(show, money(v, undefined, 0)); });
+  Object.entries(line.money || {}).forEach(([k, v]) => { vars[k] = shown(show, money(v)); });
   if (line.category) vars.category = tr(line.category);
   return tr(line.key, vars);
 }
