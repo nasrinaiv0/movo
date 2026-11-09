@@ -5,6 +5,11 @@ export const LOGO_TONES = {
   color: { light: '#3dba78', mid: '#10a866', dark: '#0b7a54' },
   mono: { light: '#8a8a8a', mid: '#555559', dark: '#2b2b2e' },
   white: { light: '#ffffff', mid: '#e9e9ec', dark: '#d4d4d8' },
+  // Plan and badge tiers (2026-11-09): Free is the green mark, the free month is white, Pro is gold, Pro+ platinum.
+  bronze: { light: '#efbd8f', mid: '#cd8a52', dark: '#8f5729' },
+  silver: { light: '#f2f4f7', mid: '#bcc4ce', dark: '#7f8996' },
+  gold: { light: '#f8dc8c', mid: '#e3b04a', dark: '#a87618' },
+  platinum: { light: '#ffffff', mid: '#dcd9ef', dark: '#9d97c4' },
 };
 
 export const MARK_VIEWBOX = '0 0 120 104';

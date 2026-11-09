@@ -1,5 +1,6 @@
 import { usePlan } from '../lib/PlanContext';
 import { PlanComparison } from '../components/PlanOffer';
+import AppIconPicker from '../components/AppIconPicker';
 import { PLAN_LABELS } from '../lib/planAccess';
 import React, { useEffect, useRef, useState } from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
@@ -369,6 +370,8 @@ export function Appearance({ c }) {
     <h2 className="group-title">{tr('Theme')}</h2>
     <section className="appearance-theme-section"><ThemePicker c={c} />
       <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></section>
+    <h2 className="group-title">{tr('App icon')}</h2>
+    <AppIconPicker c={c} />
     <h2 className="group-title">{tr('Liquid Glass')}</h2>
     <section className="card pad glass-settings">
       <div className="glass-head"><span className="menu-main"><strong>{tr('Liquid Glass')}</strong><small>{tr('Translucent, light-bending surfaces')}</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label={tr('Liquid Glass')} /></div>

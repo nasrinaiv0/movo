@@ -211,6 +211,6 @@ describe('offline-first with Cloud Sync on', () => {
     await act(async () => { window.dispatchEvent(new Event('offline')); });
     await nav(container, 'Menu');
     // The Pro plan still shows its Gold badge while working from the device copy.
-    expect(container.querySelector('.menu-hero .plan-badge .tier-max')).not.toBeNull();
+    expect(container.querySelector('.menu-hero .plan-badge .tone-gold')).not.toBeNull();
   });
 });

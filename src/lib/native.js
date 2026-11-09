@@ -127,3 +127,12 @@ export async function nativeAuthenticate(reason) {
 
 // Keychain access for the automation device key lives in lib/nativeAutomationKey.js (one vault, key
 // movo-autolog-key, allowlisted by MovoNativePlugin.swift); auth tokens in lib/nativeSecureAuthStorage.js.
+
+/**
+ * iPhone app: switch the home-screen icon to an unlocked badge icon (an alternate icon set compiled into the app).
+ * `name` null restores the standard icon. Resolves false where the platform cannot change the icon.
+ */
+export async function setNativeAppIcon(name) {
+  if (!isNativeApp()) return false;
+  try { await MovoNative.setAppIcon({ name: name || null }); return true; } catch { return false; }
+}
