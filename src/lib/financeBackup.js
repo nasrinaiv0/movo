@@ -41,10 +41,12 @@ export async function createFinanceBackup(c) {
       // Owner RLS still applies. Do not silently skip failed pages or tables.
       tables[table] = await fetchAllRows(() => supabase.from(table).select('*').eq('user_id', c.session.user.id).order(table === 'user_preferences' || table === 'payment_reminder_preferences' ? 'user_id' : 'id'));
     }
-  } else {
-    const { autoLogKey, devices, ...preferences } = c.prefs || {};
-    tables.local_preferences = [preferences];
   }
+  // Everything shown in Home, Wallet, Transactions and Menu besides accounts and transactions (subscriptions,
+  // plans, budgets, limits, card styles and payments, loyalty cards, archive, layouts...) lives in preferences.
+  // The device's own copy is the freshest; device secrets and device state are left out.
+  const { autoLogKey, devices, accountQrPending, pushed, ...preferences } = c.prefs || {};
+  tables.local_preferences = [preferences];
   const attachments = [];
   let bytes = JSON.stringify(tables).length;
   const add = (path, dataUrl) => {
@@ -58,20 +60,30 @@ export async function createFinanceBackup(c) {
     if (error || !data) throw new Error('Could not download a backup attachment.');
     return toDataUrl(data);
   };
-  const receipts = new Set([...(tables.transactions || []), ...(c.txs || [])].map(row => row.receipt_path).filter(Boolean));
+  // One unreadable file (deleted from the device, or a failed download) is counted and reported; it never
+  // cancels the rest of the backup.
+  let missingAttachments = 0;
+  const attach = async (path, read) => {
+    let data = null;
+    try { data = await read(); } catch { data = null; }
+    if (typeof data === 'string' && MEDIA_DATA.test(data)) add(path, data); else missingAttachments += 1;
+  };
+  const receipts = new Set([...(tables.transactions || []), ...(c.rawTxs || c.txs || [])].map(row => row.receipt_path).filter(Boolean));
   for (const path of receipts) {
-    const data = path.startsWith('localreceipt:') ? await toDataUrl(await getLocalAttachment(path)) : await readStorage('movo-receipts',path);
-    add(path,data);
+    await attach(path, async () => (path.startsWith('localreceipt:') ? toDataUrl(await getLocalAttachment(path)) : readStorage('movo-receipts', path)));
   }
   for (const [id,path] of Object.entries(c.prefs?.accountQrCodes || {})) {
     if (!path) continue;
-    const data = path.startsWith('data:') ? path : path.startsWith('localqr:') ? await getLocalAccountQr(path.slice(8)) : await readStorage('movo-account-qrs',path);
-    add('qr:'+id,data);
+    await attach('qr:'+id, async () => (path.startsWith('data:') ? path : path.startsWith('localqr:') ? getLocalAccountQr(path.slice(8)) : readStorage('movo-account-qrs',path)));
   }
   if (c.sceneryPhoto) add('scenery',c.sceneryPhoto);
   for (const sticker of getCustomStickers()) if (MEDIA_DATA.test(sticker.src || '')) add('sticker:'+sticker.id,sticker.src);
+  // The person's own rows (original amount, currency and category id), not the screen's converted copies, and
+  // never cloud accounting activity, which is not a transaction.
+  const transactions = (Array.isArray(c.rawTxs) ? c.rawTxs : c.txs || [])
+    .filter(row => { const type = row?.transaction_type || row?.type; return !type || ['income', 'expense', 'transfer'].includes(type); });
   const backup = { format: 'movo-finance-backup', version: 1, exportedAt: new Date().toISOString(),
-    accounts: c.accountsView || [], transactions: c.txs || [], tables, attachments };
+    accounts: c.accountsView || [], transactions, tables, attachments, missingAttachments };
   if (JSON.stringify(backup).length > 50 * 1024 * 1024) throw new Error('Backup must be 50 MB or smaller.');
   return backup;
 }

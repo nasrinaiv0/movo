@@ -7767,3 +7767,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .plan-current:has(.plan-badge) strong { margin-inline-start: auto; }
 .movo-app .menu-hero .plan-badge { margin-inline-start: auto; }
 .movo-app .menu-hero .plan-badge + .streak-chip { margin-inline-start: 0; }
+
+/* ---------- Total balance note (2026-11-09): accounts left out for lack of an exchange rate ---------- */
+.movo-app .balance-card .balance-note { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 500; color: var(--muted); }

@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Total balance fixes and complete device-transfer backup (review)
+
+Total balance no longer rises with card payments that moved no money (new "Paid from" records a real transfer), excludes archived and unconvertible accounts, follows the Home month filter, and month-over-month compares like periods. Backup export/restore now carries subscriptions, plans, budgets, limits, card styles/payments, loyalty, archive, settings, receipts, QR, scenery and stickers, re-linked to the restored accounts; CSV keeps transfers, notes and categories. No migration or production change. See `docs/engineering/updates/2026-11-09-total-balance-and-full-backup.md`.
+
 ## 2026-11-09 — Owner Command Center consolidated from #253, with live analytics (review)
 
 #253 failed the per-commit docs gate; its net change is carried in one documented commit on PR #255. Fixes the strict-build import order, plans in the user directory (trials/referrals showed "Not verified"), and entitlement-row counts shown as plans. New aggregate-only `movo_owner_kpis` / `movo_owner_user_plans` (service_role only, isolated SQL tests pass). Key figures, 30-day activity, plan mix, capture channels, user plan filter and last sign-in. Production migrations need owner approval. See `docs/engineering/updates/2026-11-09-owner-console-analytics.md`.

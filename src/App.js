@@ -1,5 +1,6 @@
 import FinanceBackupSheet from './components/FinanceBackupSheet';
 import { prepareFinanceBackupRestore } from './lib/financeBackupRestore';
+import { planPreferenceRestore } from './lib/backupPreferences';
 import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from './lib/localAttachments';
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
@@ -83,6 +84,7 @@ import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
 import { BudgetsSheet, SpendingLimitsSheet, budgetProgress } from './components/Budgets';
 import { monthOverMonth } from './lib/trend';
+import { totalBalance, balanceAsOf } from './lib/totalBalance';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
 import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace, recordOfflineDeletions, restoreOfflineRows } from './lib/offlineWorkspaceStore';
@@ -256,6 +258,15 @@ function PostTourLegalDisclosure({ onReview, onDismiss }) {
  * cloud (online on this device, or on another one). Any device-only change, invalid row or owner mismatch still
  * stops here for review; pending changes always go through the reconciliation instead.
  */
+/** A backup attachment (base64 data URL) as a Blob for the device's attachment store. */
+function dataUrlToBlob(dataUrl) {
+  const [head, body = ''] = String(dataUrl).split(',', 2);
+  const type = (/^data:([^;]+);base64$/.exec(head) || [])[1] || 'application/octet-stream';
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type });
+}
 function cleanCopyCheck(ownerId, copy, cloud) {
   const check=planOfflineReconciliation({ownerId,base:copy.baseline,local:copy.working,cloud,
     groups:['financial_accounts','transactions'],localDeletions:copy.pendingDeletions,deletedRows:copy.deletedRows});
@@ -898,18 +909,29 @@ function App() {
   const homeYears = useMemo(() => Array.from(new Set([new Date().getFullYear(), ...txs.map(t => Number(monthKey(t.date).slice(0, 4)))] )).sort((a, b) => b - a), [txs]);
   const homeStats = useMemo(() => statsFor(activeHomeMonth), [statsFor, activeHomeMonth]);
   const monthStats = useMemo(() => statsFor(activeMonth), [statsFor, activeMonth]);
+  // Total balance (lib/totalBalance.js): open accounts, linked debit cards once, card payments that moved no money
+  // left out, unconvertible accounts listed instead of breaking the total.
+  const balanceTotals = useMemo(() => totalBalance(accountsView, toBase, prefs.creditCardPayments || {}), [accountsView, toBase, prefs.creditCardPayments]);
+  // Home's month filter sits on the balance card: a past month shows the total at the end of that month.
+  const homeMonthEnd = `${activeHomeMonth}-${String(new Date(Number(activeHomeMonth.slice(0, 4)), Number(activeHomeMonth.slice(5, 7)), 0).getDate()).padStart(2, '0')}`;
+  const homeIsPast = homeMonthEnd < dayKey(new Date());
   const stats = useMemo(() => {
-    const balance = accountsView.length ? accountsView.filter(a => !a.linkedAccountId).reduce((s, a) => s + toBase(a.balance, a.currency), 0) : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+    const current = accountsView.length ? balanceTotals.total : txs.reduce((s, t) => s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+    const balance = homeIsPast ? balanceAsOf(current, txs, homeMonthEnd) : current;
+    // The line runs through the selected month: only income and expenses change the total (transfers and
+    // allocations stay inside it).
     let running = balance - homeStats.net; const daily = new Map();
-    homeStats.list.slice().reverse().forEach(t => { if (t.type !== 'transfer') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
+    homeStats.list.slice().reverse().forEach(t => { if (t.type === 'income' || t.type === 'expense') { running += t.type === 'income' ? t.amount : -t.amount; daily.set(dayKey(t.date), running); } });
     let points = [balance - homeStats.net, ...daily.values()];
     for (let pass = 0; pass < 3; pass += 1) points = points.map((v, i) => { const w = points.slice(Math.max(0, i - 1), i + 2); return w.reduce((s, x) => s + x, 0) / w.length; });
     const savings = savingsBalance(accountsView, toBase, prefs.accountStyles);
-    return { balance, income: homeStats.income, expenses: homeStats.expenses, savings, netCashFlow: homeStats.net, trend: points.length > 1 ? points : [balance, balance] };
-  }, [accountsView, txs, homeStats, toBase, prefs.accountStyles]);
+    return { balance, balanceExcluded: balanceTotals.excluded.length, income: homeStats.income, expenses: homeStats.expenses, savings, netCashFlow: homeStats.net, trend: points.length > 1 ? points : [balance, balance] };
+  }, [accountsView, balanceTotals, homeIsPast, homeMonthEnd, txs, homeStats, toBase, prefs.accountStyles]);
   // Savings is an account-balance measure (cash excluded), not monthly net cash flow. Until a historical
   // savings-balance snapshot is available, do not display a misleading cash-flow trend beside that balance.
-  const deltas = useMemo(() => ({ ...monthOverMonth(txs, homeRefDate, stats.balance), savings: null }), [txs, homeRefDate, stats.balance]);
+  // The current month compares like with like (1st–today against the same days last month); a past month
+  // compares that whole month with the one before.
+  const deltas = useMemo(() => ({ ...monthOverMonth(txs, homeIsPast ? homeRefDate : new Date(), stats.balance, homeIsPast ? homeMonthEnd : undefined), savings: null }), [txs, homeIsPast, homeRefDate, homeMonthEnd, stats.balance]);
   const homeBreakdown = useMemo(() => breakdownFor(activeHomeMonth), [breakdownFor, activeHomeMonth]);
   const txBreakdown = useMemo(() => breakdownFor(activeMonth), [breakdownFor, activeMonth]);
   const monthTxs = useMemo(() => {
@@ -1211,6 +1233,7 @@ function App() {
           merchant: row.merchant, amount: row.amount, transaction_type: row.transaction_type, category: row.category,
           account_id: accountId, transfer_to_account_id: destinationId, currency: row.currency,
           occurred_at: row.occurred_at, note: row.note, source: 'CSV Import', external_reference: fingerprint,
+          ...(row.payment_reference ? { payment_reference: row.payment_reference } : {}),
         };
         // A row the sync could never upload stays out, so it cannot hold back every later upload.
         const problem = viaCloud ? offlineUploadProblem('transactions', record, signedOwner) : '';
@@ -1453,7 +1476,10 @@ function App() {
     setSheet({ name: 'transaction', type: 'expense' });
   };
   const exportCsv = () => {
-    const rows = [['Date', 'Description', 'Category', 'Type', 'Amount', 'Currency', 'Account'], ...txs.map(t => [t.date, t.merchant, categoryFullLabel(t.categoryId || t.category), t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName])];
+    // Every column MOVO's CSV import reads back (exact time, both accounts of a transfer, note, reference), plus a
+    // stable category id; accounting activity is not a transaction and is left out.
+    const rows = [['Date', 'Description', 'Category', 'Category ID', 'Type', 'Amount', 'Currency', 'Account', 'To Account', 'Note', 'Payment Reference'],
+      ...txs.filter(t => ['income', 'expense', 'transfer'].includes(t.type)).map(t => [t.date, t.merchant, categoryFullLabel(t.categoryId || t.category), t.categoryId || '', t.type, t.origAmount, t.origCurrency || 'PHP', t.accountName, t.type === 'transfer' ? t.transferToAccountName : '', t.note || '', t.payment_reference || ''])];
     const csv = buildCsv(rows);
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a'); a.href = url; a.download = 'movo-transactions.csv'; a.click();
@@ -1515,6 +1541,30 @@ function App() {
     const row = written.offline ? { ...payload, id, source: 'Manual', created_at: new Date().toISOString() } : written.value;
     setRawTxs(cur => [row, ...cur]);
     return row;
+  }, [accountsView, base, cloudMode, cloudWrite, session]);
+  /*
+   * A credit-card payment paid from one of the person's accounts is a transfer (account → card): the card owes less
+   * and the account holds less, so the total balance stays right. Without a source account it is only noted on the
+   * card (the total leaves it out; lib/totalBalance.js).
+   */
+  const recordCardPayment = useCallback(async ({ cardId, amount, date, fromAccountId }) => {
+    const value = Math.round(Number(amount) * 100) / 100;
+    if (!Number.isFinite(value) || value <= 0 || value >= 1e15) throw new Error(tr('Enter an amount greater than zero.'));
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(date || '') ? date : today();
+    const payment = { id: newRecordId(), amount: value, date: day, month: day.slice(0, 7) };
+    if (fromAccountId) {
+      const card = accountsView.find(a => a.id === cardId);
+      const from = accountsView.find(a => a.id === fromAccountId && !a.is_archived && a.id !== cardId);
+      if (!card || !from) throw new Error(tr('Choose the account you paid from.'));
+      const id = newRecordId();
+      const payload = { merchant: `${tr('Card payment')} · ${card.institution_name || card.name}`.slice(0, 160), amount: value, currency: from.currency || base, transaction_type: 'transfer', category: 'Transfer', account_id: from.id, transfer_to_account_id: card.id, occurred_at: new Date(`${day}T12:00:00`).toISOString(), note: '' };
+      const written = cloudMode ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
+      const row = written.offline ? { ...payload, id, source: 'Manual' } : written.value;
+      setRawTxs(cur => [row, ...cur]);
+      payment.transaction_id = String(row.id);
+    }
+    setPrefs(p => ({ ...p, creditCardPayments: { ...(p.creditCardPayments || {}), [cardId]: [...(p.creditCardPayments?.[cardId] || []), payment] } }));
+    return payment;
   }, [accountsView, base, cloudMode, cloudWrite, session]);
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
@@ -2008,6 +2058,39 @@ function App() {
     } catch { notify(tr('Could not sign out. Please try again.')); }
   };
 
+  /*
+   * The rest of a backup: subscriptions, plans, budgets, limits, card looks and payments, loyalty cards, archive,
+   * layouts and profile (lib/backupPreferences.js), plus QR codes, the scenery photo and custom stickers from the
+   * attachments. Merged into this device; nothing already here is overwritten. Returns how many items were added.
+   */
+  const restoreBackupExtras = async (backup, accountIdMap, files) => {
+    const { patch, counts, qrCodes } = planPreferenceRestore(backup, prefsRef.current, accountIdMap, DEFAULTS);
+    let added = Object.values(counts).reduce((sum, n) => sum + n, 0);
+    const qrPatch = {}; const qrPending = {};
+    for (const { from, to } of qrCodes) {
+      const data = files.get('qr:' + from);
+      if (!isAccountQrDataUrl(data)) continue;
+      const cacheKey = cloudMode && session?.user?.id ? `${session.user.id}:${to}` : `local:${to}`;
+      try { await saveLocalAccountQr(cacheKey, data); } catch { continue; }
+      qrPatch[to] = `localqr:${cacheKey}`;
+      if (cloudMode && session?.user?.id) qrPending[to] = true;
+      added += 1;
+    }
+    const scenery = files.get('scenery');
+    if (scenery && !sceneryPhoto && /^data:image\/(jpeg|png|webp);base64,/.test(scenery)) { setSceneryPhoto(scenery); added += 1; }
+    const stickers = [...files.entries()].filter(([path, src]) => path.startsWith('sticker:') && /^data:image\/(jpeg|png|webp);base64,/.test(src || ''));
+    if (stickers.length) {
+      const mine = getCustomStickers();
+      const extra = stickers.map(([path, src]) => ({ id: path.slice(8), src })).filter(item => !mine.some(s => s.id === item.id));
+      if (extra.length && replaceCustomStickers([...mine, ...extra].slice(0, 40))) added += extra.length;
+    }
+    if (Object.keys(patch).length || Object.keys(qrPatch).length) {
+      setPrefs(cur => ({ ...cur, ...patch,
+        ...(Object.keys(qrPatch).length ? { accountQrCodes: { ...(cur.accountQrCodes || {}), ...qrPatch } } : {}),
+        ...(Object.keys(qrPending).length ? { accountQrPending: { ...(cur.accountQrPending || {}), ...qrPending } } : {}) }));
+    }
+    return { added, counts };
+  };
   const saveFinanceBackupRecords = async (backup) => {
     // A file import is never sent to a cloud API directly. With Cloud Sync on it is saved into this account's
     // device copy, shown everywhere at once, and uploaded by the verified offline sync (now or on reconnect).
@@ -2021,14 +2104,25 @@ function App() {
     const planned = prepareFinanceBackupRestore(backup, existing, {
       base, fingerprint: transactionFingerprint, newId: newRecordId,
     });
-    if (!planned.accounts.length && !planned.transactions.length) {
-      return { accounts: 0, transactions: 0, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
+    // Receipts travel as attachments: store each one on this device and point the restored row at it.
+    const files = new Map((Array.isArray(backup?.attachments) ? backup.attachments : []).map(item => [item.path, item.dataUrl]));
+    for (const row of planned.transactions) {
+      if (!row.receipt_source_path) continue;
+      const data = files.get(row.receipt_source_path);
+      delete row.receipt_source_path;
+      row.receipt_path = data && /^data:(image\/(jpeg|png|webp)|application\/pdf);base64,/.test(data)
+        ? await putLocalAttachment(dataUrlToBlob(data)).catch(() => null) : null;
     }
-    if (viaCloud) {
+    const hasRows = planned.accounts.length > 0 || planned.transactions.length > 0;
+    if (hasRows && viaCloud) {
       const problem = [...planned.accounts.map(row => offlineUploadProblem('financial_accounts', row, signedOwner)),
         ...planned.transactions.map(row => offlineUploadProblem('transactions', row, signedOwner))].find(Boolean);
       if (problem) throw new Error(`Some records in this file cannot be uploaded to your MOVO account (${problem}). Nothing was saved.`);
     }
+    const result = { accounts: planned.accounts.length, transactions: planned.transactions.length, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
+    // Preferences point at the restored accounts, so they are applied only after those are safely saved.
+    const withExtras = async () => ({ ...result, other: await restoreBackupExtras(backup, planned.accountIdMap || {}, files) });
+    if (!hasRows) return { ...(await withExtras()), accounts: 0, transactions: 0 };
     const nextAccounts = [...deviceAccounts, ...planned.accounts];
     const nextTransactions = [...planned.transactions, ...deviceTransactions];
     if(signedOwner && ((!viaCloud&&offlineOwnerId!==signedOwner)||!priorWorkspace))
@@ -2052,8 +2146,7 @@ function App() {
         setLocalAccounts(verifiedWorkspace.working.financial_accounts);
         setRawTxs(verifiedWorkspace.working.transactions);
       }
-      return {accounts:planned.accounts.length,transactions:planned.transactions.length,
-        failed:0,skipped:planned.skipped,unsupported:planned.unsupported};
+      return withExtras();
     }
     const accountsOk = saveLocalAccounts(nextAccounts);
     const transactionsOk = accountsOk && saveLocalTransactions(nextTransactions, false);
@@ -2071,13 +2164,14 @@ function App() {
       throw new Error('This device could not save the imported records. Free storage and retry.');
     setLocalAccounts(loadLocalAccounts());
     setRawTxs(loadLocalTransactions());
-    return { accounts: planned.accounts.length, transactions: planned.transactions.length, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
+    return withExtras();
   };
 
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
+    recordCardPayment, rawTxs,
     entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
     syncState,
@@ -2088,7 +2182,7 @@ function App() {
     onFinanceBackupSaved: (result) => {
       // Restore views from the same verified local snapshot without reloading
       // or switching on cloud mode. Reset stale filters hiding imported rows.
-      if (!(result?.accounts + result?.transactions > 0)) return;
+      if (!((result?.accounts || 0) + (result?.transactions || 0) + (result?.other?.added || 0) > 0)) return;
       setSheet(null);
       setSearch(''); setTxFilter('All'); setWalletFilter('All');
       setMonth(''); setHomeMonthKey('');

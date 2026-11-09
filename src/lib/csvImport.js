@@ -1,6 +1,7 @@
 const aliases = {
   date: ['date', 'transactiondate', 'occurredat', 'timestamp'],
   merchant: ['description', 'merchant', 'payee', 'title', 'details'],
+  categoryId: ['categoryid'],
   category: ['category', 'subcategory'],
   type: ['type', 'transactiontype', 'direction'],
   amount: ['amount', 'value', 'transactionamount'],
@@ -8,6 +9,7 @@ const aliases = {
   account: ['account', 'accountname', 'fromaccount', 'sourceaccount', 'paymentmethod'],
   destination: ['toaccount', 'destinationaccount', 'transferdestination'],
   note: ['note', 'memo', 'remarks'],
+  paymentReference: ['paymentreference'],
 };
 const normalizeHeader = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -106,12 +108,15 @@ export function parseCsvTransactions(input) {
     if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { errors.push({ line, message: 'Amount must be a positive number.' }); return; }
     if (!type) { errors.push({ line, message: 'Type must be income, expense, or transfer.' }); return; }
     if (!occurred_at) { errors.push({ line, message: 'Date is invalid.' }); return; }
-    const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : (get('category').slice(0, 60) || 'Other');
+    // A MOVO export carries the stable category id; income keeps its own category (Salary, Freelance...).
+    const ownCategory = (get('categoryId') || get('category')).slice(0, 60);
+    const category = type === 'transfer' ? 'Transfer' : ownCategory || (type === 'income' ? 'Income' : 'Other');
     transactions.push({
       merchant, amount: Math.round(amount * 100) / 100, transaction_type: type, type, category,
       occurred_at, date: occurred_at, currency: /^[A-Z]{3}$/.test(get('currency').toUpperCase()) ? get('currency').toUpperCase() : 'PHP',
       account_name: get('account').slice(0, 100), to_account_name: get('destination').slice(0, 100),
       note: get('note').slice(0, 1000), source: 'csv_import',
+      ...(get('paymentReference') ? { payment_reference: get('paymentReference').slice(0, 120) } : {}),
     });
   });
   return { transactions, errors };

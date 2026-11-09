@@ -164,6 +164,54 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Imported coffee');
   });
 
+  test('a backup moves Menu data to another device: subscriptions, plans, limits, card looks and payments follow the restored accounts', async () => {
+    clickButton(container, 'Settings');
+    act(() => [...container.querySelectorAll('button')].find(button => button.textContent.includes('Import & Export')).click());
+    const input = container.querySelector('#movo-backup-input');
+    const backup = {
+      format:'movo-finance-backup', version:1,
+      accounts:[
+        { id:'old-bank', name:'Transfer Bank', account_type:'bank', currency:'PHP', opening_balance:2000 },
+        { id:'old-card', name:'Transfer Card', account_type:'card', currency:'PHP', opening_balance:-500 },
+      ],
+      transactions:[{ id:'old-t1', account_id:'old-bank', merchant:'Salary transfer test', amount:1000, transaction_type:'income', category:'income:salary', currency:'PHP', occurred_at:'2026-10-28T02:00:00Z' },
+        { id:'allocation-9', transaction_type:'allocation', merchant:'Goal allocation', amount:50, currency:'PHP', occurred_at:'2026-10-28T02:00:00Z' }],
+      tables:{ local_preferences:[{
+        subscriptions:[{ id:'sub-transfer', name:'Netflix Transfer', amount:549, currency:'PHP', cycle:'monthly', start:'2026-11-05', accountId:'old-card' }],
+        plans:[{ id:'plan-transfer', name:'Japan trip', target:50000, saved:0, fundingAllocations:[{ id:'fa-1', account_id:'old-bank', amount:1000 }] }],
+        spendingLimits:[{ id:'limit-transfer', scope:'account', account_id:'old-bank', monthly_limit:5000, alert_percent:80, currency:'PHP' }],
+        accountStyles:{ 'old-card':{ cardKind:'credit', creditLimit:30000, color:'black' } },
+        creditCardPayments:{ 'old-card':[{ id:'pay-transfer', amount:200, date:'2026-10-10', month:'2026-10' }] },
+        autoLogKey:'never-restore-this', devices:[{ id:'other-phone' }],
+      }] },
+    };
+    Object.defineProperty(input, 'files', { value:[{ name:'movo-finance-backup.json', size:4096, text:async () => JSON.stringify(backup) }], configurable:true });
+    await act(async () => input.dispatchEvent(new Event('change', { bubbles:true })));
+    const press = async label => { await act(async () => [...container.querySelectorAll('button')].find(item => item.textContent.trim() === label).click()); };
+    await press('Save records');
+    await press('Confirm save locally');
+    const accounts = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'));
+    const transactions = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    const bank = accounts.find(a => a.name === 'Transfer Bank'); const card = accounts.find(a => a.name === 'Transfer Card');
+    expect(bank && card).toBeTruthy();
+    expect(bank.id).not.toBe('old-bank');
+    // Every link points at this device's restored account.
+    expect(prefs.subscriptions.find(item => item.id === 'sub-transfer').accountId).toBe(card.id);
+    expect(prefs.plans.find(item => item.id === 'plan-transfer').fundingAllocations[0].account_id).toBe(bank.id);
+    expect(prefs.spendingLimits.find(item => item.id === 'limit-transfer').account_id).toBe(bank.id);
+    expect(prefs.accountStyles[card.id]).toEqual(expect.objectContaining({ cardKind:'credit', creditLimit:30000 }));
+    expect(prefs.creditCardPayments[card.id]).toEqual([expect.objectContaining({ id:'pay-transfer', amount:200 })]);
+    // Device secrets and cloud accounting activity are never restored; categories keep their own id.
+    expect(prefs.autoLogKey).not.toBe('never-restore-this');
+    expect(JSON.stringify(prefs.devices || [])).not.toContain('other-phone');
+    expect(transactions.some(t => t.merchant === 'Goal allocation')).toBe(false);
+    expect(transactions.find(t => t.merchant === 'Salary transfer test').category).toBe('income:salary');
+    nav(container, 'Menu');
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Subscriptions')).click());
+    expect(container.textContent).toContain('Netflix Transfer');
+  });
+
   test('Home greeting is unboxed and its three utility buttons remain accessible', () => {
     const header = container.querySelector('.screen-header.home-header');
     const greeting = header.querySelector('.home-greeting');

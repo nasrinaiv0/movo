@@ -5,6 +5,11 @@ import { createFinanceBackup, parseFinanceBackup } from '../lib/financeBackup';
 import { money } from '../lib/format';
 import './FinanceBackupSheet.css';
 
+const OTHER_LABELS = { subscriptions: 'subscriptions', plans: 'plans', spendingLimits: 'spending limits', budgets: 'budgets',
+  membershipCards: 'loyalty cards', cashbackEntries: 'cashback entries', archive: 'archived items', creditCardPayments: 'card payments',
+  creditSpendLogs: 'credit logs', accountStyles: 'card styles' };
+const otherDetails = counts => Object.entries(OTHER_LABELS).filter(([key]) => counts[key] > 0).map(([key, label]) => counts[key] + ' ' + label).join(', ');
+
 export default function FinanceBackupSheet({ c, onClose }) {
   const [backup, setBackup] = useState(null);
   const [section, setSection] = useState('accounts');
@@ -22,9 +27,10 @@ export default function FinanceBackupSheet({ c, onClose }) {
     setBusy(true); setMessage('');
     try {
       const data = await createFinanceBackup(c);
+      const missing = data.missingAttachments || 0;
       const url = URL.createObjectURL(new Blob([JSON.stringify(data)], { type: 'application/json' }));
       const a = document.createElement('a'); a.href = url; a.download = 'movo-finance-backup.json'; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000); setMessage('Financial backup exported with available receipt and QR attachments.');
+      setTimeout(() => URL.revokeObjectURL(url), 1000); setMessage('Backup exported: accounts, transactions, subscriptions, plans, budgets, limits, cards, archive and settings, with receipts and QR codes.' + (missing ? ' ' + missing + ' attachment(s) could not be read and were left out.' : '') + ' Open it on the other device with Upload backup.');
     } catch { setMessage('Export did not complete. Check your connection and try again; no partial backup was downloaded.'); }
     finally { setBusy(false); }
   };
@@ -44,13 +50,15 @@ export default function FinanceBackupSheet({ c, onClose }) {
     setBusy(true); setConfirmation(''); setMessage('');
     try {
       const result = await c.saveFinanceBackupRecords(backup);
-      const total = result.accounts + result.transactions;
+      const otherAdded = result.other?.added || 0;
+      const total = result.accounts + result.transactions + otherAdded;
+      const other = otherDetails(result.other?.counts || {});
       const skipped = (result.skipped?.duplicates || 0) + (result.skipped?.conflicts || 0) + (result.failed || 0);
       // A confirmation is not a successful import when every supported row was
       // skipped. Keep the preview so the person can investigate or try again.
       setSaved(total > 0);
       setMessage(total
-        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device. ' + skipped + ' skipped or needing review. Home, Wallet, Transactions and Menu now reflect these records.' + (c.cloudMode ? ' They upload to your MOVO account automatically.' : '')
+        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device' + (otherAdded ? ', plus ' + (other || otherAdded + ' other item(s)') : '') + '. ' + skipped + ' skipped or needing review. Home, Wallet, Transactions and Menu now reflect these records.' + (c.cloudMode ? ' They upload to your MOVO account automatically.' : '')
         : 'No new accounts or transactions were applied. ' + skipped + ' row(s) were skipped or already existed. Other financial groups in this backup are preview-only. The existing records were preserved.');
       if (total > 0) c.onFinanceBackupSaved?.(result);
     } catch (error) { setMessage(error?.message || 'Saving records failed. No further changes were attempted.'); }
@@ -67,6 +75,8 @@ export default function FinanceBackupSheet({ c, onClose }) {
     .map(([key]) => key.replaceAll('_',' ')) : [];
   const rows = backup ? (backup[section] || backup.tables[section] || []) : [];
   const sections = backup ? ['accounts','transactions', ...Object.keys(backup.tables).filter(key => !['accounts','transactions'].includes(key))] : [];
+  // Menu data (subscriptions, plans, limits...) and attachments are restorable even without new accounts or rows.
+  const hasExtras = !!(backup?.tables?.local_preferences?.length || backup?.tables?.user_preferences?.length || backup?.attachments?.length);
   const summaryAccounts = (backup?.tables?.financial_accounts?.length || backup?.accounts?.length || 0);
   const summaryTransactions = (backup?.tables?.transactions?.length || backup?.transactions?.length || 0);
   return <Sheet title="Import & Export" label="Financial backups" className="movo-import-export-sheet" onClose={onClose}>
@@ -108,13 +118,13 @@ export default function FinanceBackupSheet({ c, onClose }) {
           </details>)}
         </div>
         {rows.length > limit && <button type="button" className="secondary-button" onClick={() => setLimit(limit + 12)}>Show more</button>}
-        {unsupportedGroups.length > 0 && <p className="movo-backup-subnote" role="note">Other groups are preview-only and will not be applied: {unsupportedGroups.join(', ')}. Only supported accounts and transactions update MOVO locally.</p>}
+        {unsupportedGroups.length > 0 && <p className="movo-backup-subnote" role="note">Cloud-only groups are preview-only and will not be applied: {unsupportedGroups.join(', ')}.</p>}
         {c.cloudMode && <p className="movo-backup-subnote" role="note">Cloud Sync is on. Saved records appear on this device right away and upload to your MOVO account automatically, now or when you are back online.</p>}
         <div className="movo-backup-save-actions">
           <button type="button" className="secondary-button" disabled={busy || saved} onClick={() => setConfirmation('discard')}>
             <Icon name="trash" size={17} /> Discard records
           </button>
-          <button type="button" className="primary-button" disabled={busy || saved || (!summaryAccounts && !summaryTransactions)} onClick={() => setConfirmation('save')}>
+          <button type="button" className="primary-button" disabled={busy || saved || (!summaryAccounts && !summaryTransactions && !hasExtras)} onClick={() => setConfirmation('save')}>
             <Icon name="check" size={17} /> {busy ? 'Saving…' : saved ? 'Records saved' : 'Save records'}
           </button>
         </div>
@@ -125,6 +135,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
               ? 'Valid new accounts and transactions will be saved on this device, shown in Wallet, Home and Transactions, and uploaded to your MOVO account automatically. Existing records are never changed. Duplicates and unsupported groups remain untouched.'
               : 'Valid new accounts and transactions will be added to local MOVO records and reflected in Wallet, Home and Transactions. Cloud records will not change. Duplicates and unsupported groups remain untouched.')
             : 'The uploaded preview will be removed without changing any existing MOVO records.'}</p>
+          {confirmation === 'save' && hasExtras && <p>Subscriptions, plans, budgets, limits, cards and settings from this backup are added too.</p>}
           <div className="movo-backup-confirm-actions">
             <button type="button" className="secondary-button" onClick={() => setConfirmation('')} disabled={busy}>Keep preview</button>
             <button type="button" ref={confirmationRef} className={confirmation === 'save' ? 'primary-button' : 'secondary-button'} disabled={busy} onClick={confirmation === 'save' ? saveRecords : discardPreview}>
@@ -132,7 +143,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
             </button>
           </div>
         </section>}
-        <small className="movo-backup-subnote">Import adds only validated, non-duplicate accounts and transactions to local MOVO. Additional financial groups, QR images, and receipts are preview-only; they are not automatically replayed.</small>
+        <small className="movo-backup-subnote">Saving adds new accounts and transactions, then subscriptions, plans, budgets, limits, card styles and payments, loyalty cards, archive, receipts, QR codes and settings. Nothing already on this device is overwritten.</small>
       </section>}
     </div>
   </Sheet>;

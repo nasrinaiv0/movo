@@ -52,3 +52,14 @@ describe('CSV account disambiguation', () => {
     expect(findUniqueCsvAccount(accounts,'Other')).toEqual({ account:null, ambiguous:false });
   });
 });
+
+test('a MOVO CSV export reads back with transfers, notes, references and stable category ids', async () => {
+  const { buildCsv } = await import('./csvExport');
+  const csv = buildCsv([['Date', 'Description', 'Category', 'Category ID', 'Type', 'Amount', 'Currency', 'Account', 'To Account', 'Note', 'Payment Reference'],
+    ['2026-10-02T09:15:00.000Z', 'Salary', 'Income · Salary', 'income:salary', 'income', 50000, 'PHP', 'BPI', '', 'October', 'PAY-1'],
+    ['2026-10-03T10:00:00.000Z', 'Move to savings', 'Transfer', '', 'transfer', 2000, 'PHP', 'BPI', 'GoTyme', '', '']]);
+  const { transactions, errors } = parseCsvTransactions(csv);
+  expect(errors).toEqual([]);
+  expect(transactions[0]).toEqual(expect.objectContaining({ category: 'income:salary', note: 'October', payment_reference: 'PAY-1', occurred_at: '2026-10-02T09:15:00.000Z' }));
+  expect(transactions[1]).toEqual(expect.objectContaining({ transaction_type: 'transfer', account_name: 'BPI', to_account_name: 'GoTyme' }));
+});
