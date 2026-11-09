@@ -1,3 +1,7 @@
+## 2026-11-09 — Integration hardening for #258 and #259
+
+Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
+
 # MOVO Pull Request Progress Register
 
 ## 2026-11-09 — Plans offer on one panel, Gold/Platinum MOVO logos, badge app icons
@@ -9,6 +13,18 @@ The plans offer is one compact dark panel (fits 375×667 without scrolling): Mon
 Each card also carries its own geometric pattern (hexagons, triangles, diamonds, discs, chevrons or low-poly shards) in three shadowed depth layers, seeded by the card so it is stable everywhere and unique per card, kept to the right third so text stays clear (`docs/engineering/updates/2026-11-09-card-geometric-patterns.md`).
 
 Memberships, loyalty, rewards and tokens now use the layout of the owner's 25 Philippine merchant-card references: mark and name on top, the program title large, member number and date, rewards balance, and one flat MOVO motif (rings, diagonal band, stripes, foil edge or two-tone split) in each merchant's colours. 14 programs from the references were added to the provider list; program titles (Suki Card, Happy Plus, Value Card, Go+ …) show unless the person typed their own. No merchant artwork is reproduced, logos stay on the curated favicon list (no new domains), and card text is tested at WCAG 4.5:1 on both the card and motif colours. See `docs/engineering/updates/2026-11-09-merchant-card-layouts.md`.
+
+## 2026-11-09 — PR #258: short referral codes, iPhone/Android download QR codes, referral points (review; points gated)
+
+**Short codes (owner request):** every person now has one reusable referral code, `M` + five digits (for example `M78038`), replacing the 24-character free-month code and the 64-character single-use invite tokens this PR first proposed. Codes are case- and space-insensitive and are generated server-side from a secure random source; once digit codes run short they continue with five characters from 0-9 and A-Z without I/O. Each account may enter at most 10 codes an hour (attempts are kept even when a code is wrong), so short codes cannot be guessed in bulk. A code can be added only by a verified account created in the last 7 days that has not been referred and has not bought a plan; starting the free month never clears or replaces an existing referral (fixes a latent bug where a later code-less trial claim set `referred_by` to null).
+
+**Download QR codes:** Profile → **Refer MOVO** shows the code with Copy/Share, progress toward the existing 10-subscriber reward (3 months of Pro), and two QR codes — iPhone (App Store) and Android (Google Play). Both point to `/api/download?platform=ios|android&ref=CODE`, which redirects to the store addresses set in the server settings `MOVO_IOS_APP_STORE_URL` / `MOVO_ANDROID_STORE_URL` (exact store URLs only; no open redirect) and, until MOVO is listed, to the web app, which keeps the friend's code on the device and fills it in on the free-month panel and in Refer MOVO.
+
+**Points to Pro:** every 500 referral points convert to 1 month of Pro (Refer MOVO → Use 500 points, confirmation first); the server checks the balance, spends the points in a separate redemptions table and queues the month after any current plan. The download QR codes say **iOS** and **Android**.
+
+**Points (unchanged rules, still off):** +5 after server-verified App Attest / Play Integrity, +100 once after the first verified production Pro/Pro+ purchase, −100 once on refund; isolated ledger, service-role-only RPCs, RLS, review holds. `MOVO_REFERRAL_POINTS_ENABLED=false` keeps the native-proof routes closed and hides points in the app; linking a code works once the migration is applied.
+
+Validation: SQL suite (isolated PostgreSQL) passes, including deliberate-break checks for the attempt limit and the trial referral fix; Jest, typecheck and strict build on the current head. **No production migration or environment change was made.** Before enabling points: apply the migration (rotates the 3 existing production codes, none used yet), set the store URLs, signed-device attestation tests and privacy text for referrals. See `docs/engineering/updates/2026-11-09-short-referral-codes-download-qr.md`.
 
 ## 2026-11-09 — Owner Access sign-in email template failure (requires live Supabase action)
 
