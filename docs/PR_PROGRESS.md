@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Membership and rewards cards follow the owner's merchant card references
+
+Memberships, loyalty, rewards and tokens now use the layout of the owner's 25 Philippine merchant-card references: mark and name on top, the program title large, member number and date, rewards balance, and one flat MOVO motif (rings, diagonal band, stripes, foil edge or two-tone split) in each merchant's colours. 14 programs from the references were added to the provider list; program titles (Suki Card, Happy Plus, Value Card, Go+ …) show unless the person typed their own. No merchant artwork is reproduced, logos stay on the curated favicon list (no new domains), and card text is tested at WCAG 4.5:1 on both the card and motif colours. See `docs/engineering/updates/2026-11-09-merchant-card-layouts.md`.
+
 ## 2026-11-09 — Owner Access sign-in email template failure (requires live Supabase action)
 
 Verified MOVO Supabase Auth HTTP 500 on `POST /otp`: live Magic Link template fails Go `html/template` rendering in unclosed CSS double-quote context. Replaced committed OTP email with inline-style, text-only code interpolation and added static validation plus regression tests. **GitHub/Vercel deploy does not publish the Supabase email template**: update the live Magic Link body in the Supabase dashboard and verify a real owner OTP plus MFA before calling the incident resolved. See `docs/engineering/updates/2026-11-09-owner-otp-template-rendering.md`.
