@@ -168,7 +168,7 @@ function OwnerContent({session}) {
   const users=useMemo(()=>((payload?.users||[]).filter(u=>(u.email+' '+u.id).toLowerCase().includes(search.toLowerCase()))),[payload,search]);
   const grantUser=(payload?.users||[]).find(u=>u.id===selected);
   if(ownerLocked)return <OwnerGate session={session} ready onUnlock={()=>{setOwnerLocked(false);reload();}}/>;
-  const nav=MODULES.map(([id,name,symbol])=><button type="button" key={id} className={'occ-nav-item'+(view===id?' active':'')} aria-current={view===id?'page':undefined} onClick={()=>{setView(id);setPage(1);}}><span className="occ-nav-symbol">{symbol}</span><span>{name}</span>{view===id&&<i/>}</button>);
+  const nav=MODULES.map(([id,name,symbol])=><button type="button" key={id} className={'occ-nav-item'+(view===id?' active':'')} aria-current={view===id?'page':undefined} onClick={()=>{setPayload(null);setView(id);setPage(1);}}><span className="occ-nav-symbol">{symbol}</span><span>{name}</span>{view===id&&<i/>}</button>);
   return <div className="occ-layout"><aside className={'occ-sidebar'+(mobileNav?' expanded':'')}>
     <div className="occ-brand"><div className="occ-mark"><Glyph name="shield" size={22}/></div><div><strong>MOVO</strong><small>OWNER COMMAND CENTER</small></div></div>
     <p className="occ-nav-label">WORKSPACE</p><nav aria-label="Owner modules">{nav}</nav>
@@ -209,7 +209,7 @@ function OwnerContent({session}) {
     {view==='health'&&<div className="occ-two-col"><Surface><h3>Backend reachability</h3><div className="occ-health-rows">{[['Admin API',payload?.server||'Unavailable'],['Supabase',payload?.database||'Unavailable'],['Schema verification','Requires verification'],['Deployment feed','Not connected']].map(([k,v])=><div key={k} className="occ-health-row"><span>{k}</span><Tag tone={v==='reachable'?'occ-good':''}>{v}</Tag></div>)}</div></Surface><Surface><h3>Operational safeguards</h3><p>Owner actions require signed-in identity, verified MFA, allowlisted UID, scoped RPC permissions, and immutable audit records.</p><Tag>Fail closed</Tag></Surface></div>}
     {['sync','support','compliance','promotions','settings'].includes(view)&&<Surface className="occ-integration-note"><div className="occ-heading"><div><h3>Integration status</h3><p>Owner workflow is available; external provider telemetry is not yet connected.</p></div><Tag>Provider pending</Tag></div><p>Track operational tasks below. These records do not automatically change MOVO subscriptions, customer records, app-store listings or production flags.</p></Surface>}
     {['sync','support','compliance','promotions','settings','health'].includes(view)&&payload?.items&&
-      <OwnerWorkBoard area={view} items={payload.items} action={request=>api(session,view,{},request)}
+      <OwnerWorkBoard key={view} area={view} items={payload.items} action={request=>api(session,view,{},request)}
         onChanged={notice=>{setBanner(notice);reload();}}/>}
     <footer className="occ-footer">MOVO Owner Command Center · Restricted access · No simulated metrics</footer>
     </main></div></div>;
