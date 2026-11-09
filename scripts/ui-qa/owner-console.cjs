@@ -48,6 +48,7 @@ async function run(){
       if(width<=760)await page.locator('.occ-mobile-toggle').click();
       await page.getByRole('button',{name:/Support Center/}).first().click();
       await page.getByRole('heading',{name:'Support Center',exact:true}).waitFor();
+      await page.locator('.occ-work-item').first().waitFor({timeout:10000});
       assert.equal(await page.locator('.occ-work-item').count(),1);
       await page.getByRole('button',{name:'+ New item'}).click();
       await page.getByRole('textbox',{name:'Title'}).fill('Review import reconciliation');
