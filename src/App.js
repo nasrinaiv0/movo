@@ -719,7 +719,7 @@ function App() {
   const toBase = useCallback((value, from) => convert(value, from || 'PHP', base, rates), [base, rates]);
   const txs = useMemo(() => {
     const regular = rawTxs.map(t => normalize(t, baseAccounts, base, rates));
-    const accounting = cloudActivities.map(t => ({
+    const accounting = (cloudMode ? cloudActivities : []).map(t => ({
       ...t,
       id: t.transaction_type === 'allocation' ? `allocation-${t.id}` : t.id,
       type: t.transaction_type === 'allocation' ? 'allocation' : 'expense',
@@ -728,7 +728,7 @@ function App() {
       accountName: t.source_account_id ? (baseAccounts.find(account => account.id === t.source_account_id)?.name || tr('Account')) : tr('Accounting event'),
     }));
     return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [rawTxs, cloudActivities, baseAccounts, base, rates]);
+  }, [rawTxs, cloudMode, cloudActivities, baseAccounts, base, rates]);
   const accountsView = useMemo(() => {
     const ledger = cloudMode ? [...txs, ...cloudPostings] : txs;
     const links = prefs.cardBankLinks || {};
@@ -1903,7 +1903,10 @@ function App() {
       if(JSON.stringify(verifiedWorkspace?.working?.financial_accounts)!==JSON.stringify(nextAccounts)
         ||JSON.stringify(verifiedWorkspace?.working?.transactions)!==JSON.stringify(nextTransactions))
         throw new Error('This device could not save the imported records. Free storage and retry.');
-      setLocalAccounts(nextAccounts);setRawTxs(nextTransactions);
+      // Render exactly what storage confirmed; all derived Home/Wallet/Menu/Transactions
+      // selectors read these states on the same React commit.
+      setLocalAccounts(verifiedWorkspace.working.financial_accounts);
+      setRawTxs(verifiedWorkspace.working.transactions);
       return {accounts:planned.accounts.length,transactions:planned.transactions.length,
         failed:0,skipped:planned.skipped,unsupported:planned.unsupported};
     }
@@ -1921,7 +1924,8 @@ function App() {
     if(JSON.stringify(loadLocalAccounts())!==JSON.stringify(nextAccounts)
       ||JSON.stringify(loadLocalTransactions())!==JSON.stringify(nextTransactions))
       throw new Error('This device could not save the imported records. Free storage and retry.');
-    setLocalAccounts(nextAccounts); setRawTxs(nextTransactions);
+    setLocalAccounts(loadLocalAccounts());
+    setRawTxs(loadLocalTransactions());
     return { accounts: planned.accounts.length, transactions: planned.transactions.length, failed: 0, skipped: planned.skipped, unsupported: planned.unsupported };
   };
 
@@ -1934,6 +1938,16 @@ function App() {
     syncState,
     retrySync: () => setCloudSyncEnabled(true),
     saveFinanceBackupRecords,
+    onFinanceBackupSaved: (result) => {
+      // Restore views from the same verified local snapshot without reloading
+      // or switching on cloud mode. Reset stale filters hiding imported rows.
+      if (!(result?.accounts + result?.transactions > 0)) return;
+      setSheet(null);
+      setSearch(''); setTxFilter('All'); setWalletFilter('All');
+      setMonth(''); setHomeMonthKey('');
+      go('Home');
+      notify(tr('Local records saved on this device.'));
+    },
     openCsvImporter: file => {
       setCsvRows([]); setCsvErrors([]); setCsvImportSummary(''); setCsvFileName(''); setImportAccountId(''); setCsvConfirmAction('');
       setSheet({ name: 'importCsv' });

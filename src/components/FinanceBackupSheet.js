@@ -50,8 +50,9 @@ export default function FinanceBackupSheet({ c, onClose }) {
       // skipped. Keep the preview so the person can investigate or try again.
       setSaved(total > 0);
       setMessage(total
-        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device. ' + skipped + ' skipped or needing review. Wallet, Home and Transactions now use the saved records.'
+        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device. ' + skipped + ' skipped or needing review. Home, Wallet, Transactions and Menu now reflect these local records.'
         : 'No new accounts or transactions were applied. ' + skipped + ' row(s) were skipped or already existed. Other financial groups in this backup are preview-only. The existing records were preserved.');
+      if (total > 0) c.onFinanceBackupSaved?.(result);
     } catch (error) { setMessage(error?.message || 'Saving records failed. No further changes were attempted.'); }
     finally { setBusy(false); }
   };
@@ -120,7 +121,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
         {confirmation && <section className="movo-backup-confirm" role="alertdialog" aria-label={confirmation === 'save' ? 'Confirm local record import' : 'Confirm discard preview'} aria-modal="false">
           <strong>{confirmation === 'save' ? 'Save reviewed records to this device?' : 'Discard the uploaded preview?'}</strong>
           <p>{confirmation === 'save'
-            ? 'Valid new accounts and transactions will be added to local MOVO records and reflected in Wallet, Home and Transactions. Cloud records will not change. Duplicates and unsupported groups remain untouched.'
+            ? 'Valid new accounts and transactions will be saved locally and reflected in Home, Wallet, Transactions and related Menu views. Cloud records will not change. Duplicates and unsupported groups remain untouched.'
             : 'The uploaded preview will be removed without changing any existing MOVO records.'}</p>
           <div className="movo-backup-confirm-actions">
             <button type="button" className="secondary-button" onClick={() => setConfirmation('')} disabled={busy}>Keep preview</button>

@@ -1,92 +1,163 @@
-import { normalizeAccount, normalizeTransaction, planImport } from './dataImport';
+import { normalizeAccount, normalizeTransaction } from './dataImport';
 import { transactionEffect } from './financeCalculations';
 
+const normalizedName = value => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
+const sourceKey = value => value === null || value === undefined || value === '' ? '' : String(value);
+const compatible = (current, incoming) => {
+  const expected = String(incoming.account_type || incoming.type || 'other').toLowerCase();
+  return (!current.account_type || expected === 'other' || current.account_type === expected)
+    && (!current.currency || !incoming.currency || String(current.currency).toUpperCase() === String(incoming.currency).toUpperCase());
+};
+
 /**
- * Plan a safe *additive* replay of exported accounts and transactions. The
- * uploaded file can never select an owner: all server writes use the session
- * owner and new IDs. Never replay old foreign keys or user preferences.
+ * Additive, local-only replay of MOVO backup accounts and transactions.
+ * Source IDs are untrusted references, never reused as local owner identities.
+ * Identically named accounts must be kept separate and transactions are mapped
+ * by their source IDs, never by the first bank with that display name.
  */
 export function prepareFinanceBackupRestore(backup, existing, { base = 'PHP', newId, fingerprint }) {
-  const originalAccounts = Array.isArray(backup?.tables?.financial_accounts) && backup.tables.financial_accounts.length
+  const accountsIn = Array.isArray(backup?.tables?.financial_accounts) && backup.tables.financial_accounts.length
     ? backup.tables.financial_accounts : (backup?.accounts || []);
-  const originalTransactions = Array.isArray(backup?.tables?.transactions) && backup.tables.transactions.length
+  const transactionsIn = Array.isArray(backup?.tables?.transactions) && backup.tables.transactions.length
     ? backup.tables.transactions : (backup?.transactions || []);
-  if (originalAccounts.length > 20000 || originalTransactions.length > 20000) throw new Error('A single restore supports up to 20,000 accounts or transactions.');
-  // The generic planner maps transaction accounts by display name. Refuse an
-  // ambiguous name before any write so two different cards/banks cannot be
-  // silently combined into a single ledger.
-  const normalizedName = value => String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
-  const sourceNames = new Set();
-  for (const account of originalAccounts) {
-    const name = normalizedName(account?.name);
-    if (!name || sourceNames.has(name)) throw new Error('This backup contains missing or duplicate account names. Rename each account uniquely before importing.');
-    sourceNames.add(name);
-    const matching = (existing?.accounts || []).filter(row => normalizedName(row?.name) === name);
-    if (matching.length > 1) throw new Error('Multiple existing accounts share a name. Resolve duplicate account names before importing.');
-    if (matching.length) {
-      const current = matching[0];
-      const expectedType = String(account.account_type || account.type || 'other').toLowerCase();
-      if ((current.account_type && expectedType !== 'other' && current.account_type !== expectedType)
-        || (current.currency && account.currency && String(current.currency).toUpperCase() !== String(account.currency).toUpperCase())) {
-        throw new Error('An existing account has the same name but a different type or currency. Rename the imported account before saving.');
-      }
-    }
-  }
-  const names = new Map(originalAccounts.filter(a => a?.id && typeof a.name === 'string').map(a => [String(a.id), a.name]));
-  const candidateAccounts = originalAccounts.map(account => {
-    if (!account || typeof account !== 'object') return null;
-    let opening = Number(account.opening_balance);
-    if (!Number.isFinite(opening)) {
-      const current = Number(account.balance);
-      if (!Number.isFinite(current)) return null;
-      const posted = originalTransactions.reduce((total, row) => total + transactionEffect(row, account.id), 0);
-      opening = current - posted;
-    }
-    return normalizeAccount({
-      name: account.name, account_type: account.account_type || account.type,
-      institution_name: account.institution_name, currency: account.currency,
-      balance: opening, mask: account.mask || account.last4,
+  if (!Array.isArray(accountsIn) || !Array.isArray(transactionsIn)
+    || accountsIn.length > 20000 || transactionsIn.length > 20000)
+    throw new Error('A single restore supports up to 20,000 accounts or transactions.');
+
+  const namesCount = new Map();
+  const sourceIds = new Set();
+  const sources = accountsIn.map(row => {
+    if (!row || typeof row !== 'object' || !normalizedName(row.name))
+      throw new Error('This backup contains an account without a valid name. No records were changed.');
+    const name = normalizedName(row.name);
+    namesCount.set(name, (namesCount.get(name) || 0) + 1);
+    const key = sourceKey(row.id);
+    if (key && sourceIds.has(key))
+      throw new Error('This backup has duplicate account identifiers. No records were changed.');
+    if (key) sourceIds.add(key);
+    const directOpening = row.opening_balance === null || row.opening_balance === '' || row.opening_balance === undefined
+      ? NaN : Number(row.opening_balance);
+    const existingBalance = row.balance === null || row.balance === '' || row.balance === undefined
+      ? NaN : Number(row.balance);
+    const opening = Number.isFinite(directOpening) ? directOpening
+      : existingBalance - transactionsIn.reduce((sum, item) => sum + transactionEffect(item, row.id), 0);
+    if (!Number.isFinite(opening))
+      throw new Error('Some accounts lack valid balances or identifiers. Import stopped without changes.');
+    const normalized = normalizeAccount({
+      name: row.name, account_type: row.account_type || row.type,
+      institution_name: row.institution_name, currency: row.currency,
+      balance: opening, mask: row.mask || row.last4,
     });
-  }).filter(Boolean);
-  if (candidateAccounts.length !== originalAccounts.length) throw new Error('Some accounts lack valid balances or identifiers. Import stopped without changes.');
-  const candidateTransactions = originalTransactions.map(row => {
-    if (!row || typeof row !== 'object') return null;
-    if (row.account_id && row.account_id !== 'local'
-        && !names.has(String(row.account_id)) && !row.account_name && !row.accountName) {
-      throw new Error('A transaction references an account not included in the backup. Import stopped without changes.');
+    if (!normalized)
+      throw new Error('Some accounts lack valid balances or identifiers. Import stopped without changes.');
+    return { row, key, name, normalized };
+  });
+  if (sources.some(({ key, name }) => namesCount.get(name) > 1 && !key))
+    throw new Error('Same-name accounts in this backup need distinct identifiers to keep their transactions separate.');
+
+  const current = [...(existing?.accounts || [])];
+  const accounts = [];
+  const bySourceId = new Map();
+  const byName = new Map();
+  const skipped = { duplicates: 0, conflicts: 0 };
+  const batchId = 'backup-' + Date.now().toString(36);
+  let index = 0;
+  const makeId = prefix => newId?.() || prefix + '-' + batchId + '-' + (++index);
+  const register = (name, id) => {
+    if (!byName.has(name)) byName.set(name, new Set());
+    byName.get(name).add(id);
+  };
+
+  for (const item of sources) {
+    const { row, key, name, normalized } = item;
+    let match = key ? current.find(a => (sourceKey(a.id) === key || sourceKey(a.import_source_account_id) === key)
+      && normalizedName(a.name) === name) : null;
+    // Legacy name fallback is only safe when the name is unique on both sides.
+    if (!match && namesCount.get(name) === 1) {
+      const sameName = current.filter(a => normalizedName(a.name) === name);
+      if (sameName.length > 1) throw new Error('Multiple existing accounts share a name. Resolve duplicate account names before importing.');
+      match = sameName[0] || null;
     }
-    if (row.transfer_to_account_id && !names.has(String(row.transfer_to_account_id))
-        && !row.to_account_name) {
-      throw new Error('A transfer references a missing destination account. Import stopped without changes.');
+    if (match && !compatible(match, row))
+      throw new Error('An existing account has the same name but a different type or currency. Rename the imported account before saving.');
+    if (!match) {
+      match = {
+        id: makeId('local-account'), name: normalized.name, account_type: normalized.account_type,
+        institution_name: normalized.institution_name, currency: normalized.currency || base,
+        opening_balance: normalized.opening_balance, balance: normalized.opening_balance,
+        is_archived: false, mask: normalized.mask, brand: 'blue',
+        source: 'File Import', import_batch: batchId,
+        ...(key ? { import_source_account_id: key } : {}),
+      };
+      if (current.some(a => String(a.id) === String(match.id)))
+        throw new Error('New account identifiers collided with local records. No records were changed.');
+      accounts.push(match); current.push(match);
+    } else {
+      skipped.duplicates += 1;
     }
-    const sourceName = names.get(String(row.account_id)) || row.account_name || row.accountName || '';
-    const targetName = names.get(String(row.transfer_to_account_id)) || row.to_account_name || '';
-    const value = normalizeTransaction({
+    if (key) bySourceId.set(key, match.id);
+    register(name, match.id);
+  }
+
+  const resolveName = value => {
+    const name = normalizedName(value);
+    if (!name) return '';
+    const candidates = new Set([...(byName.get(name) || []),
+      ...current.filter(a => normalizedName(a.name) === name).map(a => a.id)]);
+    if (candidates.size > 1)
+      throw new Error('The backup refers to an ambiguous account name. Use account identifiers to distinguish accounts before importing.');
+    return [...candidates][0] || '';
+  };
+  const resolveAccount = (id, name, destination = false) => {
+    const key = sourceKey(id);
+    if (key && key !== 'local') {
+      if (!bySourceId.has(key))
+        throw new Error(destination
+          ? 'A transfer references a missing destination account. Import stopped without changes.'
+          : 'A transaction references an account not included in the backup. Import stopped without changes.');
+      return bySourceId.get(key);
+    }
+    return resolveName(name) || (destination ? '' : 'local');
+  };
+
+  const knownFingerprints = new Set((existing?.transactions || []).map(fingerprint));
+  const transactions = [];
+  for (const row of transactionsIn) {
+    if (!row || typeof row !== 'object')
+      throw new Error('Some transactions have missing amounts, dates or descriptions. No records were saved.');
+    const normalized = normalizeTransaction({
       merchant: row.merchant, amount: row.origAmount ?? row.amount,
       transaction_type: row.transaction_type || row.type,
-      occurred_at: row.occurred_at || row.date,
-      currency: row.origCurrency || row.currency,
-      account_name: sourceName, to_account_name: targetName,
+      occurred_at: row.occurred_at || row.date, currency: row.origCurrency || row.currency,
       category: row.category, note: row.note,
     });
-    // Keep full timestamp rather than silently rewriting a transaction to noon.
-    if (value && Number.isFinite(Date.parse(row.occurred_at || row.date))) {
-      value.occurred_at = new Date(row.occurred_at || row.date).toISOString();
+    if (!normalized)
+      throw new Error('Some transactions have missing amounts, dates or descriptions. No records were saved.');
+    const originalTime = row.occurred_at || row.date;
+    if (!Number.isFinite(Date.parse(originalTime)))
+      throw new Error('Some transactions have missing amounts, dates or descriptions. No records were saved.');
+    normalized.occurred_at = new Date(originalTime).toISOString();
+    const from = resolveAccount(row.account_id, row.account_name || row.accountName);
+    const to = normalized.transaction_type === 'transfer'
+      ? resolveAccount(row.transfer_to_account_id, row.to_account_name, true) : undefined;
+    if (normalized.transaction_type === 'transfer' && (!to || to === from)) {
+      skipped.conflicts += 1;
+      continue;
     }
-    return value;
-  }).filter(Boolean);
-  if (candidateTransactions.length !== originalTransactions.length) {
-    throw new Error('Some transactions have missing amounts, dates or descriptions. No records were saved.');
+    const fp = fingerprint({ ...normalized, account_id: from, transfer_to_account_id: to });
+    if (knownFingerprints.has(fp)) { skipped.duplicates += 1; continue; }
+    knownFingerprints.add(fp);
+    transactions.push({
+      id: makeId('import'), merchant: normalized.merchant, amount: normalized.amount,
+      currency: normalized.currency || base, transaction_type: normalized.transaction_type,
+      category: normalized.category, account_id: from, transfer_to_account_id: to,
+      occurred_at: normalized.occurred_at, note: normalized.note,
+      source: 'File Import', import_batch: batchId, external_reference: fp,
+    });
   }
-  const planned = planImport({
-    accounts: candidateAccounts, transactions: candidateTransactions,
-    subscriptions: [], budgets: [], plans: [], loans: [], receivables: [], bills: [], skipped: 0, errors: [],
-  }, existing, {
-    base, newId, batchId: 'backup-' + Date.now().toString(36), fingerprint,
-  });
   return {
-    accounts: planned.accounts, transactions: planned.transactions, skipped: planned.skipped,
-    unsupported: Object.keys(backup?.tables || {}).filter(name => !['local_preferences','financial_accounts','transactions'].includes(name)
+    accounts, transactions, skipped,
+    unsupported: Object.keys(backup?.tables || {}).filter(name => !['local_preferences', 'financial_accounts', 'transactions'].includes(name)
       && Array.isArray(backup.tables[name]) && backup.tables[name].length > 0),
   };
 }
