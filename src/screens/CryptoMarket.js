@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './CryptoMarket.css';
 import Icon from '../components/Icon';
 import MarketUpdate from '../components/MarketUpdate';
-import { SubHeader } from '../components/ui';
+import { Skeleton, SubHeader } from '../components/ui';
 import { loadCryptoHistory, loadCryptoMarkets, sortCryptoCoins } from '../lib/crypto';
 import { evaluateCryptoAlerts } from '../lib/cryptoAlerts';
 import { summarizeCryptoHoldings, upsertCryptoHolding } from '../lib/cryptoPortfolio';
@@ -284,7 +284,7 @@ export default function CryptoMarket({ c }) {
         <div className="crypto-section-heading"><div><small>MARKET DISCOVERY</small><h2>Top cryptocurrencies</h2></div><span>{updatedAt ? stamp(updatedAt) : '—'}</span></div>
         <label className="crypto-search"><Icon name="search" size={17} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or symbol" aria-label="Search cryptocurrencies" /></label>
         <div className="crypto-sort" aria-label="Sort cryptocurrency market">{[['rank','Market cap'],['change','24h change'],['price','Price']].map(([key,label]) => <button type="button" key={key} aria-pressed={sort === key} className={sort === key ? 'active' : ''} onClick={() => setSort(key)}>{label}</button>)}</div>
-        {loading ? <p className="crypto-empty">Loading crypto market…</p> : error && !coins.length ? <div className="card crypto-error" role="status"><Icon name="info" size={20} /><p>{error}</p></div> : <div className="crypto-list">
+        {loading ? <div className="card pad"><Skeleton lines={5} label="Loading crypto market…" /></div> : error && !coins.length ? <div className="card crypto-error" role="status"><Icon name="info" size={20} /><p>{error}</p></div> : <div className="crypto-list">
           {visible.map((coin) => <article className="card crypto-row" key={coin.id}>
             <button type="button" className="crypto-row-main" onClick={() => setSelected(coin)}>
               <span className="crypto-rank">{coin.rank || '—'}</span><CryptoLogo coin={coin} /><span className="crypto-coin-name"><strong>{coin.name}</strong><small>{coin.symbol}</small></span>

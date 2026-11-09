@@ -51,6 +51,21 @@ may stay whole); only functional gradients stay (content fades, sticker scrims, 
 - Measured in the built app: no element with a gradient background on Home, Wallet, Transactions, Menu or Settings
   other than the donut chart. Screenshots of the badges in light and dark checked.
 
+## Phases 5 and 6 — hero and loading
+
+- **Mascot.** Correction to audit finding 2.3: the Home ram already shrinks when the page scrolls (`.is-scrolled
+  .ram-stage`, measured 88 → 77px); it now eases in 260ms instead of 450ms. Balance figures count up in 400ms
+  (phase 3), and the first screen still loads with no layout shift (CLS 0 measured).
+- **No provisional figures.** Financial planning showed a net worth from accounts alone (₱80,000.00 in the new test,
+  with a ₱60,000 loan still loading) until the loans arrived; Bills showed ₱0.00 totals and "nothing due"; the crypto
+  market showed a text line. All three now show a `Skeleton` (`components/ui.js`) shaped like their content while
+  cloud records genuinely load: static blocks that fade in once, `aria-busy`, no shimmer loop and no fake progress.
+  Test: `FinancialPlanning.test.js` (fails on the old screen).
+- **Launch.** The branded splash in `index.html` (MOVO mark, colourway shift, fade-out) stays; its forced minimum
+  drops from 0.9s to 0.45s from launch, so returning users reach their records sooner. Records stored on the device
+  are already read before the first render; owner-scoped cache hydration for signed-in people is in draft PR #261.
+- Two new strings in 11 languages (`zz-premium-ui-20261109.js`).
+
 ## Data and security
 
 No schema, API, RLS or entitlement change. Totals can differ from before by at most a cent when foreign balances

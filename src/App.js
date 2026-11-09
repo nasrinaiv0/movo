@@ -1974,12 +1974,13 @@ function App() {
     } catch { notify(tr('Could not log this payment. Please try again.')); }
   };
 
-  /* Fade out the loading screen from index.html once the app is ready; keep it at least ~0.9s so it never flashes. */
+  /* Fade out the loading screen from index.html once the app is ready. It stays at least ~0.45s from launch so it never
+     flashes, and no longer: returning users reach their records as soon as the session is read. */
   useEffect(() => {
     if (!authReady) return undefined;
     const el = document.getElementById('movo-splash');
     if (!el) return undefined;
-    const t = setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 400); }, Math.max(0, 900 - (window.performance?.now?.() || 0)));
+    const t = setTimeout(() => { el.classList.add('leaving'); setTimeout(() => el.remove(), 400); }, Math.max(0, 450 - (window.performance?.now?.() || 0)));
     return () => clearTimeout(t);
   }, [authReady]);
   /* First-run tour: only for people with no saved preferences, on Home, and never in tests. */

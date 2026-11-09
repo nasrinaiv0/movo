@@ -9,6 +9,17 @@ import BrandLogo from './BrandLogo';
 import { categoryOf } from '../lib/categories';
 import { merchantLogoUrl } from '../lib/merchantFavicons';
 
+/**
+ * Placeholder shaped like the content it stands for, shown only while cloud data is genuinely loading, so a screen
+ * never shows ₱0.00 or "nothing here" before its records arrive. No fake progress and no looping shimmer.
+ */
+export function Skeleton({ lines = 3, figure = false, className = '', label }) {
+  return <div className={`skeleton${figure ? ' has-figure' : ''} ${className}`.trim()} role="status" aria-live="polite" aria-busy="true" aria-label={label || tr('Loading your records…')}>
+    {figure && <span className="skeleton-figure" />}
+    {Array.from({ length: lines }, (_, i) => <span key={i} className="skeleton-line" style={{ '--w': `${[92, 68, 84, 56][i % 4]}%` }} />)}
+  </div>;
+}
+
 /** Animated currency amount: counts up when it appears and eases between values. Always two decimals (lib/format.js). */
 export function Money({ value, show, currency }) {
   const v = useCountUp(Number(value) || 0);

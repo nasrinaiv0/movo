@@ -6,7 +6,7 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 ## 2026-11-09 — Premium UI phases 2–7 (in progress)
 
-Following the merged confirmation dialog (#262) and the audit plan: phase 2 fixes the Menu page's sideways scroll, gives every small control a 44×44 tap area without visual change, removes the ignored `digits` money option (two decimals were already enforced) and sums total balances in whole cents. Phase 3 puts every entrance, sheet and chart animation on one set of durations (120/220/260/380ms, ease-out, no overshoot) and shortens the balance count-up to 400ms. Phase 4 replaces decorative gradients with solid colours and stops the looping badge shine. Details: `docs/engineering/updates/2026-11-09-premium-ui-phases.md`.
+Following the merged confirmation dialog (#262) and the audit plan: phase 2 fixes the Menu page's sideways scroll, gives every small control a 44×44 tap area without visual change, removes the ignored `digits` money option (two decimals were already enforced) and sums total balances in whole cents. Phase 3 puts every entrance, sheet and chart animation on one set of durations (120/220/260/380ms, ease-out, no overshoot) and shortens the balance count-up to 400ms. Phase 4 replaces decorative gradients with solid colours and stops the looping badge shine. Phases 5–6 show loading placeholders instead of provisional figures on Financial planning, Bills and the crypto market, and shorten the splash's forced minimum to 0.45s. Details: `docs/engineering/updates/2026-11-09-premium-ui-phases.md`.
 
 ## 2026-11-09 — Log out and every delete ask first in one dialog (review)
 

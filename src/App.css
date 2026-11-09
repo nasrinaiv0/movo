@@ -8063,3 +8063,12 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app .tv-bars span { background: rgba(255, 255, 255, .85); }
 .movo-app.movo-app .tv-badge { background: #f2c14e; }
 .movo-app.movo-app .tv-player { background: #121722; }
+
+/* ---------- Loading placeholders (2026-11-09, audit phase 6) ----------
+   Shown only while cloud records load (Financial planning, Bills, crypto market). Static blocks that fade in once:
+   no shimmer loop, no fake progress. */
+.movo-app .skeleton { display: grid; gap: 10px; padding: 4px 0; animation: fade var(--dur-page) ease-out both; }
+.movo-app .skeleton-figure { width: 58%; height: 30px; border-radius: 10px; background: var(--field); }
+.movo-app .skeleton-line { width: var(--w, 80%); height: 13px; border-radius: 7px; background: var(--field); }
+.movo-app .sub-hero .skeleton :is(.skeleton-figure, .skeleton-line) { background: rgba(255, 255, 255, .22); }
+@media (prefers-reduced-motion: reduce) { .movo-app .skeleton { animation: none; } }

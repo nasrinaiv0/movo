@@ -380,3 +380,20 @@ test('a card payment records where the money came from (the card bank by default
   expect(recordCardPayment).toHaveBeenCalledWith(expect.objectContaining({ cardId: 'credit-pay', amount: 1500, fromAccountId: 'bank' }));
   act(() => root.unmount()); el.remove();
 });
+
+test('while cloud records load, the position shows placeholders, never a provisional net worth', async () => {
+  let release;
+  obligations.listLoans.mockReturnValue(new Promise(resolve => { release = () => resolve([loan]); }));
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const c = { cloudMode: true, base: 'PHP', show: true, accountsView: accounts, toBase: (v) => v, go: jest.fn(), refreshFinance: jest.fn(), notify: jest.fn(), session: { user: { id: 'u' } } };
+  await act(async () => root.render(<FinancialPlanning c={c} />));
+  const placeholder = el.querySelector('.skeleton');
+  expect(placeholder.getAttribute('aria-busy')).toBe('true');
+  // Before this change the hero showed ₱80,000.00 (accounts without the loan) until the loan arrived.
+  expect(el.querySelector('.fp-hero').textContent).not.toMatch(/\d/);
+  await act(async () => { release(); });
+  expect(el.querySelector('.skeleton')).toBeNull();
+  expect(el.querySelector('.fp-hero').textContent).toContain('20,000.00');
+  act(() => root.unmount()); el.remove();
+});
