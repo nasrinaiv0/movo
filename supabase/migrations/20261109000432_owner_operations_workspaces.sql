@@ -79,7 +79,7 @@ grant execute on function public.movo_owner_work_update(uuid,uuid,timestamptz,te
 -- Weekly signup counts only (no per-user data leaves the database).
 create or replace function public.movo_owner_weekly_signups()
 returns jsonb language plpgsql stable security invoker set search_path = ''
-as $
+as $occ$
 declare v_series jsonb;
 begin
  if (select auth.jwt()->>'role') is distinct from 'service_role' then
@@ -98,7 +98,7 @@ begin
        and u.created_at < w.week_start + interval '1 week'
  ) n on true;
  return v_series;
-end $;
+end $occ$;
 revoke all on function public.movo_owner_weekly_signups() from public, anon, authenticated;
 grant execute on function public.movo_owner_weekly_signups() to service_role;
 commit;
