@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import OwnerWorkBoard from './OwnerWorkBoard';
+import OwnerSignupChart from './OwnerSignupChart';
 import './OwnerConsole.css';
 
 const MODULES = [
@@ -187,7 +188,7 @@ function OwnerContent({session}) {
       <Stat title="Transactions" value={num(metrics.transactions?.value)} sub="Recorded entries"/>
       <Stat title="Store entitlement records" value={num(metrics.subscriptions?.value)} sub="Not unique subscribers"/>
       <Stat title="Complimentary grants" value={num(metrics.grants?.value)} sub="Includes expired grants"/>
-    </div><div className="occ-two-col"><Bars metrics={metrics}/><Surface><div className="occ-heading"><div><h3>Business intelligence</h3><p>Connection integrity</p></div><Tag>Read only</Tag></div>
+    </div>{view!=='billing'&&<OwnerSignupChart series={payload?.signupSeries}/>}<div className="occ-two-col"><Bars metrics={metrics}/><Surface><div className="occ-heading"><div><h3>Business intelligence</h3><p>Connection integrity</p></div><Tag>Read only</Tag></div>
       <div className="occ-health-rows">{[['Revenue and settlements','Not connected'],['User retention cohorts','Not connected'],['Trial conversions','Not connected'],['Refunds and chargebacks','Not connected'],['Database counts',metrics.accounts?.status==='verified'?'Verified':'Unavailable']].map(([a,b])=><div className="occ-health-row" key={a}><span>{a}</span><Tag tone={b==='Verified'?'occ-good':''}>{b}</Tag></div>)}</div>
     </Surface></div>{view==='billing'&&<Surface><div className="occ-heading"><div><h3>Store verification records</h3><p>Latest 100 Apple and Google purchase verifications · not settled revenue</p></div><Tag>Read only</Tag></div><div className="occ-table-scroll"><table><thead><tr><th>Account</th><th>Platform</th><th>Tier</th><th>Status</th><th>Expires</th></tr></thead><tbody>{(payload?.storeRecords||[]).map(record=><tr key={record.id}><td><strong>{record.user_id?.slice(0,8)}…</strong></td><td>{record.platform==='apple'?'Apple':record.platform==='google'?'Google':'Unknown'}</td><td>{label(record.tier)}</td><td><Tag tone={record.status==='active'?'occ-good':''}>{record.status}</Tag></td><td>{date(record.expires_at)}</td></tr>)}{!(payload?.storeRecords||[]).length&&<tr><td colSpan={5}><Empty title="No store verification records" desc="No verified store rows are available to this account."/></td></tr>}</tbody></table></div><p className="occ-chart-note">Actual App Store and Google Play revenue must come from verified settlement feeds. No estimated earnings or invented balances are displayed.</p></Surface>}</>}
     {view==='users'&&<><Surface><div className="occ-heading"><div><h3>User directory</h3><p>Verified account identities · {payload?.total??'Unknown'} total returned by Auth provider</p></div><Tag>50 per page</Tag></div>
