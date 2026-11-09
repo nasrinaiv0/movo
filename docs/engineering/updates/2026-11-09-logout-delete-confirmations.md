@@ -70,3 +70,22 @@ runs without explicit confirmation.
 
 Clear all data and Delete account (typed DELETE sheets), legal text (log out still keeps device records, as before),
 and the owner console's own sign-out (separate app).
+
+## Data and security
+
+- No schema, RLS, grant, API or server change. Deletions use the same repository calls, offline tombstones
+  (`recordOfflineDeletions`) and Archive entries as before; the dialog only decides whether they run.
+- Logging out never clears the offline workspace or local records. Online, the session is revoked on the server
+  (`scope: 'global'`, as before). Offline, the session is removed from this device (`scope: 'local'`); its refresh
+  token cannot be revoked until the server is reachable, and the toast says other devices were not signed out.
+- In-memory session state, cloud rows and the per-account referral/trial guards are reset on log out.
+
+## Rollback
+
+Revert the commit. No data migration; records deleted while it was live stay deleted or archived as recorded.
+
+## Remaining release gates
+
+- Native iOS and Android builds were not run for this change; only the web build, Jest and Playwright against the
+  built app. The dialog is plain web UI inside the Capacitor web view.
+- Vercel preview check and Vercel Sandbox run are reported on the PR.
