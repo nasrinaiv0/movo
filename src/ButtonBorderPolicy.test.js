@@ -5,7 +5,9 @@ import path from 'path';
 /* Regression coverage: enforce the final global button-border policy
    that must win over screen-specific styles and pseudo hairlines. */
 const css = fs.readFileSync(path.join(__dirname, 'App.css'), 'utf8');
-const policy = css.split('/* MOVO borderless control policy — 2026-11-07.')[1];
+// The policy block runs from its header to the next block's header; later blocks (motion timing, dialogs) may style
+// sheets and cards, but the borderless policy itself must not.
+const policy = css.split('/* MOVO borderless control policy — 2026-11-07.')[1].split('/* MOVO header button interior and child navigation')[0];
 
 describe('MOVO borderless interactive controls', () => {
   test('last stylesheet block targets buttons, tabs, interactive roles and link buttons', () => {

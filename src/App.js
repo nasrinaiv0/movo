@@ -21,20 +21,13 @@ import Icon, { NasrinMark } from './components/Icon';
 import { Sheet } from './components/ui';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
-import FinancialPlanning from './screens/FinancialPlanning';
-import Cashback from './screens/Cashback';
-import ScheduledTransactions from './screens/ScheduledTransactions';
 import ScheduledDuePrompt from './components/ScheduledDuePrompt';
-import ExchangeRates from './screens/ExchangeRates';
-import CryptoMarket from './screens/CryptoMarket';
-import StocksMarket from './screens/StocksMarket';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
 import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
-import TutorialVideo from './components/TutorialVideo';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
 import AccountTile from './components/AccountTile';
@@ -64,12 +57,9 @@ import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from '.
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
-import GrocerySheet from './components/GrocerySheet';
 import AccountSheet from './components/AccountSheet';
 import AccountDetailsSheet from './components/AccountDetailsSheet';
 import LoyaltyDetailsSheet from './components/LoyaltyDetailsSheet';
-import ScannerSheet from './components/ScannerSheet';
-import AutoLogSheet from './components/AutoLogSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
 import { guessCategory } from './lib/ocr';
 import { categoryOf, categoryId, categoryFullLabel } from './lib/categories';
@@ -80,7 +70,6 @@ import { buildTransactionRunningBalances } from './lib/transactionRunningBalance
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
-import Archive from './screens/Archive';
 import { listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
@@ -95,6 +84,7 @@ import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clear
 import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
 import { unsyncedChangeCount } from './lib/unsyncedChanges';
 import { ConfirmProvider, deleteRecord, useConfirmController } from './components/ConfirmDialog';
+import { lazyScreen, preloadScreens } from './lib/lazyScreen';
 import { newRecordId } from './lib/recordId';
 import { CLOUD_READ_TIMEOUT_MS, CLOUD_WRITE_TIMEOUT_MS, isNetworkFailure, withTimeout } from './lib/networkFailure';
 import { readRequiredFinancialCloudViews } from './lib/cloudFinancialReadGate';
@@ -106,15 +96,29 @@ import { parseCsvTransactions, transactionFingerprint, findUniqueCsvAccount } fr
 import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport';
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
-import NasrinAIChat from './components/NasrinAIChat';
-import { TermsOfService, PrivacyPolicy } from './screens/Legal';
-import HelpCenter from './screens/HelpCenter';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl, isNativeApp } from './lib/platform';
 import { nativeAutomationKey, sanitizeNativePreferenceCache, saveNativeAutomationKey } from './lib/nativeAutomationKey';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
 import { listBills, listOccurrences, createBill } from './lib/billsRepository';
+
+/* Loaded on demand (lib/lazyScreen.js): none of these is needed for the first screen; all are preloaded once idle. */
+const FinancialPlanning = lazyScreen(() => import('./screens/FinancialPlanning'));
+const Cashback = lazyScreen(() => import('./screens/Cashback'));
+const ScheduledTransactions = lazyScreen(() => import('./screens/ScheduledTransactions'));
+const ExchangeRates = lazyScreen(() => import('./screens/ExchangeRates'));
+const CryptoMarket = lazyScreen(() => import('./screens/CryptoMarket'));
+const StocksMarket = lazyScreen(() => import('./screens/StocksMarket'));
+const Archive = lazyScreen(() => import('./screens/Archive'));
+const NasrinAIChat = lazyScreen(() => import('./components/NasrinAIChat'));
+const TermsOfService = lazyScreen(() => import('./screens/Legal'), { pick: 'TermsOfService' });
+const PrivacyPolicy = lazyScreen(() => import('./screens/Legal'), { pick: 'PrivacyPolicy' });
+const HelpCenter = lazyScreen(() => import('./screens/HelpCenter'));
+const TutorialVideo = lazyScreen(() => import('./components/TutorialVideo'), { placeholder: null });
+const GrocerySheet = lazyScreen(() => import('./components/GrocerySheet'), { placeholder: null });
+const ScannerSheet = lazyScreen(() => import('./components/ScannerSheet'), { placeholder: null });
+const AutoLogSheet = lazyScreen(() => import('./components/AutoLogSheet'), { placeholder: null });
 
 const PREF = 'movo.preferences.v3';
 const OLD_PREF = 'movo.preferences.v2';
@@ -1974,6 +1978,14 @@ function App() {
     } catch { notify(tr('Could not log this payment. Please try again.')); }
   };
 
+  /* Once the first screen is up, fetch the on-demand screens while the device is idle, so later pages open at once
+     (and still open offline if the connection drops after launch). */
+  useEffect(() => {
+    if (!authReady) return undefined;
+    const idle = typeof window.requestIdleCallback === 'function';
+    const id = idle ? window.requestIdleCallback(() => { preloadScreens(); }, { timeout: 4000 }) : window.setTimeout(() => { preloadScreens(); }, 2500);
+    return () => { if (idle) window.cancelIdleCallback(id); else window.clearTimeout(id); };
+  }, [authReady]);
   /* Fade out the loading screen from index.html once the app is ready. It stays at least ~0.45s from launch so it never
      flashes, and no longer: returning users reach their records as soon as the session is read. */
   useEffect(() => {

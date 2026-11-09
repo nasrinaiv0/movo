@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './Icon';
 import { MovoMark } from './MovoLogo';
 import { categoryOf } from '../lib/categories';
@@ -38,7 +38,9 @@ export default function SearchOverlay({ txs, show, refDate, onOpen, onClose }) {
   const [query, setQuery] = useState('');
   const [closing, setClosing] = useState(false);
   const inputRef = useRef(null);
-  const terms = useMemo(() => query.trim().toLowerCase().split(/\s+/).filter(Boolean), [query]);
+  // Filtering follows the typed text a beat behind, so typing stays instant even over thousands of records.
+  const deferredQuery = useDeferredValue(query);
+  const terms = useMemo(() => deferredQuery.trim().toLowerCase().split(/\s+/).filter(Boolean), [deferredQuery]);
   const results = useMemo(() => {
     if (!terms.length) return txs.slice(0, 6);
     return txs.filter((t) => { const h = haystack(t, show); return terms.every((term) => h.includes(term)); });

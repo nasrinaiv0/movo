@@ -8072,3 +8072,5 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .skeleton-line { width: var(--w, 80%); height: 13px; border-radius: 7px; background: var(--field); }
 .movo-app .sub-hero .skeleton :is(.skeleton-figure, .skeleton-line) { background: rgba(255, 255, 255, .22); }
 @media (prefers-reduced-motion: reduce) { .movo-app .skeleton { animation: none; } }
+/* Progressive list: the Show more control under long transaction lists (performance phase 7). */
+.movo-app .tx-more { display: flex; justify-content: center; padding: 8px 0 4px; }

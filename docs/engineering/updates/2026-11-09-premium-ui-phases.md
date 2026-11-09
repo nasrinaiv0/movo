@@ -66,6 +66,29 @@ may stay whole); only functional gradients stay (content fades, sticker scrims, 
   are already read before the first render; owner-scoped cache hydration for signed-in people is in draft PR #261.
 - Two new strings in 11 languages (`zz-premium-ui-20261109.js`).
 
+## Phase 7 — performance
+
+- **Code splitting** (`lib/lazyScreen.js`): Financial planning, Cashback, Scheduled, Exchange rates, Crypto, Stocks,
+  Archive, NasrinAI chat, Terms, Privacy, Help Center, the tutorial video and the scanner, auto-log and grocery
+  sheets load on demand. Main bundle 1,530,638 → 1,252,370 bytes (436 → 362 KB gzip, −17%).
+  - Each split screen has its own boundary: a placeholder while its code arrives, and "This page could not be opened…
+    Try again" if the download fails, instead of a blank app.
+  - Already-loaded screens render in the same pass (a synchronous thenable), and the tree shape never changes, so
+    screens do not remount.
+  - Once the first screen is up, every split screen is fetched while the device is idle. Checked in the built app:
+    after going offline, Financial planning, Cashback and Archive still open.
+  - Tests load split screens at import time, so suites stay synchronous.
+  - `FinanceBackupSheet` stays in the main bundle because its stylesheet must keep loading before `App.css`.
+- **Long lists.** Transactions "See All" rendered every row. Measured with 3,000 records in one period: 2,560ms and
+  51,870 DOM nodes. It now renders 150 rows, then the next page as the end comes into view (or via "Show more (n
+  left)"): 117ms and 2,666 nodes. Without IntersectionObserver every row renders as before. Tests:
+  `TransactionsPaging.test.js`.
+- **Search** filters via `useDeferredValue`, so typing never waits on filtering thousands of records.
+- **Not done:** memoizing transaction rows. Their click handlers are created per render, so `memo` would not skip
+  renders without a wider refactor, and progressive rendering already removes the cost that was measured.
+- `ButtonBorderPolicy.test.js` now scopes its checks to the policy block itself. It used to assume that block was the
+  last in `App.css`, so the phase 3 motion rules (which set sheet timing after it) tripped it.
+
 ## Data and security
 
 No schema, API, RLS or entitlement change. Totals can differ from before by at most a cent when foreign balances

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
 import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
@@ -6,6 +6,9 @@ import { t as tr } from '../lib/i18n';
 import { activityNetAmount } from '../lib/financeCalculations';
 import { billingCycleSpending, spendingVsPreviousCycle } from '../lib/billingCycleSpending';
 import { percentLabel } from '../lib/trend';
+
+/** Rows rendered per page in long lists (progressive rendering). */
+const ROW_PAGE = 150;
 
 const FILTERS = ['All', 'Income', 'Expenses', 'Transfers'];
 const SORTS = { Expenses: ['Date', 'Amount', 'Category', 'Merchant'], Transfers: ['Date', 'Amount', 'From/To', 'Account'], Income: ['Date', 'Amount', 'Account'], All: ['Date', 'Amount', 'Category', 'Merchant'] };
@@ -76,7 +79,21 @@ export default function Transactions({ c }) {
     sorted.forEach(t => { const k = dayKey(t.date); if (!map.has(k)) map.set(k, []); map.get(k).push(t); });
     return Array.from(map, ([k, items]) => ({ key: k, label: relativeDay(items[0].date, refDate), date: longDate(items[0].date), total: net(items), items }));
   }, [sorted, sort, refDate]);
-  const limit = txFilter === 'All' && !expanded ? 4 : Infinity;
+  /* Long histories render progressively: the first rows at once, the next page as the end of the list comes into
+     view (or on Show more). Without IntersectionObserver (old browsers, tests) every row renders, as before. */
+  const page = typeof IntersectionObserver === 'undefined' ? Infinity : ROW_PAGE;
+  const [shownRows, setShownRows] = useState(page);
+  useEffect(() => { setShownRows(page); }, [page, txFilter, selectedCycle, sort, expanded]);
+  const limit = txFilter === 'All' && !expanded ? 4 : shownRows;
+  const moreRows = Number.isFinite(limit) ? Math.max(0, monthTxs.length - limit) : 0;
+  const moreRef = useRef(null);
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!moreRows || !el || typeof IntersectionObserver === 'undefined' || (txFilter === 'All' && !expanded)) return undefined;
+    const io = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setShownRows(n => n + ROW_PAGE); }, { rootMargin: `${900}px 0px` /* load the next page well before the end is visible */ });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [moreRows, txFilter, expanded]);
   let remaining = limit;
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
@@ -147,6 +164,7 @@ export default function Transactions({ c }) {
         {g.label && <div className="group-head"><span><b>{g.label}</b>{g.label !== g.date && <> · {g.date}</>}</span><span>{shown(show, `${txFilter === 'Transfers' ? '' : g.total < 0 ? '−' : '+'}${money(Math.abs(g.total))}`)}</span></div>}
         <div className="card list-card">{g.items.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} chip timeOnly={sort === 'Date'} accountLabel={txFilter === 'Transfers' ? `${t.accountName} → ${t.transferToAccountName || 'Unknown account'}` : t.type === 'allocation' ? t.accountName : undefined} onOpen={c.openTx} />)}</div>
       </section>)}
+      {moreRows > 0 && !(txFilter === 'All' && !expanded) && <div ref={moreRef} className="tx-more"><button type="button" className="link-button" onClick={() => setShownRows(n => n + ROW_PAGE)}>{tr('Show more ({n} left)', { n: moreRows })}</button></div>}
       {!monthTxs.length && <div className="card empty-card"><Icon name="list" size={28} /><h3>{tr('No transactions')}</h3><p>{tr('Nothing matches this view. Try another month or filter, or add a record.')}</p><button type="button" className="primary-button" onClick={() => c.setSheet({ name: 'transaction' })}><Icon name="plus" size={16} /> {tr('Add transaction')}</button></div>}
     </div>
   </>;
