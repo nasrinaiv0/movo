@@ -1,5 +1,10 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Owner Access sign-in email template failure (requires live Supabase action)
+
+Verified MOVO Supabase Auth HTTP 500 on `POST /otp`: live Magic Link template fails Go `html/template` rendering in unclosed CSS double-quote context. Replaced committed OTP email with inline-style, text-only code interpolation and added static validation plus regression tests. **GitHub/Vercel deploy does not publish the Supabase email template**: update the live Magic Link body in the Supabase dashboard and verify a real owner OTP plus MFA before calling the incident resolved. See `docs/engineering/updates/2026-11-09-owner-otp-template-rendering.md`.
+
+
 ## 2026-11-09 — Memberships and rewards cards open Account details (review)
 
 Tapping a membership, loyalty, rewards, tokens or custom card opens the same Account details layout as other cards (card, Account overview / Transactions / Connected items / More, actions) with rewards-only figures, member code, earning account and purchases that earned points. Card face shows Valid thru and no longer truncates the program early. See `docs/engineering/updates/2026-11-09-loyalty-card-details.md`.
