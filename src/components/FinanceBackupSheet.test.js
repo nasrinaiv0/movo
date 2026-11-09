@@ -25,7 +25,7 @@ const sample = { format:'movo-finance-backup',version:1,accounts:[{id:'bank',nam
 async function setup() {
   const node = document.createElement('div'); document.body.appendChild(node);
   const root = createRoot(node);
-  const c = { saveFinanceBackupRecords: jest.fn().mockResolvedValue({ accounts:1,transactions:1,failed:0,skipped:{duplicates:0,conflicts:0},unsupported:[] }), exportCsv: jest.fn(), openCsvImporter: jest.fn() };
+  const c = { saveFinanceBackupRecords: jest.fn().mockResolvedValue({ accounts:1,transactions:1,failed:0,skipped:{duplicates:0,conflicts:0},unsupported:[] }), onFinanceBackupSaved: jest.fn(), exportCsv: jest.fn(), openCsvImporter: jest.fn() };
   await act(async () => root.render(<FinanceBackupSheet c={c} onClose={jest.fn()} />));
   return { node, c, cleanup: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
@@ -62,6 +62,7 @@ test('JSON upload stays preview-only until Save and a second explicit confirmati
   await click('Confirm save locally');
   expect(ui.c.saveFinanceBackupRecords).toHaveBeenCalledTimes(1);
   expect(ui.c.saveFinanceBackupRecords).toHaveBeenCalledWith(sample);
+  expect(ui.c.onFinanceBackupSaved).toHaveBeenCalledWith(expect.objectContaining({accounts:1,transactions:1}));
   expect(ui.node.textContent).toContain('Records saved');
   await ui.cleanup();
 });
@@ -133,6 +134,7 @@ test('a zero-write confirmation keeps the preview and does not falsely mark the 
   await click('Save records');
   await click('Confirm save locally');
   expect(ui.node.textContent).toContain('No new accounts or transactions were applied');
+  expect(ui.c.onFinanceBackupSaved).not.toHaveBeenCalled();
   expect(ui.node.textContent).toContain('Other financial groups');
   expect(ui.node.textContent).not.toContain('Records saved');
   expect(ui.node.textContent).toContain('Preview records');
