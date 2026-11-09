@@ -143,6 +143,10 @@ async function handler(req,res) {
     }
     if(view==='overview'||view==='analytics'||view==='billing'){
       const metrics=await collect(admin);
+      // Aggregated signup trend only; never serialize auth.users details.
+      const trend=view==='billing'?null:await admin.rpc('movo_owner_weekly_signups');
+      const signupSeries=trend?(trend.error||!Array.isArray(trend.data)
+        ? {status:'unavailable'}:{status:'verified',data:trend.data}):{status:'not_requested'};
       let storeRecords;
       if(view==='billing'){
         const {data,error}=await admin.from('movo_store_entitlements')
@@ -151,7 +155,7 @@ async function handler(req,res) {
         if(error) throw Error('billing_records_unavailable');
         storeRecords=data||[];
       }
-      return reply(res,200,{metrics,...(view==='billing'?{storeRecords,limitedTo:100}:{}),
+      return reply(res,200,{metrics,signupSeries,...(view==='billing'?{storeRecords,limitedTo:100}:{}),
         revenue:{status:'not_integrated'},retention:{status:'not_integrated'},
         storeSettlements:{status:'not_integrated'},currency:'PHP',
         message:'Only database-backed counts are shown. Revenue and retention require verified integrations.'});
