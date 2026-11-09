@@ -8036,3 +8036,30 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app :is(.bars-plot span, .budget-meter i, .cat-bars-track i, .flow-bars i, .mini-bars rect, .flow-value-bar) { animation-duration: var(--dur-chart); }
 .movo-app.movo-app .donut-hole { animation-duration: var(--dur-page); animation-delay: 120ms; }
 .movo-app.movo-app .progress-track > span { transition-duration: var(--dur-chart); }
+
+/* ---------- Solid surfaces (2026-11-09, audit phase 4) ----------
+   No decorative gradients: badges, ribbons, plan cards, the tutorial video and card sheens use solid colours.
+   Kept on purpose, because they do a job: scroll-edge masks, the content fades under headers and the bottom bar, the
+   scrims that keep text readable on sticker cards, the split theme swatches, the clarity slider's fill, the EMV chip
+   contacts, the scanner line and the donut chart's own segments. The badge shine and sparkle loops (every 4–7s,
+   forever) stop too. */
+.movo-app.movo-app .streak-badge.earned { background: var(--badge); }
+.movo-app.movo-app .streak-badge.tier-pro { --ring: #9aa4b2; }
+.movo-app.movo-app .streak-badge.tier-max { --ring: #d9a521; }
+.movo-app.movo-app .streak-badge.tier-ultra { --ring: #8b6cff; }
+.movo-app.movo-app .streak-badge:is(.tier-pro, .tier-max, .tier-ultra) { background: var(--card-solid); border-color: var(--ring); background-clip: padding-box; }
+.movo-app.movo-app .streak-badge:not(.earned):is(.tier-pro, .tier-max, .tier-ultra) { background: var(--field); }
+.movo-app.movo-app .streak-badge.earned:is(.tier-pro, .tier-max, .tier-ultra) { background: var(--badge); }
+.movo-app.movo-app .streak-badge.earned::after, .movo-app.movo-app .streak-badges li.tier-ultra::after { content: none; animation: none; }
+.movo-app.movo-app .streak-badges .badge-tier { background: #d5dbe3; color: #1d2330; }
+.movo-app.movo-app .streak-badges li.tier-max .badge-tier { background: #e2b23a; color: #3b2803; }
+.movo-app.movo-app .streak-badges li.tier-ultra .badge-tier { background: #7a5cf0; color: #fff; text-shadow: none; }
+.movo-app.movo-app .ram-glow { display: none; }
+.movo-app.movo-app .credit-card.ccx.orientation-portrait::after { background: none; }
+.movo-app.movo-app :is(.balance-card, .stat-card, .spending-card, .total-card)::after { background: rgba(var(--accent-rgb), .5); }
+.movo-app.movo-app .plan-detail-card.plan-pro { background: color-mix(in srgb, var(--accent) 10%, var(--card-solid)); }
+.movo-app.movo-app .plan-detail-card.plan-plus { background: color-mix(in srgb, #d4a017 12%, var(--card-solid)); }
+.movo-app.movo-app .tv-card { background: var(--a, #3a7bfd); }
+.movo-app.movo-app .tv-bars span { background: rgba(255, 255, 255, .85); }
+.movo-app.movo-app .tv-badge { background: #f2c14e; }
+.movo-app.movo-app .tv-player { background: #121722; }

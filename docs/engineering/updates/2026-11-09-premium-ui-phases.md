@@ -38,6 +38,19 @@ may stay whole); only functional gradients stay (content fades, sticker scrims, 
 - Reduced motion still switches these animations off (existing blocks), and celebrations (badge unlock, tutorial
   video) keep their own timing.
 
+## Phase 4 — solid surfaces
+
+- Decorative gradients replaced by solid colours: streak badges (radial fills → the badge colour; tier rings →
+  silver #9aa4b2, gold #d9a521, platinum #8b6cff), tier ribbons, the card's bottom accent line, plan detail cards
+  (accent or gold mixed into the card colour), the tutorial video player and its cards, bars and badge. The mascot's
+  radial glow and the portrait card's glass sheen are removed. The badge shine and Ultra sparkle, which looped every
+  4–7 seconds forever, stop.
+- Kept because they do a job: scroll-edge masks, the content fades under headers and above the bottom bar, the scrims
+  that keep text readable on sticker cards, the split light/dark theme swatches, the clarity slider's fill, the EMV
+  chip contacts, the scanner line and the donut chart's own segments (data).
+- Measured in the built app: no element with a gradient background on Home, Wallet, Transactions, Menu or Settings
+  other than the donut chart. Screenshots of the badges in light and dark checked.
+
 ## Data and security
 
 No schema, API, RLS or entitlement change. Totals can differ from before by at most a cent when foreign balances
