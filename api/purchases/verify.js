@@ -67,6 +67,10 @@ module.exports = async function handler(req, res) {
     if (verified.paidVerified && verified.environment === 'production') {
       const { error } = await api.admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: userId });
       if (error) throw error;
+      if (process.env.MOVO_REFERRAL_POINTS_ENABLED === 'true') {
+        const { error: pointsError } = await api.admin.rpc('movo_award_referral_upgrade', { p_entitlement_id: entitlementId, p_user_id: userId });
+        if (pointsError) throw pointsError;
+      }
     }
     return json(res, 200, { verified: true, entitlementId, acknowledged: verified.platform === 'google', tier: verified.tier, status: verified.status, expiresAt: verified.expiresAt });
   } catch (cause) {

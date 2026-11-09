@@ -1,0 +1,55 @@
+name: MOVO Referral Points Security (isolated PostgreSQL)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/*referral*'
+      - 'supabase/tests/referral_points.test.sql'
+      - 'scripts/test-plan-migration.py'
+      - 'api/referrals/**'
+      - 'api/purchases/**'
+      - '.github/workflows/referral-points-security.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: movo-referral-security-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  referral-isolation:
+    name: Referral token, RLS, replay and ledger regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: movo-referral-ci-only
+          POSTGRES_DB: postgres
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - name: Checkout without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install local PostgreSQL client only
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+      - name: Run disposable plan and referral database security tests
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "55432"
+          PGUSER: postgres
+          PGPASSWORD: movo-referral-ci-only
+        run: python3 scripts/test-plan-migration.py

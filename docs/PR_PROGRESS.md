@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — PR #258: secure one-time referral points and compact Profile UI (review; production gated)
+
+Adds a compact Local Mode sheet and Profile **Refer MOVO** QR/share sheet. Each newly referred verified mobile app account can produce exactly one 5-point reward after native attestation and one additional 100-point reward after a verified production Pro/Pro+ purchase; refund compensation is also idempotent. Referral incentives are isolated from money, plans, loyalty and cashback; 256-bit one-time invitations, hash-only storage, challenge verification, RLS, server-only RPCs, invite rate limits and review holds block easy replay. Sandbox build: 169 suites / 1,022 tests passed, npm production dependency audit 0 advisories. The isolated PostgreSQL CI suite has passed; native signed-device verification and privacy review remain required. Feature flag is disabled; **no production schema or environment was changed**. The prior #257 was closed due truncated transfer; this replacement uses checked full-length GitHub objects. See `docs/engineering/updates/2026-11-09-referral-points-native-attestation.md`.
+
 ## 2026-11-09 — Owner Access sign-in email template failure (requires live Supabase action)
 
 Verified MOVO Supabase Auth HTTP 500 on `POST /otp`: live Magic Link template fails Go `html/template` rendering in unclosed CSS double-quote context. Replaced committed OTP email with inline-style, text-only code interpolation and added static validation plus regression tests. **GitHub/Vercel deploy does not publish the Supabase email template**: update the live Magic Link body in the Supabase dashboard and verify a real owner OTP plus MFA before calling the incident resolved. See `docs/engineering/updates/2026-11-09-owner-otp-template-rendering.md`.

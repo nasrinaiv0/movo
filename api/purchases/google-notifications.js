@@ -54,6 +54,10 @@ module.exports = async function handler(req, res) {
         .eq('purchase_token_hash', tokenHash)
         .eq('user_id', existing.user_id);
       if (revokeError) throw revokeError;
+      if (process.env.MOVO_REFERRAL_POINTS_ENABLED === 'true') {
+        const { error: reverseError } = await admin.rpc('movo_reverse_referral_upgrade', { p_user_id: existing.user_id });
+        if (reverseError) throw reverseError;
+      }
       return json(res, 200, { received: true, processed: true });
     }
 
@@ -63,6 +67,10 @@ module.exports = async function handler(req, res) {
     if (verified.paidVerified && verified.environment === 'production' && !verified.needsAcknowledgement) {
       const { error: referralError } = await admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: existing.user_id });
       if (referralError) throw referralError;
+      if (process.env.MOVO_REFERRAL_POINTS_ENABLED === 'true') {
+        const { error: pointsError } = await admin.rpc('movo_award_referral_upgrade', { p_entitlement_id: entitlementId, p_user_id: existing.user_id });
+        if (pointsError) throw pointsError;
+      }
     }
     return json(res, 200, { received: true, processed: true });
   } catch (error) {

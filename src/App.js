@@ -6,6 +6,7 @@ import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
 import { canUseFeatureInMode, effectiveAccessPlan } from './lib/planAccess';
 import PlanOffer from './components/PlanOffer';
+import { activateNativeReferral } from './lib/referrals';
 import { UsageSheet } from './screens/Settings';
 import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
@@ -278,6 +279,13 @@ function cleanCopyCheck(ownerId, copy, cloud) {
 function App() {
   const [session, setSession] = useState(null);
   const { entitlement, refreshEntitlement } = usePlanEntitlement(session);
+  const nativeReferralAttempt = useRef('');
+  useEffect(() => {
+    const id = session?.user?.id;
+    if (!id || !session?.access_token || nativeReferralAttempt.current === id) return;
+    nativeReferralAttempt.current = id;
+    activateNativeReferral(session).catch(() => { /* Server retains pending verification; no local reward. */ });
+  }, [session?.user?.id, session?.access_token]);
   const [authReady, setAuthReady] = useState(!supabaseConfigured);
   const [cloudMode, setCloudMode] = useState(false);
   const [offlineOwnerId, setOfflineOwnerId] = useState(null);
