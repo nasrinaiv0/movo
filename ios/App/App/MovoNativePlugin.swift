@@ -16,8 +16,11 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "setChrome", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureSet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureGet", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setAppIcon", returnType: CAPPluginReturnPromise)
     ]
+    /// Alternate home-screen icons compiled from Assets.xcassets (ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES).
+    private static let alternateIcons: Set<String> = ["AppIcon-Bronze", "AppIcon-Silver", "AppIcon-Gold", "AppIcon-Platinum"]
 
 
     // Auth credentials are persisted only in the device-bound Keychain and
@@ -117,6 +120,29 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         let reason = call.getString("reason") ?? "Unlock MOVO"
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, _ in
             call.resolve(["success": success])
+        }
+    }
+
+    /// Badge app icons: only the compiled alternate icons are accepted; nil/empty restores the standard icon.
+    @objc func setAppIcon(_ call: CAPPluginCall) {
+        let requested = call.getString("name") ?? ""
+        let name: String? = requested.isEmpty || requested == "default" ? nil : requested
+        if let name = name, !Self.alternateIcons.contains(name) {
+            call.reject("Unknown app icon.")
+            return
+        }
+        DispatchQueue.main.async {
+            guard UIApplication.shared.supportsAlternateIcons else {
+                call.reject("This device cannot change the app icon.")
+                return
+            }
+            if UIApplication.shared.alternateIconName == name {
+                call.resolve()
+                return
+            }
+            UIApplication.shared.setAlternateIconName(name) { error in
+                if let error = error { call.reject(error.localizedDescription) } else { call.resolve() }
+            }
         }
     }
 

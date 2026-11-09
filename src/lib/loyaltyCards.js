@@ -5,11 +5,17 @@
 export const LOYALTY_TYPES = ['loyalty', 'membership', 'rewards', 'tokens', 'other'];
 export const isLoyaltyType = (type) => LOYALTY_TYPES.includes(type);
 
+// Grouped like the wallet: fuel, coffee, food, supermarkets and department stores, health and beauty, other retail,
+// travel. Each has a card face in lib/loyaltyBranding.js.
 export const LOYALTY_PROVIDERS = [
   'Petron', 'Seaoil', 'Shell', 'Caltex',
   'Starbucks', 'Tim Hortons', 'Coffee Bean & Tea Leaf',
-  'SM Advantage', 'Watsons', 'Landers', 'Robinsons Rewards',
-  'Mercury Drug Suki', '7-Eleven', 'Jollibee', 'McDonald’s', 'Other'
+  'Jollibee', 'McDonald’s', 'Max’s All Access', 'Shakey’s SuperCard', 'The Bistro Group BFF',
+  'SM Advantage', 'Robinsons Rewards', 'S&R Membership', 'Landers', 'Puregold Perks', 'Metro Rewards Club',
+  'Rustan’s Frequent Shopper', 'AllRewards', '7-Eleven',
+  'Mercury Drug Suki', 'Watsons', 'Southstar Drug',
+  'National Book Store', 'ACE Hardware', 'Toy Kingdom',
+  'Cebu Pacific GetGo', 'Other'
 ];
 
 const trimmed = (value, maximum) => String(value ?? '').replace(/[\u0000-\u001F\u007F]/g, '').trim().slice(0, maximum);
