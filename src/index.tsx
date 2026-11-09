@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
+import { captureReferralFromUrl } from './lib/referrals';
 
 // The owner console (/owner) loads separately; customers never download it.
 const OwnerConsole = React.lazy(() => import('./owner/OwnerConsole'));
@@ -17,6 +18,8 @@ if (!container) {
 // so remove it here before it can cover or intercept owner controls.
 const ownerRoute = window.location.pathname === '/owner' || window.location.pathname.startsWith('/owner/');
 if (ownerRoute) document.getElementById('movo-splash')?.remove();
+// A friend's download link (?ref=M78038) keeps the code on this device for the free month or Refer MOVO.
+else captureReferralFromUrl();
 
 const root = createRoot(container);
 const render = () => root.render(

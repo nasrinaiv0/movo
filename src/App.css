@@ -7770,3 +7770,70 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 
 /* ---------- Total balance note (2026-11-09): accounts left out for lack of an exchange rate ---------- */
 .movo-app .balance-card .balance-note { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 500; color: var(--muted); }
+
+/* 2026-11-09: compact Local Mode disclosure and native-verified referral sheet. */
+.local-mode-sheet { padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
+.local-mode-sheet .sheet-grabber, .referral-sheet .sheet-grabber { margin-bottom: 12px; }
+.local-mode-sheet .sheet-title, .referral-sheet .sheet-title { margin: 0 42px 11px 0; font-size: 20px; line-height: 1.25; }
+.local-mode-content { display: grid; gap: 12px; }
+.local-mode-content p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.local-mode-detail { display: flex; align-items: flex-start; gap: 10px; color: var(--text); font-size: 12px; line-height: 1.5; }
+.local-mode-detail > svg { flex: none; margin-top: 2px; color: var(--accent-ink,var(--accent)); }
+.local-mode-action { width: 100%; min-height: 46px; margin-top: 2px; }
+.profile-refer-card { margin: 10px 0 14px; }
+.profile-refer-card .menu-row { min-height: 56px; }
+
+/* ---------- Refer MOVO (2026-11-09): short code, iPhone + Android download QR codes, one compact panel ---------- */
+.referral-sheet { padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
+.referral-content { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.referral-code-card { display: grid; justify-items: center; gap: 8px; padding: 14px 14px 12px; border-radius: var(--r-card, 22px); background: var(--field); text-align: center; }
+.referral-code-card > small, .referral-code-label { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
+.referral-code { font: 750 30px/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; padding-left: .14em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; max-width: 100%; }
+.referral-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.referral-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 48px; min-width: 0; border: 0; border-radius: 16px; background: var(--card, rgba(255,255,255,.7)); color: var(--text); font-size: 13px; font-weight: 650; }
+.referral-actions .primary-button { background: var(--accent); color: var(--on-accent, #fff); }
+.referral-progress { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.45; }
+.referral-signed-out { gap: 10px; }
+.referral-signed-out .primary-button { width: 100%; }
+.referral-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.referral-stats span { display: grid; gap: 2px; min-width: 0; padding: 10px 6px; border-radius: 14px; background: var(--field); text-align: center; }
+.referral-stats strong { font-size: 17px; font-variant-numeric: tabular-nums; }
+.referral-stats small { color: var(--muted); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.referral-points-redeem { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 14px; border-radius: 16px; background: var(--field); min-width: 0; }
+.referral-points-redeem > span { display: grid; gap: 2px; min-width: 0; }
+.referral-points-redeem strong { font-size: 13px; font-weight: 700; }
+.referral-points-redeem small { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.referral-points-redeem button { flex: none; min-height: 48px; padding: 0 16px; border: 0; border-radius: 16px; background: var(--accent); color: var(--on-accent, #fff); font-size: 13px; font-weight: 650; }
+.referral-points-redeem button:disabled { opacity: .4; }
+.referral-download h3 { margin: 0 0 8px; font-size: 13px; font-weight: 700; }
+.referral-qr-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.referral-qr { display: grid; justify-items: center; gap: 6px; margin: 0; padding: 10px 8px; min-width: 0; border-radius: 18px; background: var(--field); }
+.referral-qr-code { display: block; padding: 6px; border-radius: 12px; background: #fff; line-height: 0; }
+.referral-qr-code svg { display: block; width: min(112px, 30vw); height: auto; }
+.referral-qr figcaption { display: grid; gap: 1px; text-align: center; min-width: 0; }
+.referral-qr figcaption strong { font-size: 12.5px; }
+.referral-qr figcaption small { color: var(--muted); font-size: 10.5px; }
+.referral-note { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.48; }
+.referral-download .referral-note { margin-top: 7px; text-align: center; }
+.referral-notice { color: var(--text); }
+.referral-claim { display: grid; gap: 6px; }
+.referral-redeem { display: flex; gap: 8px; min-width: 0; }
+.referral-redeem input { flex: 1; width: 0; min-width: 0; min-height: 48px; border: 0; border-radius: 16px; padding: 0 14px; background: var(--field); color: var(--text); font: 650 16px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .1em; text-transform: uppercase; }
+.referral-redeem input::placeholder { color: var(--muted); opacity: .55; }
+.referral-redeem button { flex: none; padding: 0 18px; min-height: 48px; border: 0; border-radius: 16px; background: var(--accent); color: var(--on-accent, #fff); font-size: 13px; font-weight: 650; }
+.referral-redeem button:disabled { opacity: .4; }
+@media (max-height: 700px) {
+  /* Small phones (375x667) fit the whole panel, points included; buttons stay at least 48px. */
+  .referral-content { gap: 7px; }
+  .referral-code-card { gap: 6px; padding: 10px 12px; }
+  .referral-code { font-size: 24px; }
+  .referral-stats span { padding: 6px; }
+  .referral-stats strong { font-size: 15px; }
+  .referral-points-redeem { padding: 6px 6px 6px 12px; }
+  .referral-qr { padding: 7px 6px; gap: 4px; }
+  .referral-qr-code { padding: 4px; }
+  .referral-qr-code svg { width: min(78px, 21vw); }
+  .referral-download h3 { margin-bottom: 6px; }
+  .referral-download .referral-note { display: none; }
+  .referral-qr figcaption { display: flex; justify-content: center; align-items: baseline; gap: 5px; }
+}
