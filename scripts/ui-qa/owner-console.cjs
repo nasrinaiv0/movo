@@ -42,6 +42,7 @@ async function run(){
       if(width<=760)await page.locator('.occ-mobile-toggle').click();
       await page.getByRole('button',{name:/Users/}).first().click();
       await page.getByRole('heading',{name:'Users',exact:true}).waitFor();
+      await page.getByText('te•••@example.org').first().waitFor({timeout:10000});
       assert.ok((await page.locator('.occ-table-scroll').innerText()).includes('te•••@example.org'));
       await page.getByRole('button',{name:'Manage',exact:true}).click();
       assert.equal(await page.getByRole('button',{name:'Confirm and grant access'}).isDisabled(),true);
