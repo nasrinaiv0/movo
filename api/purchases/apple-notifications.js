@@ -1,46 +1,72 @@
-'use strict';
-
-const { createClient } = require('@supabase/supabase-js');
-const { decodeAppleTransaction, verifyAppleNotification, verifyApple } = require('../lib/purchaseVerification');
-const { persistStoreEntitlement } = require('../lib/persistStoreEntitlement');
-
-const json = (res, status, body) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  return res.status(status).json(body);
-};
-
+"use strict";
+const {
+  verifyAppleNotification,
+  decodeAppleTransaction,
+  verifyApple,
+  getProduct,
+  appleEntitlement,
+} = require("../lib/purchaseVerification");
+const S = require("../lib/iapSecurity");
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return json(res, 405, { error: 'method_not_allowed' }); }
-  const signedPayload = req.body?.signedPayload;
-  if (!signedPayload || typeof signedPayload !== 'string') return json(res, 400, { error: 'signed_payload_required' });
-  const url = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !service) return json(res, 503, { error: 'service_unavailable' });
-  const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return S.json(res, 405, { error: "method_not_allowed" });
+  }
   try {
-    const notification = await verifyAppleNotification(signedPayload);
-    const signedTransaction = notification.data?.signedTransactionInfo;
-    if (!signedTransaction) return json(res, 200, { received: true, processed: false });
-    const { transaction } = await decodeAppleTransaction(signedTransaction);
-    if (!transaction.originalTransactionId) return json(res, 200, { received: true, processed: false });
-    const { data: existing, error } = await admin.from('movo_store_entitlements')
-      .select('user_id')
-      .eq('platform', 'apple')
-      .eq('store_subscription_key', String(transaction.originalTransactionId))
-      .maybeSingle();
-    if (error) throw error;
-    if (!existing?.user_id) return json(res, 200, { received: true, processed: false });
-    const verified = await verifyApple(signedTransaction, existing.user_id);
-    const entitlementId = await persistStoreEntitlement(admin, existing.user_id, verified);
-    if (verified.paidVerified && verified.environment === 'production' && !verified.needsAcknowledgement) {
-      const { error: referralError } = await admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: existing.user_id });
-      if (referralError) throw referralError;
+    const input = S.body(S.appleSchema, req);
+    const event = await verifyAppleNotification(input.signedPayload);
+    if (
+      typeof event.notificationUUID !== "string" ||
+      event.notificationUUID.length > 200 ||
+      !event.notificationUUID
+    )
+      throw new Error("invalid_request");
+    const db = S.adminClient();
+    if (await S.duplicate(db, "apple", event.notificationUUID))
+      return S.json(res, 200, { received: true, duplicate: true });
+    if (!event.data?.signedTransactionInfo) {
+      if (event.notificationType === "TEST")
+        return S.json(res, 200, { received: true });
+      throw new Error("invalid_request");
     }
-    return json(res, 200, { received: true, processed: true });
+    const jws = event.data.signedTransactionInfo;
+    const { transaction: tx } = await decodeAppleTransaction(jws);
+    const key = String(tx.originalTransactionId || "");
+    if (!key) throw new Error("invalid_request");
+    await S.lease(db, "apple", key, async (fence) => {
+      const existing = await S.owner(db, "apple", key);
+      const revoked = ["REFUND", "REVOKE"].includes(event.notificationType);
+      let verified;
+      if (existing)
+        verified = revoked
+          ? appleEntitlement(tx, "production", existing.user_id)
+          : await verifyApple(jws, existing.user_id);
+      else {
+        if (!revoked) throw new Error("iap_owner_unknown");
+        if (!getProduct(tx.productId) || !tx.transactionId)
+          throw new Error("invalid_request");
+        verified = {
+          platform: "apple",
+          storeSubscriptionKey: key,
+          storeTransactionId: String(tx.transactionId),
+          environment: "production",
+        };
+      }
+      if (revoked) {
+        verified.status = "revoked";
+        verified.paidVerified = false;
+        verified.eventAt = new Date(event.signedDate).toISOString();
+      }
+      await S.commit(
+        db,
+        existing?.user_id || null,
+        verified,
+        fence,
+        event.notificationUUID,
+      );
+    });
+    return S.json(res, 200, { received: true });
   } catch (error) {
-    console.error('[movo-purchases] Apple notification rejected', { code: String(error?.message || 'unknown').slice(0, 80) });
-    return json(res, 400, { error: 'invalid_notification' });
+    return S.failure(res, error);
   }
 };

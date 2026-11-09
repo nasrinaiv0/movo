@@ -1,72 +1,129 @@
-'use strict';
-
-const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
-const { verifyGoogle } = require('../lib/purchaseVerification');
-const { persistStoreEntitlement } = require('../lib/persistStoreEntitlement');
-
-const json = (res, status, body) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  return res.status(status).json(body);
-};
-
+"use strict";
+const crypto = require("crypto");
+const { google } = require("googleapis");
+const { verifyGoogle } = require("../lib/purchaseVerification");
+const S = require("../lib/iapSecurity");
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return json(res, 405, { error: 'method_not_allowed' }); }
-  const audience = process.env.GOOGLE_PLAY_RTDN_AUDIENCE;
-  const expectedEmail = process.env.GOOGLE_PLAY_RTDN_SERVICE_ACCOUNT_EMAIL;
-  const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const url = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
-  if (!audience || !expectedEmail || !service || !url) return json(res, 503, { error: 'service_unavailable' });
-
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return S.json(res, 405, { error: "method_not_allowed" });
+  }
   try {
-    const match = /^Bearer\s+(.+)$/i.exec(req.headers.authorization || '');
-    if (!match) return json(res, 401, { error: 'unauthorized' });
-    const { google } = require('googleapis');
-    const client = new google.auth.OAuth2();
-    const ticket = await client.verifyIdToken({ idToken: match[1], audience });
-    const claims = ticket.getPayload();
-    if (!claims?.email_verified || claims.email !== expectedEmail) return json(res, 401, { error: 'unauthorized' });
-
-    const encoded = req.body?.message?.data;
-    if (!encoded || typeof encoded !== 'string' || encoded.length > 100000) return json(res, 400, { error: 'invalid_message' });
-    const message = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
-    const packageName = process.env.GOOGLE_PLAY_PACKAGE_NAME || 'com.nasrinai.movo';
-    if (message.packageName && message.packageName !== packageName) return json(res, 400, { error: 'package_mismatch' });
-    if (!message.subscriptionNotification && !message.voidedPurchaseNotification) return json(res, 200, { received: true, processed: false });
-
-    const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-    const purchaseToken = message.subscriptionNotification?.purchaseToken || message.voidedPurchaseNotification?.purchaseToken;
-    if (!purchaseToken) return json(res, 200, { received: true, processed: false });
-    const tokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
-    const { data: existing, error } = await admin.from('movo_store_entitlements')
-      .select('user_id,product_id')
-      .eq('platform', 'google')
-      .eq('purchase_token_hash', tokenHash)
-      .maybeSingle();
-    if (error) throw error;
-    if (!existing?.user_id) return json(res, 200, { received: true, processed: false });
-
-    if (message.voidedPurchaseNotification) {
-      const { error: revokeError } = await admin.from('movo_store_entitlements')
-        .update({ status: 'revoked', verified_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-        .eq('platform', 'google')
-        .eq('purchase_token_hash', tokenHash)
-        .eq('user_id', existing.user_id);
-      if (revokeError) throw revokeError;
-      return json(res, 200, { received: true, processed: true });
+    const audience = process.env.GOOGLE_PLAY_RTDN_AUDIENCE;
+    const email = process.env.GOOGLE_PLAY_RTDN_SERVICE_ACCOUNT_EMAIL;
+    const subscription = process.env.GOOGLE_PLAY_RTDN_SUBSCRIPTION;
+    if (!audience || !email || !subscription)
+      throw new Error("iap_unavailable");
+    const bearer = /^Bearer ([^\s]{1,8192})$/.exec(
+      req.headers.authorization || "",
+    )?.[1];
+    if (!bearer) throw new Error("unauthorized");
+    let claims;
+    try {
+      claims = (
+        await new google.auth.OAuth2().verifyIdToken({
+          idToken: bearer,
+          audience,
+        })
+      ).getPayload();
+    } catch {
+      throw new Error("unauthorized");
     }
-
-    const subscriptionId = message.subscriptionNotification.subscriptionId || existing.product_id;
-    const verified = await verifyGoogle(purchaseToken, subscriptionId, existing.user_id);
-    const entitlementId = await persistStoreEntitlement(admin, existing.user_id, verified);
-    if (verified.paidVerified && verified.environment === 'production' && !verified.needsAcknowledgement) {
-      const { error: referralError } = await admin.rpc('record_movo_paid_referral', { p_entitlement_id: entitlementId, p_user_id: existing.user_id });
-      if (referralError) throw referralError;
+    if (
+      !claims ||
+      claims.email_verified !== true ||
+      claims.email !== email ||
+      claims.aud !== audience ||
+      !["https://accounts.google.com", "accounts.google.com"].includes(
+        claims.iss,
+      )
+    )
+      throw new Error("unauthorized");
+    const input = S.body(S.pubsubSchema, req);
+    if (input.subscription !== subscription) throw new Error("unauthorized");
+    const db = S.adminClient();
+    if (await S.duplicate(db, "google", input.message.messageId))
+      return S.json(res, 200, { received: true, duplicate: true });
+    let raw;
+    try {
+      raw = JSON.parse(
+        Buffer.from(input.message.data, "base64").toString("utf8"),
+      );
+    } catch {
+      throw new Error("invalid_request");
     }
-    return json(res, 200, { received: true, processed: true });
+    const parsed = S.rtdnSchema.safeParse(raw);
+    if (!parsed.success) throw new Error("invalid_request");
+    const event = parsed.data;
+    if (event.testNotification) return S.json(res, 200, { received: true });
+    const token =
+      event.subscriptionNotification?.purchaseToken ||
+      event.voidedPurchaseNotification.purchaseToken;
+    const key = crypto.createHash("sha256").update(token).digest("hex");
+    await S.lease(db, "google", key, async (fence) => {
+      let existing = await S.owner(db, "google", key);
+      const revoked =
+        !!event.voidedPurchaseNotification ||
+        event.subscriptionNotification?.notificationType === 12;
+      if (!existing) {
+        const { data: current } =
+          await S.publisher().purchases.subscriptionsv2.get(
+            { packageName: S.BUNDLE_ID, token },
+            { timeout: 15000 },
+          );
+        if (current.testPurchase) throw new Error("sandbox_purchase_rejected");
+        if (current.linkedPurchaseToken) {
+          existing = await S.owner(
+            db,
+            "google",
+            crypto
+              .createHash("sha256")
+              .update(current.linkedPurchaseToken)
+              .digest("hex"),
+          );
+          if (existing)
+            existing.product_id = current.lineItems?.find((item) =>
+              require("../lib/purchaseVerification").getProduct(item.productId),
+            )?.productId;
+        }
+      }
+      let verified;
+      if (existing)
+        verified = await verifyGoogle(token, null, existing.user_id);
+      else {
+        // Even revocations must query server truth; do not turn an unauthenticated client claim into a tombstone.
+        await S.publisher().purchases.subscriptionsv2.get(
+          { packageName: S.BUNDLE_ID, token },
+          { timeout: 15000 },
+        );
+        if (!revoked) throw new Error("iap_owner_unknown");
+        verified = {
+          platform: "google",
+          storeSubscriptionKey: key,
+          storeTransactionId: key,
+          environment: "production",
+        };
+      }
+      if (revoked) {
+        verified.status = "revoked";
+        verified.paidVerified = false;
+        verified.needsAcknowledgement = false;
+        verified.eventAt = new Date(
+          Number(event.eventTimeMillis),
+        ).toISOString();
+      }
+      await S.commit(
+        db,
+        existing?.user_id || null,
+        verified,
+        fence,
+        input.message.messageId,
+      );
+    });
+    // Durable outbox also retries after a process crash or a duplicate delivery.
+    await S.acknowledge(db, key);
+    return S.json(res, 200, { received: true });
   } catch (error) {
-    console.error('[movo-purchases] Google notification rejected', { code: String(error?.message || 'unknown').slice(0, 80) });
-    return json(res, 400, { error: 'invalid_notification' });
+    return S.failure(res, error);
   }
 };

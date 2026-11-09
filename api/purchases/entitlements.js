@@ -31,13 +31,8 @@ module.exports = async function handler(req, res) {
     if (error) throw error;
     const { error: grantError } = await admin.from('movo_plan_grants').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
     if (grantError) throw grantError;
-    const testUser = String(process.env.MOVO_STORE_TEST_USER_IDS || '').split(',').map(value => value.trim()).includes(userId);
-    const testAccess = testUser
-      ? await admin.from('movo_store_test_users').upsert({ user_id:userId }, { onConflict:'user_id' })
-      : await admin.from('movo_store_test_users').delete().eq('user_id',userId);
-    if (testAccess.error) throw testAccess.error;
     const plan = await getPlan(admin, userId);
-    const eligible = (data || []).filter(item => item.environment === 'production' || testUser);
+    const eligible = (data || []).filter(item => item.environment === 'production');
     return json(res, 200, {
       ...plan,
       entitlements: eligible.map(({ platform, product_id, tier: itemTier, status, expires_at, environment, verified_at }) => ({
