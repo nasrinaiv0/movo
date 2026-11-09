@@ -63,3 +63,36 @@ test('authorized verified owner can request server-logged time-bounded Pro+ gran
     {p_actor:OWNER,p_user:OTHER,p_tier:'pro_plus',p_days:30,p_reason:'Owner complimentary grant'});
   expect(response.status).toHaveBeenCalledWith(200);
 });
+
+
+test('owner can add an operational follow-up after MFA and allowlist verification',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},
+    body:{action:'work_create',area:'sync',title:'Review incomplete reconciliation',notes:'Regression report',priority:'critical'}},response);
+  expect(a.rpc).toHaveBeenCalledWith('movo_owner_work_create',{
+    p_actor:OWNER,p_area:'sync',p_title:'Review incomplete reconciliation',p_notes:'Regression report',p_priority:'critical'
+  });
+  expect(response.status).toHaveBeenCalledWith(200);
+});
+test('owner rejects unsupported task areas before calling database',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},
+    body:{action:'work_create',area:'private_transactions',title:'Read customer finances',notes:'bad',priority:'high'}},response);
+  expect(response.status).toHaveBeenCalledWith(400);
+  expect(a.rpc).not.toHaveBeenCalled();
+});
+test('owner operational reads scope to requested queue',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'GET',headers:{authorization:'Bearer test'},query:{view:'support'}},response);
+  expect(a.from).toHaveBeenCalledWith('movo_owner_work_items');
+  expect(response.status).toHaveBeenCalledWith(200);
+});
+test('stale owner edit returns conflict instead of overwriting an updated item',async()=>{
+  const a=admin();a.rpc.mockResolvedValue({data:false,error:null});
+  createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},
+    body:{action:'work_update',id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      expectedUpdatedAt:'2026-11-09T00:00:00.000Z',status:'blocked',priority:'high',notes:'Conflict'}},response);
+  expect(response.status).toHaveBeenCalledWith(409);
+  expect(response.json).toHaveBeenCalledWith({error:'work_item_changed_reload'});
+});
