@@ -7987,18 +7987,17 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
    (Apple HIG / WCAG 2.5.5). ::before is free on these controls (the hairline uses ::after). Screens never scroll
    sideways: a decorative layer (badge shine/sparkle) could leave the page 18px wider after a tab change. */
 .movo-app .screen { overflow-x: clip; }
-.movo-app :is(.plain-icon, .ram-bubble-link, .balance-go, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle) { position: relative; }
+.movo-app :is(.plain-icon, .ram-bubble-link, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle) { position: relative; }
 .movo-app :is(.plain-icon, .ram-bubble-link, .balance-go, .section-title .link-button, .budget-head .link-button, .flow-ranges button, .chip-row button, .toggle)::before {
   content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
 }
 /* The billing-cycle picker is a 40px filter like its neighbours; its native select stays invisible and borderless. */
 .movo-app.movo-app .tx-period-filter select { border: 0; }
-/* The eye sits just above the balance figure: its hit area stays on top. The wallet arrow sits at the card's left edge,
-   which clips: its hit area grows to the right instead. Money-flow ranges are filters: 40px like every other filter. */
+/* The eye sits just above the balance figure: its hit area stays on top. The wallet arrow keeps its own absolute
+   position (bottom-right of the balance box), which already anchors its hit area; it must never be made relative here.
+   Money-flow ranges are filters: 40px like every other filter. */
 .movo-app :is(.plain-icon, .balance-go) { z-index: 2; }
 .movo-app.movo-app :is(.balance-card, .total-card) .balance-label { z-index: 2; }
-.movo-app.movo-app .balance-go::before { left: 0; transform: translateY(-50%); }
-.movo-app.movo-app[dir="rtl"] .balance-go::before { left: auto; right: 0; }
 .movo-app.movo-app .flow-ranges button { min-height: 40px; overflow: visible; }
 
 /* ---------- Motion system (2026-11-09, audit phase 3) ----------
@@ -8083,3 +8082,21 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   .movo-app.movo-app .home-period-filter.in-notch .home-period-icon { display: none; }
   .movo-app.movo-app .home-period-filter.in-notch { padding-left: 12px; }
 }
+
+/* ---------- Home balance arrow (2026-11-09) ----------
+   The wallet arrow sits at the bottom of the balance box on the trailing side: right in left-to-right languages, left in
+   right-to-left ones, where the trend chip starts from the right. It is positioned absolutely by the balance-box rules
+   above; nothing may make it `position: relative` (that dropped it onto the trend chip at the left). */
+.movo-app[dir="rtl"] .balance-card.notched .balance-go { right: auto; left: var(--box-pad); }
+/* The month pill is cut into the box's top-right corner in every language. "Total Balance" and its eye button stop
+   short of the cut (--notch-w is measured by NotchedBox) and the label shortens with an ellipsis before the eye is
+   ever covered; right-to-left languages keep them on the left of the first row, clear of the pill. Text sizes above
+   the default use the short month in the pill, as phones under 360px already do. */
+.movo-app .home-period-filter.in-notch.short .home-period-current .period-long { display: none; }
+.movo-app .home-period-filter.in-notch.short .home-period-current .period-short { display: inline; }
+.movo-app.movo-app .home-period-filter.in-notch.short .home-period-icon { display: none; }
+.movo-app.movo-app .home-period-filter.in-notch.short { padding-left: 12px; }
+.movo-app.movo-app .balance-card.notched .balance-label { max-width: calc(100% - var(--notch-w, 0px) + var(--box-pad) - 4px); min-width: 0; }
+.movo-app .balance-card.notched .balance-label-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .balance-card.notched .balance-label .plain-icon { flex: none; }
+.movo-app[dir="rtl"] .balance-card.notched .balance-label { align-self: flex-end; }

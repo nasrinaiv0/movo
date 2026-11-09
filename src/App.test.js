@@ -218,6 +218,29 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Netflix Transfer');
   });
 
+  test('the Home balance box keeps its wallet arrow last, labels the eye row, and shortens the month pill only for larger text', () => {
+    const card = container.querySelector('.balance-card.notched');
+    const go = card.querySelector('.balance-go');
+    expect(go.getAttribute('aria-label')).toBe('Open wallet');
+    expect(card.lastElementChild).toBe(go);
+    expect(card.querySelector('.balance-label > .balance-label-text').textContent).toBe('Total Balance');
+    expect(card.querySelector('.balance-label > .plain-icon').getAttribute('aria-label')).toBe('Hide balances');
+    const pill = () => container.querySelector('.notch-slot .home-period-filter');
+    expect(pill().classList.contains('in-notch')).toBe(true);
+    expect(pill().classList.contains('short')).toBe(false);
+    act(() => root.unmount());
+    const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...saved, fontSize: 'largest' }));
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    expect(pill().classList.contains('short')).toBe(true);
+    // Both month forms stay in the pill; the stylesheet picks one, so the accessible name does not change.
+    expect(pill().querySelector('.period-long')).not.toBeNull();
+    expect(pill().querySelector('.period-short').textContent).toMatch(/2026/);
+    act(() => container.querySelector('.balance-card.notched .balance-go').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.querySelector('.bottom-nav .nav-item[aria-current="page"]').getAttribute('aria-label')).toBe('Wallet');
+  });
+
   test('tapping a membership card opens the same Account details layout as other cards, with Edit card leading to the editor', () => {
     act(() => root.unmount());
     const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');

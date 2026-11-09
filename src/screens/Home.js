@@ -12,6 +12,7 @@ import RamMascot from '../components/RamMascot';
 import { mascotMood, moodMessage } from '../lib/mascotMood';
 import { dayKey, money, monthLabel, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { fontScaleOf } from '../lib/fontPrefs';
 
 const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
 const FLOW_STYLES = [['bars', 'Bars'], ['lines', 'Lines'], ['net', 'Net']];
@@ -65,9 +66,9 @@ export default function Home({ c }) {
   }, []);
   const [mascotError, setMascotError] = useState('');
   const balanceShown = !(prefs.layouts?.home?.hidden || []).includes('balance');
-  const periodPill = (inBox) => <button type="button" className={`home-period-filter${inBox ? ' in-notch' : showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!inBox && !showPeriodOnTop} tabIndex={inBox || showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
+  const periodPill = (inBox) => <button type="button" className={`home-period-filter${inBox ? ` in-notch${fontScaleOf(prefs.fontSize) > 1 ? ' short' : ''}` : showPeriodOnTop ? '' : ' is-hidden'}`} aria-label={tr('Filter Home by month and year')} aria-haspopup="dialog" aria-hidden={!inBox && !showPeriodOnTop} tabIndex={inBox || showPeriodOnTop ? 0 : -1} onClick={() => setPeriodSheet(true)}>
     <span className="home-period-icon"><Icon name="calendar" size={15} /></span>
-    {/* Small phones get the short month ("Nov 2026") so the pill never covers the balance's eye button. */}
+    {/* Small phones and larger text sizes get the short month ("Nov 2026") so the pill never covers the balance's eye button. */}
     <span className="home-period-current"><span className="period-long">{monthName(homeMonthKey)}</span><span className="period-short">{monthLabel(homeMonthKey)}</span></span>
     <Icon name="chevron" size={13} className="home-period-chevron" />
   </button>;
@@ -101,7 +102,7 @@ export default function Home({ c }) {
   const recentFor = (size) => (size === 'M' ? recent : (homeMonthStats?.list || txs).filter(t => t.type !== 'transfer').slice(0, size === 'S' ? 2 : 8));
   const boxes = [
     { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <NotchedBox className={`card balance-card notched size-${size}`} label={tr('Total balance')} corner={periodPill(true)}>
-      <div className="balance-label">{tr('Total Balance')}
+      <div className="balance-label"><span className="balance-label-text">{tr('Total Balance')}</span>
         <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={18} /></button>
       </div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
