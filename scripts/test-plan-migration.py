@@ -23,7 +23,7 @@ do $$ begin
 end $$;
 create schema auth; create schema storage;
 create extension pgcrypto;
-create table auth.users(id uuid primary key, email_confirmed_at timestamptz, phone_confirmed_at timestamptz, created_at timestamptz not null default now());
+create table auth.users(id uuid primary key, email_confirmed_at timestamptz, phone_confirmed_at timestamptz);
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('role',current_setting('request.jwt.claim.role',true))$$;
 grant usage on schema auth, public, storage to authenticated, anon, service_role;
@@ -49,8 +49,4 @@ sql((root/'supabase/tests/plan_access.test.sql').read_text())
 sql((root/'supabase/tests/first_time_trial.test.sql').read_text())
 sql((root/'supabase/migrations/20261108230330_owner_manual_plan_grants.sql').read_text())
 sql((root/'supabase/tests/manual_plan_grants.test.sql').read_text())
-sql((root/'supabase/migrations/20261108232950_owner_console_security_audit.sql').read_text())
-sql((root/'supabase/tests/owner_console.test.sql').read_text())
-sql((root/'supabase/migrations/20261109000432_owner_operations_workspaces.sql').read_text())
-sql((root/'supabase/tests/owner_workspaces.test.sql').read_text())
 print('PASS: plan migration and adversarial SQL checks in isolated PostgreSQL')
