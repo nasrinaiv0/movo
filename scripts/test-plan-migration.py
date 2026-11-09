@@ -51,4 +51,6 @@ sql((root/'supabase/migrations/20261108230330_owner_manual_plan_grants.sql').rea
 sql((root/'supabase/tests/manual_plan_grants.test.sql').read_text())
 sql((root/'supabase/migrations/20261108232950_owner_console_security_audit.sql').read_text())
 sql((root/'supabase/tests/owner_console.test.sql').read_text())
+sql((root/'supabase/migrations/20261109000432_owner_operations_workspaces.sql').read_text())
+sql((root/'supabase/tests/owner_workspaces.test.sql').read_text())
 print('PASS: plan migration and adversarial SQL checks in isolated PostgreSQL')
