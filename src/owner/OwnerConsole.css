@@ -23,3 +23,15 @@
 .occ-integration-note p{font-size:12px;line-height:1.65}
 @media(max-width:760px){.occ-work-item{align-items:flex-start;gap:8px}.occ-work-item>.occ-small-button{flex-shrink:0}.occ-work-form{padding:14px}.occ-work-filters button{padding:7px 9px;font-size:11px}}
 @media(prefers-color-scheme:dark){.occ-root{--occ-green-light:#234633;--occ-green:#a1dbb2}.occ-work-status.complete{background:#234633;color:#a2e4b9}.occ-work-status.blocked{background:#4f3130;color:#f2b1a8}.occ-work-status.in_progress{background:#253b56;color:#a0c8f7}}
+
+/* Server-verified signup chart: crisp solid strokes and no decorative gradients. */
+.occ-signup-chart{display:flex;flex-direction:column;gap:3px}
+.occ-trend-summary{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;color:var(--occ-muted)}
+.occ-trend-summary strong{font-size:28px;line-height:1.2;letter-spacing:-.045em;color:var(--occ-ink)}
+.occ-trend-summary span{font-size:11px}
+.occ-trend-svg{width:100%;height:auto;display:block;margin-top:16px;overflow:visible}
+.occ-trend-grid{stroke:var(--occ-line);stroke-width:1.2}
+.occ-trend-line{stroke:#228252}
+.occ-trend-point{fill:var(--occ-surface);stroke:#238551;stroke-width:2.8}
+.occ-trend-tick{fill:var(--occ-muted);font-family:inherit;font-size:11px;letter-spacing:0}
+@media(prefers-color-scheme:dark){.occ-trend-line{stroke:#79c99a}.occ-trend-point{stroke:#79c99a}}
