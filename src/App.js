@@ -4,7 +4,9 @@ import { planPreferenceRestore } from './lib/backupPreferences';
 import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from './lib/localAttachments';
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
-import { canUseFeatureInMode, effectiveAccessPlan } from './lib/planAccess';
+import { canUseFeatureInMode, effectiveAccessPlan, effectivePlan } from './lib/planAccess';
+import { appIconById, appIconUnlocked } from './lib/appIcons';
+import { setNativeAppIcon } from './lib/native';
 import PlanOffer from './components/PlanOffer';
 import { activateNativeReferral } from './lib/referrals';
 import { UsageSheet } from './screens/Settings';
@@ -149,7 +151,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, mascot: '', mascotStyle: 'ram', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
@@ -278,7 +280,7 @@ function cleanCopyCheck(ownerId, copy, cloud) {
 }
 function App() {
   const [session, setSession] = useState(null);
-  const { entitlement, refreshEntitlement } = usePlanEntitlement(session);
+  const { entitlement, refreshEntitlement, entitlementReady } = usePlanEntitlement(session);
   const nativeReferralAttempt = useRef('');
   useEffect(() => {
     const id = session?.user?.id;
@@ -428,6 +430,18 @@ function App() {
    * (where a referral code can be entered), an eligible signed-in person who did not start it there gets it started
    * automatically. The server alone decides eligibility (claim_movo_trial); a refusal is retried on a later launch.
    */
+  /*
+   * Badge app icon: the iPhone app shows the chosen badge icon while it stays unlocked. It follows the verified
+   * subscription (not Cloud Sync mode, so turning sync off does not flip the icon); once the plan is confirmed
+   * to have ended, MOVO returns to the standard icon.
+   */
+  const subscriptionPlan = effectivePlan(entitlement);
+  useEffect(() => {
+    const icon = appIconById(prefs.appIcon);
+    if (icon.id === 'default') return;
+    if (appIconUnlocked(icon, prefs.streak, subscriptionPlan)) { setNativeAppIcon(icon.native); return; }
+    if (entitlementReady || (authReady && !session?.user)) { setPrefs(p => ({ ...p, appIcon: 'default' })); setNativeAppIcon(null); }
+  }, [prefs.appIcon, prefs.streak, subscriptionPlan, entitlementReady, authReady, session?.user]);
   const trialAutoRef = useRef('');
   useEffect(() => {
     const id = session?.user?.id;
@@ -2180,7 +2194,7 @@ function App() {
 
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
-    recordCardPayment, rawTxs,
+    recordCardPayment, rawTxs, subscriptionPlan,
     entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
     syncState,
@@ -2391,7 +2405,7 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked && view !== 'Sign in' && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
+      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked && view !== 'Sign in' && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
       {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
       {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
       {/* First run: the video guide, then (skipped or finished) the spotlight walkthrough, then the free month of Pro. */}

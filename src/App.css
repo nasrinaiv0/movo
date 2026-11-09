@@ -7771,6 +7771,107 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 /* ---------- Total balance note (2026-11-09): accounts left out for lack of an exchange rate ---------- */
 .movo-app .balance-card .balance-note { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 500; color: var(--muted); }
 
+/* ---------- Plans panel (2026-11-09 reference): one compact dark panel, MOVO marks per tier ---------- */
+.movo-app.movo-app .sheet.plan-panel {
+  --pp-ink: #f5f5f7; --pp-muted: #a3a3ab; --pp-line: rgba(255,255,255,.12); --pp-tile: #141416;
+  --pp-gold: #e9c46a; --pp-gold-soft: #f2d58b; --pp-plat: #d9d6ee; --pp-green: #3dba78;
+  background: #09090a;
+  color: var(--pp-ink); border: 0; box-shadow: 0 -14px 50px rgba(0,0,0,.5);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  display: flex; flex-direction: column; gap: 12px; padding: 10px 18px calc(16px + env(safe-area-inset-bottom));
+  max-height: 96dvh;
+}
+.movo-app .sheet.plan-panel .sheet-grabber { background: rgba(255,255,255,.25); }
+.movo-app .sheet.plan-panel .sheet-close { background: rgba(255,255,255,.1); color: var(--pp-ink); }
+.movo-app .plan-panel-head { display: grid; justify-items: center; gap: 4px; text-align: center; padding-top: 4px; }
+.movo-app .plan-panel-brand { display: inline-flex; align-items: center; gap: 8px; }
+.movo-app .plan-panel-brand b { font-size: 20px; font-weight: 800; letter-spacing: .14em; color: var(--pp-ink); }
+.movo-app .plan-panel-head h2 { margin: 2px 0 0; font-size: 26px; line-height: 1.15; font-weight: 800; letter-spacing: -.02em; color: var(--pp-ink); }
+.movo-app .plan-panel-head p { margin: 0; font-size: 13.5px; color: var(--pp-muted); }
+.movo-app .plan-period { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: min(100%, 290px); margin: 0 auto; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid var(--pp-line); }
+.movo-app .plan-period button { min-height: 36px; border: 0; border-radius: 999px; background: transparent; color: var(--pp-muted); font: inherit; font-size: 14px; font-weight: 650; }
+.movo-app .plan-period button.selected { background: #232326; color: var(--pp-ink); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.75); }
+.movo-app .plan-tiles-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) 30px; align-items: center; gap: 6px; }
+.movo-app .plan-arrow { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255,255,255,.08); color: var(--pp-ink); padding: 0; }
+.movo-app .plan-arrow:first-child .movo-icon { transform: scaleX(-1); }
+.movo-app .plan-arrow:disabled { opacity: .3; }
+.movo-app .plan-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+.movo-app .plan-tile { position: relative; display: grid; justify-items: center; align-content: center; gap: 5px; min-width: 0; min-height: 104px; padding: 12px 4px; border: 1.5px solid var(--pp-line); border-radius: 18px; background: var(--pp-tile); color: var(--pp-ink); font: inherit; }
+.movo-app .plan-tile strong { font-size: 17px; font-weight: 750; line-height: 1.1; }
+.movo-app .plan-tile small { font-size: 10.5px; font-weight: 650; color: var(--pp-muted); }
+.movo-app .plan-tile.selected.tier-free { border-color: var(--pp-green); box-shadow: 0 0 0 3px rgba(61,186,120,.15); }
+.movo-app .plan-tile.selected.tier-pro { border-color: var(--pp-gold); background: #1a160c; box-shadow: 0 0 0 3px rgba(233,196,106,.15), 0 0 26px -8px rgba(233,196,106,.6); }
+.movo-app .plan-tile.selected.tier-pro_plus { border-color: var(--pp-plat); background: #16151c; box-shadow: 0 0 0 3px rgba(217,214,238,.13), 0 0 26px -8px rgba(217,214,238,.5); }
+.movo-app .plan-dots { display: flex; justify-content: center; gap: 6px; margin-top: -4px; }
+.movo-app .plan-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.22); }
+.movo-app .plan-dots i.on { background: var(--pp-gold); }
+.movo-app .plan-price { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; column-gap: 6px; row-gap: 2px; text-align: center; min-height: 52px; }
+.movo-app .plan-price .movo-mark { align-self: center; }
+.movo-app .plan-price strong { font-size: 30px; font-weight: 800; letter-spacing: -.02em; color: var(--pp-ink); font-variant-numeric: tabular-nums; }
+.movo-app .plan-price > span { font-size: 17px; color: var(--pp-ink); opacity: .85; }
+.movo-app .plan-price small { flex-basis: 100%; font-size: 13px; color: var(--pp-muted); }
+.movo-app .plan-price small em { font-style: normal; color: var(--pp-gold); font-weight: 650; }
+.movo-app .plan-price .plan-price-note { flex-basis: 100%; font-size: 13px; color: var(--pp-muted); }
+.movo-app .plan-price .plan-trial-note { color: var(--pp-ink); opacity: .85; }
+.movo-app .plan-features { padding: 12px 16px; border: 1px solid var(--pp-line); border-radius: 18px; background: rgba(255,255,255,.02); }
+.movo-app .plan-features b { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 700; color: var(--pp-ink); }
+.movo-app .plan-features ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.movo-app .plan-features li { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13.5px; color: var(--pp-ink); }
+.movo-app .plan-features li .movo-icon { flex: none; color: var(--pp-gold); }
+.movo-app .sheet.plan-panel .plan-referral-toggle { align-self: center; color: var(--pp-gold-soft); font-size: 13px; padding: 0; min-height: 0; }
+.movo-app .sheet.plan-panel .plan-referral-input { min-height: 44px; border: 1px solid var(--pp-line); border-radius: 14px; background: rgba(255,255,255,.06); color: var(--pp-ink); padding: 0 14px; font-size: 16px; }
+.movo-app .plan-cta { width: 100%; min-height: 52px; border: 0; border-radius: 999px; font: inherit; font-size: 17px; font-weight: 750; background: var(--pp-gold); color: #1d1606; }
+.movo-app .plan-cta.tier-pro_plus { background: var(--pp-plat); color: #16141f; }
+.movo-app .plan-cta.tier-free { background: var(--pp-green); color: #06150d; }
+.movo-app .plan-cta:disabled { opacity: .5; }
+.movo-app .plan-panel .plan-fine { margin: -4px 0 0; text-align: center; font-size: 12px; line-height: 1.45; color: var(--pp-muted); }
+/* Global button colours use `color: var(--button-ink) !important`; the panel sets that variable for its own links. */
+.movo-app.movo-app .sheet.plan-panel .plan-fine .link-button { --button-ink: var(--pp-ink); padding: 0; min-height: 0; font-size: 12px; color: var(--pp-ink); text-decoration: underline; text-underline-offset: 2px; }
+.movo-app.movo-app .sheet.plan-panel .plan-referral-toggle { --button-ink: var(--pp-gold-soft); }
+.movo-app .plan-panel .form-error { margin: 0; text-align: center; }
+.movo-app .sheet.plan-panel > :nth-child(n+3) { animation-delay: 0s; }
+@media (max-height: 760px) {
+  .movo-app.movo-app .sheet.plan-panel { gap: 9px; }
+  .movo-app .plan-panel-head h2 { font-size: 22px; }
+  .movo-app .plan-tile { min-height: 92px; padding-top: 10px; padding-bottom: 10px; }
+  .movo-app .plan-features { padding: 10px 14px; }
+  .movo-app .plan-features ul { gap: 4px; }
+}
+@media (max-height: 700px) {
+  /* Small phones (375×667): the whole panel still fits without scrolling; buttons stay at least 48px. */
+  .movo-app.movo-app .sheet.plan-panel { gap: 7px; padding-top: 8px; }
+  .movo-app .plan-panel-brand b { font-size: 17px; }
+  .movo-app .plan-panel-head h2 { font-size: 20px; }
+  .movo-app .plan-panel-head p { font-size: 12.5px; }
+  .movo-app .plan-period button { min-height: 32px; }
+  .movo-app .plan-tile { min-height: 82px; padding: 8px 4px; }
+  .movo-app .plan-price { min-height: 44px; }
+  .movo-app .plan-price strong { font-size: 26px; }
+  .movo-app .plan-features { padding: 9px 13px; }
+  .movo-app .plan-features li { font-size: 12.5px; }
+  .movo-app .plan-features ul { gap: 3px; }
+  .movo-app .plan-cta { min-height: 48px; }
+}
+@media (max-width: 360px) { .movo-app .plan-tile strong { font-size: 15px; } }
+/* Plan badge tile (2026-11-09): toned MOVO logo on a dark tile, like the badge app icons. */
+.movo-app .plan-badge-mark { display: grid; place-items: center; width: var(--plan-badge, 26px); height: var(--plan-badge, 26px); flex: none; border-radius: 30%; background: #121213; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 2px 8px -2px rgba(0,0,0,.35); }
+.movo-app .plan-badge-mark.tone-gold { box-shadow: inset 0 0 0 1px rgba(233,196,106,.35), 0 2px 10px -2px rgba(227,176,74,.45); }
+.movo-app .plan-badge-mark.tone-platinum { box-shadow: inset 0 0 0 1px rgba(217,214,238,.35), 0 2px 10px -2px rgba(157,151,196,.45); }
+/* App icon picker (2026-11-09): badge icons for the home screen, locked until the badge is unlocked. */
+.movo-app .app-icon-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.movo-app .app-icon-option { display: grid; justify-items: center; gap: 4px; min-width: 0; padding: 8px 2px; border: 0; border-radius: 16px; background: transparent; color: var(--text); font: inherit; }
+.movo-app .app-icon-option strong { font-size: 12px; font-weight: 650; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .app-icon-option small { font-size: 10px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .app-icon-option.selected { background: var(--field); }
+.movo-app .app-icon-option.selected small { color: var(--accent-ink, var(--accent)); font-weight: 650; }
+.movo-app .app-icon-frame { position: relative; display: grid; }
+.movo-app .app-icon-preview { display: grid; place-items: center; width: min(var(--app-icon, 60px), 15vw); aspect-ratio: 1; border-radius: 23%; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.12), 0 3px 10px -4px rgba(0,0,0,.3); }
+.movo-app .app-icon-preview .movo-mark { width: 62%; height: auto; }
+.movo-app .app-icon-option.selected .app-icon-preview { box-shadow: 0 0 0 2px var(--sheet-bg, #fff), 0 0 0 4px var(--accent); }
+.movo-app .app-icon-option.locked .app-icon-preview { filter: saturate(.35) brightness(.75); }
+.movo-app .app-icon-lock { position: absolute; right: -4px; bottom: -4px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--card-solid, #fff); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.movo-app .app-icon-picker .form-note { margin: 8px 0 0; }
+
 /* 2026-11-09: compact Local Mode disclosure and native-verified referral sheet. */
 .local-mode-sheet { padding: 12px 18px calc(18px + env(safe-area-inset-bottom)); }
 .local-mode-sheet .sheet-grabber, .referral-sheet .sheet-grabber { margin-bottom: 12px; }

@@ -1,3 +1,7 @@
+## 2026-11-09 — Integration hardening for #258 and #259
+
+Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
+
 # MOVO Pull Request Progress Register
 
 ## 2026-11-09 — PR #260 billing audit follow-up (review; production rollout pending)
@@ -5,6 +9,16 @@
 Pinned Zod 4.6.7 to clear the production dependency vulnerability, updated bounded Pub/Sub record validation, made checkout fail closed on incomplete server configuration, and removed optional payment-history lookup from Google revocation processing. Added isolated PostgreSQL billing CI. Backend JavaScript IAP tests remain in all Jest/prebuild runs; only the frontend TypeScript 4.9 program excludes those two Node-only files.
 
 Vercel Sandbox: zero production dependency vulnerabilities; 174 suites / 1,068 tests, typecheck, production build, real forged-JWS rejection and database replay/refund/concurrency checks passed. Mobile guest accounting flow retains the correct balance across reload with no cloud writes. Required secrets, coordinated database migration and real store purchase/refund delivery remain release prerequisites. No production changes. Details: `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
+
+## 2026-11-09 — Plans offer on one panel, Gold/Platinum MOVO logos, badge app icons
+
+The plans offer is one compact dark panel (fits 375×667 without scrolling): Monthly/Annual, Free (green MOVO), Pro (gold MOVO), Pro+ (platinum MOVO) — no "Gold/Platinum MOVO" labels on the tiles, store prices only, the free month with the white MOVO mark and no renewal line. Plan badges use the same tier logos. Subscribers can switch the home-screen icon to a badge icon (Settings → Appearance → App icon): Pro unlocks Bronze–Gold right after payment, Pro+ all four; iOS uses alternate app icons. See `docs/engineering/updates/2026-11-09-plans-panel-app-icons.md`.
+
+## 2026-11-09 — Membership and rewards cards follow the owner's merchant card references
+
+Each card also carries its own geometric pattern (hexagons, triangles, diamonds, discs, chevrons or low-poly shards) in three shadowed depth layers, seeded by the card so it is stable everywhere and unique per card, kept to the right third so text stays clear (`docs/engineering/updates/2026-11-09-card-geometric-patterns.md`).
+
+Memberships, loyalty, rewards and tokens now use the layout of the owner's 25 Philippine merchant-card references: mark and name on top, the program title large, member number and date, rewards balance, and one flat MOVO motif (rings, diagonal band, stripes, foil edge or two-tone split) in each merchant's colours. 14 programs from the references were added to the provider list; program titles (Suki Card, Happy Plus, Value Card, Go+ …) show unless the person typed their own. No merchant artwork is reproduced, logos stay on the curated favicon list (no new domains), and card text is tested at WCAG 4.5:1 on both the card and motif colours. See `docs/engineering/updates/2026-11-09-merchant-card-layouts.md`.
 
 ## 2026-11-09 — PR #258: short referral codes, iPhone/Android download QR codes, referral points (review; points gated)
 

@@ -48,4 +48,22 @@ jobs:
         run: npx cap sync android
       - name: Compile debug and R8 release variants (unsigned)
         working-directory: android
-        run: bash gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace
+        shell: bash
+        run: |
+          set -euo pipefail
+          # GitHub release CDN sometimes returns 502/503/504 while Gradle fetches
+          # its distribution or Kotlin dependencies. Retry transport failures only;
+          # never turn a real Java/Kotlin compile error into a passing build.
+          for attempt in 1 2 3; do
+            log="${RUNNER_TEMP}/movo-gradle-attempt-${attempt}.log"
+            if bash gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee "$log"; then
+              exit 0
+            fi
+            if (( attempt < 3 )) && grep -Eqi '(HTTP response code: (429|502|503|504)|status code (429|502|503|504)|Read timed out|Connection reset)' "$log"; then
+              echo "::warning::Transient Gradle artifact download failure (attempt ${attempt}/3); retrying"
+              sleep $((attempt * 15))
+            else
+              echo "::error::Android native build failed; see Gradle output above"
+              exit 1
+            fi
+          done

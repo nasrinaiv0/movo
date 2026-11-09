@@ -1,11 +1,13 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import { clearPendingReferralCode, pendingReferralCode, trialReferralCode } from '../lib/referrals';
 import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
-import PlanBadge from './PlanBadge';
 import { apiUrl } from '../lib/platform';
-import { PLAN_LABELS, effectivePlan } from '../lib/planAccess';
+import { MovoMark } from './MovoLogo';
+import { getStoreProducts, isNativePurchasePlatform, purchaseStoreProduct } from '../lib/nativePurchases';
+import { STORE_PRODUCT_BY_ID } from '../lib/storeProducts';
+import { effectivePlan } from '../lib/planAccess';
 import { t as tr } from '../lib/i18n';
 
 /*
@@ -35,14 +37,43 @@ export function PlanComparison() {
   </div>;
 }
 
-export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, onOpenCloudSettings, cloudMode = true, feature }) {
+const PLANS = [
+  { tier: 'free', name: 'Free', tone: 'color', heading: 'Included:', features: ['Unlimited records on this device', 'Export & import', 'Receipt attachments', 'NasrinAI answers from your records'] },
+  { tier: 'pro', name: 'Pro', tone: 'gold', heading: 'Everything in Free, plus:', features: ['Cloud Sync', 'Insights & briefings', 'Full NasrinAI', 'Receipt scanner', 'Custom Money Flow', 'Gold badges & app icons'] },
+  { tier: 'pro_plus', name: 'Pro+', tone: 'platinum', heading: 'Everything in Pro, plus:', features: ['Automatic logging', 'Glow and motion finish', 'Premium card styles & uploads', 'Platinum badges & app icons'] },
+];
+const PLUS_ONLY = ['automation', 'premiumMascots', 'premiumUI'];
+
+/*
+ * One compact panel (2026-11-09 reference): MOVO mark, Monthly/Annual, Free (green MOVO) · Pro (gold MOVO) · Pro+ (platinum MOVO),
+ * the store's own localized price, what the plan adds, one action. Free is the green mark, the free month white,
+ * Pro gold, Pro+ platinum. Prices only ever come from the App Store / Google Play; none are invented here.
+ */
+export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, onOpenCloudSettings, onOpenTerms, cloudMode = true, feature }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [period, setPeriod] = useState('monthly');
+  const [products, setProducts] = useState([]);
   // A friend's code from a download link (?ref=M78038) is filled in, ready to use.
   const [code, setCode] = useState(() => pendingReferralCode());
   const [showCode, setShowCode] = useState(() => Boolean(pendingReferralCode()));
   const eligible = !entitlement || entitlement.trialEligible;
   const plan = effectivePlan(entitlement);
+  const onTrial = entitlement?.source === 'trial' && plan === 'pro';
+  const [index, setIndex] = useState(() => (PLUS_ONLY.includes(feature) || plan === 'pro_plus' ? 2 : 1));
+  const native = isNativePurchasePlatform();
+  useEffect(() => {
+    let live = true;
+    if (native) getStoreProducts().then(items => { if (live) setProducts(items || []); }).catch(() => { if (live) setProducts([]); });
+    return () => { live = false; };
+  }, [native]);
+  const selected = PLANS[index];
+  const productFor = (tier, which) => products.find(item => STORE_PRODUCT_BY_ID[item.productIdentifier]?.tier === tier && STORE_PRODUCT_BY_ID[item.productIdentifier]?.period === which);
+  const product = selected.tier === 'free' ? null : productFor(selected.tier, period);
+  const other = selected.tier === 'free' ? null : productFor(selected.tier, period === 'monthly' ? 'annual' : 'monthly');
+  const monthly = selected.tier === 'free' ? null : productFor(selected.tier, 'monthly');
+  const annual = selected.tier === 'free' ? null : productFor(selected.tier, 'annual');
+  const saving = monthly?.price > 0 && annual?.price > 0 ? Math.round((1 - annual.price / (monthly.price * 12)) * 100) : 0;
   const claim = async () => {
     if (!session?.access_token) { onSignIn(); return; }
     setBusy(true); setError('');
@@ -60,6 +91,13 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       await onRefresh(); onClose();
     } catch (cause) { setError(cause.message); } finally { setBusy(false); }
   };
+  const purchase = async () => {
+    if (!session?.access_token) { onSignIn(); return; }
+    if (!product) return;
+    setBusy(true); setError('');
+    try { await purchaseStoreProduct(product.productIdentifier, session); await onRefresh(); onClose(); }
+    catch (cause) { setError(cause?.message || tr('Purchase could not be verified.')); } finally { setBusy(false); }
+  };
   // Cloud Sync off (#245): paid features pause on this device; the subscription itself is untouched.
   if (feature && !cloudMode) return <Sheet title={tr('Local mode active')} label={tr('Offline feature access')} className="local-mode-sheet" onClose={onClose}>
     <div className="local-mode-content">
@@ -69,24 +107,58 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       {onOpenCloudSettings && <button type="button" className="primary-button local-mode-action" onClick={onOpenCloudSettings}>{tr('Cloud Sync settings')}</button>}
     </div>
   </Sheet>;
-  return <Sheet title={feature ? tr('Unlock with Pro') : tr('Your first month of Pro is free')} label={tr('MOVO plans')} className="plan-offer-sheet" onClose={onClose}>
-    <div className="plan-offer-scroll">
-      <p className="plan-current">{tr('Current plan')} <strong>{tr(PLAN_LABELS[plan])}</strong><PlanBadge plan={plan} size={22} /></p>
-      <PlanComparison />
-      <p className="plan-referral-line"><Icon name="gift" size={15} /> {tr('Invite 10 friends who subscribe and get 3 months of Pro.')}</p>
-      {entitlement?.referralCode && <div className="plan-code-row"><input readOnly aria-label={tr('Your referral code')} value={entitlement.referralCode} onFocus={e => e.target.select()} /><small>{tr('{n} of 10', { n: entitlement.qualifiedReferrals || 0 })}</small></div>}
-      {entitlement?.rewardStartsAt && <p className="plan-fine">{tr('Pro reward: {start} – {end}', { start: new Date(entitlement.rewardStartsAt).toLocaleDateString(), end: new Date(entitlement.rewardExpiresAt).toLocaleDateString() })}</p>}
+
+  const isCurrent = selected.tier === plan && !(selected.tier === 'pro' && onTrial);
+  const trialOffer = selected.tier === 'pro' && eligible && !isCurrent;
+  let action;
+  if (isCurrent) action = { label: tr('Current plan'), disabled: true };
+  else if (selected.tier === 'free') action = plan === 'free' ? { label: tr('Current plan'), disabled: true } : { label: tr('Plans & purchases'), run: onPlans };
+  else if (trialOffer) action = { label: busy ? tr('Starting…') : session?.access_token ? tr('Start my free month') : tr('Sign in to claim my free month'), run: claim };
+  else if (!session?.access_token) action = { label: tr('Sign in to continue'), run: onSignIn };
+  else if (product) action = { label: busy ? tr('Please wait…') : tr('Continue with {plan}', { plan: selected.name }), run: purchase };
+  else action = { label: tr('Continue with {plan}', { plan: selected.name }), disabled: true, note: native ? tr('Store subscription products are not available yet.') : tr('Subscribe in the MOVO iOS or Android app.') };
+  const markTone = trialOffer || (selected.tier === 'pro' && onTrial) ? 'white' : selected.tone;
+
+  return <Sheet label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
+    <div className="plan-panel-head">
+      <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
+      <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
+      <p>{tr('Choose the plan that fits your money flow')}</p>
     </div>
-    <div className="plan-offer-footer">
-      {eligible && <>
-        <p className="plan-trial-note">{tr('1 month free · no payment, no automatic charge')}</p>
-        {session?.access_token && (showCode
-          ? <input className="plan-referral-input" maxLength={24} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code, e.g. M78038')} aria-label={tr('Referral code')} autoCapitalize="characters" autoComplete="off" spellCheck={false} />
-          : <button type="button" className="link-button plan-referral-toggle" onClick={() => setShowCode(true)}>{tr('Have a referral code?')}</button>)}
-        <button type="button" className="primary-button" disabled={busy} onClick={claim}>{busy ? tr('Starting…') : session?.access_token ? tr('Start my free month') : tr('Sign in to claim my free month')}</button>
-      </>}
-      {error && <p role="alert" className="form-error">{error}</p>}
-      <div className="sheet-actions"><button type="button" className="secondary-button" onClick={onPlans}>{tr('Plans & purchases')}</button><button type="button" className="secondary-button" onClick={onClose}>{tr('Not now')}</button></div>
+    <div className="plan-period" role="group" aria-label={tr('Billing period')}>
+      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}</button>)}
     </div>
+    <div className="plan-tiles-row">
+      <button type="button" className="plan-arrow" aria-label={tr('Previous plan')} disabled={index === 0} onClick={() => setIndex(i => Math.max(0, i - 1))}><Icon name="chevron" size={16} /></button>
+      <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
+        {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
+          <MovoMark size={30} tone={item.tone} />
+          <strong>{tr(item.name)}</strong>
+          {item.tier === plan && <small>{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
+        </button>)}
+      </div>
+      <button type="button" className="plan-arrow next" aria-label={tr('Next plan')} disabled={index === PLANS.length - 1} onClick={() => setIndex(i => Math.min(PLANS.length - 1, i + 1))}><Icon name="chevron" size={16} /></button>
+    </div>
+    <div className="plan-dots" aria-hidden="true">{PLANS.map((item, i) => <i key={item.tier} className={index === i ? 'on' : ''} />)}</div>
+    <div className="plan-price" aria-live="polite">
+      {selected.tier === 'free' ? <><strong>{tr('Free')}</strong><span>{tr('always')}</span></>
+        : product ? <><strong>{product.priceString}</strong><span>/ {tr(period === 'monthly' ? 'month' : 'year')}</span></>
+          : trialOffer ? <><MovoMark size={22} tone="white" /><strong>{tr('1 month free')}</strong></>
+            : <span className="plan-price-note">{tr('Price shown by the App Store or Google Play')}</span>}
+      {selected.tier !== 'free' && other && <small>{tr('or {price} / {period}', { price: other.priceString, period: tr(period === 'monthly' ? 'year' : 'month') })}{saving > 0 && period === 'monthly' ? <em> {tr('(save {n}%)', { n: saving })}</em> : null}</small>}
+      {trialOffer && <small className="plan-trial-note">{tr('1 month free · no payment, no automatic charge')}</small>}
+    </div>
+    <div className="plan-features">
+      <b>{tr(selected.heading)}</b>
+      <ul>{selected.features.map(item => <li key={item}><Icon name="check" size={15} strokeWidth={2.4} />{tr(item)}</li>)}</ul>
+    </div>
+    {trialOffer && session?.access_token && (showCode
+      ? <input className="plan-referral-input" maxLength={24} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code, e.g. M78038')} aria-label={tr('Referral code')} autoCapitalize="none" autoComplete="off" />
+      : <button type="button" className="link-button plan-referral-toggle" onClick={() => setShowCode(true)}>{tr('Have a referral code?')}</button>)}
+    {error && <p role="alert" className="form-error">{error}</p>}
+    <button type="button" className={`plan-cta tier-${selected.tier}`} disabled={busy || action.disabled} onClick={action.run}>{action.label}</button>
+    {action.note && <p className="plan-fine">{action.note}</p>}
+    <p className="plan-fine">{selected.tier === 'free' ? tr('Your records stay on this device unless you turn on Cloud Sync.') : trialOffer ? tr('The free month ends on its own; nothing renews.') : tr('Auto-renews unless canceled.')} {onOpenTerms ? <button type="button" className="link-button" onClick={onOpenTerms}>{tr('Terms apply.')}</button> : tr('Terms apply.')}
+      {onPlans && selected.tier !== 'free' && <> · <button type="button" className="link-button" onClick={onPlans}>{tr('Plans & purchases')}</button></>}</p>
   </Sheet>;
 }
