@@ -63,3 +63,36 @@ test('authorized verified owner can request server-logged time-bounded Pro+ gran
     {p_actor:OWNER,p_user:OTHER,p_tier:'pro_plus',p_days:30,p_reason:'Owner complimentary grant'});
   expect(response.status).toHaveBeenCalledWith(200);
 });
+
+
+test('authorized owner can create an audited support work item without a target user',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},
+    body:{action:'work_create',area:'support',title:'Investigate local import',notes:'Test report',priority:'high'}},response);
+  expect(a.rpc).toHaveBeenCalledWith('movo_owner_work_create',{
+    p_actor:OWNER,p_area:'support',p_title:'Investigate local import',p_notes:'Test report',p_priority:'high'
+  });
+  expect(response.status).toHaveBeenCalledWith(200);
+});
+test('owner operational writes reject unsupported areas and oversized notes',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},
+    body:{action:'work_create',area:'internal_finance',title:'Read expenses',notes:'test',priority:'high'}},response);
+  expect(response.status).toHaveBeenCalledWith(400);
+  expect(a.rpc).not.toHaveBeenCalled();
+});
+test('owner read access scopes work items by area',async()=>{
+  const a=admin();createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'GET',headers:{authorization:'Bearer test'},query:{view:'support'}},response);
+  expect(a.from).toHaveBeenCalledWith('movo_owner_work_items');
+  expect(response.status).toHaveBeenCalledWith(200);
+});
+test('owner work updates fail closed on optimistic write conflict',async()=>{
+  const a=admin();a.rpc.mockResolvedValue({data:false,error:null});
+  createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(a);
+  const response=res();await handler({method:'POST',headers:{authorization:'Bearer test'},
+    body:{action:'work_update',id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+      expectedUpdatedAt:'2026-11-09T00:00:00.000Z',status:'blocked',priority:'high',notes:'Conflict'}},response);
+  expect(response.status).toHaveBeenCalledWith(409);
+  expect(response.json).toHaveBeenCalledWith({error:'work_item_changed_reload'});
+});
