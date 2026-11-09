@@ -59,3 +59,11 @@ Owners need a verified Supabase Auth account, and a working TOTP second factor. 
 
 ## Rollback
 Revert the /owner entrypoint and owner API and leave manual grant rows intact until they are reviewed. The owner security migration is additive; do not DROP audit tables or delete existing grants as a rollback shortcut. Explicitly revoke grants through the audited RPC instead.
+
+## Verified signup chart enhancement
+- Owner Overview and Analytics include a 12-week, no-gradient SVG line chart when the privileged aggregate function is available.
+- `movo_owner_weekly_signups()` returns only ISO week labels and registration counts, not emails, UUIDs or other individual user fields. EXECUTE is restricted to `service_role`.
+- This measures *new accounts*, not DAU/MAU, revenue, conversion, retention or validated active customers.
+- Post-enhancement Sandbox: isolated PostgreSQL regression suite passed (including unauthorized analytics access), 947/947 frontend tests passed, TypeScript passed, optimized CRA compiled, and Chrome fixture QA passed at 390/768/1440px including 12 chart points, support form navigation, and no page overflow/obstruction.
+- The browser used an explicitly fake Supabase Auth fixture and intercepted owner API responses. No live owner/session/production test was performed.
+- Prerequisite PR #252 was subsequently merged; retarget the owner PR to `main`, re-review conflicts and CI before promotion.
