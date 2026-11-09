@@ -145,12 +145,8 @@
 .movo-app .loyalty-card-face .loyalty-card-details-row { justify-content: flex-start; align-items: baseline; gap: clamp(6px, 3cqw, 12px); margin-top: clamp(2px, 1.2cqw, 5px); }
 .movo-app .loyalty-card-face .loyalty-card-mask { white-space: nowrap; }
 .movo-app .loyalty-card-face .loyalty-card-footer { justify-content: flex-start; align-items: baseline; gap: clamp(6px, 3cqw, 12px); margin-top: clamp(3px, 1.8cqw, 7px); }
-/* The motif side stays clear of text. */
-.movo-app .loyalty-card-face[data-motif="band"] > :not(.loyalty-card-motif) { max-width: 64%; }
-.movo-app .loyalty-card-face[data-motif="split"] > :not(.loyalty-card-motif) { max-width: 54%; }
 /* Small wallet tiles show the date alone (06/27); the label returns on larger faces. */
 @container (max-width: 280px) { .movo-app .loyalty-card-face .loyalty-card-expiry-label { display: none; } }
-.movo-app .loyalty-card-face[data-motif="foil"] > :not(.loyalty-card-motif) { max-width: 74%; }
 
 /* rings: concentric rings in the lower right (coffee houses). */
 .movo-app .loyalty-card-face[data-motif="rings"] .loyalty-card-motif i { border: 1.5px solid var(--lc-trim); border-radius: 50%; aspect-ratio: 1; }
@@ -178,3 +174,11 @@
 .movo-app .loyalty-card-face[data-motif="split"] .loyalty-card-motif i:nth-child(1) { inset: 0; background: var(--lc-accent); clip-path: polygon(76% 0, 100% 0, 100% 100%, 56% 100%); }
 .movo-app .loyalty-card-face[data-motif="split"] .loyalty-card-motif i:nth-child(2) { inset: 0; background: var(--lc-trim); clip-path: polygon(74.5% 0, 76% 0, 56% 100%, 54.5% 100%); }
 .movo-app .loyalty-card-face[data-motif="split"] .loyalty-card-motif i:nth-child(3) { display: none; }
+
+/* Geometric patterns (2026-11-09): each card's own shapes in three depth layers, deeper shadows in front.
+   The pattern sits above the brand motif and below the text, in the right half of the card. */
+.movo-app .loyalty-card-face .loyalty-card-pattern { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+.movo-app .loyalty-card-face:is([data-motif="rings"], [data-motif="stripes"]) > :not(.loyalty-card-motif, .loyalty-card-pattern) { max-width: 66%; }
+.movo-app .loyalty-card-face[data-motif="band"] > :not(.loyalty-card-motif, .loyalty-card-pattern) { max-width: 64%; }
+.movo-app .loyalty-card-face[data-motif="split"] > :not(.loyalty-card-motif, .loyalty-card-pattern) { max-width: 54%; }
+.movo-app .loyalty-card-face[data-motif="foil"] > :not(.loyalty-card-motif, .loyalty-card-pattern) { max-width: 66%; }

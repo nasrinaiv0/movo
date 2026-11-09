@@ -71,3 +71,17 @@ test('the layout: program title (the person’s own name wins), motif, short dat
   expect(own).toContain('>Family Card<');
   expect(own).not.toContain('Happy Plus');
 });
+
+test('each card carries its own geometric pattern with shadow depth, behind the text', () => {
+  const card = { id: 'one', type: 'membership', name: 'Petron', points: '10' };
+  const html = renderToStaticMarkup(<><LoyaltyCardFace card={card} /><LoyaltyCardFace card={{ ...card, id: 'two' }} /></>);
+  expect(html.match(/class="loyalty-card-pattern"/g)).toHaveLength(2);
+  expect(html).toMatch(/data-pattern="(hexagons|triangles|diamonds|discs|chevrons|shards)"/);
+  expect(html).toContain('feDropShadow');
+  expect(html).toMatch(/aria-hidden="true" focusable="false"/);
+  // Shadow filter ids never collide between cards on one screen.
+  const ids = [...html.matchAll(/<filter id="([^"]+)"/g)].map(m => m[1]);
+  expect(new Set(ids).size).toBe(ids.length);
+  const patterns = [...html.matchAll(/<svg class="loyalty-card-pattern"[\s\S]*?<\/svg>/g)].map(m => m[0].replace(/id="[^"]+"|url\(#[^)]+\)/g, ''));
+  expect(patterns[0]).not.toBe(patterns[1]);
+});

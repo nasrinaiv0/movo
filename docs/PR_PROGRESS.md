@@ -6,6 +6,8 @@ The plans offer is one compact dark panel (fits 375×667 without scrolling): Mon
 
 ## 2026-11-09 — Membership and rewards cards follow the owner's merchant card references
 
+Each card also carries its own geometric pattern (hexagons, triangles, diamonds, discs, chevrons or low-poly shards) in three shadowed depth layers, seeded by the card so it is stable everywhere and unique per card, kept to the right third so text stays clear (`docs/engineering/updates/2026-11-09-card-geometric-patterns.md`).
+
 Memberships, loyalty, rewards and tokens now use the layout of the owner's 25 Philippine merchant-card references: mark and name on top, the program title large, member number and date, rewards balance, and one flat MOVO motif (rings, diagonal band, stripes, foil edge or two-tone split) in each merchant's colours. 14 programs from the references were added to the provider list; program titles (Suki Card, Happy Plus, Value Card, Go+ …) show unless the person typed their own. No merchant artwork is reproduced, logos stay on the curated favicon list (no new domains), and card text is tested at WCAG 4.5:1 on both the card and motif colours. See `docs/engineering/updates/2026-11-09-merchant-card-layouts.md`.
 
 ## 2026-11-09 — Owner Access sign-in email template failure (requires live Supabase action)
