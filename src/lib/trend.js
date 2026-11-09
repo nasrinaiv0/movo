@@ -56,14 +56,16 @@ export function periodTotals(txs, key, lastDay) {
  * month is never judged against a whole one. On the last day of a month the whole previous month is used.
  * `balance` is today's total; last month's figure is rebuilt by undoing everything recorded since then.
  */
-export function monthOverMonth(txs, refDate, balance) {
+export function monthOverMonth(txs, refDate, balance, untilDay) {
   const today = dayKey(refDate); const key = today.slice(0, 7); const day = Number(today.slice(8, 10));
   const prevKey = prevMonth(key); const prevDays = daysIn(prevKey);
   const upto = day >= daysIn(key) ? prevDays : Math.min(day, prevDays);
   const now = periodTotals(txs, key, day);
   const before = periodTotals(txs, prevKey, upto);
   const cutoff = `${prevKey}-${String(upto).padStart(2, '0')}`;
-  const since = txs.reduce((s, t) => (dayKey(t.date) > cutoff ? s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0) : s), 0);
+  // `balance` is the total at `untilDay` (a past month's last day) or today; undo only what came after the cutoff
+  // and up to that day.
+  const since = txs.reduce((s, t) => { const d = dayKey(t.date); return d > cutoff && (!untilDay || d <= untilDay) ? s + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0) : s; }, 0);
   return {
     balance: trend(balance, balance - since, GOOD_WHEN.balance),
     income: trend(now.income, before.income, GOOD_WHEN.income),

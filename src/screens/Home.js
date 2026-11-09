@@ -104,6 +104,7 @@ export default function Home({ c }) {
         <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={18} /></button>
       </div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
+      {stats.balanceExcluded > 0 && <small className="balance-note">{tr('Excludes {n} account(s) without an exchange rate.', { n: stats.balanceExcluded })}</small>}
       <Trend value={deltas.balance} chip size={13} />
       {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={260} height={110} /> : <Sparkline values={stats.trend} width={260} height={110} />}</div>}
       <button type="button" className="round-button balance-go" aria-label={tr('Open wallet')} onClick={() => go('Wallet')}><Icon name="chevron" size={20} /></button>

@@ -180,7 +180,7 @@ export function UsageSheet({ c, onClose }) {
   ];
 
   return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Manage your MOVO subscription and restore purchases from the store.')} onClose={onClose} label={tr('Plan & Usage')}>
-    {!c.cloudMode && <p className="form-hint" role="status">Local mode is active. Pro and Pro+ features are paused, but any existing subscription stays on record. Local tracking, manual transactions and import/export remain available. Enable Cloud Sync to restore eligible plan access.</p>}
+    {!c.cloudMode && !c.deviceCopyAccess && <p className="form-hint" role="status">Local mode is active. Pro and Pro+ features are paused, but any existing subscription stays on record. Local tracking, manual transactions and import/export remain available. Enable Cloud Sync to restore eligible plan access.</p>}
     <PlanComparison />
     <button type="button" className="secondary-button" onClick={() => { onClose(); c.openPlans?.(); }}>Free trial & referrals</button>
     <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
@@ -215,7 +215,7 @@ export default function Settings({ c }) {
   useEffect(() => { biometricAvailable().then(setBio); }, []);
   const lock = lockState();
   const pushOn = !!prefs.push && pushGranted();
-  const toggleValue = (key) => (key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? c.cloudMode : prefs[key] !== false && !!prefs[key]);
+  const toggleValue = (key) => (key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? (c.cloudMode || !!c.deviceCopyAccess) : prefs[key] !== false && !!prefs[key]);
   const toggleDisabled = (key) => (key === 'email' || (key === 'push' && !pushSupported()) || (key === 'biometrics' && (!bio || !lock.enabled)));
   const toggleChange = async (key, v) => {
     if (key === 'push') return togglePush(c, v);
@@ -230,7 +230,7 @@ export default function Settings({ c }) {
     { title: tr('Account'), rows: [
       { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('EditProfile') },
       { icon: 'download', title: tr('Import & Export'), sub: tr('Read and save your financial backup on any plan'), onClick: () => c.openBackup?.() },
-      { icon: 'database', title: tr('Plan & Usage'), sub: c.cloudMode ? tr('Your plan and usage') : tr('Local mode · paid features paused'), onClick: () => setPanel('usage') },
+      { icon: 'database', title: tr('Plan & Usage'), sub: c.cloudMode || c.deviceCopyAccess ? tr('Your plan and usage') : tr('Local mode · paid features paused'), onClick: () => setPanel('usage') },
       { icon: 'layout', title: tr('Connected Accounts'), sub: tr('Manually tracked accounts; no bank connection is active.'), onClick: () => go('Wallet') },
     ] },
     { title: tr('Appearance'), rows: [
@@ -261,7 +261,7 @@ export default function Settings({ c }) {
         toggle: 'showBalanceAfterTransaction' },
     ] },
     { title: tr('Data & Sync'), rows: [
-      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
+      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.deviceCopyAccess ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
       { icon: 'refresh', title: tr('Offline & online sync'), sub: c.syncState?.message || tr('Changes are kept on this device until safely reconciled.'), onClick: c.session?.user ? () => c.retrySync?.() : undefined },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },

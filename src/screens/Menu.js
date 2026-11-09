@@ -5,6 +5,7 @@ import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { BADGES, TIER_LABEL, nextBadge, badgeEarned, badgeByPlan } from '../lib/streak';
 import { MovoMark } from '../components/MovoLogo';
+import PlanBadge from '../components/PlanBadge';
 
 /** The fifth tab: profile, subscriptions, savings plans and spending limits in one place. */
 export default function Menu({ c }) {
@@ -30,6 +31,7 @@ export default function Menu({ c }) {
     <button type="button" className="card menu-hero" onClick={() => go('Profile')}>
       <span className="avatar">{user.initial}</span>
       <span className="menu-main"><strong>{user.name}</strong><small>{tr('View profile')}</small></span>
+      <PlanBadge plan={c.plan} size={30} />
       {streak.count > 1 && <span className="streak-chip" aria-label={tr('{n}-day streak', { n: streak.count })}><Icon name="spark" size={13} strokeWidth={2.2} />{streak.count}</span>}
       <Icon name="chevron" size={16} />
     </button>

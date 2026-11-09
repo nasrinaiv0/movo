@@ -140,7 +140,7 @@ export default function Wallet({ c }) {
   const renderLoyaltyCards = () => loyaltyCards.map(card => <button
     type="button" className="wallet-card-item loyalty-wallet-item" key={'loyalty-' + card.id}
     aria-label={card.name + ' · ' + loyaltyTypeLabel(card)}
-    onClick={() => setSheet({ name: 'loyalty', id: card.id, type: card.type })}
+    onClick={() => setSheet({ name: 'loyaltyDetails', id: card.id })}
   ><LoyaltyCardFace card={card} show={show} estimate={loyaltyEstimates[card.id] || 0} /></button>);
   const renderAccounts = (items, withLoyalty = false) => (wv.view === 'list'
     ? <>
@@ -157,6 +157,7 @@ export default function Wallet({ c }) {
     { id: 'balance', label: tr('Total balance'), styles: BALANCE_STYLES, node: ({ size, style }) => <section className={`card balance-card compact size-${size}`} aria-label={tr('Total balance')}>
       <div className="balance-label">{tr('Total Balance')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={16} /></button></div>
       <div className="balance-amount"><Money value={stats.balance} show={show} /></div>
+      {stats.balanceExcluded > 0 && <small className="balance-note">{tr('Excludes {n} account(s) without an exchange rate.', { n: stats.balanceExcluded })}</small>}
       <Trend value={c.deltas.balance} chip />
       {style !== 'off' && <div className="balance-art">{style === 'bars' ? <MiniBars values={stats.trend} width={200} height={90} /> : <Sparkline values={stats.trend} width={200} height={90} />}</div>}
     </section> },

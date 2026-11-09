@@ -109,3 +109,16 @@ test('preserves account-specific transfers between same-name accounts', () => {
   expect(result.transactions[0].transfer_to_account_id).toBe(result.accounts[1].id);
   expect(result.transactions[0].amount).toBe(12.34);
 });
+
+test('restore returns the account id map, keeps categories, notes and receipt references, and skips accounting activity', () => {
+  const planned = prepareFinanceBackupRestore({ tables: {},
+    accounts: [{ id: 'old', name: 'Wallet A', account_type: 'e_wallet', currency: 'PHP', opening_balance: 10 }],
+    transactions: [
+      { id: 't1', account_id: 'old', merchant: 'Pay', amount: 100, transaction_type: 'income', category: 'income:salary', currency: 'PHP', occurred_at: '2026-10-01T00:00:00Z', payment_reference: 'REF1', receipt_path: 'localreceipt:abc' },
+      { id: 'allocation-1', transaction_type: 'allocation', merchant: 'Goal', amount: 5, currency: 'PHP', occurred_at: '2026-10-01T00:00:00Z' },
+    ] }, { accounts: [], transactions: [] }, { base: 'PHP', newId: () => '123e4567-e89b-42d3-a456-4266141740aa', fingerprint: t => `${t.merchant}|${t.amount}` });
+  expect(planned.accountIdMap).toEqual({ old: '123e4567-e89b-42d3-a456-4266141740aa' });
+  expect(planned.transactions).toHaveLength(1);
+  expect(planned.transactions[0]).toEqual(expect.objectContaining({ category: 'income:salary', payment_reference: 'REF1', receipt_source_path: 'localreceipt:abc' }));
+  expect(planned.skipped.accounting).toBe(1);
+});

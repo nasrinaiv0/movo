@@ -350,3 +350,28 @@ test('loan actions edit metadata and require confirmation before deletion', asyn
   expect(obligations.deleteLoan).toHaveBeenCalledWith('l1','u');
   act(()=>root.unmount());el.remove();
 });
+
+test('a card payment records where the money came from (the card bank by default) so the total balance stays right', async () => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  const credit = { id: 'credit-pay', name: 'AUB Credit', institution_name: 'AUB', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -5000 };
+  const recordCardPayment = jest.fn().mockResolvedValue({ id: 'payment' });
+  await act(async () => root.render(<FinancialPlanning c={{
+    cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, credit], recordCardPayment,
+    prefs: { accountStyles: { 'credit-pay': { issuerBankId: 'bank' } } }, setPref: jest.fn(), toBase: value => value, go: jest.fn(),
+  }} />));
+  await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
+  if (!el.querySelector('.fp-credit-card-actions')) await act(async () => el.querySelector('.fp-credit-card-toggle').click());
+  await act(async () => Array.from(el.querySelectorAll('.fp-credit-card-actions button')).find(b => b.textContent === 'Record payment').click());
+  const dialog = document.querySelector('[role="dialog"]');
+  const from = dialog.querySelector('#fp-card-payment-from');
+  expect(from.value).toBe('bank');
+  const amount = dialog.querySelector('input[type="number"]');
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(amount, '1500');
+    amount.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => dialog.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(recordCardPayment).toHaveBeenCalledWith(expect.objectContaining({ cardId: 'credit-pay', amount: 1500, fromAccountId: 'bank' }));
+  act(() => root.unmount()); el.remove();
+});

@@ -125,6 +125,9 @@ export function prepareFinanceBackupRestore(backup, existing, { base = 'PHP', ne
   for (const row of transactionsIn) {
     if (!row || typeof row !== 'object')
       throw new Error('Some transactions have missing amounts, dates or descriptions. No records were saved.');
+    // Cloud accounting activity (allocations and similar) is not a transaction: never replay it as an expense.
+    const rowType = String(row.transaction_type || row.type || '').toLowerCase();
+    if (rowType && !['income', 'expense', 'transfer'].includes(rowType)) { skipped.accounting = (skipped.accounting || 0) + 1; continue; }
     const normalized = normalizeTransaction({
       merchant: row.merchant, amount: row.origAmount ?? row.amount,
       transaction_type: row.transaction_type || row.type,
@@ -147,17 +150,24 @@ export function prepareFinanceBackupRestore(backup, existing, { base = 'PHP', ne
     const fp = fingerprint({ ...normalized, account_id: from, transfer_to_account_id: to });
     if (knownFingerprints.has(fp)) { skipped.duplicates += 1; continue; }
     knownFingerprints.add(fp);
+    // Keep the record's own category (stable id or custom text), not the importer's generic "Income".
+    const ownCategory = typeof (row.categoryId || row.category) === 'string' ? String(row.categoryId || row.category).trim().slice(0, 60) : '';
+    const text = (value, max) => (typeof value === 'string' && value.trim() ? value.trim().slice(0, max) : null);
     transactions.push({
       id: makeId('import'), merchant: normalized.merchant, amount: normalized.amount,
       currency: normalized.currency || base, transaction_type: normalized.transaction_type,
-      category: normalized.category, account_id: from, transfer_to_account_id: to,
+      category: normalized.transaction_type === 'transfer' ? 'Transfer' : (ownCategory || normalized.category),
+      account_id: from, transfer_to_account_id: to,
       occurred_at: normalized.occurred_at, note: normalized.note,
+      payment_reference: text(row.payment_reference, 120), receipt_note: text(row.receipt_note, 500),
+      // The receipt image travels as a backup attachment under this path; the app stores it on this device.
+      ...(text(row.receipt_path, 500) ? { receipt_source_path: text(row.receipt_path, 500) } : {}),
       source: 'File Import', import_batch: batchId, external_reference: fp,
     });
   }
   return {
-    accounts, transactions, skipped,
-    unsupported: Object.keys(backup?.tables || {}).filter(name => !['local_preferences', 'financial_accounts', 'transactions'].includes(name)
+    accounts, transactions, skipped, accountIdMap: Object.fromEntries(bySourceId),
+    unsupported: Object.keys(backup?.tables || {}).filter(name => !['local_preferences', 'user_preferences', 'financial_accounts', 'transactions'].includes(name)
       && Array.isArray(backup.tables[name]) && backup.tables[name].length > 0),
   };
 }

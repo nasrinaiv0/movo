@@ -1,5 +1,25 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Memberships and rewards cards open Account details (review)
+
+Tapping a membership, loyalty, rewards, tokens or custom card opens the same Account details layout as other cards (card, Account overview / Transactions / Connected items / More, actions) with rewards-only figures, member code, earning account and purchases that earned points. Card face shows Valid thru and no longer truncates the program early. See `docs/engineering/updates/2026-11-09-loyalty-card-details.md`.
+
+## 2026-11-09 — Profile: signed-in people see no Sign in button (review)
+
+The Profile Sign in button and the Cloud Sync row now follow the signed-in session, not cloud mode, so a signed-in person in local/offline mode no longer sees "Sign in". Account rows on Profile add up like Total Balance (linked debit cards once, archived out). See `docs/engineering/updates/2026-11-09-profile-signed-in-state.md`.
+
+## 2026-11-09 — Total balance fixes and complete device-transfer backup (review)
+
+Total balance no longer rises with card payments that moved no money (new "Paid from" records a real transfer), excludes archived and unconvertible accounts, follows the Home month filter, and month-over-month compares like periods. Backup export/restore now carries subscriptions, plans, budgets, limits, card styles/payments, loyalty, archive, settings, receipts, QR, scenery and stickers, re-linked to the restored accounts; CSV keeps transfers, notes and categories. No migration or production change. See `docs/engineering/updates/2026-11-09-total-balance-and-full-backup.md`.
+
+## 2026-11-09 — Owner Command Center consolidated from #253, with live analytics (review)
+
+#253 failed the per-commit docs gate; its net change is carried in one documented commit on PR #255. Fixes the strict-build import order, plans in the user directory (trials/referrals showed "Not verified"), and entitlement-row counts shown as plans. New aggregate-only `movo_owner_kpis` / `movo_owner_user_plans` (service_role only, isolated SQL tests pass). Key figures, 30-day activity, plan mix, capture channels, user plan filter and last sign-in. Production migrations need owner approval. See `docs/engineering/updates/2026-11-09-owner-console-analytics.md`.
+
+## 2026-11-09 — Offline-first saving, automatic upload, imports under Cloud Sync, plan badges (review)
+
+With Cloud Sync on, saves that cannot reach the cloud (offline or >12 s) land on the account's device copy and upload automatically on reconnect, on foreground and every minute; offline transaction edits (CAS), deletions (revision-checked server procedure) and device receipts now sync. CSV/backup "Save locally" works under Cloud Sync and refreshes every page, then uploads. Pro features stay on during an outage with the last verified plan. Fixes main's online-delete drop to local mode. Gold (Pro) / Platinum (Pro+) plan badge. No migration or production change. See `docs/engineering/updates/2026-11-09-offline-first-autosync-plan-badges.md`.
+
 ## 2026-11-09 — Confirmed local backup immediately refreshes financial views (review)
 
 Restores same-name accounts by stable source identifiers rather than rejecting multiple BPI/GoTyme accounts or connecting payments to the first matching name. Guest and signed-in offline saves read back persisted accounts/transactions, then refresh Home, Wallet, Transactions and Menu-derived financial state and return to Home. Cloud accounting rows no longer leak into local transactions. Import preview rows use content-height grid tracks to avoid overlapping on small screens. Added malicious/ambiguous ID, idempotency, transfer and end-to-end reload regression coverage. No cloud writes or production migration. See docs/engineering/updates/2026-11-09-identity-safe-local-backup-dashboard-refresh.md. Full CI/preview and signed iPhone verification remain release gates. The follow-up CI localization correction restores the existing 11-language-confirmed confirmation copy; import behavior is unchanged.
@@ -560,3 +580,8 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - PR #227 second Android CI attempt found sdkmanager present under the hosted Android SDK but absent from PATH. The workflow now discovers its absolute executable location under ANDROID_HOME/cmdline-tools, rather than assuming PATH. Compiling the app remains a separate verification step.
 
 - PR #227 follow-up: automation device secret had remained embedded in native general preferences; now stored only in the platform vault after write-first migration, scrubbed from mirrored preferences, and safely rotated before old-token revocation. Native/browser behavior covered by additional unit and source contract tests. Native CI and physical-device validation still required.
+
+### 2026-11-09 — PR #255 iOS simulator smoke reliability (strict)
+- Run #42546337168: native simulator Xcode build passed, while CoreSimulator first-boot migrations took 7+ minutes and `simctl launch` timed out after 90 s; the smoke test, not the compilation, failed.
+- iOS CI now exercises a separately unit-tested launch script: deterministic iPhone choice, bounded 600 s cold boot, 180 s install/launch, exactly one retry **only** for launch timeouts after cold boot, and mandatory deep-link plus screenshot success. Nonzero launch errors and repeat timeouts remain hard failures.
+- Local/Vercel Sandbox Python unit tests are NOT evidence of native simulator success. Await exact-head GitHub macOS runner smoke and full regression gate before merging. See `docs/engineering/updates/2026-11-09-pr255-ios-simulator-launch.md`.
