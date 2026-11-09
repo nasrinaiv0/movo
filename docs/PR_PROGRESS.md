@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Memberships and rewards cards open Account details (review)
+
+Tapping a membership, loyalty, rewards, tokens or custom card opens the same Account details layout as other cards (card, Account overview / Transactions / Connected items / More, actions) with rewards-only figures, member code, earning account and purchases that earned points. Card face shows Valid thru and no longer truncates the program early. See `docs/engineering/updates/2026-11-09-loyalty-card-details.md`.
+
 ## 2026-11-09 — Profile: signed-in people see no Sign in button (review)
 
 The Profile Sign in button and the Cloud Sync row now follow the signed-in session, not cloud mode, so a signed-in person in local/offline mode no longer sees "Sign in". Account rows on Profile add up like Total Balance (linked debit cards once, archived out). See `docs/engineering/updates/2026-11-09-profile-signed-in-state.md`.

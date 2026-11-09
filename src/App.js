@@ -64,6 +64,7 @@ import TransactionSheet from './components/TransactionSheet';
 import GrocerySheet from './components/GrocerySheet';
 import AccountSheet from './components/AccountSheet';
 import AccountDetailsSheet from './components/AccountDetailsSheet';
+import LoyaltyDetailsSheet from './components/LoyaltyDetailsSheet';
 import ScannerSheet from './components/ScannerSheet';
 import AutoLogSheet from './components/AutoLogSheet';
 import { readLogLink, sameKey, isRepeat, matchAccount, newKey } from './lib/autoLog';
@@ -2239,6 +2240,14 @@ function App() {
   const detailTx = sheet?.name === 'tx' ? txs.find(t => t.id === sheet.id) : null;
   const formAccounts = accountsView.filter(a => !a.is_archived);
   const rawIds = new Set(rawTxs.map(t => t.id));
+  const removeLoyaltyCard = id => {
+    setPref('membershipCards', visibleLoyaltyCards(prefs).filter(card => card.id !== id));
+    const nextRules = { ...(prefs.loyaltyRewardRules || {}) };
+    delete nextRules[id];
+    setPref('loyaltyRewardRules', nextRules);
+    setSheet(null);
+    notify(tr('Membership or rewards removed.'));
+  };
   const accountChoice = sheet?.name === 'cardDetails' ? accountsView.find(a => a.id === sheet.id) || selectedCard : null;
 
   const screen = (() => {
@@ -2331,19 +2340,29 @@ function App() {
           const id = safe.id || window.crypto?.randomUUID?.();
           if (!id) { notify(tr('Could not create a secure identifier. Please try again.')); return; }
           const record = { ...safe, id };
-          setPref('membershipCards', cards.some(card => card.id === id) ? cards.map(card => card.id === id ? record : card) : [...cards, record]);
-          setSheet(null);
+          const existed = cards.some(card => card.id === id);
+          setPref('membershipCards', existed ? cards.map(card => card.id === id ? record : card) : [...cards, record]);
+          // An edit made from the card's details returns there, like other cards.
+          setSheet(existed ? { name: 'loyaltyDetails', id } : null);
           notify(tr('Membership or rewards saved.'));
         }}
-        onRemove={id => {
-          setPref('membershipCards', visibleLoyaltyCards(prefs).filter(card => card.id !== id));
-          const nextRules = { ...(prefs.loyaltyRewardRules || {}) };
-          delete nextRules[id];
-          setPref('loyaltyRewardRules', nextRules);
-          setSheet(null);
-          notify(tr('Membership or rewards removed.'));
-        }}
+        onRemove={removeLoyaltyCard}
       />}
+      {sheet?.name === 'loyaltyDetails' && (() => {
+        // Memberships, loyalty, rewards and custom cards open the same Account details layout as other cards.
+        const card = visibleLoyaltyCards(prefs).find(item => item.id === sheet.id);
+        if (!card) return null;
+        return <LoyaltyDetailsSheet
+          key={card.id}
+          card={card} transactions={txs} accounts={accountsView} rules={prefs.loyaltyRewardRules || {}} show={show}
+          onClose={() => setSheet(null)}
+          onEdit={() => setSheet({ name: 'loyalty', id: card.id, type: card.type })}
+          onRemove={removeLoyaltyCard}
+          onOpenAccount={id => { setSelectedCardId(id); setSheet({ name: 'cardDetails', id }); }}
+          onOpenTransaction={item => openTx(item)}
+          onOpenRewards={() => { setSheet(null); go('Cashback'); }}
+        />;
+      })()}
 
       {sheet?.name === 'account' && <AccountSheet base={base} country={prefs.country || 'PH'} qrCode={prefs.accountQrCodes?.[sheet?.id] || ''} qrCodeDisplay={accountQrDisplay[sheet?.id] || ''} accounts={accountsView} form={accountForm} setForm={setAccountForm} editing={!!sheet.id} cloudMode={cloudMode} busy={busy} error={error} onSave={saveAccount} onSelectLoyalty={type => { setAccountForm(BLANK_ACCOUNT); setSheet({ name: 'loyalty', type }); }} onAddBank={sheet.id ? undefined : () => { setError(''); setAccountForm({ ...BLANK_ACCOUNT, account_type: 'bank' }); setSheet({ name: 'account', type: 'bank' }); }} onClose={() => { setSheet(null); setError(''); setAccountForm(BLANK_ACCOUNT); }} />}
 

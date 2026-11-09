@@ -212,6 +212,25 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Netflix Transfer');
   });
 
+  test('tapping a membership card opens the same Account details layout as other cards, with Edit card leading to the editor', () => {
+    act(() => root.unmount());
+    const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...saved, membershipCards: [{ id: 'tim-card', type: 'membership', name: 'Tim Hortons', program: 'Tim Hortons', memberNumber: '99887766', points: '120', pointsUnit: 'points', noExpiry: true }] }));
+    root = createRoot(container);
+    act(() => root.render(<App />));
+    nav(container, 'Wallet');
+    const tile = container.querySelector('.loyalty-wallet-item');
+    expect(tile).not.toBeNull();
+    act(() => tile.click());
+    const dialog = container.querySelector('[role="dialog"][aria-label="Account details"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog.querySelector('.account-hub-hero .loyalty-card-face')).not.toBeNull();
+    expect(Array.from(dialog.querySelectorAll('[role="tab"]')).map(b => b.textContent)).toEqual(['Account overview', 'Transactions', 'Connected items', 'More']);
+    expect(dialog.querySelector('.account-hub-metrics').textContent).toContain('120');
+    act(() => Array.from(dialog.querySelectorAll('button')).find(b => b.textContent === 'Edit card').click());
+    expect(container.textContent).toContain('Edit membership or rewards');
+  });
+
   test('Home greeting is unboxed and its three utility buttons remain accessible', () => {
     const header = container.querySelector('.screen-header.home-header');
     const greeting = header.querySelector('.home-greeting');

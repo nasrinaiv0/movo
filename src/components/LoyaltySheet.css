@@ -29,7 +29,7 @@
 
 /* Loyalty, membership, rewards, tokens and custom cards share the exact 856:540
    viewport and Wallet grid sizing of the existing Cash/account CardArt. No gradients. */
-.movo-app .wallet-card-item > .loyalty-card-face {
+.movo-app :is(.wallet-card-item, .account-hub-hero) > .loyalty-card-face {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -111,3 +111,17 @@
 @media (prefers-reduced-motion: reduce) {
   .movo-app .wallet-card-item > .loyalty-card-face { transition: none; }
 }
+
+/* Card details (2026-11-09): memberships and rewards open the same Account details layout as other cards. */
+.movo-app .loyalty-hub-hero > .loyalty-card-face { max-width: 420px; padding: clamp(14px, 5cqw, 22px); border-radius: 22px; }
+.movo-app .loyalty-card-expiry { font-size: clamp(8px, 4cqw, 10px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; opacity: .86; white-space: nowrap; }
+.movo-app .loyalty-card-details-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; margin-top: auto; }
+.movo-app .loyalty-card-details-row .loyalty-card-details { margin-top: 0; min-width: 0; flex: 1 1 auto; }
+.movo-app .loyalty-hub-sheet .account-hub-metric strong small { font-size: 12px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+.movo-app .loyalty-code-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 10px 10px 16px; border: 1px solid var(--line); border-radius: 13px; background: var(--card); }
+.movo-app .loyalty-code-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; font-weight: 650; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.movo-app .loyalty-code-actions { display: flex; gap: 6px; flex: none; }
+.movo-app .loyalty-code-actions .round-button { width: 36px; height: 36px; }
+.movo-app .loyalty-earned-row { display: grid; gap: 2px; }
+.movo-app .loyalty-earned-points { justify-self: end; margin: -4px 4px 6px 0; font-size: 11.5px; font-weight: 600; color: var(--accent-ink, var(--accent)); }
+.movo-app .loyalty-hub-sheet .account-hub-section > .wide-button { margin-top: 10px; }

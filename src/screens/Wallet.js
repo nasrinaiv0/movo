@@ -140,7 +140,7 @@ export default function Wallet({ c }) {
   const renderLoyaltyCards = () => loyaltyCards.map(card => <button
     type="button" className="wallet-card-item loyalty-wallet-item" key={'loyalty-' + card.id}
     aria-label={card.name + ' · ' + loyaltyTypeLabel(card)}
-    onClick={() => setSheet({ name: 'loyalty', id: card.id, type: card.type })}
+    onClick={() => setSheet({ name: 'loyaltyDetails', id: card.id })}
   ><LoyaltyCardFace card={card} show={show} estimate={loyaltyEstimates[card.id] || 0} /></button>);
   const renderAccounts = (items, withLoyalty = false) => (wv.view === 'list'
     ? <>
