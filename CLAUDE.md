@@ -39,6 +39,7 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Never imply mock settings deliver real push/email notifications or that balances are bank-verified.
 - "While you were away" (`components/RecentLogsSheet.js`) opens on launch or after 2+ minutes in the background when records arrived since `logsSeenAt` (set to now on first run, so history is never dumped). Failed phone automations live server-side in `movo_automation_inbox` (owner RLS; written only by `record_automation_failure`); the app logs or dismisses them.
 - Automation account matching prefers the bank account of the card's bank (`accountFor` in `api/log.js`, `matchAccount` in `lib/autoLog.js`); keep both in step.
+- Offline-first (signed in, Cloud Sync on): a write that cannot reach the cloud (`cloudWrite`, 12 s) is saved on the owner's device copy (`movo.offline.workspace.v2.<uid>`) and uploaded by `reconcileAndCommitOfflineWorkspace` on reconnect/foreground/every minute; deletions are tombstones (`recordOfflineDeletions`). New financial ids come from `newRecordId()` (always a UUID). File imports under Cloud Sync save to the device copy and sync; never call a cloud API from an import directly.
 - Sign-in is passwordless (`components/AuthPanel.js`): Apple, Google, or an email one-time code (`sendEmailCode` / `verifyEmailCode`). Do not reintroduce passwords.
 
 ## UI conventions (owner-approved)

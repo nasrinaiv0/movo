@@ -53,6 +53,10 @@ export async function signOut() { return unwrap(await requireClient().auth.signO
 /** Revoke refresh tokens for every other session without logging out this device. */
 export async function revokeOtherSessions() { return unwrap(await requireClient().auth.signOut({ scope: 'others' })); }
 
+// A record created on this device carries its own UUID, so a save that times out but still reaches the cloud is
+// recognised by the offline sync as the same record instead of becoming a duplicate.
+const CLIENT_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const clientId = id => (typeof id === 'string' && CLIENT_UUID.test(id) ? { id } : {});
 export async function listAccounts() {
   // Stable full pagination is required for accurate offline reconciliation.
   return fetchAllRows(() => requireClient().from('financial_accounts')
@@ -68,7 +72,7 @@ export async function createAccount(account, userId) {
   const allowedTypes = ['bank', 'card', 'e_wallet', 'cash', 'investment', 'other'];
   const accountType = allowedTypes.includes(account.account_type) ? account.account_type : 'other';
   return unwrap(await requireClient().from('financial_accounts').insert({
-    user_id: userId, name, account_type: accountType,
+    ...clientId(account?.id), user_id: userId, name, account_type: accountType,
     institution_name: typeof account.institution_name === 'string' ? account.institution_name.trim().slice(0, 100) || null : null,
     currency: /^[A-Z]{3}$/.test(account.currency || 'PHP') ? (account.currency || 'PHP') : 'PHP',
     opening_balance: Math.round(openingBalance * 100) / 100,
@@ -78,7 +82,7 @@ export async function createAccount(account, userId) {
 export async function listTransactions({ from, to, accountId } = {}) {
   return fetchAllRows(() => {
     let query = requireClient().from('transactions')
-      .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,payment_reference,receipt_note,receipt_path,schedule_id')
+      .select('id,account_id,transfer_to_account_id,transaction_type,amount,currency,merchant,category,note,occurred_at,source,external_reference,is_pending,created_at,updated_at,payment_reference,receipt_note,receipt_path,schedule_id')
       .order('occurred_at', { ascending: false }).order('id', { ascending: false });
     if (from) query = query.gte('occurred_at', from);
     if (to) query = query.lt('occurred_at', to);
@@ -101,7 +105,7 @@ export async function createTransaction(transaction, userId) {
   const occurredAt = transaction.occurred_at || new Date().toISOString();
   if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
   return unwrap(await requireClient().from('transactions').insert({
-    user_id: userId, account_id: transaction.account_id, ...(transaction.schedule_id ? { schedule_id: transaction.schedule_id } : {}),
+    ...clientId(transaction?.id), user_id: userId, account_id: transaction.account_id, ...(transaction.schedule_id ? { schedule_id: transaction.schedule_id } : {}),
     transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
     category: typeof transaction.category === 'string' ? transaction.category.trim().slice(0, 60) || 'Other' : 'Other',

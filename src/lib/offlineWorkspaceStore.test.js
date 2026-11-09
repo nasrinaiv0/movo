@@ -1,4 +1,4 @@
-import {loadOfflineWorkspace,saveOfflineWorkspace,updateOfflineWorking,clearOfflineWorkspace} from './offlineWorkspaceStore';
+import {loadOfflineWorkspace,saveOfflineWorkspace,updateOfflineWorking,clearOfflineWorkspace,recordOfflineDeletions,restoreOfflineRows} from './offlineWorkspaceStore';
 const OWNER='123e4567-e89b-42d3-a456-426614174000',OTHER='123e4567-e89b-42d3-a456-426614174001';
 const base={financial_accounts:[{id:'a',name:'Bank',user_id:OWNER}],transactions:[{id:'t',account_id:'a',amount:4.25,user_id:OWNER}]};
 beforeEach(()=>localStorage.clear());
@@ -41,4 +41,39 @@ test('only selected account workspace is cleared',()=>{
  expect(clearOfflineWorkspace(OWNER)).toBe(true);
  expect(loadOfflineWorkspace(OWNER)).toBeNull();
  expect(loadOfflineWorkspace(OTHER)).not.toBeNull();
+});
+
+test('a device deletion removes the row and keeps a tombstone with the deleted copy in one write',()=>{
+ saveOfflineWorkspace(OWNER,{baseline:base,working:base,dirty:false});
+ expect(recordOfflineDeletions(OWNER,[{group:'transactions',id:'t'}])).toBe(true);
+ const stored=loadOfflineWorkspace(OWNER);
+ expect(stored.working.transactions).toHaveLength(0);
+ expect(stored.baseline.transactions).toHaveLength(1);
+ expect(stored.pendingDeletions).toEqual({transactions:['t']});
+ expect(stored.deletedRows.transactions.t).toEqual(base.transactions[0]);
+ expect(stored.dirty).toBe(true);
+ // later working-copy saves keep the tombstone
+ expect(updateOfflineWorking(OWNER,stored.working)).toBe(true);
+ expect(loadOfflineWorkspace(OWNER).pendingDeletions).toEqual({transactions:['t']});
+});
+test('restoring a deleted row clears its tombstone',()=>{
+ saveOfflineWorkspace(OWNER,{baseline:base,working:base,dirty:false});
+ recordOfflineDeletions(OWNER,[{group:'transactions',id:'t'}]);
+ expect(restoreOfflineRows(OWNER,'transactions',[base.transactions[0]])).toBe(true);
+ const stored=loadOfflineWorkspace(OWNER);
+ expect(stored.working.transactions.map(x=>x.id)).toEqual(['t']);
+ expect(stored.pendingDeletions.transactions).toEqual([]);
+ expect(stored.deletedRows.transactions).toEqual({});
+});
+test('tombstones are never written without a verified owner workspace',()=>{
+ expect(recordOfflineDeletions(OWNER,[{group:'transactions',id:'t'}])).toBe(false);
+ expect(restoreOfflineRows(OWNER,'transactions',[])).toBe(false);
+});
+test('a row missing from a stale device copy is tombstoned with the copy the app showed',()=>{
+ saveOfflineWorkspace(OWNER,{baseline:base,working:base,dirty:false});
+ const shown={id:'online-only',account_id:'a',amount:3,user_id:OWNER};
+ expect(recordOfflineDeletions(OWNER,[{group:'transactions',id:'online-only',row:shown}])).toBe(true);
+ expect(loadOfflineWorkspace(OWNER).deletedRows.transactions['online-only']).toEqual(shown);
+ expect(recordOfflineDeletions(OWNER,[{group:'transactions',id:'x',row:{id:'x',user_id:OTHER}}])).toBe(true);
+ expect(loadOfflineWorkspace(OWNER).pendingDeletions.transactions).toEqual(['online-only']);
 });

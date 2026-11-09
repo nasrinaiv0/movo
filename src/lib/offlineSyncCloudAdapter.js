@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { getCurrentSession, listAccounts, listTransactions } from './financeRepository';
 import { TRANSACTION_SOURCES } from './transactionSources';
+import { getLocalAttachment } from './localAttachments';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ACCOUNT_TYPES=new Set(['bank','card','e_wallet','cash','investment','other']);
@@ -63,7 +64,7 @@ const permittedSource=source=>{
  if(['CSV Import','File Import'].includes(value))return 'csv_import';
  return TRANSACTION_SOURCES.includes(value)?value:'manual';
 };
-export async function insertOfflineTransaction(row,ownerId){
+function transactionPayload(row,ownerId){
  validUUID(row?.id);
  validUUID(row?.account_id,'account');
  if(row.user_id && row.user_id!==ownerId)throw Error('Cross-account transaction rejected.');
@@ -80,7 +81,7 @@ export async function insertOfflineTransaction(row,ownerId){
    throw Error('Unsynced schedule reference requires review before uploading.');
  const amount=money(row.amount);
  if(!(amount>0))throw Error('Transaction amount must be positive.');
- const payload={
+ return {
   id:row.id,user_id:ownerId,account_id:row.account_id,
   transfer_to_account_id:isTransfer?row.transfer_to_account_id:null,
   transaction_type:row.transaction_type,amount,
@@ -95,7 +96,74 @@ export async function insertOfflineTransaction(row,ownerId){
   receipt_path:row.receipt_path||null,
   ...(row.schedule_id?{schedule_id:row.schedule_id}:{}),
  };
+}
+export async function insertOfflineTransaction(row,ownerId){
+ const payload=transactionPayload(row,ownerId);
  const {data,error}=await client().from('transactions').insert(payload).select().single();
  if(error)throw error;
  return data;
+}
+/**
+ * Upload a transaction edited on this device. The same fields the app edits online (never its owner, source,
+ * import reference or schedule), and only while the cloud row still carries the revision this device checked.
+ */
+export async function updateOfflineTransactionCAS(row,expectedUpdatedAt,ownerId){
+ if(!expectedUpdatedAt||!Number.isFinite(Date.parse(expectedUpdatedAt)))throw Error('Missing validated transaction revision; reconciliation was not applied.');
+ const payload=transactionPayload(row,ownerId);
+ const update={account_id:payload.account_id,transfer_to_account_id:payload.transfer_to_account_id,
+  transaction_type:payload.transaction_type,amount:payload.amount,currency:payload.currency,merchant:payload.merchant,
+  category:payload.category,note:payload.note,occurred_at:payload.occurred_at,payment_reference:payload.payment_reference,
+  receipt_note:payload.receipt_note,receipt_path:payload.receipt_path};
+ const {data,error}=await client().from('transactions').update(update)
+  .eq('id',row.id).eq('user_id',ownerId).eq('updated_at',expectedUpdatedAt).select().maybeSingle();
+ if(error)throw error;
+ if(!data)throw Error('Cloud transaction was updated elsewhere. Retry reconciliation and review the conflict.');
+ return data;
+}
+/**
+ * Apply a deletion made on this device with the same server procedure the app uses online (it also reverses linked
+ * bill, subscription and loan payments). Refuses when the cloud row changed since this device checked it; a row
+ * that is already gone counts as deleted.
+ */
+export async function deleteOfflineTransactionCAS(id,expectedUpdatedAt,ownerId){
+ validUUID(id);validUUID(ownerId,'owner');
+ if(!expectedUpdatedAt)throw Error('Missing validated transaction revision; the deletion was not applied.');
+ const {data,error}=await client().from('transactions').select('id,updated_at').eq('id',id).eq('user_id',ownerId).maybeSingle();
+ if(error)throw error;
+ if(!data)return false;
+ if(String(data.updated_at)!==String(expectedUpdatedAt))throw Error('Cloud transaction was updated elsewhere. Retry reconciliation and review the conflict.');
+ const {error:rpcError}=await client().rpc('delete_transaction_with_reversals',{p_transaction_id:id});
+ if(rpcError){if(rpcError.code==='P0002')return false;throw rpcError;}
+ return true;
+}
+const RECEIPT_TYPES={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'};
+/**
+ * Upload a receipt kept on this device for an offline transaction into the owner's private receipts folder. The
+ * path is fixed per transaction, so a retry replaces the same file instead of leaving copies behind.
+ */
+export async function uploadOfflineReceipt(localPath,transactionId,ownerId){
+ validUUID(ownerId,'owner');validUUID(transactionId);
+ if(!String(localPath||'').startsWith('localreceipt:'))throw Error('Only receipts saved on this device can be uploaded.');
+ const file=await getLocalAttachment(localPath);
+ if(!file)throw Error('A receipt saved on this device is missing. Re-attach it to the transaction, then sync again.');
+ const extension=RECEIPT_TYPES[file.type];
+ if(!extension||!(file.size<=10*1024*1024))throw Error('A receipt saved on this device must be a JPG, PNG, WebP or PDF under 10 MB.');
+ const path=ownerId+'/offline-'+transactionId+'.'+extension;
+ const {error}=await client().storage.from('movo-receipts').upload(path,file,{contentType:file.type,upsert:true});
+ if(error)throw error;
+ return path;
+}
+/**
+ * Check, without any network call, that a device record can be uploaded by this sync. Imports saved while Cloud
+ * Sync is on are checked first, so one unsyncable row never blocks every later upload. Returns '' or the reason.
+ */
+export function offlineUploadProblem(group,row,ownerId){
+ try{
+  if(group==='financial_accounts')accountPayload(row,ownerId);
+  else if(group==='transactions'){
+   const copy=row?.receipt_path?.startsWith?.('localreceipt:')?{...row,receipt_path:null}:row;
+   transactionPayload(copy,ownerId);
+  }else return 'Cloud syncing this financial category is not yet verified.';
+  return '';
+ }catch(cause){return cause?.message||'This record cannot be uploaded.';}
 }

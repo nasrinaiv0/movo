@@ -6,6 +6,7 @@ import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
 import { maskEmail } from '../lib/emailPrivacy';
 import { revokeOtherSessions } from '../lib/financeRepository';
+import PlanBadge from '../components/PlanBadge';
 
 
 export default function Profile({ c }) {
@@ -32,7 +33,7 @@ export default function Profile({ c }) {
     <div className="card profile-card-wrap">
       <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
         <span className="avatar big">{c.prefs?.profilePhoto ? <img className="avatar-photo" src={c.prefs.profilePhoto} alt="" /> : user.initial}<i><Icon name="camera" size={13} /></i></span>
-        <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{c.cloudMode && <em className="plan-pill"><Icon name="info" size={13} /> {tr('Plan details unavailable')}</em>}</span>
+        <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{(c.plan === 'pro' || c.plan === 'pro_plus') && <em className="plan-pill"><PlanBadge plan={c.plan} size={18} label /></em>}</span>
         <Icon name="chevron" size={18} />
       </button>
       {!c.cloudMode && c.supabaseConfigured && <button type="button" className="primary-button profile-signin" onClick={() => go('Sign in')}><Icon name="user" size={18} /> {tr('Sign in')}</button>}

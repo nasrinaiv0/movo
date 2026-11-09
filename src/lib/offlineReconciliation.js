@@ -106,11 +106,26 @@ function mapRows(rows, group, ownerId, side, issues) {
 function explicitDeletion(deletions, group, id) {
   return Array.isArray(deletions?.[group]) && deletions[group].includes(id);
 }
+/**
+ * A device deletion is uploaded only when the cloud row still holds exactly what this device last confirmed (or,
+ * for a row created on this device and never confirmed, exactly what the device deleted). A row already gone from
+ * the cloud is a completed deletion (for example a retry after a lost acknowledgment). Anything else is a conflict:
+ * a row changed elsewhere is never removed automatically.
+ */
+function planDeletion({ group, id, ancestor, server, deletedRow, upload, unchanged, conflicts }) {
+  if (server === undefined) { unchanged.push({ group, id }); return; }
+  const expected = ancestor !== undefined ? ancestor : deletedRow;
+  if (expected === undefined || !sameSyncedFinanceFields(server, expected, group)) {
+    conflicts.push({ group, id, reason: 'deleted_locally_changed_remotely', base: ancestor, cloud: server });
+    return;
+  }
+  upload.push({ group, id, change: 'delete', expected, cloud: server });
+}
 export function planOfflineReconciliation({
-  ownerId, base, local, cloud, groups = SYNC_GROUPS, localDeletions = {},
+  ownerId, base, local, cloud, groups = SYNC_GROUPS, localDeletions = {}, deletedRows = {},
 } = {}) {
   if (!uuid.test(String(ownerId || ''))) throw new Error('A verified signed-in owner ID is required for reconciliation.');
-  const issues = [], conflicts = [], upload = [], download = [], unchanged = [], deletions = [];
+  const issues = [], conflicts = [], upload = [], download = [], unchanged = [];
   const named = Array.from(new Set(groups));
   for (const group of named) {
     if (!SYNC_GROUPS.includes(group)) { issues.push({group, reason:'unsupported_group'}); continue; }
@@ -126,8 +141,9 @@ export function planOfflineReconciliation({
       const localDeleted = explicitDeletion(localDeletions, group, id);
       if (localDeleted && device) { conflicts.push({group,id,reason:'deletion_marker_with_live_row',base:ancestor,local:device,cloud:server}); continue; }
       if (localDeleted) {
-        // Never hard-delete live cloud records as part of automatic reconciliation.
-        deletions.push({group,id,reason:'requires_reversible_server_tombstone',base:ancestor,cloud:server});
+        const deletedRow = deletedRows?.[group]?.[id];
+        if (deletedRow && deletedRow.user_id && deletedRow.user_id !== ownerId) { issues.push({group,id,side:'local',reason:'owner_mismatch'}); continue; }
+        planDeletion({ group, id, ancestor, server, deletedRow, upload, unchanged, conflicts });
         continue;
       }
       if (existsInBase && device === undefined) {
@@ -149,16 +165,16 @@ export function planOfflineReconciliation({
       const localChanged = !sameFinanceRecord(device,ancestor);
       const cloudChanged = !sameFinanceRecord(server,ancestor);
       if (!localChanged && !cloudChanged) unchanged.push({group,id});
-      else if (localChanged && !cloudChanged) upload.push({group,id,change:'update',record:device,expected:ancestor});
+      else if (localChanged && !cloudChanged) upload.push({group,id,change:'update',record:device,expected:ancestor,cloud:server});
       else if (!localChanged && cloudChanged) download.push({group,id,change:'update',record:server,expected:ancestor});
-      else if (sameFinanceRecord(device,server)) unchanged.push({group,id});
+      // Both sides hold the same financial meaning (e.g. an edit whose acknowledgment was lost): nothing to do.
+      else if (sameSyncedFinanceFields(device,server,group)) unchanged.push({group,id});
       else conflicts.push({group,id,reason:'concurrent_divergent_edits',base:ancestor,local:device,cloud:server});
     }
   }
   return {
-    ok: issues.length===0 && conflicts.length===0 && deletions.length===0,
-    upload, download, unchanged, conflicts, deletions, issues,
-    counts: {upload:upload.length,download:download.length,conflicts:conflicts.length,
-      unresolvedDeletes:deletions.length,invalid:issues.length},
+    ok: issues.length===0 && conflicts.length===0,
+    upload, download, unchanged, conflicts, issues,
+    counts: {upload:upload.length,download:download.length,conflicts:conflicts.length,invalid:issues.length},
   };
 }

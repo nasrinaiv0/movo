@@ -48,13 +48,59 @@ test('record ownership mismatch and duplicate IDs stop reconciliation',()=>{
   const wrong=plan(scope([a]),scope([{...a,user_id:'other-owner'}]),scope([a]));
   expect(wrong.issues[0].reason).toBe('owner_mismatch');
 });
-test('deletions require explicit irreversible-workflow protection; never resurrect',()=>{
+test('a missing device row without a tombstone is never treated as a deletion',()=>{
   const gone=plan(scope([a]),scope([]),scope([a]));
   expect(gone.ok).toBe(false);
   expect(gone.conflicts[0].reason).toBe('missing_local_row_without_tombstone');
-  const marked=plan(scope([a]),scope([]),scope([a]),{localDeletions:{financial_accounts:['a']}});
-  expect(marked.ok).toBe(false);
-  expect(marked.deletions[0].reason).toBe('requires_reversible_server_tombstone');
+  expect(gone.upload).toHaveLength(0);
+});
+test('a tombstoned row still unchanged in the cloud is queued as a guarded delete',()=>{
+  const marked=plan(scope([a],[t]),scope([a],[]),scope([a],[{...t,updated_at:'later'}]),{localDeletions:{transactions:['t']}});
+  expect(marked.ok).toBe(true);
+  expect(marked.upload).toEqual([expect.objectContaining({group:'transactions',id:'t',change:'delete',expected:t,cloud:expect.objectContaining({updated_at:'later'})})]);
+});
+test('a tombstoned row changed elsewhere is a conflict, never deleted',()=>{
+  const result=plan(scope([a],[t]),scope([a],[]),scope([a],[{...t,amount:99}]),{localDeletions:{transactions:['t']}});
+  expect(result.ok).toBe(false);
+  expect(result.conflicts[0].reason).toBe('deleted_locally_changed_remotely');
+  expect(result.upload).toHaveLength(0);
+});
+test('a tombstoned row already gone from the cloud is complete (retry after a lost acknowledgment)',()=>{
+  const result=plan(scope([a],[t]),scope([a],[]),scope([a],[]),{localDeletions:{transactions:['t']}});
+  expect(result.ok).toBe(true);
+  expect(result.upload).toHaveLength(0);
+  expect(result.unchanged).toContainEqual({group:'transactions',id:'t'});
+});
+test('a device-created row uploaded earlier, then deleted, is removed only when it still matches the deleted copy',()=>{
+  const uploaded={...t,id:'n',merchant:'Taxi'};
+  const same=plan(scope([a],[]),scope([a],[]),scope([a],[uploaded]),{localDeletions:{transactions:['n']},deletedRows:{transactions:{n:uploaded}}});
+  expect(same.ok).toBe(true);
+  expect(same.upload).toEqual([expect.objectContaining({id:'n',change:'delete'})]);
+  const unknown=plan(scope([a],[]),scope([a],[]),scope([a],[uploaded]),{localDeletions:{transactions:['n']}});
+  expect(unknown.ok).toBe(false);
+  expect(unknown.conflicts[0].reason).toBe('deleted_locally_changed_remotely');
+  const created=plan(scope([a],[]),scope([a],[]),scope([a],[]),{localDeletions:{transactions:['n']}});
+  expect(created.ok).toBe(true);
+  expect(created.upload).toHaveLength(0);
+});
+test('a tombstone next to a live device row is a conflict',()=>{
+  const result=plan(scope([a],[t]),scope([a],[t]),scope([a],[t]),{localDeletions:{transactions:['t']}});
+  expect(result.ok).toBe(false);
+  expect(result.conflicts[0].reason).toBe('deletion_marker_with_live_row');
+});
+test('a local transaction edit uploads with the current cloud row as its revision',()=>{
+  const cloudRow={...t,updated_at:'2026-11-08T01:00:00Z'};
+  const edited={...t,amount:25};
+  const result=plan(scope([a],[t]),scope([a],[edited]),scope([a],[cloudRow]));
+  expect(result.ok).toBe(true);
+  expect(result.upload).toEqual([expect.objectContaining({group:'transactions',change:'update',record:edited,expected:t,cloud:cloudRow})]);
+});
+test('an edit the cloud already accepted (lost acknowledgment) is reconciled, not a conflict',()=>{
+  const edited={...t,amount:'25.00',source:'Manual'};
+  const cloudRow={...t,amount:25,source:'manual',updated_at:'later'};
+  const result=plan(scope([a],[t]),scope([a],[edited]),scope([a],[cloudRow]));
+  expect(result.ok).toBe(true);
+  expect(result.upload).toHaveLength(0);
 });
 test('missing cloud row is not recreated from a stale cache',()=>{
   const result=plan(scope([a]),scope([a]),scope([]));

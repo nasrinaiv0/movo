@@ -1,5 +1,9 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Offline-first saving, automatic upload, imports under Cloud Sync, plan badges (review)
+
+With Cloud Sync on, saves that cannot reach the cloud (offline or >12 s) land on the account's device copy and upload automatically on reconnect, on foreground and every minute; offline transaction edits (CAS), deletions (revision-checked server procedure) and device receipts now sync. CSV/backup "Save locally" works under Cloud Sync and refreshes every page, then uploads. Pro features stay on during an outage with the last verified plan. Fixes main's online-delete drop to local mode. Gold (Pro) / Platinum (Pro+) plan badge. No migration or production change. See `docs/engineering/updates/2026-11-09-offline-first-autosync-plan-badges.md`.
+
 ## 2026-11-09 — Confirmed local backup immediately refreshes financial views (review)
 
 Restores same-name accounts by stable source identifiers rather than rejecting multiple BPI/GoTyme accounts or connecting payments to the first matching name. Guest and signed-in offline saves read back persisted accounts/transactions, then refresh Home, Wallet, Transactions and Menu-derived financial state and return to Home. Cloud accounting rows no longer leak into local transactions. Import preview rows use content-height grid tracks to avoid overlapping on small screens. Added malicious/ambiguous ID, idempotency, transfer and end-to-end reload regression coverage. No cloud writes or production migration. See docs/engineering/updates/2026-11-09-identity-safe-local-backup-dashboard-refresh.md. Full CI/preview and signed iPhone verification remain release gates. The follow-up CI localization correction restores the existing 11-language-confirmed confirmation copy; import behavior is unchanged.

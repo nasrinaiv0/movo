@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import Icon from './Icon';
 import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
+import PlanBadge from './PlanBadge';
 import { apiUrl } from '../lib/platform';
 import { PLAN_LABELS, effectivePlan } from '../lib/planAccess';
 import { t as tr } from '../lib/i18n';
@@ -60,7 +61,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   </Sheet>;
   return <Sheet title={feature ? tr('Unlock with Pro') : tr('Your first month of Pro is free')} label={tr('MOVO plans')} className="plan-offer-sheet" onClose={onClose}>
     <div className="plan-offer-scroll">
-      <p className="plan-current">{tr('Current plan')} <strong>{tr(PLAN_LABELS[plan])}</strong></p>
+      <p className="plan-current">{tr('Current plan')} <strong>{tr(PLAN_LABELS[plan])}</strong><PlanBadge plan={plan} size={22} /></p>
       <PlanComparison />
       <p className="plan-referral-line"><Icon name="gift" size={15} /> {tr('Invite 10 friends who subscribe and get 3 months of Pro.')}</p>
       {entitlement?.referralCode && <div className="plan-code-row"><input readOnly aria-label={tr('Your referral code')} value={entitlement.referralCode} onFocus={e => e.target.select()} /><small>{tr('{n} of 10', { n: entitlement.qualifiedReferrals || 0 })}</small></div>}

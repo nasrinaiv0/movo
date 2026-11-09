@@ -7756,3 +7756,14 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .plan-detail-card.plan-plus { background: linear-gradient(160deg, rgba(212,160,23,.16), transparent 60%), var(--card); }
 /* Dark mode: the plans sheet's secondary actions sit on a soft tint, not a white slab (2026-11-09). */
 .movo-app.movo-app.theme-dark .plan-offer-footer .secondary-button { background: #2b2f37; color: #f2f4f7 !important; box-shadow: none; opacity: 1; backdrop-filter: none; }
+
+/* ---------- Plan badge (2026-11-09): Pro wears the Gold MOVO badge, Pro+ the Platinum one ---------- */
+.movo-app .plan-badge { display: inline-flex; align-items: center; gap: 8px; flex: none; min-width: 0; }
+.movo-app .streak-badge.plan-badge-mark { width: var(--plan-badge, 26px); height: var(--plan-badge, 26px); flex: none; opacity: 1; }
+.movo-app .plan-badge-text { display: grid; min-width: 0; line-height: 1.15; font-size: 12px; font-weight: 700; color: var(--text); }
+.movo-app .plan-badge-text small { font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.movo-app .plan-pill:has(.plan-badge) { gap: 0; padding: 3px 10px 3px 3px; background: var(--field); color: var(--text); }
+.movo-app .plan-current:has(.plan-badge) { justify-content: flex-start; gap: 8px; }
+.movo-app .plan-current:has(.plan-badge) strong { margin-inline-start: auto; }
+.movo-app .menu-hero .plan-badge { margin-inline-start: auto; }
+.movo-app .menu-hero .plan-badge + .streak-chip { margin-inline-start: 0; }

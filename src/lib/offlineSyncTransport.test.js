@@ -5,9 +5,13 @@ const account={id:A,user_id:OWNER,name:'Main',account_type:'bank',currency:'PHP'
 const tx={id:T,user_id:OWNER,account_id:A,transaction_type:'expense',amount:8,merchant:'Food',category:'Other',currency:'PHP',occurred_at:'2026-11-08T01:00:00Z'};
 const rows=(accounts=[],transactions=[])=>({financial_accounts:accounts,transactions});
 const ws=(base,working)=>({version:2,owner:OWNER,baseline:base,working,dirty:true});
-function deps(initial){let remote=JSON.parse(JSON.stringify(initial));const owner=jest.fn(async()=>{}),created=jest.fn(async row=>{remote.transactions.push({...row,user_id:OWNER})}),accountCreated=jest.fn(async row=>{remote.financial_accounts.push({...row,user_id:OWNER})}),updated=jest.fn(async row=>{remote.financial_accounts=remote.financial_accounts.map(x=>x.id===row.id?{...row,updated_at:'fresh'}:x)});
+function deps(initial){let remote=JSON.parse(JSON.stringify(initial));const owner=jest.fn(async()=>{}),created=jest.fn(async row=>{remote.transactions.push({...row,user_id:OWNER,updated_at:'t1'})}),accountCreated=jest.fn(async row=>{remote.financial_accounts.push({...row,user_id:OWNER})}),updated=jest.fn(async row=>{remote.financial_accounts=remote.financial_accounts.map(x=>x.id===row.id?{...row,updated_at:'fresh'}:x)});
+ const txUpdated=jest.fn(async(row,rev)=>{const cur=remote.transactions.find(x=>x.id===row.id);if(!cur||cur.updated_at!==rev)throw Error('Cloud transaction was updated elsewhere.');remote.transactions=remote.transactions.map(x=>x.id===row.id?{...x,...row,updated_at:'fresh'}:x)});
+ const txDeleted=jest.fn(async(id,rev)=>{const cur=remote.transactions.find(x=>x.id===id);if(!cur)return false;if(cur.updated_at!==rev)throw Error('Cloud transaction was updated elsewhere.');remote.transactions=remote.transactions.filter(x=>x.id!==id);return true;});
+ const receipt=jest.fn(async(local,id)=>OWNER+'/offline-'+id+'.jpg');
  return {fetchRemote:async()=>JSON.parse(JSON.stringify(remote)),insertAccount:accountCreated,updateAccountCAS:updated,insertTransaction:created,assertOwner:owner,
-       getCalls:()=>({owner,created,accountCreated,updated}),getRemote:()=>remote};}
+       updateTransactionCAS:txUpdated,deleteTransactionCAS:txDeleted,uploadReceipt:receipt,
+       getCalls:()=>({owner,created,accountCreated,updated,txUpdated,txDeleted,receipt}),getRemote:()=>remote,setRemote:next=>{remote=next;}};}
 test('new offline transaction uploads idempotent stable UUID, existing server transaction survives',async()=>{
  const newTx={...tx,id:N,amount:14};
  const env=deps(rows([account],[tx]));
@@ -28,10 +32,70 @@ test('concurrent conflicting transaction edits are not uploaded or overwritten',
  expect(result.ok).toBe(false);expect(result.plan.conflicts).toHaveLength(1);
  expect(env.getCalls().created).not.toHaveBeenCalled();
 });
-test('edited transactions deliberately fail closed until accounting reversal support',async()=>{
+test('a transaction edited offline uploads with the cloud revision it was checked against',async()=>{
+ const cloudTx={...tx,updated_at:'r1'};
+ const env=deps(rows([account],[cloudTx]));
+ const edited={...tx,merchant:'Changed',amount:9.5};
+ const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[cloudTx]),rows([account],[edited])),...env});
+ expect(result.ok).toBe(true);expect(result.uploaded).toBe(1);
+ expect(env.getCalls().txUpdated).toHaveBeenCalledWith(edited,'r1',OWNER);
+ expect(env.getRemote().transactions[0]).toEqual(expect.objectContaining({merchant:'Changed',amount:9.5}));
+ expect(result.workspace.dirty).toBe(false);
+});
+test('an offline edit never overwrites a cloud edit made in the meantime',async()=>{
+ const env=deps(rows([account],[{...tx,merchant:'Cloud edit',updated_at:'r2'}]));
+ const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[{...tx,updated_at:'r1'}]),rows([account],[{...tx,merchant:'Device edit'}])),...env});
+ expect(result.ok).toBe(false);expect(result.plan.conflicts[0].reason).toBe('concurrent_divergent_edits');
+ expect(env.getCalls().txUpdated).not.toHaveBeenCalled();
+});
+test('a transaction deleted offline is removed with the server procedure only while unchanged',async()=>{
+ const cloudTx={...tx,updated_at:'r1'};
+ const env=deps(rows([account],[cloudTx]));
+ const work={...ws(rows([account],[cloudTx]),rows([account],[])),pendingDeletions:{transactions:[T]},deletedRows:{transactions:{[T]:cloudTx}}};
+ const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:work,...env});
+ expect(result.ok).toBe(true);
+ expect(env.getCalls().txDeleted).toHaveBeenCalledWith(T,'r1',OWNER);
+ expect(env.getRemote().transactions).toHaveLength(0);
+ expect(result.workspace.pendingDeletions).toEqual({});
+});
+test('a deletion is not applied to a row that changed in the cloud',async()=>{
+ const env=deps(rows([account],[{...tx,amount:50,updated_at:'r2'}]));
+ const work={...ws(rows([account],[{...tx,updated_at:'r1'}]),rows([account],[])),pendingDeletions:{transactions:[T]}};
+ const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:work,...env});
+ expect(result.ok).toBe(false);expect(result.plan.conflicts[0].reason).toBe('deleted_locally_changed_remotely');
+ expect(env.getCalls().txDeleted).not.toHaveBeenCalled();
+ expect(env.getRemote().transactions).toHaveLength(1);
+});
+test('a retry after a lost acknowledgment converges: the deletion and edit already applied are not repeated',async()=>{
+ const cloudTx={...tx,updated_at:'r1'},other={...tx,id:N,merchant:'Other',updated_at:'r1'};
+ const edited={...other,merchant:'Edited'};
+ const env=deps(rows([account],[{...edited,updated_at:'r9'}])); // both writes already reached the cloud
+ const work={...ws(rows([account],[cloudTx,other]),rows([account],[edited])),pendingDeletions:{transactions:[T]}};
+ const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:work,...env});
+ expect(result.ok).toBe(true);expect(result.uploaded).toBe(0);
+ expect(env.getCalls().txDeleted).not.toHaveBeenCalled();expect(env.getCalls().txUpdated).not.toHaveBeenCalled();
+});
+test('a receipt kept on the device is uploaded first and the verified row points at the cloud copy',async()=>{
+ const env=deps(rows([account],[]));
+ const newTx={...tx,id:N,receipt_path:'localreceipt:abc'};
+ const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[]),rows([account],[newTx])),...env});
+ expect(result.ok).toBe(true);
+ expect(env.getCalls().receipt).toHaveBeenCalledWith('localreceipt:abc',N,OWNER);
+ expect(env.getCalls().created.mock.calls[0][0].receipt_path).toBe(OWNER+'/offline-'+N+'.jpg');
+ expect(result.workspace.working.transactions[0].receipt_path).toBe(OWNER+'/offline-'+N+'.jpg');
+});
+test('edits, deletions and receipts fail closed when the transport for them is missing',async()=>{
+ const cloudTx={...tx,updated_at:'r1'};
+ const env=deps(rows([account],[cloudTx]));delete env.updateTransactionCAS;
+ await expect(reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[cloudTx]),rows([account],[{...tx,merchant:'Changed'}])),...env})).rejects.toThrow('edited transactions is unavailable');
+ const env2=deps(rows([account],[]));delete env2.uploadReceipt;
+ await expect(reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[]),rows([account],[{...tx,id:N,receipt_path:'localreceipt:x'}])),...env2})).rejects.toThrow('receipts is unavailable');
+ expect(env2.getCalls().created).not.toHaveBeenCalled();
+});
+test('a missing cloud revision refuses to update or delete',async()=>{
  const env=deps(rows([account],[tx]));
- await expect(reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[tx]),rows([account],[{...tx,merchant:'Changed'}])),...env})).rejects.toThrow('reversal/accounting reconciliation');
- expect(env.getCalls().created).not.toHaveBeenCalled();
+ await expect(reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[tx]),rows([account],[{...tx,merchant:'Changed'}])),...env})).rejects.toThrow('revision is missing');
+ expect(env.getCalls().txUpdated).not.toHaveBeenCalled();
 });
 test('missing local account FK refuses automatic remote insertion',async()=>{
  const env=deps(rows([account],[]));

@@ -88,7 +88,7 @@ test('Discard requires confirmation and removes only the unsaved uploaded previe
   expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
   await ui.cleanup();
 });
-test('Cloud Sync active blocks JSON import and explains local-only requirement', async () => {
+test('with Cloud Sync on, a reviewed JSON import is saved on the device and explained as uploading automatically', async () => {
   const ui = await setup();
   ui.c.cloudMode = true;
   await act(async () => { /* let mocked context update via force rerender below */ });
@@ -96,11 +96,13 @@ test('Cloud Sync active blocks JSON import and explains local-only requirement',
   const input=ui.node.querySelector('input[type="file"]');
   Object.defineProperty(input,'files',{value:[file],configurable:true});
   await act(async () => input.dispatchEvent(new Event('change',{bubbles:true})));
-  // cloudMode is checked on every render, so the asynchronous upload refreshes the UI.
   const save=[...ui.node.querySelectorAll('button')].find(b=>b.textContent.trim()==='Save records');
-  expect(save.disabled).toBe(true);
-  expect(ui.node.textContent).toContain('Saving cannot change cloud records.');
+  expect(save.disabled).toBe(false);
+  expect(ui.node.textContent).toContain('upload to your MOVO account automatically');
+  // Nothing is saved until the second confirmation.
+  await act(async () => save.click());
   expect(ui.c.saveFinanceBackupRecords).not.toHaveBeenCalled();
+  expect(ui.node.textContent).toContain('uploaded to your MOVO account automatically');
   await ui.cleanup();
 });
 test('CSV file routes into the existing CSV preview without silently recording it', async () => {

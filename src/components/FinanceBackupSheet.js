@@ -40,7 +40,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
     } catch (error) { setMessage(error.message || 'Could not read this backup.'); } finally { setBusy(false); }
   };
   const saveRecords = async () => {
-    if (!backup || busy || saved || c.cloudMode || confirmation !== 'save') return;
+    if (!backup || busy || saved || confirmation !== 'save') return;
     setBusy(true); setConfirmation(''); setMessage('');
     try {
       const result = await c.saveFinanceBackupRecords(backup);
@@ -50,7 +50,7 @@ export default function FinanceBackupSheet({ c, onClose }) {
       // skipped. Keep the preview so the person can investigate or try again.
       setSaved(total > 0);
       setMessage(total
-        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device. ' + skipped + ' skipped or needing review. Home, Wallet, Transactions and Menu now reflect these local records.'
+        ? 'Saved and verified ' + result.accounts + ' account(s) and ' + result.transactions + ' transaction(s) on this device. ' + skipped + ' skipped or needing review. Home, Wallet, Transactions and Menu now reflect these records.' + (c.cloudMode ? ' They upload to your MOVO account automatically.' : '')
         : 'No new accounts or transactions were applied. ' + skipped + ' row(s) were skipped or already existed. Other financial groups in this backup are preview-only. The existing records were preserved.');
       if (total > 0) c.onFinanceBackupSaved?.(result);
     } catch (error) { setMessage(error?.message || 'Saving records failed. No further changes were attempted.'); }
@@ -109,19 +109,21 @@ export default function FinanceBackupSheet({ c, onClose }) {
         </div>
         {rows.length > limit && <button type="button" className="secondary-button" onClick={() => setLimit(limit + 12)}>Show more</button>}
         {unsupportedGroups.length > 0 && <p className="movo-backup-subnote" role="note">Other groups are preview-only and will not be applied: {unsupportedGroups.join(', ')}. Only supported accounts and transactions update MOVO locally.</p>}
-        {c.cloudMode && <p className="movo-backup-subnote" role="note">Cloud Sync is on. Turn it off in Settings and return to upload this file again. Saving cannot change cloud records.</p>}
+        {c.cloudMode && <p className="movo-backup-subnote" role="note">Cloud Sync is on. Saved records appear on this device right away and upload to your MOVO account automatically, now or when you are back online.</p>}
         <div className="movo-backup-save-actions">
           <button type="button" className="secondary-button" disabled={busy || saved} onClick={() => setConfirmation('discard')}>
             <Icon name="trash" size={17} /> Discard records
           </button>
-          <button type="button" className="primary-button" disabled={busy || saved || !!c.cloudMode || (!summaryAccounts && !summaryTransactions)} onClick={() => setConfirmation('save')}>
+          <button type="button" className="primary-button" disabled={busy || saved || (!summaryAccounts && !summaryTransactions)} onClick={() => setConfirmation('save')}>
             <Icon name="check" size={17} /> {busy ? 'Saving…' : saved ? 'Records saved' : 'Save records'}
           </button>
         </div>
         {confirmation && <section className="movo-backup-confirm" role="alertdialog" aria-label={confirmation === 'save' ? 'Confirm local record import' : 'Confirm discard preview'} aria-modal="false">
           <strong>{confirmation === 'save' ? 'Save reviewed records to this device?' : 'Discard the uploaded preview?'}</strong>
           <p>{confirmation === 'save'
-            ? 'Valid new accounts and transactions will be added to local MOVO records and reflected in Wallet, Home and Transactions. Cloud records will not change. Duplicates and unsupported groups remain untouched.'
+            ? (c.cloudMode
+              ? 'Valid new accounts and transactions will be saved on this device, shown in Wallet, Home and Transactions, and uploaded to your MOVO account automatically. Existing records are never changed. Duplicates and unsupported groups remain untouched.'
+              : 'Valid new accounts and transactions will be added to local MOVO records and reflected in Wallet, Home and Transactions. Cloud records will not change. Duplicates and unsupported groups remain untouched.')
             : 'The uploaded preview will be removed without changing any existing MOVO records.'}</p>
           <div className="movo-backup-confirm-actions">
             <button type="button" className="secondary-button" onClick={() => setConfirmation('')} disabled={busy}>Keep preview</button>
