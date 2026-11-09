@@ -76,4 +76,29 @@ begin
 end $$;
 revoke all on function public.movo_owner_work_update(uuid,uuid,timestamptz,text,text,text) from public, anon, authenticated;
 grant execute on function public.movo_owner_work_update(uuid,uuid,timestamptz,text,text,text) to service_role;
+-- Weekly signup counts only (no per-user data leaves the database).
+create or replace function public.movo_owner_weekly_signups()
+returns jsonb language plpgsql stable security invoker set search_path = ''
+as $
+declare v_series jsonb;
+begin
+ if (select auth.jwt()->>'role') is distinct from 'service_role' then
+  raise exception 'service_role_required' using errcode='42501';
+ end if;
+ select coalesce(jsonb_agg(jsonb_build_object(
+   'week',to_char(w.week_start,'YYYY-MM-DD'),'count',coalesce(n.total,0))
+   order by w.week_start),'[]'::jsonb) into v_series
+ from pg_catalog.generate_series(
+    pg_catalog.date_trunc('week',now()) - interval '11 weeks',
+    pg_catalog.date_trunc('week',now()),interval '1 week'
+ ) w(week_start)
+ left join lateral (
+   select count(*)::bigint as total from auth.users u
+     where u.created_at >= w.week_start
+       and u.created_at < w.week_start + interval '1 week'
+ ) n on true;
+ return v_series;
+end $;
+revoke all on function public.movo_owner_weekly_signups() from public, anon, authenticated;
+grant execute on function public.movo_owner_weekly_signups() to service_role;
 commit;
