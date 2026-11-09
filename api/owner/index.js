@@ -4,6 +4,9 @@
 const { createClient } = require('@supabase/supabase-js');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TIER = new Set(['pro','pro_plus']);
+const WORK_AREAS = new Set(['sync','support','compliance','promotions','settings','health']);
+const WORK_STATUSES = new Set(['pending','in_progress','blocked','complete']);
+const WORK_PRIORITIES = new Set(['low','medium','high','critical']);
 const VIEWS = new Set(['overview','analytics','users','billing','grants','security','health','sync','support','compliance','promotions','settings']);
 function reply(res,code,data) {
   res.setHeader('Cache-Control','no-store, private');
@@ -32,12 +35,6 @@ async function collect(admin) {
   ]);
   return {accounts,transactions,subscriptions,grants,pro,plus};
 }
-async function audit(admin,actor,action,target,meta) {
-  const {error} = await admin.from('movo_owner_audit_log').insert({
-    actor_user_id:actor,action,target_user_id:target||null,details:meta||{}
-  });
-  if(error) throw new Error('audit_failed');
-}
 async function handler(req,res) {
   if(!['GET','POST'].includes(req.method)){
     res.setHeader('Allow','GET, POST');return reply(res,405,{error:'method_not_allowed'});
@@ -62,6 +59,28 @@ async function handler(req,res) {
     if(req.method==='POST'){
       const body=req.body && typeof req.body==='object' && !Array.isArray(req.body) ? req.body : {};
       const action=body.action,target=body.userId,tier=body.tier;
+      if(action==='work_create'){
+        if(!WORK_AREAS.has(body.area)||typeof body.title!=='string'||body.title.trim().length<5||body.title.length>140
+          ||typeof body.notes!=='string'||body.notes.length>3000||!WORK_PRIORITIES.has(body.priority))
+          return reply(res,400,{error:'invalid_work_item'});
+        const {data,error}=await admin.rpc('movo_owner_work_create',{
+          p_actor:actor,p_area:body.area,p_title:body.title.trim(),p_notes:body.notes,p_priority:body.priority
+        });
+        if(error)throw error;
+        return reply(res,200,{ok:true,id:data});
+      }
+      if(action==='work_update'){
+        if(!UUID.test(body.id||'')||typeof body.expectedUpdatedAt!=='string'
+          ||!Number.isFinite(Date.parse(body.expectedUpdatedAt))||!WORK_STATUSES.has(body.status)
+          ||!WORK_PRIORITIES.has(body.priority)||typeof body.notes!=='string'||body.notes.length>3000)
+          return reply(res,400,{error:'invalid_work_update'});
+        const {data,error}=await admin.rpc('movo_owner_work_update',{
+          p_actor:actor,p_id:body.id,p_expected_updated_at:body.expectedUpdatedAt,
+          p_status:body.status,p_priority:body.priority,p_notes:body.notes
+        });
+        if(error)throw error;
+        return reply(res,data?200:409,data?{ok:true}:{error:'work_item_changed_reload'});
+      }
       if(!UUID.test(target||'')||typeof body.reason!=='string'||body.reason.trim().length<5||body.reason.length>300)
         return reply(res,400,{error:'invalid_action_fields'});
       if(action==='grant'){
@@ -137,10 +156,17 @@ async function handler(req,res) {
         storeSettlements:{status:'not_integrated'},currency:'PHP',
         message:'Only database-backed counts are shown. Revenue and retention require verified integrations.'});
     }
-    if(view==='health'){
-      const {error}=await admin.from('movo_plan_grants').select('user_id',{head:true,count:'exact'}).limit(1);
-      return reply(res,200,{database:error?'degraded':'reachable',server:'reachable',
-        deployment:{status:'not_integrated'},mobileCrashes:{status:'not_integrated'},schema:{status:'requires_verification'}});
+    if(WORK_AREAS.has(view)){
+      const {data:items,error:itemError}=await admin.from('movo_owner_work_items')
+        .select('id,area,title,notes,status,priority,created_at,updated_at,updated_by')
+        .eq('area',view).order('updated_at',{ascending:false}).limit(100);
+      if(itemError)throw Error('workspace_unavailable');
+      if(view==='health'){
+        const {error}=await admin.from('movo_plan_grants').select('user_id',{head:true,count:'exact'}).limit(1);
+        return reply(res,200,{items:items||[],database:error?'degraded':'reachable',server:'reachable',
+          deployment:{status:'not_integrated'},mobileCrashes:{status:'not_integrated'},schema:{status:'requires_verification'}});
+      }
+      return reply(res,200,{items:items||[],limitedTo:100,status:'ready',externalIntegration:'not_integrated'});
     }
     return reply(res,200,{status:'not_integrated',
       message:'This module is included in the owner workspace, but no verified provider or backend feed is connected yet.'});
