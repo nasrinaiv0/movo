@@ -37,14 +37,14 @@ export function PlanComparison() {
 }
 
 const PLANS = [
-  { tier: 'free', name: 'Free', tone: 'color', chip: '', heading: 'Included:', features: ['Unlimited records on this device', 'Export & import', 'Receipt attachments', 'NasrinAI answers from your records'] },
-  { tier: 'pro', name: 'Pro', tone: 'gold', chip: 'Gold MOVO', heading: 'Everything in Free, plus:', features: ['Cloud Sync', 'Insights & briefings', 'Full NasrinAI', 'Receipt scanner', 'Custom Money Flow', 'Gold badges & app icons'] },
-  { tier: 'pro_plus', name: 'Pro+', tone: 'platinum', chip: 'Platinum MOVO', heading: 'Everything in Pro, plus:', features: ['Automatic logging', 'Glow and motion finish', 'Premium card styles & uploads', 'Platinum badges & app icons'] },
+  { tier: 'free', name: 'Free', tone: 'color', heading: 'Included:', features: ['Unlimited records on this device', 'Export & import', 'Receipt attachments', 'NasrinAI answers from your records'] },
+  { tier: 'pro', name: 'Pro', tone: 'gold', heading: 'Everything in Free, plus:', features: ['Cloud Sync', 'Insights & briefings', 'Full NasrinAI', 'Receipt scanner', 'Custom Money Flow', 'Gold badges & app icons'] },
+  { tier: 'pro_plus', name: 'Pro+', tone: 'platinum', heading: 'Everything in Pro, plus:', features: ['Automatic logging', 'Glow and motion finish', 'Premium card styles & uploads', 'Platinum badges & app icons'] },
 ];
 const PLUS_ONLY = ['automation', 'premiumMascots', 'premiumUI'];
 
 /*
- * One compact panel (2026-11-09 reference): MOVO mark, Monthly/Annual, Free · Pro (Gold MOVO) · Pro+ (Platinum MOVO),
+ * One compact panel (2026-11-09 reference): MOVO mark, Monthly/Annual, Free (green MOVO) · Pro (gold MOVO) · Pro+ (platinum MOVO),
  * the store's own localized price, what the plan adds, one action. Free is the green mark, the free month white,
  * Pro gold, Pro+ platinum. Prices only ever come from the App Store / Google Play; none are invented here.
  */
@@ -122,7 +122,6 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       <button type="button" className="plan-arrow" aria-label={tr('Previous plan')} disabled={index === 0} onClick={() => setIndex(i => Math.max(0, i - 1))}><Icon name="chevron" size={16} /></button>
       <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
         {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
-          {item.chip && <span className="plan-tile-chip"><MovoMark size={12} tone={item.tone} />{tr(item.chip)}</span>}
           <MovoMark size={30} tone={item.tone} />
           <strong>{tr(item.name)}</strong>
           {item.tier === plan && <small>{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}

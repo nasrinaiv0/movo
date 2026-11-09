@@ -2,7 +2,7 @@
 
 ## 2026-11-09 — Plans offer on one panel, Gold/Platinum MOVO logos, badge app icons
 
-The plans offer is one compact dark panel (fits 375×667 without scrolling): Monthly/Annual, Free (green MOVO), Pro (Gold MOVO), Pro+ (Platinum MOVO), store prices only, the free month with the white MOVO mark and no renewal line. Plan badges use the same tier logos. Subscribers can switch the home-screen icon to a badge icon (Settings → Appearance → App icon): Pro unlocks Bronze–Gold right after payment, Pro+ all four; iOS uses alternate app icons. See `docs/engineering/updates/2026-11-09-plans-panel-app-icons.md`.
+The plans offer is one compact dark panel (fits 375×667 without scrolling): Monthly/Annual, Free (green MOVO), Pro (gold MOVO), Pro+ (platinum MOVO) — no "Gold/Platinum MOVO" labels on the tiles, store prices only, the free month with the white MOVO mark and no renewal line. Plan badges use the same tier logos. Subscribers can switch the home-screen icon to a badge icon (Settings → Appearance → App icon): Pro unlocks Bronze–Gold right after payment, Pro+ all four; iOS uses alternate app icons. See `docs/engineering/updates/2026-11-09-plans-panel-app-icons.md`.
 
 ## 2026-11-09 — Membership and rewards cards follow the owner's merchant card references
 

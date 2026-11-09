@@ -10,7 +10,7 @@ after payment."
 ## What changed
 
 - **Plans panel (`PlanOffer`).** One dark panel that fits without scrolling at 430×932 and 375×667: MOVO header,
-  Monthly/Annual switch, three tiles — Free (green MOVO), Pro (Gold MOVO chip), Pro+ (Platinum MOVO chip) — with arrows
+  Monthly/Annual switch, three tiles — Free (green MOVO), Pro (gold MOVO), Pro+ (platinum MOVO) — with arrows
   and dots, the price, the plan's features, one action button and the fine print. Prices come only from the App Store
   or Google Play product (`priceString`), with the other period and its saving; without a store product the panel says
   the store shows the price. Nothing is invented.
@@ -33,3 +33,8 @@ current plan and Terms), `PlanBadge.test.js`, `appIcons.test.js`, `AppIconPicker
 ## To verify on device
 
 The iOS alternate icons need an iOS build (`build-ios`) and a check on a phone; the switch is a no-op on the web.
+
+## Follow-up (owner, 2026-11-09)
+
+The "Gold MOVO" and "Platinum MOVO" labels were removed from the Pro and Pro+ tiles; the mark's colour carries the
+tier. The tiles are re-centred without them and the panel still fits 375×667 (`PlanOffer.test.js` checks no label).

@@ -29,8 +29,9 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   expect(fills(tiles[0])).toContain('#10a866'); // green Free
   expect(fills(tiles[1])).toContain('#e3b04a'); // gold Pro
   expect(fills(tiles[2])).toContain('#dcd9ef'); // platinum Pro+
-  expect(tiles[1].textContent).toContain('Gold MOVO');
-  expect(tiles[2].textContent).toContain('Platinum MOVO');
+  // No "Gold MOVO" / "Platinum MOVO" labels on the tiles: the mark's colour says it (owner, 2026-11-09).
+  expect(el.querySelector('.plan-tile-chip')).toBeNull();
+  expect(tiles.map(t => t.textContent)).toEqual(['FreeCurrent', 'Pro', 'Pro+']);
   expect(tiles[1].getAttribute('aria-checked')).toBe('true');
   // On the web no price is invented.
   expect(el.textContent).toContain('Price shown by the App Store or Google Play');
