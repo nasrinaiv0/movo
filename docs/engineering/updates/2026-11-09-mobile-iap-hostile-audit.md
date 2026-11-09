@@ -1,6 +1,6 @@
 # MOVO mobile billing hostile audit and hardening
 
-Audited baseline: `115cf784fbc6ef4495d599e945347562a1f69a0c`; integrated with main `9c5ed2b2`, `nasrinaiv0/movo`, 9 November 2026. Scope: subscription verification, Apple V2 notifications, Google RTDN, database state, native acknowledgment boundary and production plan calculation. This is a source audit and isolated execution assessment; no production database migration, store-console change, production-secret inspection, real purchase or refund was performed.
+Audited baseline: `115cf784fbc6ef4495d599e945347562a1f69a0c`; integrated with main `e50b7061` including PR #258, `nasrinaiv0/movo`, 9 November 2026. Scope: subscription verification, Apple V2 notifications, Google RTDN, database state, native acknowledgment boundary and production plan calculation. This is a source audit and isolated execution assessment; no production database migration, store-console change, production-secret inspection, real purchase or refund was performed.
 
 ## 1. Exploit scenarios found
 
@@ -65,7 +65,7 @@ Required new server configuration: `GOOGLE_PLAY_RTDN_SUBSCRIPTION`, `MOVO_IAP_TO
 
 All execution was isolated in Vercel Sandbox. Production data and store credentials were not used.
 
-- Final integrated application typecheck, 170 Jest suites / 1,036 tests and production build passed. The subsequent production-only entitlement-listing change was validated by the focused run below and Node syntax checks.
+- Final integrated application typecheck, 173 Jest suites / 1,063 tests and production build passed after integrating PR #258. PostgreSQL checks also passed with the real referral migration, including point award/reversal and redeemed Pro access.
 - Final focused run: 4 suites / 33 tests covering verification, native purchase behavior, boundary schemas, encryption/tampering, safe errors, OIDC claim rejection, duplicate delivery, post-commit acknowledgment and committed-state responses.
 - Real Apple library rejected unsigned, missing-chain and substituted-algorithm JWS payloads using the pinned official root.
 - Disposable PostgreSQL migration and behavioral tests passed: receipt ownership, shorter-expiry refunds, token-wide revocation across order IDs, unknown-owner Apple refunds, later legitimate purchases, delayed renewals, predecessor tombstones, expired fencing, atomic event rollback, rate limits and execute permissions.
@@ -77,3 +77,9 @@ Remaining release checks: real store purchase/renewal/refund/revoke/upgrade deli
 References: official Apple library https://github.com/apple/app-store-server-library-node ; Apple PKI https://www.apple.com/certificateauthority/ ; Google Pub/Sub auth https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions ; Play v3 subscriptions https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2 ; acknowledgment https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptions/acknowledge .
 
 Reproduce focused checks with `CI=true npm test -- --runInBand src/lib/iapHandlers.test.js src/lib/iapSecurity.test.js src/lib/purchaseVerification.test.js src/lib/nativePurchases.test.js` and `node scripts/security/iap-crypto-smoke.cjs`. For SQL tests, use a fresh disposable local PostgreSQL database named `iap_security`, generate its isolated fixture using `python3 scripts/security/iap-db-bootstrap.py`, apply that output with `psql -v ON_ERROR_STOP=1`, then run `scripts/security/iap-db.test.sql` and `scripts/security/iap-concurrency.test.py`. The fixture creates test roles/auth tables and must never target a deployed database.
+
+### PR #258 compatibility
+
+Referral upgrade award/reversal calls execute inside the fenced entitlement transaction when MOVO_REFERRAL_POINTS_ENABLED=true. They use committed state and the existing unique referral ledger. The plan-status function preserves the 500-points-to-Pro redemption branch. SQL tests cover the paid award, refund reversal and redeemed-point plan access.
+
+The published merge tree before this documentation-only evidence update matched the Vercel Sandbox-tested tree exactly: `4ccfafc4088d0729bda614a9fdd0d68261adc42a`.

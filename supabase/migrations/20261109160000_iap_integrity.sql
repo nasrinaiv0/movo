@@ -152,6 +152,12 @@ begin
   end if;
   if old.paid_verified and old.status in ('active','grace_period') then
     perform public.record_movo_paid_referral(old.id,old.user_id);
+    if coalesce((p_verified->>'referralPointsEnabled')::boolean,false) then
+      perform public.movo_award_referral_upgrade(old.id,old.user_id);
+    end if;
+  end if;
+  if old.status='revoked' and coalesce((p_verified->>'referralPointsEnabled')::boolean,false) then
+    perform public.movo_reverse_referral_upgrade(old.user_id);
   end if;
   delete from public.movo_iap_leases where platform=v_platform and subscription_key=v_key and fence=p_fence;
   return jsonb_build_object('entitlementId',old.id,'status',old.status,'tier',old.tier,'expiresAt',old.expires_at);
@@ -181,6 +187,8 @@ begin
       where mg.user_id = p_user_id and mg.revoked_at is null and mg.expires_at > now()
     union all select 'pro', g.trial_expires_at, 'trial' where g.trial_expires_at > now()
     union all select 'pro', g.reward_expires_at, 'referral' where g.reward_started_at <= now() and g.reward_expires_at > now() and v_count >= 10
+    union all select 'pro', pr.expires_at, 'points' from public.movo_referral_point_redemptions pr
+      where pr.user_id = p_user_id and pr.starts_at <= now() and pr.expires_at > now()
   ) a order by (tier = 'pro_plus') desc, expires_at desc limit 1;
   return jsonb_build_object('tier',coalesce(v_tier,'free'),'active',v_tier is not null,'expiresAt',v_expiry,'source',v_source,
     'trialEligible',g.trial_started_at is null and not exists(select 1 from public.movo_store_entitlements where user_id=p_user_id and environment='production'),
@@ -189,4 +197,5 @@ begin
 end $$;
 revoke all on function public.movo_plan_status(uuid) from public, anon;
 grant execute on function public.movo_plan_status(uuid) to authenticated, service_role;
+
 commit;

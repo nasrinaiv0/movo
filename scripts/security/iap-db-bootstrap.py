@@ -2,7 +2,7 @@
 from pathlib import Path
 root=Path(__file__).resolve().parents[2]
 print('''create role anon; create role authenticated; create role service_role bypassrls;
-create schema auth; create table auth.users(id uuid primary key,email_confirmed_at timestamptz,phone_confirmed_at timestamptz);
+create schema auth; create table auth.users(id uuid primary key,email_confirmed_at timestamptz,phone_confirmed_at timestamptz,created_at timestamptz not null default now());
 create function auth.uid() returns uuid language sql as $$select null::uuid$$;
 create function auth.jwt() returns jsonb language sql as $$select '{"role":"service_role"}'::jsonb$$;
 grant usage on schema public,auth to service_role,authenticated,anon;
@@ -13,4 +13,5 @@ print(a[:a.index('-- Remove the writable')])
 a=(root/'supabase/migrations/20261107070000_movo_plans_trials_referrals.sql').read_text()
 print(a[:a.index('-- Triggers also cover')]); print('commit;')
 print((root/'supabase/migrations/20261108230330_owner_manual_plan_grants.sql').read_text())
+print((root/'supabase/migrations/20261109153000_verified_referral_points.sql').read_text())
 print((root/'supabase/migrations/20261109160000_iap_integrity.sql').read_text())

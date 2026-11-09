@@ -1,5 +1,17 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — PR #258: short referral codes, iPhone/Android download QR codes, referral points (review; points gated)
+
+**Short codes (owner request):** every person now has one reusable referral code, `M` + five digits (for example `M78038`), replacing the 24-character free-month code and the 64-character single-use invite tokens this PR first proposed. Codes are case- and space-insensitive and are generated server-side from a secure random source; once digit codes run short they continue with five characters from 0-9 and A-Z without I/O. Each account may enter at most 10 codes an hour (attempts are kept even when a code is wrong), so short codes cannot be guessed in bulk. A code can be added only by a verified account created in the last 7 days that has not been referred and has not bought a plan; starting the free month never clears or replaces an existing referral (fixes a latent bug where a later code-less trial claim set `referred_by` to null).
+
+**Download QR codes:** Profile → **Refer MOVO** shows the code with Copy/Share, progress toward the existing 10-subscriber reward (3 months of Pro), and two QR codes — iPhone (App Store) and Android (Google Play). Both point to `/api/download?platform=ios|android&ref=CODE`, which redirects to the store addresses set in the server settings `MOVO_IOS_APP_STORE_URL` / `MOVO_ANDROID_STORE_URL` (exact store URLs only; no open redirect) and, until MOVO is listed, to the web app, which keeps the friend's code on the device and fills it in on the free-month panel and in Refer MOVO.
+
+**Points to Pro:** every 500 referral points convert to 1 month of Pro (Refer MOVO → Use 500 points, confirmation first); the server checks the balance, spends the points in a separate redemptions table and queues the month after any current plan. The download QR codes say **iOS** and **Android**.
+
+**Points (unchanged rules, still off):** +5 after server-verified App Attest / Play Integrity, +100 once after the first verified production Pro/Pro+ purchase, −100 once on refund; isolated ledger, service-role-only RPCs, RLS, review holds. `MOVO_REFERRAL_POINTS_ENABLED=false` keeps the native-proof routes closed and hides points in the app; linking a code works once the migration is applied.
+
+Validation: SQL suite (isolated PostgreSQL) passes, including deliberate-break checks for the attempt limit and the trial referral fix; Jest, typecheck and strict build on the current head. **No production migration or environment change was made.** Before enabling points: apply the migration (rotates the 3 existing production codes, none used yet), set the store URLs, signed-device attestation tests and privacy text for referrals. See `docs/engineering/updates/2026-11-09-short-referral-codes-download-qr.md`.
+
 ## 2026-11-09 — Owner Access sign-in email template failure (requires live Supabase action)
 
 Verified MOVO Supabase Auth HTTP 500 on `POST /otp`: live Magic Link template fails Go `html/template` rendering in unclosed CSS double-quote context. Replaced committed OTP email with inline-style, text-only code interpolation and added static validation plus regression tests. **GitHub/Vercel deploy does not publish the Supabase email template**: update the live Magic Link body in the Supabase dashboard and verify a real owner OTP plus MFA before calling the incident resolved. See `docs/engineering/updates/2026-11-09-owner-otp-template-rendering.md`.
@@ -594,3 +606,5 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 ## 2026-11-09 — Mobile subscription integrity
 
 Implemented production-only Apple/Google verification, pinned Apple trust root, strict OIDC/schema validation, fenced atomic state transitions, revocation tombstones, event deduplication, predecessor cleanup and encrypted server-acknowledgment retries. Includes a source-level hostile audit, deployable SQL, setup changes and regression tests. Vercel Sandbox: integrated build/typecheck and 170 suites/1,036 tests passed; final focused 33 tests passed; PostgreSQL behavioral and separate-connection concurrency tests passed; mobile browser render smoke passed. Migration and three new server settings are required before deployment; no production migration performed. See `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
+
+- PR #260 integration with PR #258: 173 suites / 1,063 tests, typecheck and build passed in Vercel Sandbox. Atomic referral awards/refund reversals and points-to-Pro plan access passed PostgreSQL regressions. The GitHub source tree matches the tested Sandbox tree. No production changes.

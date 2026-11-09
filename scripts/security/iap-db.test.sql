@@ -61,6 +61,17 @@ begin
  r:=public.movo_iap_commit(u,v||jsonb_build_object('status','expired','eventAt',now()+interval '1 second'),f,'expired');
  f:=public.movo_iap_acquire('apple','apple-original'); r:=public.movo_iap_commit(u,v,f,'delayed-renewal');
  if r->>'status'<>'expired' then raise exception 'TEST: out-of-order renewal resurrected expiry'; end if;
+
+ -- Preserve PR258: award and reverse paid referral points in the entitlement transaction.
+ insert into public.movo_referral_claims(referrer_id,referred_id,native_verified_at) values(other_user,u,now());
+ v:=v||jsonb_build_object('storeTransactionId','apple-tx-3','status','active','purchasedAt',now()+interval '1 second',
+ 'eventAt',now()+interval '2 seconds','expiresAt',now()+interval '31 days','paidVerified',true,'referralPointsEnabled',true);
+ f:=public.movo_iap_acquire('apple','apple-original'); perform public.movo_iap_commit(u,v,f,'points-purchase');
+ if (select coalesce(sum(points),0) from public.movo_referral_points_ledger where referred_id=u)<>100 then raise exception 'TEST: referral points lost'; end if;
+ f:=public.movo_iap_acquire('apple','apple-original'); perform public.movo_iap_commit(u,v||'{"status":"revoked","paidVerified":false}',f,'points-refund');
+ if (select coalesce(sum(points),0) from public.movo_referral_points_ledger where referred_id=u)<>0 then raise exception 'TEST: referral reversal lost'; end if;
+ insert into public.movo_referral_point_redemptions(user_id,months,points,starts_at,expires_at) values(other_user,1,500,now()-interval '1 second',now()+interval '1 month');
+ if public.movo_plan_status(other_user)->>'source'<>'points' then raise exception 'TEST: redeemed points plan lost'; end if;
  for n in 1..10 loop if not public.movo_iap_rate_limit(u) then raise exception 'TEST: early rate limit'; end if; end loop;
  if public.movo_iap_rate_limit(u) then raise exception 'TEST: rate limit bypass'; end if;
  if has_function_privilege('authenticated','public.movo_iap_commit(uuid,jsonb,uuid,text)','EXECUTE') then raise exception 'TEST: public RPC'; end if;

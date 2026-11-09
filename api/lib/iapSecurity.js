@@ -263,6 +263,7 @@ async function acknowledge(db, hash) {
 }
 async function commit(db, user, verified, fence, eventId = null) {
   const { purchaseToken, ...safe } = verified;
+  safe.referralPointsEnabled = process.env.MOVO_REFERRAL_POINTS_ENABLED === "true";
   if (
     verified.platform === "google" &&
     verified.needsAcknowledgement &&
