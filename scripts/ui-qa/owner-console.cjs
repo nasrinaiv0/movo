@@ -28,7 +28,10 @@ async function run(){
         const metrics=Object.fromEntries(['accounts','transactions','subscriptions','grants','pro','plus'].map((name,i)=>[name,{value:[42,300,12,3,9,3][i],status:'verified'}]));
         const item={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',area:'support',title:'Follow up on billing issue',notes:'Illustrative only',status:'pending',priority:'medium',
           created_at:'2026-11-09T00:00:00Z',updated_at:'2026-11-09T00:00:00Z',updated_by:owner};
-        const body=['overview','analytics','billing'].includes(view)?{metrics,storeRecords:[]}:
+        const signupSeries={status:'verified',data:Array.from({length:12},(_,i)=>({
+          week:new Date(Date.UTC(2026,7,17+i*7)).toISOString().slice(0,10),count:2+i
+        }))};
+        const body=['overview','analytics','billing'].includes(view)?{metrics,storeRecords:[],signupSeries}:
           view==='users'?{users:[{id:recipient,email:'test@example.org',verified:true,createdAt:'2026-10-09T00:00:00Z',plan:'pro',planSource:'manual'}],page:1,total:1}:
           view==='grants'?{grants:[]}:view==='security'?{events:[]}:
           {items:view==='support'?[item]:[],server:'reachable',database:'reachable',status:'ready'};
@@ -37,6 +40,7 @@ async function run(){
       await page.goto('http://127.0.0.1:3000/owner',{waitUntil:'networkidle'});
       await page.getByRole('heading',{name:'Overview',exact:true}).waitFor({timeout:10000});
       assert.equal(await page.locator('.occ-stat').count(),4);
+      assert.equal(await page.locator('.occ-trend-point').count(),12);
       const overflow=await page.evaluate(()=>[document.documentElement.scrollWidth,innerWidth]);
       assert.ok(overflow[0]<=overflow[1]+1,'page overflow '+width+': '+overflow);
       if(width<=760)await page.locator('.occ-mobile-toggle').click();
