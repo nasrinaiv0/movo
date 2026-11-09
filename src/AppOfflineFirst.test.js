@@ -11,7 +11,7 @@ const ACCOUNT = '123e4567-e89b-42d3-a456-426614174001';
 const EXISTING = '123e4567-e89b-42d3-a456-426614174002';
 
 const mockNet = { down: false };
-const mockCalls = { create: [], insert: [], remove: [] };
+const mockCalls = { create: [], insert: [], remove: [], signOut: 0 };
 const mockServer = { accounts: [], transactions: [] };
 const mockOffline = () => Object.assign(new TypeError('Failed to fetch'), {});
 const mockCopy = value => JSON.parse(JSON.stringify(value));
@@ -48,7 +48,7 @@ jest.mock('./lib/financeRepository', () => {
     savePreferences: async () => null,
     purgeArchivedAutomations: async () => null,
     listArchivedAutomations: async () => [],
-    signOut: async () => null,
+    signOut: async () => { mockCalls.signOut += 1; return { localOnly: mockNet.down }; },
   };
 });
 jest.mock('./lib/obligationsRepository', () => ({
@@ -103,7 +103,7 @@ const nav = (container, name) => click(container, name);
 describe('offline-first with Cloud Sync on', () => {
   let container; let root;
   beforeEach(async () => {
-    mockNet.down = false; mockRevision = 0; mockCalls.create = []; mockCalls.insert = []; mockCalls.remove = [];
+    mockNet.down = false; mockRevision = 0; mockCalls.create = []; mockCalls.insert = []; mockCalls.remove = []; mockCalls.signOut = 0;
     mockServer.accounts = [{ id: ACCOUNT, user_id: OWNER, name: 'BPI', account_type: 'bank', institution_name: 'BPI', currency: 'PHP', opening_balance: 5000, is_archived: false, display_order: 0, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z' }];
     mockServer.transactions = [{ id: EXISTING, user_id: OWNER, account_id: ACCOUNT, transfer_to_account_id: null, transaction_type: 'expense', amount: 120, currency: 'PHP', merchant: 'Bakery', category: 'Food', note: null, occurred_at: '2026-11-08T03:00:00+00:00', source: 'manual', external_reference: null, is_pending: false, created_at: '2026-11-08T03:00:00Z', updated_at: mockStamp(), payment_reference: null, receipt_note: null, receipt_path: null, schedule_id: null }];
     window.localStorage.clear();
@@ -141,11 +141,14 @@ describe('offline-first with Cloud Sync on', () => {
     expect(container.textContent).toContain('Bakery');
 
     // 3. Delete the cloud record while still offline: it disappears and is remembered for upload.
-    window.confirm = jest.fn(() => true);
     await click(container, 'See All');
     const bakery = Array.from(container.querySelectorAll('button')).find(b => (b.getAttribute('aria-label') || '').startsWith('Bakery, '));
     await act(async () => { bakery.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     await click(container, 'Delete Bakery');
+    // Nothing is deleted until the person confirms in the dialog.
+    expect(container.querySelector('.confirm-name').textContent).toBe('Bakery');
+    expect(mockCalls.remove).toHaveLength(0);
+    await act(async () => { container.querySelector('.confirm-accept').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     await waitFor(() => loadOfflineWorkspace(OWNER).pendingDeletions?.transactions?.includes(EXISTING), 'the deletion tombstone');
     copy = loadOfflineWorkspace(OWNER);
     expect(copy.working.transactions.map(t => t.id)).toEqual([sentId]);
@@ -192,18 +195,61 @@ describe('offline-first with Cloud Sync on', () => {
   });
 
   test('deleting online keeps cloud mode: the clean device copy accepts the cloud deletion', async () => {
-    window.confirm = jest.fn(() => true);
     await nav(container, 'Transactions');
     await click(container, 'See All');
     const bakery = Array.from(container.querySelectorAll('button')).find(b => (b.getAttribute('aria-label') || '').startsWith('Bakery, '));
     await act(async () => { bakery.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     await click(container, 'Delete Bakery');
+    // Nothing is deleted until the person confirms in the dialog.
+    expect(container.querySelector('.confirm-name').textContent).toBe('Bakery');
+    expect(mockCalls.remove).toHaveLength(0);
+    await act(async () => { container.querySelector('.confirm-accept').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
     await waitFor(() => loadOfflineWorkspace(OWNER).baseline.transactions.length === 0, 'the refreshed device copy');
     expect(mockServer.transactions).toHaveLength(0);
     expect(container.textContent).not.toContain('Cloud and device history differ unexpectedly');
     const copy = loadOfflineWorkspace(OWNER);
     expect(copy.dirty).toBe(false);
     expect(copy.pendingDeletions).toEqual({});
+  });
+
+  test('logging out asks first, warns about unsynced records offline, keeps them, and opens sign-in', async () => {
+    // An offline save leaves one record waiting for the cloud.
+    mockNet.down = true;
+    await nav(container, 'NasrinAI');
+    const box = container.querySelector('textarea#movo-ai-prompt');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(box, 'Spent 250 on Grab');
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => { container.querySelector('form.movo-ai-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    await waitFor(() => loadOfflineWorkspace(OWNER)?.dirty === true, 'the offline save');
+    const before = JSON.stringify(loadOfflineWorkspace(OWNER));
+    await nav(container, 'Menu');
+    await act(async () => { container.querySelector('.menu-hero').click(); });
+    await click(container, 'Log out');
+    const dialog = container.querySelector('.confirm-dialog');
+    expect(dialog.querySelector('.confirm-title').textContent).toBe('Log out of MOVO?');
+    expect(dialog.textContent).toContain('Are you sure you want to log out of your account?');
+    expect(dialog.querySelector('.confirm-warning').textContent).toContain('1 change on this device has not synced to your account yet.');
+    expect([...dialog.querySelectorAll('.confirm-actions button')].map(b => b.textContent)).toEqual(['Cancel', 'Log Out']);
+
+    // Cancel: still signed in, nothing changed.
+    await act(async () => { dialog.querySelector('.confirm-cancel').click(); });
+    expect(mockCalls.signOut).toBe(0);
+    expect(JSON.stringify(loadOfflineWorkspace(OWNER))).toBe(before);
+    expect(container.textContent).toContain('Log out');
+
+    // Log Out, tapped twice: one sign-out, the offline records stay on the device, and the sign-in screen opens.
+    await click(container, 'Log out');
+    await act(async () => { const accept = container.querySelector('.confirm-accept'); accept.click(); accept.click(); });
+    await waitFor(() => container.querySelector('.confirm-dialog') === null, 'the dialog to close');
+    expect(mockCalls.signOut).toBe(1);
+    const kept = loadOfflineWorkspace(OWNER);
+    expect(kept.dirty).toBe(true);
+    expect(kept.working.transactions.some(t => t.merchant === 'Grab')).toBe(true);
+    expect(container.textContent).toContain('Logged out on this device. You were offline, so other devices were not signed out.');
+    expect(container.querySelector('.auth-card')).not.toBeNull();
+    expect(container.textContent).not.toContain('Log out');
   });
 
   test('paid features stay available during an outage when the plan was verified', async () => {

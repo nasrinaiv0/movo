@@ -4,6 +4,7 @@ import { SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
 import { ARCHIVE_DAYS, ARCHIVE_KINDS, daysLeft, purgeArchive } from '../lib/archive';
 import { t as tr } from '../lib/i18n';
+import { useConfirm } from '../components/ConfirmDialog';
 
 /*
  * Archive: removed transactions, subscriptions, limits and plans, and failed phone automations the person archived.
@@ -27,6 +28,7 @@ function describe(entry, show) {
 export default function Archive({ c }) {
   const { archive = [], archivedAutomations = [], loadArchivedAutomations, restoreArchived, deleteArchived, emptyArchive, show } = c;
   const [busy, setBusy] = useState('');
+  const confirm = useConfirm();
   useEffect(() => { loadArchivedAutomations?.(); }, [loadArchivedAutomations]);
   const entries = useMemo(() => [
     ...purgeArchive(archive),
@@ -48,11 +50,11 @@ export default function Archive({ c }) {
           {d.amount && <b className="archive-amount">{d.amount}</b>}
           <span className="archive-actions">
             <button type="button" className="archive-restore" disabled={busy === entry.id} onClick={() => act(entry.id, () => restoreArchived(entry))}>{tr('Restore')}</button>
-            <button type="button" className="archive-delete" aria-label={tr('Delete {name} for good', { name: d.title })} disabled={busy === entry.id} onClick={() => { if (window.confirm(tr('Delete this for good? It cannot be restored.'))) act(entry.id, () => deleteArchived(entry)); }}><Icon name="trash" size={16} /></button>
+            <button type="button" className="archive-delete" aria-label={tr('Delete {name} for good', { name: d.title })} disabled={busy === entry.id} onClick={async () => { if (await confirm({ title: tr('Delete this for good?'), name: d.title, message: tr('It is removed from the Archive and cannot be restored.'), detail: tr('This cannot be undone.'), confirmLabel: tr('Delete'), danger: true })) act(entry.id, () => deleteArchived(entry)); }}><Icon name="trash" size={16} /></button>
           </span>
         </li>;
       })}</ul>
     </section>)}
-    {groups.length > 0 && <button type="button" className="secondary-button archive-empty-all" onClick={() => { if (window.confirm(tr('Delete everything in the Archive for good?'))) act('all', emptyArchive); }}>{tr('Empty archive')}</button>}
+    {groups.length > 0 && <button type="button" className="secondary-button archive-empty-all" disabled={busy === 'all'} onClick={async () => { if (await confirm({ title: tr('Empty the Archive?'), message: entries.length === 1 ? tr('1 item is deleted for good and cannot be restored.') : tr('{n} items are deleted for good and cannot be restored.', { n: entries.length }), detail: tr('This cannot be undone.'), confirmLabel: tr('Delete all'), danger: true, verify: 'DELETE' })) act('all', emptyArchive); }}>{tr('Empty archive')}</button>}
   </>;
 }

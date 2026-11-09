@@ -5,6 +5,7 @@ import CardArt from './CardArt';
 import { Sheet, Chips } from './ui';
 import { THEMES, GENRES, WALLPAPER_THEMES, WALLPAPER_GENRES, useCustomStickers, addCustomSticker, removeCustomSticker } from '../lib/stickers';
 import { t as tr } from '../lib/i18n';
+import { useConfirm } from './ConfirmDialog';
 import { listPremiumStickers } from '../lib/premiumStickers';
 import { FINISHES, FINISH_PREFIX } from '../lib/cardFaces';
 
@@ -23,6 +24,7 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);
   const [error, setError] = useState('');
+  const confirm = useConfirm();
   const file = useRef(null);
   const remoteGenres = [...new Set(remote.map(item => item.genre))];
   const genres = ['All', ...(custom.length ? ['Mine'] : []), ...remoteGenres, ...WALLPAPER_GENRES, ...GENRES];
@@ -56,7 +58,8 @@ export default function CardStyleSheet({ account, show, holder, current, onPick,
         <button type="button" className={`style-tile${current === t.id ? ' selected' : ''}`} onClick={() => { if (t.storage && !requireFeature('premiumStickers')) return; if (t.custom && !requireFeature('styleUploads')) return; onPick(t.id); }} aria-label={tr('{name} sticker', { name: nameOf(t) })} aria-pressed={current === t.id}>
           <CardArt a={account} show={show} styleId={t.id} compact /><span>{nameOf(t)}</span>{current === t.id && <i className="style-check"><Icon name="check" size={14} strokeWidth={2.6} /></i>}
         </button>
-        {mine(t) && <button type="button" className="style-remove" aria-label={tr('Remove {name}', { name: t.name })} onClick={() => {
+        {mine(t) && <button type="button" className="style-remove" aria-label={tr('Remove {name}', { name: t.name })} onClick={async () => {
+          if (!(await confirm({ title: tr('Remove this sticker?'), name: t.name, message: tr('Your uploaded sticker image is removed from MOVO.'), detail: tr('This cannot be undone.'), confirmLabel: tr('Remove'), danger: true }))) return;
           const removed = removeCustomSticker(t.id);
           if (!removed) { setError(tr('Could not remove this sticker because browser storage is unavailable or full. Free storage and try again.')); return; }
           if (current === t.id) onPick('');

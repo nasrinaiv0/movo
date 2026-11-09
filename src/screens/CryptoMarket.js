@@ -7,6 +7,8 @@ import { loadCryptoHistory, loadCryptoMarkets, sortCryptoCoins } from '../lib/cr
 import { evaluateCryptoAlerts } from '../lib/cryptoAlerts';
 import { summarizeCryptoHoldings, upsertCryptoHolding } from '../lib/cryptoPortfolio';
 import { enablePush, pushGranted, showSystemNotification } from '../lib/alerts';
+import { deleteRecord, useConfirm } from '../components/ConfirmDialog';
+import { t as tr } from '../lib/i18n';
 
 const CRYPTO_DOMAINS = { BTC:"bitcoin.org", ETH:"ethereum.org", BNB:"bnbchain.org", SOL:"solana.com", XRP:"xrpl.org", ADA:"cardano.org", DOGE:"dogecoin.com", TRX:"tron.network", TON:"ton.org", AVAX:"avax.network", DOT:"polkadot.com", LINK:"chain.link", BCH:"bitcoincash.org", LTC:"litecoin.org", XLM:"stellar.org", SHIB:"shibatoken.com", HBAR:"hedera.com", SUI:"sui.io", XMR:"getmonero.org", ETC:"ethereumclassic.org", NEAR:"near.org", APT:"aptosfoundation.org", UNI:"uniswap.org", AAVE:"aave.com", CRO:"crypto.com", OKB:"okx.com", ICP:"internetcomputer.org", FIL:"filecoin.io", ALGO:"algorand.com", VET:"vechain.org", ATOM:"cosmos.network", ARB:"arbitrum.io", OP:"optimism.io", MKR:"makerdao.com", INJ:"injective.com", PEPE:"pepe.vip" };
 function CryptoLogo({ coin, size = 38 }) {
@@ -39,6 +41,7 @@ export default function CryptoMarket({ c }) {
   const watchlist = Array.isArray(c.prefs?.cryptoWatchlist) ? c.prefs.cryptoWatchlist : ['btc-bitcoin', 'eth-ethereum', 'sol-solana'];
   const [coins, setCoins] = useState([]);
   const [selected, setSelected] = useState(null);
+  const confirm = useConfirm();
   useEffect(() => {
     setSelected(current => current ? coins.find(coin => coin.id === current.id) || current : null);
   }, [coins]);
@@ -158,7 +161,11 @@ export default function CryptoMarket({ c }) {
     c.notify?.(`Price alert saved for ${selected.symbol}.`);
   };
   const toggleAlert = (id) => c.setPref?.('cryptoAlerts', alerts.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
-  const deleteAlert = (id) => c.setPref?.('cryptoAlerts', alerts.filter(a => a.id !== id));
+  const deleteAlert = async (id) => {
+    const row = alerts.find(a => a.id === id);
+    if (!row || !(await confirm({ title: tr('Delete this price alert?'), name: `${row.symbol} · ${row.direction === 'above' ? tr('Above') : tr('Below')} ${money(row.target, row.quote)}`, message: tr('You will no longer be alerted for this price.'), confirmLabel: tr('Delete'), danger: true }))) return;
+    c.setPref?.('cryptoAlerts', (c.prefs?.cryptoAlerts || alerts).filter(a => a.id !== id));
+  };
   const openHoldingForm = (row = null) => {
     setHoldingEditId(row?.id || null); setHoldingCoin(row?.coinId || coins[0]?.id || '');
     setHoldingQuantity(row ? String(row.quantity) : ''); setHoldingCost(row?.averageCost == null ? '' : String(row.averageCost));
@@ -176,7 +183,11 @@ export default function CryptoMarket({ c }) {
       c.notify?.(holdingEditId ? 'Holding updated.' : 'Holding added to your portfolio.');
     } catch { c.notify?.('Check the quantity and average cost, then try again.'); }
   };
-  const deleteHolding = (id) => { c.setPref?.('cryptoHoldings', holdings.filter(row => row.id !== id)); c.notify?.('Holding removed from portfolio.'); };
+  const deleteHolding = async (id) => {
+    const row = holdings.find(item => item.id === id);
+    if (!row || !(await confirm(deleteRecord(`${row.name || row.symbol} (${row.symbol})`, { impact: tr('Your portfolio value updates straight away. Your coins on any exchange or wallet are not affected.'), permanent: true })))) return;
+    c.setPref?.('cryptoHoldings', (c.prefs?.cryptoHoldings || holdings).filter(item => item.id !== id)); c.notify?.(tr('Holding removed from portfolio.'));
+  };
 
   const requestAlertPermission = async () => {
     const result = await enablePush();

@@ -4,6 +4,12 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Log out and every delete ask first in one dialog (review)
+
+One compact confirmation dialog (`components/ConfirmDialog.js`) now guards log out and every deletion of a financial or personal record: transactions (including the chat Undo), allocation reversal, account archive, budgets, plans, limits, subscriptions, loans, receivables, cashback, crypto holdings and alerts, membership cards, Archive delete/empty, stickers, profile photo, other-device sign-out, points redemption and the lock-screen reset. Cancel, Escape and a tap outside never confirm; double taps and taps during the closing animation never run twice; failures stay in the dialog with Try again; bulk and reset need typed DELETE. Log out warns when this account has unsynced device changes, saves pending offline changes before ending the session (previously after), still works offline (device session removed) and opens sign-in. Details: `docs/engineering/updates/2026-11-09-logout-delete-confirmations.md`.
+
+Validation on this branch: 181 suites / 1,107 tests, typecheck and strict build pass locally; light/dark screenshots at 430×932 and 375×667 from the built app (Cancel kept the row; Delete removed and archived it). Vercel preview and Sandbox results are reported on the PR.
+
 ## 2026-11-09 — PR #260 billing audit follow-up (review; production rollout pending)
 
 Pinned Zod 4.6.7 to clear the production dependency vulnerability, updated bounded Pub/Sub record validation, made checkout fail closed on incomplete server configuration, and removed optional payment-history lookup from Google revocation processing. Added isolated PostgreSQL billing CI. Backend JavaScript IAP tests remain in all Jest/prebuild runs; only the frontend TypeScript 4.9 program excludes those two Node-only files.

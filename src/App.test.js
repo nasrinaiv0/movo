@@ -45,6 +45,12 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 const NativeDate = Date;
 const FIXED_TEST_NOW = '2026-10-29T12:00:00+08:00';
 window.scrollTo = jest.fn();
+/* The shared confirmation dialog (components/ConfirmDialog.js); tests skip its animation. */
+async function answerConfirm(container, accept) {
+  const dialog = container.querySelector('.confirm-dialog');
+  if (!dialog) throw new Error('No confirmation dialog');
+  await act(async () => { dialog.querySelector(accept ? '.confirm-accept' : '.confirm-cancel').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+}
 function clickButton(container, name) {
   const button = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === name || item.textContent.trim() === name);
   if (!button) throw new Error('Button not found: ' + name);
@@ -339,14 +345,46 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('[role="dialog"]').textContent).toMatch(/transfer/i);
   });
 
-  test('opens a transaction, then deletes it after confirmation', () => {
-    window.confirm = jest.fn(() => true);
+  test('opens a transaction, then deletes it only after confirmation; Cancel changes nothing', async () => {
+    const stored = () => JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').filter(t => t.id === 'demo-1');
+    const walletBalance = () => { nav(container, 'Wallet'); return Number(container.querySelector('.balance-amount').textContent.replace(/[^0-9.-]/g, '')); };
+    const balanceBefore = walletBalance();
     nav(container, 'Transactions');
     clickButton(container, 'See All');
     clickButton(container, 'SM Supermarket, −₱1,250.00');
     expect(container.querySelector('[role="dialog"]').textContent).toContain('SM Supermarket');
+    const before = stored();
+    expect(before).toHaveLength(1);
     clickButton(container, 'Delete SM Supermarket');
-    expect(container.textContent).not.toContain('SM Supermarket, ');
+    const dialog = container.querySelector('.confirm-dialog');
+    expect(dialog.getAttribute('role')).toBe('alertdialog');
+    expect(dialog.querySelector('.confirm-title').textContent).toBe('Delete this record?');
+    expect(dialog.querySelector('.confirm-name').textContent).toBe('SM Supermarket');
+    expect(dialog.textContent).toContain('This action may affect your financial balances and reports.');
+    expect(document.activeElement.textContent).toBe('Cancel');
+    // Cancel: the record, the open sheet and the stored copy stay exactly as they were.
+    await answerConfirm(container, false);
+    expect(container.querySelector('.confirm-dialog')).toBeNull();
+    expect(stored()).toEqual(before);
+    expect(container.querySelector('[role="dialog"]').textContent).toContain('SM Supermarket');
+    // Escape and a tap outside only dismiss as well.
+    clickButton(container, 'Delete SM Supermarket');
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(container.querySelector('.confirm-dialog')).toBeNull();
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+    clickButton(container, 'Delete SM Supermarket');
+    await act(async () => { container.querySelector('.confirm-backdrop').click(); });
+    expect(container.querySelector('.confirm-dialog')).toBeNull();
+    expect(stored()).toEqual(before);
+    // Confirm: removed from the list and the device, and kept in the Archive.
+    clickButton(container, 'Delete SM Supermarket');
+    await answerConfirm(container, true);
+    expect(stored()).toHaveLength(0);
+    expect(container.querySelector('button[aria-label="SM Supermarket, −₱1,250.00"]')).toBeNull();
+    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    expect(prefs.archive.some(entry => entry.kind === 'transaction' && entry.item.id === 'demo-1')).toBe(true);
+    // The ₱1,250 expense no longer counts: the wallet total rises by exactly that much.
+    expect(Math.round((walletBalance() - balanceBefore) * 100) / 100).toBe(1250);
   });
 
   test('opens and closes the add-transaction sheet', () => {
@@ -605,6 +643,13 @@ describe('MOVO finance frontend', () => {
     let saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
     expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => [t.merchant, t.amount, t.category])).toEqual([['Grab', 250, 'transport:ride_hailing'], ['ChatGPT Plus', 699, 'Subscriptions']]);
     await act(async () => { Array.from(rows[0].querySelectorAll('.link-button')).find(b => b.textContent === 'Undo').click(); });
+    // Undo deletes a record, so it asks first; Cancel keeps it.
+    expect(container.querySelector('.confirm-name').textContent).toBe('Grab');
+    await answerConfirm(container, false);
+    expect(rows[0].textContent).not.toContain('Removed');
+    expect(JSON.parse(window.localStorage.getItem('movo.local.transactions.v1')).some(t => t.merchant === 'Grab')).toBe(true);
+    await act(async () => { Array.from(rows[0].querySelectorAll('.link-button')).find(b => b.textContent === 'Undo').click(); });
+    await answerConfirm(container, true);
     expect(rows[0].textContent).toContain('Removed');
     saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
     expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => t.merchant)).toEqual(['ChatGPT Plus']);
@@ -657,8 +702,7 @@ describe('MOVO finance frontend', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  test('creates, edits and archives a local-only account across reloads', () => {
-    window.confirm = jest.fn(() => true);
+  test('creates, edits and archives a local-only account across reloads', async () => {
     nav(container, 'Wallet');
     clickButton(container, 'New account');
     act(() => Array.from(container.querySelectorAll('.sheet-card')).find(b => b.textContent.includes('Credit or debit card')).click());
@@ -701,7 +745,13 @@ describe('MOVO finance frontend', () => {
     expect(rcbcCard.getAttribute('aria-current')).toBe('true');
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
-    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC').is_archived).toBe(true);
+    const rcbc = () => JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC');
+    expect(container.querySelector('.confirm-title').textContent).toBe('Archive this account?');
+    await answerConfirm(container, false);
+    expect(rcbc().is_archived).toBe(false);
+    clickButton(container, 'Archive account');
+    await answerConfirm(container, true);
+    expect(rcbc().is_archived).toBe(true);
   });
 
   test('edits a transaction and persists the change locally', () => {

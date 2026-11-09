@@ -95,7 +95,7 @@ export function BudgetsSheet({ progress, plans, show, cloudMode, onSaveBudget, o
       </>}
       {err && <p className="form-error" role="alert">{err}</p>}
       <div className="sheet-actions">
-        {draft.id ? <button type="button" className="danger-button" onClick={async () => { try { if (tab === 'budgets') await onDeleteBudget(draft.id); else onDeletePlan(draft.id); setDraft(null); } catch { setErr(tr('Could not remove it. Please try again.')); } }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
+        {draft.id ? <button type="button" className="danger-button" onClick={async () => { try { const removed = tab === 'budgets' ? await onDeleteBudget(draft.id) : await onDeletePlan(draft.id); if (removed !== false) setDraft(null); } catch { setErr(tr('Could not remove it. Please try again.')); } }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
         <button type="submit" className="primary-button">{tr('Save')}</button>
       </div>
     </form>}
@@ -140,7 +140,7 @@ export function SpendingLimitsSheet({ limits = [], accounts = [], show, onSave, 
       <label>{tr('Alert threshold (%)')}<input inputMode="numeric" type="number" min="1" max="100" value={draft.alert_percent} onChange={e => setDraft({ ...draft, alert_percent: e.target.value })} /></label>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div className="sheet-actions">
-        {draft.id ? <button type="button" className="danger-button" onClick={async () => { await onDelete(draft.id); setDraft(null); }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
+        {draft.id ? <button type="button" className="danger-button" onClick={async () => { if (await onDelete(draft.id) !== false) setDraft(null); }}>{tr('Remove')}</button> : <button type="button" className="secondary-button" onClick={() => setDraft(null)}>{tr('Cancel')}</button>}
         <button type="submit" className="primary-button">{tr('Save')}</button>
       </div>
     </form>}

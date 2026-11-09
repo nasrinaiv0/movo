@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { RootHeader, SectionTitle, Sheet } from '../components/ui';
 import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { deleteRecord, useConfirm } from '../components/ConfirmDialog';
 import { cashbackTotals, estimateCashback } from '../lib/cashback';
 import { visibleLoyaltyCards, estimateLoyaltyRewards, estimatedLoyaltyTotals, safeLoyaltyPoints, normalizeLoyaltyCard } from '../lib/loyaltyCards';
 import RewardsPresetDirectory from '../components/RewardsPresetDirectory';
@@ -18,6 +19,7 @@ export default function Cashback({ c }) {
   const [sheet, setSheet] = useState(null);
   const [form, setForm] = useState({});
   const [error, setError] = useState('');
+  const confirm = useConfirm();
   const [expandedRuleGroups, setExpandedRuleGroups] = useState({});
   const [expandedAccounts, setExpandedAccounts] = useState({});
   const wallets = accountsView.filter(a => !a.is_archived && ['e_wallet', 'bank'].includes(a.account_type));
@@ -94,7 +96,14 @@ export default function Cashback({ c }) {
     setError('');
   };
   const updateEntry = (id, patch) => setPref('cashbackEntries', manual.map(entry => entry.id === id ? { ...entry, ...patch } : entry));
-  const removeEntry = id => setPref('cashbackEntries', manual.filter(entry => entry.id !== id));
+  const removeEntry = id => {
+    const row = manual.find(entry => entry.id === id);
+    if (!row) return Promise.resolve(false);
+    return confirm({
+      ...deleteRecord(row.source || tr('Manual cashback'), { impact: tr('Your cashback totals update straight away.'), permanent: true }),
+      action: () => setPref('cashbackEntries', (c.prefs?.cashbackEntries || []).filter(entry => entry.id !== id)),
+    });
+  };
 
   return <>
     <RootHeader title={tr('Cashback')} onBack={() => c.go('Menu')} onSearch={c.openSearch} onBell={() => c.go('Notifications')} onSettings={() => c.go('Settings')} unread={c.unread} />

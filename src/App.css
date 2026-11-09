@@ -7938,3 +7938,46 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   .referral-download .referral-note { display: none; }
   .referral-qr figcaption { display: flex; justify-content: center; align-items: baseline; gap: 5px; }
 }
+
+/* ---------- Confirmation dialog (2026-11-09): log out and every destructive action ----------
+   Compact centred dialog in MOVO's language: solid surfaces, no gradients, no button borders, 48px buttons,
+   red only for the destructive action. 200ms opacity/scale in and out; none with reduced motion. */
+.movo-app .confirm-layer { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); }
+.movo-app .confirm-backdrop { position: absolute; inset: 0; background: var(--overlay, rgba(15,18,30,.4)); animation: confirm-fade 200ms ease-out both; }
+.movo-app .confirm-dialog { position: relative; display: grid; justify-items: center; gap: 8px; width: min(100%, 340px); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px 18px 16px; border-radius: 22px; background: var(--sheet-bg, var(--card-solid, #fff)); color: var(--text); text-align: center; box-shadow: 0 18px 48px rgba(0,0,0,.24); outline: none; animation: confirm-in 200ms cubic-bezier(.2,.8,.2,1) both; }
+.movo-app .confirm-layer.closing .confirm-backdrop { animation: confirm-fade-out 200ms ease-in both; }
+.movo-app .confirm-layer.closing .confirm-dialog { animation: confirm-out 200ms ease-in both; }
+.movo-app .confirm-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 30%; background: var(--field); color: var(--accent-ink, var(--accent)); }
+.movo-app .confirm-dialog.is-danger .confirm-icon { background: var(--red-bg); color: var(--red); }
+.movo-app .confirm-title { margin: 4px 0 0; font-size: 18px; font-weight: 750; line-height: 1.25; letter-spacing: -.01em; }
+.movo-app .confirm-name { margin: 0; max-width: 100%; padding: 4px 10px; border-radius: 999px; background: var(--field); font-size: 13px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .confirm-body { display: grid; gap: 6px; }
+.movo-app .confirm-body p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.45; }
+.movo-app .confirm-body .confirm-detail { color: var(--text); font-size: 12.5px; }
+.movo-app .confirm-warning { display: flex; align-items: flex-start; gap: 7px; padding: 9px 11px; border-radius: 14px; background: var(--red-bg); color: var(--text) !important; text-align: left; }
+.movo-app .confirm-warning .movo-icon { flex: none; margin-top: 1px; color: var(--red); }
+.movo-app .confirm-verify { display: grid; gap: 6px; width: 100%; margin-top: 2px; text-align: left; }
+.movo-app .confirm-verify span { color: var(--muted); font-size: 12px; font-weight: 600; }
+.movo-app .confirm-verify input { width: 100%; min-height: 48px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--field); color: var(--text); font: 650 16px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; outline: none; }
+.movo-app .confirm-error { margin: 0; color: var(--red); font-size: 13px; font-weight: 600; line-height: 1.4; }
+.movo-app .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 8px; }
+.movo-app.movo-app .confirm-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; min-width: 0; padding: 0 12px; border: 0; border-radius: 16px; font: inherit; font-size: 15px; font-weight: 650; box-shadow: none; transition: transform 120ms ease-out, opacity 120ms ease-out; }
+.movo-app.movo-app .confirm-actions .confirm-cancel { background: var(--field); color: var(--text); }
+.movo-app.movo-app .confirm-actions .confirm-accept { background: var(--accent); color: var(--on-accent, #fff); }
+/* One solid red in every theme: white text on it stays at 4.98:1 (the dark theme's brighter --red is only 3.4:1). */
+.movo-app.movo-app .confirm-actions .confirm-accept.danger { background: #d32f2f; color: #fff; }
+.movo-app.movo-app .confirm-actions button:active:not(:disabled) { transform: scale(.97); }
+.movo-app.movo-app .confirm-actions button:disabled { opacity: .45; }
+.movo-app.movo-app .confirm-actions .confirm-accept[aria-busy="true"] { opacity: .85; }
+.movo-app .confirm-spinner { width: 15px; height: 15px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: confirm-spin 700ms linear infinite; }
+@keyframes confirm-in { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes confirm-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(.97); } }
+@keyframes confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes confirm-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes confirm-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .movo-app .confirm-backdrop, .movo-app .confirm-dialog, .movo-app .confirm-layer.closing .confirm-backdrop, .movo-app .confirm-layer.closing .confirm-dialog { animation: none; }
+  .movo-app .confirm-spinner { animation-duration: 1.6s; }
+}
+/* While the dialog closes it no longer takes taps, so nothing can be pressed twice. */
+.movo-app .confirm-layer.closing { pointer-events: none; }
