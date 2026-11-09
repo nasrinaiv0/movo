@@ -89,7 +89,7 @@ module.exports = async function handler(req, res) {
       }
       let verified;
       if (existing)
-        verified = await verifyGoogle(token, null, existing.user_id);
+        verified = await verifyGoogle(token, null, existing.user_id, { skipPaymentCheck: revoked });
       else {
         // Even revocations must query server truth; do not turn an unauthenticated client claim into a tombstone.
         await S.publisher().purchases.subscriptionsv2.get(

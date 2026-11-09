@@ -85,3 +85,10 @@ describe("IAP request boundary and encrypted acknowledgement outbox", () => {
     spy.mockRestore();
   });
 });
+
+test('Zod 4 validates Pub/Sub attributes without throwing and rejects invalid values', () => {
+ const valid = { subscription: 'projects/p/subscriptions/s', message: { messageId: '1', data: 'e30=', attributes: { source: 'play' } } };
+ expect(S.pubsubSchema.safeParse(valid).success).toBe(true);
+ expect(S.pubsubSchema.safeParse({ ...valid, message: { ...valid.message, attributes: { source: 123 } } }).success).toBe(false);
+ expect(S.pubsubSchema.safeParse({ ...valid, message: { ...valid.message, attributes: { source: 'x'.repeat(4097) } } }).success).toBe(false);
+});

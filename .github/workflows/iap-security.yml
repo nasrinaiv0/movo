@@ -1,0 +1,48 @@
+name: MOVO IAP integrity (isolated PostgreSQL)
+on:
+  pull_request:
+    paths:
+      - 'api/purchases/**'
+      - 'api/lib/*iap*'
+      - 'api/lib/*Iap*'
+      - 'api/lib/billingReadiness.js'
+      - 'api/lib/purchaseVerification.js'
+      - 'api/lib/certs/**'
+      - 'supabase/migrations/**'
+      - 'scripts/security/**'
+      - 'src/lib/*iap*'
+      - 'src/lib/*Readiness*'
+      - 'src/lib/purchaseVerification.test.js'
+      - 'package*.json'
+      - '.github/workflows/iap-security.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: iap-integrity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx --yes npm@11.19.1 ci
+      - run: npm run audit:production
+      - name: Billing handlers and cryptographic boundary
+        run: |
+          CI=true npm test -- --runInBand src/lib/iapHandlers.test.js src/lib/iapSecurity.test.js src/lib/billingReadiness.test.js src/lib/purchaseVerification.test.js src/lib/nativePurchases.test.js
+          node scripts/security/iap-crypto-smoke.cjs
+      - name: Isolated database, replay and concurrent lease tests
+        run: |
+          sudo service postgresql start
+          sudo -u postgres createdb iap_security
+          python3 scripts/security/iap-db-bootstrap.py > /tmp/iap-bootstrap.sql
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -d iap_security -f /tmp/iap-bootstrap.sql
+          cp scripts/security/iap-db.test.sql /tmp/iap-db.test.sql
+          cp scripts/security/iap-concurrency.test.py /tmp/iap-concurrency.test.py
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -d iap_security -f /tmp/iap-db.test.sql
+          sudo -u postgres python3 /tmp/iap-concurrency.test.py

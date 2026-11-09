@@ -7,10 +7,11 @@ describe('MOVO store purchase verification', () => {
   let googleOrder;
   let googleOverrides;
   let verifiedEnvironments;
+  let orderLookupFailure;
 
   beforeEach(() => {
     jest.resetModules();
-    googleOverrides={}; verifiedEnvironments=[];
+    googleOverrides={}; verifiedEnvironments=[]; orderLookupFailure=false;
     process.env.APPLE_ROOT_CERTS_BASE64 = 'Y2VydA==';
     process.env.APPLE_APP_ID = '123456789';
     process.env.APPLE_IAP_SIGNING_KEY='test-key'; process.env.APPLE_IAP_KEY_ID='test-id'; process.env.APPLE_IAP_ISSUER_ID='test-issuer';
@@ -40,7 +41,7 @@ describe('MOVO store purchase verification', () => {
       google: {
         auth: { GoogleAuth: class {} },
         androidpublisher: () => ({
-          orders: { get: async () => ({data:googleOrder}) },
+          orders: { get: async () => { if(orderLookupFailure) throw new Error('provider_order_unavailable'); return {data:googleOrder}; } },
           purchases: {
             subscriptionsv2: {
               get: async () => ({ data: {
@@ -161,6 +162,18 @@ describe('MOVO store purchase verification', () => {
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(result.linkedPurchaseTokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.linkedPurchaseTokenHash).not.toContain('old-secret');
+  });
+
+  test('refund processing is independent of optional order-payment evidence',async()=>{
+    orderLookupFailure=true;
+    const verified=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId,{skipPaymentCheck:true});
+    expect(verified.paidVerified).toBe(false);
+    googleOverrides.subscriptionState='SUBSCRIPTION_STATE_EXPIRED';
+    expect((await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).status).toBe('expired');
+  });
+  test('missing Apple app identity is a configuration failure, not a bad receipt',async()=>{
+    delete process.env.APPLE_APP_ID;
+    await expect(verifyApple('signed',userId)).rejects.toThrow('apple_verification_not_configured');
   });
 
 });

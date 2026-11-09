@@ -83,3 +83,17 @@ Reproduce focused checks with `CI=true npm test -- --runInBand src/lib/iapHandle
 Referral upgrade award/reversal calls execute inside the fenced entitlement transaction when MOVO_REFERRAL_POINTS_ENABLED=true. They use committed state and the existing unique referral ledger. The plan-status function preserves the 500-points-to-Pro redemption branch. SQL tests cover the paid award, refund reversal and redeemed-point plan access.
 
 The published merge tree before this documentation-only evidence update matched the Vercel Sandbox-tested tree exactly: `4ccfafc4088d0729bda614a9fdd0d68261adc42a`.
+
+### PR #260 follow-up: dependency audit and deployment readiness
+
+The first GitHub production-dependency audit found GHSA-mrhx-c7xc-m3w5 in the previously selected Zod release. Pin Zod 4.6.7, migrate the Pub/Sub attributes record to the two-schema API, and retain bounded body/attribute validation. The audit remains blocking; no advisory exception was added.
+
+The public checkout configuration now fails closed if mandatory billing infrastructure settings are absent or malformed, even when MOVO_STORE_BILLING_ENABLED=true. It returns only enabled/disabled; server operators can run `node scripts/security/iap-readiness.cjs` to see invalid key names without values. This is structural configuration validation, not proof of valid credentials, applied migrations or working store delivery. Both provider configurations are required by the current shared checkout switch.
+
+Google negative notifications and inactive states skip the optional orders.get payment-evidence lookup so its outage cannot delay revocation after successful subscriptionsv2.get. Missing Apple app identity is classified as a server configuration failure. Add regression tests for these paths and a dedicated isolated-PostgreSQL GitHub workflow for migrations, receipt replay, state ordering, referral reversals and concurrent fencing.
+
+No production environment values or database state were changed. The new deployment settings still require secure configuration and live store checks before enabling billing.
+
+The two Node-only IAP Jest files are excluded from the frontend TypeScript 4.9 program because their backend Zod 4 dependency uses TypeScript 5 declaration syntax. They still run in every full Jest run, the prebuild gate and the dedicated billing CI job. No application TypeScript file or Jest test is excluded from its own validation.
+
+Follow-up validation in Vercel Sandbox: production dependency audit reports zero vulnerabilities; 174 Jest suites / 1,068 tests, frontend typecheck and production compilation pass. The disposable PostgreSQL migration/behavior/concurrency checks and real Apple forged-JWS rejection pass. Mobile Chromium guest flow creates PHP100.25 cash, records PHP12.34 expense, retains PHP87.91 after reload, and makes zero cloud writes. Live store and production rollout checks above remain outstanding.

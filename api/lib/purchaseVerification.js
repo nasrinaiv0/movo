@@ -28,6 +28,7 @@ function appleVerifierConfig() {
   if (crypto.createHash('sha256').update(root).digest('hex') !== '63343abfb89a6a03ebb57e9b3f5fa7be7c4f5c756f3017b3a8c488c3653e9179') throw new Error('apple_root_invalid');
   const rootCerts = [root];
   const appAppleId = Number(process.env.APPLE_APP_ID);
+  if (!Number.isSafeInteger(appAppleId) || appAppleId <= 0) throw new Error('apple_verification_not_configured');
   const { Environment, SignedDataVerifier } = require('@apple/app-store-server-library');
   return { rootCerts, appAppleId, Environment, SignedDataVerifier };
 }
@@ -126,7 +127,7 @@ function appleEntitlement(transaction, environment, userId) {
   };
 }
 
-async function verifyGoogle(purchaseToken, productId, userId) {
+async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck = false } = {}) {
   if (!purchaseToken || typeof purchaseToken !== 'string' || purchaseToken.length > 4096) throw new Error('invalid_google_purchase_token');
   if (productId && !getProduct(productId)) throw new Error('unknown_store_product');
   const packageName = BUNDLE_ID;
@@ -164,7 +165,7 @@ async function verifyGoogle(purchaseToken, productId, userId) {
   const status = statusMap[state] || 'pending';
   const purchaseTokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
   let paidVerified = false;
-  if (!data.testPurchase && data.latestOrderId && publisher.orders?.get) {
+  if (!skipPaymentCheck && ['active', 'grace_period'].includes(status) && data.latestOrderId && publisher.orders?.get) {
     // Only an actual positive, processed order qualifies; free trials do not.
     const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }, { timeout: 15000 }))?.data;
     const purchasedLine = order?.lineItems?.find(item => item.productId === productId);

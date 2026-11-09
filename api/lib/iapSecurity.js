@@ -29,7 +29,7 @@ const pubsubSchema = z
         messageId: z.string().min(1).max(200),
         data: z.string().min(1).max(100000),
         publishTime: z.string().optional(),
-        attributes: z.record(z.string()).optional(),
+        attributes: z.record(z.string().max(256), z.string().max(4096)).optional(),
         orderingKey: z.string().optional(),
       })
       .strict(),

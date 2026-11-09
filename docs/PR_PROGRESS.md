@@ -1,5 +1,11 @@
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — PR #260 billing audit follow-up (review; production rollout pending)
+
+Pinned Zod 4.6.7 to clear the production dependency vulnerability, updated bounded Pub/Sub record validation, made checkout fail closed on incomplete server configuration, and removed optional payment-history lookup from Google revocation processing. Added isolated PostgreSQL billing CI. Backend JavaScript IAP tests remain in all Jest/prebuild runs; only the frontend TypeScript 4.9 program excludes those two Node-only files.
+
+Vercel Sandbox: zero production dependency vulnerabilities; 174 suites / 1,068 tests, typecheck, production build, real forged-JWS rejection and database replay/refund/concurrency checks passed. Mobile guest accounting flow retains the correct balance across reload with no cloud writes. Required secrets, coordinated database migration and real store purchase/refund delivery remain release prerequisites. No production changes. Details: `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
+
 ## 2026-11-09 — PR #258: short referral codes, iPhone/Android download QR codes, referral points (review; points gated)
 
 **Short codes (owner request):** every person now has one reusable referral code, `M` + five digits (for example `M78038`), replacing the 24-character free-month code and the 64-character single-use invite tokens this PR first proposed. Codes are case- and space-insensitive and are generated server-side from a secure random source; once digit codes run short they continue with five characters from 0-9 and A-Z without I/O. Each account may enter at most 10 codes an hour (attempts are kept even when a code is wrong), so short codes cannot be guessed in bulk. A code can be added only by a verified account created in the last 7 days that has not been referred and has not bought a plan; starting the free month never clears or replaces an existing referral (fixes a latent bug where a later code-less trial claim set `referred_by` to null).
