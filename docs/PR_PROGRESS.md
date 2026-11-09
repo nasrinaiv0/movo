@@ -4,6 +4,12 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 # MOVO Pull Request Progress Register
 
+## 2026-11-09 — Home balance arrow back at the bottom right (fix for a #263 regression)
+
+The round arrow on the Home Total Balance box (opens Wallet) had dropped to the bottom left, over the "vs last month" chip: the 44px tap-area rule from #263 made it `position: relative`, overriding the box's own absolute position. It is back at the bottom right (bottom left in right-to-left languages, where the chip starts from the right) with a centred 44px tap area. While checking every width, text size and direction: the month pill no longer covers the "Total Balance" label or blocks the show/hide eye button at larger text sizes and in Arabic (the label stops short of the pill and text sizes above the default use the short month). CSS, one class and one CSS variable only; no data, sync, auth or API change. Details, checks and limits: `docs/engineering/updates/2026-11-09-home-balance-arrow.md`.
+
+Validation: 184 suites / 1,119 tests, typecheck and strict build pass locally; production build checked in headless Chromium at 320–820px, light/dark, largest text, English/German/Japanese/Arabic. WebKit and native builds were not run.
+
 ## 2026-11-09 — Premium UI phases 2–7 (in progress)
 
 Following the merged confirmation dialog (#262) and the audit plan: phase 2 fixes the Menu page's sideways scroll, gives every small control a 44×44 tap area without visual change, removes the ignored `digits` money option (two decimals were already enforced) and sums total balances in whole cents. Phase 3 puts every entrance, sheet and chart animation on one set of durations (120/220/260/380ms, ease-out, no overshoot) and shortens the balance count-up to 400ms. Phase 4 replaces decorative gradients with solid colours and stops the looping badge shine. Phases 5–6 show loading placeholders instead of provisional figures on Financial planning, Bills and the crypto market, and shorten the splash's forced minimum to 0.45s. Phase 7 splits 15 secondary screens out of the main bundle (−17% gzip, preloaded when idle so they also open offline), renders long transaction lists progressively (3,000 rows: 2.56s → 0.12s) and defers search filtering. On phones under 360px the month pill no longer covers the balance's eye button. Details: `docs/engineering/updates/2026-11-09-premium-ui-phases.md`.
