@@ -580,3 +580,8 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - PR #227 second Android CI attempt found sdkmanager present under the hosted Android SDK but absent from PATH. The workflow now discovers its absolute executable location under ANDROID_HOME/cmdline-tools, rather than assuming PATH. Compiling the app remains a separate verification step.
 
 - PR #227 follow-up: automation device secret had remained embedded in native general preferences; now stored only in the platform vault after write-first migration, scrubbed from mirrored preferences, and safely rotated before old-token revocation. Native/browser behavior covered by additional unit and source contract tests. Native CI and physical-device validation still required.
+
+### 2026-11-09 — PR #255 iOS simulator smoke reliability (strict)
+- Run #42546337168: native simulator Xcode build passed, while CoreSimulator first-boot migrations took 7+ minutes and `simctl launch` timed out after 90 s; the smoke test, not the compilation, failed.
+- iOS CI now exercises a separately unit-tested launch script: deterministic iPhone choice, bounded 600 s cold boot, 180 s install/launch, exactly one retry **only** for launch timeouts after cold boot, and mandatory deep-link plus screenshot success. Nonzero launch errors and repeat timeouts remain hard failures.
+- Local/Vercel Sandbox Python unit tests are NOT evidence of native simulator success. Await exact-head GitHub macOS runner smoke and full regression gate before merging. See `docs/engineering/updates/2026-11-09-pr255-ios-simulator-launch.md`.
