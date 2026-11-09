@@ -560,3 +560,10 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - PR #227 second Android CI attempt found sdkmanager present under the hosted Android SDK but absent from PATH. The workflow now discovers its absolute executable location under ANDROID_HOME/cmdline-tools, rather than assuming PATH. Compiling the app remains a separate verification step.
 
 - PR #227 follow-up: automation device secret had remained embedded in native general preferences; now stored only in the platform vault after write-first migration, scrubbed from mirrored preferences, and safely rotated before old-token revocation. Native/browser behavior covered by additional unit and source contract tests. Native CI and physical-device validation still required.
+
+### 2026-11-09 — PR #253 CI history repair and iOS validation
+- Consolidated the final owner-command-center feature delta on top of main so each code-bearing PR commit includes this progress entry and its dated engineering handoff, without disabling the per-commit documentation gate.
+- Preserved the owner-only MFA/UID authorization, audited grants and work queues, database migrations, and existing main import/offline corrections. The original 64-commit tip is archived separately before replacing the PR branch.
+- At original PR tip e5d4796, GitHub's iOS workflow succeeded through unsigned simulator compilation, simulator boot, app launch, and screenshot upload; the failing check was Phase 1 CI's documentation-history gate, not iOS compilation.
+- Require fresh exact-head CI, iOS workflow, Vercel preview, and isolated sandbox tests on the consolidated branch. No production release or migration is authorized by this history repair.
+- Engineering handoff: docs/engineering/updates/2026-11-09-movo-owner-command-center.md.

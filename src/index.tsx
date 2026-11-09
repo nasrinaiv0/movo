@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+const OwnerConsole = React.lazy(() => import('./owner/OwnerConsole'));
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
 
@@ -10,10 +11,17 @@ if (!container) {
   throw new Error('MOVO could not start because the root element is missing.');
 }
 
+// The customer splash is dismissed by App. The owner portal does not render App,
+// so remove it here before it can cover or intercept owner controls.
+const ownerRoute = window.location.pathname === '/owner' || window.location.pathname.startsWith('/owner/');
+if (ownerRoute) document.getElementById('movo-splash')?.remove();
+
 const root = createRoot(container);
 const render = () => root.render(
   <React.StrictMode>
-    <App />
+    {ownerRoute
+      ? <React.Suspense fallback={<div style={{ padding: 32 }}>Loading protected owner access…</div>}><OwnerConsole /></React.Suspense>
+      : <App />}
   </React.StrictMode>
 );
 
