@@ -18,13 +18,13 @@ begin
  where action in ('work_create','work_update') and (details->>'id')=v_id::text;
  if v_count <> 2 then raise exception 'Missing or duplicate audit events: %',v_count; end if;
 end $$;
-do $
+do $trend$
 declare v_points jsonb;
 begin
  v_points:=public.movo_owner_weekly_signups();
  if jsonb_array_length(v_points)<>12 then raise exception 'Missing weekly signup points'; end if;
  if (v_points->11->>'count') is null then raise exception 'Signup count missing'; end if;
-end $;
+end $trend$;
 select set_config('request.jwt.claim.role','authenticated',false);
 set role authenticated;
 do $$
