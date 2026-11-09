@@ -273,7 +273,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const undo = async (index, id) => {
     if (!requireFeature('fullAI')) return;
     try {
-      await onUndoLog?.(id);
+      // The app asks first; a cancelled confirmation leaves the record and the chat as they were.
+      if (await onUndoLog?.(id) === false) return;
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, removed: [...m.removed, id] } : m)));
     } catch { setError(tr('That record could not be removed. Please try again.')); }
   };

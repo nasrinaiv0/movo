@@ -5,6 +5,7 @@ import AccountPicker, { accountName, accountKind } from '../components/AccountPi
 import { Chips, Money, SectionTitle, Sheet, SubHeader } from '../components/ui';
 import { formatDate, money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { deleteRecord, useConfirm } from '../components/ConfirmDialog';
 import { allocateToGoal, allocatePlanFunds, createGoal, createLoan, createReceivable, updateLoan, deleteLoan, updateReceivable, deleteReceivable, recordLoanEvent, recordReceivableEvent, releaseGoalAllocation, releasePlanFundingAllocation } from '../lib/obligationsRepository';
 import { goalProgress } from '../lib/accounting';
 import { creditCardOutstanding } from '../lib/financialPlanningIntegrations';
@@ -69,6 +70,23 @@ export default function FinancialPlanning({ c }) {
   const set = (patch) => setForm(f => ({ ...f, ...patch }));
   const releasePlanAllocation = (planId, allocationId) => releasePlanFundingAllocation(allocationId);
 
+  const confirm = useConfirm();
+  /* Loans and receivables are archived, never erased: recorded payments, collections and balances stay. Nothing
+     changes until the person confirms; a failure is shown in the dialog. */
+  const removeObligation = (kind, item) => confirm({
+    ...deleteRecord(item.name, { impact: kind === 'loan'
+      ? tr('Recorded payments and account balances will be kept. This does not cancel the debt with your lender.')
+      : tr('Recorded collections and account balances will remain unchanged. This does not forgive or cancel a real-world debt.') }),
+    failure: tr('Could not delete it. Nothing was changed. Please try again.'),
+    action: async () => {
+      if (kind === 'loan') await deleteLoan(item.id, c.session?.user?.id); else await deleteReceivable(item.id, c.session?.user?.id);
+      const success = kind === 'loan' ? 'Loan or debt deleted.' : 'Receivable deleted.';
+      setNotice(tr(success)); c.notify?.(tr(success));
+      // Refresh the totals; a failed refresh never turns a finished deletion into an error.
+      await Promise.resolve(p.reload()).catch(() => {});
+      if (c.refreshFinance) await Promise.resolve(c.refreshFinance()).catch(() => {});
+    },
+  });
   const run = async (fn, success) => {
     if (busy) return false;
     setBusy(true); setError(''); setNotice('');
@@ -205,7 +223,7 @@ export default function FinancialPlanning({ c }) {
       </button><div className="fp-loan-actions" role="group" aria-label={tr('Actions for {name}', { name: l.name })}>
         <button type="button" className="primary-button" disabled={busy || left <= 0} onClick={pay}><Icon name="wallet" size={16}/>{tr('Pay')}</button>
         <button type="button" className="secondary-button" disabled={busy} onClick={() => open('edit-loan', { ...l, inconsistent_interest: !!l.interest_schedule?.length, interest_months: String(l.interest_schedule?.length || 12), monthly_interest_rates: l.interest_schedule?.map(item => String(item.rate)) || Array(12).fill('') })}><Icon name="edit" size={16}/>{tr('Edit')}</button>
-        <button type="button" className="secondary-button" disabled={busy} onClick={() => open('delete-loan', l)}><Icon name="trash" size={16}/>{tr('Delete')}</button>
+        <button type="button" className="secondary-button" disabled={busy} onClick={() => removeObligation('loan', l)}><Icon name="trash" size={16}/>{tr('Delete')}</button>
       </div></article>; })}</div>
         : !creditCardDebts.length && <button type="button" className="budget-empty" onClick={() => open('loan', blankLoan(base))}><Icon name="plus" size={20} /><span><strong>{tr('Add a loan or debt')}</strong><small>{tr('No loans or debts recorded yet.')}</small></span></button>}
     </>}
@@ -231,7 +249,7 @@ export default function FinancialPlanning({ c }) {
           <div className="fp-loan-actions" role="group" aria-label={tr('Actions for {name}', { name: r.name })}>
             <button type="button" className="primary-button" disabled={busy || !canCollect} onClick={collect}><Icon name="wallet" size={16}/>{tr('Collect')}</button>
             <button type="button" className="secondary-button" disabled={busy} onClick={() => open('edit-receivable', { ...r, due_date: r.due_date || '' })}><Icon name="edit" size={16}/>{tr('Edit')}</button>
-            <button type="button" className="secondary-button" disabled={busy} onClick={() => open('delete-receivable', r)}><Icon name="trash" size={16}/>{tr('Delete')}</button>
+            <button type="button" className="secondary-button" disabled={busy} onClick={() => removeObligation('receivable', r)}><Icon name="trash" size={16}/>{tr('Delete')}</button>
           </div>
         </article>;
       })}</div>
@@ -335,11 +353,6 @@ export default function FinancialPlanning({ c }) {
       </div>
     </Sheet>}
 
-    {sheet?.kind === 'delete-loan' && <Sheet title={tr('Delete loan or debt')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Delete loan or debt')}>
-      <p className="form-note">{tr('Remove this loan or debt from Financial Planning? Recorded payments and account balances will be kept. This does not cancel the debt with your lender.')}</p>
-      {error && <p className="app-alert" role="alert">{error}</p>}
-      <div className="sheet-actions"><button className="secondary-button" disabled={busy} onClick={() => setSheet(null)}>{tr('Cancel')}</button><button className="danger-button" disabled={busy} onClick={() => run(() => deleteLoan(form.id, c.session?.user?.id), 'Loan or debt deleted.')}>{busy ? tr('Saving…') : tr('Delete')}</button></div>
-    </Sheet>}
     {sheet?.kind === 'edit-loan' && <Sheet title={tr('Edit loan or debt')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Edit loan or debt')}>
       <form className="sheet-form" onSubmit={e => { e.preventDefault(); if (!busy) run(() => updateLoan(form.id, form, c.session?.user?.id), 'Loan or debt updated.'); }}>
         {error && <p className="app-alert" role="alert">{error}</p>}
@@ -398,12 +411,6 @@ export default function FinancialPlanning({ c }) {
         <p className="form-note">{tr('Original amount and recorded collections cannot be changed here.')}</p>
         <button type="submit" className="primary-button" disabled={busy}>{busy ? tr('Saving…') : tr('Save changes')}</button>
       </form>
-    </Sheet>}
-    {sheet?.kind === 'delete-receivable' && <Sheet title={tr('Delete receivable')} subtitle={form.name} onClose={() => !busy && setSheet(null)} label={tr('Delete receivable')}>
-      <p className="form-note">{tr('Archive this receivable? Recorded collections and account balances will remain unchanged. This does not forgive or cancel a real-world debt.')}</p>
-      {error && <p className="app-alert" role="alert">{error}</p>}
-      <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => setSheet(null)}>{tr('Cancel')}</button>
-      <button type="button" className="danger-button" disabled={busy} onClick={() => run(() => deleteReceivable(form.id, c.session?.user?.id), 'Receivable deleted.')}>{busy ? tr('Saving…') : tr('Delete')}</button></div>
     </Sheet>}
 
     {sheet?.kind === 'goal' && <Sheet title={tr('Create a savings goal')} onClose={() => setSheet(null)} label={tr('Create a savings goal')}>

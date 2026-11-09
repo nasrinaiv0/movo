@@ -3,6 +3,7 @@ import Icon from './Icon';
 import { Sheet } from './ui';
 import { LOYALTY_PROVIDERS, isLoyaltyType, normalizeLoyaltyCard } from '../lib/loyaltyCards';
 import { t as tr } from '../lib/i18n';
+import { removeLoyaltyCardPrompt, useConfirm } from './ConfirmDialog';
 import './LoyaltySheet.css';
 
 export default function LoyaltySheet({ existing, initialType = 'membership', onSave, onRemove, onClose }) {
@@ -18,6 +19,7 @@ export default function LoyaltySheet({ existing, initialType = 'membership', onS
     note: existing?.note || '',
   }));
   const [error, setError] = useState('');
+  const confirm = useConfirm();
   const [customProvider, setCustomProvider] = useState(Boolean(existing?.name && !LOYALTY_PROVIDERS.includes(existing.name)));
   const set = patch => { setForm(prev => ({ ...prev, ...patch })); setError(''); };
   const provider = customProvider ? 'Other' : LOYALTY_PROVIDERS.includes(form.name) ? form.name : '';
@@ -55,7 +57,7 @@ export default function LoyaltySheet({ existing, initialType = 'membership', onS
       <label className="loyalty-field"><span>{tr('Rewards expiry (optional)')}</span><input type="date" value={form.pointsExpiry} onChange={e => set({ pointsExpiry: e.target.value })} /></label>
       <label className="loyalty-field"><span>{tr('Notes (optional)')}</span><textarea rows="2" value={form.note} maxLength={300} onChange={e => set({ note: e.target.value })} placeholder={tr('Additional details')} /></label>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div className="loyalty-actions">{existing && <button type="button" className="loyalty-remove" onClick={() => { if (window.confirm(tr('Remove this membership or rewards card?'))) onRemove(existing.id); }}>{tr('Remove')}</button>}
+      <div className="loyalty-actions">{existing && <button type="button" className="loyalty-remove" onClick={async () => { if (await confirm(removeLoyaltyCardPrompt(existing.name))) onRemove(existing.id); }}>{tr('Remove')}</button>}
         <button type="submit" className="primary-button">{tr(existing ? 'Save changes' : 'Add membership')}</button>
       </div>
     </form>

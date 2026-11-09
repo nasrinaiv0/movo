@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import FinancialPlanning from './FinancialPlanning';
+import { ConfirmHost } from '../components/ConfirmDialog';
 import * as obligations from '../lib/obligationsRepository';
 import * as billsRepo from '../lib/billsRepository';
 
@@ -336,7 +337,7 @@ test('loan actions edit metadata and require confirmation before deletion', asyn
   const el=document.createElement('div');document.body.appendChild(el);const root=createRoot(el);
   obligations.updateLoan.mockResolvedValue({});obligations.deleteLoan.mockResolvedValue({});
   const c={cloudMode:true,base:'PHP',show:true,accountsView:accounts,toBase:v=>v,go:jest.fn(),session:{user:{id:'u'}},refreshFinance:jest.fn(),notify:jest.fn()};
-  await act(async()=>root.render(<FinancialPlanning c={c}/>));
+  await act(async()=>root.render(<ConfirmHost><FinancialPlanning c={c}/></ConfirmHost>));
   await act(async()=>Array.from(el.querySelectorAll('.fp-glance .fp-row')).find(b=>b.textContent.includes('Loans & debts')).click());
   expect(el.querySelector('.fp-loan-actions').textContent).toContain('PayEditDelete');
   await act(async()=>el.querySelectorAll('.fp-loan-actions button')[1].click());
@@ -345,9 +346,13 @@ test('loan actions edit metadata and require confirmation before deletion', asyn
   expect(obligations.updateLoan).toHaveBeenCalledWith('l1',expect.objectContaining({name:'Car loan'}),'u');
   await act(async()=>el.querySelectorAll('.fp-loan-actions button')[2].click());
   expect(obligations.deleteLoan).not.toHaveBeenCalled();
-  expect(document.querySelector('[role="dialog"]').textContent).toContain('Recorded payments and account balances will be kept');
-  await act(async()=>document.querySelector('[role="dialog"] .danger-button').click());
+  const box=document.querySelector('.confirm-dialog');
+  expect(box.querySelector('.confirm-title').textContent).toBe('Delete this record?');
+  expect(box.querySelector('.confirm-name').textContent).toBe('Car loan');
+  expect(box.textContent).toContain('Recorded payments and account balances will be kept');
+  await act(async()=>box.querySelector('.confirm-accept').click());
   expect(obligations.deleteLoan).toHaveBeenCalledWith('l1','u');
+  expect(c.notify).toHaveBeenCalledWith('Loan or debt deleted.');
   act(()=>root.unmount());el.remove();
 });
 

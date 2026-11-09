@@ -93,6 +93,8 @@ import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/s
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
 import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace, recordOfflineDeletions, restoreOfflineRows } from './lib/offlineWorkspaceStore';
 import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
+import { unsyncedChangeCount } from './lib/unsyncedChanges';
+import { ConfirmProvider, deleteRecord, useConfirmController } from './components/ConfirmDialog';
 import { newRecordId } from './lib/recordId';
 import { CLOUD_READ_TIMEOUT_MS, CLOUD_WRITE_TIMEOUT_MS, isNetworkFailure, withTimeout } from './lib/networkFailure';
 import { readRequiredFinancialCloudViews } from './lib/cloudFinancialReadGate';
@@ -280,6 +282,8 @@ function cleanCopyCheck(ownerId, copy, cloud) {
 }
 function App() {
   const [session, setSession] = useState(null);
+  // One confirmation dialog for log out and every destructive action (components/ConfirmDialog.js).
+  const { confirm, element: confirmDialog } = useConfirmController();
   const { entitlement, refreshEntitlement, entitlementReady } = usePlanEntitlement(session);
   const nativeReferralAttempt = useRef('');
   useEffect(() => {
@@ -1405,55 +1409,79 @@ function App() {
     } catch (cause) { setError(cause?.message === tr('This record is not on this device yet. Try again when you are back online.') ? cause.message : editingId ? 'Could not update account. Please review the details and try again.' : 'Could not add account. Please review the details and try again.'); }
     finally { setBusy(false); }
   };
-  const archiveAccount = async (account) => {
-    if (!window.confirm(tr('Archive “{name}”? Its transaction history will remain available.', { name: account.name }))) return;
-    try {
+  const archiveAccount = (account) => confirm({
+    title: tr('Archive this account?'), name: account.name, icon: 'archive', confirmLabel: tr('Archive'),
+    message: tr('It leaves your wallet and totals. Its transaction history will remain available.'),
+    failure: tr('Could not archive this account. Please try again.'),
+    action: async () => {
       const written = cloudMode ? await cloudWrite(() => updateAccount(account.id, { is_archived: true })) : { offline: true };
       if (!written.offline) setCloudAccounts(cur => cur.map(item => item.id === account.id ? (written.value || { ...item, is_archived: true }) : item));
       else setLocalAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
       setSheet(null); notify(tr('Account archived. Its transaction history was kept.'));
-    } catch { notify(tr('Could not archive this account. Please try again.')); }
-  };
+    },
+  });
   /* Removing moves the item to the Archive for 90 days (Menu → Archive), where it can be restored. */
   const archiveItem = useCallback((kind, item) => setPrefs(p => ({ ...p, archive: addToArchive(p.archive, archiveEntry(kind, item)) })), []);
+  /* Deleting or reversing always asks first; the change runs only after the person confirms, and a failure is shown in
+     the dialog with nothing removed on screen. Returns true when it was done. */
   const removeTransaction = async (t) => {
     const raw = rawTxs.find(x => x.id === t.id) || t;
-    try {
-      if (String(t.id).startsWith('allocation-')) {
-        if (t.event_type !== 'allocated') {
-          notify(tr('Allocation release history is kept for audit purposes.'));
-          return;
+    if (String(t.id).startsWith('allocation-')) {
+      if (t.event_type !== 'allocated') {
+        notify(tr('Allocation release history is kept for audit purposes.'));
+        return false;
+      }
+      return confirm({
+        title: tr('Reverse this allocation?'), name: t.merchant, icon: 'refresh', confirmLabel: tr('Reverse'), danger: true,
+        message: tr('The money is released back to its account and your balances update. The allocation history is kept.'),
+        failure: tr('Could not reverse this allocation. Nothing was changed. Please try again.'),
+        action: async () => {
+          await reverseAllocationEvent(String(t.id).slice('allocation-'.length));
+          await refreshCloud(session?.user);
+          setSheet(null);
+          notify(tr('Allocation reversed and released from its account.'));
+        },
+      });
+    }
+    const impact = [
+      t.type === 'transfer' ? tr('Both accounts in this transfer are updated.') : tr('Your balances and reports update straight away.'),
+      /^movo-subscription:/.test(String(raw.external_reference || '')) ? tr('The linked subscription payment is reversed too.') : '',
+      tr('It stays in the Archive for 90 days, where you can restore it.'),
+    ].filter(Boolean).join(' ');
+    return confirm({
+      ...deleteRecord(t.merchant || raw.merchant, { impact }),
+      failure: tr('Could not delete this transaction or reverse its linked payment.'),
+      action: async () => {
+        const written = cloudMode ? await cloudWrite(() => deleteTransaction(t.id)) : { offline: true };
+        if (!written.offline) {
+          const saved = session?.user?.id ? await loadPreferences(session.user.id).catch(() => null) : null;
+          if (saved?.prefs) setPrefs(cur => ({ ...cur, ...saved.prefs, archive: cur.archive }));
+          await refreshCloud(session?.user);
+        } else {
+          // A signed-in owner's deletion is remembered (tombstone) and applied to the cloud on reconnect, with the same
+          // server procedure, only if the cloud row is still unchanged.
+          if (session?.user?.id && !recordOfflineDeletions(session.user.id, [{ group: 'transactions', id: t.id, row: raw }])) throw new Error('device_copy_unavailable');
+          const restoredSubscriptions = revertSubscriptionPayment(prefsRef.current.subscriptions || [], raw);
+          if (restoredSubscriptions !== (prefsRef.current.subscriptions || [])) setPref('subscriptions', restoredSubscriptions);
         }
-        await reverseAllocationEvent(String(t.id).slice('allocation-'.length));
-        await refreshCloud(session?.user);
-        setSheet(null);
-        notify(tr('Allocation reversed and released from its account.'));
-        return;
-      }
-      const written = cloudMode ? await cloudWrite(() => deleteTransaction(t.id)) : { offline: true };
-      if (!written.offline) {
-        const saved = session?.user?.id ? await loadPreferences(session.user.id).catch(() => null) : null;
-        if (saved?.prefs) setPrefs(cur => ({ ...cur, ...saved.prefs, archive: cur.archive }));
-        await refreshCloud(session?.user);
-      } else {
-        // A signed-in owner's deletion is remembered (tombstone) and applied to the cloud on reconnect, with the same
-        // server procedure, only if the cloud row is still unchanged.
-        if (session?.user?.id && !recordOfflineDeletions(session.user.id, [{ group: 'transactions', id: t.id, row: raw }])) throw new Error('device_copy_unavailable');
-        const restoredSubscriptions = revertSubscriptionPayment(prefs.subscriptions || [], raw);
-        if (restoredSubscriptions !== (prefs.subscriptions || [])) setPref('subscriptions', restoredSubscriptions);
-      }
-      archiveItem('transaction', raw);
-      setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null);
-      notify(tr('Moved to Archive. You can restore it for 90 days.'));
-    } catch { notify(tr('Could not delete this transaction or reverse its linked payment.')); }
+        archiveItem('transaction', raw);
+        setRawTxs(cur => cur.filter(x => x.id !== t.id)); setSheet(null);
+        notify(tr('Moved to Archive. You can restore it for 90 days.'));
+      },
+    });
   };
   const saveSpendingLimit = async ({ id, scope, account_id, merchant, monthly_limit, alert_percent }) => {
     const row = { id: id || window.crypto?.randomUUID?.() || `limit-${Date.now()}`, scope, account_id: account_id || '', merchant: merchant || '', monthly_limit, alert_percent: Number(alert_percent) || 80, currency: base };
     setPref('spendingLimits', [...(prefs.spendingLimits || []).filter(item => item.id !== row.id), row]);
     notify(tr('Budget saved.'));
   };
-  const deleteSpendingLimit = async (id) => {
-    setPref('spendingLimits', (prefs.spendingLimits || []).filter(item => item.id !== id));
+  const deleteSpendingLimit = (id) => {
+    const row = (prefs.spendingLimits || []).find(item => item.id === id);
+    if (!row) return Promise.resolve(false);
+    return confirm({
+      ...deleteRecord(row.merchant || accountsView.find(a => a.id === row.account_id)?.name || tr('Spending limit'), { impact: tr('Only the limit is removed. Your transactions and balances stay the same.'), permanent: true }),
+      action: () => { setPref('spendingLimits', (prefsRef.current.spendingLimits || []).filter(item => item.id !== id)); notify(tr('Budget removed.')); },
+    });
   };
   const saveBudget = async ({ id, category: picked, monthly_limit }) => {
     // Budgets are kept per compact category id (custom text stays as written).
@@ -1467,20 +1495,38 @@ function App() {
     }
     notify(tr('Budget saved.'));
   };
-  const deleteBudget = async (id) => {
+  const deleteBudget = (id) => {
     const row = (cloudMode ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
-    if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); } else setPref('budgets', (prefs.budgets || []).filter(b => b.id !== id));
-    if (row) archiveItem('budget', row);
-    notify(tr('Moved to Archive. You can restore it for 90 days.'));
+    return confirm({
+      ...deleteRecord(row ? categoryFullLabel(row.category) : '', { impact: [tr('Your transactions are not changed.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
+      failure: tr('Could not remove it. Please try again.'),
+      action: async () => {
+        if (cloudMode) { await removeBudget(id); setCloudBudgets(cur => cur.filter(b => b.id !== id)); } else setPref('budgets', (prefsRef.current.budgets || []).filter(b => b.id !== id));
+        if (row) archiveItem('budget', row);
+        notify(tr('Moved to Archive. You can restore it for 90 days.'));
+      },
+    });
   };
   const savePlan = (plan) => { const target = Number(plan.target ?? plan.target_amount ?? plan.amount); const saved = Number(plan.saved ?? plan.saved_amount ?? 0); const row = { ...plan, target: Number.isFinite(target) && target > 0 ? target : 0, saved: Number.isFinite(saved) && saved > 0 ? saved : 0, annual_rate: Math.max(0, Math.min(100, Number(plan.annual_rate) || 0)), compounding: ['monthly', 'quarterly', 'annually'].includes(plan.compounding) ? plan.compounding : 'monthly', due: plan.due || plan.due_date || plan.target_date || plan.date || '', currency: base, id: plan.id || window.crypto?.randomUUID?.() || `plan-${Date.now()}` }; setPref('plans', [...plans.filter(p => p.id !== row.id), row]); notify(tr('Plan saved.')); };
-  const deletePlan = (id) => { const row = (prefs.plans || []).find(p => p.id === id); setPref('plans', plans.filter(p => p.id !== id)); if (row) archiveItem('plan', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
+  const deletePlan = (id) => {
+    const row = (prefs.plans || []).find(p => p.id === id);
+    return confirm({
+      ...deleteRecord(row?.name || row?.title || '', { impact: [tr('Money you set aside in your accounts is not moved.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
+      action: () => { setPref('plans', (prefsRef.current.plans || []).filter(p => p.id !== id)); if (row) archiveItem('plan', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); },
+    });
+  };
   const saveSubscription = (sub) => {
     const row = { ...sub, id: sub.id || window.crypto?.randomUUID?.() || `sub-${Date.now()}` };
     setPref('subscriptions', [...subscriptions.filter(x => x.id !== row.id), row]);
     notify(sub.id ? tr('Subscription updated.') : tr('{name} added to your subscriptions.', { name: row.name }));
   };
-  const deleteSubscription = (id) => { const row = subscriptions.find(x => x.id === id); setPref('subscriptions', subscriptions.filter(x => x.id !== id)); if (row) archiveItem('subscription', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); };
+  const deleteSubscription = (id) => {
+    const row = subscriptions.find(x => x.id === id);
+    return confirm({
+      ...deleteRecord(row?.name || '', { impact: [tr('Payments you already logged are kept.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
+      action: () => { setPref('subscriptions', (prefsRef.current.subscriptions || []).filter(x => x.id !== id)); if (row) archiveItem('subscription', row); notify(tr('Moved to Archive. You can restore it for 90 days.')); },
+    });
+  };
   /* Opens the add-transaction sheet pre-filled with this renewal, converted to the home currency. */
   const logCreditCardPayment = (card, amount) => {
     const value=Number(amount);
@@ -1661,12 +1707,20 @@ function App() {
     { id: 'activity', icon: 'list', label: 'Transactions', run: () => go('Transactions') },
     { id: 'accounts', icon: 'wallet', label: 'Accounts', run: () => go('Wallet') },
   ];
-  const undoChatLog = useCallback(async (id) => {
-    const written = cloudMode ? await cloudWrite(() => deleteTransaction(id)) : { offline: true };
-    if (written.offline && session?.user?.id && !recordOfflineDeletions(session.user.id, [{ group: 'transactions', id }])) throw new Error('device_copy_unavailable');
-    setRawTxs(cur => cur.filter(x => x.id !== id));
-    notify(tr('Transaction removed.'));
-  }, [cloudMode, cloudWrite, session?.user?.id, notify]);
+  const undoChatLog = useCallback((id) => {
+    const raw = rawTxs.find(x => x.id === id);
+    return confirm({
+      ...deleteRecord(raw?.merchant || '', { impact: [tr('Your balances and reports update straight away.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
+      failure: tr('That record could not be removed. Please try again.'),
+      action: async () => {
+        const written = cloudMode ? await cloudWrite(() => deleteTransaction(id)) : { offline: true };
+        if (written.offline && session?.user?.id && !recordOfflineDeletions(session.user.id, [{ group: 'transactions', id, ...(raw ? { row: raw } : {}) }])) throw new Error('device_copy_unavailable');
+        if (raw) archiveItem('transaction', raw);
+        setRawTxs(cur => cur.filter(x => x.id !== id));
+        notify(tr('Moved to Archive. You can restore it for 90 days.'));
+      },
+    });
+  }, [rawTxs, confirm, cloudMode, cloudWrite, session?.user?.id, archiveItem, notify]);
   /* ---------- preferences follow the signed-in person across devices ----------
      On sign-in the account's saved preferences (card styles, layouts, theme, subscriptions, plans…) and custom
      sticker artwork are merged with what this device already has cached (nothing local is dropped), and the merged
@@ -2057,28 +2111,48 @@ function App() {
     setSheet({ name: 'transaction', type: 'expense' });
   };
 
-  const signOutNow = async () => {
-    try {
-      await signOut();
-      const pending = pendingLocalDataRef.current;
-      if(pending?.ownerId){
-        const workspace=loadOfflineWorkspace(pending.ownerId);
-        if(!workspace||!updateOfflineWorking(pending.ownerId,{...workspace.working,
-          financial_accounts:pending.accounts,transactions:pending.transactions}))
-          throw new Error('Offline changes are not saved. Export records or retry before signing out.');
-      }
-      setOfflineOwnerId(null);
-      setSession(null);
-      setCloudMode(false);
-      setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
-      setCloudPostings([]);
-      setCloudActivities([]);
-      setRawTxs(!pending?.ownerId&&pending?.transactions ? pending.transactions:loadLocalTransactions());
-      setLocalAccounts(!pending?.ownerId&&pending?.accounts ? pending.accounts:loadLocalAccounts());
-      pendingLocalDataRef.current=null;
-      go('Home');
-      notify(tr('Signed out securely.'));
-    } catch { notify(tr('Could not sign out. Please try again.')); }
+  /*
+   * Log out (owner spec 2026-11-09). Nothing happens until the person confirms in the dialog. Records saved on this
+   * device are never deleted by logging out: any offline changes are written to this account's device copy first (and
+   * logging out stops if that write fails), then the session is ended on the server and removed from this device
+   * (still removed when offline), and the app returns to the sign-in screen.
+   */
+  const performSignOut = async () => {
+    const pending = pendingLocalDataRef.current;
+    if (pending?.ownerId) {
+      const workspace = loadOfflineWorkspace(pending.ownerId);
+      if (!workspace || !updateOfflineWorking(pending.ownerId, { ...workspace.working, financial_accounts: pending.accounts, transactions: pending.transactions }))
+        throw Object.assign(new Error('offline_changes_not_saved'), { userMessage: tr('Your changes on this device could not be saved, so you are still logged in. Free some storage or export your records, then try again.') });
+      pendingLocalDataRef.current = null;
+    }
+    const result = await signOut();
+    nativeReferralAttempt.current = ''; trialAutoRef.current = '';
+    setOfflineOwnerId(null);
+    setSession(null);
+    setCloudMode(false);
+    setCloudAccounts([]); setInbox([]); setCloudBills([]); setCloudBillOccurrences([]); setCloudBudgets([]);
+    setCloudPostings([]);
+    setCloudActivities([]);
+    setRawTxs(!pending?.ownerId&&pending?.transactions ? pending.transactions:loadLocalTransactions());
+    setLocalAccounts(!pending?.ownerId&&pending?.accounts ? pending.accounts:loadLocalAccounts());
+    pendingLocalDataRef.current=null;
+    setSheet(null);
+    setAuthMode('signin');
+    go('Sign in');
+    notify(result?.localOnly ? tr('Logged out on this device. You were offline, so other devices were not signed out.') : tr('Signed out securely.'));
+  };
+  const signOutNow = () => {
+    if (!session?.user) return Promise.resolve(false);
+    const ownerId = session.user.id;
+    const unsynced = unsyncedChangeCount(loadOfflineWorkspace(ownerId)) || (pendingLocalDataRef.current?.ownerId === ownerId ? 1 : 0);
+    return confirm({
+      title: tr('Log out of MOVO?'), message: tr('Are you sure you want to log out of your account?'),
+      warning: unsynced === 1 ? tr('1 change on this device has not synced to your account yet. Logging out keeps it on this device; sign in to this account again to see or sync it.')
+        : unsynced > 1 ? tr('{count} changes on this device have not synced to your account yet. Logging out keeps them on this device; sign in to this account again to see or sync them.', { count: unsynced }) : '',
+      confirmLabel: tr('Log Out'), danger: true, icon: 'logout',
+      failure: tr('Could not log out. You are still signed in. Please try again.'),
+      action: performSignOut,
+    });
   };
 
   /*
@@ -2301,7 +2375,7 @@ function App() {
     }
   })();
 
-  return <PlanProvider entitlement={entitlement} cloudMode={safeCloudAccess} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+  return <PlanProvider entitlement={entitlement} cloudMode={safeCloudAccess} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
@@ -2413,12 +2487,17 @@ function App() {
       {showTour && !locked && prefs.tutorialSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {guideOpen && !locked && <TutorialVideo onDone={() => setGuideOpen(false)} />}
       {showPostTourDisclosure && !locked && <PostTourLegalDisclosure onReview={() => { setShowPostTourDisclosure(false); openLegal('TermsOfService'); }} onDismiss={() => setShowPostTourDisclosure(false)} />}
-      {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => {
+      {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => confirm({
         // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.
-        if (!window.confirm(tr('Reset Movo on this device? This removes the lock and all Movo data stored here. Data saved to your account returns after you sign in.'))) return;
-        const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-        wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
-      }} />}
+        // Erases every MOVO record on this device, so the person types DELETE first.
+        title: tr('Reset MOVO on this device?'), icon: 'trash', danger: true, verify: 'DELETE', confirmLabel: tr('Reset'),
+        message: tr('This removes the lock and all MOVO data stored here. Data saved to your account returns after you sign in.'),
+        detail: tr('This cannot be undone.'),
+        action: () => {
+          const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+          wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
+        },
+      })} />}
       {sheet?.name === 'briefing' && can('insights') && <BriefingSheet briefing={briefing} show={show} name={user.firstName} onClose={() => { setPref('briefingDay', todayKey); setSheet(null); }} onAsk={() => { setPref('briefingDay', todayKey); setSheet(null); go('NasrinAI'); }} />}
       {sheet?.name === 'budgets' && <BudgetsSheet initialTab={sheet.tab} progress={budgetList} plans={plans} show={show} cloudMode={cloudMode} onSaveBudget={saveBudget} onDeleteBudget={deleteBudget} onSavePlan={savePlan} onDeletePlan={deletePlan} onOpenLimits={() => setSheet({ name: 'spendingLimits' })} onClose={() => setSheet(null)} />}
       {sheet?.name === 'spendingLimits' && <SpendingLimitsSheet limits={spendingLimitList} accounts={accountsView} show={show} onSave={saveSpendingLimit} onDelete={deleteSpendingLimit} onClose={() => setSheet({ name: 'budgets', tab: 'budgets' })} />}
@@ -2549,10 +2628,11 @@ function App() {
       {sheet?.name === 'recentLogs' && <RecentLogsSheet transactionBalances={transactionBalances} showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false} logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
+      {confirmDialog}
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
-  </div></PlanProvider>;
+  </div></ConfirmProvider></PlanProvider>;
 }
 export default App;
 

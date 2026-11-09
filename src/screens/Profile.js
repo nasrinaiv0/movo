@@ -9,18 +9,24 @@ import { revokeOtherSessions } from '../lib/financeRepository';
 import PlanBadge from '../components/PlanBadge';
 import ReferralSheet from '../components/ReferralSheet';
 import { totalBalance } from '../lib/totalBalance';
+import { useConfirm } from '../components/ConfirmDialog';
 
 
 export default function Profile({ c }) {
   const { show, stats, deltas, user, accountsByType, go, session, signOutNow, exportCsv } = c;
   const [revokingOtherSessions, setRevokingOtherSessions] = useState(false);
   const [referralOpen, setReferralOpen] = useState(false);
+  const confirm = useConfirm();
   const revokeOtherDevices = async () => {
-    if (revokingOtherSessions || !window.confirm(tr('Sign out of other devices?'))) return;
+    if (revokingOtherSessions) return;
     setRevokingOtherSessions(true);
     try {
-      await revokeOtherSessions();
-      c.notify(tr('Other devices will need to sign in again after their current session expires.'));
+      await confirm({
+        title: tr('Sign out of other devices?'), icon: 'shield', confirmLabel: tr('Sign out others'),
+        message: tr('Every other device signed in to this account will need to sign in again. This device stays signed in, and no records are deleted.'),
+        failure: tr('Could not revoke other sessions. Please try again.'),
+        action: async () => { await revokeOtherSessions(); c.notify(tr('Other devices will need to sign in again after their current session expires.')); },
+      });
     } catch {
       c.notify(tr('Could not revoke other sessions. Please try again.'));
     } finally {
@@ -96,7 +102,7 @@ export default function Profile({ c }) {
         <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
         <Icon name="chevron" size={16} />
       </button>}
-      {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Sign out')}</strong></span></button>
+      {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
         : c.supabaseConfigured && <button type="button" className="menu-row" onClick={() => go('Sign in')}><span className="menu-icon bare"><Icon name="user" size={20} /></span><span className="menu-main"><strong>{tr('Sign in / create account')}</strong></span><Icon name="chevron" size={16} /></button>}
     </section>
     {referralOpen && <ReferralSheet session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
@@ -113,6 +119,7 @@ export function EditProfile({ c }) {
   }));
   const [error, setError] = useState('');
   const [photoError, setPhotoError] = useState('');
+  const confirm = useConfirm();
   const photoInput = useRef(null);
   const handlePhotoFile = (event) => {
     const file = event.target.files?.[0];
@@ -171,7 +178,7 @@ export function EditProfile({ c }) {
     <div className="edit-profile">
       <header className="ep-head">
         <span className="avatar huge">{prefs.profilePhoto ? <img className="avatar-photo" src={prefs.profilePhoto} alt="" /> : (draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span>
-        <div className="ep-photo-actions"><button type="button" className="link-button" onClick={() => photoInput.current?.click()}><Icon name="camera" size={16} /> {tr('Change photo')}</button>{prefs.profilePhoto && <button type="button" className="link-button" onClick={() => { setPref('profilePhoto', ''); setPhotoError(''); }}>{tr('Remove photo')}</button>}</div>
+        <div className="ep-photo-actions"><button type="button" className="link-button" onClick={() => photoInput.current?.click()}><Icon name="camera" size={16} /> {tr('Change photo')}</button>{prefs.profilePhoto && <button type="button" className="link-button" onClick={async () => { if (!(await confirm({ title: tr('Remove your photo?'), message: tr('Your profile photo is removed from MOVO. You can add a new one at any time.'), confirmLabel: tr('Remove'), danger: true, icon: 'user' }))) return; setPref('profilePhoto', ''); setPhotoError(''); }}>{tr('Remove photo')}</button>}</div>
         <input ref={photoInput} type="file" accept="image/*" hidden onChange={handlePhotoFile} />
         {photoError && <p className="form-error" role="alert">{photoError}</p>}
         <strong>{draft.profileName.trim() || user.name}</strong>

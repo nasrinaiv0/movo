@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import LoyaltyDetailsSheet from './LoyaltyDetailsSheet';
+import { ConfirmHost } from './ConfirmDialog';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 const card = { id: 'tim', type: 'membership', name: 'Tim Hortons', program: 'Tims Rewards', memberNumber: '1234567890', barcode: '', points: '320', pointsUnit: 'points', noExpiry: false, expiryDate: '2027-06-30', pointsExpiry: '2026-12-31', note: 'Gold tier' };
@@ -16,7 +17,7 @@ function render(props = {}) {
   const el = document.createElement('div'); document.body.appendChild(el);
   const root = createRoot(el);
   const handlers = { onClose: jest.fn(), onEdit: jest.fn(), onRemove: jest.fn(), onOpenAccount: jest.fn(), onOpenTransaction: jest.fn(), onOpenRewards: jest.fn() };
-  act(() => root.render(<LoyaltyDetailsSheet card={card} transactions={transactions} accounts={[bank]} rules={rules} show {...handlers} {...props} />));
+  act(() => root.render(<ConfirmHost><LoyaltyDetailsSheet card={card} transactions={transactions} accounts={[bank]} rules={rules} show {...handlers} {...props} /></ConfirmHost>));
   return { el: document.body, root, handlers, cleanup: () => { act(() => root.unmount()); el.remove(); } };
 }
 const tab = (el, name) => act(() => Array.from(el.querySelectorAll('[role="tab"]')).find(b => b.textContent === name).click());
@@ -47,8 +48,7 @@ test('overview shows rewards, never money: balance in points, estimated earnings
   cleanup();
 });
 
-test('connected items and more show the earning account and every card detail; actions edit and remove', () => {
-  const confirm = window.confirm; window.confirm = () => true;
+test('connected items and more show the earning account and every card detail; actions edit and remove', async () => {
   const { el, handlers, cleanup } = render();
   tab(el, 'Connected items');
   act(() => el.querySelector('.account-hub-linked').click());
@@ -58,9 +58,16 @@ test('connected items and more show the earning account and every card detail; a
   ['Tim Hortons', 'Membership', 'Tims Rewards', '•••• 7890', 'Gold tier'].forEach(text => expect(more).toContain(text));
   act(() => Array.from(el.querySelectorAll('.account-hub-actions button')).find(b => b.textContent === 'Edit card').click());
   expect(handlers.onEdit).toHaveBeenCalled();
-  act(() => Array.from(el.querySelectorAll('.account-hub-actions button')).find(b => b.textContent === 'Remove card').click());
+  const remove = () => act(() => Array.from(el.querySelectorAll('.account-hub-actions button')).find(b => b.textContent === 'Remove card').click());
+  remove();
+  // Removing asks first in the shared dialog, naming the card; Cancel keeps it.
+  expect(el.querySelector('.confirm-title').textContent).toBe('Remove this card?');
+  expect(el.querySelector('.confirm-name').textContent).toBe('Tim Hortons');
+  await act(async () => el.querySelector('.confirm-cancel').click());
+  expect(handlers.onRemove).not.toHaveBeenCalled();
+  remove();
+  await act(async () => el.querySelector('.confirm-accept').click());
   expect(handlers.onRemove).toHaveBeenCalledWith('tim');
-  window.confirm = confirm;
   cleanup();
 });
 

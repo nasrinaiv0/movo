@@ -49,7 +49,22 @@ export async function finishOAuth(code) {
 }
 export async function signInWithGoogle() { return signInWithProvider('google', { prompt: 'select_account' }); }
 export async function signInWithApple() { return signInWithProvider('apple'); }
-export async function signOut() { return unwrap(await requireClient().auth.signOut()); }
+/**
+ * Log out. The server revokes the session when it can be reached. Offline (or on a server error) the session is still
+ * removed from this device, so logging out never depends on the network; the result then says `{ localOnly: true }`.
+ * Throws only when this device is still signed in afterwards.
+ */
+export async function signOut() {
+  const auth = requireClient().auth;
+  const attempt = async options => { try { return (await auth.signOut(options))?.error || null; } catch (cause) { return cause || new Error('sign_out_failed'); } };
+  const error = await attempt();
+  if (!error) return { localOnly: false };
+  await attempt({ scope: 'local' });
+  let stillSignedIn = true;
+  try { stillSignedIn = Boolean((await auth.getSession())?.data?.session); } catch { stillSignedIn = true; }
+  if (stillSignedIn) throw error;
+  return { localOnly: true };
+}
 /** Revoke refresh tokens for every other session without logging out this device. */
 export async function revokeOtherSessions() { return unwrap(await requireClient().auth.signOut({ scope: 'others' })); }
 

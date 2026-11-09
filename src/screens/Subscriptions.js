@@ -246,7 +246,7 @@ export default function Subscriptions({ c }) {
     {catalog && <CatalogSheet country={c.country} onPick={startNew} onClose={() => setCatalog(false)} />}
     {draft && <SubForm draft={draft} setDraft={setDraft} base={base} accounts={accountsView}
       onSave={(row) => { c.saveSubscription(row); setDraft(null); }}
-      onDelete={(id) => { c.deleteSubscription(id); setDraft(null); }}
+      onDelete={async (id) => { if (await c.deleteSubscription(id) !== false) setDraft(null); }}
       onLog={(row) => { setDraft(null); c.logSubscription(row); }}
       onClose={() => setDraft(null)} />}
   </>;

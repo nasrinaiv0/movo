@@ -5,6 +5,7 @@ import { Sheet } from './ui';
 import { t as tr } from '../lib/i18n';
 import { isNativeApp } from '../lib/platform';
 import { formatDate } from '../lib/format';
+import { useConfirm } from './ConfirmDialog';
 import {
   POINTS_PER_MONTH, activateNativeReferral, claimReferralCode, clearPendingReferralCode, downloadUrl, getReferralStatus,
   normalizeReferralCode, pendingReferralCode, redeemReferralPoints,
@@ -38,6 +39,7 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
   const [claim, setClaim] = useState(() => pendingReferralCode());
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   useEffect(() => {
     let active = true;
     if (!signedIn) return undefined;
@@ -97,7 +99,7 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
 
   async function usePoints() {
     if (busy || !signedIn || ready < 1) return;
-    if (!window.confirm(tr('Use 500 points for 1 month of Pro? It starts when your current plan ends.'))) return;
+    if (!(await confirm({ title: tr('Use 500 points?'), icon: 'gift', confirmLabel: tr('Use 500 points'), message: tr('Use 500 points for 1 month of Pro? It starts when your current plan ends.'), detail: tr('Used points cannot be returned.') }))) return;
     setBusy(true); setNotice('');
     try {
       const result = await redeemReferralPoints(session, 1);

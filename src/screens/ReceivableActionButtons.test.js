@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import FinancialPlanning from './FinancialPlanning';
+import { ConfirmHost } from '../components/ConfirmDialog';
 import * as repo from '../lib/obligationsRepository';
 import * as bills from '../lib/billsRepository';
 
@@ -40,7 +41,7 @@ afterEach(() => {
 });
 
 const showOwed = async () => {
-  await act(async () => root.render(<FinancialPlanning c={c}/>));
+  await act(async () => root.render(<ConfirmHost><FinancialPlanning c={c}/></ConfirmHost>));
   const tab = [...el.querySelectorAll('.chip-row button')].find(b => b.textContent === 'Owed to you');
   expect(tab).toBeDefined();
   await act(async () => tab.click());
@@ -85,10 +86,32 @@ test('Edit form cannot overwrite original amount or collection balance', async (
 test('Delete asks for confirmation and archives rather than deleting cash movement', async () => {
   await showOwed();
   await act(async () => action('Delete').click());
-  expect(dialog().textContent).toContain('Archive this receivable?');
+  const confirmBox = () => document.querySelector('.confirm-dialog');
+  expect(confirmBox().querySelector('.confirm-name').textContent).toBe('Emergency Fund');
+  expect(confirmBox().textContent).toContain('Recorded collections and account balances will remain unchanged.');
   expect(repo.deleteReceivable).not.toHaveBeenCalled();
-  await act(async () => [...dialog().querySelectorAll('button')].find(b => b.textContent === 'Delete').click());
+  await act(async () => confirmBox().querySelector('.confirm-cancel').click());
+  expect(repo.deleteReceivable).not.toHaveBeenCalled();
+  await act(async () => action('Delete').click());
+  // A double tap sends one request.
+  await act(async () => { const accept = confirmBox().querySelector('.confirm-accept'); accept.click(); accept.click(); });
+  expect(repo.deleteReceivable).toHaveBeenCalledTimes(1);
   expect(repo.deleteReceivable).toHaveBeenCalledWith('rec-1', 'user-1');
+  expect(c.notify).toHaveBeenCalledWith('Receivable deleted.');
+});
+
+test('a failed delete is shown in the dialog and nothing is reported as deleted', async () => {
+  repo.deleteReceivable.mockRejectedValueOnce(new Error('offline'));
+  await showOwed();
+  await act(async () => action('Delete').click());
+  await act(async () => document.querySelector('.confirm-accept').click());
+  expect(document.querySelector('.confirm-error').textContent).toBe('Could not delete it. Nothing was changed. Please try again.');
+  expect(document.querySelector('.confirm-accept').textContent).toBe('Try again');
+  expect(c.notify).not.toHaveBeenCalled();
+  await act(async () => document.querySelector('.confirm-accept').click());
+  expect(repo.deleteReceivable).toHaveBeenCalledTimes(2);
+  expect(document.querySelector('.confirm-dialog')).toBeNull();
+  expect(c.notify).toHaveBeenCalledWith('Receivable deleted.');
 });
 
 test('Fully collected receivable has Collect disabled; editing/deleting remains possible', async () => {

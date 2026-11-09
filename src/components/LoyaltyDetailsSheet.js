@@ -6,6 +6,7 @@ import { estimateLoyaltyRewards, maskedMembershipNumber, safeLoyaltyPoints } fro
 import { loyaltyTypeLabel } from '../lib/loyaltyBranding';
 import { formatDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { removeLoyaltyCardPrompt, useConfirm } from './ConfirmDialog';
 
 /*
  * Memberships, loyalty, rewards, tokens and custom cards open the same Account details layout as money accounts:
@@ -20,6 +21,7 @@ export default function LoyaltyDetailsSheet({ card, transactions = [], accounts 
   const [tab, setTab] = useState('overview');
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState('');
+  const confirm = useConfirm();
   const unit = card.pointsUnit || (card.type === 'tokens' ? 'tokens' : 'points');
   const rule = rules[card.id] || null;
   const earned = useMemo(() => estimateLoyaltyRewards(transactions, accounts, [card], rules)
@@ -100,7 +102,7 @@ export default function LoyaltyDetailsSheet({ card, transactions = [], accounts 
     </div>}
     <div className="account-hub-actions">
       <button type="button" className="secondary-button" onClick={onEdit}><Icon name="edit" size={16} />{tr('Edit card')}</button>
-      <button type="button" className="danger-button" onClick={() => { if (window.confirm(tr('Remove this membership or rewards card?'))) onRemove?.(card.id); }}><Icon name="trash" size={16} />{tr('Remove card')}</button>
+      <button type="button" className="danger-button" onClick={async () => { if (await confirm(removeLoyaltyCardPrompt(card.name))) onRemove?.(card.id); }}><Icon name="trash" size={16} />{tr('Remove card')}</button>
       {code
         ? <button type="button" className="primary-button" onClick={() => copy(code, 'action')}><Icon name={copied === 'action' ? 'check' : 'copy'} size={16} />{tr(copied === 'action' ? 'Copied' : 'Copy member number')}</button>
         : <button type="button" className="primary-button" onClick={onEdit}><Icon name="plus" size={16} />{tr('Add member number')}</button>}
