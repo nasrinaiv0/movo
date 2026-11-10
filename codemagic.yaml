@@ -32,19 +32,32 @@ workflows:
         - pattern: 'ios-v*'
           include: true
     scripts:
-      - name: Install dependencies
-        script: npm install
+      - name: Install locked dependencies
+        script: npx --yes npm@11.19.1 ci
+      - name: Verify Xcode and iOS SDK toolchain
+        script: |
+          set -eu
+          xcodebuild -version
+          major="$(xcodebuild -version | awk '/^Xcode / {split($2,a,"."); print a[1]}')"
+          if [ -z "$major" ] || [ "$major" -lt 26 ]; then
+            echo "The iOS release requires Xcode 26 or newer." >&2
+            exit 1
+          fi
+      - name: Validate iOS source release gates
+        script: |
+          node --test scripts/check-ios-release-readiness.test.cjs
+          node scripts/check-ios-release-readiness.cjs
       - name: Tests and typecheck
         script: |
-          npx tsc --noEmit
-          CI=true npx react-scripts test --runInBand --watchAll=false
+          npm run typecheck
+          CI=true npm test -- --runInBand --watchAll=false
       - name: Build the web app
         script: |
           if [ -z "$REACT_APP_SUPABASE_URL" ] || [ -z "$REACT_APP_SUPABASE_ANON_KEY" ]; then
             echo "Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to the movo_web group." >&2
             exit 1
           fi
-          CI=true npx react-scripts build
+          CI=true npm run build
       - name: Copy the web app into the iOS project
         script: npx cap sync ios
       - name: Signing profiles

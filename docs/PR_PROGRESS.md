@@ -685,3 +685,12 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Vercel Sandbox on unchanged production base SHA plus these files: 185 Jest suites / 1,123 tests passed, typecheck/optimized build passed; XML parser passed; production dependency advisory count zero. Browser smoke at phone and desktop widths: HTTP 200, no JS exceptions or horizontal overflow. This does not certify native Android device behavior.
 - Full evidence and pending *NO-GO* gates: `docs/audits/2026-11-10-google-play-release-audit.md` and `docs/engineering/updates/2026-11-10-google-play-native-oauth-release-audit.md`.
 - PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.
+
+
+## 2026-11-11 — PR #272 iOS release pipeline hardening (not yet App Store certified)
+- Keep the existing React/Capacitor/Swift architecture, product screens, financial calculations, sync/RLS and StoreKit production entitlement verification unchanged.
+- Expand GitHub macOS iOS CI trigger coverage to all app/auth/billing/backend changes; compile the unsigned Release iPhone target alongside simulator Debug and deep-link smoke.
+- Add source packaging assertions with five negative-regression tests for the canonical bundle ID, strict local bundled web assets, positive build versions, native privacy permissions, secure post-verification StoreKit finishing, actual opaque 1024px RGB App Store icon, and deterministic signed TestFlight CI configuration.
+- Codemagic TestFlight uses npm lockfile verification and Xcode 26+ preflight, with existing App Store signing integration unchanged.
+- No owner Apple credentials or signed distribution IPA are verified here; production DB still rejects sandbox entitlements, Vercel Sandbox access returns 402, and real-device TestFlight purchase/login/privacy acceptance is a NO-GO gate.
+- Detailed source and release evidence: `docs/engineering/updates/2026-11-11-ios-release-safety-gates.md`.
