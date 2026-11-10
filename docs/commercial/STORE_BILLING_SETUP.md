@@ -6,16 +6,14 @@ Entitlements: public.movo_store_entitlements; no client-side purchase state gran
 
 ## Product catalogue
 
-Create these exact subscription product IDs in App Store Connect and Google Play Console:
+Create the following **current** subscription product IDs in Google Play Console (and in App Store Connect only when an iOS launch is planned). The actual store catalogue in `src/lib/store-products.json` is authoritative. Older Pro/Max/Ultra identifiers are obsolete and must not be configured for this release:
 
 | Product ID | MOVO tier | Google Play base plan |
 |---|---|---|
 | com.nasrinai.movo.pro.monthly | Pro | monthly |
-| com.nasrinai.movo.max.monthly | Max | monthly |
-| com.nasrinai.movo.ultra.monthly | Ultra | monthly |
 | com.nasrinai.movo.pro.annual | Pro | annual |
-| com.nasrinai.movo.max.annual | Max | annual |
-| com.nasrinai.movo.ultra.annual | Ultra | annual |
+| com.nasrinai.movo.proplus.monthly | Pro+ | monthly |
+| com.nasrinai.movo.proplus.annual | Pro+ | annual |
 
 Prices are loaded from the stores and must not be hardcoded in the app. Configure product descriptions, localized prices, subscription group, billing periods, grace period, tax settings, and availability in each store console.
 
@@ -46,8 +44,8 @@ Apply supabase/migrations/*_movo_store_entitlements.sql to the intended Supabase
 
 ## Manual store-console and device tasks
 
-- [ ] Create the six product IDs and subscription groups in App Store Connect.
-- [ ] Create the six product IDs and monthly/annual base plans in Google Play Console.
+- [ ] Create the four current product IDs and subscription groups in App Store Connect for a future iOS release.
+- [ ] Create the four current Pro / Pro+ product IDs and monthly/annual base plans in Google Play Console.
 - [ ] Set actual prices, billing periods, territories, tax, grace-period and account-hold policies.
 - [ ] Enable the In-App Purchase capability for the iOS target.
 - [ ] Configure an App Store Server API key and App Store Server Notifications V2 URL.

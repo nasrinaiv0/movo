@@ -644,3 +644,12 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 Implemented production-only Apple/Google verification, pinned Apple trust root, strict OIDC/schema validation, fenced atomic state transitions, revocation tombstones, event deduplication, predecessor cleanup and encrypted server-acknowledgment retries. Includes a source-level hostile audit, deployable SQL, setup changes and regression tests. Vercel Sandbox: integrated build/typecheck and 170 suites/1,036 tests passed; final focused 33 tests passed; PostgreSQL behavioral and separate-connection concurrency tests passed; mobile browser render smoke passed. Migration and three new server settings are required before deployment; no production migration performed. See `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
 
 - PR #260 integration with PR #258: 173 suites / 1,063 tests, typecheck and build passed in Vercel Sandbox. Atomic referral awards/refund reversals and points-to-Pro plan access passed PostgreSQL regressions. The GitHub source tree matches the tested Sandbox tree. No production changes.
+
+
+## 2026-11-10 — Google Play Android OAuth release audit (PR #266)
+- Registered restricted browser-resolvable Android `movo://auth-callback` and `movo://log` native intent filters to match existing Supabase PKCE and log handlers; no extra permissions or broad catch-all schemes.
+- Added Android manifest deep-link and backup regression tests.
+- Aligned historical store setup documentation with live Pro/Pro+ four-product catalogue, without changing checkout or subscriptions.
+- Vercel Sandbox on unchanged production base SHA plus these files: 185 Jest suites / 1,123 tests passed, typecheck/optimized build passed; XML parser passed; production dependency advisory count zero. Browser smoke at phone and desktop widths: HTTP 200, no JS exceptions or horizontal overflow. This does not certify native Android device behavior.
+- Full evidence and pending *NO-GO* gates: `docs/audits/2026-11-10-google-play-release-audit.md` and `docs/engineering/updates/2026-11-10-google-play-native-oauth-release-audit.md`.
+- PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.
