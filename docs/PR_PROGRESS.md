@@ -1,3 +1,7 @@
+## 2026-11-10 — Owner audit foreign keys blocking user account deletion
+
+Stage ON DELETE SET NULL and strictly verified internal-FK-only audit anonymization for four owner tables. Prevents the immutable audit trigger from obstructing account erasure while preserving append-only event history. Adds synthetic full deletion/forgery regression to isolated PostgreSQL finance CI. No production migrations or customer data changes. See docs/engineering/updates/2026-11-10-owner-account-deletion-fks.md.
+
 ## 2026-11-10 — Non-destructive release database performance indexes (staged)
 
 Addressed five Supabase advisor findings with idempotent FK indexes and local PostgreSQL assertions wired into the financial tenant-isolation CI. No customer database changes, RLS weakening, or billing enablement. Independent CI and Vercel Sandbox verification are required before merge; production migration awaits explicit release verification. See docs/engineering/updates/2026-11-10-release-db-fk-indexes.md.
