@@ -1,3 +1,7 @@
+## 2026-11-11 — PR #271: Repair sign-in startup and owner-cache hydration
+
+Keep the entitlement refresher stable while the auth listener recovers the owner journal, preserve the full Supabase session after OTP verification, and render a recovered confirmed/dirty owner cache while cloud checks continue. Concurrent entitlement checks share a bounded request per owner/token. New accounts keep the initial-load gate and paid cloud access remains server-verified. Regression coverage includes delayed recovery, token refresh, cross-owner isolation and timeout/retry. Local validation: 194 suites / 1,183 tests, typecheck and production build passed. Vercel Sandbox verification is blocked by HTTP 402 payment_required; no production rollout. Details: `docs/engineering/updates/2026-11-11-signin-startup.md`.
+
 ## 2026-11-10 — PR #270: Correct GitHub manual Play versionCode input serialization
 
 GitHub Actions manual runs #4 and #5 failed before signing: the workflow_dispatch number input formatted integer versionCode 1 as `1.0`, which the strict integer validator correctly rejected. Change the workflow input to string to preserve owner-entered integer text without relaxing validation. Keep the signed AAB build restricted to reviewed main and the protected google-play-release environment. The four signing repository secrets are set but the real signed AAB, physical Android-device tests, hybrid financial sync acceptance, and Google Play production authorization are not yet verified. See `docs/engineering/updates/2026-11-10-play-version-code-dispatch.md`.
