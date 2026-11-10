@@ -694,3 +694,5 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Codemagic TestFlight uses npm lockfile verification and Xcode 26+ preflight, with existing App Store signing integration unchanged.
 - No owner Apple credentials or signed distribution IPA are verified here; production DB still rejects sandbox entitlements, Vercel Sandbox access returns 402, and real-device TestFlight purchase/login/privacy acceptance is a NO-GO gate.
 - Detailed source and release evidence: `docs/engineering/updates/2026-11-11-ios-release-safety-gates.md`.
+
+- PR #272 macOS CI first attempt caught a release-contract matcher that recognized unpinned `npm ci` but not the explicitly pinned `npx npm@11.19.1 ci`; corrected the check and its negative test without weakening the lockfile requirement. Codemagic avoids re-running the same tests in the web build stage. Exact-head native and full CI rerun required.

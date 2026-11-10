@@ -51,6 +51,6 @@ test('fails closed when a native permission or StoreKit finish gate disappears',
 
 test('requires a reproducible signed TestFlight pipeline', () => {
   const changed = fixture();
-  changed.codemagic = changed.codemagic.replace('npm ci', 'npm install');
+  changed.codemagic = changed.codemagic.replace('npm@11.19.1 ci', 'npm install');
   assert.throws(() => checkReleaseContract(changed), /Signed TestFlight pipeline/);
 });

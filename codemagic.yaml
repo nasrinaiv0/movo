@@ -57,7 +57,8 @@ workflows:
             echo "Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to the movo_web group." >&2
             exit 1
           fi
-          CI=true npm run build
+          # Tests already passed above; avoid a second prebuild test suite on signed CI.
+          CI=true npx react-scripts build
       - name: Copy the web app into the iOS project
         script: npx cap sync ios
       - name: Signing profiles
