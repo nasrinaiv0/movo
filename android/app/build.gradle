@@ -7,7 +7,15 @@ android {
         applicationId "com.nasrinai.movo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // Play Console rejects duplicate or lower versionCode uploads.
+        // The protected release workflow requires an explicit monotonically
+        // increasing code; local unsigned builds retain the baseline 1.
+        def requestedVersionCode = System.getenv("MOVO_ANDROID_VERSION_CODE")
+        def releaseVersionCode = requestedVersionCode ? Integer.parseInt(requestedVersionCode) : 1
+        if (releaseVersionCode < 1 || releaseVersionCode > 2100000000) {
+            throw new GradleException("MOVO_ANDROID_VERSION_CODE is outside Google Play limits")
+        }
+        versionCode releaseVersionCode
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

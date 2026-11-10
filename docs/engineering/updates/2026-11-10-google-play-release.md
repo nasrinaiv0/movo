@@ -37,3 +37,6 @@ The build fails closed without every signing secret. The signed AAB is retained 
 
 ## Nonproduction signing validation gate (2026-11-10)
 A PR-triggered `ci-test-signing` job generates a disposable, one-day self-signed key on the GitHub runner, exercises Gradle's environment-gated `bundleRelease`, verifies that the resulting AAB is JAR-signed, and deletes its test keystore. It deliberately does **not** upload an AAB or use protected release credentials. Passing the job does not replace generation of a legitimate owner-managed upload key, signed Google Play AAB, internal-track installation, or a real Android device test.
+
+## Required Play versionCode input
+The manual GitHub workflow requires `version_code` (positive integer between 1 and 2,100,000,000). For the first Play upload use 1 only when the app has no previously uploaded build. **For subsequent uploads, read the highest uploaded version code in Play Console and enter a strictly larger value.** The runner validates the value and Gradle writes it into the bundle manifest; CI test-signing uses local default 1. A CI pass does not prove that the entered value is greater than the Play Console's latest upload. If Google Play has already bound another upload key, reuse that key rather than creating a new one.

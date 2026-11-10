@@ -1,3 +1,7 @@
+## 2026-11-10 — Require explicit monotonic Google Play Android versionCode
+
+The protected main-only signed AAB workflow now asks for an owner-selected Android `version_code` and rejects invalid/out-of-range values. Android Gradle reads this value only when set; normal CI remains at versionCode 1. On each subsequent Google Play upload, the owner must choose a code greater than all prior uploaded bundles; only Play Console can confirm this. The ephemeral-key PR signature test remains non-publishable. Implementation and release limitations: `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
 ## 2026-11-10 — Reconcile Google Play signing PR #264 and add disposable signed-path CI
 
 Rebased the Google Play-only signing workflow over the reviewed Google-only provider readiness fix. Production bundle creation stays manual, main-only and protected by the GitHub `google-play-release` environment. Added an isolated, PR-triggered CI job using a disposable test key to exercise the Android release signing path and `jarsigner` without publishing any artifact or using production secrets. Existing unsigned native CI remains. This is not a signed Play AAB or launch authorization. See `docs/engineering/updates/2026-11-10-google-play-release.md`.
