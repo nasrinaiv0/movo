@@ -104,6 +104,8 @@ def main():
             sql(migration.read_text(), migration.name)
         sql((ROOT / "supabase/tests/security_definer_tenant_isolation.test.sql").read_text(),
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
+        sql((ROOT / "supabase/tests/release_fk_covering_indexes.test.sql").read_text(),
+            "five audited foreign-key covering index assertions")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_"):
