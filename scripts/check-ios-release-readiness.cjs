@@ -52,7 +52,7 @@ function checkReleaseContract({ capacitor, project, info, icon, codemagic }) {
     && codemagic.includes('app_store_connect:')
     && codemagic.includes('submit_to_testflight: true')
     && codemagic.includes('xcode-project build-ipa')
-    && /(?:\\bnpm ci\\b|\\bnpm@\\d+(?:\\.\\d+)+ ci\\b)/.test(codemagic),
+    && /(?:\bnpm ci\b|\bnpm@\d+(?:\.\d+)+ ci\b)/.test(codemagic),
   'Signed TestFlight pipeline is missing or not reproducible');
   return true;
 }

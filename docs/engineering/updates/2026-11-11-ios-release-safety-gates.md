@@ -39,3 +39,6 @@ PR is non-draft for CI. Merge only if required checks pass and preview/device cr
 ## Follow-up — first CI feedback and correction
 
 GitHub macOS run `42903979685` passed dependency installation and four negative contract tests, but the source contract failed its positive fixture because the matcher looked for the literal `npm ci` despite the locked equivalent `npx --yes npm@11.19.1 ci`. The matcher now accepts pinned npm CLI syntax; the regression test asserts replacing that command with `npm install` still fails closed. No billing, runtime, database, UI or native application code was touched. Codemagic uses its explicit earlier test step once and calls `react-scripts build` directly to avoid duplicate test execution within a 60-minute signed build. Run CI against this exact new head before release.
+
+### Build guard regex correctness
+The previous edit wrote double-escaped regex tokens. Corrected to genuine JavaScript regex word boundaries and digit classes in the same per-commit documentation change. The pinned npm install still qualifies; an unpinned `npm install` must fail the negative test. This does not modify MOVO runtime or subscriptions.

@@ -696,3 +696,5 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Detailed source and release evidence: `docs/engineering/updates/2026-11-11-ios-release-safety-gates.md`.
 
 - PR #272 macOS CI first attempt caught a release-contract matcher that recognized unpinned `npm ci` but not the explicitly pinned `npx npm@11.19.1 ci`; corrected the check and its negative test without weakening the lockfile requirement. Codemagic avoids re-running the same tests in the web build stage. Exact-head native and full CI rerun required.
+
+- Follow-up iOS guard source check: ensured the pinned `npm@11.19.1 ci` regular expression uses actual JavaScript regex word boundaries rather than escaped literals. Verify via the next exact-head macOS build; no release approved before successful CI.
