@@ -1,6 +1,10 @@
-## 2026-11-10 — Google Play-only Android release pipeline (review pending)
+## 2026-11-10 — Reconcile Google Play signing PR #264 and add disposable signed-path CI
 
-Added manual main-only signed AAB workflow with protected GitHub Environment, ephemeral keystore, mandatory signing secret checks, signed-bundle verification and 7-day artifact retention. Optional Android Gradle signing leaves ordinary unsigned CI intact. No production store publishing, database changes, or paid billing activation. Review and evidence checklist: `docs/engineering/updates/2026-11-10-google-play-release.md`. Release remains blocked on credentials, native device tests, sync, billing, RLS and Play compliance. CI and Vercel Sandbox verification remain pending.
+Rebased the Google Play-only signing workflow over the reviewed Google-only provider readiness fix. Production bundle creation stays manual, main-only and protected by the GitHub `google-play-release` environment. Added an isolated, PR-triggered CI job using a disposable test key to exercise the Android release signing path and `jarsigner` without publishing any artifact or using production secrets. Existing unsigned native CI remains. This is not a signed Play AAB or launch authorization. See `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Google-only provider checkout readiness isolation (draft PR #267)
+
+Addressed Google Play native checkout readiness incorrectly requiring Apple IAP signing credentials. Added strict Google/Apple-specific checks, fail-closed handling of unknown platforms, backwards-compatible legacy all-provider gate, and native purchase regression coverage. Vercel Sandbox based on main f2311f2 passed targeted billing tests (2 suites / 7 tests) and full CI-style production build. No production key, billing activation, or database writes. Exact-PR-head GitHub CI and preview must pass before merge. Release remains blocked on signed AAB, Google Play license/device tests, hybrid sync and console compliance. Engineering notes: docs/engineering/updates/2026-11-10-google-only-billing-gate.md.
 
 ## 2026-11-09 — Integration hardening for #258 and #259
 

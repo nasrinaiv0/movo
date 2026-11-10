@@ -4,7 +4,7 @@
 Android Google Play distribution only. This change does not modify iOS code, live billing, Supabase, customer records, or production Vercel. Public release is blocked until explicit evidence completes the checklist below.
 
 ## Manual signed-bundle workflow
-`.github/workflows/google-play-release.yml` only runs by manual dispatch from `main`. The job uses the protected `google-play-release` GitHub Environment; configure required reviewers and a branch deployment restriction to `main` before adding credentials. The upload keystore and passwords must be created/owned by the publisher and kept outside source control. **Keep a separate backup of the upload keystore and its passwords.**
+`google-play-release.yml` has a PR-only disposable-key signing check and a separate manual, main-only, protected production signing job. The production job only runs by manual dispatch from `main`. The job uses the protected `google-play-release` GitHub Environment; configure required reviewers and a branch deployment restriction to `main` before adding credentials. The upload keystore and passwords must be created/owned by the publisher and kept outside source control. **Keep a separate backup of the upload keystore and its passwords.**
 
 Environment secrets (GitHub repository Settings → Environments → google-play-release):
 - `PLAY_UPLOAD_KEYSTORE_BASE64`: base64 of the **existing** Google Play upload keystore; do not generate a new key if the app already has an established upload certificate
@@ -34,3 +34,6 @@ The build fails closed without every signing secret. The signed AAB is retained 
 - Existing Android native CI still compiles unsigned variants with no signing secrets.
 - Vercel Sandbox cannot substitute for signed Android Gradle compilation or Play Console/device verification. This PR does not change web UI.
 - Rollback: revert new workflow and optional signing configuration; no database or production migration.
+
+## Nonproduction signing validation gate (2026-11-10)
+A PR-triggered `ci-test-signing` job generates a disposable, one-day self-signed key on the GitHub runner, exercises Gradle's environment-gated `bundleRelease`, verifies that the resulting AAB is JAR-signed, and deletes its test keystore. It deliberately does **not** upload an AAB or use protected release credentials. Passing the job does not replace generation of a legitimate owner-managed upload key, signed Google Play AAB, internal-track installation, or a real Android device test.
