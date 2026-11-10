@@ -7939,6 +7939,16 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   .referral-qr figcaption { display: flex; justify-content: center; align-items: baseline; gap: 5px; }
 }
 
+/* MOVO hybrid reconnect reminder: compact, solid colors, no gradient/border. */
+.movo-sync-restored { position: fixed; z-index: 110; left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: calc(82px + env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 12px; background: var(--surface-solid, var(--card-solid, #fff)); color: var(--text, #171923); border-radius: 16px; box-shadow: 0 8px 26px rgba(0,0,0,.14); animation: movo-sync-enter .28s ease-out both; }
+.movo-sync-restored-icon { color: var(--accent, #10a866); font-size: 23px; font-weight: 700; }
+.movo-sync-restored-message { display: grid; flex: 1 1 170px; gap: 2px; font-size: 13px; line-height: 1.35; }
+.movo-sync-restored-message span { color: var(--muted, #858997); font-size: 12px; }
+.movo-sync-restored-action { color: white; background: var(--accent, #078552); padding: 9px 12px; min-height: 42px; border: 0; border-radius: 10px; font-size: 12px; font-weight: 650; cursor: pointer; }
+.movo-sync-restored-dismiss { background: transparent; color: inherit; border: 0; min-height: 42px; min-width: 36px; font-size: 23px; cursor: pointer; }
+.movo-sync-restored button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@keyframes movo-sync-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media(prefers-reduced-motion:reduce){ .movo-sync-restored { animation: none; } }
 /* ---------- Confirmation dialog (2026-11-09): log out and every destructive action ----------
    Compact centred dialog in MOVO's language: solid surfaces, no gradients, no button borders, 48px buttons,
    red only for the destructive action. 200ms opacity/scale in and out; none with reduced motion. */

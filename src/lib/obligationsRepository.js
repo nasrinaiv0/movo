@@ -26,7 +26,15 @@ const validDate = value => {
 
 /** List functions rely on RLS as the primary ownership boundary. */
 export async function listAccountingPostings() {
-  return (await fetchAllRows(() => requireClient().from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at', { ascending: false }).order('id', { ascending: false }))).map(row => ({ ...row, transaction_type: 'accounting_posting', amount: Math.abs(Number(row.signed_amount)), type: 'accounting_posting' }));
+  const client=requireClient();
+  const [postings,loans,receivables]=await Promise.all([
+    fetchAllRows(()=>client.from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at',{ascending:false}).order('id',{ascending:false})),
+    fetchAllRows(()=>client.from('loan_events').select('id,transaction_id').order('id',{ascending:true})),
+    fetchAllRows(()=>client.from('receivable_events').select('id,transaction_id').order('id',{ascending:true})),
+  ]);
+  const links=new Map([...loans.map(row=>['loan_event:'+row.id,row.transaction_id]),...receivables.map(row=>['receivable_event:'+row.id,row.transaction_id])]);
+  return postings.map(row=>({...row,transaction_id:links.get(row.source_type+':'+row.source_id)||null,
+    transaction_type:'accounting_posting',amount:Math.abs(Number(row.signed_amount)),type:'accounting_posting'}));
 }
 
 /** Non-cash accounting events that must appear in expense analytics without posting cash a second time. */

@@ -31,6 +31,7 @@ export function saveOfflineWorkspace(ownerId, snapshot){
    ||!allOwned(snapshot.baseline,ownerId)||!allOwned(snapshot.working,ownerId))return false;
  const value={version:2,owner:ownerId,baseline:copy(snapshot.baseline),
   working:copy(snapshot.working), dirty:snapshot.dirty===true,
+  requiresManualSync:snapshot.requiresManualSync===true,
   lastConfirmedAt:String(snapshot.lastConfirmedAt||''),pendingDeletions:snapshot.pendingDeletions||{},
   deletedRows:snapshot.deletedRows||{},
   syncError:snapshot.syncError?String(snapshot.syncError).slice(0,220):''};
@@ -45,7 +46,8 @@ export function saveOfflineWorkspace(ownerId, snapshot){
 export function updateOfflineWorking(ownerId, nextGroups){
  const previous=loadOfflineWorkspace(ownerId);
  if(!previous||!isValidGroups(nextGroups)||!allOwned(nextGroups,ownerId))return false;
- return saveOfflineWorkspace(ownerId,{...previous,working:copy(nextGroups),dirty:true});
+ return saveOfflineWorkspace(ownerId,{...previous,working:copy(nextGroups),dirty:true,
+   requiresManualSync:previous.requiresManualSync===true || (typeof navigator!=='undefined' && navigator.onLine===false)});
 }
 /**
  * Remove rows from the working copy and remember each removal (a tombstone with the row as it was), in one write.
@@ -65,7 +67,8 @@ export function recordOfflineDeletions(ownerId, removals){
   pendingDeletions[group]=Array.from(new Set([...(pendingDeletions[group]||[]),id]));
   deletedRows[group]={...(deletedRows[group]||{}),[id]:row};
  }
- return saveOfflineWorkspace(ownerId,{...previous,working,pendingDeletions,deletedRows,dirty:true});
+ return saveOfflineWorkspace(ownerId,{...previous,working,pendingDeletions,deletedRows,dirty:true,
+  requiresManualSync:previous.requiresManualSync===true || (typeof navigator!=='undefined' && navigator.onLine===false)});
 }
 /** Put rows back (an Archive restore) and drop their tombstones, in one write. */
 export function restoreOfflineRows(ownerId, group, rows){
@@ -75,9 +78,17 @@ export function restoreOfflineRows(ownerId, group, rows){
  const working={...copy(previous.working),[group]:[...copy(rows),...previous.working[group].filter(item=>!ids.has(item?.id))]};
  const pendingDeletions={...previous.pendingDeletions,[group]:(previous.pendingDeletions?.[group]||[]).filter(id=>!ids.has(id))};
  const deletedRows={...(previous.deletedRows||{}),[group]:Object.fromEntries(Object.entries(previous.deletedRows?.[group]||{}).filter(([id])=>!ids.has(id)))};
- return saveOfflineWorkspace(ownerId,{...previous,working,pendingDeletions,deletedRows,dirty:true});
+ return saveOfflineWorkspace(ownerId,{...previous,working,pendingDeletions,deletedRows,dirty:true,
+  requiresManualSync:previous.requiresManualSync===true || (typeof navigator!=='undefined' && navigator.onLine===false)});
 }
 export function clearOfflineWorkspace(ownerId){
  const k=key(ownerId);if(!k)return false;
  try {storage()?.removeItem(k);return !storage()?.getItem(k);}catch{return false;}
+}
+
+/** A network outage creates a manual-approval boundary, but never clears data. */
+export function holdOfflineWorkspaceForApproval(ownerId) {
+ const snapshot=loadOfflineWorkspace(ownerId);
+ if(!snapshot)return false;
+ return saveOfflineWorkspace(ownerId,{...snapshot,requiresManualSync:true});
 }

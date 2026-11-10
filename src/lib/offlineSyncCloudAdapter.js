@@ -1,3 +1,4 @@
+import { applyHybridCloudOperation } from './hybridSyncCloudAdapter';
 import { supabase } from './supabaseClient';
 import { getCurrentSession, listAccounts, listTransactions } from './financeRepository';
 import { TRANSACTION_SOURCES } from './transactionSources';
@@ -44,19 +45,14 @@ function accountPayload(row,ownerId){
 }
 export async function insertOfflineAccount(row,ownerId){
  const payload=accountPayload(row,ownerId);
- const {data,error}=await client().from('financial_accounts').insert(payload).select().single();
- if(error)throw error;
- return data;
+ return (await applyHybridCloudOperation({ownerId,group:'financial_accounts',kind:'create',recordId:row.id,payload})).record;
 }
 export async function updateOfflineAccountCAS(row,expectedUpdatedAt,ownerId){
  if(!Number.isFinite(Date.parse(expectedUpdatedAt)))throw Error('Missing validated account revision; reconciliation was not applied.');
  const payload=accountPayload(row,ownerId);
  delete payload.id;delete payload.user_id;
- const {data,error}=await client().from('financial_accounts').update(payload)
-  .eq('id',row.id).eq('user_id',ownerId).eq('updated_at',expectedUpdatedAt).select().maybeSingle();
- if(error)throw error;
- if(!data)throw Error('Cloud account was updated elsewhere. Retry reconciliation and review the conflict.');
- return data;
+ return (await applyHybridCloudOperation({ownerId,group:'financial_accounts',kind:'update',recordId:row.id,
+  payload,expectedUpdatedAt})).record;
 }
 const permittedSource=source=>{
  const value=String(source||'').trim();
@@ -99,9 +95,7 @@ function transactionPayload(row,ownerId){
 }
 export async function insertOfflineTransaction(row,ownerId){
  const payload=transactionPayload(row,ownerId);
- const {data,error}=await client().from('transactions').insert(payload).select().single();
- if(error)throw error;
- return data;
+ return (await applyHybridCloudOperation({ownerId,group:'transactions',kind:'create',recordId:row.id,payload})).record;
 }
 /**
  * Upload a transaction edited on this device. The same fields the app edits online (never its owner, source,
@@ -114,11 +108,8 @@ export async function updateOfflineTransactionCAS(row,expectedUpdatedAt,ownerId)
   transaction_type:payload.transaction_type,amount:payload.amount,currency:payload.currency,merchant:payload.merchant,
   category:payload.category,note:payload.note,occurred_at:payload.occurred_at,payment_reference:payload.payment_reference,
   receipt_note:payload.receipt_note,receipt_path:payload.receipt_path};
- const {data,error}=await client().from('transactions').update(update)
-  .eq('id',row.id).eq('user_id',ownerId).eq('updated_at',expectedUpdatedAt).select().maybeSingle();
- if(error)throw error;
- if(!data)throw Error('Cloud transaction was updated elsewhere. Retry reconciliation and review the conflict.');
- return data;
+ return (await applyHybridCloudOperation({ownerId,group:'transactions',kind:'update',recordId:row.id,
+  payload:update,expectedUpdatedAt})).record;
 }
 /**
  * Apply a deletion made on this device with the same server procedure the app uses online (it also reverses linked
@@ -127,13 +118,8 @@ export async function updateOfflineTransactionCAS(row,expectedUpdatedAt,ownerId)
  */
 export async function deleteOfflineTransactionCAS(id,expectedUpdatedAt,ownerId){
  validUUID(id);validUUID(ownerId,'owner');
- if(!expectedUpdatedAt)throw Error('Missing validated transaction revision; the deletion was not applied.');
- const {data,error}=await client().from('transactions').select('id,updated_at').eq('id',id).eq('user_id',ownerId).maybeSingle();
- if(error)throw error;
- if(!data)return false;
- if(String(data.updated_at)!==String(expectedUpdatedAt))throw Error('Cloud transaction was updated elsewhere. Retry reconciliation and review the conflict.');
- const {error:rpcError}=await client().rpc('delete_transaction_with_reversals',{p_transaction_id:id});
- if(rpcError){if(rpcError.code==='P0002')return false;throw rpcError;}
+ if(!Number.isFinite(Date.parse(expectedUpdatedAt)))throw Error('Missing validated transaction revision; the deletion was not applied.');
+ await applyHybridCloudOperation({ownerId,group:'transactions',kind:'delete',recordId:id,payload:null,expectedUpdatedAt});
  return true;
 }
 const RECEIPT_TYPES={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','application/pdf':'pdf'};
