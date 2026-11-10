@@ -40,3 +40,6 @@ A PR-triggered `ci-test-signing` job generates a disposable, one-day self-signed
 
 ## Required Play versionCode input
 The manual GitHub workflow requires `version_code` (positive integer between 1 and 2,100,000,000). For the first Play upload use 1 only when the app has no previously uploaded build. **For subsequent uploads, read the highest uploaded version code in Play Console and enter a strictly larger value.** The runner validates the value and Gradle writes it into the bundle manifest; CI test-signing uses local default 1. A CI pass does not prove that the entered value is greater than the Play Console's latest upload. If Google Play has already bound another upload key, reuse that key rather than creating a new one.
+
+## CI-signature verification fix
+The first disposable-key run compiled and signed the release bundle successfully. Its shell verification failed because `printf | grep -q` under `set -o pipefail` produced SIGPIPE after `grep -q` stopped reading. The check now matches the captured verification string without a pipeline, preserving fail-closed signature validation and removing the false CI failure. Re-run the exact-head GitHub Action before merging.

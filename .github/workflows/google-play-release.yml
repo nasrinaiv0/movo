@@ -75,7 +75,12 @@ jobs:
           AAB=app/build/outputs/bundle/release/app-release.aab
           test -s "$AAB"
           VERIFY="$(jarsigner -verify -certs "$AAB" 2>&1)"
-          printf '%s\n' "$VERIFY" | grep -Eqi 'jar verified'
+          # grep -q on a pipe can SIGPIPE the writer under pipefail even
+          # when signing succeeded. Match the captured string directly.
+          if [[ "$VERIFY" != *"jar verified."* ]]; then
+            echo "::error::Disposable-key bundle signature verification failed"
+            exit 1
+          fi
           # Never upload the test bundle or the disposable keystore.
           echo "Ephemeral CI signing path passed (not a distributable Play bundle)."
 

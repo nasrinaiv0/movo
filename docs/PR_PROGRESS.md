@@ -1,3 +1,7 @@
+## 2026-11-10 — Fix false negative after successful CI test signing
+
+The disposable CI-only signing test reached `app:signReleaseBundle` and Gradle reported `BUILD SUCCESSFUL`, but the subsequent `printf | grep -q` verification was vulnerable to SIGPIPE under `pipefail`. Replaced the pipeline with a captured-string assertion that still fails closed on unsigned bundles. The workflow must pass anew on its exact head before merging. Source: `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
 ## 2026-11-10 — Require explicit monotonic Google Play Android versionCode
 
 The protected main-only signed AAB workflow now asks for an owner-selected Android `version_code` and rejects invalid/out-of-range values. Android Gradle reads this value only when set; normal CI remains at versionCode 1. On each subsequent Google Play upload, the owner must choose a code greater than all prior uploaded bundles; only Play Console can confirm this. The ephemeral-key PR signature test remains non-publishable. Implementation and release limitations: `docs/engineering/updates/2026-11-10-google-play-release.md`.
