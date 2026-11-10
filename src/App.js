@@ -866,9 +866,13 @@ function App() {
       const nextUserId = nextSession?.user?.id || null;
       // Supabase can emit SIGNED_IN repeatedly (including on tab focus). Refresh
       // finance records only when the authenticated identity actually changes.
-      if (cloudAuthUserRef.current === nextUserId) return;
+      if (cloudAuthUserRef.current === nextUserId) {
+        if (!nextUserId) setAuthReady(true);
+        return;
+      }
       cloudAuthUserRef.current = nextUserId;
       if(nextUserId){
+        setView(current => current === 'Sign in' ? 'Home' : current);
         setAuthReady(false);setCloudMode(false);setOfflineOwnerId(null);
         setCloudAccounts([]);setLocalAccounts([]);setRawTxs([]);
         setCloudPostings([]);setCloudActivities([]);
@@ -884,7 +888,10 @@ function App() {
         // before the full server reconciliation. Never grant cloud privileges
         // from the device cache (cloudMode remains false until verification).
         const cache = loadOfflineWorkspace(nextSession.user.id);
-        if (cache && !loadOwnedLocal(nextSession.user.id)) setLocalPersistenceWarning(true);
+        if (cache && (cache.lastConfirmedAt || cache.dirty)) {
+          if (loadOwnedLocal(nextSession.user.id)) setAuthReady(true);
+          else setLocalPersistenceWarning(true);
+        }
         refreshCloud(nextSession.user);
       } else if (nextSession?.user) {
         // Local mode for a signed-in owner: that owner's own device workspace (#246), never guest records.
@@ -901,18 +908,10 @@ function App() {
         setRawTxs(!pending?.ownerId&&pending?.transactions ? pending.transactions:loadLocalTransactions());
         setLocalAccounts(!pending?.ownerId&&pending?.accounts ? pending.accounts:loadLocalAccounts());
         pendingLocalDataRef.current=null;
+        setAuthReady(true);
       }
     };
-    getCurrentSession().then(async (s) => {
-      await applySession(s);
-      // Cold-start without a confirmed local cache must not expose empty
-      // financial totals as if they were fully loaded.
-      const id=s?.user?.id;
-      const cache=id?loadOfflineWorkspace(id):null;
-      const canHydrate=Boolean(cache && (cache.lastConfirmedAt || cache.dirty));
-      if(mounted && (!id || prefsRef.current.cloudSyncEnabled===false || canHydrate))
-        setAuthReady(true);
-    }).catch(() => { if (mounted) setAuthReady(true); });
+    getCurrentSession().then(applySession).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       // No Supabase query or other awaited operation inside this callback.
       window.setTimeout(()=>applySession(nextSession).catch(()=>{if(mounted)setAuthReady(true);}),0);
@@ -2464,7 +2463,7 @@ function App() {
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
       case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode || deviceCopyAccess} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
-      case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={u => { setSession({ user: u }); go('Home'); refreshCloud(u); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
+      case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={() => { go('Home'); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
   })();
