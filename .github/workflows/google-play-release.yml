@@ -5,7 +5,7 @@ on:
     inputs:
       version_code:
         description: "Android Play versionCode (1–2100000000, greater than latest uploaded)"
-        type: number
+        type: string
         required: true
   pull_request:
     branches: [main]
