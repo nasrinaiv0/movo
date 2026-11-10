@@ -1,3 +1,7 @@
+## 2026-11-10 — Google-only provider checkout readiness isolation (draft PR #267)
+
+Addressed Google Play native checkout readiness incorrectly requiring Apple IAP signing credentials. Added strict Google/Apple-specific checks, fail-closed handling of unknown platforms, backwards-compatible legacy all-provider gate, and native purchase regression coverage. Vercel Sandbox based on main f2311f2 passed targeted billing tests (2 suites / 7 tests) and full CI-style production build. No production key, billing activation, or database writes. Exact-PR-head GitHub CI and preview must pass before merge. Release remains blocked on signed AAB, Google Play license/device tests, hybrid sync and console compliance. Engineering notes: docs/engineering/updates/2026-11-10-google-only-billing-gate.md.
+
 ## 2026-11-09 — Integration hardening for #258 and #259
 
 Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
