@@ -1,3 +1,7 @@
+## 2026-11-10 — PR #270: Correct GitHub manual Play versionCode input serialization
+
+GitHub Actions manual runs #4 and #5 failed before signing: the workflow_dispatch number input formatted integer versionCode 1 as `1.0`, which the strict integer validator correctly rejected. Change the workflow input to string to preserve owner-entered integer text without relaxing validation. Keep the signed AAB build restricted to reviewed main and the protected google-play-release environment. The four signing repository secrets are set but the real signed AAB, physical Android-device tests, hybrid financial sync acceptance, and Google Play production authorization are not yet verified. See `docs/engineering/updates/2026-11-10-play-version-code-dispatch.md`.
+
 ## 2026-11-10 — Owner audit foreign keys blocking user account deletion
 
 Stage ON DELETE SET NULL and strictly verified internal-FK-only audit anonymization for four owner tables. Prevents the immutable audit trigger from obstructing account erasure while preserving append-only event history. Adds synthetic full deletion/forgery regression to isolated PostgreSQL finance CI. No production migrations or customer data changes. See docs/engineering/updates/2026-11-10-owner-account-deletion-fks.md.
