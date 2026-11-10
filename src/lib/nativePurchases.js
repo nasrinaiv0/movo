@@ -104,14 +104,16 @@ export async function getStoreEntitlements(session) {
 
 export async function purchaseStoreProduct(productIdentifier, session) {
   if (!isNativeApp()) throw new Error('Please use the MOVO iOS or Android app to subscribe.');
-  const readiness = await fetch(apiUrl('/api/purchases/config'), { cache: 'no-store' });
+  const platform = Capacitor.getPlatform();
+  if (platform !== 'ios' && platform !== 'android') throw new Error('Official native app required for checkout.');
+  const provider = platform === 'android' ? 'google' : 'apple';
+  const readiness = await fetch(apiUrl('/api/purchases/config?platform=' + provider), { cache: 'no-store' });
   const configuration = await readiness.json().catch(() => ({}));
   if (!readiness.ok || configuration.enabled !== true) throw new Error('Subscriptions are not available yet. Please try again later.');
   await ensureConfigured();
   const active = await sessionDetails(session);
   const product = STORE_PRODUCTS.find((item) => item.productIdentifier === productIdentifier);
   if (!product) throw new Error('This subscription is not configured.');
-  const platform = Capacitor.getPlatform();
   const transaction = await NativePurchases.purchaseProduct({
     productIdentifier,
     productType: PURCHASE_TYPE.SUBS,

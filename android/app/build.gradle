@@ -7,7 +7,15 @@ android {
         applicationId "com.nasrinai.movo"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        // Play Console rejects duplicate or lower versionCode uploads.
+        // The protected release workflow requires an explicit monotonically
+        // increasing code; local unsigned builds retain the baseline 1.
+        def requestedVersionCode = System.getenv("MOVO_ANDROID_VERSION_CODE")
+        def releaseVersionCode = requestedVersionCode ? Integer.parseInt(requestedVersionCode) : 1
+        if (releaseVersionCode < 1 || releaseVersionCode > 2100000000) {
+            throw new GradleException("MOVO_ANDROID_VERSION_CODE is outside Google Play limits")
+        }
+        versionCode releaseVersionCode
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
@@ -16,8 +24,29 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Release signing is only configured on protected CI runners with all four
+    // credentials present. Never embed keystore bytes or passwords in source.
+    def signingPath = System.getenv("ANDROID_KEYSTORE_PATH")
+    def signingAlias = System.getenv("ANDROID_KEY_ALIAS")
+    def storePasswordValue = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    def keyPasswordValue = System.getenv("ANDROID_KEY_PASSWORD")
+    signingConfigs {
+        if (signingPath && signingAlias && storePasswordValue && keyPasswordValue) {
+            release {
+                storeFile file(signingPath)
+                storePassword storePasswordValue
+                keyAlias signingAlias
+                keyPassword keyPasswordValue
+            }
+        }
+    }
     buildTypes {
         release {
+            // An unsigned release can still compile in ordinary CI; the signed
+            // Play bundle workflow separately requires the signing secrets.
+            if (signingConfigs.findByName('release') != null) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

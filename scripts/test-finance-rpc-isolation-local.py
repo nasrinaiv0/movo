@@ -106,6 +106,10 @@ def main():
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
             "Hybrid sync idempotency, CAS, precision, tenant isolation and entitlement")
+        sql((ROOT / "supabase/tests/release_fk_covering_indexes.test.sql").read_text(),
+            "five audited foreign-key covering index assertions")
+        sql((ROOT / "supabase/tests/owner_account_deletion_fks.test.sql").read_text(),
+            "owner audit immutability and account deletion without FK obstruction")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_"):

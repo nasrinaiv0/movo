@@ -97,6 +97,27 @@ export async function commitLocalFinanceChange({
       // Exact retries are idempotent and must not repeat a balance mutation.
       return await done.then(() => existing);
     }
+    // The UI's preflight check is advisory: another tab may enqueue between
+    // that check and this transaction. Fence competing authenticated edits
+    // inside IndexedDB's owner-wide readwrite transaction instead.
+    if (origin === 'online') {
+      const active = await request(operations.index('owner').getAll(IDBKeyRange.only(ownerId)));
+      if (active.some(item => item.recordId === record.id && item.group === group &&
+        item.id !== op.id && ['pending', 'in_flight', 'conflict'].includes(item.status) &&
+        // Legacy same-record operation chains may exist. CAS-bearing edits
+        // must never race an earlier operation with a different request ID.
+        (expectedUpdatedAt != null || item.kind === kind))) {
+        throw new Error('Concurrent edit: sync the pending record change before editing it again.');
+      }
+      const current = await request(records.get(key(ownerId, group, record.id)));
+      if (kind === 'create' && current) {
+        throw new Error('Concurrent edit: record already exists locally.');
+      }
+      if (kind !== 'create' && expectedUpdatedAt != null &&
+        current?.record?.updated_at !== expectedUpdatedAt) {
+        throw new Error('Concurrent edit: local record revision changed.');
+      }
+    }
     // Serialize mutations for one owner with a durable sequence allocated in
     // the SAME transaction. UUID index order does not represent posting order.
     const meta = await request(metadata.get(ownerId));

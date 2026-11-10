@@ -1,12 +1,26 @@
-## 2026-11-09 — Draft PR #261: hybrid local-first sync, OTP auto-continue and startup performance
+## 2026-11-10 — Owner audit foreign keys blocking user account deletion
 
-**Scope:** owner-scoped local-first financial synchronization, durable IndexedDB outbox foundation, a manually approved offline reconciliation path, animated reconnection notification, automatic six-digit email OTP submission, owner-specific startup cache hydration, and single-pass wallet balance computation. The draft also contains accounting-equivalence, owner isolation, online/offline consent, retry, and OTP regression tests. Engineering handover: `docs/engineering/updates/2026-11-09-hybrid-sync-otp-and-performance.md`.
+Stage ON DELETE SET NULL and strictly verified internal-FK-only audit anonymization for four owner tables. Prevents the immutable audit trigger from obstructing account erasure while preserving append-only event history. Adds synthetic full deletion/forgery regression to isolated PostgreSQL finance CI. No production migrations or customer data changes. See docs/engineering/updates/2026-11-10-owner-account-deletion-fks.md.
 
-**Sandbox validation:** Vercel Sandbox isolated checkout, TypeScript passed, 179 test suites / 1,082 tests passed, optimized CRA build passed. A separate reconnect/consent test ensures the held offline workspace is not automatically uploaded on network restoration.
+## 2026-11-10 — Non-destructive release database performance indexes (staged)
 
-**Production release blocked:** The IndexedDB journal and headless coordinator are not yet the authoritative write path for every account/transaction, and the server lacks a verified idempotent `(user_id, operation_id)` mutation endpoint. Loans, receivables, subscription-linked reversals, crash/restart interleaving and real-device/performance acceptance remain unverified. Preserve existing secure CAS and owner checks; do not merge or deploy until full integration, CI and real-device checks pass. No production database/billing/environment changes were made.
+Addressed five Supabase advisor findings with idempotent FK indexes and local PostgreSQL assertions wired into the financial tenant-isolation CI. No customer database changes, RLS weakening, or billing enablement. Independent CI and Vercel Sandbox verification are required before merge; production migration awaits explicit release verification. See docs/engineering/updates/2026-11-10-release-db-fk-indexes.md.
 
----
+## 2026-11-10 — Fix false negative after successful CI test signing
+
+The disposable CI-only signing test reached `app:signReleaseBundle` and Gradle reported `BUILD SUCCESSFUL`, but the subsequent `printf | grep -q` verification was vulnerable to SIGPIPE under `pipefail`. Replaced the pipeline with a captured-string assertion that still fails closed on unsigned bundles. The workflow must pass anew on its exact head before merging. Source: `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Require explicit monotonic Google Play Android versionCode
+
+The protected main-only signed AAB workflow now asks for an owner-selected Android `version_code` and rejects invalid/out-of-range values. Android Gradle reads this value only when set; normal CI remains at versionCode 1. On each subsequent Google Play upload, the owner must choose a code greater than all prior uploaded bundles; only Play Console can confirm this. The ephemeral-key PR signature test remains non-publishable. Implementation and release limitations: `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Reconcile Google Play signing PR #264 and add disposable signed-path CI
+
+Rebased the Google Play-only signing workflow over the reviewed Google-only provider readiness fix. Production bundle creation stays manual, main-only and protected by the GitHub `google-play-release` environment. Added an isolated, PR-triggered CI job using a disposable test key to exercise the Android release signing path and `jarsigner` without publishing any artifact or using production secrets. Existing unsigned native CI remains. This is not a signed Play AAB or launch authorization. See `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Google-only provider checkout readiness isolation (draft PR #267)
+
+Addressed Google Play native checkout readiness incorrectly requiring Apple IAP signing credentials. Added strict Google/Apple-specific checks, fail-closed handling of unknown platforms, backwards-compatible legacy all-provider gate, and native purchase regression coverage. Vercel Sandbox based on main f2311f2 passed targeted billing tests (2 suites / 7 tests) and full CI-style production build. No production key, billing activation, or database writes. Exact-PR-head GitHub CI and preview must pass before merge. Release remains blocked on signed AAB, Google Play license/device tests, hybrid sync and console compliance. Engineering notes: docs/engineering/updates/2026-11-10-google-only-billing-gate.md.
 
 ## 2026-11-09 — Integration hardening for #258 and #259
 
@@ -649,18 +663,17 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - iOS CI now exercises a separately unit-tested launch script: deterministic iPhone choice, bounded 600 s cold boot, 180 s install/launch, exactly one retry **only** for launch timeouts after cold boot, and mandatory deep-link plus screenshot success. Nonzero launch errors and repeat timeouts remain hard failures.
 - Local/Vercel Sandbox Python unit tests are NOT evidence of native simulator success. Await exact-head GitHub macOS runner smoke and full regression gate before merging. See `docs/engineering/updates/2026-11-09-pr255-ios-simulator-launch.md`.
 
-## 2026-11-09 — PR #261 post-audit outbox fixes
-
-- **Staged fixes only; draft / no release:** durable owner-scoped ordering, expiry/reclaim of interrupted claims, stale-worker claim-generation fencing, persisted offline consent, and exact retry revision checks.
-- Regression tests added for reverse-UUID create/delete, offline predecessor blocking, cross-tab leases, lost-ack retry, owner isolation, and conflicting operation metadata.
-- Security and accounting details: docs/audits/2026-11-09-pr261-outbox-audit-fixes.md.
-- Production blockers unchanged: authenticated server idempotency/CAS/RLS, outbox integration and reversible legacy workspace migration, device/security/performance validation.
 ## 2026-11-09 — Mobile subscription integrity
 
 Implemented production-only Apple/Google verification, pinned Apple trust root, strict OIDC/schema validation, fenced atomic state transitions, revocation tombstones, event deduplication, predecessor cleanup and encrypted server-acknowledgment retries. Includes a source-level hostile audit, deployable SQL, setup changes and regression tests. Vercel Sandbox: integrated build/typecheck and 170 suites/1,036 tests passed; final focused 33 tests passed; PostgreSQL behavioral and separate-connection concurrency tests passed; mobile browser render smoke passed. Migration and three new server settings are required before deployment; no production migration performed. See `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
 
 - PR #260 integration with PR #258: 173 suites / 1,063 tests, typecheck and build passed in Vercel Sandbox. Atomic referral awards/refund reversals and points-to-Pro plan access passed PostgreSQL regressions. The GitHub source tree matches the tested Sandbox tree. No production changes.
 
-## 2026-11-10 — PR 261 live account/transaction integration
 
-Added authenticated atomic operation application, durable acknowledgements, CAS and owner isolation; integrated account/transaction writers with IndexedDB intents, recovery, batch imports and persisted reconnect consent. Added linked loan-reversal SQL tests and real-browser crash/cross-tab/10k/100k checks. The full sandbox Jest suite passed (191 suites / 1,170 tests); the final missing-cache safeguard adds a targeted regression. See `docs/engineering/updates/2026-11-10-hybrid-live-writes.md` for evidence and outstanding single-authority migration, remaining obligation writers and device validation gates. No production database changes; not release approval.
+## 2026-11-10 — Google Play Android OAuth release audit (PR #266)
+- Registered restricted browser-resolvable Android `movo://auth-callback` and `movo://log` native intent filters to match existing Supabase PKCE and log handlers; no extra permissions or broad catch-all schemes.
+- Added Android manifest deep-link and backup regression tests.
+- Aligned historical store setup documentation with live Pro/Pro+ four-product catalogue, without changing checkout or subscriptions.
+- Vercel Sandbox on unchanged production base SHA plus these files: 185 Jest suites / 1,123 tests passed, typecheck/optimized build passed; XML parser passed; production dependency advisory count zero. Browser smoke at phone and desktop widths: HTTP 200, no JS exceptions or horizontal overflow. This does not certify native Android device behavior.
+- Full evidence and pending *NO-GO* gates: `docs/audits/2026-11-10-google-play-release-audit.md` and `docs/engineering/updates/2026-11-10-google-play-native-oauth-release-audit.md`.
+- PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.

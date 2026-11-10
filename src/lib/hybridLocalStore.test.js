@@ -4,7 +4,7 @@ if (typeof global.structuredClone !== 'function') global.structuredClone = value
 import {
   commitLocalFinanceChange, listLocalFinanceRecords, listOwnerSyncOperations,
   claimHybridSyncBatch, finalizeHybridSyncOperation, requeueHybridSyncOperation,
-  countHeldOfflineOperations, clearHybridOwner,
+  countHeldOfflineOperations, clearHybridOwner, migrateHybridWorkspace,
 } from './hybridLocalStore';
 
 const owner = '1d1a5d3f-5ce7-4d8b-b28e-52fa8bb27db4';
@@ -203,7 +203,37 @@ test('online transaction cannot bypass a held offline account creation', async (
 test('same operation identity cannot change the server CAS revision', async () => {
  const input={ownerId:owner,group:'transactions',kind:'update',record:row(b),origin:'online',operationId:o1,
   createdAt:'2026-11-09T02:00:00Z',expectedUpdatedAt:'2026-11-09T01:00:00Z'};
+ const seeded={financial_accounts:[],transactions:[{...row(b),updated_at:input.expectedUpdatedAt}]};
+ await migrateHybridWorkspace(owner,{ownerId:owner,owner,baseline:seeded,working:seeded});
  await commitLocalFinanceChange(input);
  await expect(commitLocalFinanceChange({...input,expectedUpdatedAt:'2026-11-09T01:01:00Z'})).rejects.toThrow('collision');
  expect((await listOwnerSyncOperations(owner))[0].expectedUpdatedAt).toBe(input.expectedUpdatedAt);
+});
+
+test('two tabs cannot enqueue colliding online creates for one record', async () => {
+  const x = 'b1111111-1111-4111-8111-111111111111';
+  const y = 'c1111111-1111-4111-8111-111111111111';
+  const settled = await Promise.allSettled([
+    commitLocalFinanceChange({ownerId:owner,group:'transactions',kind:'create',record:row(a),origin:'online',operationId:x}),
+    commitLocalFinanceChange({ownerId:owner,group:'transactions',kind:'create',record:row(a),origin:'online',operationId:y}),
+  ]);
+  expect(settled.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+  expect(settled.filter(result => result.status === 'rejected')).toHaveLength(1);
+  expect((await listOwnerSyncOperations(owner)).filter(op => op.recordId === a)).toHaveLength(1);
+});
+
+test('online optimistic edits reject a stale local revision across tabs', async () => {
+  const first = 'e1111111-1111-4111-8111-111111111111';
+  const second = 'f1111111-1111-4111-8111-111111111111';
+  const stamp = '2026-11-09T02:00:00.000Z';
+  const seeded={financial_accounts:[],transactions:[{...row(a),updated_at:stamp}]};
+  await migrateHybridWorkspace(owner,{ownerId:owner,owner,baseline:seeded,working:seeded});
+  const edit = operationId => commitLocalFinanceChange({
+    ownerId:owner,group:'transactions',kind:'update',
+    record:{...row(a),updated_at:stamp,amount:12.34},origin:'online',
+    operationId,expectedUpdatedAt:stamp,
+  });
+  const results=await Promise.allSettled([edit(first),edit(second)]);
+  expect(results.filter(item=>item.status==='fulfilled')).toHaveLength(1);
+  expect(results.filter(item=>item.status==='rejected')).toHaveLength(1);
 });
