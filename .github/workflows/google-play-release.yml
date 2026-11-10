@@ -1,0 +1,94 @@
+name: MOVO Google Play signed AAB (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: movo-google-play-bundle-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  signed-play-bundle:
+    # Manual only, and only from reviewed main. Protect the google-play-release
+    # GitHub environment with reviewers before adding signing credentials.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: google-play-release
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Java 21
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npx --yes npm@11.19.1 ci
+      - name: Build and test MOVO web assets
+        run: CI=true npm run build
+      - name: Synchronize Android native assets
+        run: npx cap sync android
+      - name: Verify signing configuration and materialize upload keystore
+        shell: bash
+        env:
+          PLAY_KEYSTORE_BASE64: ${{ secrets.PLAY_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for variable in PLAY_KEYSTORE_BASE64 ANDROID_KEY_ALIAS ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!variable:-}" ]]; then
+              echo "::error::Missing required Google Play signing secret: $variable"
+              exit 1
+            fi
+          done
+          umask 077
+          mkdir -p "$RUNNER_TEMP/movo-signing"
+          printf '%s' "$PLAY_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/movo-signing/upload.jks"
+          test -s "$RUNNER_TEMP/movo-signing/upload.jks"
+          printf 'ANDROID_KEYSTORE_PATH=%s\n' "$RUNNER_TEMP/movo-signing/upload.jks" >> "$GITHUB_ENV"
+          # Passwords stay in step-secret environment bindings below, not GITHUB_ENV.
+      - name: Install Android API 36 SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+      - name: Build signed Google Play Android bundle
+        working-directory: android
+        shell: bash
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.PLAY_UPLOAD_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.PLAY_UPLOAD_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.PLAY_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          bash gradlew :app:bundleRelease --no-daemon
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          test -s "$AAB" || { echo "::error::Signed release bundle not found"; exit 1; }
+          jarsigner -verify -certs "$AAB" >/dev/null || { echo "::error::AAB signature check failed"; exit 1; }
+          echo "Signed release bundle verified."
+      - name: Upload signed bundle for manual Play Console upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: movo-google-play-aab-${{ github.run_number }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
+      - name: Delete temporary signing file
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/movo-signing/upload.jks"

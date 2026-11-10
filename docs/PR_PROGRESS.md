@@ -1,3 +1,7 @@
+## 2026-11-10 — Google Play-only Android release pipeline (review pending)
+
+Added manual main-only signed AAB workflow with protected GitHub Environment, ephemeral keystore, mandatory signing secret checks, signed-bundle verification and 7-day artifact retention. Optional Android Gradle signing leaves ordinary unsigned CI intact. No production store publishing, database changes, or paid billing activation. Review and evidence checklist: `docs/engineering/updates/2026-11-10-google-play-release.md`. Release remains blocked on credentials, native device tests, sync, billing, RLS and Play compliance. CI and Vercel Sandbox verification remain pending.
+
 ## 2026-11-09 — Integration hardening for #258 and #259
 
 Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
