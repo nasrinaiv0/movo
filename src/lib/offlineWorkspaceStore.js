@@ -31,6 +31,8 @@ export function saveOfflineWorkspace(ownerId, snapshot){
    ||!allOwned(snapshot.baseline,ownerId)||!allOwned(snapshot.working,ownerId))return false;
  const value={version:2,owner:ownerId,baseline:copy(snapshot.baseline),
   working:copy(snapshot.working), dirty:snapshot.dirty===true,
+  // Set once this device lost the cloud; changes made since then upload only after "Sync local to cloud".
+  held:snapshot.held===true,
   lastConfirmedAt:String(snapshot.lastConfirmedAt||''),pendingDeletions:snapshot.pendingDeletions||{},
   deletedRows:snapshot.deletedRows||{},
   syncError:snapshot.syncError?String(snapshot.syncError).slice(0,220):''};
@@ -80,4 +82,14 @@ export function restoreOfflineRows(ownerId, group, rows){
 export function clearOfflineWorkspace(ownerId){
  const k=key(ownerId);if(!k)return false;
  try {storage()?.removeItem(k);return !storage()?.getItem(k);}catch{return false;}
+}
+/**
+ * Mark that this device lost the cloud. Changes made from now on are offline changes: they upload only after the
+ * person taps "Sync local to cloud" (a reconnect alone never uploads them). Never changes any record.
+ */
+export function holdOfflineChanges(ownerId){
+ const previous=loadOfflineWorkspace(ownerId);
+ if(!previous)return false;
+ if(previous.held===true)return true;
+ return saveOfflineWorkspace(ownerId,{...previous,held:true});
 }

@@ -1,4 +1,4 @@
-import {loadOfflineWorkspace,saveOfflineWorkspace,updateOfflineWorking,clearOfflineWorkspace,recordOfflineDeletions,restoreOfflineRows} from './offlineWorkspaceStore';
+import {loadOfflineWorkspace,saveOfflineWorkspace,updateOfflineWorking,clearOfflineWorkspace,recordOfflineDeletions,restoreOfflineRows,holdOfflineChanges} from './offlineWorkspaceStore';
 const OWNER='123e4567-e89b-42d3-a456-426614174000',OTHER='123e4567-e89b-42d3-a456-426614174001';
 const base={financial_accounts:[{id:'a',name:'Bank',user_id:OWNER}],transactions:[{id:'t',account_id:'a',amount:4.25,user_id:OWNER}]};
 beforeEach(()=>localStorage.clear());
@@ -76,4 +76,21 @@ test('a row missing from a stale device copy is tombstoned with the copy the app
  expect(loadOfflineWorkspace(OWNER).deletedRows.transactions['online-only']).toEqual(shown);
  expect(recordOfflineDeletions(OWNER,[{group:'transactions',id:'x',row:{id:'x',user_id:OTHER}}])).toBe(true);
  expect(loadOfflineWorkspace(OWNER).pendingDeletions.transactions).toEqual(['online-only']);
+});
+test('holding offline changes survives every later write and changes no record',()=>{
+ expect(holdOfflineChanges(OWNER)).toBe(false); // no workspace yet: nothing is created
+ saveOfflineWorkspace(OWNER,{baseline:base,working:base,dirty:false});
+ const before=loadOfflineWorkspace(OWNER);
+ expect(before.held).toBe(false);
+ expect(holdOfflineChanges(OWNER)).toBe(true);
+ const held=loadOfflineWorkspace(OWNER);
+ expect(held.held).toBe(true);
+ expect({...held,held:false}).toEqual(before);
+ // Later edits, deletions and restores keep the hold until a sync saves a fresh copy.
+ expect(updateOfflineWorking(OWNER,{...base,transactions:[]})).toBe(true);
+ expect(recordOfflineDeletions(OWNER,[{group:'financial_accounts',id:'a'}])).toBe(true);
+ expect(restoreOfflineRows(OWNER,'financial_accounts',[base.financial_accounts[0]])).toBe(true);
+ expect(loadOfflineWorkspace(OWNER).held).toBe(true);
+ expect(saveOfflineWorkspace(OWNER,{baseline:base,working:base,dirty:false})).toBe(true);
+ expect(loadOfflineWorkspace(OWNER).held).toBe(false);
 });

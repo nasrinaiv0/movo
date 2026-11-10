@@ -102,10 +102,18 @@ test('an edit the cloud already accepted (lost acknowledgment) is reconciled, no
   expect(result.ok).toBe(true);
   expect(result.upload).toHaveLength(0);
 });
-test('missing cloud row is not recreated from a stale cache',()=>{
-  const result=plan(scope([a]),scope([a]),scope([]));
+test('a row deleted in the cloud and untouched on this device is a download, never recreated from the cache',()=>{
+  const result=plan(scope([a],[t]),scope([a],[t,{...t,id:'local'}]),scope([a],[]));
+  expect(result.ok).toBe(true);
+  expect(result.upload.map(x=>x.id)).toEqual(['local']);
+  expect(result.download).toEqual([expect.objectContaining({group:'transactions',id:'t',change:'delete',expected:t})]);
+});
+test('a row deleted in the cloud but edited on this device is a conflict, not dropped or recreated',()=>{
+  const result=plan(scope([a]),scope([{...a,name:'Edited here'}]),scope([]));
   expect(result.ok).toBe(false);
-  expect(result.conflicts[0].reason).toBe('remote_row_missing_without_tombstone');
+  expect(result.upload).toHaveLength(0);
+  expect(result.download).toHaveLength(0);
+  expect(result.conflicts[0]).toEqual(expect.objectContaining({reason:'remote_row_missing_without_tombstone',id:'a'}));
 });
 test('new equal row IDs on both sides not considered duplicate uploads',()=>{
   const result=plan(scope(),scope([a]),scope([a]));

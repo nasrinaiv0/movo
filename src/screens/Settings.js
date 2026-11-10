@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 import { t as tr } from '../lib/i18n';
+import { syncStatusDetail, syncStatusLabel } from '../components/SyncStatus';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
@@ -262,9 +263,12 @@ export default function Settings({ c }) {
         toggle: 'showBalanceAfterTransaction' },
     ] },
     { title: tr('Data & Sync'), rows: [
-      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.deviceCopyAccess ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
+      { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.deviceCopyAccess ? ((c.syncStatus && c.syncStatus.kind !== 'local' ? syncStatusDetail(c.syncStatus, c.syncState) : c.syncState?.message) || tr('Changes are kept on this device until safely reconciled.')) : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
-      { icon: 'refresh', title: tr('Offline & online sync'), sub: c.syncState?.message || tr('Changes are kept on this device until safely reconciled.'), onClick: c.session?.user ? () => c.retrySync?.() : undefined },
+      { icon: 'refresh', title: tr('Offline & online sync'),
+        // With Cloud Sync on, the live status; the row opens the sync sheet (details, conflicts, Sync local to cloud).
+        sub: c.syncStatus && c.syncStatus.kind !== 'local' ? `${syncStatusLabel(c.syncStatus.kind)} · ${syncStatusDetail(c.syncStatus, c.syncState)}` : c.syncState?.message || tr('Changes are kept on this device until safely reconciled.'),
+        onClick: c.session?.user ? () => (c.syncStatus && c.syncStatus.kind !== 'local' && c.openSync ? c.openSync() : c.retrySync?.()) : undefined },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },
     ] },
     { title: tr('Automatic Logging'), rows: [

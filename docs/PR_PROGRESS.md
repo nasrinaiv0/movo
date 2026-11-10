@@ -4,6 +4,10 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 # MOVO Pull Request Progress Register
 
+## 2026-11-10 — Offline/online sync, section 5 (in progress; not ready to merge)
+
+Takes over section 5 from draft #261 on `claude/movo-ui-motion-refinement-vafrxa`. Changes made while the cloud is unreachable are held on the device; after reconnecting MOVO shows "Your internet connection has been restored." with **Sync local to cloud**, and held changes upload only after that tap. Records changed both on the device and in the account are shown side by side to keep one or the other, per record, never by clock. Automatic attempts back off 5s → 5min with jitter; one status (offline, ready to sync, syncing, synced, needs review, paused) shows on every page. No schema, RLS or API change. Local checks so far, remaining gates and limits (only accounts and transactions sync offline; WebKit and native builds not run): `docs/engineering/updates/2026-11-10-offline-online-sync.md`.
+
 ## 2026-11-09 — Home balance arrow back at the bottom right (fix for a #263 regression)
 
 The round arrow on the Home Total Balance box (opens Wallet) had dropped to the bottom left, over the "vs last month" chip: the 44px tap-area rule from #263 made it `position: relative`, overriding the box's own absolute position. It is back at the bottom right (bottom left in right-to-left languages, where the chip starts from the right) with a centred 44px tap area. While checking every width, text size and direction: the month pill no longer covers the "Total Balance" label or blocks the show/hide eye button at larger text sizes and in Arabic (the label stops short of the pill and text sizes above the default use the short month). CSS, one class and one CSS variable only; no data, sync, auth or API change. Details, checks and limits: `docs/engineering/updates/2026-11-09-home-balance-arrow.md`.

@@ -10,6 +10,7 @@ import PlanBadge from '../components/PlanBadge';
 import ReferralSheet from '../components/ReferralSheet';
 import { totalBalance } from '../lib/totalBalance';
 import { useConfirm } from '../components/ConfirmDialog';
+import { syncStatusDetail, syncStatusLabel } from '../components/SyncStatus';
 
 
 export default function Profile({ c }) {
@@ -78,9 +79,14 @@ export default function Profile({ c }) {
 
     <SectionTitle>{tr('Data & Sync')}</SectionTitle>
     <section className="card menu-card">
-      <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
-        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
-      </button>
+      {session?.user && c.syncStatus && c.syncStatus.kind !== 'local'
+        // Cloud Sync is on: the same live status as the sync bar (synced, syncing, offline, ready, review, paused).
+        ? <button type="button" className="menu-row" onClick={() => c.openSync?.()}>
+          <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{syncStatusDetail(c.syncStatus, c.syncState)}</small></span><span className={`pill tone-${c.syncStatus.kind === 'synced' ? 'green' : c.syncStatus.kind === 'error' ? 'red' : c.syncStatus.kind === 'review' ? 'amber' : 'blue'}`}>{syncStatusLabel(c.syncStatus.kind)}</span><Icon name="chevron" size={16} />
+        </button>
+        : <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
+          <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
+        </button>}
       <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Manually entered records persist across reloads in this browser; they are not synced to other devices or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
       <div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Auto Categorization')}</strong><small>{tr('Automatic categorization is not implemented yet.')}</small></span><span className="pill tone-gray">{tr('Unavailable')}</span></div>
     </section>
@@ -125,7 +131,7 @@ export function EditProfile({ c }) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!/^image\\//i.test(file.type || '') || file.size > 8 * 1024 * 1024) { setPhotoError(tr('Choose an image under 8 MB.')); return; }
+    if (!/^image\//i.test(file.type || '') || file.size > 8 * 1024 * 1024) { setPhotoError(tr('Choose an image under 8 MB.')); return; }
     const reader = new FileReader();
     reader.onerror = () => setPhotoError(tr('This image could not be read.'));
     reader.onload = () => {

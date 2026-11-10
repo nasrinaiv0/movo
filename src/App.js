@@ -80,9 +80,13 @@ import { monthOverMonth } from './lib/trend';
 import { totalBalance, balanceAsOf } from './lib/totalBalance';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
-import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace, recordOfflineDeletions, restoreOfflineRows } from './lib/offlineWorkspaceStore';
+import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace, recordOfflineDeletions, restoreOfflineRows, holdOfflineChanges } from './lib/offlineWorkspaceStore';
 import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
 import { unsyncedChangeCount } from './lib/unsyncedChanges';
+import { conflictKey, resolveOfflineConflicts } from './lib/offlineConflicts';
+import { retryDelay } from './lib/syncBackoff';
+import { syncStatusOf } from './lib/syncStatus';
+import { SyncBar, SyncSheet } from './components/SyncStatus';
 import { ConfirmProvider, deleteRecord, useConfirmController } from './components/ConfirmDialog';
 import { lazyScreen, preloadScreens } from './lib/lazyScreen';
 import { newRecordId } from './lib/recordId';
@@ -302,6 +306,10 @@ function App() {
   const [syncState, setSyncState] = useState({status:'idle',message:'',uploaded:0,downloaded:0});
   const syncActiveRef = useRef(false);
   const lastSyncRetryRef = useRef(false); // the last failed sync only needs the connection back
+  const retryAttemptRef = useRef(0); // automatic attempts since the last success (exponential backoff)
+  // Records changed both on this device and elsewhere, from the last sync attempt; the person picks a version.
+  const [syncConflicts, setSyncConflicts] = useState([]);
+  const [syncNoticeHidden, setSyncNoticeHidden] = useState(false);
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -502,7 +510,13 @@ function App() {
       'Browser storage is unavailable or full. Export your records and retry.');
   }, [rawTxs,localAccounts,cloudMode,session?.user?.id,notify]);
 
-  const refreshCloud = useCallback(async (user) => {
+  /*
+   * Sync this account's device copy with the cloud. `approved` is true only when the person asked for it ("Sync
+   * local to cloud", "Try again", turning Cloud Sync on). Changes made while this device had no connection (`held`)
+   * are uploaded only then: a reconnect, a launch or a background retry just checks that the cloud answers and
+   * offers the sync.
+   */
+  const refreshCloud = useCallback(async (user, { approved = false } = {}) => {
     if (!user || !cloudSyncRequestedRef.current || syncActiveRef.current) return false;
     syncActiveRef.current=true;
     const ownerId=user.id;
@@ -514,10 +528,19 @@ function App() {
       // Verify before reading or copying a cloud-backed finance workspace.
       const verified=await withTimeout(refreshEntitlement(),CLOUD_READ_TIMEOUT_MS);
       // No answer at all means the server could not be reached: keep working on the device and retry later.
-      if(verified===null)throw Object.assign(Error('Cloud is unreachable. Changes are saved on this device and upload automatically when you are back online.'),{retryable:true});
+      if(verified===null)throw Object.assign(Error('Cloud is unreachable. Changes are saved on this device.'),{retryable:true,offline:true});
       if(!canUseFeature(verified,'cloudWrite'))
         throw Error('Cloud Sync requires verified active access. Local records remain on this device.');
       if(cloudAuthUserRef.current!==ownerId||!cloudSyncRequestedRef.current||loadEpoch!==cloudLoadEpochRef.current)return false;
+      const waiting=loadOfflineWorkspace(ownerId);
+      if(waiting?.dirty&&waiting.held&&!approved){
+        // The cloud answers again, but offline changes wait for the person's "Sync local to cloud". Keep showing
+        // this account's device copy; nothing is read into it or uploaded from it here.
+        if(!loadOwnedLocal(ownerId))setLocalPersistenceWarning(true);
+        retryAttemptRef.current=0;lastSyncRetryRef.current=false;
+        setSyncState({status:'waiting',reason:'reconnected',message:'Your internet connection has been restored. Changes made offline are ready to sync.',uploaded:0,downloaded:0});
+        return false;
+      }
       const today=new Date();
       const dateKey=d=>String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
       const until=new Date(today);until.setDate(until.getDate()+30);
@@ -559,9 +582,12 @@ function App() {
           shouldContinue:()=>cloudSyncRequestedRef.current && loadEpoch===cloudLoadEpochRef.current,
         });
         if(!result.ok){
-          const reasons=result.plan?.counts||{};
+          const conflicts=result.plan?.conflicts||[],invalid=result.plan?.issues?.length||0;
+          // Records changed both here and elsewhere: the person chooses which version to keep (never a clock).
+          if(conflicts.length&&!invalid)
+            throw Object.assign(Error('Some records changed both on this device and in your MOVO account. Choose which version to keep. Nothing was uploaded or discarded.'),{conflicts});
           throw Error('Offline and cloud data need review ('+
-            (reasons.conflicts||0)+' conflicts, '+(reasons.invalid||0)+' invalid groups). Nothing was discarded.');
+            conflicts.length+' conflicts, '+invalid+' invalid groups). Nothing was discarded.');
         }
         // User may have edited another tab while network calls ran.
         const latest=loadOfflineWorkspace(ownerId);
@@ -583,26 +609,37 @@ function App() {
       setCloudActivities(activities||[]);setCloudBills(bills||[]);
       setCloudBillOccurrences(billOccurrences||[]);setCloudBudgets(budgets||[]);
       setInbox(failed||[]);setCloudMode(true);setSyncState(status);
-      lastSyncRetryRef.current=false;
+      setSyncConflicts([]);
+      lastSyncRetryRef.current=false;retryAttemptRef.current=0;
+      if(approved&&status.uploaded>0)notify(tr('Synced with your MOVO account.'));
       return true;
     }catch(cause){
-      // A lost or slow connection is retried automatically; anything else (a conflict, a plan check) waits for review.
-      const retry=isNetworkFailure(cause)||cause?.retryable===true;
+      // A lost or slow connection is retried automatically (with backoff); anything else (a conflict, a plan check)
+      // waits for the person. Losing the connection holds every change made from now on for "Sync local to cloud".
+      const offline=isNetworkFailure(cause)||cause?.offline===true;
+      const retry=offline||cause?.retryable===true;
+      if(offline)holdOfflineChanges(ownerId);
+      if(retry)retryAttemptRef.current+=1;
       lastSyncRetryRef.current=retry;
-      const message=retry
-        ? 'No connection to the cloud. Changes are saved on this device and upload automatically when you are back online.'
+      const message=offline
+        ? 'No connection to the cloud. Changes are saved on this device; sync them when you are back online.'
         : cause?.message||'Cloud is unavailable. Device changes remain queued.';
       // A superseded attempt (signed out, Cloud Sync switched, or a newer save) leaves the current state alone.
       if(cloudAuthUserRef.current===ownerId&&cloudSyncRequestedRef.current&&loadEpoch===cloudLoadEpochRef.current){
-        setSyncState({status:'pending',retry,message,uploaded:0,downloaded:0});
-        if(!retry)setError(message);
+        if(Array.isArray(cause?.conflicts)){
+          setSyncConflicts(cause.conflicts);
+          setSyncState({status:'review',retry:false,message,uploaded:0,downloaded:0});
+        }else{
+          setSyncState({status:'pending',retry,offline,message,uploaded:0,downloaded:0});
+          if(!retry)setError(message);
+        }
         const restored=loadOwnedLocal(ownerId);
         if(!restored) setLocalPersistenceWarning(true);
         setCloudMode(false);
       }
       return false;
     }finally{syncActiveRef.current=false;setBusy(false);setAuthReady(true);}
-  },[loadOwnedLocal,refreshEntitlement]);
+  },[loadOwnedLocal,refreshEntitlement,notify]);
 
   const setCloudSyncEnabled=useCallback(async (enabled)=>{
     if(!enabled){
@@ -646,8 +683,9 @@ function App() {
     cloudSyncRequestedRef.current=true;++cloudLoadEpochRef.current;
     // Reconciliation determines if cloud can be enabled. A failed sync cannot
     // overwrite the dirty working set or falsely mark it as uploaded.
-    const ok=await refreshCloud(session.user);
-    // A lost connection keeps Cloud Sync on (it uploads on reconnect); a conflict or plan problem turns it off.
+    // Turning Cloud Sync on is the person's own request to sync, so changes waiting on this device go up too.
+    const ok=await refreshCloud(session.user,{approved:true});
+    // A lost connection keeps Cloud Sync on (it syncs when the connection is back); a conflict or plan problem turns it off.
     const keep=!!ok||lastSyncRetryRef.current;
     setPref('cloudSyncEnabled',keep);
     cloudSyncRequestedRef.current=keep;
@@ -656,8 +694,9 @@ function App() {
 
   /*
    * Offline-first hand-off. When the connection drops, or a cloud save cannot reach the server, a signed-in owner
-   * keeps working on this account's own device copy (never guest records, never another person's), and every change
-   * is uploaded automatically once the connection is back. Returns true when the device copy is active.
+   * keeps working on this account's own device copy (never guest records, never another person's). Changes made
+   * from then on are held on this device; once the connection is back MOVO says so and uploads them when the
+   * person taps "Sync local to cloud". Returns true when the device copy is active.
    * Browser network loss must not discard a confirmed owner-specific cloud copy or cancel a subscription.
    */
   const switchToDeviceCopy = useCallback(() => {
@@ -685,21 +724,53 @@ function App() {
       // Restoring a previously verified device copy preserves both the owner journal and newer cloud rows.
       return block('Signed-in account workspace is unavailable. No records were changed.');
     }
+    // Every change from now on is an offline change, kept for "Sync local to cloud".
+    if(!holdOfflineChanges(ownerId))return block('Offline switch stopped: device storage is full. Export your records before editing.');
     cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
-    setSyncState({status:'offline',retry:true,
+    retryAttemptRef.current=0;
+    setSyncState({status:'offline',retry:true,offline:true,
       message:choice==='restore_stale'
-        ? 'No internet. Showing the last copy synced to this device; changes upload automatically when you are back online.'
-        : 'No internet. Changes are saved on this device and upload automatically when you are back online.',
+        ? 'No internet. Showing the last copy synced to this device; changes are saved here until you sync.'
+        : 'No internet. Changes are saved on this device until you sync.',
       uploaded:0,downloaded:0});
     return true;
   },[cloudMode,cloudAccounts,rawTxs,session?.user?.id,offlineOwnerId,loadOwnedLocal,notify]);
+  // Automatic attempt (reconnect, launch, background retry): reconnects and uploads online changes, but changes made
+  // offline only wait for the person. `syncLocalToCloud` is the person's own "Sync local to cloud".
   const syncNow = useCallback(() => {
     if(prefsRef.current.cloudSyncEnabled===false||!session?.user||syncActiveRef.current)return;
     cloudSyncRequestedRef.current=true;
     refreshCloud(session.user).catch(()=>{});
   },[session?.user,refreshCloud]);
-  // Show this account's device copy everywhere (Home, Wallet, Transactions, Menu) and upload it right away; if the
-  // connection is down the upload retries automatically. Used after a file import saved while Cloud Sync is on.
+  const syncLocalToCloud = useCallback(async () => {
+    if(prefsRef.current.cloudSyncEnabled===false||!session?.user||syncActiveRef.current)return false;
+    cloudSyncRequestedRef.current=true;
+    retryAttemptRef.current=0;
+    return refreshCloud(session.user,{approved:true}).catch(()=>false);
+  },[session?.user,refreshCloud]);
+  /*
+   * The person settles one sync conflict: keep this device's version or the cloud's. Only the device copy changes
+   * here; the next "Sync local to cloud" uploads the choice with the usual revision check (lib/offlineConflicts.js).
+   */
+  const resolveSyncConflict = useCallback((conflict, keep) => {
+    const ownerId=session?.user?.id;
+    const copy=ownerId?loadOfflineWorkspace(ownerId):null;
+    try{
+      if(!copy||syncActiveRef.current)throw new Error('busy');
+      const {workspace,resolved}=resolveOfflineConflicts(copy,ownerId,[conflict],{[conflictKey(conflict)]:keep});
+      if(resolved!==1||!saveOfflineWorkspace(ownerId,workspace))throw new Error('not_saved');
+      setOfflineOwnerId(ownerId);setLocalAccounts(workspace.working.financial_accounts);setRawTxs(workspace.working.transactions);
+      const rest=syncConflicts.filter(item=>conflictKey(item)!==conflictKey(conflict));
+      setSyncConflicts(rest);
+      if(!rest.length)setSyncState({status:'waiting',reason:'resolved',message:'Your choices are saved on this device. Sync to upload them.',uploaded:0,downloaded:0});
+      return true;
+    }catch{
+      notify(tr('That choice could not be saved. Nothing was changed.'));
+      return false;
+    }
+  },[session?.user?.id,syncConflicts,notify]);
+  // Show this account's device copy everywhere (Home, Wallet, Transactions, Menu) and upload it right away (changes
+  // made offline still wait for "Sync local to cloud"). Used after a file import saved while Cloud Sync is on.
   const showDeviceCopyAndSync = (ownerId) => {
     const copy=loadOfflineWorkspace(ownerId);
     if(!copy)return false;
@@ -707,35 +778,52 @@ function App() {
     cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
     setOfflineOwnerId(ownerId);setLocalAccounts(copy.working.financial_accounts);setRawTxs(copy.working.transactions);
     setCloudMode(false);
-    setSyncState({status:'pending',retry:true,message:'Saved on this device. Uploading to your MOVO account…',uploaded:0,downloaded:0});
+    setSyncState({status:'pending',retry:true,offline:false,message:'Saved on this device. Uploading to your MOVO account…',uploaded:0,downloaded:0});
     window.setTimeout(syncNow,0);
     return true;
   };
   useEffect(() => {
-    const wentOffline=()=>{ if(cloudMode)switchToDeviceCopy(); };
+    const wentOffline=()=>{
+      if(cloudMode){switchToDeviceCopy();return;}
+      // The connection dropped again before the person synced: the offer comes back with the next reconnect.
+      setSyncState(state=>state.status==='waiting'
+        ? {status:'offline',retry:true,offline:true,message:'No internet. Changes are saved on this device until you sync.',uploaded:0,downloaded:0}
+        : state);
+    };
+    const cameOnline=()=>{ retryAttemptRef.current=0; syncNow(); };
     window.addEventListener('offline',wentOffline);
-    window.addEventListener('online',syncNow);
+    window.addEventListener('online',cameOnline);
     return ()=>{
       window.removeEventListener('offline',wentOffline);
-      window.removeEventListener('online',syncNow);
+      window.removeEventListener('online',cameOnline);
     };
   },[cloudMode,switchToDeviceCopy,syncNow]);
   /*
-   * Automatic upload: while changes wait on this device because the connection failed (not because they need
-   * review), try again every minute and whenever MOVO comes back to the foreground.
+   * Automatic retries while the cloud cannot be reached: exponential backoff with jitter (lib/syncBackoff.js), and
+   * at once when MOVO comes back to the foreground or the browser reports a connection. A retry reconnects and
+   * offers "Sync local to cloud" for changes made offline; it never uploads those by itself.
    */
   const waitingForNetwork = !cloudMode && !!session?.user?.id && prefs.cloudSyncEnabled !== false && syncState.retry === true;
   useEffect(() => {
     if(!waitingForNetwork)return undefined;
-    const attempt=()=>{ if(typeof navigator!=='undefined'&&navigator.onLine===false)return; syncNow(); };
-    const onVisible=()=>{ if(document.visibilityState==='visible')attempt(); };
-    const timer=setInterval(attempt,60000);
+    let timer;
+    const schedule=()=>{
+      timer=setTimeout(()=>{
+        // Still no connection at all: wait longer without a request (the 'online' event also tries at once).
+        if(typeof navigator!=='undefined'&&navigator.onLine===false){retryAttemptRef.current+=1;schedule();return;}
+        syncNow();
+      },retryDelay(retryAttemptRef.current));
+    };
+    schedule();
+    const onVisible=()=>{ if(document.visibilityState==='visible'){ retryAttemptRef.current=0; syncNow(); } };
     document.addEventListener('visibilitychange',onVisible);
-    return ()=>{ clearInterval(timer); document.removeEventListener('visibilitychange',onVisible); };
-  },[waitingForNetwork,syncNow]);
+    return ()=>{ clearTimeout(timer); document.removeEventListener('visibilitychange',onVisible); };
+  },[waitingForNetwork,syncState,syncNow]);
+  // A dismissed "connection restored" notice comes back the next time changes wait for a sync.
+  useEffect(() => { if(syncState.status!=='waiting')setSyncNoticeHidden(false); },[syncState.status]);
   /*
    * Run a cloud write with a deadline. If the server cannot be reached, switch to this account's device copy and
-   * return { offline: true } so the caller saves the same change there (it uploads on reconnect). Server answers
+   * return { offline: true } so the caller saves the same change there (held for "Sync local to cloud"). Server answers
    * (validation, permissions) are rethrown unchanged. New records carry their own UUID, so a write that timed out
    * but still reached the cloud is matched on reconnect instead of duplicated.
    */
@@ -818,7 +906,15 @@ function App() {
       if (cloudAuthUserRef.current === nextUserId) return;
       cloudAuthUserRef.current = nextUserId;
       if (nextSession?.user && prefsRef.current.cloudSyncEnabled !== false) {
-        refreshCloud(nextSession.user);
+        // Offline-first launch: show this account's own device copy at once, then check it against the cloud.
+        // Never show guest records under a signed-in account; with no copy yet, the first screen waits briefly for
+        // the cloud instead (see below). The device copy grants nothing: plans still come from the server.
+        const ownerId = nextSession.user.id;
+        const copy = loadOfflineWorkspace(ownerId);
+        const hydrated = !!copy && (!!copy.lastConfirmedAt || copy.dirty === true) && loadOwnedLocal(ownerId);
+        if (!hydrated) { setRawTxs([]); setLocalAccounts([]); }
+        const loading = refreshCloud(nextSession.user);
+        return hydrated ? null : loading;
       } else if (nextSession?.user) {
         // Local mode for a signed-in owner: that owner's own device workspace (#246), never guest records.
         setCloudMode(false);
@@ -836,8 +932,13 @@ function App() {
       }
     };
     getCurrentSession().then((s) => {
-      applySession(s);
-      if (mounted) setAuthReady(true);
+      const firstLoad = applySession(s);
+      if (!firstLoad) { if (mounted) setAuthReady(true); return; }
+      // No device copy for this account yet: keep the launch screen while the first cloud load runs, at most 6s
+      // (a slow connection then shows the empty account with its loading states, never guest records).
+      const ready = () => { if (mounted) setAuthReady(true); };
+      const cap = setTimeout(ready, 6000);
+      Promise.resolve(firstLoad).catch(() => {}).finally(() => { clearTimeout(cap); ready(); });
     }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       // No Supabase query or other awaited operation inside this callback.
@@ -2279,6 +2380,17 @@ function App() {
 
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
+  // One sync status for every page (lib/syncStatus.js), with the number of changes waiting on this device.
+  const signedOwnerId = session?.user?.id || '';
+  const ownerCopy = useMemo(() => (signedOwnerId ? loadOfflineWorkspace(signedOwnerId) : null),
+    // Re-read whenever the device copy can have changed: records, mode or a sync step.
+    [signedOwnerId, rawTxs, localAccounts, cloudMode, syncState]);
+  const syncStatus = syncStatusOf({
+    signedIn: !!signedOwnerId, cloudSyncOn: prefs.cloudSyncEnabled !== false, cloudMode, syncState,
+    pending: cloudMode ? 0 : unsyncedChangeCount(ownerCopy), conflicts: syncConflicts.length,
+  });
+  const openSync = () => setSheet({ name: 'sync' });
+
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
@@ -2287,7 +2399,8 @@ function App() {
     syncState,
     deviceCopyAccess,
     // "Sync now": retries the upload without changing the Cloud Sync choice (a failed try never switches it off).
-    retrySync: () => (prefs.cloudSyncEnabled === false ? setCloudSyncEnabled(true) : syncNow()),
+    retrySync: () => (prefs.cloudSyncEnabled === false ? setCloudSyncEnabled(true) : syncLocalToCloud()),
+    syncStatus, openSync,
     saveFinanceBackupRecords,
     onFinanceBackupSaved: (result) => {
       // Restore views from the same verified local snapshot without reloading
@@ -2339,7 +2452,9 @@ function App() {
     root.setProperty('--app-font', fontStack);
   }, [fontScale, fontStack, prefs.fontStyle]);
   const rootStyle = { ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
-  const rootClass = `movo-app plan-${plan} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
+  // The sync bar sits above the dock on every page; it steps aside for sheets, sign-in and the lock screen.
+  const syncBarShown = ['offline', 'waiting', 'review', 'error'].includes(syncStatus.kind) && !sheet && !busy && !locked && view !== 'Sign in';
+  const rootClass = `movo-app plan-${plan} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}${syncBarShown ? ' has-sync-bar' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -2641,8 +2756,10 @@ function App() {
       {sheet?.name === 'recentLogs' && <RecentLogsSheet transactionBalances={transactionBalances} showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false} logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
+      {sheet?.name === 'sync' && <SyncSheet status={syncStatus} syncState={syncState} conflicts={syncConflicts} accounts={baseAccounts} lastSyncedAt={ownerCopy?.lastConfirmedAt} busy={busy} onSync={syncLocalToCloud} onResolve={resolveSyncConflict} onClose={() => setSheet(null)} />}
       {confirmDialog}
-      {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
+      {syncBarShown && <div className={`sync-bar${view === 'NasrinAI' ? ' over-composer' : ''}`}><SyncBar status={syncStatus} reason={syncState.reason} noticeHidden={syncNoticeHidden} busy={busy} onSync={syncLocalToCloud} onOpen={openSync} onHide={() => setSyncNoticeHidden(true)} /></div>}
+      {toast && <div className={`toast${busy || syncBarShown ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}
     </div>
   </div></ConfirmProvider></PlanProvider>;
