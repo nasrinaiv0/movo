@@ -1,3 +1,5 @@
+import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
+import { listOwnerSyncOperations, acknowledgeReconciledWorkspace, approveHybridOperations } from './lib/hybridLocalStore';
 import FinanceBackupSheet from './components/FinanceBackupSheet';
 import { prepareFinanceBackupRestore } from './lib/financeBackupRestore';
 import { planPreferenceRestore } from './lib/backupPreferences';
@@ -12,6 +14,8 @@ import { activateNativeReferral } from './lib/referrals';
 import { UsageSheet } from './screens/Settings';
 import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
+import { buildIndexedBalances } from './lib/indexedBalance';
+import { clearHybridOwner } from './lib/hybridLocalStore';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
@@ -80,7 +84,7 @@ import { monthOverMonth } from './lib/trend';
 import { totalBalance, balanceAsOf } from './lib/totalBalance';
 import { scenerySrc, veilFor, loadSceneryPhoto, saveSceneryPhoto } from './lib/scenery';
 import { loadLocalTransactions, saveLocalTransactions, loadLocalAccounts, saveLocalAccounts, clearLocalFinanceData } from './lib/localFinanceStore';
-import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace, recordOfflineDeletions, restoreOfflineRows } from './lib/offlineWorkspaceStore';
+import { loadOfflineWorkspace, saveOfflineWorkspace, updateOfflineWorking, clearOfflineWorkspace, recordOfflineDeletions, restoreOfflineRows, holdOfflineWorkspaceForApproval } from './lib/offlineWorkspaceStore';
 import { reconcileAndCommitOfflineWorkspace } from './lib/offlineSyncTransport';
 import { unsyncedChangeCount } from './lib/unsyncedChanges';
 import { ConfirmProvider, deleteRecord, useConfirmController } from './components/ConfirmDialog';
@@ -182,9 +186,9 @@ function readPrefs() {
 const hexToRgb = (hex) => { const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex || ''); return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '47,107,255'; };
 const monthsBack = (key, n) => { const [y, m] = key.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 - n, 1)); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; };
 /* Each record keeps its original amount and currency; `amount` is converted to the home currency for totals. */
-const normalize = (t, accounts, base, rates) => {
-  const account = accounts.find(a => a.id === t.account_id);
-  const transferTarget = accounts.find(a => a.id === t.transfer_to_account_id);
+const normalize = (t, accountsById, base, rates) => {
+  const account = accountsById.get(t.account_id);
+  const transferTarget = accountsById.get(t.transfer_to_account_id);
   const origCurrency = t.origCurrency || t.currency || account?.currency || 'PHP';
   const origAmount = Number(t.origAmount ?? t.amount);
   // category: the stored value is kept as categoryId (stable id, or custom text); `category` becomes the compact
@@ -300,6 +304,7 @@ function App() {
   const [cloudMode, setCloudMode] = useState(false);
   const [offlineOwnerId, setOfflineOwnerId] = useState(null);
   const [syncState, setSyncState] = useState({status:'idle',message:'',uploaded:0,downloaded:0});
+  const [restoredConnection, setRestoredConnection] = useState(false);
   const syncActiveRef = useRef(false);
   const lastSyncRetryRef = useRef(false); // the last failed sync only needs the connection back
   const [view, setView] = useState('Home');
@@ -430,6 +435,8 @@ function App() {
     setOfflineOwnerId(ownerId);
     setLocalAccounts(next.working.financial_accounts);
     setRawTxs(next.working.transactions);
+    setCloudPostings(next.working.accounting_postings||[]);
+    setCloudActivities(next.working.accounting_activities||[]);
     setCloudMode(false);
     return true;
   }, []);
@@ -502,7 +509,7 @@ function App() {
       'Browser storage is unavailable or full. Export your records and retry.');
   }, [rawTxs,localAccounts,cloudMode,session?.user?.id,notify]);
 
-  const refreshCloud = useCallback(async (user) => {
+  const refreshCloud = useCallback(async (user, { allowOffline = false } = {}) => {
     if (!user || !cloudSyncRequestedRef.current || syncActiveRef.current) return false;
     syncActiveRef.current=true;
     const ownerId=user.id;
@@ -510,6 +517,22 @@ function App() {
     setBusy(true);setError('');
     setSyncState({status:'checking',message:'Checking offline and cloud changes…',uploaded:0,downloaded:0});
     try {
+      // Never let SIGNED_IN/visibility/online events approve an older offline
+      // journal. Only the explicit Sync local to cloud action may do that.
+      await recoverHybridWorkspace(ownerId);
+      const capturedOperations=(await listOwnerSyncOperations(ownerId)).map(op=>op.id);
+      const waiting=loadOfflineWorkspace(ownerId);
+      if(allowOffline&&waiting){
+        await approveHybridOperations(ownerId,capturedOperations);
+        if(!saveOfflineWorkspace(ownerId,{...waiting,requiresManualSync:false}))
+          throw new Error('Device storage could not save your sync approval.');
+      }
+      if(waiting?.dirty && waiting.requiresManualSync && !allowOffline){
+        setRestoredConnection(true);
+        setSyncState({status:'pending',retry:false,message:'Offline changes are saved. Tap Sync local to cloud to upload them.',uploaded:0,downloaded:0});
+        loadOwnedLocal(ownerId);
+        return false;
+      }
       // A signed-in browser session alone is never a paid cloud entitlement.
       // Verify before reading or copying a cloud-backed finance workspace.
       const verified=await withTimeout(refreshEntitlement(),CLOUD_READ_TIMEOUT_MS);
@@ -523,7 +546,7 @@ function App() {
       const until=new Date(today);until.setDate(until.getDate()+30);
       // Never convert a failed financial read into an empty collection. That
       // would falsely certify a partial device fallback as complete.
-      const {accountsTransactions:rawCloud,postings,activities,inbox:failed,bills,
+      let {accountsTransactions:rawCloud,postings,activities,inbox:failed,bills,
         billOccurrences,budgets}=await withTimeout(readRequiredFinancialCloudViews({
         accountsTransactions:()=>fetchOfflineSyncCloud(ownerId),
         postings:()=>listAccountingPostings(),
@@ -570,27 +593,37 @@ function App() {
         confirmed={financial_accounts:result.workspace.working.financial_accounts,
           transactions:result.workspace.working.transactions};
         status={status:'synced',message:'Account and transaction changes reconciled.',uploaded:result.uploaded,downloaded:result.downloaded};
+        // Reversal RPCs update linked tables. Never cache their pre-mutation values.
+        if(result.uploaded){
+          [postings,activities,bills,billOccurrences,budgets]=await withTimeout(Promise.all([
+            listAccountingPostings(),listAccountingActivities(),listBills(),listOccurrences(dateKey(until),dateKey(today)),listBudgets(),
+          ]),CLOUD_READ_TIMEOUT_MS);
+        }
       }
       if(cloudAuthUserRef.current!==ownerId||!cloudSyncRequestedRef.current||loadEpoch!==cloudLoadEpochRef.current)return false;
       const verifiedCopy=loadOfflineWorkspace(ownerId);
-      const shared={...verifiedCopy?.working,...confirmed};
+      const shared={...verifiedCopy?.working,...confirmed,accounting_postings:postings,accounting_activities:activities,
+        financial_bills:bills,bill_occurrences:billOccurrences,budgets};
       const synced={version:2,owner:ownerId,baseline:shared,working:shared,dirty:false,
         lastConfirmedAt:new Date().toISOString(),pendingDeletions:{},deletedRows:{}};
       if(!saveOfflineWorkspace(ownerId,synced))
         throw Error('Device storage could not hold the reconciled copy. Cloud was not enabled; export records and free space.');
+      await acknowledgeReconciledWorkspace(ownerId,confirmed,capturedOperations);
       setOfflineOwnerId(ownerId);setLocalAccounts(shared.financial_accounts);setRawTxs(shared.transactions);
       setCloudAccounts(confirmed.financial_accounts);setCloudPostings(postings||[]);
       setCloudActivities(activities||[]);setCloudBills(bills||[]);
       setCloudBillOccurrences(billOccurrences||[]);setCloudBudgets(budgets||[]);
       setInbox(failed||[]);setCloudMode(true);setSyncState(status);
+      setRestoredConnection(false);
       lastSyncRetryRef.current=false;
       return true;
     }catch(cause){
       // A lost or slow connection is retried automatically; anything else (a conflict, a plan check) waits for review.
       const retry=isNetworkFailure(cause)||cause?.retryable===true;
+      if(retry&&!allowOffline)holdOfflineWorkspaceForApproval(ownerId);
       lastSyncRetryRef.current=retry;
       const message=retry
-        ? 'No connection to the cloud. Changes are saved on this device and upload automatically when you are back online.'
+        ? 'No connection to the cloud. Changes are saved on this device. Sync when connection is restored.'
         : cause?.message||'Cloud is unavailable. Device changes remain queued.';
       // A superseded attempt (signed out, Cloud Sync switched, or a newer save) leaves the current state alone.
       if(cloudAuthUserRef.current===ownerId&&cloudSyncRequestedRef.current&&loadEpoch===cloudLoadEpochRef.current){
@@ -633,7 +666,8 @@ function App() {
       setPref('cloudSyncEnabled',false);
       setCloudMode(false);setCloudAccounts([]);setCloudBudgets([]);
       setCloudBills([]);setCloudBillOccurrences([]);setInbox([]);
-      setCloudPostings([]);setCloudActivities([]);
+      const cached=loadOfflineWorkspace(session.user.id);
+      setCloudPostings(cached?.working.accounting_postings||[]);setCloudActivities(cached?.working.accounting_activities||[]);
       setSyncState({status:'offline',message:'Offline mode. Local changes will be reconciled after reconnecting.',uploaded:0,downloaded:0});
       return true;
     }
@@ -676,7 +710,7 @@ function App() {
     // Never turn an unverified empty device cache into an apparent copy of live cloud finances.
     if(choice==='blocked')return block('Signed-in account workspace is unavailable. No records were changed.');
     if(choice==='reuse_confirmed'){
-      if(!saveOfflineWorkspace(ownerId,previous))return block('Offline switch stopped: device storage is full. Export your records before editing.');
+      if(!saveOfflineWorkspace(ownerId,{...previous,requiresManualSync:true}))return block('Offline switch stopped: device storage is full. Export your records before editing.');
       setOfflineOwnerId(ownerId);
       setLocalAccounts(previous.working.financial_accounts);
       setRawTxs(previous.working.transactions);
@@ -685,54 +719,71 @@ function App() {
       // Restoring a previously verified device copy preserves both the owner journal and newer cloud rows.
       return block('Signed-in account workspace is unavailable. No records were changed.');
     }
+    holdOfflineWorkspaceForApproval(ownerId);
     cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
     setSyncState({status:'offline',retry:true,
       message:choice==='restore_stale'
-        ? 'No internet. Showing the last copy synced to this device; changes upload automatically when you are back online.'
-        : 'No internet. Changes are saved on this device and upload automatically when you are back online.',
+        ? 'No internet. Showing the last saved device copy; you can sync when the connection returns.'
+        : 'No internet. Changes are saved on this device; approve sync after reconnection.',
       uploaded:0,downloaded:0});
     return true;
   },[cloudMode,cloudAccounts,rawTxs,session?.user?.id,offlineOwnerId,loadOwnedLocal,notify]);
+  // Explicit approval for held offline records. Auth and CAS are still verified by refreshCloud.
   const syncNow = useCallback(() => {
     if(prefsRef.current.cloudSyncEnabled===false||!session?.user||syncActiveRef.current)return;
     cloudSyncRequestedRef.current=true;
-    refreshCloud(session.user).catch(()=>{});
+    setRestoredConnection(false);
+    refreshCloud(session.user,{allowOffline:true}).then(ok=>{
+      if(!ok && loadOfflineWorkspace(session.user.id)?.requiresManualSync) setRestoredConnection(true);
+    }).catch(()=>setRestoredConnection(true));
   },[session?.user,refreshCloud]);
-  // Show this account's device copy everywhere (Home, Wallet, Transactions, Menu) and upload it right away; if the
-  // connection is down the upload retries automatically. Used after a file import saved while Cloud Sync is on.
+  // Online import is allowed to upload automatically only when there are no held offline changes.
   const showDeviceCopyAndSync = (ownerId) => {
     const copy=loadOfflineWorkspace(ownerId);
     if(!copy)return false;
-    // An in-flight cloud load must not replace the rows just saved.
     cloudSyncRequestedRef.current=false;++cloudLoadEpochRef.current;
     setOfflineOwnerId(ownerId);setLocalAccounts(copy.working.financial_accounts);setRawTxs(copy.working.transactions);
     setCloudMode(false);
-    setSyncState({status:'pending',retry:true,message:'Saved on this device. Uploading to your MOVO account…',uploaded:0,downloaded:0});
-    window.setTimeout(syncNow,0);
+    const manual=copy.requiresManualSync===true || (typeof navigator!=='undefined' && navigator.onLine===false);
+    if(manual)holdOfflineWorkspaceForApproval(ownerId);
+    setSyncState({status:'pending',retry:!manual,
+      message:manual?'Saved on device. Tap Sync local to cloud after reconnecting.':'Saved on device. Uploading to your MOVO account…',
+      uploaded:0,downloaded:0});
+    if(manual){ if(typeof navigator!=='undefined' && navigator.onLine!==false)setRestoredConnection(true); }
+    else window.setTimeout(()=>{
+      cloudSyncRequestedRef.current=true;
+      refreshCloud({id:ownerId}).catch(()=>{});
+    },0);
     return true;
   };
   useEffect(() => {
-    const wentOffline=()=>{ if(cloudMode)switchToDeviceCopy(); };
+    const wentOffline=()=>{setRestoredConnection(false);if(cloudMode)switchToDeviceCopy();};
+    const cameOnline=()=>{
+      const ownerId=session?.user?.id;
+      const workspace=ownerId?loadOfflineWorkspace(ownerId):null;
+      if(ownerId&&prefsRef.current.cloudSyncEnabled!==false&&workspace?.dirty&&workspace.requiresManualSync)
+        setRestoredConnection(true);
+    };
     window.addEventListener('offline',wentOffline);
-    window.addEventListener('online',syncNow);
+    window.addEventListener('online',cameOnline);
     return ()=>{
       window.removeEventListener('offline',wentOffline);
-      window.removeEventListener('online',syncNow);
+      window.removeEventListener('online',cameOnline);
     };
-  },[cloudMode,switchToDeviceCopy,syncNow]);
-  /*
-   * Automatic upload: while changes wait on this device because the connection failed (not because they need
-   * review), try again every minute and whenever MOVO comes back to the foreground.
-   */
-  const waitingForNetwork = !cloudMode && !!session?.user?.id && prefs.cloudSyncEnabled !== false && syncState.retry === true;
+  },[cloudMode,switchToDeviceCopy,session?.user?.id]);
+  // Retry only ordinary online failures; never release a manually held offline queue.
+  const waitingForNetwork = !cloudMode && !!session?.user?.id && prefs.cloudSyncEnabled !== false
+    && syncState.retry === true && !loadOfflineWorkspace(session.user.id)?.requiresManualSync;
   useEffect(() => {
     if(!waitingForNetwork)return undefined;
-    const attempt=()=>{ if(typeof navigator!=='undefined'&&navigator.onLine===false)return; syncNow(); };
-    const onVisible=()=>{ if(document.visibilityState==='visible')attempt(); };
+    const attempt=()=>{if(typeof navigator!=='undefined'&&navigator.onLine===false)return;
+      cloudSyncRequestedRef.current=true;refreshCloud(session.user).catch(()=>{});
+    };
+    const onVisible=()=>{if(document.visibilityState==='visible')attempt();};
     const timer=setInterval(attempt,60000);
     document.addEventListener('visibilitychange',onVisible);
-    return ()=>{ clearInterval(timer); document.removeEventListener('visibilitychange',onVisible); };
-  },[waitingForNetwork,syncNow]);
+    return ()=>{clearInterval(timer);document.removeEventListener('visibilitychange',onVisible);};
+  },[waitingForNetwork,refreshCloud,session?.user]);
   /*
    * Run a cloud write with a deadline. If the server cannot be reached, switch to this account's device copy and
    * return { offline: true } so the caller saves the same change there (it uploads on reconnect). Server answers
@@ -807,7 +858,7 @@ function App() {
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
-    const applySession = (nextSession) => {
+    const applySession = async (nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
       // Signing out invalidates any cloud load still in flight (#245).
@@ -817,12 +868,29 @@ function App() {
       // finance records only when the authenticated identity actually changes.
       if (cloudAuthUserRef.current === nextUserId) return;
       cloudAuthUserRef.current = nextUserId;
+      if(nextUserId){
+        setAuthReady(false);setCloudMode(false);setOfflineOwnerId(null);
+        setCloudAccounts([]);setLocalAccounts([]);setRawTxs([]);
+        setCloudPostings([]);setCloudActivities([]);
+        try { await recoverHybridWorkspace(nextUserId); }
+        catch(cause){
+          if(mounted&&cloudAuthUserRef.current===nextUserId){setError(cause.message);setLocalPersistenceWarning(true);setAuthReady(true);}
+          return;
+        }
+        if(!mounted||cloudAuthUserRef.current!==nextUserId)return;
+      }
       if (nextSession?.user && prefsRef.current.cloudSyncEnabled !== false) {
+        // Cache-first: hydrate only this verified identity's device snapshot
+        // before the full server reconciliation. Never grant cloud privileges
+        // from the device cache (cloudMode remains false until verification).
+        const cache = loadOfflineWorkspace(nextSession.user.id);
+        if (cache && !loadOwnedLocal(nextSession.user.id)) setLocalPersistenceWarning(true);
         refreshCloud(nextSession.user);
       } else if (nextSession?.user) {
         // Local mode for a signed-in owner: that owner's own device workspace (#246), never guest records.
         setCloudMode(false);
         if (!loadOwnedLocal(nextSession.user.id)) setLocalPersistenceWarning(true);
+        setAuthReady(true);
       } else {
         const pending = pendingLocalDataRef.current;
         setCloudMode(false);
@@ -835,13 +903,19 @@ function App() {
         pendingLocalDataRef.current=null;
       }
     };
-    getCurrentSession().then((s) => {
-      applySession(s);
-      if (mounted) setAuthReady(true);
+    getCurrentSession().then(async (s) => {
+      await applySession(s);
+      // Cold-start without a confirmed local cache must not expose empty
+      // financial totals as if they were fully loaded.
+      const id=s?.user?.id;
+      const cache=id?loadOfflineWorkspace(id):null;
+      const canHydrate=Boolean(cache && (cache.lastConfirmedAt || cache.dirty));
+      if(mounted && (!id || prefsRef.current.cloudSyncEnabled===false || canHydrate))
+        setAuthReady(true);
     }).catch(() => { if (mounted) setAuthReady(true); });
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       // No Supabase query or other awaited operation inside this callback.
-      applySession(nextSession);
+      window.setTimeout(()=>applySession(nextSession).catch(()=>{if(mounted)setAuthReady(true);}),0);
     });
     return () => { mounted = false; data?.subscription?.unsubscribe(); };
   }, [refreshCloud,loadOwnedLocal]);
@@ -851,60 +925,51 @@ function App() {
   const base = /^[A-Z]{3}$/.test(prefs.currency || '') ? prefs.currency : 'PHP';
   const rates = fx.rates;
   const toBase = useCallback((value, from) => convert(value, from || 'PHP', base, rates), [base, rates]);
+  const useOwnerAccounting=cloudMode||Boolean(session?.user?.id&&offlineOwnerId===session.user.id);
+  const visiblePostings=useMemo(()=>{
+    if(!useOwnerAccounting)return [];
+    const deleted=new Set(loadOfflineWorkspace(session?.user?.id)?.pendingDeletions?.transactions||[]);
+    return cloudPostings.filter(row=>!row.transaction_id||!deleted.has(row.transaction_id));
+  },[useOwnerAccounting,cloudPostings,session?.user?.id,rawTxs]);
   const txs = useMemo(() => {
-    const regular = rawTxs.map(t => normalize(t, baseAccounts, base, rates));
-    const accounting = (cloudMode ? cloudActivities : []).map(t => ({
+    const accountsById = new Map(baseAccounts.map(a => [a.id, a]));
+    const regular = rawTxs.map(t => normalize(t, accountsById, base, rates));
+    const accounting = (useOwnerAccounting ? cloudActivities : []).map(t => ({
       ...t,
       id: t.transaction_type === 'allocation' ? `allocation-${t.id}` : t.id,
       type: t.transaction_type === 'allocation' ? 'allocation' : 'expense',
       date: t.occurred_at, origAmount: Number(t.amount), origCurrency: t.currency || base,
       currency: base, amount: convert(Number(t.amount), t.currency || base, base, rates),
-      accountName: t.source_account_id ? (baseAccounts.find(account => account.id === t.source_account_id)?.name || tr('Account')) : tr('Accounting event'),
+      accountName: t.source_account_id ? (accountsById.get(t.source_account_id)?.name || tr('Account')) : tr('Accounting event'),
     }));
     return [...regular, ...accounting].filter(t => Number.isFinite(new Date(t.date).getTime())).sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [rawTxs, cloudMode, cloudActivities, baseAccounts, base, rates]);
+  }, [rawTxs, useOwnerAccounting, cloudActivities, baseAccounts, base, rates]);
   const accountsView = useMemo(() => {
-    const ledger = cloudMode ? [...txs, ...cloudPostings] : txs;
+    const ledger = [...txs, ...visiblePostings];
     const links = prefs.cardBankLinks || {};
     const cardKindOf = (account) => prefs.accountStyles?.[account.id]?.cardKind || account.cardKind || 'debit';
-    const linkedDebitCardIds = (bankId) => baseAccounts.filter(item => item.account_type === 'card' && links[item.id] === bankId && cardKindOf(item) === 'debit').map(item => item.id);
-    const balanceFor = (account) => {
-      const currency = account.currency || 'PHP';
-      let relevantLedger = ledger;
-      if (account.account_type === 'bank') {
-        const ids = new Set(linkedDebitCardIds(account.id));
-        if (ids.size) relevantLedger = ledger.map(t => {
-          const accountId = ids.has(t.account_id) ? account.id : t.account_id;
-          const transferTo = ids.has(t.transfer_to_account_id) ? account.id : t.transfer_to_account_id;
-          return accountId === t.account_id && transferTo === t.transfer_to_account_id ? t : { ...t, account_id: accountId, transfer_to_account_id: transferTo };
-        });
-      }
-      const opening = cloudMode ? Number(account.opening_balance || 0) : Number(account.opening_balance ?? account.balance ?? 0);
-      const converter = (amount, from, to) => convert(amount, from || 'PHP', to || currency, rates);
-      return {
-        settled: accountBalance(account, relevantLedger, converter, opening),
-        available: accountAvailableBalance(account, relevantLedger, converter, opening),
-      };
-    };
+    const indexed = buildIndexedBalances(baseAccounts, ledger, links, prefs.accountStyles,
+      (amount, from, to) => convert(amount, from || 'PHP', to || 'PHP', rates), cloudMode);
+    const byAccountId = new Map(baseAccounts.map(account => [account.id, account]));
     return baseAccounts.map(a => {
       const st = prefs.accountStyles?.[a.id] || {};
       const currency = a.currency || 'PHP';
       const linkedBankId = a.account_type === 'card' && cardKindOf(a) === 'debit' ? links[a.id] || '' : '';
-      const linkedBank = linkedBankId ? baseAccounts.find(item => item.id === linkedBankId && item.account_type === 'bank') : null;
-      const ledgerBalances = linkedBank ? balanceFor(linkedBank) : balanceFor(a);
+      const linkedBank = linkedBankId ? (byAccountId.get(linkedBankId)?.account_type === 'bank' ? byAccountId.get(linkedBankId) : null) : null;
+      const ledgerBalances = indexed.get(linkedBank?.id || a.id) || { settled: NaN, available: NaN };
       const ledgerBalance = ledgerBalances.settled;
       const adjusted = applyCardPayments({ ...a, cardKind: st.cardKind || a.cardKind, balance: ledgerBalance }, prefs.creditCardPayments?.[a.id] || []);
       const balance = adjusted.balance;
       return { ...a, chip: st.chip || a.chip, contactless: st.contactless ?? a.contactless ?? (a.account_type === 'card'), cardKind: st.cardKind || a.cardKind, cardNetwork: st.cardNetwork || a.cardNetwork || '', creditLimit: Number(st.creditLimit) || 0, issuerBankId: st.issuerBankId || '', mask: a.mask || st.mask || '', brand: a.brand || 'blue', balance, available_balance: ledgerBalances.available, recordedPaymentsApplied: adjusted.recordedPaymentsApplied, currency: linkedBank ? (linkedBank.currency || currency) : currency, linkedAccountId: linkedBank ? linkedBank.id : '' };
     });
-  }, [baseAccounts, txs, cloudMode, cloudPostings, prefs.accountStyles, prefs.cardBankLinks, prefs.creditCardPayments, rates]);
+  }, [baseAccounts, txs, cloudMode, visiblePostings, prefs.accountStyles, prefs.cardBankLinks, prefs.creditCardPayments, rates]);
   // Pure derived ledger display: does not write or modify any transaction rows.
   const transactionBalances = useMemo(() => buildTransactionRunningBalances({
-    transactions: txs, postings: cloudMode ? cloudPostings : [], accounts: baseAccounts,
+    transactions: txs, postings: visiblePostings, accounts: baseAccounts,
     cardBankLinks: prefs.cardBankLinks || {}, accountStyles: prefs.accountStyles || {},
     creditCardPayments: prefs.creditCardPayments || {},
     convertAmount: (amount, from, to) => convert(amount, from, to, rates),
-  }), [txs, cloudMode, cloudPostings, baseAccounts, prefs.cardBankLinks, prefs.accountStyles, prefs.creditCardPayments, rates]);
+  }), [txs, visiblePostings, baseAccounts, prefs.cardBankLinks, prefs.accountStyles, prefs.creditCardPayments, rates]);
   const accountsByType = useMemo(() => ({ card: accountsView.filter(a => a.account_type === 'card'), bank: accountsView.filter(a => a.account_type === 'bank'), e_wallet: accountsView.filter(a => a.account_type === 'e_wallet') }), [accountsView]);
   const refDate = useMemo(() => (cloudMode || !txs.length ? new Date() : new Date(txs[0].date)), [cloudMode, txs]);
   const refMonth = monthKey(refDate);
@@ -1165,6 +1230,7 @@ function App() {
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source);
         const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual' }) };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
+        if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[transactionRow]);
         savedTransaction = transactionRow;
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
@@ -1283,6 +1349,7 @@ function App() {
         // Commit before the React render changes; a failed localStorage write
         // never announces success or alters the visible financial ledger.
         const next=[...created,...(viaCloud?currentStored:rawTxs)];
+        if(signedOwner)await persistHybridLocalImport(signedOwner,[],created,viaCloud?'online':'offline');
         const saved=signedOwner
           ? updateOfflineWorking(signedOwner,{...loadOfflineWorkspace(signedOwner).working,transactions:next})
           : saveLocalTransactions(next,false);
@@ -1403,6 +1470,7 @@ function App() {
           currency, opening_balance: Math.round(openingBalance * 100) / 100,
           balance: Math.round(openingBalance * 100) / 100, is_archived: existing?.is_archived || false, mask: accountForm.mask || existing?.mask || '', brand: existing?.brand || 'blue', source: 'Manual',
         };
+        if(session?.user?.id) await persistHybridLocalRows(session.user.id,'financial_accounts',[a]);
         saveStyle(a.id); if (isAccountQrDataUrl(accountForm.qrCode)) await saveQrCode(a.id); else saveQrCode(a.id);
         setLocalAccounts(cur => editingId ? cur.map(item => item.id === editingId ? a : item) : [...cur, a]);
         const nextLinks = { ...(prefs.cardBankLinks || {}) }; if (linkedBankId) nextLinks[a.id] = linkedBankId; else delete nextLinks[a.id]; setPref('cardBankLinks', nextLinks);
@@ -1420,7 +1488,10 @@ function App() {
     action: async () => {
       const written = cloudMode ? await cloudWrite(() => updateAccount(account.id, { is_archived: true })) : { offline: true };
       if (!written.offline) setCloudAccounts(cur => cur.map(item => item.id === account.id ? (written.value || { ...item, is_archived: true }) : item));
-      else setLocalAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
+      else {
+        if(session?.user?.id) await persistHybridLocalRows(session.user.id,'financial_accounts',[{...account,is_archived:true}]);
+        setLocalAccounts(cur => cur.map(item => item.id === account.id ? { ...item, is_archived: true } : item));
+      }
       setSheet(null); notify(tr('Account archived. Its transaction history was kept.'));
     },
   });
@@ -1464,6 +1535,7 @@ function App() {
         } else {
           // A signed-in owner's deletion is remembered (tombstone) and applied to the cloud on reconnect, with the same
           // server procedure, only if the cloud row is still unchanged.
+          if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[raw],'delete');
           if (session?.user?.id && !recordOfflineDeletions(session.user.id, [{ group: 'transactions', id: t.id, row: raw }])) throw new Error('device_copy_unavailable');
           const restoredSubscriptions = revertSubscriptionPayment(prefsRef.current.subscriptions || [], raw);
           if (restoredSubscriptions !== (prefsRef.current.subscriptions || [])) setPref('subscriptions', restoredSubscriptions);
@@ -1570,6 +1642,7 @@ function App() {
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
       await qrCleanup;
+      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
     } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
     finally { setBusy(false); }
@@ -1581,6 +1654,7 @@ function App() {
     setBusy(true); setError('');
     try {
       await deleteMyAccount();
+      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
@@ -1612,6 +1686,7 @@ function App() {
     const id = newRecordId();
     const written = cloudMode ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
     const row = written.offline ? { ...payload, id, source: 'Manual', created_at: new Date().toISOString() } : written.value;
+    if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
     setRawTxs(cur => [row, ...cur]);
     return row;
   }, [accountsView, base, cloudMode, cloudWrite, session]);
@@ -1633,6 +1708,7 @@ function App() {
       const payload = { merchant: `${tr('Card payment')} · ${card.institution_name || card.name}`.slice(0, 160), amount: value, currency: from.currency || base, transaction_type: 'transfer', category: 'Transfer', account_id: from.id, transfer_to_account_id: card.id, occurred_at: new Date(`${day}T12:00:00`).toISOString(), note: '' };
       const written = cloudMode ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
       const row = written.offline ? { ...payload, id, source: 'Manual' } : written.value;
+      if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
       setRawTxs(cur => [row, ...cur]);
       payment.transaction_id = String(row.id);
     }
@@ -1650,6 +1726,7 @@ function App() {
       const source = AUTOMATION_SOURCES.includes(entry.src) ? entry.src : 'notification';
       const written = cloudMode ? await cloudWrite(() => createAutomated({ ...payload, id, source, external_reference: entry.ref || undefined })) : { offline: true };
       const row = written.offline ? { ...payload, id, source, external_reference: entry.ref || undefined } : written.value;
+      if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
       markFresh(row.id); setRawTxs(cur => [row, ...cur]);
       notify(tr('Logged {amount} at {merchant} from {source}.', { amount: money(entry.amount), merchant: entry.merchant, source: tr(entry.source) }));
       celebrate();
@@ -1675,6 +1752,7 @@ function App() {
       const written = online ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
       if (written.offline) online = false;
       const row = written.offline ? { ...payload, id, source: 'Manual' } : written.value;
+      if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
       saved.push({ ...row, accountName: account?.name || '' });
     }
     if (saved.length) {
@@ -1718,6 +1796,7 @@ function App() {
       failure: tr('That record could not be removed. Please try again.'),
       action: async () => {
         const written = cloudMode ? await cloudWrite(() => deleteTransaction(id)) : { offline: true };
+        if (written.offline && raw) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[raw],'delete');
         if (written.offline && session?.user?.id && !recordOfflineDeletions(session.user.id, [{ group: 'transactions', id, ...(raw ? { row: raw } : {}) }])) throw new Error('device_copy_unavailable');
         if (raw) archiveItem('transaction', raw);
         setRawTxs(cur => cur.filter(x => x.id !== id));
@@ -1916,7 +1995,7 @@ function App() {
         const open = new Set(formAccounts.map(a => a.id));
         if (!open.has(it.account_id) || (it.transfer_to_account_id && !open.has(it.transfer_to_account_id))) { notify(tr('Its account is no longer in your wallet. Add the account again, then restore.')); return; }
         if (cloudMode && session?.user) {
-          const row = await createTransaction({ ...it, transaction_type: it.transaction_type || it.type }, session.user.id);
+          const row = await createTransaction({ ...it, id:newRecordId(), transaction_type: it.transaction_type || it.type }, session.user.id);
           try {
             await restoreTransactionLinks(it.id, row.id);
           } catch (restoreError) {
@@ -1929,6 +2008,7 @@ function App() {
           await refreshCloud(session.user);
         } else {
           // A signed-in owner's restore also drops the pending deletion, in the same device write.
+          if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[it]);
           if (session?.user?.id && !restoreOfflineRows(session.user.id, 'transactions', [it])) throw new Error('device_copy_unavailable');
           const restoredSubscriptions = restoreSubscriptionPayment(prefs.subscriptions || [], it);
           if (restoredSubscriptions !== (prefs.subscriptions || [])) setPref('subscriptions', restoredSubscriptions);
@@ -2243,6 +2323,7 @@ function App() {
       || JSON.stringify(beforeTransactions)!==JSON.stringify(deviceTransactions))
       throw new Error('Local records changed in another tab or are still saving. Reopen the backup and review before importing.');
     if(signedOwner){
+      await persistHybridLocalImport(signedOwner,planned.accounts,planned.transactions,viaCloud?'online':'offline');
       if(!updateOfflineWorking(signedOwner,{...priorWorkspace.working,financial_accounts:nextAccounts,transactions:nextTransactions}))
         throw new Error('Device storage could not save the imported records; no visible records were changed.');
       const verifiedWorkspace=loadOfflineWorkspace(signedOwner);
@@ -2641,6 +2722,17 @@ function App() {
       {sheet?.name === 'recentLogs' && <RecentLogsSheet transactionBalances={transactionBalances} showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false} logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
+      {restoredConnection && !!session?.user?.id && !cloudMode && prefs.cloudSyncEnabled !== false && (
+        <div className="movo-sync-restored" role="status" aria-live="polite">
+          <span className="movo-sync-restored-icon" aria-hidden="true">↗</span>
+          <div className="movo-sync-restored-message">
+            <strong>{tr('Your internet connection has been restored')}</strong>
+            <span>{tr('Offline records are ready to sync.')}</span>
+          </div>
+          <button type="button" className="movo-sync-restored-action" onClick={syncNow} disabled={busy}>{tr('Sync local to cloud')}</button>
+          <button type="button" className="movo-sync-restored-dismiss" aria-label={tr('Close')} onClick={()=>setRestoredConnection(false)}>×</button>
+        </div>
+      )}
       {confirmDialog}
       {toast && <div className={`toast${busy ? ' raised' : ''}${view === 'NasrinAI' ? ' over-composer' : ''}`} role="status" aria-live="polite">{toast}</div>}
       {busy && <div className="sync-indicator" role="status"><span className="spinner" /> {tr('Syncing securely…')}</div>}

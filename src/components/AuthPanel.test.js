@@ -114,6 +114,32 @@ describe('MOVO Google OAuth sign-in', () => {
     expect(onAuthenticated).not.toHaveBeenCalled();
   });
 
+  test('automatically verifies a complete six-digit OTP without a submit click', async () => {
+    accept();
+    setValue(container.querySelector('input[type="email"]'), 'auto@example.com');
+    await submit();
+    setValue(container.querySelector('input[autocomplete="one-time-code"]'), '123456');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 260)); });
+    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
+    expect(verifyEmailCode).toHaveBeenCalledWith('auto@example.com', '123456');
+    expect(onAuthenticated).toHaveBeenCalledWith({ id: 'u1' });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 220)); });
+    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
+  });
+
+  test('a wrong auto-submitted OTP is not repeatedly retried without editing', async () => {
+    verifyEmailCode.mockRejectedValue(new Error('expired'));
+    accept();
+    setValue(container.querySelector('input[type="email"]'), 'expired@example.com');
+    await submit();
+    setValue(container.querySelector('input[autocomplete="one-time-code"]'), '654321');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 280)); });
+    expect(container.textContent).toContain('That code is not valid or has expired.');
+    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 280)); });
+    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
+  });
+
   test('Apple sign-in starts only after consent', async () => {
     const apple = container.querySelector('.auth-apple');
     await act(async () => { apple.click(); await Promise.resolve(); });

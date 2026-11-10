@@ -1,3 +1,13 @@
+## 2026-11-09 — Draft PR #261: hybrid local-first sync, OTP auto-continue and startup performance
+
+**Scope:** owner-scoped local-first financial synchronization, durable IndexedDB outbox foundation, a manually approved offline reconciliation path, animated reconnection notification, automatic six-digit email OTP submission, owner-specific startup cache hydration, and single-pass wallet balance computation. The draft also contains accounting-equivalence, owner isolation, online/offline consent, retry, and OTP regression tests. Engineering handover: `docs/engineering/updates/2026-11-09-hybrid-sync-otp-and-performance.md`.
+
+**Sandbox validation:** Vercel Sandbox isolated checkout, TypeScript passed, 179 test suites / 1,082 tests passed, optimized CRA build passed. A separate reconnect/consent test ensures the held offline workspace is not automatically uploaded on network restoration.
+
+**Production release blocked:** The IndexedDB journal and headless coordinator are not yet the authoritative write path for every account/transaction, and the server lacks a verified idempotent `(user_id, operation_id)` mutation endpoint. Loans, receivables, subscription-linked reversals, crash/restart interleaving and real-device/performance acceptance remain unverified. Preserve existing secure CAS and owner checks; do not merge or deploy until full integration, CI and real-device checks pass. No production database/billing/environment changes were made.
+
+---
+
 ## 2026-11-09 — Integration hardening for #258 and #259
 
 Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
@@ -639,8 +649,18 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 - iOS CI now exercises a separately unit-tested launch script: deterministic iPhone choice, bounded 600 s cold boot, 180 s install/launch, exactly one retry **only** for launch timeouts after cold boot, and mandatory deep-link plus screenshot success. Nonzero launch errors and repeat timeouts remain hard failures.
 - Local/Vercel Sandbox Python unit tests are NOT evidence of native simulator success. Await exact-head GitHub macOS runner smoke and full regression gate before merging. See `docs/engineering/updates/2026-11-09-pr255-ios-simulator-launch.md`.
 
+## 2026-11-09 — PR #261 post-audit outbox fixes
+
+- **Staged fixes only; draft / no release:** durable owner-scoped ordering, expiry/reclaim of interrupted claims, stale-worker claim-generation fencing, persisted offline consent, and exact retry revision checks.
+- Regression tests added for reverse-UUID create/delete, offline predecessor blocking, cross-tab leases, lost-ack retry, owner isolation, and conflicting operation metadata.
+- Security and accounting details: docs/audits/2026-11-09-pr261-outbox-audit-fixes.md.
+- Production blockers unchanged: authenticated server idempotency/CAS/RLS, outbox integration and reversible legacy workspace migration, device/security/performance validation.
 ## 2026-11-09 — Mobile subscription integrity
 
 Implemented production-only Apple/Google verification, pinned Apple trust root, strict OIDC/schema validation, fenced atomic state transitions, revocation tombstones, event deduplication, predecessor cleanup and encrypted server-acknowledgment retries. Includes a source-level hostile audit, deployable SQL, setup changes and regression tests. Vercel Sandbox: integrated build/typecheck and 170 suites/1,036 tests passed; final focused 33 tests passed; PostgreSQL behavioral and separate-connection concurrency tests passed; mobile browser render smoke passed. Migration and three new server settings are required before deployment; no production migration performed. See `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
 
 - PR #260 integration with PR #258: 173 suites / 1,063 tests, typecheck and build passed in Vercel Sandbox. Atomic referral awards/refund reversals and points-to-Pro plan access passed PostgreSQL regressions. The GitHub source tree matches the tested Sandbox tree. No production changes.
+
+## 2026-11-10 — PR 261 live account/transaction integration
+
+Added authenticated atomic operation application, durable acknowledgements, CAS and owner isolation; integrated account/transaction writers with IndexedDB intents, recovery, batch imports and persisted reconnect consent. Added linked loan-reversal SQL tests and real-browser crash/cross-tab/10k/100k checks. The full sandbox Jest suite passed (191 suites / 1,170 tests); the final missing-cache safeguard adds a targeted regression. See `docs/engineering/updates/2026-11-10-hybrid-live-writes.md` for evidence and outstanding single-authority migration, remaining obligation writers and device validation gates. No production database changes; not release approval.

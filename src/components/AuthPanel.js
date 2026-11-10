@@ -23,6 +23,8 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [wait, setWait] = useState(0);
   const codeRef = useRef(null);
+  const verificationRef = useRef(false);
+  const lastAttemptRef = useRef('');
 
   useEffect(() => {
     if (!wait) return undefined;
@@ -30,6 +32,16 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     return () => clearTimeout(timer);
   }, [wait]);
   useEffect(() => { if (step === 'code') codeRef.current?.focus(); }, [step]);
+  // Supabase email OTPs are six digits. Submit once after the complete code is
+  // entered or pasted; retain manual submit for legacy 7–10-digit tokens.
+  useEffect(() => {
+    if (step !== 'code' || code.length !== 6 || busy || !legalAccepted) return undefined;
+    const fingerprint = email.trim().toLowerCase() + ':' + code;
+    if (lastAttemptRef.current === fingerprint) return undefined;
+    const timer = setTimeout(() => { verify(undefined, code); }, 180);
+    return () => clearTimeout(timer);
+  // verify is a local event handler, not an effect dependency.
+  }, [step, code, email, busy, legalAccepted]);
 
   const needsConsent = () => {
     if (legalAccepted) return false;
@@ -59,24 +71,29 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     setBusy('send');
     try {
       await sendEmailCode(email);
-      setStep('code'); setCode(''); setWait(RESEND_SECONDS);
+      setStep('code'); setCode(''); lastAttemptRef.current = ''; setWait(RESEND_SECONDS);
       setNotice(tr('We sent a sign-in code to {email}.', { email: email.trim() }));
     } catch {
       setError(tr('We could not send a code right now. Wait a minute and try again.'));
     } finally { setBusy(''); }
   }
 
-  async function verify(event) {
-    event.preventDefault(); setError('');
-    const token = code.replace(/\s+/g, '');
+  async function verify(event, explicitCode) {
+    event?.preventDefault();
+    const token = String(explicitCode ?? code).replace(/\s+/g, '');
     if (!/^\d{6,10}$/.test(token)) { setError(tr('Enter the code from your email.')); return; }
-    setBusy('verify');
+    if (verificationRef.current) return;
+    const fingerprint = email.trim().toLowerCase() + ':' + token;
+    if (!event && lastAttemptRef.current === fingerprint) return;
+    verificationRef.current = true;
+    lastAttemptRef.current = fingerprint;
+    setError(''); setBusy('verify');
     try {
       const result = await verifyEmailCode(email, token);
       onAuthenticated?.(result?.session?.user ?? result?.user);
     } catch {
       setError(tr('That code is not valid or has expired. Check it or send a new one.'));
-    } finally { setBusy(''); }
+    } finally { verificationRef.current = false; setBusy(''); }
   }
 
   const unavailable = !supabaseConfigured;
@@ -108,9 +125,10 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     {step === 'email' ? <form className="auth-form" onSubmit={sendCode} noValidate>
       <label className="auth-field"><span>{tr('Email address')}</span><input type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>
       <button className="auth-submit" type="submit" disabled={!!busy || unavailable} {...disabledProps}>{busy === 'send' ? tr('Sending…') : tr('Email me a code')}</button>
-    </form> : <form className="auth-form" onSubmit={verify} noValidate>
-      <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => setCode(e.target.value.replace(/[^\d]/g, ''))} /></label>
-      <button className="auth-submit" type="submit" disabled={!!busy}>{busy === 'verify' ? tr('Checking…') : tr('Verify and sign in')}</button>
+    </form> : <form className={`auth-form auth-code-form${busy === 'verify' ? ' auth-verifying' : ''}`} onSubmit={verify} noValidate>
+      <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => { setCode(e.target.value.replace(/[^\d]/g, '')); setError(''); }} /></label>
+      <div className="auth-code-progress" role="presentation"><div style={{ width: `${Math.min(100, (code.length / 6) * 100)}%` }} /></div>
+      <button className="auth-submit" type="submit" disabled={!!busy} aria-busy={busy === 'verify'}>{busy === 'verify' ? <><span className="auth-verifying-spinner" aria-hidden="true" />{tr('Checking…')}</> : tr('Verify and sign in')}</button>
       <div className="auth-code-actions">
         <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); }}>{tr('Use a different email')}</button>
         <button type="button" disabled={wait > 0 || !!busy} onClick={() => sendCode()}>{wait > 0 ? tr('Resend in {n}s', { n: wait }) : tr('Resend code')}</button>
