@@ -1,4 +1,5 @@
-import { readChrome } from './nativeChrome';
+import { Capacitor } from '@capacitor/core';
+import { readChrome, startNativeChrome } from './nativeChrome';
 
 const page = (html) => { document.body.innerHTML = html; return document; };
 
@@ -27,4 +28,20 @@ test('both bars step aside while a sheet or dialog is open', () => {
   expect(s.overlay).toBe(true);
   expect(s.top.hidden).toBe(true);
   expect(s.dock.hidden).toBe(true);
+});
+
+test('Android does not activate iOS native chrome or hide the web navigation', () => {
+  const nativePlatform = jest.spyOn(Capacitor, 'isNativePlatform').mockReturnValue(true);
+  const platform = jest.spyOn(Capacitor, 'getPlatform').mockReturnValue('android');
+  try {
+    page('<main class="screen"><header class="screen-header"><h1>MOVO</h1></header></main><nav class="bottom-nav"><button class="nav-item">Home</button></nav>');
+    const stop = startNativeChrome();
+    expect(document.documentElement.classList.contains('native-chrome')).toBe(false);
+    expect(document.querySelector('main.screen .screen-header')).not.toBeNull();
+    expect(document.querySelector('nav.bottom-nav')).not.toBeNull();
+    stop();
+  } finally {
+    platform.mockRestore();
+    nativePlatform.mockRestore();
+  }
 });
