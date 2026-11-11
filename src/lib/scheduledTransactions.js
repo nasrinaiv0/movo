@@ -51,22 +51,25 @@ export async function createScheduledTransaction(input, userId) {
     ends_on:endsOn,reminder_days:reminderDays,timezone,
   }).select().single());
 }
-export async function logScheduledTransaction(item, accountId = item.account_id, transferTo = item.transfer_to_account_id) {
+export async function logScheduledTransaction(item, accountId = item.account_id, transferTo = item.transfer_to_account_id, now = new Date()) {
   if (!item?.id) throw new Error('Scheduled transaction not found.');
   const occurrence = item.scheduled_for;
+  // One log per occurrence, found by its reference (unique per account), never by its time: the time is the moment
+  // it was logged on this device (owner, 2026-11-11), not a fixed noon UTC on the due date.
   const reference = `movo-schedule:${item.id}:${occurrence}`;
-  let transaction = unwrap(await client().from('transactions').select('id').eq('schedule_id',item.id).eq('occurred_at',`${occurrence}T12:00:00+00:00`).maybeSingle());
+  const findLogged = async () => unwrap(await client().from('transactions').select('id').eq('schedule_id',item.id).eq('external_reference',reference).maybeSingle());
+  let transaction = await findLogged();
   if (!transaction) {
     try {
       transaction = await createTransaction({
         transaction_type:item.transaction_type,amount:item.amount,currency:item.currency,merchant:item.title,
         category:item.category||'Other',account_id:accountId,transfer_to_account_id:item.transaction_type==='transfer'?transferTo:null,
-        occurred_at:`${occurrence}T12:00:00Z`,source:'manual',external_reference:reference,schedule_id:item.id,
+        occurred_at:now.toISOString(),source:'manual',external_reference:reference,schedule_id:item.id,
         note:item.notes||null,
       }, item.user_id);
     } catch (error) {
-      // A concurrent tap may have won the unique schedule-occurrence index. Reuse that log.
-      const existing = unwrap(await client().from('transactions').select('id').eq('schedule_id',item.id).eq('occurred_at',`${occurrence}T12:00:00+00:00`).maybeSingle());
+      // A concurrent tap may have won the unique reference index. Reuse that log.
+      const existing = await findLogged();
       if (!existing) throw error;
       transaction = existing;
     }

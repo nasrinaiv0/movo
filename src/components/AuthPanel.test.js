@@ -41,14 +41,14 @@ describe('MOVO Google OAuth sign-in', () => {
 
   test('shows a dedicated Google sign-in action', () => {
     const button = Array.from(container.querySelectorAll('button'))
-      .find((item) => item.textContent.includes('Continue with Google'));
+      .find((item) => item.getAttribute('aria-label') === 'Continue with Google');
     expect(button).toBeTruthy();
     expect(button.disabled).toBe(false);
   });
 
   test('requires explicit legal acknowledgement before starting Google OAuth', async () => {
     const button = Array.from(container.querySelectorAll('button'))
-      .find((item) => item.textContent.includes('Continue with Google'));
+      .find((item) => item.getAttribute('aria-label') === 'Continue with Google');
     await act(async () => {
       button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await Promise.resolve();

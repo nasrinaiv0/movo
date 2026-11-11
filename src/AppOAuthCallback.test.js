@@ -38,7 +38,7 @@ describe('MOVO Google OAuth callback', () => {
 
   test('shows a safe sign-in error and removes provider details from the URL', () => {
     expect(container.textContent).toContain('Google sign-in could not be completed.');
-    expect(container.textContent).toContain('Continue with Google');
+    expect(container.querySelector('button[aria-label="Continue with Google"]')).not.toBeNull();
     expect(window.location.hash).toBe('');
     expect(window.location.search).not.toContain('private-provider-details');
   });

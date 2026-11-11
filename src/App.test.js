@@ -241,6 +241,43 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.bottom-nav .nav-item[aria-current="page"]').getAttribute('aria-label')).toBe('Wallet');
   });
 
+  test('the device Back button closes an open sheet, then returns through the screens visited, then to Home', async () => {
+    const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
+    const current = () => container.querySelector('.bottom-nav .nav-item[aria-current="page"]')?.getAttribute('aria-label');
+    openProfile(container);
+    clickButton(container, 'Settings');
+    const plan = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
+    act(() => plan.click());
+    expect(container.querySelector('[role="dialog"][aria-label="Plan & Usage"]')).not.toBeNull();
+    await back(); // closes the sheet, stays on Settings
+    expect(container.querySelector('[role="dialog"][aria-label="Plan & Usage"]')).toBeNull();
+    expect(Array.from(container.querySelectorAll('.menu-row')).some(row => row.querySelector('strong')?.textContent === 'Plan & Usage')).toBe(true);
+    await back(); // Settings → Profile
+    expect(container.querySelector('.menu-row strong')?.textContent).not.toBe(undefined);
+    expect(Array.from(container.querySelectorAll('.menu-row')).some(row => row.querySelector('strong')?.textContent === 'Plan & Usage')).toBe(false);
+    await back(); // Profile → Menu
+    expect(current()).toBe('Menu');
+    expect(container.querySelector('.menu-hero')).not.toBeNull();
+    await back(); // Menu → Home
+    expect(current()).toBe('Home');
+    await back(); // nothing left: Home stays
+    expect(current()).toBe('Home');
+  });
+
+  test('Pro+ colours the bottom navigation platinum by default, and Appearance can switch it to the app accent', () => {
+    const root_ = () => container.querySelector('.movo-app');
+    expect(root_().className).toContain('nav-tier-platinum');
+    openProfile(container);
+    const options = () => Array.from(container.querySelectorAll('.nav-accent-options button'));
+    expect(options().map(b => b.textContent)).toEqual(['Platinum', 'App accent']);
+    expect(options()[0].getAttribute('aria-checked')).toBe('true');
+    act(() => options()[1].click());
+    expect(root_().className).not.toContain('nav-tier-');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).navAccent).toBe('app');
+    act(() => options()[0].click());
+    expect(root_().className).toContain('nav-tier-platinum');
+  });
+
   test('tapping a membership card opens the same Account details layout as other cards, with Edit card leading to the editor', () => {
     act(() => root.unmount());
     const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');

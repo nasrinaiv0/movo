@@ -21,6 +21,7 @@ export const MERCHANT_FAVICONS = {
   'Watsons': { domain: 'watsons.com.ph' }, 'Landers': { domain: 'landers.ph' }, 'SM Advantage': { domain: 'smadvantage.com' },
   '7-Eleven': { domain: '7-eleven.com.ph' }, '7 Eleven': { domain: '7-eleven.com.ph' }, Shopee: { domain: 'shopee.ph' },
   Lazada: { domain: 'lazada.com.ph' }, Puregold: { domain: 'puregold.com.ph' }, 'Mercury Drug': { domain: 'mercurydrug.com' },
+  'MR DIY': { domain: 'mrdiy.com' }, 'MR. DIY': { domain: 'mrdiy.com' }, 'MR.DIY': { domain: 'mrdiy.com' },
   Uniqlo: { domain: 'uniqlo.com' }, IKEA: { domain: 'ikea.com' }, Amazon: { domain: 'amazon.com' }, Apple: { domain: 'apple.com' },
   // Bills and utilities
   Meralco: { domain: 'meralco.com.ph' }, Globe: { domain: 'globe.com.ph' }, Smart: { domain: 'smart.com.ph' },

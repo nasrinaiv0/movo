@@ -57,6 +57,8 @@ const P = {
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.7M12 17h.01" /></>,
   face: <><path d="M4 8.5V7a3 3 0 0 1 3-3h1.5M15.5 4H17a3 3 0 0 1 3 3v1.5M20 15.5V17a3 3 0 0 1-3 3h-1.5M8.5 20H7a3 3 0 0 1-3-3v-1.5" /><path d="M9 10v1M15 10v1M12 10v3h-1M9.5 15.5c1.4 1 3.6 1 5 0" /></>,
   limits: <path d={LIMITS_GAUGE_PATH} fill="currentColor" fillRule="evenodd" stroke="none" />,
+  // Solid filter mark (owner reference, 2026-11-11): three thick bars, each with a round knob set off by a small gap.
+  filterBars: <><g fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"><path d="M2.7 5h5.9M20.2 5h1.1M2.7 12h.3M14.6 12h6.7M2.7 19h5.9M20.2 19h1.1" /></g><g fill="currentColor" stroke="none"><circle cx="14.4" cy="5" r="3.3" /><circle cx="8.8" cy="12" r="3.3" /><circle cx="14.4" cy="19" r="3.3" /></g></>,
   sliders: <><path d="M3.5 5.2h17M3.5 12h17M3.5 18.8h17" /><circle cx="9" cy="5.2" r="2.4" /><circle cx="16" cy="12" r="2.4" /><circle cx="7" cy="18.8" r="2.4" /></>,
   transactionFilter: <><circle cx="12" cy="12" r="12" fill="#1e1e1e" stroke="none" /><g fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h11M18 4h3M3 12h7M14 12h7M3 20h13M20 20h1M14 1v6M10 9v6M16 17v6" /></g></>,
   // Page-specific reference-matched header glyphs. currentColor inherits the accent/theme ink.

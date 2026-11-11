@@ -125,7 +125,7 @@ export function EditProfile({ c }) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!/^image\\//i.test(file.type || '') || file.size > 8 * 1024 * 1024) { setPhotoError(tr('Choose an image under 8 MB.')); return; }
+    if (!/^image\//i.test(file.type || '') || file.size > 8 * 1024 * 1024) { setPhotoError(tr('Choose an image under 8 MB.')); return; }
     const reader = new FileReader();
     reader.onerror = () => setPhotoError(tr('This image could not be read.'));
     reader.onload = () => {

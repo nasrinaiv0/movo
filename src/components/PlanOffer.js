@@ -123,42 +123,38 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     <div className="plan-panel-head">
       <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
       <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
-      <p>{tr('Choose the plan that fits your money flow')}</p>
     </div>
     <div className="plan-period" role="group" aria-label={tr('Billing period')}>
       {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}</button>)}
     </div>
-    <div className="plan-tiles-row">
-      <button type="button" className="plan-arrow" aria-label={tr('Previous plan')} disabled={index === 0} onClick={() => setIndex(i => Math.max(0, i - 1))}><Icon name="chevron" size={16} /></button>
-      <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
-        {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
-          <MovoMark size={30} tone={item.tone} />
-          <strong>{tr(item.name)}</strong>
-          {item.tier === plan && <small>{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
-        </button>)}
-      </div>
-      <button type="button" className="plan-arrow next" aria-label={tr('Next plan')} disabled={index === PLANS.length - 1} onClick={() => setIndex(i => Math.min(PLANS.length - 1, i + 1))}><Icon name="chevron" size={16} /></button>
+    <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
+      {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
+        <MovoMark size={26} tone={item.tone} />
+        <strong>{tr(item.name)}</strong>
+        {item.tier === plan && <small>{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
+      </button>)}
     </div>
-    <div className="plan-dots" aria-hidden="true">{PLANS.map((item, i) => <i key={item.tier} className={index === i ? 'on' : ''} />)}</div>
-    <div className="plan-price" aria-live="polite">
+    <div className="plan-price" aria-live="polite" key={`${selected.tier}:${period}`}>
       {selected.tier === 'free' ? <><strong>{tr('Free')}</strong><span>{tr('always')}</span></>
         : product ? <><strong>{product.priceString}</strong><span>/ {tr(period === 'monthly' ? 'month' : 'year')}</span></>
           : trialOffer ? <><MovoMark size={22} tone="white" /><strong>{tr('1 month free')}</strong></>
             : <span className="plan-price-note">{tr('Price shown by the App Store or Google Play')}</span>}
       {selected.tier !== 'free' && other && <small>{tr('or {price} / {period}', { price: other.priceString, period: tr(period === 'monthly' ? 'year' : 'month') })}{saving > 0 && period === 'monthly' ? <em> {tr('(save {n}%)', { n: saving })}</em> : null}</small>}
-      {trialOffer && <small className="plan-trial-note">{tr('1 month free · no payment, no automatic charge')}</small>}
+      {trialOffer && <small className="plan-trial-note">{tr('No payment, no automatic charge')}</small>}
     </div>
-    <div className="plan-features">
+    <div className={`plan-features tier-${selected.tier}`} key={selected.tier}>
       <b>{tr(selected.heading)}</b>
-      <ul>{selected.features.map(item => <li key={item}><Icon name="check" size={15} strokeWidth={2.4} />{tr(item)}</li>)}</ul>
+      <ul>{selected.features.map((item, i) => <li key={item} style={{ '--i': i }}><Icon name="check" size={15} strokeWidth={2.4} />{tr(item)}</li>)}</ul>
     </div>
     {trialOffer && session?.access_token && (showCode
       ? <input className="plan-referral-input" maxLength={24} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code, e.g. M78038')} aria-label={tr('Referral code')} autoCapitalize="none" autoComplete="off" />
       : <button type="button" className="link-button plan-referral-toggle" onClick={() => setShowCode(true)}>{tr('Have a referral code?')}</button>)}
+    <div className="plan-panel-foot">
     {error && <p role="alert" className="form-error">{error}</p>}
-    <button type="button" className={`plan-cta tier-${selected.tier}`} disabled={busy || action.disabled} onClick={action.run}>{action.label}</button>
+    <button type="button" key={selected.tier} className={`plan-cta tier-${selected.tier}`} disabled={busy || action.disabled} onClick={action.run}>{action.label}</button>
     {action.note && <p className="plan-fine">{action.note}</p>}
     <p className="plan-fine">{selected.tier === 'free' ? tr('Your records stay on this device unless you turn on Cloud Sync.') : trialOffer ? tr('The free month ends on its own; nothing renews.') : tr('Auto-renews unless canceled.')} {onOpenTerms ? <button type="button" className="link-button" onClick={onOpenTerms}>{tr('Terms apply.')}</button> : tr('Terms apply.')}
       {onPlans && selected.tier !== 'free' && <> · <button type="button" className="link-button" onClick={onPlans}>{tr('Plans & purchases')}</button></>}</p>
+    </div>
   </Sheet>;
 }

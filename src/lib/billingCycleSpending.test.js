@@ -19,3 +19,31 @@ test('historical cycle % compares against actual previous month, not daily bucke
   expect(spendingVsPreviousCycle([expense('2026-10-02',50)],'all')).toBeNull();
   expect(billingCycleSpending([], 'invalid')).toEqual([]);
 });
+
+describe('graph rows that follow the billing-cycle filter', () => {
+  const { dailyCycleSpending, allCycleSpending } = require('./billingCycleSpending');
+  const tx = (date, amount, type = 'expense') => ({ type, amount, date });
+
+  test('a chosen cycle gives one row for every day of that month, in order, with exact cents', () => {
+    const rows = dailyCycleSpending([
+      tx('2026-11-01T02:00:00Z', 10.1), tx('2026-11-01T05:00:00Z', 0.2), tx('2026-11-30T03:00:00Z', 47),
+      tx('2026-10-31T03:00:00Z', 999), tx('2026-12-01T03:00:00Z', 999), tx('2026-11-10T03:00:00Z', 500, 'income'),
+    ], '2026-11');
+    expect(rows).toHaveLength(30);
+    expect(rows[0]).toEqual({ key: '2026-11-01', amount: 10.3 });
+    expect(rows[29]).toEqual({ key: '2026-11-30', amount: 47 });
+    expect(rows.slice(1, 29).every(row => row.amount === 0)).toBe(true);
+    expect(dailyCycleSpending([], '2028-02')).toHaveLength(29); // leap year
+    expect(dailyCycleSpending([], 'all')).toEqual([]);
+  });
+
+  test('"All" gives every cycle from the first one with data to the present, empty months included', () => {
+    const rows = allCycleSpending([tx('2026-08-12T03:00:00Z', 120), tx('2026-10-02T03:00:00Z', 30.5), tx('2026-10-20T03:00:00Z', 9.5)], '2026-11');
+    expect(rows).toEqual([{ key: '2026-08', amount: 120 }, { key: '2026-09', amount: 0 }, { key: '2026-10', amount: 40 }, { key: '2026-11', amount: 0 }]);
+    expect(allCycleSpending([], '2026-11')).toEqual([{ key: '2026-11', amount: 0 }]);
+    // A long history keeps the most recent cycles.
+    const long = allCycleSpending([tx('2020-01-05T03:00:00Z', 1)], '2026-11', 36);
+    expect(long).toHaveLength(36);
+    expect(long[35].key).toBe('2026-11');
+  });
+});

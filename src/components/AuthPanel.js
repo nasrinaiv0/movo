@@ -116,8 +116,8 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </label>
 
     <div className="auth-providers">
-      <button className="auth-provider auth-apple" type="button" onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}><AppleMark />{busy === 'apple' ? tr('Please wait…') : tr('Continue with Apple')}</button>
-      <button className="auth-provider auth-google" type="button" onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}><GoogleMark />{busy === 'google' ? tr('Please wait…') : tr('Continue with Google')}</button>
+      <button className="auth-provider auth-apple" type="button" aria-label={tr('Continue with Apple')} onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}>{busy === 'apple' ? tr('Please wait…') : rich('Continue with {brand}', { brand: <AppleMark /> })}</button>
+      <button className="auth-provider auth-google" type="button" aria-label={tr('Continue with Google')} onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}>{busy === 'google' ? tr('Please wait…') : rich('Continue with {brand}', { brand: <GoogleMark /> })}</button>
     </div>
 
     <div className="auth-divider" aria-hidden="true"><span>{tr('or use your email')}</span></div>
@@ -126,9 +126,17 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       <label className="auth-field"><span>{tr('Email address')}</span><input type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>
       <button className="auth-submit" type="submit" disabled={!!busy || unavailable} {...disabledProps}>{busy === 'send' ? tr('Sending…') : tr('Email me a code')}</button>
     </form> : <form className={`auth-form auth-code-form${busy === 'verify' ? ' auth-verifying' : ''}`} onSubmit={verify} noValidate>
-      <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => { setCode(e.target.value.replace(/[^\d]/g, '')); setError(''); }} /></label>
-      <div className="auth-code-progress" role="presentation"><div style={{ width: `${Math.min(100, (code.length / 6) * 100)}%` }} /></div>
+      {/* One real field (so the phone can fill the code from the message) drawn as six boxes. */}
+      <label className="auth-field auth-otp-field"><span>{tr('Code from your email')}</span>
+        <span className={`auth-otp${error ? ' has-error' : ''}`}>
+          <input ref={codeRef} className="auth-code auth-otp-input" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={6} value={code} onChange={e => { setCode(e.target.value.replace(/[^\d]/g, '').slice(0, 6)); setError(''); }} />
+          <span className="auth-otp-boxes" aria-hidden="true">
+            {[0, 1, 2, 3, 4, 5].map(i => <span key={i} style={{ '--i': i }} className={`auth-otp-box${code[i] ? ' filled' : ''}${i === Math.min(code.length, 5) ? ' active' : ''}`}>{code[i] ? <b key={code[i] + i}>{code[i]}</b> : null}</span>)}
+          </span>
+        </span>
+      </label>
       <button className="auth-submit" type="submit" disabled={!!busy} aria-busy={busy === 'verify'}>{busy === 'verify' ? <><span className="auth-verifying-spinner" aria-hidden="true" />{tr('Checking…')}</> : tr('Verify and sign in')}</button>
+      {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
       <div className="auth-code-actions">
         <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); }}>{tr('Use a different email')}</button>
         <button type="button" disabled={wait > 0 || !!busy} onClick={() => sendCode()}>{wait > 0 ? tr('Resend in {n}s', { n: wait }) : tr('Resend code')}</button>
@@ -136,7 +144,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </form>}
 
     {error && <p className="auth-error" role="alert">{error}</p>}
-    {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
+    {notice && !error && step !== 'code' && <p className="auth-notice" role="status">{notice}</p>}
     {unavailable && <p id="auth-config-note" className="auth-config-note" role="note">{tr('Cloud sign-in is unavailable until deployment configuration is completed. You can continue in local-only mode, but cloud account creation and sign-in will not work until configuration is fixed.')}</p>}
 
     {onContinueLocally && <button className="auth-local" type="button" onClick={() => { if (needsConsent()) return; onContinueLocally(); }}>{tr('Continue with this device only')}</button>}

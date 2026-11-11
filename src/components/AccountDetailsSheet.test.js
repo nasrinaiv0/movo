@@ -88,11 +88,13 @@ test('account overview shows Money Flow scoped to the selected account', async (
   const el = document.createElement('div');
   document.body.appendChild(el);
   const root = createRoot(el);
+  // One shared timestamp: separate new Date() calls could land a millisecond apart and reorder the list.
+  const now = new Date().toISOString();
   const transactions = [
-    { id: 'cash-expense', account_id: 'cash-1', type: 'expense', amount: 125, date: new Date().toISOString() },
-    { id: 'cash-income', account_id: 'cash-1', type: 'income', amount: 500, date: new Date().toISOString() },
-    { id: 'transfer-to-cash', account_id: 'other-account', transfer_to_account_id: 'cash-1', type: 'transfer', amount: 300, date: new Date().toISOString() },
-    { id: 'other-account-expense', account_id: 'other-account', type: 'expense', amount: 800, date: new Date().toISOString() },
+    { id: 'cash-expense', account_id: 'cash-1', type: 'expense', amount: 125, date: now },
+    { id: 'cash-income', account_id: 'cash-1', type: 'income', amount: 500, date: now },
+    { id: 'transfer-to-cash', account_id: 'other-account', transfer_to_account_id: 'cash-1', type: 'transfer', amount: 300, date: now },
+    { id: 'other-account-expense', account_id: 'other-account', type: 'expense', amount: 800, date: now },
   ];
   await act(async () => {
     root.render(<AccountDetailsSheet
