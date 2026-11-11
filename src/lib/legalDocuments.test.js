@@ -8,6 +8,8 @@ describe('public app-store legal documents', () => {
       expect(html).toContain('MOVO');
       expect(html).toContain('November 11, 2026');
       expect(html).toContain('support@nasrinai.com');
+      expect(html).toContain('dpo@nasrinai.com');
+      expect(html).toContain('Nasrin Abubakar');
       expect(html).toMatch(/<h2>/);
       expect(html).not.toContain('<div id="root"></div>');
     });
@@ -32,4 +34,15 @@ test('public and in-app legal disclosures use the same canonical English supplem
     for (const section of legalSupplement[kind]) expect(html).toContain(section.heading);
     expect(html).toContain('data-legal-supplement=');
   }
+});
+
+
+test('external account deletion and in-app legal notices identify the DPO', () => {
+  const page = fs.readFileSync(path.join(process.cwd(), 'public/account-deletion.html'), 'utf8');
+  const app = fs.readFileSync(path.join(process.cwd(), 'src/screens/Legal.js'), 'utf8');
+  for (const source of [page, app]) {
+    expect(source).toContain('Nasrin Abubakar');
+    expect(source).toContain('dpo@nasrinai.com');
+  }
+  expect(page).toContain('mailto:support@nasrinai.com');
 });

@@ -57,3 +57,7 @@ The [production audit](../../audits/2026-11-11-security-safety-compliance.md) re
 - UI regression for Clear All Data now awaits its verified asynchronous QR, attachment, hybrid-store and native-storage cleanup before asserting that records disappeared; this preserves the stricter completion contract rather than relying on an unsafe synchronous assumption.
 
 - The privacy cleanup regression exposed an IndexedDB-absent runtime: account QR removal already treats unavailable IndexedDB as an empty store, but receipt attachment removal threw before the local ledger could be cleared. Both now skip only absent IndexedDB, while actual database write/clear errors remain blocking. The local-finance-key removal result is also checked before claiming success.
+
+## 2026-11-11 — PR #274: DPO disclosure and 176-market compliance gate
+
+Designated DPO Nasrin Abubakar, dpo@nasrinai.com, in public and in-app legal pages and the external account-deletion instructions; retain general support email. Legal controller identity, physical address and local representative details remain unverified, and no legal clearance is asserted. Added regression coverage and a global market-specific release evidence register. Apple currently advertises 175 App Store countries or regions, not the requested 176; Google Play market list and individual requirements need separate confirmation. Do not merge, publish, activate billing, or apply production migrations without independent validation. Vercel Sandbox still returns HTTP 402 payment_required.

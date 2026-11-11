@@ -1,3 +1,8 @@
+
+## 2026-11-11 — PR #274: DPO disclosure and 176-market compliance gate
+
+Designated DPO Nasrin Abubakar, dpo@nasrinai.com, in public and in-app legal pages and the external account-deletion instructions; retain general support email. Legal controller identity, physical address and local representative details remain unverified, and no legal clearance is asserted. Added regression coverage and a global market-specific release evidence register. Apple currently advertises 175 App Store countries or regions, not the requested 176; Google Play market list and individual requirements need separate confirmation. Do not merge, publish, activate billing, or apply production migrations without independent validation. Vercel Sandbox still returns HTTP 402 payment_required.
+
 ## 2026-11-11 — PR #274: Security, privacy and billing remediation (review — NO-GO)
 
 - The existing Clear All Data action previously ignored private-file cleanup failures, did not await removal of the native Preferences mirror, and could report both a false success and a misleading 'nothing removed' error. It now awaits QR, receipt, hybrid journal and native mirror cleanup, retains the retry sheet on failure and reports a retry-required failure without falsely claiming no data changed. Native/browser acceptance is still required.

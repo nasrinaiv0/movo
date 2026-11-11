@@ -57,6 +57,7 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
       <LegalSupplement kind={current === 'TermsOfService' ? 'terms' : 'privacy'} />
       <footer className="legal-contact">
         <h2>{tr('Questions or privacy requests?')}</h2>
+        <p lang="en">Data Protection Officer: Nasrin Abubakar · <a href="mailto:dpo@nasrinai.com">dpo@nasrinai.com</a></p>
         <p>{rich('Contact the MOVO service team at {link}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       </footer>
       <SocialLinks />
