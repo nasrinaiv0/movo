@@ -8287,3 +8287,56 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app.nav-tier-platinum .side-nav .side-item.active { background: rgba(196,204,212,.28); }
 .movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active { background: rgba(226,232,238,.12); }
 .movo-app.movo-app.nav-tier-gold .side-nav .side-item.active { background: rgba(227,176,74,.16); }
+
+/* ===== Tutorial film and setup agreement (owner, 2026-11-11) =====
+   The video guide is a real recording of MOVO, full-bleed like a story: controls float over a top shade and the
+   translated caption over a bottom shade. The setup agreement covers the dashboard until the Terms are accepted. */
+.movo-app.movo-app .tv-player.tv-film { width: min(100%, 430px); height: min(932px, calc(100dvh - 24px)); padding: 0; background: #07090d; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); isolation: isolate; }
+@media (max-width: 520px) {
+  .movo-app .tv-backdrop:has(.tv-film) { padding: 0; }
+  .movo-app.movo-app .tv-player.tv-film { width: 100%; height: 100dvh; border-radius: 0; }
+}
+.movo-app .tv-film .tv-video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; background: #07090d; }
+.movo-app .tv-film .tv-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(5,7,11,.9) 0, rgba(5,7,11,.55) 84px, rgba(5,7,11,0) 150px), linear-gradient(0deg, rgba(5,7,11,.94) 0, rgba(5,7,11,.82) 150px, rgba(5,7,11,0) 300px); }
+.movo-app .tv-film .tv-progress { position: relative; z-index: 3; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
+.movo-app .tv-film .tv-progress i { transition: width .25s linear; }
+.movo-app .tv-film .tv-top { z-index: 3; padding: 0 16px; }
+.movo-app .tv-film .tv-icon, .movo-app .tv-film .tv-skip { background: rgba(20,24,32,.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.movo-app .tv-film .tv-sound.is-muted { opacity: .62; position: relative; }
+.movo-app .tv-film .tv-sound.is-muted::after { content: ''; position: absolute; width: 18px; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
+.movo-app .tv-film .tv-hold { position: absolute; inset: 0; z-index: 1; }
+.movo-app .tv-film .tv-tap { z-index: 2; top: 96px; bottom: 210px; width: 30%; }
+.movo-app .tv-film .tv-bigplay { position: absolute; z-index: 3; left: 50%; top: 42%; width: 72px; height: 72px; margin: -36px 0 0 -36px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: rgba(20,24,32,.55); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 12px 40px -12px rgba(0,0,0,.7); }
+.movo-app .tv-film .tv-caption { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 66px); text-align: center; pointer-events: none; animation: tv-caption .45s ease-out both; }
+.movo-app .tv-film .tv-caption h2 { margin: 0 0 6px; font-size: 22px; line-height: 1.18; letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
+.movo-app .tv-film .tv-caption p { margin: 0 auto; max-width: 340px; font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.84); text-shadow: 0 1px 12px rgba(0,0,0,.6); }
+.movo-app .tv-film .tv-actions { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
+.movo-app .tv-film .tv-actions .secondary-button { background: rgba(255,255,255,.14); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+@keyframes tv-caption { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .movo-app .tv-film .tv-caption { animation: none; } .movo-app .tv-film .tv-progress i { transition: none; } }
+
+/* Setup gate: the bottom nav stays visible but closed until setup is finished. */
+.movo-app .bottom-nav.is-locked, .movo-app .side-nav.is-locked { opacity: .45; filter: saturate(.4); pointer-events: none; }
+.movo-app .setup-agreement { position: fixed; inset: 0; z-index: 390; display: grid; place-items: center; overflow-y: auto; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); background: var(--bg, #0b0d12); }
+.movo-app .setup-agreement-card { width: min(100%, 420px); display: grid; gap: 12px; justify-items: center; text-align: center; animation: tv-caption .5s ease-out both; }
+.movo-app .setup-agreement-mark { display: grid; place-items: center; width: 64px; height: 64px; }
+.movo-app .setup-agreement-card h2 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
+.movo-app .setup-agreement-card > p { margin: 0; font-size: 14px; color: var(--muted); }
+.movo-app .setup-agreement-points { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; display: grid; gap: 8px; text-align: start; }
+.movo-app .setup-agreement-points li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-card, 22px); background: var(--card); font-size: 13.5px; line-height: 1.45; animation: tv-caption .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+.movo-app .setup-agreement-points li > span:last-child { min-width: 0; }
+.movo-app .setup-agreement-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-tile, 30%); background: rgba(127,127,127,.16); color: var(--text); }
+.movo-app .setup-agreement-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+.movo-app .setup-agreement-links .link-button { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--accent); }
+.movo-app .setup-agreement-check { display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: start; font-size: 13.5px; line-height: 1.45; cursor: pointer; }
+.movo-app .setup-agreement-check input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--accent); }
+.movo-app .setup-agreement-accept { width: 100%; }
+.movo-app .setup-agreement-accept:disabled { opacity: .45; }
+@media (prefers-reduced-motion: reduce) { .movo-app .setup-agreement-card, .movo-app .setup-agreement-points li { animation: none; } }
+
+/* Edge swipe back in the iPhone app (owner, 2026-11-12): the screen follows the finger with a soft edge shadow. */
+html.movo-edge-swiping .movo-app main.screen { box-shadow: -14px 0 34px -12px rgba(0,0,0,.35), 14px 0 34px -12px rgba(0,0,0,.35); }
+/* The slid screen must not widen the page: mobile browsers would zoom out and move the fixed bottom nav. */
+html.movo-edge-swiping, html.movo-edge-swiping body { overscroll-behavior-x: none; overflow-x: hidden; }
+html.movo-edge-swiping .movo-app .app-shell { overflow-x: clip; }

@@ -35,6 +35,8 @@ export function pushBackLayer(close) {
   layers.push(layer);
   return () => { const at = layers.indexOf(layer); if (at >= 0) layers.splice(at, 1); };
 }
+/** True while a sheet or dialog is registered as open. */
+export function hasBackLayer() { return layers.length > 0; }
 /** Close the top open layer. True when there was one. */
 export function closeTopBackLayer() {
   const layer = layers[layers.length - 1];

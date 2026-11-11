@@ -45,3 +45,9 @@ test('Android does not activate iOS native chrome or hide the web navigation', (
     nativePlatform.mockRestore();
   }
 });
+
+test('the native dock stays hidden while setup is unfinished (locked web nav)', () => {
+  const doc = page(`<main class="screen"><header class="screen-header root"><h1>Sign in</h1></header></main>
+    <nav class="bottom-nav is-locked"><button class="nav-item nav-active" aria-label="Home" disabled><svg></svg></button><button class="nav-item" aria-label="Wallet" disabled><svg></svg></button></nav>`);
+  expect(readChrome(doc).dock.hidden).toBe(true);
+});

@@ -24,6 +24,8 @@ function buildStaticPolicy(kind, html) {
   if (!['terms', 'privacy'].includes(kind)) throw new Error('Invalid legal page');
   let result = html.replace(/<div data-legal-supplement="(?:terms|privacy)"[^>]*>[\s\S]*?<\/div><!-- MOVO_LEGAL_SUPPLEMENT_END -->/g, '');
   result = result.replace('November 3, 2026', 'November 6, 2026');
+  // Terms changed on 2026-11-11 (setup acceptance, section 17); keep in step with src/lib/legalVersion.js.
+  if (kind === 'terms') result = result.replace('November 6, 2026', 'November 11, 2026');
   result = result.replace(/\n<\/article>/, '</article>');
   if (!result.includes('</article>')) throw new Error('Legal page is missing article container');
   return result.replace('</article>', renderSupplement(kind) + '\n</article>');

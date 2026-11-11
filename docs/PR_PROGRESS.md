@@ -1,3 +1,11 @@
+## 2026-11-12 — Swipe back on iPhone and Android
+
+Owner request: swipe from the edge to go back. The iPhone app gets an edge swipe (left edge → right, or right edge → left) that follows the finger and closes the open sheet or returns to the previous screen. Android's back button and system gesture now call MOVO's Back directly, and at Home the app moves to the background. Browsers keep their own swipe. Validation: Jest 203 suites / 1,234 tests, tsc, strict build, browser touch check (see `docs/engineering/updates/2026-11-12-swipe-back.md`). Not run: real devices.
+
+## 2026-11-11 — Narrated video guide of the real app and setup gate
+
+Owner request: the video guide now shows the real MOVO interface with invented sample records, narrated in the owner's "MOVO" ElevenLabs voice (62 s, 3.8 MB H.264/AAC in `public/tutorial/`), with translated captions, chapter skipping, a sound button and the animated scenes as fallback. It flashes account deletion, the no-bank-connection and logo/favicon disclosures and the Terms. New setup gate: dashboard and navigation stay locked until video, walkthrough, sign-in choice, free-month panel and the new Terms/Privacy agreement are done; accepting opens the dashboard. Terms §17 added (effective November 11, 2026); acceptance syncs (newest wins). Validation: Jest 201 suites, tsc, strict build, local browser flow (see `docs/engineering/updates/2026-11-11-video-guide-setup-gate.md`). Not run: iOS/Android devices.
+
 ## 2026-11-11 — PR #273: Repair Android auth build and native navigation
 
 Fix Android's missing top and bottom bars by limiting iOS Liquid Glass native-chrome substitution to iOS; keep Android's five-tab web dock and page headers. Add Android platform regression coverage. Repair Google Play's signed AAB pipeline by injecting the public Supabase project URL and anon/publishable key from the protected GitHub release environment at CRA build time; reject missing/invalid public values and server-secret roles. Add Node release-guard tests to PR signing CI. No billing, accounting, database, iOS layout, or production release changes. Vercel Sandbox testing was attempted but blocked with HTTP 402 payment_required. CI and real Android testing are required before merging or publishing. Details: `docs/engineering/updates/2026-11-11-android-auth-chrome.md`.
