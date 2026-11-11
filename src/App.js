@@ -34,6 +34,8 @@ import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
+import SetupAgreement from './components/SetupAgreement';
+import { LEGAL_VERSION, hasAcceptedLegal } from './lib/legalVersion';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
 import AccountTile from './components/AccountTile';
@@ -165,9 +167,12 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+// Screens reachable while setup is unfinished (see setupDone in App).
+const SETUP_SCREENS = new Set(['Home', 'Sign in', 'TermsOfService', 'PrivacyPolicy']);
+const SETUP_READING = new Set(['Sign in', 'TermsOfService', 'PrivacyPolicy']);
 const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
@@ -243,33 +248,6 @@ function CurrencySheet({ value, fx, locale, onPick, onClose }) {
   </Sheet>;
 }
 
-function PostTourLegalDisclosure({ onReview, onDismiss }) {
-  const [acknowledged, setAcknowledged] = useState(false);
-  const accept = () => { if (!acknowledged) return; onReview(); };
-  return <div className="legal-disclosure-backdrop" role="presentation">
-    <section className="legal-disclosure-card" role="dialog" aria-modal="true" aria-labelledby="movo-disclosure-title" aria-describedby="movo-disclosure-description">
-      <div className="legal-disclosure-content">
-        <span className="legal-disclosure-mark" aria-hidden="true"><MovoMark size={42} /></span>
-        <p className="legal-disclosure-eyebrow">{tr('Important notice')}</p>
-        <h2 id="movo-disclosure-title">{tr('Third-party logo disclaimer')}</h2>
-        <p id="movo-disclosure-description">{tr('Please read and acknowledge the following before reviewing MOVO’s Terms of Service and Privacy Policy.')}</p>
-        <ol className="legal-disclosure-points legal-disclosure-numbered">
-          <li>{tr('Logos are for identification only. They help users recognize their cards, bank accounts, e-wallets, subscriptions, and track their financial activity.')}</li>
-          <li>{tr('MOVO does not connect to your banks or financial accounts. Logos do not perform financial operations. Displaying a logo does not authorize payments, connect to an institution, authenticate an account, or collect credentials or financial information from that institution.')}</li>
-          <li>{tr('MOVO digital subscriptions use Apple In-App Purchase on iOS and Google Play Billing on Android. Third-party bank logos identify recorded accounts and do not imply a partnership.')}</li>
-        </ol>
-      </div>
-      <div className="legal-disclosure-footer">
-        <label className="legal-disclosure-check"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)} /><span>{tr('I have read and acknowledge this disclaimer.')}</span></label>
-        <div className="legal-disclosure-actions">
-          <button type="button" className="secondary-button" disabled={!acknowledged} onClick={() => { if (acknowledged) onDismiss(); }}>{tr('Review later')}</button>
-          <button type="button" className="primary-button" disabled={!acknowledged} aria-disabled={!acknowledged} onClick={accept}>{tr('Review Terms & Privacy')} <Icon name="arrow-right" size={16} /></button>
-        </div>
-      </div>
-    </section>
-  </div>;
-}
-
 /*
  * A device copy with no pending changes holds nothing the cloud does not (every row came from a complete,
  * owner-checked cloud read), so the cloud's current rows replace it: new and edited rows, and rows deleted in the
@@ -317,7 +295,6 @@ function App() {
   const [scrolled, setScrolled] = useState(false);
   const lastTab = useRef(0);
   const [legalReturnView, setLegalReturnView] = useState('Profile');
-  const [showPostTourDisclosure, setShowPostTourDisclosure] = useState(false);
   const [prefs, setPrefs] = useState(readPrefs);
   const prefsRef = useRef(prefs);
   /*
@@ -1101,7 +1078,18 @@ function App() {
   const screenTrailRef = useRef(null);
   if (!screenTrailRef.current) screenTrailRef.current = createScreenTrail();
   const backMoveRef = useRef(false);
+  /*
+   * Setup gate (owner, 2026-11-11): until the video guide, the walkthrough, signing in (or choosing this device only)
+   * and accepting the Terms and Privacy Policy are done, only those steps show. The dashboard stays hidden and the
+   * navigation is locked. Tests skip it like the first-run tour unless they set window.__MOVO_SETUP_GATE__.
+   */
+  const setupGateOn = process.env.NODE_ENV !== 'test' || (typeof window !== 'undefined' && window.__MOVO_SETUP_GATE__ === true);
+  const legalAccepted = hasAcceptedLegal(prefs);
+  const setupDone = !setupGateOn || (!!prefs.onboarded && legalAccepted);
+  const setupDoneRef = useRef(setupDone);
+  setupDoneRef.current = setupDone;
   const go = useCallback((next, params = {}) => {
+    if (!setupDoneRef.current && !SETUP_SCREENS.has(next)) return;
     if (params.filter) setTxFilter(params.filter);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
@@ -1998,10 +1986,10 @@ function App() {
     if (!logsCheck || locked) return;
     setLogsCheck(null);
     if (!prefs.logsSeenAt) { setPref('logsSeenAt', new Date().toISOString()); return; } // first run: start counting from now
-    if (!prefs.onboarded || sheet) return;
+    if (!prefs.onboarded || !setupDone || sheet) return;
     const since = Math.max(Date.parse(prefs.logsSeenAt) || 0, logsCheck.since || 0);
     if (rawTxs.some(t => logStamp(t) > since) || inbox.some(i => Date.parse(i.created_at) > since)) setSheet({ name: 'recentLogs', since });
-  }, [logsCheck, locked, prefs.logsSeenAt, prefs.onboarded, sheet, rawTxs, inbox, setPref]);
+  }, [logsCheck, locked, prefs.logsSeenAt, prefs.onboarded, setupDone, sheet, rawTxs, inbox, setPref]);
   const closeRecentLogs = () => { setPref('logsSeenAt', new Date().toISOString()); setSheet(null); };
   const dismissInboxItem = async (item) => {
     try { await resolveAutomationInboxItem(item.id, { status: 'dismissed' }); setInbox(cur => cur.filter(i => i.id !== item.id)); notify(tr('Moved to Archive. You can restore it for 90 days.')); }
@@ -2113,7 +2101,6 @@ function App() {
   // The daily briefing waits until tomorrow, so a new person is not shown two popups in a row.
   const finishTour = useCallback(() => {
     setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey }));
-    setShowPostTourDisclosure(true);
   }, [todayKey]);
   /* Welcome choices: sign in or sign up skips the tour and opens the account page in that mode. */
   const [authMode, setAuthMode] = useState('signin');
@@ -2220,7 +2207,7 @@ function App() {
    * It also waits for the unlock screen and for the launch check for new logs, so the logs come first.
    */
   const briefingShownDay = useRef('');
-  const briefingDue = can('insights') && authReady && !locked && !logsCheck && prefs.onboarded && prefs.briefing !== false && prefs.briefingDay !== todayKey
+  const briefingDue = can('insights') && authReady && !locked && !logsCheck && prefs.onboarded && setupDone && prefs.briefing !== false && prefs.briefingDay !== todayKey
     && briefingShownDay.current !== todayKey && process.env.NODE_ENV !== 'test';
   useEffect(() => {
     if (!briefingDue || sheet) return undefined;
@@ -2515,7 +2502,7 @@ function App() {
         </div>}
         {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
-        {can('automation') && <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />}
+        {can('automation') && setupDone && <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />}
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
@@ -2526,27 +2513,27 @@ function App() {
             ['gold-dark', ['#fbe39a', '#f0c766', '#d39b2e', '#f6d47e']], ['gold-light', ['#c99a35', '#a87618', '#8a5f10', '#b98a2a']]].map(([id, stops]) =>
             <linearGradient key={id} id={`movo-nav-${id}`} x1="0" y1="0" x2="1" y2="1">{stops.map((c, i) => <stop key={i} offset={`${(i / (stops.length - 1)) * 100}%`} stopColor={c} />)}</linearGradient>)}
         </defs></svg>}
-      {layout.mode === 'phone' ? <nav className="bottom-nav" aria-label={tr('Main navigation')}>
+      {layout.mode === 'phone' ? <nav className={`bottom-nav${setupDone ? '' : ' is-locked'}`} aria-label={tr('Main navigation')} aria-disabled={setupDone ? undefined : 'true'}>
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={27} /></span> : <Icon name={icon} size={29} strokeWidth={1.8} filled={active} />}</span>
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
         })}
-      </nav> : <nav className="side-nav" aria-label={tr('Main navigation')}>
+      </nav> : <nav className={`side-nav${setupDone ? '' : ' is-locked'}`} aria-label={tr('Main navigation')} aria-disabled={setupDone ? undefined : 'true'}>
         <span className="side-brand"><MovoMark size={30} /><span>Movo</span></span>
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} onClick={() => go(target)} aria-current={active ? 'page' : undefined} title={tr(label)}>
+          return <button type="button" key={label} className={`side-item${active ? ' active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} title={tr(label)}>
             <span className="side-icon">{center ? <NasrinMark size={20} /> : <Icon name={icon} size={22} strokeWidth={1.8} filled={active} />}{target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}</span>
             <span className="side-label">{tr(label)}</span>
           </button>;
         })}
         <span className="side-spacer" />
-        <button type="button" className="side-item side-add" onClick={() => openForm('expense')} title={tr('Add transaction')}><span className="side-icon"><Icon name="plus" size={22} strokeWidth={2} /></span><span className="side-label">{tr('Add transaction')}</span></button>
-        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gearSolid" size={22} /></span><span className="side-label">{tr('Settings')}</span></button>
+        <button type="button" className="side-item side-add" disabled={!setupDone} onClick={() => openForm('expense')} title={tr('Add transaction')}><span className="side-icon"><Icon name="plus" size={22} strokeWidth={2} /></span><span className="side-label">{tr('Add transaction')}</span></button>
+        <button type="button" className={`side-item${view === 'Settings' ? ' active' : ''}`} disabled={!setupDone} onClick={() => go('Settings')} title={tr('Settings')}><span className="side-icon"><Icon name="gearSolid" size={22} /></span><span className="side-label">{tr('Settings')}</span></button>
       </nav>}
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
@@ -2616,14 +2603,17 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !showPostTourDisclosure && !locked && view !== 'Sign in' && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
+      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !locked && !SETUP_READING.has(view) && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
       {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
       {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
       {/* First run: the video guide, then (skipped or finished) the spotlight walkthrough, then the free month of Pro. */}
       {showTour && !locked && !prefs.tutorialSeen && <TutorialVideo onDone={() => setPref('tutorialSeen', true)} />}
       {showTour && !locked && prefs.tutorialSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {guideOpen && !locked && <TutorialVideo onDone={() => setGuideOpen(false)} />}
-      {showPostTourDisclosure && !locked && <PostTourLegalDisclosure onReview={() => { setShowPostTourDisclosure(false); openLegal('TermsOfService'); }} onDismiss={() => setShowPostTourDisclosure(false)} />}
+      {/* Last setup step, after the free-month panel above: accept the Terms and Privacy Policy, then the dashboard
+          opens. Reading either one returns here. */}
+      {setupGateOn && authReady && !locked && prefs.onboarded && prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && <SetupAgreement onOpenLegal={openLegal}
+        onAccept={() => { setPrefs(cur => ({ ...cur, legalAccepted: LEGAL_VERSION, legalAcceptedAt: new Date().toISOString() })); go('Home'); }} />}
       {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => confirm({
         // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.
         // Erases every MOVO record on this device, so the person types DELETE first.
@@ -2785,4 +2775,3 @@ function App() {
 export default App;
 
 
-export { PostTourLegalDisclosure };

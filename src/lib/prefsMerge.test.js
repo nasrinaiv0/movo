@@ -65,3 +65,11 @@ test('merges separate per-account cashback edits without losing either account',
   expect(result.cashbackRules['bank-1']).toEqual(local.cashbackRules['bank-1']);
   expect(result.cashbackRules['card-2']).toEqual(cloud.cashbackRules['card-2']);
 });
+
+test('the newest Terms acceptance wins, so accepting on one device covers the others', () => {
+  const merged = mergePreferences({ ...D, legalAccepted: '', legalAcceptedAt: '' },
+    { legalAccepted: '', legalAcceptedAt: '' }, { legalAccepted: '2026-11-11', legalAcceptedAt: '2026-11-11T08:00:00.000Z' });
+  expect(merged.legalAccepted).toBe('2026-11-11');
+  const older = mergePreferences(D, { legalAccepted: '2026-11-11', legalAcceptedAt: '2026-11-11T08:00:00.000Z' }, { legalAccepted: '2026-11-06', legalAcceptedAt: '2026-11-06T08:00:00.000Z' });
+  expect(older.legalAccepted).toBe('2026-11-11');
+});

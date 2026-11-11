@@ -32,7 +32,8 @@ export function readChrome(doc = document) {
       actions: actions.map(b => ({ label: b.getAttribute('aria-label') || b.textContent.trim(), dot: !!b.querySelector('.red-dot'), svg: b.querySelector('svg') })),
     },
     dock: {
-      hidden: overlay || !navItems.length,
+      // Hidden during setup too: the web nav is locked (App.js setupDone) until the Terms are accepted.
+      hidden: overlay || !navItems.length || !!doc.querySelector('nav.bottom-nav.is-locked'),
       active: navItems.findIndex(b => b.classList.contains('nav-active')),
       tabs: navItems.map(b => ({ label: b.getAttribute('aria-label') || '', badge: !!b.querySelector('.nav-badge'), original: b.classList.contains('nav-center'), svg: b.querySelector('svg') })),
     },

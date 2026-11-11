@@ -44,6 +44,13 @@
         "Bank and payment-network names, merchant logos and product names may belong to their respective owners and do not imply partnership or endorsement. Market-data and AI services can provide information that is incomplete or unavailable. Third-party services may have additional terms.",
         "To report an inaccurate calculation, disputed purchase entitlement, unauthorized access or data-handling concern, contact support@nasrinai.com. Include the affected feature and relevant non-secret details only; do not email passwords, one-time codes or full card numbers."
       ]
+    },
+    {
+      "heading": "17. Accepting these terms during setup",
+      "paragraphs": [
+        "When you first set up MOVO, and again after these Terms or the Privacy Policy change, MOVO asks you to accept them before the app opens. The version you accepted and the time you accepted it are saved with your MOVO preferences on this device and, when you are signed in, with your account preferences.",
+        "The video guide shown during setup uses invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
+      ]
     }
   ],
   "privacy": [

@@ -512,7 +512,7 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: November 6, 2026');
+    expect(container.textContent).toContain('Effective date: November 11, 2026');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
@@ -1048,77 +1048,77 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
 });
 
 
-describe('post-tour third-party logo disclaimer regression coverage', () => {
-  let container;
-  let root;
+describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 2026-11-11)', () => {
+  const { LEGAL_VERSION } = require('./lib/legalVersion');
+  let container; let root;
+  const prefs = () => JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
+  const start = async (stored) => {
+    window.localStorage.clear();
+    seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs(), planWelcomeSeen: true, onboarded: true, tutorialSeen: true, ...stored }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+  };
+  const agreement = () => container.querySelector('.setup-agreement [role="dialog"]');
+  const navButtons = () => Array.from(container.querySelectorAll('.bottom-nav .nav-item'));
+  beforeEach(() => { window.__MOVO_SETUP_GATE__ = true; });
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); delete window.__MOVO_SETUP_GATE__; });
 
-  beforeEach(() => {
-    container = document.createElement('div');
-    document.body.appendChild(container);
-    root = createRoot(container);
+  test('without an acceptance the dashboard is covered and the bottom navigation is locked', async () => {
+    await start({ legalAccepted: '' });
+    expect(agreement()).not.toBeNull();
+    expect(container.querySelector('.bottom-nav').classList.contains('is-locked')).toBe(true);
+    expect(navButtons().every(b => b.disabled)).toBe(true);
+    act(() => navButtons().find(b => b.getAttribute('aria-label') === 'Wallet').click());
+    expect(container.querySelector('.bottom-nav .nav-active')?.getAttribute('aria-label')).toBe('Home');
+    ['never connects to your bank', 'logos', 'delete your account'].forEach(text => expect(agreement().textContent).toContain(text));
   });
 
-  afterEach(() => {
-    act(() => root.unmount());
-    container.remove();
+  test('Accept stays off until the box is ticked; accepting saves the version and opens the dashboard', async () => {
+    await start({ legalAccepted: '' });
+    const accept = container.querySelector('.setup-agreement-accept');
+    expect(accept.disabled).toBe(true);
+    act(() => accept.click());
+    expect(agreement()).not.toBeNull();
+    act(() => container.querySelector('.setup-agreement-check input').click());
+    expect(accept.disabled).toBe(false);
+    act(() => accept.click());
+    expect(agreement()).toBeNull();
+    expect(prefs().legalAccepted).toBe(LEGAL_VERSION);
+    expect(Number.isNaN(Date.parse(prefs().legalAcceptedAt))).toBe(false);
+    expect(navButtons().some(b => b.disabled)).toBe(false);
+    act(() => navButtons().find(b => b.getAttribute('aria-label') === 'Wallet').click());
+    expect(container.querySelector('.bottom-nav .nav-active')?.getAttribute('aria-label')).toBe('Wallet');
   });
 
-  test('both actions remain disabled until the disclaimer checkbox is checked', () => {
-    const onReview = jest.fn();
-    const onDismiss = jest.fn();
-    const { PostTourLegalDisclosure } = require('./App');
-
-    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
-
-    const dialog = container.querySelector('[role="dialog"][aria-labelledby="movo-disclosure-title"]');
-    expect(dialog).not.toBeNull();
-    expect(dialog.querySelector('.legal-disclosure-content')).not.toBeNull();
-    expect(dialog.querySelector('.legal-disclosure-footer')).not.toBeNull();
-
-    const checkbox = dialog.querySelector('input[type="checkbox"]');
-    const reviewLater = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent.includes('Review later'));
-    const reviewTerms = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent.includes('Review Terms & Privacy'));
-
-    expect(checkbox.checked).toBe(false);
-    expect(reviewLater.disabled).toBe(true);
-    expect(reviewTerms.disabled).toBe(true);
-
-    act(() => reviewLater.click());
-    act(() => reviewTerms.click());
-    expect(onDismiss).not.toHaveBeenCalled();
-    expect(onReview).not.toHaveBeenCalled();
-
-    act(() => checkbox.click());
-    expect(checkbox.checked).toBe(true);
-    expect(reviewLater.disabled).toBe(false);
-    expect(reviewTerms.disabled).toBe(false);
+  test('the Terms can be read from the agreement, which returns afterwards', async () => {
+    await start({ legalAccepted: '' });
+    act(() => Array.from(container.querySelectorAll('.setup-agreement-links button')).find(b => b.textContent.includes('Terms of Service')).click());
+    expect(agreement()).toBeNull();
+    expect(container.textContent).toContain('17. Accepting these terms during setup');
+    expect(navButtons().every(b => b.disabled)).toBe(true);
+    act(() => container.querySelector('main .back-button').click());
+    expect(agreement()).not.toBeNull();
   });
 
-  test('acknowledged users can choose either action and only the selected callback runs', () => {
-    const { PostTourLegalDisclosure } = require('./App');
-    const onReview = jest.fn();
-    const onDismiss = jest.fn();
-
-    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
-    act(() => container.querySelector('input[type="checkbox"]').click());
-
-    const reviewLater = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Review later'));
-    act(() => reviewLater.click());
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-    expect(onReview).not.toHaveBeenCalled();
+  test('the free-month panel comes first, then the agreement', async () => {
+    await start({ legalAccepted: '', planWelcomeSeen: false });
+    expect(agreement()).toBeNull();
+    expect(container.querySelector('.plan-panel, [aria-label*="MOVO plans"], .plan-offer')).not.toBeNull();
+    expect(navButtons().every(b => b.disabled)).toBe(true);
+    await act(async () => { container.querySelector('.plan-panel .sheet-close, .sheet-close, [aria-label="Close"]').click(); });
+    expect(prefs().planWelcomeSeen).toBe(true);
+    expect(agreement()).not.toBeNull();
   });
 
-  test('Terms and Privacy action opens the legal review only after acknowledgement', () => {
-    const { PostTourLegalDisclosure } = require('./App');
-    const onReview = jest.fn();
-    const onDismiss = jest.fn();
-
-    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
-    const reviewTerms = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Review Terms & Privacy'));
-    expect(reviewTerms.disabled).toBe(true);
-    act(() => container.querySelector('input[type="checkbox"]').click());
-    act(() => reviewTerms.click());
-    expect(onReview).toHaveBeenCalledTimes(1);
-    expect(onDismiss).not.toHaveBeenCalled();
+  test('an older acceptance asks again; the current one opens straight to the dashboard', async () => {
+    await start({ legalAccepted: '2026-11-06' });
+    expect(agreement()).not.toBeNull();
+    act(() => root.unmount()); container.remove();
+    await start({ legalAccepted: LEGAL_VERSION });
+    expect(agreement()).toBeNull();
+    expect(navButtons().some(b => b.disabled)).toBe(false);
   });
 });
+
