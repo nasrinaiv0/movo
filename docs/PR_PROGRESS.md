@@ -1,3 +1,7 @@
+## 2026-11-12 — Screenshots work on Android
+
+Owner request: screenshots (and screen recording) now work in the Android app; `FLAG_SECURE` is no longer set while MOVO is in use. The recent-apps preview still hides balances: blank via `setRecentsScreenshotEnabled(false)` on Android 13+, and `FLAG_SECURE` only while the app goes to the background on older versions. iOS already allows screenshots and keeps its app-switcher cover. Validation: security contract test updated, Jest, strict build; Android compile in CI `native-android`. Not run: a real Android phone (see `docs/engineering/updates/2026-11-12-android-screenshots.md`).
+
 ## 2026-11-12 — Blurred previous-page preview during swipe back
 
 Owner request: while swiping back on iPhone, the previous page now shows underneath, blurred, dimmed and parallaxed, clearing as the swipe completes; it is a static copy taken when the page was left. The returned page opens without an entrance animation at its previous scroll position, with no flash (per-frame browser check). Validation: Jest 203 suites / 1,237 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-swipe-back-preview.md`). Not run: a real iPhone.
