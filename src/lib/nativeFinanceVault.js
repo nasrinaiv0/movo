@@ -15,8 +15,9 @@ const DB_NAME = 'movo.encrypted.finance.snapshots.v1';
 const GROUPS = new Set(['accounts', 'transactions', 'hybrid']);
 const OWNER_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
-const enc = new TextEncoder();
-const dec = new TextDecoder('utf-8', { fatal: true });
+// WebCrypto and text codecs are resolved on use: jsdom can import this module without codecs.
+const encode = value => new TextEncoder().encode(value);
+const decode = bytes => new TextDecoder('utf-8', { fatal: true }).decode(bytes);
 const toHex = bytes => Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
 function fromHex(value) {
   if (typeof value !== 'string' || !/^(?:[0-9a-f]{2})+$/i.test(value)) throw new Error('Invalid encrypted finance encoding');
@@ -63,12 +64,12 @@ const identity = (ownerId, group) => 'movo-finance-v1:' + validatedOwner(ownerId
 export async function sealNativeFinanceSnapshot({ ownerId = 'local', group, data, cryptoProvider } = {}) {
   const id = identity(ownerId, group);
   const provider = getCrypto(cryptoProvider);
-  const plaintext = enc.encode(JSON.stringify(data));
+  const plaintext = encode(JSON.stringify(data));
   if (!plaintext.length || plaintext.length > MAX_INPUT_BYTES) throw new Error('Protected finance snapshot exceeds allowed size');
   const key = await loadNativeKey(provider);
   const iv = new Uint8Array(12);
   provider.getRandomValues(iv);
-  const encrypted = await provider.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(id), tagLength: 128 }, key, plaintext);
+  const encrypted = await provider.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: encode(id), tagLength: 128 }, key, plaintext);
   return { id, ownerId, group, version: 1, iv: toHex(iv), ciphertext: toHex(new Uint8Array(encrypted)) };
 }
 
@@ -84,8 +85,8 @@ export async function openNativeFinanceSnapshot({ ownerId = 'local', group, enve
   if (ciphertext.length < 16 || ciphertext.length > MAX_INPUT_BYTES + 16) throw new Error('Invalid protected finance ciphertext length');
   const key = await loadNativeKey(provider);
   // GCM authentication rejects tampering, wrong keys and swapped snapshots. Never return partial data.
-  const plain = await provider.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(id), tagLength: 128 }, key, ciphertext);
-  return JSON.parse(dec.decode(plain));
+  const plain = await provider.subtle.decrypt({ name: 'AES-GCM', iv, additionalData: encode(id), tagLength: 128 }, key, ciphertext);
+  return JSON.parse(decode(plain));
 }
 
 function idbRequest(request) {

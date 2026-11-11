@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { TextEncoder, TextDecoder } from 'util';
 import { webcrypto } from 'crypto';
 import { MovoNative } from './native';
 import { isNativeApp } from './platform';
@@ -8,6 +9,10 @@ jest.mock('./native', () => ({ MovoNative: { secureGet: jest.fn(), secureSet: je
 jest.mock('./platform', () => ({ isNativeApp: jest.fn(() => true) }));
 
 let stored;
+beforeAll(() => {
+  Object.defineProperty(global, 'TextEncoder', { configurable: true, value: TextEncoder });
+  Object.defineProperty(global, 'TextDecoder', { configurable: true, value: TextDecoder });
+});
 beforeEach(() => {
   stored = null;
   isNativeApp.mockReturnValue(true);
