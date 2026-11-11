@@ -26,6 +26,36 @@ class IosSimulatorSmokeTests(unittest.TestCase):
         import json
         self.assertEqual("warm", smoke.choose_iphone(json.dumps(devices))["udid"])
 
+    def test_prefers_latest_available_ios_runtime_over_older_booted_device(self):
+        import json
+        devices = {"devices": {
+            "com.apple.CoreSimulator.SimRuntime.iOS-26-2": [
+                {"name": "iPhone 17 Pro", "udid": "old-booted", "isAvailable": True, "state": "Booted"}
+            ],
+            "com.apple.CoreSimulator.SimRuntime.iOS-26-5": [
+                {"name": "iPhone 17 Pro", "udid": "latest-cold", "isAvailable": True, "state": "Shutdown"}
+            ],
+        }}
+        self.assertEqual("latest-cold", smoke.choose_iphone(json.dumps(devices))["udid"])
+
+    def test_recovery_restarts_just_selected_device_without_erasing(self):
+        runner = mock.Mock()
+        smoke.recover_stalled_simulator("device1", runner=runner)
+        self.assertEqual([
+            ["xcrun", "simctl", "shutdown", "device1"],
+            ["xcrun", "simctl", "boot", "device1"],
+            ["xcrun", "simctl", "bootstatus", "device1", "-b"],
+        ], [call.args[0] for call in runner.call_args_list])
+        self.assertEqual([90, 90, 600], [call.kwargs["timeout"] for call in runner.call_args_list])
+
+    def test_failed_recovery_does_not_hide_a_failed_launch(self):
+        runner = mock.Mock(side_effect=smoke.SmokeFailure("launch IPC timeout", timed_out=True))
+        recovery = mock.Mock(side_effect=smoke.SmokeFailure("CoreSimulator reboot failed"))
+        with self.assertRaisesRegex(smoke.SmokeFailure, "reboot failed"):
+            smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=mock.Mock(), recovery=recovery)
+        runner.assert_called_once()
+        recovery.assert_called_once_with("device1")
+
     def test_rejects_missing_iphone(self):
         with self.assertRaisesRegex(smoke.SmokeFailure, "No available iPhone"):
             smoke.choose_iphone('{"devices":{"iOS":[]}}')
@@ -37,7 +67,9 @@ class IosSimulatorSmokeTests(unittest.TestCase):
     def test_retries_only_transient_launch_timeout(self):
         runner = mock.Mock(side_effect=[smoke.SmokeFailure("slow", timed_out=True), None])
         sleeper = mock.Mock()
-        smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=sleeper)
+        recovery = mock.Mock()
+        smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=sleeper, recovery=recovery)
+        recovery.assert_called_once_with("device1")
         self.assertEqual(2, runner.call_count)
         self.assertEqual(180, runner.call_args.kwargs["timeout"])
         sleeper.assert_called_once_with(15)
@@ -51,7 +83,7 @@ class IosSimulatorSmokeTests(unittest.TestCase):
     def test_second_timeout_remains_failure(self):
         runner = mock.Mock(side_effect=smoke.SmokeFailure("slow", timed_out=True))
         with self.assertRaisesRegex(smoke.SmokeFailure, "slow"):
-            smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=mock.Mock())
+            smoke.launch_with_cold_boot_retry("device1", runner=runner, sleeper=mock.Mock(), recovery=mock.Mock())
         self.assertEqual(2, runner.call_count)
 
     def test_subprocess_timeout_is_not_success(self):
