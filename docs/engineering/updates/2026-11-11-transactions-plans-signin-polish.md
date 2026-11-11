@@ -79,6 +79,11 @@ Owner requests with screenshots.
   (`movo-schedule:<id>:<date>`, unique per account in the database) instead of by its time.
 - Loan and money-owed reminders and the subscription form already used the current time.
 
+## Test robustness
+- `AccountDetailsSheet.test.js` built each record with its own `new Date()`; a clock tick between them reordered the
+  newest-first list and failed the test intermittently (seen locally, unrelated to this branch's code). The records
+  now share one timestamp; 8 of 8 reruns passed.
+
 ## Not changed (needs a device)
 - Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
   possible in this environment.
