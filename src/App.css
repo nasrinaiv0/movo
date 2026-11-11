@@ -8277,3 +8277,13 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app.nav-tier-platinum.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-plat-dark); }
 .movo-app.movo-app.nav-tier-gold .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-gold-light); }
 .movo-app.movo-app.nav-tier-gold.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-gold-dark); }
+/* The sliding highlight in a quiet platinum (owner, 2026-11-11): a soft, low-contrast silver with only a faint sheen —
+   plain linear gradients and rgba, which render the same in iOS Safari/WKWebView and Android Chrome/WebView. Gold for
+   Pro. The capsule's position and motion are unchanged. */
+.movo-app.movo-app.nav-tier-platinum .bottom-nav .nav-pill { background: linear-gradient(120deg, rgba(196,204,212,.30), rgba(222,228,234,.42) 55%, rgba(204,212,220,.32)); }
+.movo-app.movo-app.nav-tier-platinum.theme-dark .bottom-nav .nav-pill { background: linear-gradient(120deg, rgba(226,232,238,.10), rgba(240,244,248,.16) 55%, rgba(226,232,238,.10)); }
+.movo-app.movo-app.nav-tier-gold .bottom-nav .nav-pill { background: linear-gradient(120deg, rgba(227,176,74,.16), rgba(240,199,102,.24) 55%, rgba(227,176,74,.16)); }
+.movo-app.movo-app.nav-tier-gold.theme-dark .bottom-nav .nav-pill { background: linear-gradient(120deg, rgba(240,199,102,.10), rgba(240,199,102,.17) 55%, rgba(240,199,102,.10)); }
+.movo-app.movo-app.nav-tier-platinum .side-nav .side-item.active { background: rgba(196,204,212,.28); }
+.movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active { background: rgba(226,232,238,.12); }
+.movo-app.movo-app.nav-tier-gold .side-nav .side-item.active { background: rgba(227,176,74,.16); }

@@ -63,7 +63,11 @@ Owner requests with screenshots.
 ## Bottom navigation in the plan colour (owner follow-up)
 - With a server-verified Pro+ plan the active bottom-nav icon (and the tablet side-rail icon) is filled with a
   platinum, prismatic gradient by default (bright on dark themes, a deeper steel on light themes so it reads against
-  the grey inactive tabs); Pro is gold. The sliding highlight behind the icon keeps its usual look (owner follow-up). The free month keeps the app accent. Settings → Appearance (and Profile → App Appearance) has
+  the grey inactive tabs); Pro is gold. The sliding highlight is a quiet platinum (or gold): soft silver with a faint
+  sheen, plain linear gradients and rgba only, which render the same in iOS WKWebView and Android WebView.
+- The iOS app draws its own native dock and tints the active tab with the colour it reads from the page; it now reads
+  the plan colour (a solid platinum or gold, since the native bar cannot draw the web gradient), else the app accent.
+  No Swift change; seen only after a new iOS build, not tested on a device. The free month keeps the app accent. Settings → Appearance (and Profile → App Appearance) has
   **Navigation accent**: the plan colour or the app accent (pref `navAccent`, synced like other preferences).
 
 ## Payments logged at the device's time (owner follow-up)

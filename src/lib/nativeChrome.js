@@ -97,7 +97,9 @@ export function startNativeChrome() {
     ]);
     const payload = {
       theme: dark ? 'dark' : 'light',
-      accent: toHex(styles.getPropertyValue('--accent').trim() || '#10a866'),
+      // The iOS dock tints its active tab with this colour: the plan colour (platinum / gold, a solid tone because the
+      // native bar cannot draw the web gradient) when the navigation follows the plan, else the app accent.
+      accent: toHex(styles.getPropertyValue('--nav-tier').trim() || styles.getPropertyValue('--accent').trim() || '#10a866'),
       top: { hidden: state.top.hidden, title: state.top.title, back: state.top.back, backLabel: state.top.backLabel, backIcon, actions: state.top.actions.map((a, i) => ({ label: a.label, dot: a.dot, icon: actionIcons[i] })) },
       dock: { ...state.dock, tabs: state.dock.tabs.map((t, i) => ({ label: t.label, badge: t.badge, original: t.original, icon: tabIcons[i] })) },
     };
