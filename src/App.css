@@ -8243,7 +8243,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .account-hub-more { width:100%; min-height:42px; }
 
 /* ---------- Bottom navigation in the plan colour (owner, 2026-11-11) ----------
-   Pro+ (platinum) and Pro (gold) colour the active tab and its capsule by default; Settings → Appearance →
+   Pro+ (platinum) and Pro (gold) colour the active tab's icon by default (the capsule keeps its usual look); Settings → Appearance →
    Navigation accent switches back to the app accent. Platinum is a cool silver with a soft iridescent glow, darker on
    light themes so it stays readable. */
 .movo-app.nav-tier-platinum { --nav-tier: #6f7c88; --nav-tier-glow: rgba(150,200,215,.55); --nav-tier-soft: rgba(124,140,156,.14); }
@@ -8251,10 +8251,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.nav-tier-gold { --nav-tier: #a87618; --nav-tier-glow: rgba(227,176,74,.5); --nav-tier-soft: rgba(227,176,74,.16); }
 .movo-app.nav-tier-gold.theme-dark { --nav-tier: #f0c766; --nav-tier-glow: rgba(240,199,102,.55); --nav-tier-soft: rgba(240,199,102,.15); }
 .movo-app.movo-app:is(.nav-tier-platinum, .nav-tier-gold) .bottom-nav .nav-item.nav-active:not(.nav-center) { color: var(--nav-tier) !important; }
-.movo-app.movo-app:is(.nav-tier-platinum, .nav-tier-gold) .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon { filter: drop-shadow(0 0 6px var(--nav-tier-glow)); }
-.movo-app.movo-app:is(.nav-tier-platinum, .nav-tier-gold) .bottom-nav .nav-pill { background: var(--nav-tier-soft); }
-.movo-app.movo-app.nav-tier-platinum .bottom-nav .nav-pill { background: linear-gradient(120deg, rgba(241,211,226,.16), rgba(205,238,242,.18) 50%, rgba(243,231,200,.14)), var(--nav-tier-soft); }
-.movo-app.movo-app:is(.nav-tier-platinum, .nav-tier-gold) .side-nav .side-item.active { background: var(--nav-tier-soft); color: var(--nav-tier); }
 .movo-app.movo-app:is(.nav-tier-platinum, .nav-tier-gold) .side-nav .side-item.active .side-icon { color: var(--nav-tier); }
 .movo-app .nav-accent-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .movo-app.movo-app .nav-accent-options button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 14px; background: var(--field); color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600; }
@@ -8265,4 +8261,19 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .nav-accent-swatch.swatch-app { background: var(--accent); }
 /* Light themes: a deeper steel so the active platinum tab stands apart from the grey inactive ones. */
 .movo-app.nav-tier-platinum:not(.theme-dark) { --nav-tier: #3f4e5c; --nav-tier-glow: rgba(120,190,210,.6); }
-.movo-app.movo-app.nav-tier-platinum:not(.theme-dark) .bottom-nav .nav-pill { background: linear-gradient(120deg, rgba(232,180,206,.32), rgba(160,220,232,.36) 50%, rgba(236,214,160,.3)); }
+
+/* The plan colour is on the icon itself, not the highlight (owner, 2026-11-11): the active tab's icon is filled with a
+   platinum (prismatic) or gold gradient; the sliding capsule and the side-rail tile keep their usual look. */
+.movo-app .nav-tier-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.movo-app.movo-app.nav-tier-platinum .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-platinum .side-nav .side-item.active .side-icon svg { fill: url(#movo-nav-plat-light); }
+.movo-app.movo-app.nav-tier-platinum.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active .side-icon svg { fill: url(#movo-nav-plat-dark); filter: drop-shadow(0 0 5px rgba(205,238,242,.45)); }
+.movo-app.movo-app.nav-tier-gold .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-gold .side-nav .side-item.active .side-icon svg { fill: url(#movo-nav-gold-light); }
+.movo-app.movo-app.nav-tier-gold.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-gold.theme-dark .side-nav .side-item.active .side-icon svg { fill: url(#movo-nav-gold-dark); filter: drop-shadow(0 0 5px rgba(240,199,102,.4)); }
+.movo-app.movo-app.nav-tier-platinum .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-plat-light); }
+.movo-app.movo-app.nav-tier-platinum.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-plat-dark); }
+.movo-app.movo-app.nav-tier-gold .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-gold-light); }
+.movo-app.movo-app.nav-tier-gold.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg[stroke="currentColor"] { stroke: url(#movo-nav-gold-dark); }
