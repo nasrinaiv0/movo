@@ -25,7 +25,9 @@ if HOST not in {"/var/run/postgresql", "127.0.0.1", "localhost", "::1"}:
     sys.exit("Unsafe database host: only disposable localhost PostgreSQL is allowed")
 if not PORT.isdigit() or not 1 <= int(PORT) <= 65535:
     sys.exit("Invalid local PostgreSQL port")
-DATABASE = "movo_security_test_" + uuid.uuid4().hex[:14]
+RUN_ID = uuid.uuid4().hex[:14]
+DATABASE = "movo_security_test_" + RUN_ID
+RESTORE_DATABASE = "movo_rollback_test_" + RUN_ID
 CONN = ["-h", HOST, "-p", PORT, "-U", USER]
 ENV = {**os.environ, "PGHOST": HOST, "PGPORT": PORT, "PGUSER": USER, "PGCONNECT_TIMEOUT": "5"}
 # The chosen target is created by this process; no user-defined database is
@@ -44,9 +46,35 @@ def command(executable, *args, stdin=None):
     return result
 
 
-def sql(sql_text, title):
-    command("psql", *CONN, "-X", "-v", "ON_ERROR_STOP=1", "-d", DATABASE, stdin=sql_text)
+def sql(sql_text, title, database=DATABASE):
+    if database not in {DATABASE, RESTORE_DATABASE}:
+        raise RuntimeError("Safety guard: only generated disposable databases are allowed")
+    command("psql", *CONN, "-X", "-v", "ON_ERROR_STOP=1", "-d", database, stdin=sql_text)
     print("PASS", title, flush=True)
+
+
+def snapshot_bytes():
+    # No persistent CI artifact; never connect to or back up any remote database.
+    proc = subprocess.run(
+        ["pg_dump", *CONN, "-Fc", "--no-owner", "-d", DATABASE],
+        capture_output=True, env=ENV, timeout=120,
+    )
+    if proc.returncode or not proc.stdout:
+        raise RuntimeError("Disposable pre-upgrade snapshot failed: " + proc.stderr.decode(errors="replace")[-1000:])
+    return proc.stdout
+
+
+def verify_disposable_rollback(snapshot):
+    command("createdb", *CONN, RESTORE_DATABASE)
+    proc = subprocess.run(
+        ["pg_restore", *CONN, "--exit-on-error", "--no-owner", "-d", RESTORE_DATABASE],
+        input=snapshot, capture_output=True, env=ENV, timeout=120,
+    )
+    if proc.returncode:
+        raise RuntimeError("Isolated snapshot restore failed: " + proc.stderr.decode(errors="replace")[-1800:])
+    sql((ROOT / "supabase/tests/pr274_snapshot_restore_check.sql").read_text(),
+        "snapshot restore preserved old schema, billing queue and finance data", RESTORE_DATABASE)
+
 
 
 BOOTSTRAP = r"""
@@ -100,8 +128,25 @@ def main():
         migrations = sorted((ROOT / "supabase" / "migrations").glob("*.sql"))
         if len(migrations) < 28:
             raise RuntimeError("Expected complete MOVO migration history (at least 28)")
-        for migration in migrations:
-            sql(migration.read_text(), migration.name)
+        cutoff = "20261111133000"
+        baseline = [migration for migration in migrations if migration.name[:14] < cutoff]
+        upgrade = [migration for migration in migrations if migration.name[:14] >= cutoff]
+        if [migration.name[:14] for migration in upgrade] != [
+            "20261111133000", "20261111133100", "20261111133200"
+        ]:
+            raise RuntimeError("Unexpected PR274 migration sequence or missing upgrade step")
+        for migration in baseline:
+            sql(migration.read_text(), "baseline: " + migration.name)
+        sql((ROOT / "supabase/tests/pr274_legacy_preupgrade_fixture.sql").read_text(),
+            "old client raw write contract before PR274, with synthetic data")
+        pre_upgrade_snapshot = snapshot_bytes()
+        for migration in upgrade:
+            sql(migration.read_text(), "staged: " + migration.name)
+        sql((ROOT / "supabase/tests/pr274_postupgrade_rehearsal.sql").read_text(),
+            "PR274 migration account clear, retention and old-client compatibility")
+        # This proves only a disposable snapshot restore. Production needs PITR,
+        # separate provider snapshots and a confirmed rollback window.
+        verify_disposable_rollback(pre_upgrade_snapshot)
         sql((ROOT / "supabase/tests/security_definer_tenant_isolation.test.sql").read_text(),
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
@@ -118,8 +163,9 @@ def main():
             "obligation cash-posting and authorization contracts")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
-        if not DATABASE.startswith("movo_security_test_"):
+        if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):
             raise RuntimeError("Safety guard: unexpected test database name")
+        command("dropdb", *CONN, "--if-exists", "--force", RESTORE_DATABASE)
         command("dropdb", *CONN, "--if-exists", "--force", DATABASE)
 
 

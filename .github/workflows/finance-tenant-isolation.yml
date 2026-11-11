@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/movo-pg-bin"
-          for tool in psql createdb dropdb; do
+          for tool in psql createdb dropdb pg_dump pg_restore; do
             cat > "$RUNNER_TEMP/movo-pg-bin/$tool" <<'SH'
           #!/usr/bin/env bash
           set -euo pipefail
@@ -56,7 +56,9 @@ jobs:
           done
           echo "$RUNNER_TEMP/movo-pg-bin" >> "$GITHUB_PATH"
           echo "MOVO_TEST_PG_CONTAINER=$container" >> "$GITHUB_ENV"
-      - name: Run migrations and cross-account authorization against disposable localhost DB
+      - name: Verify staged migration + isolated snapshot rollback guard
+        run: python3 scripts/test-pr274-migration-plan.py
+      - name: Run migrations, old-client compatibility, retention and rollback against disposable localhost DB
         env:
           MOVO_TEST_PGHOST: 127.0.0.1
           MOVO_TEST_PGPORT: "5432"

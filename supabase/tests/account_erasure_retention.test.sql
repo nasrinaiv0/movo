@@ -25,9 +25,11 @@ insert into public.user_preferences(user_id, prefs) values
     jsonb_build_object('id', 'keep', 'archivedAt', now()-interval '1 day')
   ), 'theme', 'dark'));
 alter table public.user_preferences enable trigger movo_expire_incoming_archive;
-insert into public.movo_iap_ack_jobs(purchase_token_hash, product_id, encrypted_token, created_at) values
-  (repeat('a', 64), 'product', 'ciphertext-a', now()-interval '8 days'),
-  (repeat('b', 64), 'product', 'ciphertext-b', now()-interval '2 days');
+insert into public.movo_iap_ack_jobs(purchase_token_hash, product_id, encrypted_token, created_at, completed_at) values
+  (repeat('a', 64), 'product', 'ciphertext-a', now()-interval '8 days', null),
+  (repeat('b', 64), 'product', 'ciphertext-b', now()-interval '2 days', null),
+  (repeat('c', 64), 'product', '', now()-interval '9 days', now()-interval '8 days'),
+  (repeat('d', 64), 'product', '', now()-interval '9 days', now()-interval '2 days');
 
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000011',true);
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
@@ -79,9 +81,12 @@ begin
     or (select jsonb_array_length(prefs->'archive') from public.user_preferences) <> 1 then
     raise exception 'Expired archive was retained or fresh item was removed';
   end if;
-  if (select count(*) from public.movo_iap_ack_jobs) <> 1 or not exists(
-    select 1 from public.movo_iap_ack_jobs where purchase_token_hash=repeat('b',64)
-  ) then raise exception 'Acknowledgement retention removed the wrong job'; end if;
+  if (select count(*) from public.movo_iap_ack_jobs) <> 3
+    or not exists(select 1 from public.movo_iap_ack_jobs where purchase_token_hash=repeat('a',64) and completed_at is null)
+    or not exists(select 1 from public.movo_iap_ack_jobs where purchase_token_hash=repeat('b',64))
+    or not exists(select 1 from public.movo_iap_ack_jobs where purchase_token_hash=repeat('d',64))
+    or exists(select 1 from public.movo_iap_ack_jobs where purchase_token_hash=repeat('c',64))
+  then raise exception 'Retention deleted a pending acknowledgement or retained an expired completed job'; end if;
 end $$;
 
 update public.user_preferences

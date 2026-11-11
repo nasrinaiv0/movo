@@ -1,4 +1,13 @@
 
+## 2026-11-12 — PR #274 premerge staging and migration-history safety gate
+
+Live Supabase preflight (read-only) found zero cross-owner schedule links, zero invalid transaction amounts, 3 archive preference rows, zero currently overdue acknowledgement jobs, and existing direct UPDATE/DELETE grants and RLS policies. Repo has 40 migration files while production migration history has 35 entries; only 19 timestamps match. **DO NOT RUN `supabase db push` across the entire repo history against production, or merge on CI-green alone.** The oldest raw PostgREST transaction clients can write before the proposed revocation and fail after it; minimum supported signed mobile versions/rollout remains unverified.
+
+The disposable PostgreSQL CI harness now splits the exact three PR migrations from its baseline, seeds two fake users and finance/schedule/archive/billing rows, confirms old raw UPDATE/DELETE before migration and their denial afterward, tests owner-safe cloud clearing and bounded retention, and creates a private pg_dump/pg_restore snapshot restore in a second disposable database to verify the legacy baseline is recoverable. No credentials, production user records, Supabase API endpoints, or real customer billing traffic are used. This synthetic snapshot exercise does **not** validate production PITR or Storage/Auth rollback.
+
+Critical billing hardening: the 7-day retention job now deletes only *completed* acknowledgement jobs older than 7 days, never pending Google Play acknowledgement work regardless of age. Extended SQL assertions cover overdue pending, overdue completed, and recently completed jobs. Require actual Supabase production-schema staging branch + Auth/Storage/API flows and version-distribution evidence before merging. Supabase quoted staging branch cost $0.01344/hour; creation requires owner cost approval, so no paid branch was started.
+
+
 ## 2026-11-12 — iOS smoke-test path trigger correction
 
 The existing iOS workflow PR/push path filters did not include the smoke driver or its host tests, so a standalone simulator recovery patch would not automatically rerun iOS. Added both script paths to both trigger lists. The actual macOS simulator launch/deep-link/screenshot remains mandatory, with no soft-fail. The host-side selection/recovery tests were run before commit; verify new exact-head CI following push.

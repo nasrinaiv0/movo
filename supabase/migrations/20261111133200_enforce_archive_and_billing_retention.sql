@@ -30,7 +30,9 @@ create trigger movo_expire_incoming_archive
   before insert or update of prefs on public.user_preferences
   for each row execute function public.movo_expire_incoming_archive();
 
-create index movo_iap_ack_created_at_idx on public.movo_iap_ack_jobs(created_at);
+-- Completed jobs have no further acknowledgement retries; never expire pending jobs by creation age.
+create index movo_iap_ack_completed_at_idx on public.movo_iap_ack_jobs(completed_at)
+  where completed_at is not null;
 
 create function public.movo_run_data_retention()
 returns void language plpgsql security definer set search_path = '' as $$
@@ -46,7 +48,8 @@ begin
   delete from public.movo_automation_inbox
   where status = 'dismissed' and resolved_at <= archive_cutoff;
 
-  delete from public.movo_iap_ack_jobs where created_at <= now() - interval '168 hours';
+  delete from public.movo_iap_ack_jobs
+  where completed_at is not null and completed_at <= now() - interval '168 hours';
 end
 $$;
 revoke all on function public.movo_run_data_retention() from public, anon, authenticated;
