@@ -4,6 +4,7 @@ import { Sheet } from './ui';
 import { deleteRecord, useConfirm } from './ConfirmDialog';
 import { describeConflict } from '../lib/offlineConflicts';
 import { money, longDate, timeLabel } from '../lib/format';
+import { categoryOf } from '../lib/categories';
 import { t as tr } from '../lib/i18n';
 
 /*
@@ -70,6 +71,13 @@ const amountOf = row => {
   const value = Number(row?.amount ?? row?.opening_balance);
   return Number.isFinite(value) ? money(value, /^[A-Z]{3}$/.test(row?.currency || '') ? row.currency : undefined) : '';
 };
+// Stored categories are ids ("transport") or older labels ("Transportation"): show the same name for both, so a record
+// whose category only changed its stored form does not look different.
+const categoryName = value => {
+  if (!value) return '';
+  const c = categoryOf(value);
+  return c.custom ? c.label : c.subLabel ? `${tr(c.label)} · ${tr(c.subLabel)}` : tr(c.label);
+};
 const dateOf = value => (value && Number.isFinite(Date.parse(value)) ? `${longDate(value)} · ${timeLabel(value)}` : '');
 
 /** The fields a person needs to tell two versions apart, in a fixed order. */
@@ -84,7 +92,7 @@ function fieldsOf(group, row, accountName) {
   return [
     [tr('Description'), row.merchant || ''], [tr('Amount'), amountOf(row)],
     [tr('Type'), ({ expense: tr('Expense'), income: tr('Income'), transfer: tr('Transfer') })[row.transaction_type] || row.transaction_type || ''], [tr('Date'), dateOf(row.occurred_at)],
-    [tr('Account'), accountName(row.account_id)], [tr('Category'), row.category || ''], [tr('Note'), row.note || ''],
+    [tr('Account'), accountName(row.account_id)], [tr('Category'), categoryName(row.category)], [tr('Note'), row.note || ''],
   ];
 }
 

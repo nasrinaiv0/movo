@@ -26,3 +26,10 @@ test('sends only the curated domain and size', () => {
   expect(u.origin + u.pathname).toBe('https://www.google.com/s2/favicons');
   expect([...u.searchParams.keys()].sort()).toEqual(['domain', 'sz']);
 });
+
+test('MR DIY branches resolve to the curated domain whatever the branch suffix or letter case', () => {
+  const { merchantLogoUrl } = require('./merchantFavicons');
+  expect(merchantLogoUrl('Mr Diy Zmta')).toContain('domain=mrdiy.com');
+  expect(merchantLogoUrl('MR. DIY SM North')).toContain('domain=mrdiy.com');
+  expect(merchantLogoUrl('Mr Diyer')).toBeFalsy();
+});

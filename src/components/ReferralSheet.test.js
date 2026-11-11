@@ -39,7 +39,8 @@ test('shows the short code, the 10-friend progress and one download QR code per 
   const { el, cleanup } = await render({ session, entitlement: { referralCode: 'M78038', qualifiedReferrals: 3 } });
   expect(el.textContent).not.toContain('iPhone');
   expect(el.querySelector('.referral-code').textContent).toBe('M78038');
-  expect(el.textContent).toContain('3 of 10 friends subscribed. At 10, you get 3 months of Pro.');
+  // Referrals are counted in points now: the old "n of 10 friends subscribed" line is gone.
+  expect(el.textContent).not.toMatch(/of 10 friends subscribed/);
   const qrs = Array.from(el.querySelectorAll('.referral-qr-code'));
   expect(qrs.map(q => q.getAttribute('aria-label'))).toEqual(['QR code to get MOVO on iOS', 'QR code to get MOVO on Android']);
   expect(qrs.every(q => q.querySelector('svg path'))).toBe(true);

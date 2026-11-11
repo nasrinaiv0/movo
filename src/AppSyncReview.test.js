@@ -1,7 +1,8 @@
 /*
  * Section 5 end to end with a signed-in account (Cloud Sync on), against an in-memory cloud:
- *  - offline changes survive a relaunch and still wait for "Sync local to cloud";
- *  - launch shows this account's own device copy at once and never guest records;
+ *  - opening MOVO syncs by itself before the first screen (latest records, offline changes uploaded with their
+ *    revision check); without a connection it shows this account's device copy, never guest records;
+ *  - a reconnect while MOVO is open offers "Sync local to cloud" and uploads nothing until it is tapped;
  *  - a record changed on both sides is settled by the person (keep this device / keep MOVO account), uploaded only
  *    with the cloud revision it was shown;
  *  - automatic retries back off exponentially and reconnect a clean device copy by themselves.
@@ -13,8 +14,9 @@ const OWNER = '123e4567-e89b-42d3-a456-426614174000';
 const ACCOUNT = '123e4567-e89b-42d3-a456-426614174001';
 const BAKERY = '123e4567-e89b-42d3-a456-426614174002';
 
-const mockNet = { down: false, gate: null };
-const mockCalls = { insert: [], update: [], remove: [], entitlement: 0 };
+const mockNet = { down: false, gate: null, authEventFirst: false };
+const mockSession = { user: { id: '123e4567-e89b-42d3-a456-426614174000', email: 'owner@example.test' }, access_token: 'test-token' };
+const mockCalls = { insert: [], update: [], remove: [], entitlement: 0, sessions: [] };
 const mockServer = { accounts: [], transactions: [] };
 const mockOffline = () => new TypeError('Failed to fetch');
 const mockCopy = value => JSON.parse(JSON.stringify(value));
@@ -23,21 +25,21 @@ const mockStamp = () => `2026-11-09T00:00:00.${String(++mockRevision).padStart(6
 
 jest.mock('./lib/usePlanEntitlement', () => {
   const entitlement = { tier: 'pro', active: true, expiresAt: '2099-01-01T00:00:00Z' };
-  const refreshEntitlement = async () => { mockCalls.entitlement += 1; return mockNet.down ? null : entitlement; };
+  const refreshEntitlement = async (session) => { mockCalls.entitlement += 1; mockCalls.sessions.push(session); return mockNet.down ? null : entitlement; };
   return { usePlanEntitlement: () => ({ entitlement, refreshEntitlement }) };
 });
 jest.mock('./lib/supabaseClient', () => ({
   supabaseConfigured: true,
   supabase: {
-    auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
+    // The real client reports the stored session to the listener before getSession() answers.
+    auth: { onAuthStateChange: (listener) => { if (mockNet.authEventFirst) listener('INITIAL_SESSION', mockSession); return { data: { subscription: { unsubscribe() {} } } }; } },
     storage: { from: () => ({ remove: async () => ({}), upload: async () => ({ error: null }) }) },
   },
 }));
 jest.mock('./lib/financeRepository', () => {
-  const session = { user: { id: '123e4567-e89b-42d3-a456-426614174000', email: 'owner@example.test' }, access_token: 'test-token' };
   const read = rows => async () => { if (mockNet.gate) await mockNet.gate; if (mockNet.down) throw mockOffline(); return mockCopy(rows()); };
   return {
-    getCurrentSession: async () => session,
+    getCurrentSession: async () => mockSession,
     listAccounts: read(() => mockServer.accounts),
     listTransactions: read(() => mockServer.transactions),
     listBudgets: read(() => []),
@@ -109,40 +111,123 @@ async function launch() {
   await act(async () => { root.render(<App />); });
 }
 beforeEach(() => {
-  mockNet.down = false; mockNet.gate = null; mockRevision = 10;
-  Object.assign(mockCalls, { insert: [], update: [], remove: [], entitlement: 0 });
+  mockNet.down = false; mockNet.gate = null; mockNet.authEventFirst = false; mockRevision = 10;
+  Object.assign(mockCalls, { insert: [], update: [], remove: [], entitlement: 0, sessions: [] });
   mockServer.accounts = [account];
   window.localStorage.clear();
   window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ planWelcomeSeen: true, onboarded: true, tutorialSeen: true }));
 });
 afterEach(() => { if (root) act(() => root.unmount()); container?.remove(); root = null; window.localStorage.clear(); jest.useRealTimers(); });
 
-test('offline changes survive a relaunch: the device copy shows at once and they still wait for Sync local to cloud', async () => {
+const heldEdit = () => {
   const confirmed = bakery(120, 'r1');
   mockServer.transactions = [confirmed];
   // Saved offline in an earlier session: Bakery edited to 150 while there was no connection.
   saveOfflineWorkspace(OWNER, { baseline: groups([account], [confirmed]), working: groups([account], [{ ...confirmed, amount: 150 }]), dirty: true, held: true, lastConfirmedAt: '2026-11-08T04:00:00Z' });
   // Guest records on this device must never show under the signed-in account.
   window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{ id: 'guest-1', account_id: 'g', transaction_type: 'expense', amount: 9, merchant: 'Guest Only', occurred_at: '2026-11-08T05:00:00Z' }]));
-  // The cloud answers slowly: the first screen must not wait for it.
+};
+const setOnline = value => Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => value });
+
+test('opening MOVO syncs by itself: the first screen waits for it and changes saved offline upload without a tap', async () => {
+  heldEdit();
   let open; mockNet.gate = new Promise(resolve => { open = resolve; });
   await launch();
-  await waitFor(() => container.querySelector('.bottom-nav'), 'the first screen');
-  await click(container, 'Transactions');
-  expect(container.textContent).toContain('Bakery');
-  expect(container.textContent).not.toContain('Guest Only');
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+  // Nothing is shown until the sync has run: no stale screen first.
+  expect(container.querySelector('.loading-screen')).not.toBeNull();
+  expect(container.querySelector('.bottom-nav')).toBeNull();
   open(); mockNet.gate = null;
-  await waitFor(() => container.querySelector('.sync-notice'), 'the reconnect notice');
-  expect(container.querySelector('.sync-notice').textContent).toContain('Your internet connection has been restored.');
-  expect(mockCalls.update).toHaveLength(0);
-  expect(loadOfflineWorkspace(OWNER).working.transactions[0].amount).toBe(150);
-  expect(container.textContent).not.toContain('Guest Only');
-
-  await click(container, 'Sync local to cloud');
-  await waitFor(() => loadOfflineWorkspace(OWNER).dirty === false, 'the approved upload');
+  await waitFor(() => container.querySelector('.bottom-nav'), 'the first screen');
+  // Uploaded once, against the cloud revision this device last confirmed; no notice, nothing left to tap.
   expect(mockCalls.update).toEqual([[BAKERY, 'r1', OWNER, 150]]);
   expect(mockServer.transactions[0].amount).toBe(150);
-  expect(container.textContent).toContain('Synced with your MOVO account.');
+  expect(loadOfflineWorkspace(OWNER).dirty).toBe(false);
+  expect(container.querySelector('.sync-notice')).toBeNull();
+  expect(container.querySelector('.sync-pill')).toBeNull();
+  expect(container.textContent).toContain('₱4,850.00');
+  expect(container.textContent).not.toContain('Guest Only');
+});
+
+test('opening MOVO shows the latest cloud records on its first screen, never the older device copy', async () => {
+  const before = bakery(120, 'r1');
+  saveOfflineWorkspace(OWNER, { baseline: groups([account], [before]), working: groups([account], [before]), dirty: false, held: false, lastConfirmedAt: '2026-11-08T04:00:00Z' });
+  // Changed on another device since this one last synced.
+  mockServer.transactions = [bakery(480, 'r2')];
+  const seen = [];
+  const watcher = new MutationObserver(() => { if (document.querySelector('.bottom-nav')) seen.push(document.body.textContent.includes('₱4,880.00') ? 'old' : document.body.textContent.includes('₱4,520.00') ? 'new' : 'other'); });
+  watcher.observe(document.body, { childList: true, subtree: true, characterData: true });
+  let open; mockNet.gate = new Promise(resolve => { open = resolve; });
+  await launch();
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+  expect(container.querySelector('.loading-screen')).not.toBeNull();
+  open(); mockNet.gate = null;
+  await waitFor(() => container.querySelector('.bottom-nav') && container.textContent.includes('₱4,520.00'), 'the latest records');
+  watcher.disconnect();
+  expect(seen).not.toContain('old');
+  expect(seen).toContain('new');
+  expect(mockCalls.update).toHaveLength(0);
+  expect(container.querySelector('.sync-pill')).toBeNull();
+});
+
+test('the first screen also waits when the sign-in listener reports the session before the launch check does', async () => {
+  const before = bakery(120, 'r1');
+  saveOfflineWorkspace(OWNER, { baseline: groups([account], [before]), working: groups([account], [before]), dirty: false, held: false, lastConfirmedAt: '2026-11-08T04:00:00Z' });
+  mockServer.transactions = [bakery(480, 'r2')];
+  mockNet.authEventFirst = true;
+  let open; mockNet.gate = new Promise(resolve => { open = resolve; });
+  await launch();
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 150)); });
+  // The older device copy (₱4,880.00) must not be on screen while the sync is still running.
+  expect(container.querySelector('.loading-screen')).not.toBeNull();
+  expect(container.querySelector('.bottom-nav')).toBeNull();
+  open(); mockNet.gate = null;
+  await waitFor(() => container.querySelector('.bottom-nav'), 'the first screen');
+  expect(container.textContent).toContain('₱4,520.00');
+  expect(container.textContent).not.toContain('₱4,880.00');
+});
+
+test('opened without a connection: the device copy shows at once, and a reconnect while open offers Sync local to cloud', async () => {
+  heldEdit();
+  mockNet.down = true; setOnline(false);
+  try {
+    await launch();
+    await waitFor(() => container.querySelector('.bottom-nav'), 'the first screen', 1500);
+    expect(container.textContent).toContain('₱4,850.00');
+    expect(container.textContent).not.toContain('Guest Only');
+    await waitFor(() => container.querySelector('.sync-pill'), 'the offline bar');
+    expect(container.querySelector('.sync-pill').textContent).toBe('Offline · 1 change saved on this device');
+    expect(mockCalls.update).toHaveLength(0);
+    // The connection returns while MOVO is open: the notice, and nothing uploads until it is tapped.
+    mockNet.down = false; setOnline(true);
+    await act(async () => { window.dispatchEvent(new Event('online')); });
+    await waitFor(() => container.querySelector('.sync-notice'), 'the reconnect notice');
+    expect(container.querySelector('.sync-notice').textContent).toContain('Your internet connection has been restored.');
+    expect(mockCalls.update).toHaveLength(0);
+    expect(loadOfflineWorkspace(OWNER).working.transactions[0].amount).toBe(150);
+    await click(container, 'Sync local to cloud');
+    await waitFor(() => loadOfflineWorkspace(OWNER).dirty === false, 'the approved upload');
+    expect(mockCalls.update).toEqual([[BAKERY, 'r1', OWNER, 150]]);
+    expect(mockServer.transactions[0].amount).toBe(150);
+  } finally { setOnline(true); }
+});
+
+test('a cloud that does not answer in time: the launch screen gives way to the device copy, which updates when the sync lands', async () => {
+  const before = bakery(120, 'r1');
+  saveOfflineWorkspace(OWNER, { baseline: groups([account], [before]), working: groups([account], [before]), dirty: false, held: false, lastConfirmedAt: '2026-11-08T04:00:00Z' });
+  mockServer.transactions = [bakery(480, 'r2')];
+  let open; mockNet.gate = new Promise(resolve => { open = resolve; });
+  jest.useFakeTimers();
+  const settle = async () => { for (let i = 0; i < 30; i += 1) await act(async () => { await Promise.resolve(); }); };
+  await launch(); await settle();
+  await act(async () => { jest.advanceTimersByTime(5900); }); await settle();
+  expect(container.querySelector('.bottom-nav')).toBeNull();
+  await act(async () => { jest.advanceTimersByTime(200); }); await settle();
+  expect(container.querySelector('.bottom-nav')).not.toBeNull();
+  expect(container.textContent).toContain('₱4,880.00');
+  open(); mockNet.gate = null; await settle();
+  jest.useRealTimers();
+  await waitFor(() => container.textContent.includes('₱4,520.00'), 'the records from the late sync');
 });
 
 test('with no device copy yet, launch waits for the cloud (briefly) instead of showing guest records', async () => {
@@ -167,9 +252,9 @@ async function launchWithConflict() {
   mockServer.transactions = [bakery(130, 'r2')];
   saveOfflineWorkspace(OWNER, { baseline: groups([account], [confirmed]), working: groups([account], [{ ...confirmed, amount: 150 }]), dirty: true, held: true, lastConfirmedAt: '2026-11-08T04:00:00Z' });
   await launch();
-  await waitFor(() => container.querySelector('.sync-notice'), 'the reconnect notice');
-  await click(container, 'Sync local to cloud');
+  // Opening MOVO syncs by itself; the conflict stops it and asks for a review instead of picking a side.
   await waitFor(() => container.querySelector('.sync-pill'), 'the review state');
+  expect(container.querySelector('.sync-notice')).toBeNull();
   expect(container.querySelector('.sync-pill').textContent).toContain('Sync needs your review');
   // Nothing was uploaded or changed on either side.
   expect(mockCalls.update).toHaveLength(0);
@@ -242,4 +327,33 @@ test('automatic retries back off exponentially and reconnect a clean device copy
   expect(container.querySelector('.sync-notice')).toBeNull();
   expect(loadOfflineWorkspace(OWNER).held).toBe(false);
   Math.random.mockRestore();
+});
+
+test('launch verifies the plan with the stored session, so a healthy connection never starts as Offline', async () => {
+  mockServer.transactions = [bakery(120, 'r1')];
+  await launch();
+  await waitFor(() => container.querySelector('.bottom-nav') && container.textContent.includes('₱4,880.00'), 'the cloud records');
+  // The session is handed over: at launch the plan hook has not rendered with it yet, and "no session" used to be
+  // reported as an unreachable cloud (Offline for several seconds, then a retry).
+  expect(mockCalls.sessions[0]).toEqual(expect.objectContaining({ access_token: 'test-token', user: expect.objectContaining({ id: OWNER }) }));
+  expect(mockCalls.entitlement).toBe(1);
+  expect(container.querySelector('.sync-bar')).toBeNull();
+});
+
+test('a change made offline is counted in the bar as soon as it is saved on this device', async () => {
+  mockServer.transactions = [bakery(120, 'r1')];
+  await launch();
+  await waitFor(() => container.querySelector('.bottom-nav') && container.textContent.includes('₱4,880.00'), 'the cloud records');
+  mockNet.down = true;
+  await act(async () => { window.dispatchEvent(new Event('offline')); });
+  await waitFor(() => container.querySelector('.sync-pill'), 'the offline bar');
+  expect(container.querySelector('.sync-pill').textContent).toBe('Offline · Showing the copy saved on this device.');
+  // Delete the record while offline: one change is now waiting on this device.
+  await click(container, 'Transactions');
+  await act(async () => { Array.from(container.querySelectorAll('button')).find(b => (b.getAttribute('aria-label') || '').startsWith('Bakery,')).dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  await click(container, 'Delete Bakery');
+  await act(async () => { document.querySelector('.confirm-dialog .confirm-accept').dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  await waitFor(() => container.querySelector('.sync-pill')?.textContent === 'Offline · 1 change saved on this device', 'the pending count');
+  expect(mockCalls.remove).toHaveLength(0);
+  expect(mockServer.transactions).toHaveLength(1);
 });

@@ -1,5 +1,5 @@
 import { usePlan } from '../lib/PlanContext';
-import { PlanComparison } from '../components/PlanOffer';
+import { MovoMark } from '../components/MovoLogo';
 import AppIconPicker from '../components/AppIconPicker';
 import { PLAN_LABELS } from '../lib/planAccess';
 import React, { useEffect, useRef, useState } from 'react';
@@ -173,7 +173,6 @@ export function UsageSheet({ c, onClose }) {
   };
 
   const rows = [
-    [tr('Plan'), storeEntitlement?.tier ? (PLAN_LABELS[storeEntitlement.tier] || 'Free') : tr('Free')],
     [tr('Access mode'), c.cloudMode ? tr('Cloud') : tr('Local (offline)')],
     [tr('Transactions'), String(c.txs?.length || 0)],
     [tr('Accounts'), String(c.accountsView?.length || 0)],
@@ -181,12 +180,20 @@ export function UsageSheet({ c, onClose }) {
     [tr('Storage on this device'), fmtBytes(storageUsed())],
   ];
 
-  return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Manage your MOVO subscription and restore purchases from the store.')} onClose={onClose} label={tr('Plan & Usage')}>
+  // One compact summary of the current plan; the plan comparison lives in the plans panel only.
+  const tier = storeEntitlement?.active && PLAN_LABELS[storeEntitlement.tier] ? storeEntitlement.tier : 'free';
+  const planName = tier === 'free' ? tr('Free') : PLAN_LABELS[tier];
+  const planNote = tier === 'free' ? tr('On this device')
+    : storeEntitlement.expiresAt ? tr('Active until {date}', { date: longDate(storeEntitlement.expiresAt) }) : tr('Active');
+
+  return <Sheet center title={tr('Plan & Usage')} onClose={onClose} label={tr('Plan & Usage')} className="plan-usage-sheet">
     {!c.cloudMode && !c.deviceCopyAccess && <p className="form-hint" role="status">Local mode is active. Pro and Pro+ features are paused, but any existing subscription stays on record. Local tracking, manual transactions and import/export remain available. Enable Cloud Sync to restore eligible plan access.</p>}
-    <PlanComparison />
-    <button type="button" className="secondary-button" onClick={() => { onClose(); c.openPlans?.(); }}>Free trial & referrals</button>
+    <div className={`plan-usage-current tier-${tier}`}>
+      <span className="plan-usage-mark" aria-hidden="true"><MovoMark size={26} tone={tier === 'pro_plus' ? 'platinum' : tier === 'pro' ? 'gold' : 'color'} /></span>
+      <span className="plan-usage-name"><small>{tr('Plan')}</small><strong>{planName}</strong></span>
+      <em>{planNote}</em>
+    </div>
     <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-    {storeEntitlement?.active && <p className="form-hint">{tr('Your verified {tier} subscription is active until {date}.', { tier: storeEntitlement.tier, date: storeEntitlement.expiresAt ? longDate(storeEntitlement.expiresAt) : tr('the current period ends') })}</p>}
     {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}
     {nativePurchases && <>
       {storeEntitlement?.source !== 'store' && <>
@@ -206,6 +213,9 @@ export function UsageSheet({ c, onClose }) {
     {!nativePurchases && <p className="form-hint">{tr('Store purchases and restore are available in the MOVO iOS and Android apps.')}</p>}
     {purchaseMessage && <p className="form-hint" role="status" aria-live="polite">{purchaseMessage}</p>}
     <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
+    <div className="plan-usage-foot">
+      <button type="button" className="primary-button plan-usage-action" onClick={() => { onClose(); c.openPlans?.(); }}>{tier === 'free' ? tr('Upgrade MOVO') : tr('View plans')}</button>
+    </div>
   </Sheet>;
 }
 

@@ -59,7 +59,7 @@ test('in the app, the store price drives the panel and Continue buys the selecte
   ]);
   purchaseStoreProduct.mockResolvedValue({});
   const { el, handlers, cleanup } = await render({ session, entitlement: { tier: 'pro', active: true, expiresAt: future, trialEligible: false } });
-  await act(async () => el.querySelector('.plan-arrow.next').click());
+  await act(async () => el.querySelectorAll('.plan-tile')[2].click());
   expect(el.querySelector('.plan-tile.selected strong').textContent).toBe('Pro+');
   expect(el.querySelector('.plan-price').textContent).toContain('₱349.00');
   expect(el.querySelector('.plan-price').textContent).toContain('or ₱3,490.00 / year');

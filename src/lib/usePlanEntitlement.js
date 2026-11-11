@@ -7,11 +7,14 @@ export function usePlanEntitlement(session) {
   const checkedRef = useRef(null); // read inside refresh without making refresh change identity
   const owner = useRef(session?.user?.id);
   owner.current = session?.user?.id;
-  const refresh = useCallback(async () => {
-    const id = session?.user?.id;
-    if (!id || !session?.access_token) { checkedRef.current = null; setCheckedOwner(null); return null; }
+  // A caller that already holds the signed-in session (app launch, right after sign-in) may pass it: this hook's own
+  // copy arrives one render later, and "no session yet" must not be mistaken for an unreachable server.
+  const refresh = useCallback(async (override) => {
+    const active = override?.user?.id && override?.access_token ? override : session;
+    const id = active?.user?.id;
+    if (!id || !active?.access_token) { checkedRef.current = null; setCheckedOwner(null); return null; }
     try {
-      const value = await getStoreEntitlements(session);
+      const value = await getStoreEntitlements(active);
       if (owner.current === id) { setState({ ...value, owner: id }); checkedRef.current = id; setCheckedOwner(id); }
       return value;
     } catch {

@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from '../components/Icon';
 import { RootHeader, Chips, SectionTitle, Bars, Donut, Legend, TransactionRow, Money, Trend } from '../components/ui';
-import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate } from '../lib/format';
+import { money, shown, monthLabel, dayKey, monthKey, relativeDay, longDate, formatDate } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { activityNetAmount } from '../lib/financeCalculations';
-import { billingCycleSpending, spendingVsPreviousCycle } from '../lib/billingCycleSpending';
+import { allCycleSpending, dailyCycleSpending, spendingVsPreviousCycle } from '../lib/billingCycleSpending';
 import { percentLabel } from '../lib/trend';
 
 /** Rows rendered per page in long lists (progressive rendering). */
@@ -33,25 +33,34 @@ export function billingCycleOptions(months = [], currentMonth) {
   }))];
 }
 
-/** Twelve monthly billing-cycle totals, not daily buckets. Full width and below the amount. */
-export function BillingCycleChart({ cycles, visible = true }) {
-  const max = Math.max(0, ...cycles.map(row => Number(row.amount) || 0));
-  const first = cycles[0]?.key;
-  const last = cycles[cycles.length - 1]?.key;
-  return <div className="billing-cycle-chart" role="group" aria-label={tr('Billing cycles')}>
-    <div className="billing-cycle-chart-title">{tr('Billing cycles')}</div>
-    <div className="billing-cycle-chart-plot" aria-hidden="true">
-      {cycles.map((row, index) => {
+const dayLabel = key => formatDate(`${key}T12:00:00Z`, { month: 'short', day: 'numeric', timeZone: 'UTC' }, 'monthDay');
+
+/**
+ * Spending graph under Total Spent. It follows the billing-cycle filter: one bar per day of the chosen cycle
+ * ("Nov 2026" runs Nov 1 to Nov 30), or one bar per cycle for "All" (every cycle there is data for).
+ * `rows` are { key, amount } with day keys (YYYY-MM-DD) or cycle keys (YYYY-MM); `selectedKey` marks one bar.
+ */
+export function BillingCycleChart({ cycles, visible = true, title, selectedKey }) {
+  const rows = cycles || [];
+  const max = Math.max(0, ...rows.map(row => Number(row.amount) || 0));
+  const first = rows[0]?.key;
+  const last = rows[rows.length - 1]?.key;
+  const label = key => (!key ? '' : key.length > 7 ? dayLabel(key) : monthLabel(key));
+  const marked = selectedKey === undefined ? last : selectedKey;
+  return <div className="billing-cycle-chart" role="group" aria-label={title || tr('Billing cycles')}>
+    <div className="billing-cycle-chart-title">{title || tr('Billing cycles')}</div>
+    <div className={'billing-cycle-chart-plot' + (rows.length > 16 ? ' dense' : '')} aria-hidden="true">
+      {rows.map(row => {
         const amount = visible ? Math.max(0, Number(row.amount) || 0) : 0;
         const height = max > 0 && amount > 0 ? Math.max(9, amount / max * 100) : 5;
-        return <span key={row.key} className={'billing-cycle-chart-column' + (index === cycles.length - 1 ? ' selected' : '')}>
+        return <span key={row.key} className={'billing-cycle-chart-column' + (row.key === marked ? ' selected' : '')}>
           <span className="billing-cycle-chart-bar" style={{ height: height + '%' }} />
         </span>;
       })}
     </div>
     <div className="billing-cycle-chart-axis">
-      <span>{first ? monthLabel(first) : ''}</span>
-      <span>{last ? monthLabel(last) : ''}</span>
+      <span>{label(first)}</span>
+      <span>{first === last ? '' : label(last)}</span>
     </div>
   </div>;
 }
@@ -63,10 +72,14 @@ export default function Transactions({ c }) {
   const cycleLabel = selectedCycle === 'all' ? tr('All') : selectedCycle === currentCycle ? tr('Present') : monthLabel(selectedCycle);
   /* Month-over-month indicators describe the current month only; older months show their totals alone. */
   const isCurrent = selectedCycle === currentCycle;
+  // The graph follows the filter: the days of the chosen cycle, or every cycle with data for "All".
   const chartCycles = useMemo(
-    () => billingCycleSpending(c.txs || [], selectedCycle === 'all' ? currentCycle : selectedCycle, 12),
+    () => (selectedCycle === 'all' ? allCycleSpending(c.txs || [], currentCycle) : dailyCycleSpending(c.txs || [], selectedCycle)),
     [c.txs, selectedCycle, currentCycle]
   );
+  const chartTitle = selectedCycle === 'all' ? tr('All') : monthLabel(selectedCycle);
+  // Today is marked in the current cycle, the latest cycle in "All"; a past cycle marks no single day.
+  const chartSelected = selectedCycle === 'all' ? undefined : isCurrent ? dayKey(refDate) : '';
   const previousSpendTrend = selectedCycle === 'all'
     ? null
     : isCurrent ? deltas.spent : spendingVsPreviousCycle(c.txs || [], selectedCycle);
@@ -97,9 +110,8 @@ export default function Transactions({ c }) {
   let remaining = limit;
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
-    <label className="tx-period-filter" aria-label={tr('Filter by billing cycle')}>
-      <span className="tx-period-filter-value">{cycleLabel}</span>
-      <Icon name="down" size={14} />
+    <label className={'tx-period-filter icon-only' + (isCurrent ? '' : ' is-set')} aria-label={`${tr('Filter by billing cycle')}: ${cycleLabel}`} title={cycleLabel}>
+      <Icon name="sliders" size={18} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
         <option value="all">{tr('All')}</option>
         {billingCycleOptions(months, currentCycle).slice(1).map(option => <option key={option.value} value={option.value}>{tr(option.label)}</option>)}
@@ -128,7 +140,7 @@ export default function Transactions({ c }) {
             </div>
           )}
         </div>
-        <BillingCycleChart cycles={chartCycles} visible={show}/>
+        <BillingCycleChart cycles={chartCycles} visible={show} title={chartTitle} selectedKey={chartSelected}/>
       </section>
       <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
         {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>

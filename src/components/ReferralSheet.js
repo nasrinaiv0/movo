@@ -48,7 +48,6 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
   }, [session?.user?.id, session?.access_token, signedIn]);
 
   const code = (signedIn && (status?.referralCode || entitlement?.referralCode)) || '';
-  const friends = Number(entitlement?.qualifiedReferrals) || 0;
   const pointsOn = Boolean(status?.pointsEnabled);
   const shareText = () => [
     tr('Join me on MOVO. Use my referral code {code} after you sign in.', { code }),
@@ -121,7 +120,6 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
             <button type="button" onClick={copy}><Icon name="copy" size={16} />{tr('Copy')}</button>
             <button type="button" className="primary-button" onClick={share}><Icon name="send" size={16} />{tr('Share')}</button>
           </div>
-          <p className="referral-progress">{tr('{n} of 10 friends subscribed. At 10, you get 3 months of Pro.', { n: friends })}</p>
         </> : <p className="referral-note">{tr('Your code appears when you are online.')}</p>}
       </section> : <section className="referral-code-card referral-signed-out">
         <p className="referral-note">{tr('Sign in to get your referral code.')}</p>

@@ -310,6 +310,8 @@ function App() {
   // Records changed both on this device and elsewhere, from the last sync attempt; the person picks a version.
   const [syncConflicts, setSyncConflicts] = useState([]);
   const [syncNoticeHidden, setSyncNoticeHidden] = useState(false);
+  // Bumped each time the device workspace is rewritten, so the pending-change count is read after the write.
+  const [workspaceRev, setWorkspaceRev] = useState(0);
   const [view, setView] = useState('Home');
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
@@ -481,6 +483,7 @@ function App() {
       if (stored) {
         const unchanged=JSON.stringify(data)===JSON.stringify(stored.working);
         saved=unchanged||updateOfflineWorking(ownerId,data);
+        if(saved)setWorkspaceRev(n=>n+1);
       }
     } else {
       const transactionsSaved=saveLocalTransactions(rawTxs,false);
@@ -511,10 +514,10 @@ function App() {
   }, [rawTxs,localAccounts,cloudMode,session?.user?.id,notify]);
 
   /*
-   * Sync this account's device copy with the cloud. `approved` is true only when the person asked for it ("Sync
-   * local to cloud", "Try again", turning Cloud Sync on). Changes made while this device had no connection (`held`)
-   * are uploaded only then: a reconnect, a launch or a background retry just checks that the cloud answers and
-   * offers the sync.
+   * Sync this account's device copy with the cloud. `approved` is true when the person asked for it ("Sync local to
+   * cloud", "Try again", turning Cloud Sync on) and when MOVO is opened or signed in to, which syncs by itself.
+   * Changes made while this device had no connection (`held`) are uploaded only then: a reconnect while MOVO is
+   * open or a background retry just checks that the cloud answers and offers the sync.
    */
   const refreshCloud = useCallback(async (user, { approved = false } = {}) => {
     if (!user || !cloudSyncRequestedRef.current || syncActiveRef.current) return false;
@@ -526,7 +529,12 @@ function App() {
     try {
       // A signed-in browser session alone is never a paid cloud entitlement.
       // Verify before reading or copying a cloud-backed finance workspace.
-      const verified=await withTimeout(refreshEntitlement(),CLOUD_READ_TIMEOUT_MS);
+      // The stored session is read here: on launch and right after sign-in this render's copy is not set yet, and
+      // a missing session must not read as "cloud unreachable" (that showed Offline for several seconds).
+      const verified=await withTimeout((async()=>{
+        const active=await getCurrentSession().catch(()=>null);
+        return refreshEntitlement(active?.user?.id===ownerId?active:undefined);
+      })(),CLOUD_READ_TIMEOUT_MS);
       // No answer at all means the server could not be reached: keep working on the device and retry later.
       if(verified===null)throw Object.assign(Error('Cloud is unreachable. Changes are saved on this device.'),{retryable:true,offline:true});
       if(!canUseFeature(verified,'cloudWrite'))
@@ -801,7 +809,7 @@ function App() {
   /*
    * Automatic retries while the cloud cannot be reached: exponential backoff with jitter (lib/syncBackoff.js), and
    * at once when MOVO comes back to the foreground or the browser reports a connection. A retry reconnects and
-   * offers "Sync local to cloud" for changes made offline; it never uploads those by itself.
+   * offers "Sync local to cloud" for changes made offline; it never uploads those by itself (opening MOVO does).
    */
   const waitingForNetwork = !cloudMode && !!session?.user?.id && prefs.cloudSyncEnabled !== false && syncState.retry === true;
   useEffect(() => {
@@ -892,6 +900,7 @@ function App() {
     },
   }), []);
 
+  const openingSyncRef = useRef(null); // the sync started when MOVO was opened or signed in to
   useEffect(() => {
     let mounted = true;
     if (!supabaseConfigured || !supabase) { setAuthReady(true); return undefined; }
@@ -906,15 +915,23 @@ function App() {
       if (cloudAuthUserRef.current === nextUserId) return;
       cloudAuthUserRef.current = nextUserId;
       if (nextSession?.user && prefsRef.current.cloudSyncEnabled !== false) {
-        // Offline-first launch: show this account's own device copy at once, then check it against the cloud.
-        // Never show guest records under a signed-in account; with no copy yet, the first screen waits briefly for
-        // the cloud instead (see below). The device copy grants nothing: plans still come from the server.
+        // Opening MOVO syncs by itself (owner, 2026-11-10): the first screen waits for the sync, so it shows the
+        // latest records and nobody has to tap "Offline & online sync" to get them. Changes saved on this device
+        // while it was offline are uploaded by the same sync, with the usual revision checks; records changed on
+        // both sides still go to the review. This account's own device copy is loaded underneath and is what shows
+        // if the cloud cannot be reached (at once when the device reports no connection, otherwise after the short
+        // wait below). Never guest records under a signed-in account. The device copy grants nothing: plans still
+        // come from the server.
         const ownerId = nextSession.user.id;
         const copy = loadOfflineWorkspace(ownerId);
         const hydrated = !!copy && (!!copy.lastConfirmedAt || copy.dirty === true) && loadOwnedLocal(ownerId);
         if (!hydrated) { setRawTxs([]); setLocalAccounts([]); }
-        const loading = refreshCloud(nextSession.user);
-        return hydrated ? null : loading;
+        const loading = refreshCloud(nextSession.user, { approved: true });
+        const noConnection = typeof navigator !== 'undefined' && navigator.onLine === false;
+        // Kept in a ref as well: the auth listener usually reports the session first, and the launch below must
+        // wait for the sync that call started.
+        openingSyncRef.current = hydrated && noConnection ? null : loading;
+        return openingSyncRef.current;
       } else if (nextSession?.user) {
         // Local mode for a signed-in owner: that owner's own device workspace (#246), never guest records.
         setCloudMode(false);
@@ -932,10 +949,11 @@ function App() {
       }
     };
     getCurrentSession().then((s) => {
-      const firstLoad = applySession(s);
+      const firstLoad = applySession(s) || (s?.user ? openingSyncRef.current : null);
       if (!firstLoad) { if (mounted) setAuthReady(true); return; }
-      // No device copy for this account yet: keep the launch screen while the first cloud load runs, at most 6s
-      // (a slow connection then shows the empty account with its loading states, never guest records).
+      // Keep the launch screen while the opening sync runs, at most 6s: a slow connection then shows this account's
+      // device copy (or, with none yet, the empty account with its loading states), never guest records, and the
+      // screens update when the sync lands.
       const ready = () => { if (mounted) setAuthReady(true); };
       const cap = setTimeout(ready, 6000);
       Promise.resolve(firstLoad).catch(() => {}).finally(() => { clearTimeout(cap); ready(); });
@@ -2384,7 +2402,7 @@ function App() {
   const signedOwnerId = session?.user?.id || '';
   const ownerCopy = useMemo(() => (signedOwnerId ? loadOfflineWorkspace(signedOwnerId) : null),
     // Re-read whenever the device copy can have changed: records, mode or a sync step.
-    [signedOwnerId, rawTxs, localAccounts, cloudMode, syncState]);
+    [signedOwnerId, rawTxs, localAccounts, cloudMode, syncState, workspaceRev]);
   const syncStatus = syncStatusOf({
     signedIn: !!signedOwnerId, cloudSyncOn: prefs.cloudSyncEnabled !== false, cloudMode, syncState,
     pending: cloudMode ? 0 : unsyncedChangeCount(ownerCopy), conflicts: syncConflicts.length,

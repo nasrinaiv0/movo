@@ -23,6 +23,9 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
   const [legalAccepted, setLegalAccepted] = useState(false);
   const [wait, setWait] = useState(0);
   const codeRef = useRef(null);
+  const verifyingRef = useRef(false); // one verification at a time, however it was started
+  const autoTriedRef = useRef('');    // the code already sent without a tap: never re-sent by itself
+  const [autoCode, setAutoCode] = useState('');
 
   useEffect(() => {
     if (!wait) return undefined;
@@ -30,6 +33,24 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     return () => clearTimeout(timer);
   }, [wait]);
   useEffect(() => { if (step === 'code') codeRef.current?.focus(); }, [step]);
+  // A code that arrives whole (pasted, or filled in by the phone from the message) is the complete code whatever its
+  // length, so it is checked without a tap. A typed code is never sent early: codes can be 6 to 10 digits long.
+  useEffect(() => {
+    if (!autoCode || step !== 'code' || busy) return undefined;
+    const timer = setTimeout(() => {
+      setAutoCode('');
+      if (autoTriedRef.current === autoCode) return;
+      autoTriedRef.current = autoCode;
+      verify(undefined, autoCode);
+    }, 150);
+    return () => clearTimeout(timer);
+    // `verify` is an event handler of this render, not a dependency.
+  }, [autoCode, step, busy]);
+  const changeCode = value => {
+    const next = String(value).replace(/[^\d]/g, '').slice(0, 10);
+    setCode(next);
+    setAutoCode(next.length - code.length >= 6 && /^\d{6,10}$/.test(next) ? next : '');
+  };
 
   const needsConsent = () => {
     if (legalAccepted) return false;
@@ -59,24 +80,27 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     setBusy('send');
     try {
       await sendEmailCode(email);
-      setStep('code'); setCode(''); setWait(RESEND_SECONDS);
+      setStep('code'); setCode(''); setAutoCode(''); autoTriedRef.current = ''; setWait(RESEND_SECONDS);
       setNotice(tr('We sent a sign-in code to {email}.', { email: email.trim() }));
     } catch {
       setError(tr('We could not send a code right now. Wait a minute and try again.'));
     } finally { setBusy(''); }
   }
 
-  async function verify(event) {
-    event.preventDefault(); setError('');
-    const token = code.replace(/\s+/g, '');
+  async function verify(event, filled) {
+    event?.preventDefault();
+    if (verifyingRef.current) return;
+    setError('');
+    const token = String(filled ?? code).replace(/\s+/g, '');
     if (!/^\d{6,10}$/.test(token)) { setError(tr('Enter the code from your email.')); return; }
+    verifyingRef.current = true;
     setBusy('verify');
     try {
       const result = await verifyEmailCode(email, token);
       onAuthenticated?.(result?.session?.user ?? result?.user);
     } catch {
       setError(tr('That code is not valid or has expired. Check it or send a new one.'));
-    } finally { setBusy(''); }
+    } finally { verifyingRef.current = false; setBusy(''); }
   }
 
   const unavailable = !supabaseConfigured;
@@ -99,8 +123,8 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </label>
 
     <div className="auth-providers">
-      <button className="auth-provider auth-apple" type="button" onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}><AppleMark />{busy === 'apple' ? tr('Please wait…') : tr('Continue with Apple')}</button>
-      <button className="auth-provider auth-google" type="button" onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}><GoogleMark />{busy === 'google' ? tr('Please wait…') : tr('Continue with Google')}</button>
+      <button className="auth-provider auth-apple" type="button" aria-label={tr('Continue with Apple')} onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}>{busy === 'apple' ? tr('Please wait…') : rich('Continue with {brand}', { brand: <AppleMark /> })}</button>
+      <button className="auth-provider auth-google" type="button" aria-label={tr('Continue with Google')} onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}>{busy === 'google' ? tr('Please wait…') : rich('Continue with {brand}', { brand: <GoogleMark /> })}</button>
     </div>
 
     <div className="auth-divider" aria-hidden="true"><span>{tr('or use your email')}</span></div>
@@ -109,7 +133,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       <label className="auth-field"><span>{tr('Email address')}</span><input type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>
       <button className="auth-submit" type="submit" disabled={!!busy || unavailable} {...disabledProps}>{busy === 'send' ? tr('Sending…') : tr('Email me a code')}</button>
     </form> : <form className="auth-form" onSubmit={verify} noValidate>
-      <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => setCode(e.target.value.replace(/[^\d]/g, ''))} /></label>
+      <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => changeCode(e.target.value)} /></label>
       <button className="auth-submit" type="submit" disabled={!!busy}>{busy === 'verify' ? tr('Checking…') : tr('Verify and sign in')}</button>
       <div className="auth-code-actions">
         <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); }}>{tr('Use a different email')}</button>

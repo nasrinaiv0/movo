@@ -21,6 +21,10 @@ export default function HelpCenter({ c }) {
         <p>{tr('In local/demo mode, manually entered financial records and accounts are stored in this browser\'s local storage and persist across reloads in the same browser profile. They are not synced to other devices and can be removed with Clear All Data or by clearing browser storage. Cloud records require sign-in and a working MOVO database connection. Browser storage is not encrypted by MOVO itself.')}</p>
       </section>
       <section className="legal-section">
+        <h2>{tr('What happens when I am offline?')}</h2>
+        <p>{tr('With Cloud Sync on, MOVO syncs by itself every time you open it, before your records appear, so you start with the latest data. It also keeps working without a connection: changes are saved on this device and shown right away. When the connection returns while MOVO is open, it shows a notice with Sync local to cloud; changes made offline are uploaded when you tap it, or the next time you open MOVO. If a record was changed both on this device and in your MOVO account, MOVO shows both versions and you choose which one to keep; nothing is overwritten or deleted without your choice. Offline sync covers accounts and transactions.')}</p>
+      </section>
+      <section className="legal-section">
         <h2>{tr('Does MOVO connect to my bank or move money?')}</h2>
         <p>{tr('No. MOVO currently organizes records you enter or import. It does not automatically connect to a bank, read private Apple Pay history, initiate payments, block cards, or verify that a transaction occurred. Treat balances as calculations from available records, not verified bank balances.')}</p>
       </section>

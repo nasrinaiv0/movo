@@ -4,9 +4,15 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 # MOVO Pull Request Progress Register
 
-## 2026-11-10 — Offline/online sync, section 5 (in progress; not ready to merge)
+## 2026-11-11 — Transactions filter icon and graph by filter, plans panels, sign-in buttons, referral line
 
-Takes over section 5 from draft #261 on `claude/movo-ui-motion-refinement-vafrxa`. Changes made while the cloud is unreachable are held on the device; after reconnecting MOVO shows "Your internet connection has been restored." with **Sync local to cloud**, and held changes upload only after that tap. Records changed both on the device and in the account are shown side by side to keep one or the other, per record, never by clock. Automatic attempts back off 5s → 5min with jitter; one status (offline, ready to sync, syncing, synced, needs review, paused) shows on every page. No schema, RLS or API change. Local checks so far, remaining gates and limits (only accounts and transactions sync offline; WebKit and native builds not run): `docs/engineering/updates/2026-11-10-offline-online-sync.md`.
+The Transactions billing-cycle filter is the filter icon (its label was cut off) and the graph under Total Spent follows it: the days of the chosen cycle, or every cycle for "All". MR DIY shows its logo in the notification detail. The plans panel and Plan & Usage are compact with lighter text, nothing repeated, a fixed bottom action and a tier-coloured glow with calm fade-ins. Apple and Google sign-in buttons share one surface and show "Continue with" plus the company mark. The "n of 10 friends subscribed" line is removed. Display only; details in `docs/engineering/updates/2026-11-11-transactions-plans-signin-polish.md`.
+
+## 2026-11-10 — Offline/online sync, section 5 (verified locally; no pull request yet)
+
+Takes over section 5 from draft #261 on `claude/movo-ui-motion-refinement-vafrxa`. **Opening MOVO now syncs by itself and the first screen waits for it**, so it shows the latest records without tapping "Offline & online sync"; changes saved offline upload in that sync. A reconnect while MOVO is open shows "Your internet connection has been restored." with **Sync local to cloud** and uploads nothing until tapped. Records changed both on the device and in the account are shown side by side to keep one or the other, per record, never by clock. Automatic attempts back off 5s → 5min with jitter; one status shows on every page. Fixed along the way: a healthy launch that started as "Offline" for several seconds, a first screen that did not wait for the sync, and a pending-change count one step behind. No schema, RLS or API change. Checks, limits (only accounts and transactions sync offline; WebKit and native builds not run): `docs/engineering/updates/2026-11-10-offline-online-sync.md`.
+
+Validation: 191 suites / 1,170 tests, typecheck and strict build pass locally; the sync flow passes 37 checks in headless Chromium against a local stand-in for the cloud. No Vercel preview or pull-request CI yet; WebKit and native builds were not run.
 
 ## 2026-11-09 — Home balance arrow back at the bottom right (fix for a #263 regression)
 
