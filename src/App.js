@@ -8,7 +8,8 @@ import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
 import { canUseFeatureInMode, effectiveAccessPlan, effectivePlan } from './lib/planAccess';
 import { loggedAt } from './lib/loggedAt';
-import { closeTopBackLayer, createScreenTrail, listenForDeviceBack } from './lib/backNavigation';
+import { closeTopBackLayer, createScreenTrail, hasBackLayer, listenForDeviceBack } from './lib/backNavigation';
+import { startEdgeSwipeBack } from './lib/edgeSwipeBack';
 import { appIconById, appIconUnlocked } from './lib/appIcons';
 import { setNativeAppIcon } from './lib/native';
 import PlanOffer from './components/PlanOffer';
@@ -59,7 +60,7 @@ import { supportsAccountQr } from './lib/accountQrEligibility';
 import LoyaltySheet from './components/LoyaltySheet';
 import { isLoyaltyType, normalizeLoyaltyCard, visibleLoyaltyCards } from './lib/loyaltyCards';
 import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
-import { revealChange } from './lib/motion';
+import { canAnimate, revealChange } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
@@ -78,7 +79,7 @@ import { buildTransactionRunningBalances } from './lib/transactionRunningBalance
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
-import { listenForAppUrls } from './lib/native';
+import { listenForAndroidBack, listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
@@ -108,7 +109,7 @@ import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BU
 import { ACCENTS } from './screens/Settings';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
-import { apiUrl, isNativeApp } from './lib/platform';
+import { apiUrl, isNativeApp, nativePlatform } from './lib/platform';
 import { nativeAutomationKey, sanitizeNativePreferenceCache, saveNativeAutomationKey } from './lib/nativeAutomationKey';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
 import { listBills, listOccurrences, createBill } from './lib/billsRepository';
@@ -1106,7 +1107,7 @@ function App() {
    */
   const sheetOpenRef = useRef(false);
   sheetOpenRef.current = !!sheet;
-  useEffect(() => listenForDeviceBack(() => {
+  const deviceBack = useCallback(() => {
     // Any open sheet first (each one registers itself, wherever its state lives), then App-level ones.
     if (closeTopBackLayer()) return true;
     if (sheetOpenRef.current) { setSheet(null); return true; }
@@ -1116,7 +1117,21 @@ function App() {
     backMoveRef.current = true;
     try { go(previous); } finally { backMoveRef.current = false; }
     return true;
-  }), [go]);
+  }, [go]);
+  useEffect(() => listenForDeviceBack(deviceBack), [deviceBack]);
+  // Android: the system back gesture and button come straight to deviceBack (lib/native.js).
+  useEffect(() => listenForAndroidBack(deviceBack), [deviceBack]);
+  /* iPhone app: swipe in from the left (or right) edge to go back, the screen following the finger
+     (lib/edgeSwipeBack.js). Browsers and Android have their own gesture, which arrives as Back above. */
+  useEffect(() => {
+    if (nativePlatform() !== 'ios' && !(typeof window !== 'undefined' && window.__MOVO_EDGE_SWIPE__ === true)) return undefined;
+    return startEdgeSwipeBack({
+      onBack: deviceBack,
+      canGoBack: () => hasBackLayer() || sheetOpenRef.current || viewRef.current !== 'Home',
+      surface: () => (hasBackLayer() || sheetOpenRef.current || document.querySelector('[aria-modal="true"]') ? null : document.querySelector('main.screen')),
+      animate: canAnimate(),
+    });
+  }, [deviceBack]);
   const openLegal = useCallback((next) => {
     if (!['TermsOfService', 'PrivacyPolicy'].includes(view)) setLegalReturnView(view);
     go(next);

@@ -1122,3 +1122,41 @@ describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 
   });
 });
 
+
+describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
+  let container; let root;
+  const swipe = (fromX, toX) => {
+    const fire = (type, x) => { const e = new Event(type, { bubbles: true, cancelable: true }); Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : [{ clientX: x, clientY: 400 }] }); act(() => { document.body.dispatchEvent(e); }); };
+    fire('touchstart', fromX); fire('touchmove', fromX + (toX - fromX) / 3); fire('touchmove', toX); fire('touchend', 0);
+  };
+  const active = () => container.querySelector('.bottom-nav .nav-active')?.getAttribute('aria-label');
+  beforeEach(async () => {
+    window.__MOVO_EDGE_SWIPE__ = true;
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    window.localStorage.clear(); seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+  });
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); delete window.__MOVO_EDGE_SWIPE__; });
+
+  test('swiping in from the left edge returns to the previous screen, and from the right edge too', () => {
+    nav(container, 'Wallet'); nav(container, 'Transactions');
+    expect(active()).toBe('Transactions');
+    swipe(4, 300);
+    expect(active()).toBe('Wallet');
+    swipe(386, 80);
+    expect(active()).toBe('Home');
+    swipe(4, 300); // nothing left: Home stays
+    expect(active()).toBe('Home');
+  });
+
+  test('an open sheet closes first, and the screen stays', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'New account');
+    expect(container.querySelector('.sheet-backdrop')).not.toBeNull();
+    swipe(4, 300);
+    expect(container.querySelector('.sheet-backdrop')).toBeNull();
+    expect(active()).toBe('Wallet');
+  });
+});

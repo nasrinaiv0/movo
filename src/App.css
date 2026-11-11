@@ -8334,3 +8334,9 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .setup-agreement-accept { width: 100%; }
 .movo-app .setup-agreement-accept:disabled { opacity: .45; }
 @media (prefers-reduced-motion: reduce) { .movo-app .setup-agreement-card, .movo-app .setup-agreement-points li { animation: none; } }
+
+/* Edge swipe back in the iPhone app (owner, 2026-11-12): the screen follows the finger with a soft edge shadow. */
+html.movo-edge-swiping .movo-app main.screen { box-shadow: -14px 0 34px -12px rgba(0,0,0,.35), 14px 0 34px -12px rgba(0,0,0,.35); }
+/* The slid screen must not widen the page: mobile browsers would zoom out and move the fixed bottom nav. */
+html.movo-edge-swiping, html.movo-edge-swiping body { overscroll-behavior-x: none; overflow-x: hidden; }
+html.movo-edge-swiping .movo-app .app-shell { overflow-x: clip; }

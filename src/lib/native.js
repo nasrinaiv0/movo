@@ -3,7 +3,7 @@ import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { isNativeApp } from './platform';
+import { isNativeApp, nativePlatform } from './platform';
 
 /*
  * iOS app services. Every function here is a no-op (or returns the web answer) outside the app, so the website
@@ -135,4 +135,20 @@ export async function nativeAuthenticate(reason) {
 export async function setNativeAppIcon(name) {
   if (!isNativeApp()) return false;
   try { await MovoNative.setAppIcon({ name: name || null }); return true; } catch { return false; }
+}
+
+/*
+ * Android back button and back gesture (owner, 2026-11-12). MOVO handles them itself rather than relying on the web
+ * view's history: `onBack()` closes the open sheet or returns to the previous screen and says whether it did; with
+ * nothing left (Home, nothing open) the app moves to the background like other Android apps. No-op elsewhere.
+ */
+export function listenForAndroidBack(onBack) {
+  if (nativePlatform() !== 'android') return () => {};
+  let handle = null; let stopped = false;
+  CapApp.addListener('backButton', () => {
+    let handled = false;
+    try { handled = onBack() === true; } catch { handled = false; }
+    if (!handled) CapApp.minimizeApp().catch(() => CapApp.exitApp().catch(() => {}));
+  }).then(h => { if (stopped) h.remove(); else handle = h; }).catch(() => {});
+  return () => { stopped = true; handle?.remove?.(); };
 }
