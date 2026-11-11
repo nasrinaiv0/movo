@@ -55,6 +55,11 @@ Owner requests with screenshots.
 - The iOS Platinum app icon was re-rendered with the same sheen (`scripts/app-icons/render.cjs`); the Bronze, Silver
   and Gold icons re-rendered byte-identical. The icon only changes on a phone after a new iOS build.
 
+## Platinum, holographic (owner follow-up)
+- The platinum finish is now a platinum base with a holographic, iridescent sheen (rose, aqua, champagne, lilac over
+  silver) on the MOVO mark, an iridescent rim and one slow light sweep (every 6s, none with reduced motion) on the
+  badge tile, and a pearlescent Pro+ action. The iOS Platinum icon is re-rendered with the same sheen.
+
 ## Not changed (needs a device)
 - Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
   possible in this environment.

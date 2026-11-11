@@ -8214,3 +8214,18 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .plan-usage-current.tier-pro_plus { box-shadow: 0 0 0 1px rgba(170,176,182,.55), 0 0 26px -8px rgba(170,176,182,.9); }
 .movo-app .plan-features.tier-pro_plus li .movo-icon { color: #d6d9dc; }
 .movo-app .plan-features.tier-free li .movo-icon { color: var(--pp-green); }
+
+/* ---------- Platinum, holographic (owner, 2026-11-11) ----------
+   Platinum base with a prismatic, high-shine finish: the mark carries an iridescent gradient (MovoLogo), the badge tile
+   an iridescent rim and one slow light sweep, and the Pro+ action a pearlescent face. The sweep runs every 6s with a
+   long rest (no pulsing), and nothing moves with reduced motion. */
+.movo-app .plan-badge-mark.tone-platinum { position: relative; overflow: hidden; background: linear-gradient(145deg, #2a2c2f, #131416 70%); box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 2px 12px -2px rgba(190,220,235,.45); }
+.movo-app .plan-badge-mark.tone-platinum::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: conic-gradient(from 200deg, #f1d3e2, #cdeef2, #f3e7c8, #ddd6f1, #e6e8ea, #f1d3e2); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+.movo-app .plan-badge-mark.tone-platinum::after { content: ''; position: absolute; inset: -20%; background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.55) 47%, rgba(205,238,242,.35) 52%, rgba(241,211,226,.3) 56%, transparent 64%); transform: translateX(-90%); animation: plat-sweep 6s ease-out 1s infinite; pointer-events: none; }
+.movo-app .plan-badge-mark.tone-platinum > .movo-mark { position: relative; z-index: 1; }
+@keyframes plat-sweep { 0% { transform: translateX(-90%); } 22%, 100% { transform: translateX(90%); } }
+.movo-app .plan-cta.tier-pro_plus { background: linear-gradient(120deg, #f6f7f8 0%, #f1d9e6 22%, #d3eff3 44%, #f4e9cd 66%, #e1dbf2 84%, #eef0f1 100%); color: #17181a; }
+.movo-app .plan-cta.tier-pro_plus:not(:disabled) { filter: drop-shadow(0 0 16px rgba(205,232,240,.5)); }
+.movo-app .plan-tile.selected.tier-pro_plus { filter: drop-shadow(0 0 14px rgba(214,226,238,.45)); }
+.movo-app .plan-features.tier-pro_plus li .movo-icon { color: #cfe8ee; }
+@media (prefers-reduced-motion: reduce) { .movo-app .plan-badge-mark.tone-platinum::after { animation: none; display: none; } }

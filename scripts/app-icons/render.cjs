@@ -14,10 +14,14 @@ const ICONS = {
   Bronze: { bg: '#121213', glow: 'rgba(205,138,82,.20)', t: { light: '#efbd8f', mid: '#cd8a52', dark: '#8f5729' } },
   Silver: { bg: '#121213', glow: 'rgba(188,196,206,.18)', t: { light: '#f2f4f7', mid: '#bcc4ce', dark: '#7f8996' } },
   Gold: { bg: '#121213', glow: 'rgba(227,176,74,.22)', t: { light: '#f8dc8c', mid: '#e3b04a', dark: '#a87618' } },
-  Platinum: { bg: '#121213', glow: 'rgba(226,228,230,.18)', t: { light: '#fbfbfa', mid: '#d8dadc', dark: '#8e9397' },
-    metal: { light: ['#ffffff', '#eceeef', '#fdfdfd'], mid: ['#eef0f1', '#c3c7ca', '#e4e6e8'], dark: ['#b4b9bd', '#7a8085', '#a3a8ac'] } },
+  Platinum: { bg: '#121213', glow: 'rgba(205,230,240,.16)', t: { light: '#fbfbfa', mid: '#d8dadc', dark: '#8e9397' },
+    metal: {
+      light: ['#ffffff', '#fbe9f1', '#e8f8fb', '#fff7e6', '#ffffff'],
+      mid: ['#eceef0', '#f1d3e2', '#cdeef2', '#f3e7c8', '#ddd6f1', '#e6e8ea'],
+      dark: ['#b9bec2', '#b49aae', '#86b3b9', '#b9ab86', '#9a95b6', '#a3a8ac'],
+    } },
 };
-// Platinum carries the same brushed-metal sheen as the in-app mark (MovoLogo `metal`); the other tiers stay flat.
+// Platinum carries the same holographic sheen as the in-app mark (MovoLogo `metal`); the other tiers stay flat.
 const svg = (t, metal) => {
   const paint = key => (metal ? `url(#${key})` : t[key]);
   const defs = metal ? `<defs>${['light', 'mid', 'dark'].map(key => `<linearGradient id="${key}" x1="0" y1="0" x2="1" y2="1">${metal[key].map((c, i) => `<stop offset="${(i / (metal[key].length - 1)) * 100}%" stop-color="${c}"/>`).join('')}</linearGradient>`).join('')}</defs>` : '';

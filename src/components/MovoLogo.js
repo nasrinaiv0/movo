@@ -9,10 +9,15 @@ export const LOGO_TONES = {
   bronze: { light: '#efbd8f', mid: '#cd8a52', dark: '#8f5729' },
   silver: { light: '#f2f4f7', mid: '#bcc4ce', dark: '#7f8996' },
   gold: { light: '#f8dc8c', mid: '#e3b04a', dark: '#a87618' },
-  // Platinum (owner, 2026-11-11): a neutral metallic white-silver, not lavender. The flat tones are the fallback; the
-  // mark itself is drawn with a brushed-metal sheen (`metal`), the only tone that uses gradients.
+  // Platinum (owner, 2026-11-11): a platinum base with a holographic, iridescent sheen (rose, aqua, champagne, lilac
+  // over silver), not a flat lavender. The flat tones are the fallback; the mark itself is drawn with the prismatic
+  // gradients in `metal`, the only tone that uses gradients.
   platinum: { light: '#fbfbfa', mid: '#d8dadc', dark: '#8e9397',
-    metal: { light: ['#ffffff', '#eceeef', '#fdfdfd'], mid: ['#eef0f1', '#c3c7ca', '#e4e6e8'], dark: ['#b4b9bd', '#7a8085', '#a3a8ac'] } },
+    metal: {
+      light: ['#ffffff', '#fbe9f1', '#e8f8fb', '#fff7e6', '#ffffff'],
+      mid: ['#eceef0', '#f1d3e2', '#cdeef2', '#f3e7c8', '#ddd6f1', '#e6e8ea'],
+      dark: ['#b9bec2', '#b49aae', '#86b3b9', '#b9ab86', '#9a95b6', '#a3a8ac'],
+    } },
 };
 
 export const MARK_VIEWBOX = '0 0 120 104';
