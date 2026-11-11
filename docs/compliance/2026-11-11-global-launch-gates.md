@@ -37,3 +37,6 @@ Privacy/contact mailing address supplied by the developer: 142 Pag-asa Village, 
 
 ### 2026-11-12 — Lossless native encrypted snapshot foundation
 A new native-only AES-256-GCM vault stages snapshots using a random, device-keystore-protected encryption key and authenticated owner/group binding. It **does not** activate for existing finance records or alter storage behavior. Plaintext primary stores and Preferences mirrors persist today. To satisfy at-rest app-level protection, migrate all synchronous workspace and hybrid data paths to the vault, test parity and recovery, remove plaintext only once verified, and retest on signed devices. Until then, **encryption at rest is a release blocker**.
+
+### 2026-11-12 — Country worksheet and draft store form
+See `2026-11-12-market-release-matrix.csv` for the initial 25 territories (all BLOCKED pending evidence) and `2026-11-12-google-play-declaration-worksheet.md` for the financial features and Data safety disclosures to submit in Play Console after exact signed-build verification. Neither provides blanket legal compliance or verifies all 176 proposed markets.

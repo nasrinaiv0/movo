@@ -23,8 +23,8 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: movo-isolated-ci-only
           POSTGRES_DB: postgres
-        ports:
-          - 55432:5432
+        # The psql/createdb/dropdb wrapper uses docker exec, so a host port is unnecessary.
+        # An explicit port binding can collide with unrelated CI containers on shared runners.
         options: >-
           --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 5s
