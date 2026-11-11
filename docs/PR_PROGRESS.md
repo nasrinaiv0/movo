@@ -1,4 +1,11 @@
 
+## 2026-11-12 — Fail-closed disposable PostgreSQL execution gate
+
+A second-stage CI safety audit found that the synthetic migration harness creates PostgreSQL cluster-global mock auth roles. Merely restricting `PGHOST` to loopback could still modify a developer's persistent local PostgreSQL cluster when copied outside CI. Restrict its entrypoint to **GitHub Actions with the disposable Postgres service container ID**, in addition to the existing loopback and generated-database restrictions. Add subprocess regression cases proving that an ordinary local run, a CI flag without a service, a whitespace-only service ID, and a remote database host all fail before any database command is executed. An isolated Python reproduction verified 5/5 access-gate cases before commit. This change applies only to the disposable test harness; no MOVO app or production database behavior changes.
+
+Canonical PR #274 is open and unmerged. GitHub API-created commits are not producing fresh Actions runs; a CI-only duplicate PR #277 was opened then closed without merge after it also failed to trigger checks. The Vercel preview is READY but cannot substitute for a real PostgreSQL integration run. Staging branch cost is declined; no paid branch should be created.
+
+
 ## 2026-11-12 — PR #274 premerge staging and migration-history safety gate
 
 Live Supabase preflight (read-only) found zero cross-owner schedule links, zero invalid transaction amounts, 3 archive preference rows, zero currently overdue acknowledgement jobs, and existing direct UPDATE/DELETE grants and RLS policies. Repo has 40 migration files while production migration history has 35 entries; only 19 timestamps match. **DO NOT RUN `supabase db push` across the entire repo history against production, or merge on CI-green alone.** The oldest raw PostgREST transaction clients can write before the proposed revocation and fail after it; minimum supported signed mobile versions/rollout remains unverified.

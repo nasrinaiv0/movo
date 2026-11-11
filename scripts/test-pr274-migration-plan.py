@@ -1,6 +1,9 @@
 """No-network unit tests for the production-safe PR274 staging and rollback harness."""
+import os
 import pathlib
 import re
+import subprocess
+import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -22,6 +25,25 @@ class MigrationStagingContractTests(unittest.TestCase):
         self.assertIn('only generated disposable databases', self.harness)
         self.assertIn('movo_rollback_test_', self.harness)
         self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', self.harness)
+
+    def test_rejects_non_disposable_postgresql_hosts_before_any_database_action(self):
+        script = str(ROOT / "scripts/test-finance-rpc-isolation-local.py")
+        cases = [
+            ({}, "requires a disposable GitHub Actions"),
+            ({"GITHUB_ACTIONS": "true"}, "requires a disposable GitHub Actions"),
+            ({"GITHUB_ACTIONS": "true", "MOVO_TEST_PG_CONTAINER": "   "}, "requires a disposable GitHub Actions"),
+            ({"GITHUB_ACTIONS": "true", "MOVO_TEST_PG_CONTAINER": "test", "MOVO_TEST_PGHOST": "db.production.example"}, "Unsafe database host"),
+        ]
+        for overrides, expected_message in cases:
+            with self.subTest(overrides=overrides):
+                env = os.environ.copy()
+                for name in ("GITHUB_ACTIONS", "MOVO_TEST_PG_CONTAINER", "MOVO_TEST_PGHOST"):
+                    env.pop(name, None)
+                env.update(overrides)
+                result = subprocess.run([sys.executable, script], capture_output=True, text=True, env=env, timeout=10)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_message, result.stderr)
+        self.assertIn("MOVO_TEST_PG_CONTAINER=$container", self.workflow)
 
     def test_stages_are_explicit_and_are_applied_in_order(self):
         self.assertIn('cutoff = "20261111133000"', self.harness)

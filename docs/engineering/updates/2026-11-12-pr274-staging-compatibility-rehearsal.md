@@ -26,3 +26,9 @@ No paid staging branch, production migration, live deletion, billing change, mai
 - The branch's test harness proves that old raw-write clients would lose UPDATE/DELETE capability under the strict grant-revocation migration. Until minimum supported Play/App Store build versions and actual adoption evidence are verified, merging and applying that migration remain blocked.
 
 **No production SQL or data was modified.** Both the PR review gate and global paid release remain NO-GO until this real-stage exercise and verified backup/restore pass.
+
+## 2026-11-12 — Fail-closed disposable PostgreSQL execution gate
+
+A second-stage CI safety audit found that the synthetic migration harness creates PostgreSQL cluster-global mock auth roles. Merely restricting `PGHOST` to loopback could still modify a developer's persistent local PostgreSQL cluster when copied outside CI. Restrict its entrypoint to **GitHub Actions with the disposable Postgres service container ID**, in addition to the existing loopback and generated-database restrictions. Add subprocess regression cases proving that an ordinary local run, a CI flag without a service, a whitespace-only service ID, and a remote database host all fail before any database command is executed. An isolated Python reproduction verified 5/5 access-gate cases before commit. This change applies only to the disposable test harness; no MOVO app or production database behavior changes.
+
+Canonical PR #274 is open and unmerged. GitHub API-created commits are not producing fresh Actions runs; a CI-only duplicate PR #277 was opened then closed without merge after it also failed to trigger checks. The Vercel preview is READY but cannot substitute for a real PostgreSQL integration run. Staging branch cost is declined; no paid branch should be created.

@@ -1,11 +1,13 @@
 """Run production migration SQL and 12 privileged finance-RPC tenant tests against
 an ephemeral *local* Postgres database. No Supabase project or remote host used.
 
-Local Vercel Sandbox:
-  MOVO_TEST_PGHOST=/var/run/postgresql MOVO_TEST_PGUSER=ubuntu python3 scripts/test-finance-rpc-isolation-local.py
+Only GitHub Actions with the disposable PostgreSQL service container are allowed.
+Local host installations and remote databases are deliberately rejected to prevent
+accidental cluster-global role creation outside a disposable test environment.
 
 CI:
   MOVO_TEST_PGHOST=127.0.0.1 MOVO_TEST_PGUSER=postgres PGPASSWORD=<local CI only>
+  MOVO_TEST_PG_CONTAINER=<disposable service container ID> GITHUB_ACTIONS=true
   python3 scripts/test-finance-rpc-isolation-local.py
 
 Only loopback and the standard Unix socket are accepted, even if PGHOST is
@@ -21,6 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 HOST = os.environ.get("MOVO_TEST_PGHOST", "/var/run/postgresql")
 PORT = os.environ.get("MOVO_TEST_PGPORT", "5432")
 USER = os.environ.get("MOVO_TEST_PGUSER", os.environ.get("USER", "postgres"))
+# Creates cluster-global mock auth roles: never allow execution against a developer's
+# ordinary local PostgreSQL cluster, even if its hostname is loopback.
+if os.environ.get("GITHUB_ACTIONS") != "true" or not os.environ.get("MOVO_TEST_PG_CONTAINER", "").strip():
+    sys.exit("Unsafe test target: requires a disposable GitHub Actions PostgreSQL service container")
 if HOST not in {"/var/run/postgresql", "127.0.0.1", "localhost", "::1"}:
     sys.exit("Unsafe database host: only disposable localhost PostgreSQL is allowed")
 if not PORT.isdigit() or not 1 <= int(PORT) <= 65535:
