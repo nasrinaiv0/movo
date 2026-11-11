@@ -1,4 +1,9 @@
 
+## 2026-11-12 — PR 274: finance card name fallback and legacy logo test coverage
+
+Exact-head CI exposed six test suites still asserting remote unreviewed favicons and a functional regression: the MOVO-face fallback masked bank names in Wallet filters. Keep the local MOVO artwork while showing the underlying account/institution label in the fallback subtitle, without changing card balances, visibility settings, or color themes. Update UI and logo tests to assert offline icons, no unreviewed network fetch, visible institution labels, and unchanged finance metrics. Re-run the complete CI suite on this new commit before merge.
+
+
 ## 2026-11-12 — PR #274: verified mailing address, Google Play declarations and fail-closed logos
 
 Published developer-supplied privacy correspondence address in web/in-app legal pages and external deletion page; explicitly did not invent the legal controller's business registration. Blocked all unreviewed Google favicon, direct site favicon and payment network external requests with generic local fallback; added tests that default and legacy owner approval do not authorize artwork. Added Google Play financial features, Data Safety and regional merchant/availability review checklists. Complete native finance encryption/migration, legal counsel approvals and Google Play Console submissions remain pending. No production data, store settings, billing or migrations modified.
