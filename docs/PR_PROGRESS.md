@@ -724,3 +724,5 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - New test gates: watch manifest/security contract, Jest deep-link abuse tests, unsigned Android Wear debug/release bundle compile, unsigned watchOS Simulator compile. Manual paired watches and store packaging/signing remain release blockers.
 - Documentation: docs/engineering/updates/2026-11-12-wearable-companions.md and docs/wearable-compatibility-2026-11-12.md.
 - No production changes or migration. PR is review-only and must not auto-merge until all native builds and physical device tests pass.
+
+- **2026-11-12 PR #280 CI fix (pre-merge):** Android and hybrid regression checks executed 203 suites / 1,235 tests. 1,234 passed; the only failing check was the prior Android manifest contract asserting exactly two allowable `movo://` hosts. Updated this test to explicitly enumerate exactly `auth-callback`, `log`, and `wear-log`, including VIEW/DEFAULT/BROWSABLE safety requirements. This is a test correction; no production code change. iOS/native and preview still require exact-head verification.

@@ -7,7 +7,7 @@ const manifest = readFileSync(path.resolve(__dirname, '../../android/app/src/mai
 const filters = Array.from(manifest.matchAll(/<intent-filter>([\s\S]*?)<\/intent-filter>/g), match => match[1]);
 
 describe('Android release deep-link routing', () => {
-  test.each(['auth-callback', 'log'])('registers an exported, browser-resolvable movo://%s link', host => {
+  test.each(['auth-callback', 'log', 'wear-log'])('registers an exported, browser-resolvable movo://%s link', host => {
     const matched = filters.filter(filter => filter.includes('android:scheme="movo"') && filter.includes('android:host="' + host + '"'));
     expect(matched).toHaveLength(1);
     expect(matched[0]).toContain('android.intent.action.VIEW');
@@ -17,7 +17,11 @@ describe('Android release deep-link routing', () => {
 
   test('does not register catch-all MOVO links or auth secrets in the manifest', () => {
     expect(manifest).toContain('android:exported="true"');
-    expect(filters.filter(filter => filter.includes('android:scheme="movo"'))).toHaveLength(2);
+    // Exact allowlist prevents new public deep-link attack surfaces sneaking in.
+    const routed = filters.filter(filter => filter.includes('android:scheme="movo"'));
+    expect(routed).toHaveLength(3);
+    expect(routed.map(filter => [...filter.matchAll(/android:host="([^"]+)"/g)].map(match => match[1])).flat().sort())
+      .toEqual(['auth-callback', 'log', 'wear-log']);
     expect(manifest).not.toMatch(/android:scheme="movo"\s*\/>/);
     expect(manifest).not.toMatch(/access_token|refresh_token|client_secret/i);
   });
