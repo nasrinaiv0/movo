@@ -60,6 +60,12 @@ Owner requests with screenshots.
   silver) on the MOVO mark, an iridescent rim and one slow light sweep (every 6s, none with reduced motion) on the
   badge tile, and a pearlescent Pro+ action. The iOS Platinum icon is re-rendered with the same sheen.
 
+## Bottom navigation in the plan colour (owner follow-up)
+- With a server-verified Pro+ plan the active bottom-nav tab, its capsule and the tablet side rail are platinum by
+  default (cool silver with an iridescent glow; a deeper steel on light themes so it reads against the grey inactive
+  tabs); Pro is gold. The free month keeps the app accent. Settings → Appearance (and Profile → App Appearance) has
+  **Navigation accent**: the plan colour or the app accent (pref `navAccent`, synced like other preferences).
+
 ## Not changed (needs a device)
 - Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
   possible in this environment.

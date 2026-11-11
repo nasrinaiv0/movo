@@ -46,6 +46,23 @@ export function ThemePicker({ c, compact }) {
     <div className="accent-row" role="radiogroup" aria-label={tr('Accent color')}>
       {ACCENTS.map(([key, color]) => <button type="button" key={key} role="radio" aria-checked={prefs.accent === key} aria-label={tr('{name} accent', { name: tr(key[0].toUpperCase() + key.slice(1)) })} className={prefs.accent === key ? 'selected' : ''} style={{ '--dot': color }} onClick={() => setPref('accent', key)}>{prefs.accent === key && <Icon name="check" size={16} strokeWidth={3} />}</button>)}
     </div>
+    <NavAccentPicker c={c} />
+  </>;
+}
+
+/** Pro and Pro+ only: the bottom navigation follows the plan colour (default) or the app accent. */
+export function NavAccentPicker({ c }) {
+  const plan = c.subscriptionPlan;
+  if (!['pro', 'pro_plus'].includes(plan) || c.entitlement?.source === 'trial') return null;
+  const tierName = plan === 'pro_plus' ? tr('Platinum') : tr('Gold');
+  const value = c.prefs.navAccent === 'app' ? 'app' : 'plan';
+  return <>
+    <h3 className="mini-title">{tr('Navigation accent')}</h3>
+    <div className="nav-accent-options" role="radiogroup" aria-label={tr('Navigation accent')}>
+      {[['plan', tierName, plan === 'pro_plus' ? 'platinum' : 'gold'], ['app', tr('App accent'), 'app']].map(([key, label, swatch]) => <button type="button" key={key} role="radio" aria-checked={value === key} className={value === key ? 'selected' : ''} onClick={() => c.setPref('navAccent', key)}>
+        <span className={`nav-accent-swatch swatch-${swatch}`} aria-hidden="true" />{label}
+      </button>)}
+    </div>
   </>;
 }
 

@@ -264,6 +264,20 @@ describe('MOVO finance frontend', () => {
     expect(current()).toBe('Home');
   });
 
+  test('Pro+ colours the bottom navigation platinum by default, and Appearance can switch it to the app accent', () => {
+    const root_ = () => container.querySelector('.movo-app');
+    expect(root_().className).toContain('nav-tier-platinum');
+    openProfile(container);
+    const options = () => Array.from(container.querySelectorAll('.nav-accent-options button'));
+    expect(options().map(b => b.textContent)).toEqual(['Platinum', 'App accent']);
+    expect(options()[0].getAttribute('aria-checked')).toBe('true');
+    act(() => options()[1].click());
+    expect(root_().className).not.toContain('nav-tier-');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).navAccent).toBe('app');
+    act(() => options()[0].click());
+    expect(root_().className).toContain('nav-tier-platinum');
+  });
+
   test('tapping a membership card opens the same Account details layout as other cards, with Edit card leading to the editor', () => {
     act(() => root.unmount());
     const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');

@@ -55,5 +55,33 @@ export default [
     "{date} まで有効",
     "{date}까지 활성",
     "{date} तक सक्रिय"
+  ],
+  [
+    "Navigation accent",
+    "Accent ng navigation",
+    "لون شريط التنقل",
+    "导航强调色",
+    "Color de la navegación",
+    "Colore della navigazione",
+    "Navigationsfarbe",
+    "Couleur de la navigation",
+    "Cor da navegação",
+    "ナビゲーションの色",
+    "내비게이션 강조 색상",
+    "नेविगेशन रंग"
+  ],
+  [
+    "App accent",
+    "Accent ng app",
+    "لون التطبيق",
+    "应用强调色",
+    "Color de la app",
+    "Colore dell'app",
+    "App-Farbe",
+    "Couleur de l'app",
+    "Cor do app",
+    "アプリの色",
+    "앱 강조 색상",
+    "ऐप रंग"
   ]
 ];
