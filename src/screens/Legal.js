@@ -58,6 +58,7 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
       <footer className="legal-contact">
         <h2>{tr('Questions or privacy requests?')}</h2>
         <p lang="en">Data Protection Officer: Nasrin Abubakar · <a href="mailto:dpo@nasrinai.com">dpo@nasrinai.com</a></p>
+        <p lang="en">Privacy correspondence: 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines</p>
         <p>{rich('Contact the MOVO service team at {link}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       </footer>
       <SocialLinks />

@@ -10,6 +10,7 @@ describe('public app-store legal documents', () => {
       expect(html).toContain('support@nasrinai.com');
       expect(html).toContain('dpo@nasrinai.com');
       expect(html).toContain('Nasrin Abubakar');
+      expect(html).toContain('142 Pag-asa Village');
       expect(html).toMatch(/<h2>/);
       expect(html).not.toContain('<div id="root"></div>');
     });

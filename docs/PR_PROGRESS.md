@@ -1,4 +1,9 @@
 
+## 2026-11-12 — PR #274: verified mailing address, Google Play declarations and fail-closed logos
+
+Published developer-supplied privacy correspondence address in web/in-app legal pages and external deletion page; explicitly did not invent the legal controller's business registration. Blocked all unreviewed Google favicon, direct site favicon and payment network external requests with generic local fallback; added tests that default and legacy owner approval do not authorize artwork. Added Google Play financial features, Data Safety and regional merchant/availability review checklists. Complete native finance encryption/migration, legal counsel approvals and Google Play Console submissions remain pending. No production data, store settings, billing or migrations modified.
+
+
 ## 2026-11-11 — PR #274: DPO disclosure and 176-market compliance gate
 
 Designated DPO Nasrin Abubakar, dpo@nasrinai.com, in public and in-app legal pages and the external account-deletion instructions; retain general support email. Legal controller identity, physical address and local representative details remain unverified, and no legal clearance is asserted. Added regression coverage and a global market-specific release evidence register. Apple currently advertises 175 App Store countries or regions, not the requested 176; Google Play market list and individual requirements need separate confirmation. Do not merge, publish, activate billing, or apply production migrations without independent validation. Vercel Sandbox still returns HTTP 402 payment_required.

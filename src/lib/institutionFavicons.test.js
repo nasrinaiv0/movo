@@ -9,16 +9,12 @@ describe('institution favicon registry', () => {
     });
   });
 
-  test('owner approval enables curated institutions; a BLOCKED entry stays off', () => {
-    expect(new URL(getInstitutionFaviconUrl('BDO Unibank')).searchParams.get('domain')).toBe('bdo.com.ph');
-    expect(new URL(getInstitutionFaviconUrl('bpi')).searchParams.get('domain')).toBe('bpi.com.ph');
+  test('unreviewed entries and legacy owner approval fail closed', () => {
+    expect(getInstitutionFaviconUrl('BDO Unibank')).toBeNull();
+    expect(getInstitutionFaviconUrl('BPI')).toBeNull();
     const entry = INSTITUTION_FAVICONS.BPI;
-    try {
-      entry.reviewStatus = 'BLOCKED';
-      expect(getInstitutionFaviconUrl('BPI')).toBeNull();
-    } finally {
-      delete entry.reviewStatus;
-    }
+    try { entry.reviewStatus = 'APPROVED_BY_OWNER'; expect(getInstitutionFaviconUrl('BPI')).toBeNull(); }
+    finally { delete entry.reviewStatus; }
   });
 
   test('generates a dynamic favicon URL only after the exact entry has an approved review status', () => {
@@ -72,8 +68,10 @@ describe('institution favicon registry', () => {
 
 
 test('institution logo candidates include curated alias fallbacks without guessing manual names',()=>{
-  const aub=institutionLogoCandidates('AUB',{size:64});
-  expect(aub.length).toBeGreaterThan(0);
-  expect(aub[0]).toContain('domain=aub.com.ph');
+  expect(institutionLogoCandidates('AUB',{size:64})).toEqual([]);
   expect(institutionLogoCandidates('Unknown personal bank')).toEqual([]);
+  const entry = INSTITUTION_FAVICONS['Asia United Bank (AUB)'];
+  const saved = entry.reviewStatus;
+  try { entry.reviewStatus = 'APPROVED_BY_COUNSEL'; expect(institutionLogoCandidates('AUB',{size:64})[0]).toContain('domain=aub.com.ph'); }
+  finally { if (saved === undefined) delete entry.reviewStatus; else entry.reviewStatus = saved; }
 });

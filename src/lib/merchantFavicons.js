@@ -3,11 +3,10 @@
  *
  * Only curated names map to a domain; a domain is never derived from what the person typed. The merchant text is
  * matched on this device (whole words at the start, case-insensitive), and only the curated domain is sent to the
- * Google S2 favicon endpoint, with no referrer, amount or account detail. Owner-approved on 2026-11-01 for
- * identification only (see docs/legal/THIRD_PARTY_BRANDS_DYNAMIC_FAVICONS_AND_SUBSCRIPTIONS.md); set
- * reviewStatus: 'BLOCKED' on an entry to stop its remote icon.
+ * Google S2 favicon endpoint only when per-provider legal/icon rights review is recorded.
+ * A historical owner preference alone is not permission to use the remote artwork.
  */
-import { APPROVED_STATUSES, OWNER_APPROVAL } from './institutionFavicons';
+import { APPROVED_STATUSES } from './institutionFavicons';
 import { institutionLogoUrl } from './institutions';
 import { SUBSCRIPTION_APP_FAVICONS } from './subscriptionAppFavicons';
 
@@ -46,7 +45,7 @@ function match(text, keys) {
 }
 
 const url = (domain, size) => `${ENDPOINT}?${new URLSearchParams({ domain, sz: String([16, 32, 48, 64, 128].includes(size) ? size : 64) })}`;
-const approved = (entry) => APPROVED_STATUSES.includes(entry.reviewStatus || OWNER_APPROVAL);
+const approved = (entry) => APPROVED_STATUSES.includes(entry?.reviewStatus);
 
 /** Logo URL for a transaction's merchant (curated merchants, subscriptions, then banks/e-wallets), or ''. */
 export function merchantLogoUrl(merchant, { size = 64 } = {}) {
