@@ -41,6 +41,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="movo" android:host="log" />
             </intent-filter>
+            <!-- Untrusted, fixed watch handoff; phone never writes automatically. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="movo" android:host="wear-log" />
+            </intent-filter>
 
         </activity>
 

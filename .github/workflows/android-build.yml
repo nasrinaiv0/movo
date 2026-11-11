@@ -56,7 +56,7 @@ jobs:
           # never turn a real Java/Kotlin compile error into a passing build.
           for attempt in 1 2 3; do
             log="${RUNNER_TEMP}/movo-gradle-attempt-${attempt}.log"
-            if bash gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee "$log"; then
+            if bash gradlew :app:assembleDebug :app:assembleRelease :wear:assembleDebug :wear:bundleRelease --no-daemon --stacktrace 2>&1 | tee "$log"; then
               exit 0
             fi
             if (( attempt < 3 )) && grep -Eqi '(HTTP response code: (429|502|503|504)|status code (429|502|503|504)|Read timed out|Connection reset)' "$log"; then

@@ -1,14 +1,40 @@
 import UIKit
 import Capacitor
+import WatchConnectivity
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, WCSessionDelegate {
 
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Only a fixed watch action is accepted. No ledger/auth data is shared.
+        if WCSession.isSupported() {
+            WCSession.default.delegate = self
+            WCSession.default.activate()
+        }
         return true
+    }
+
+    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        // A paired watch is never evidence of an authenticated user.
+    }
+
+    func sessionDidBecomeInactive(_ session: WCSession) {}
+
+    func sessionDidDeactivate(_ session: WCSession) {
+        session.activate()
+    }
+
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any],
+                 replyHandler: @escaping ([String: Any]) -> Void) {
+        guard message.count == 1, (message["action"] as? String) == "quickLog" else {
+            replyHandler(["ok": false])
+            return
+        }
+        // Single boolean, consumed exactly once when the phone app resumes.
+        UserDefaults.standard.set(true, forKey: "movo.wear.quickLog.v1")
+        replyHandler(["ok": true])
     }
 
     func applicationWillResignActive(_ application: UIApplication) {

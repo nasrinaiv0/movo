@@ -67,21 +67,46 @@ export function readAppUrl(url) {
   if (parsed.hostname === 'log' && !parsed.hash) {
     return { kind: 'log', hash: `#/log?${params.toString()}` };
   }
+  // Public deep links can only request a blank phone form. Never auto-write.
+  if (parsed.hostname === 'wear-log' && !parsed.search && !parsed.hash) {
+    return { kind: 'wear' };
+  }
   return null;
 }
 
 /** Listen for movo:// links. `onAuth({ code, error })` finishes sign-in; log links reuse the web #/log handler. */
-export function listenForAppUrls({ onAuth } = {}) {
+export function listenForAppUrls({ onAuth, onWear } = {}) {
   if (!isNativeApp()) return () => {};
   const handle = ({ url }) => {
     const link = readAppUrl(url);
     if (!link) return;
     if (link.kind === 'auth') { Browser.close().catch(() => {}); onAuth?.(link); }
     if (link.kind === 'log') window.location.hash = link.hash;
+    if (link.kind === 'wear') onWear?.();
   };
   const pending = CapApp.addListener('appUrlOpen', handle);
   CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
   return () => { pending.then(h => h.remove()).catch(() => {}); };
+}
+
+/**
+ * Apple Watch sends only a one-shot boolean through WatchConnectivity.
+ * Foreground / resume consumption never transfers financial data to the watch.
+ */
+export function listenForWearActions(onWear) {
+  if (nativePlatform() !== 'ios') return () => {};
+  let stopped = false;
+  const consume = () => {
+    MovoNative.consumeWearRequest().then(({ action }) => {
+      if (!stopped && action === 'quickLog') onWear?.();
+    }).catch(() => {});
+  };
+  const listener = CapApp.addListener('resume', consume);
+  consume();
+  return () => {
+    stopped = true;
+    listener.then(handle => handle.remove()).catch(() => {});
+  };
 }
 
 /** Open a sign-in page in the system browser sheet (Google refuses sign-in inside embedded web views). */

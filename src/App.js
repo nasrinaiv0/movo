@@ -79,7 +79,7 @@ import { buildTransactionRunningBalances } from './lib/transactionRunningBalance
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
-import { listenForAndroidBack, listenForAppUrls } from './lib/native';
+import { listenForAndroidBack, listenForAppUrls, listenForWearActions } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
@@ -339,6 +339,7 @@ function App() {
   const [sheet, setSheet] = useState(null);
   const [inbox, setInbox] = useState([]); // phone automations that could not be logged (cloud only)
   const [pendingLog, setPendingLog] = useState(null);
+  const [wearLogRequested, setWearLogRequested] = useState(false); // no watch financial data
   const [automationStatus, setAutomationStatus] = useState('idle');
   const [toast, setToast] = useState('');
   const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
@@ -836,7 +837,11 @@ function App() {
       if (failure || !code) { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); return; }
       finishOAuth(code).catch(() => { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); });
     },
+    onWear: () => setWearLogRequested(true),
   }), []);
+
+  /* One-shot Apple Watch requests arrive only through the native iPhone bridge. */
+  useEffect(() => listenForWearActions(() => setWearLogRequested(true)), []);
 
   useEffect(() => {
     let mounted = true;
@@ -1979,6 +1984,13 @@ function App() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
   const unlock = useCallback(() => setLocked(false), []);
+  // Watch handoffs cannot bypass setup, sign-in or local App Lock. They wait
+  // until the phone is ready and the person explicitly saves a manual entry.
+  useEffect(() => {
+    if (!wearLogRequested || !authReady || locked || !setupDone || sheet || view === 'Sign in') return;
+    setWearLogRequested(false);
+    setSheet({ name: 'transaction', type: 'expense' });
+  }, [wearLogRequested, authReady, locked, setupDone, sheet, view]);
 
   /* ---------- "While you were away": what was logged since MOVO was last open, and automations that failed ---------- */
   // Checked once the app is ready, and again when MOVO comes back after 2+ minutes in the background (cloud records

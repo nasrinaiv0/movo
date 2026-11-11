@@ -29,6 +29,16 @@ test('rejects spoofed, ambiguous or oversized native deep links', () => {
   });
 });
 
+test('wearable links request a blank phone form and reject injected parameters', () => {
+  expect(readAppUrl('movo://wear-log')).toEqual({ kind: 'wear' });
+  expect(readAppUrl('movo://wear-log?amount=12')).toBeNull();
+  expect(readAppUrl('movo://wear-log#secret')).toBeNull();
+  expect(readAppUrl('movo://wear-log/?x=1')).toBeNull();
+  expect(readAppUrl('movo://wear-log/unsafe')).toBeNull();
+  expect(readAppUrl('movo://evil@wear-log')).toBeNull();
+  expect(readAppUrl('movo://wear-log:443')).toBeNull();
+});
+
 test('notification ids are stable, positive and differ by tag', () => {
   expect(notificationId('renewal:netflix')).toBe(notificationId('renewal:netflix'));
   expect(notificationId('renewal:netflix')).not.toBe(notificationId('limit:food'));

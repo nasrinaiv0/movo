@@ -54,6 +54,19 @@ jobs:
         run: npx cap sync ios
       - name: Show Xcode version
         run: xcodebuild -version
+      - name: Compile Apple Watch companion for watchOS Simulator (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -target MOVOWatch \
+            -configuration Debug \
+            -sdk watchsimulator \
+            -destination 'generic/platform=watchOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tail -n 120
+      - name: Verify wearable privacy and manifest contracts
+        run: python3 scripts/test-wearable-contract.py
       - name: Compile for the iOS simulator (unsigned)
         run: |
           set -o pipefail
