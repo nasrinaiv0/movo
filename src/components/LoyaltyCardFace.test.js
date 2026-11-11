@@ -11,10 +11,11 @@ const lum = hex => {
 const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 const providers = LOYALTY_PROVIDERS.filter(name => name !== 'Other');
 
-test('merchant reward card displays a small approved logo and points, never peso balance', () => {
+test('unreviewed merchant card retains name and points without third-party logo fetch', () => {
   const html = renderToStaticMarkup(<LoyaltyCardFace card={{ type: 'loyalty', name: '7-Eleven', points: '25.5', memberNumber: '12345678', pointsUnit: 'points' }} />);
   expect(html).toContain('loyalty-card-face');
-  expect(html).toContain('7-eleven.com.ph');
+  expect(html).toContain('>7-Eleven<');
+  expect(html).not.toContain('google.com/s2/favicons');
   expect(html).toContain('25.5');
   expect(html).toContain('•••• 5678');
   expect(html).not.toContain('₱');
@@ -51,13 +52,8 @@ test('card text stays readable on the card colour and on the motif it crosses (W
   });
 });
 
-test('logos come only from the curated list, and only for merchants marked with that domain', () => {
-  providers.forEach(name => {
-    const style = loyaltyCardStyle(name);
-    const url = loyaltyLogoUrl(name);
-    if (style.logo) expect([name, url]).toEqual([name, expect.stringContaining(`domain=${encodeURIComponent(style.logo)}`)]);
-    else expect([name, url]).toEqual([name, '']);
-  });
+test('all merchant logos without documented rights review use local fallback', () => {
+  providers.forEach(name => expect(loyaltyLogoUrl(name)).toBe(''));
 });
 
 test('the layout: program title (the person’s own name wins), motif, short date and no gradients or artwork', () => {

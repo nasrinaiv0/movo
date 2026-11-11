@@ -26,7 +26,10 @@ describe('Android release deep-link routing', () => {
     expect(manifest).toContain('android:allowBackup="false"');
     expect(manifest).toContain('android:dataExtractionRules="@xml/data_extraction_rules"');
     const extraction = readFileSync(path.resolve(__dirname, '../../android/app/src/main/res/xml/data_extraction_rules.xml'), 'utf8');
-    expect(extraction).toMatch(/<cloud-backup>\s*<exclude domain="root" path="\."\s*\/>\s*<\/cloud-backup>/);
-    expect(extraction).toMatch(/<device-transfer>\s*<exclude domain="root" path="\."\s*\/>\s*<\/device-transfer>/);
+    const domains = ['root', 'file', 'database', 'sharedpref', 'external', 'device_root', 'device_file', 'device_database', 'device_sharedpref'];
+    for (const section of ['cloud-backup', 'device-transfer']) {
+      const rules = extraction.split('<' + section + '>')[1].split('</' + section + '>')[0];
+      for (const domain of domains) expect(rules).toContain('<exclude domain="' + domain + '" path="." />');
+    }
   });
 });

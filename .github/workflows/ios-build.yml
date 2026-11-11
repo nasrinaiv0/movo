@@ -15,6 +15,8 @@ on:
       - "src/lib/supabaseClient.js"
       - "src/index.tsx"
       - "package.json"
+      - "scripts/ios-simulator-smoke.py"
+      - "scripts/test-ios-simulator-smoke.py"
       - ".github/workflows/ios-build.yml"
   push:
     branches: [main]
@@ -27,6 +29,8 @@ on:
       - "src/lib/supabaseClient.js"
       - "src/index.tsx"
       - "package.json"
+      - "scripts/ios-simulator-smoke.py"
+      - "scripts/test-ios-simulator-smoke.py"
 
 permissions:
   contents: read

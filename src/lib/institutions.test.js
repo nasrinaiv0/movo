@@ -1,3 +1,4 @@
+import { INSTITUTION_FAVICONS } from './institutionFavicons';
 import { INSTITUTIONS, searchInstitutions, institutionLogoUrl, institutionLogoCandidates, cardNetworkLogoUrl } from './institutions';
 
 describe('country-aware institution catalog', () => {
@@ -22,9 +23,9 @@ describe('country-aware institution catalog', () => {
     expect(searchInstitutions('PH', 'My local cooperative', 'bank')).toHaveLength(0);
   });
 
-  test('resolves owner-approved logos by name or alias, never for unknown names', () => {
-    expect(new URL(institutionLogoUrl('BDO')).searchParams.get('domain')).toBe('bdo.com.ph');
-    expect(new URL(institutionLogoUrl('China Bank')).searchParams.get('domain')).toBe('chinabank.ph');
+  test('unreviewed banks, aliases and manual entries show local fallback', () => {
+    expect(institutionLogoUrl('BDO')).toBe('');
+    expect(institutionLogoUrl('China Bank')).toBe('');
     expect(institutionLogoUrl('My Local Credit Union')).toBe('');
   });
 
@@ -36,9 +37,8 @@ describe('country-aware institution catalog', () => {
 
 describe('expanded institution list', () => {
   const { INSTITUTIONS, INSTITUTION_COUNTRIES, searchInstitutions, institutionLogoUrl } = require('./institutions');
-  test('every listed bank, e-wallet and lender has a curated logo domain', () => {
-    const missing = INSTITUTIONS.filter(i => !institutionLogoUrl(i.name)).map(i => `${i.country}:${i.name}`);
-    expect(missing).toEqual([]);
+  test('unreviewed institutions never initiate external icon requests', () => {
+    expect(INSTITUTIONS.every(i => institutionLogoUrl(i.name) === '')).toBe(true);
   });
   test('ids are unique and every country in the list is selectable', () => {
     expect(new Set(INSTITUTIONS.map(i => i.id)).size).toBe(INSTITUTIONS.length);
@@ -51,21 +51,25 @@ describe('expanded institution list', () => {
     expect(searchInstitutions('PH', 'shopee', 'e_wallet').map(i => i.name)).toContain('ShopeePay');
     expect(searchInstitutions('PH', 'shopee', 'bank')).toEqual([]);
     expect(searchInstitutions('MY', '', 'bank').length).toBeGreaterThanOrEqual(4);
-    expect(new URL(institutionLogoUrl('EastWest Bank')).searchParams.get('domain')).toBe('eastwestbanker.com');
-    expect(new URL(institutionLogoUrl('Asia United Bank (AUB)')).searchParams.get('domain')).toBe('aub.com.ph');
-    expect(new URL(institutionLogoUrl('AUB')).searchParams.get('domain')).toBe('aub.com.ph');
+    expect(institutionLogoUrl('EastWest Bank')).toBe('');
+    expect(institutionLogoUrl('Asia United Bank (AUB)')).toBe('');
+    expect(institutionLogoUrl('AUB')).toBe('');
   });
 });
 
 
-test('matches card issuer logos when the saved label includes a product or card suffix', () => {
-  expect(new URL(institutionLogoUrl('AUB Platinum Credit Card')).searchParams.get('domain')).toBe('aub.com.ph');
-  expect(new URL(institutionLogoUrl('Atome Card')).searchParams.get('domain')).toBe('atome.ph');
-  expect(institutionLogoCandidates('Asia United Bank (AUB) Credit').length).toBeGreaterThanOrEqual(1);
+test('requires explicit rights review for bank card products and aliases', () => {
+  expect(institutionLogoUrl('AUB Platinum Credit Card')).toBe('');
+  const entry=INSTITUTION_FAVICONS['Asia United Bank (AUB)'];
+  const saved=entry.reviewStatus;
+  try { entry.reviewStatus='APPROVED_BY_COUNSEL';
+    expect(new URL(institutionLogoUrl('AUB Platinum Credit Card')).searchParams.get('domain')).toBe('aub.com.ph');
+    expect(institutionLogoCandidates('Asia United Bank (AUB) Credit')).toHaveLength(1);
+  } finally { if(saved === undefined) delete entry.reviewStatus; else entry.reviewStatus=saved; }
 });
 
-test('uses curated card-network logo fallbacks only for supported network names', () => {
-  expect(new URL(cardNetworkLogoUrl('Mastercard')).searchParams.get('domain')).toBe('mastercard.com');
-  expect(new URL(cardNetworkLogoUrl('American Express')).searchParams.get('domain')).toBe('americanexpress.com');
+test('never loads payment-network artwork lacking rights review', () => {
+  expect(cardNetworkLogoUrl('Mastercard')).toBe('');
+  expect(cardNetworkLogoUrl('American Express')).toBe('');
   expect(cardNetworkLogoUrl('Unknown Network')).toBe('');
 });

@@ -516,9 +516,9 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: November 6, 2026');
+    expect(container.textContent).toContain('Effective date: November 11, 2026');
     expect(container.textContent).not.toContain('not yet been published');
-    expect(container.textContent).toContain('Things you delete in MOVO stay in the Archive for 90 days');
+    expect(container.textContent).toContain('Eligible items moved to Archive can be restored for up to 90 days');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
     expect(container.textContent).toContain('The MOVO service team operates MOVO');
     expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
@@ -615,7 +615,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('NasrinAI Update');
   });
 
-  test('Clear All Data requires typing DELETE, then resets preferences and removes local records', () => {
+  test('Clear All Data requires typing DELETE, awaits cleanup, then resets preferences and removes local records', async () => {
     openProfile(container);
     clickButton(container, 'Settings');
     const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
@@ -626,7 +626,12 @@ describe('MOVO finance frontend', () => {
     expect(dialog.textContent).toContain('Permanently deletes all MOVO data on this device');
     expect(container.querySelector('button.danger-button').disabled).toBe(true);
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
-    clickButton(container, 'Clear all data');
+    await act(async () => {
+      const button = [...container.querySelectorAll('button')]
+        .find(item => item.textContent.trim() === 'Clear all data');
+      expect(button).toBeDefined();
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
     expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');

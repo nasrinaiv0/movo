@@ -1,4 +1,4 @@
-import { getInstitutionFaviconEntry, getInstitutionFaviconUrl } from './institutionFavicons';
+import { getInstitutionFaviconUrl } from './institutionFavicons';
 
 export const INSTITUTION_COUNTRIES = ['PH', 'US', 'GB', 'CA', 'AU', 'SG', 'IN', 'MY', 'NZ'];
 
@@ -163,9 +163,8 @@ export function institutionLogoCandidates(name, options = {}) {
   const canonical = institution?.name || text;
   const aliases = institution?.aliases || [];
   const google = getInstitutionFaviconUrl(canonical, options) || aliases.map(alias => getInstitutionFaviconUrl(alias, options)).find(Boolean) || getInstitutionFaviconUrl(text, options);
-  const entry = getInstitutionFaviconEntry(canonical) || aliases.map(alias => getInstitutionFaviconEntry(alias)).find(Boolean) || getInstitutionFaviconEntry(text);
-  const official = entry?.domain ? `https://${entry.domain}/favicon.ico` : '';
-  return [google, official].filter((value, index, all) => Boolean(value) && all.indexOf(value) === index);
+  // Direct site-favicon lookups bypass per-provider rights review and disclose merchant choices.
+  return google ? [google] : [];
 }
 
 /** Logo for a curated institution, matched by canonical name, alias, or product-suffixed label; '' if unknown. */
@@ -173,21 +172,5 @@ export function institutionLogoUrl(name, options = {}) {
   return institutionLogoCandidates(name, options)[0] || '';
 }
 
-const CARD_NETWORK_DOMAINS = {
-  visa: 'visa.com',
-  mastercard: 'mastercard.com',
-  'american express': 'americanexpress.com',
-  amex: 'americanexpress.com',
-  discover: 'discover.com',
-  jcb: 'jcb-global.com',
-  unionpay: 'unionpayintl.com',
-};
-
-/** Network-brand fallback for cards whose issuer logo is unavailable. */
-export function cardNetworkLogoUrl(network, size = 64) {
-  const key = normalizeInstitutionLabel(network);
-  const domain = CARD_NETWORK_DOMAINS[key];
-  if (!domain) return '';
-  const safeSize = [16, 32, 48, 64, 128].includes(Number(size)) ? Number(size) : 64;
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${safeSize}`;
-}
+/** Network names are still visible as text, but their imagery has no recorded rights clearance. */
+export function cardNetworkLogoUrl() { return ''; }

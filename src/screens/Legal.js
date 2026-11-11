@@ -56,6 +56,8 @@ function LegalPage({ c, title, current, effectiveDate, children }) {
       <LegalSupplement kind={current === 'TermsOfService' ? 'terms' : 'privacy'} />
       <footer className="legal-contact">
         <h2>{tr('Questions or privacy requests?')}</h2>
+        <p lang="en">Data Protection Officer: Nasrin Abubakar · <a href="mailto:dpo@nasrinai.com">dpo@nasrinai.com</a></p>
+        <p lang="en">Privacy correspondence: 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines</p>
         <p>{rich('Contact the MOVO service team at {link}. Please do not email passwords, card security codes, one-time passcodes, or unnecessary financial details.', { link: <a href="mailto:support@nasrinai.com">{tr('support@nasrinai.com')}</a> })}</p>
       </footer>
       <SocialLinks />
@@ -80,7 +82,7 @@ export function TermsOfService({ c }) {
         <li>{tr('Do not submit bank passwords, card PINs, CVVs, one-time passcodes, government identifiers, or other credentials that MOVO does not need.')}</li>
         <li>{tr('Do not misuse the service, attempt to access another person\'s records, interfere with security controls, or use MOVO unlawfully.')}</li>
       </ul>
-      <p>{tr('You must be legally able to enter into these terms where you live. If you are not, use MOVO only with the permission and supervision of a parent or legal guardian where permitted by law.')}</p>
+      <p lang="en">You must be at least 18 years old and legally able to enter into these terms where you live.</p>
     </section>
     <section className="legal-section">
       <h2>{tr('3. Local data, cloud accounts, and exports')}</h2>
@@ -112,7 +114,7 @@ export function TermsOfService({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('9. Suspension, deletion, and changes to these terms')}</h2>
-      <p>{tr('You may stop using MOVO at any time. You can permanently delete your cloud account and its records in Settings → Delete Account, or ask the service team to do it. Clearing local browser data does not delete cloud records. Some records may need to be retained where lawfully required or to resolve security, fraud, or legal issues.')}</p>
+      <p lang="en">You may stop using MOVO at any time. You can permanently delete your cloud account and its records in Settings → Security & Privacy → Delete Account, or ask the service team to do it. Clearing local browser data does not delete cloud records. Some records may need to be retained where lawfully required or to resolve security, fraud, or legal issues.</p>
       <p>{tr('We may update these terms as the product changes. We will update the effective date above when the text changes. Continued use after an update is subject to applicable law and any consent or notice requirements that apply.')}</p>
     </section>
     <section className="legal-section">
@@ -147,7 +149,7 @@ export function PrivacyPolicy({ c }) {
     </section>
     <section className="legal-section">
       <h2>{tr('Store purchase information:')}</h2>
-      <p>{tr('When you subscribe through Apple or Google, the store processes your payment. MOVO receives product identifiers, transaction and purchase-verification data, subscription status, and expiry information to verify and provide your entitlement. Google purchase tokens are used transiently for verification; MOVO stores a one-way hash. MOVO does not receive or store your full payment card number or store-account password.')}</p>
+      <p lang="en">When you subscribe through Apple or Google, the store processes your payment. MOVO receives product identifiers, transaction and purchase-verification data, subscription status, and expiry information to verify and provide your entitlement. MOVO stores a one-way hash of Google purchase tokens. When Google requires acknowledgement, MOVO may also store an encrypted copy to retry acknowledgement. MOVO clears the encrypted copy after successful acknowledgement and schedules expired retry records for removal. MOVO does not receive or store your full payment card number or store-account password.</p>
       <p>{tr('You can request account deletion in MOVO or at movo.nasrinai.com/account-deletion.html. Deleting your MOVO account does not automatically cancel a subscription billed by Apple or Google; cancel it in your store account to stop renewal.')}</p>
     </section>
     <section className="legal-section">
@@ -170,12 +172,12 @@ export function PrivacyPolicy({ c }) {
     <section className="legal-section">
       <h2>{tr('5. When information is shared')}</h2>
       <p>{tr('MOVO uses service providers for hosting, authentication, and cloud storage, including Vercel and Supabase where configured. Those providers may process technical or account data to provide their services under their own terms and contractual arrangements.')}</p>
-      <p>{tr('When you affirm the NasrinAI consent and send a chat message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI. NasrinAI and any providers it uses may process submitted content under their applicable policies. You can use MOVO without granting this chat-specific consent.')}</p>
+      <p lang="en">When you affirm the NasrinAI consent and send a chat message, MOVO sends your message and a limited, account-scoped snapshot of relevant account labels, recent transactions, and budgets to NasrinAI. NasrinAI and any providers it uses may process submitted content under their applicable policies. You can use MOVO without granting this consent. Use the shield button in NasrinAI chat to withdraw consent on this device. Withdrawal stops future sharing from that device.</p>
       <p>{tr('Information may also be disclosed where required by law, to address security incidents, or to protect rights and safety. Service providers may process data in locations outside your country; the exact location can depend on provider configuration.')}</p>
     </section>
     <section className="legal-section">
       <h2>{tr('6. Retention and deletion')}</h2>
-      <p>{tr('Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear All Data removes preferences, local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Things you delete in MOVO stay in the Archive for 90 days so you can restore them, and are then deleted. Cloud records and chat history remain while your account is active. Deleting your account in Settings → Delete Account permanently removes your cloud records; it does not remove data stored in a browser, which you can clear with Clear All Data.')}</p>
+      <p lang="en">Local browser preferences, manually entered financial records, manually created accounts, and custom sticker artwork are stored in this browser until cleared. This storage is device-specific and is not encrypted by MOVO itself. Clear All Data removes preferences, local finance records and custom sticker artwork; individual stickers can also be removed from Card Style. Eligible items moved to Archive can be restored for up to 90 days. Cloud Archive cleanup runs periodically. Device copies are cleaned when MOVO opens or when you clear local data. Cloud records and chat history remain while your account is active. Deleting your account in Settings → Security & Privacy → Delete Account permanently removes your cloud records; MOVO then attempts to clear records on the current device. Data on other devices or browsers must be cleared there.</p>
       <p>{rich('To request access, correction, export, blocking, or deletion of cloud data, email {link} from the account email when possible. We may ask for reasonable verification. Requests are handled subject to applicable law and legitimate retention requirements. Clearing browser storage does not delete cloud records, and signing out does not itself delete them.', { link: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a> })}</p>
     </section>
     <section className="legal-section">

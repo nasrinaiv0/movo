@@ -254,7 +254,7 @@ export default function CardArt({ a, show, styleId, preview, compact, displayMod
     <div className="ccx-face">
       <div className="ccx-head">
         {movo
-          ? <span className="ccx-brand"><span className="ccx-logo ccx-movo-logo"><MovoMark size={44} /></span><span className="ccx-titles"><span className="ccx-name">MOVO</span><small className="ccx-sub">{tr('Financial Tracker')}</small></span></span>
+          ? <span className="ccx-brand"><span className="ccx-logo ccx-movo-logo"><MovoMark size={44} /></span><span className="ccx-titles"><span className="ccx-name">MOVO</span><small className="ccx-sub">{showName ? (a.institution_name || a.name || tr('Financial Tracker')) : tr('Financial Tracker')}</small></span></span>
           : <span className="ccx-brand"><span className="ccx-logo"><BrandLogo src={institutionLogo} size={128} onMissing={setLogoMissing} /></span>{showName && <span className="ccx-name">{a.institution_name || a.name}</span>}</span>}
         {details && (movo
           ? <span className="ccx-type"><span className="ccx-type-line"><b>{tr(typeLabel)}</b>{a.account_type === 'card' && typeLabel !== 'Card' ? <> {tr('Card')}</> : null}</span>{movo.tier && <em className="ccx-tier">{tr(movo.tier)}</em>}</span>

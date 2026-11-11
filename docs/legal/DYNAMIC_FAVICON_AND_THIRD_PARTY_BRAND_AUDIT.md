@@ -1,7 +1,7 @@
 # Dynamic Favicon and Third-Party Brand Rights Audit Register
 
 **Status: OPEN — NOT LEGALLY CLEARED FOR ALL CATALOG ENTRIES**  
-**Last reviewed:** 2026-10-31  
+**Last reviewed:** 2026-11-12  
 **Scope:** Every entry in `src/lib/institutionFavicons.js` and `src/lib/subscriptionAppFavicons.js`, plus the Google S2 favicon endpoint.
 
 ## Important finding
@@ -85,3 +85,7 @@ These policies differ. For example, official brand guidance may distinguish ordi
 Do not mark this feature legally cleared, merge it as fully approved, or claim all icon terms have been reviewed until every provider entry has an evidence-backed decision. If comprehensive provider-by-provider clearance is not practical, use text labels and generic local icons instead of the remote brand icons.
 
 This is an engineering audit register, not legal advice or a legal opinion. Have qualified counsel review the intended use in the Philippines and major target markets.
+
+## 2026-11-12 — Enforced fail-closed icon rights
+
+A curated domain and owner consent do not supply legal permissions for bank, merchant or payment-network artwork or Google's S2 favicon endpoint. Unreviewed entries show only the local MOVO mark and readable name. Removed the unreviewed direct /favicon.ico fallback and payment-network Google S2 fetch. An explicit provider-level policy review or counsel approval must be evidenced before re-enabling an icon; Google endpoint rights remain a separate review requirement. This technical restriction lowers risk but does not establish legal compliance.

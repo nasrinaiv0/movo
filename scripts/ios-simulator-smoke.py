@@ -7,6 +7,7 @@ execute xcrun and establish that the iOS app actually launched.
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -35,28 +36,46 @@ def run_command(args, timeout):
     return result.stdout
 
 
+def runtime_version(runtime):
+    """CoreSimulator keys are formatted as either 'iOS 26.5' or '...SimRuntime.iOS-26-5'."""
+    match = re.search(r'ios(?:[-.\s]+)(\d+)(?:[-.\s]+(\d+))?(?:[-.\s]+(\d+))?', str(runtime), re.I)
+    if not match:
+        return (0, 0, 0)
+    return tuple(int(part or 0) for part in match.groups())
+
+
 def choose_iphone(simulator_json):
     try:
         data = json.loads(simulator_json)
         phones = [
-            device
-            for devices in data["devices"].values()
+            (runtime_version(runtime), device)
+            for runtime, devices in data["devices"].items()
             for device in devices
-            if device.get("isAvailable") and "iPhone" in device.get("name", "")
+            if "iOS" in runtime and device.get("isAvailable") and "iPhone" in device.get("name", "")
             and device.get("udid")
         ]
     except (ValueError, KeyError, TypeError) as error:
         raise SmokeFailure("Could not parse available CoreSimulator devices") from error
     if not phones:
         raise SmokeFailure("No available iPhone Simulator on the macOS runner")
-    return sorted(phones, key=lambda device: device.get("state") != "Booted")[0]
+    # A running older OS runtime can hang against the Xcode version selected by CI.
+    # Prefer the newest installed iOS runtime; then a booted iPhone in that runtime.
+    return sorted(phones, key=lambda entry: (
+        tuple(-part for part in entry[0]), entry[1].get("state") != "Booted",
+    ))[0][1]
 
 
-def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep):
-    """Retry only a launch TIMEOUT: startup can lag after slow CoreSimulator migrations.
+def recover_stalled_simulator(device_id, *, runner=run_command):
+    """After OS-service timeout, restart the test device WITHOUT erasing app/user data."""
+    runner(["xcrun", "simctl", "shutdown", device_id], timeout=90)
+    runner(["xcrun", "simctl", "boot", device_id], timeout=90)
+    runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=600)
 
-    Never retry a nonzero app-launch exit code, which may represent an app crash.
-    A second timeout must still fail CI; no launch step is skipped.
+def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep, recovery=None):
+    """Retry ONLY a launch timeout, after restarting the stalled CoreSimulator.
+
+    A real launch exit error or a failed device recovery must fail the job.
+    The second timeout must also fail; never claim success without app launch.
     """
     launch = ["xcrun", "simctl", "launch", device_id, BUNDLE_ID]
     for attempt in (1, 2):
@@ -66,8 +85,12 @@ def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.s
         except SmokeFailure as error:
             if not error.timed_out or attempt == 2:
                 raise
-            print("::warning::CoreSimulator launch timed out on first attempt; "
-                  "waiting 15 seconds for post-boot services, then retrying once.", flush=True)
+            print("::warning::CoreSimulator launch timed out; restarting the test "
+                  "simulator and waiting for a complete fresh boot before one retry.", flush=True)
+            if recovery is None:
+                recover_stalled_simulator(device_id, runner=runner)
+            else:
+                recovery(device_id)
             sleeper(15)
     raise SmokeFailure("Simulator launch did not complete")
 
