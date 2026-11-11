@@ -1044,7 +1044,9 @@ function App() {
   const subSummary = useMemo(() => summarizeSubscriptions(subscriptions, new Date(`${todayKey}T12:00:00`), toBase), [subscriptions, toBase, todayKey]);
   const plans = useMemo(() => (prefs.plans || []).map(p => { const currency = p.currency || 'PHP'; const target = p.target ?? p.target_amount ?? p.amount; const saved = p.saved ?? p.saved_amount ?? 0; return { ...p, target: toBase(Number(target) || 0, currency), saved: toBase(Number(saved) || 0, currency), fundingAllocations: (Array.isArray(p.fundingAllocations) ? p.fundingAllocations : []).map(a => ({ ...a, amount: toBase(Number(a.amount) || 0, a.currency || currency), currency: base })), due: p.due || p.due_date || p.target_date || p.date || '', currency: base }; }), [prefs.plans, toBase, base]);
   const briefing = useMemo(() => buildBriefing({ txs, refDate, deltas, budgets: budgetList, plans, subs: subSummary }), [txs, refDate, deltas, budgetList, plans, subSummary]);
-  const selectedCard = accountsByType.card.find(a => a.id === selectedCardId) || accountsByType.card[0];
+  // Keep card selection shared by Wallet card carousel and e-wallet display cards.
+  const walletCards = [...accountsByType.card, ...accountsByType.e_wallet].filter(a => !a.is_archived);
+  const selectedCard = walletCards.find(a => a.id === selectedCardId) || walletCards[0];
 
   const deviceId = useMemo(() => { try { let id = localStorage.getItem('movo.device.v1'); if (!id) { id = window.crypto?.randomUUID?.() || String(Date.now()); localStorage.setItem('movo.device.v1', id); } return id; } catch { return 'this-device'; } }, []);
   const systemNotices = useMemo(() => buildSystemNotices({ txs, now: new Date(`${todayKey}T12:00:00`), subs: subSummary, budgets: budgetList, spendingLimits: spendingLimitList, bills: cloudBills, billOccurrences: cloudBillOccurrences, tips: can('insights') ? briefing.tips : [], devices: prefs.devices, deviceId, fmt: (v, cur) => money(v, cur) }), [txs, todayKey, subSummary, budgetList, spendingLimitList, cloudBills, cloudBillOccurrences, briefing.tips, prefs.devices, deviceId, plan]);

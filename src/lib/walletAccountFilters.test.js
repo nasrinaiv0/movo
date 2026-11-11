@@ -22,3 +22,11 @@ test('rewards join All and Others; legacy Cash & Other remains readable', () => 
   expect(matchesWalletAccountFilter(account('cash'), 'Cash & Other')).toBe(true);
   expect(matchesWalletAccountFilter({ ...account('cash'), is_archived: true }, 'Others')).toBe(false);
 });
+
+test('e-wallets appear in both the Cards carousel filter and the dedicated E-Wallets filter', () => {
+  expect(matchesWalletAccountFilter(account('e_wallet'), 'Cards')).toBe(true);
+  expect(matchesWalletAccountFilter(account('e_wallet'), 'E-Wallets')).toBe(true);
+  expect(matchesWalletAccountFilter(account('card'), 'E-Wallets')).toBe(false);
+  expect(matchesWalletAccountFilter({ ...account('e_wallet'), is_archived: true }, 'Cards')).toBe(false);
+  expect(matchesWalletAccountFilter(account('bank'), 'Cards')).toBe(false);
+});

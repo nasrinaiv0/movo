@@ -689,3 +689,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Vercel Sandbox on unchanged production base SHA plus these files: 185 Jest suites / 1,123 tests passed, typecheck/optimized build passed; XML parser passed; production dependency advisory count zero. Browser smoke at phone and desktop widths: HTTP 200, no JS exceptions or horizontal overflow. This does not certify native Android device behavior.
 - Full evidence and pending *NO-GO* gates: `docs/audits/2026-11-10-google-play-release-audit.md` and `docs/engineering/updates/2026-11-10-google-play-native-oauth-release-audit.md`.
 - PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.
+
+
+## 2026-11-12 — PR #275: Bank and linked-card transactions; e-wallet cards
+- Bank Accounts → Account details now displays a read-only combined transaction history for the bank and all active explicitly linked debit and issuing-bank credit cards, with Bank-only and individual-card filters. A transaction involving both sides of the group appears once; each card's standalone history stays isolated. Transactions tab pages through full history at 50 rows per page.
+- Wallet → Cards includes e-wallets in the existing carousel and My Cards pile while keeping their independent E-Wallets filter, type, balances, QR codes, and sync state. No database, accounting, or RLS migrations.
+- Added source-isolation, transfer dedupe, per-card history, 65-row pagination, and filter tests. Added seven new UI labels translated in all 11 supported non-English languages.
+- Initial GitHub suite: 195/196 suites passed; i18n key coverage was the one failure and has since been fixed; await exact-head verification. Vercel Sandbox returned HTTP 402 payment_required for create/resume: UI test blocked. Release stays unmerged. Details: docs/engineering/updates/2026-11-12-bank-card-activity-ewallet-cards.md.

@@ -116,7 +116,8 @@ export default function Wallet({ c }) {
   const list = sorted.filter(a => matchesWalletAccountFilter(a, walletFilter));
   // Percentages compare account groups against liquid/deposit balances, not card limits or card liabilities.
   const total = walletAssetTotal(live, c.toBase) || 1;
-  const cards = accountsByType.card;
+  // Card carousel includes e-wallets as display cards, without changing ledger account types.
+  const cards = [...accountsByType.card, ...accountsByType.e_wallet].filter(a => !a.is_archived);
   const cardTx = selectedCard ? txs.filter(t => t.account_id === selectedCard.id || t.transfer_to_account_id === selectedCard.id).slice(0, 4) : [];
   const selectedCardSpending = useMemo(() => accountSpendingHistory({
     account: selectedCard,
