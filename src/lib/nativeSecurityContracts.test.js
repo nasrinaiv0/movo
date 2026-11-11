@@ -42,3 +42,17 @@ test('phone-automation device keys cannot be mirrored into native preferences', 
   expect(fromRoot('ios/App/App/MovoNativePlugin.swift')).toContain('movo-autolog-key');
   expect(fromRoot('android/app/src/main/java/com/nasrinai/movo/MovoNativePlugin.java')).toContain('movo-autolog-key');
 });
+
+
+test('native finance snapshots use a device-only Keychain/Keystore wrapped key', () => {
+  const swift = fromRoot('ios/App/App/MovoNativePlugin.swift');
+  const java = fromRoot('android/app/src/main/java/com/nasrinai/movo/MovoNativePlugin.java');
+  expect(swift).toContain('movo-finance-vault-key-v1');
+  expect(java).toContain('movo-finance-vault-key-v1');
+  const vault = fromRoot('src/lib/nativeFinanceVault.js');
+  expect(vault).toContain('AES-GCM');
+  expect(vault).toContain('additionalData');
+  expect(vault).toContain('snapshot verification failed');
+  expect(vault).not.toContain('localStorage.setItem');
+  expect(vault).not.toContain('Preferences.set');
+});
