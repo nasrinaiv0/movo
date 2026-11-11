@@ -136,6 +136,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
         </span>
       </label>
       <button className="auth-submit" type="submit" disabled={!!busy} aria-busy={busy === 'verify'}>{busy === 'verify' ? <><span className="auth-verifying-spinner" aria-hidden="true" />{tr('Checking…')}</> : tr('Verify and sign in')}</button>
+      {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
       <div className="auth-code-actions">
         <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); }}>{tr('Use a different email')}</button>
         <button type="button" disabled={wait > 0 || !!busy} onClick={() => sendCode()}>{wait > 0 ? tr('Resend in {n}s', { n: wait }) : tr('Resend code')}</button>
@@ -143,7 +144,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </form>}
 
     {error && <p className="auth-error" role="alert">{error}</p>}
-    {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
+    {notice && !error && step !== 'code' && <p className="auth-notice" role="status">{notice}</p>}
     {unavailable && <p id="auth-config-note" className="auth-config-note" role="note">{tr('Cloud sign-in is unavailable until deployment configuration is completed. You can continue in local-only mode, but cloud account creation and sign-in will not work until configuration is fixed.')}</p>}
 
     {onContinueLocally && <button className="auth-local" type="button" onClick={() => { if (needsConsent()) return; onContinueLocally(); }}>{tr('Continue with this device only')}</button>}

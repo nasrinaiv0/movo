@@ -38,9 +38,17 @@ Owner requests with screenshots.
   with nothing open they leave the app as usual. A link that only changes the "#" part (a MOVO log link) is not
   treated as Back. No native code changed: the Android WebView's own back handling drives it.
 
-## Not changed (needs a decision or a device)
-- "Sync before the first screen": main (#271) deliberately shows the saved copy at once and has a test for it; making
-  the first screen wait for the cloud reverses that and is left for the owner to confirm.
+## Third pass (owner confirmed)
+- **The first screen waits for the opening sync** (`App.js`, `LAUNCH_SYNC_WAIT_MS` = 4s): the saved copy is loaded
+  underneath, but the launch screen stays until the cloud check finishes, so the first screen shows the latest
+  records. With no connection the saved copy shows at once; a cloud that does not answer within 4s gives way to the
+  saved copy, which updates when the check lands. This changes #271's cache-first first paint on purpose; its test now
+  covers the wait, the 4s cap and the offline case. Checked in Chromium against a local stand-in for the cloud: after
+  a change made elsewhere, reopening showed only the new balance.
+- **Sign-in, calmer**: the agreement, the "code sent" note, "Use a different email", "Resend" and "Continue with this
+  device only" are plain text again (no panels or filled buttons), with tighter spacing and smaller type.
+
+## Not changed (needs a device)
 - Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
   possible in this environment.
 

@@ -126,3 +126,35 @@
 @media (max-width: 360px) { .auth-otp-boxes { gap: 6px; } .auth-otp-box { height: 48px; font-size: 21px; } }
 /* The invisible code field shows no ring or tint of its own: the active box carries the focus mark. */
 .movo-app .auth-card .auth-otp .auth-otp-input, .movo-app .auth-card .auth-otp .auth-otp-input:focus, .auth-card .auth-otp .auth-otp-input:focus-visible { background: transparent !important; box-shadow: none !important; outline: 0 !important; border: 0 !important; }
+
+/* ---------- Sign-in, calmer and compact (owner, 2026-11-11, second review) ----------
+   Fewer boxes: the agreement, the "code sent" note and the secondary actions are plain text, not panels or buttons;
+   "Use a different email", "Resend" and "Continue with this device only" are text links again, as before. Tighter
+   vertical rhythm, one quiet divider, and the code boxes are the only filled shapes in the form. */
+.auth-card { padding: 22px 20px 16px; }
+.auth-card .auth-head { gap: 4px; }
+.auth-card .auth-logo { margin-bottom: 2px; }
+.auth-card .auth-logo .movo-mark { width: 48px; }
+.auth-card h2 { font-size: 21px; font-weight: 750; }
+.auth-card .auth-description { font-size: 12.5px; }
+.auth-card .auth-legal { justify-content: center; padding: 0; background: none; font-size: 11.5px; color: var(--muted, #858997); text-align: start; }
+.auth-card .auth-legal > span { flex: 0 1 auto; }
+.auth-card .auth-providers { gap: 8px; }
+.auth-card .auth-provider { height: 46px; min-height: 46px; border-radius: 14px; font-size: 14.5px; }
+.auth-card .auth-divider { font-size: 11.5px; }
+.auth-card .auth-form { gap: 10px; }
+.auth-card .auth-field > span { font-size: 11.5px; font-weight: 500; }
+.auth-card .auth-field input[type="email"] { min-height: 46px; }
+.auth-card .auth-submit { min-height: 46px; border-radius: 14px; font-size: 14.5px; font-weight: 650; }
+.auth-otp-boxes { gap: 7px; }
+.auth-otp-box { height: 48px; border-radius: 12px; font-size: 21px; font-weight: 600; }
+.auth-card .auth-code-actions { justify-content: space-between; gap: 12px; margin-top: -2px; }
+.auth-card .auth-code-actions button, .auth-card .auth-local { flex: 0 1 auto; min-height: 32px; padding: 4px 2px; border-radius: 0; background: none; color: var(--accent-ink, var(--accent, #10a866)); font-size: 12.5px; font-weight: 600; }
+.auth-card .auth-code-actions button:disabled { color: var(--muted, #858997); }
+.auth-card .auth-local { color: var(--muted, #858997); }
+.auth-card .auth-notice { padding: 0; background: none; color: var(--muted, #858997); font-size: 12px; text-align: center; }
+.theme-dark .auth-card .auth-notice { background: none; color: var(--muted, #98a0b4); }
+.auth-card .auth-error { padding: 8px 10px; font-size: 12px; text-align: center; }
+.auth-card .auth-privacy { padding-top: 10px; font-size: 11px; }
+@media (max-width: 360px) { .auth-card { padding: 18px 16px 14px; } .auth-otp-box { height: 44px; font-size: 19px; } }
+.movo-app .auth-card .auth-legal, .auth-card .auth-legal { border: 0 !important; box-shadow: none !important; outline: 0; background: none !important; }

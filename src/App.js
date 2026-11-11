@@ -92,6 +92,8 @@ import { ConfirmProvider, deleteRecord, useConfirmController } from './component
 import { lazyScreen, preloadScreens } from './lib/lazyScreen';
 import { newRecordId } from './lib/recordId';
 import { CLOUD_READ_TIMEOUT_MS, CLOUD_WRITE_TIMEOUT_MS, isNetworkFailure, withTimeout } from './lib/networkFailure';
+// The first screen waits this long at most for the opening sync before showing the saved copy.
+const LAUNCH_SYNC_WAIT_MS = 4000;
 import { readRequiredFinancialCloudViews } from './lib/cloudFinancialReadGate';
 import { matchesConfirmedOfflineHandoff, planOfflineNetworkTransition } from './lib/offlineHandoffSafety';
 import { assertOfflineSyncOwner, fetchOfflineSyncCloud, insertOfflineAccount, updateOfflineAccountCAS, insertOfflineTransaction, updateOfflineTransactionCAS, deleteOfflineTransactionCAS, uploadOfflineReceipt, offlineUploadProblem } from './lib/offlineSyncCloudAdapter';
@@ -510,6 +512,7 @@ function App() {
       'Browser storage is unavailable or full. Export your records and retry.');
   }, [rawTxs,localAccounts,cloudMode,session?.user?.id,notify]);
 
+  const launchWaitRef = useRef(0); // cap on how long the launch screen waits for the opening sync
   const refreshCloud = useCallback(async (user, { allowOffline = false } = {}) => {
     if (!user || !cloudSyncRequestedRef.current || syncActiveRef.current) return false;
     syncActiveRef.current=true;
@@ -635,7 +638,7 @@ function App() {
         setCloudMode(false);
       }
       return false;
-    }finally{syncActiveRef.current=false;setBusy(false);setAuthReady(true);}
+    }finally{syncActiveRef.current=false;setBusy(false);clearTimeout(launchWaitRef.current);setAuthReady(true);}
   },[loadOwnedLocal,refreshEntitlement]);
 
   const setCloudSyncEnabled=useCallback(async (enabled)=>{
@@ -885,13 +888,17 @@ function App() {
         if(!mounted||cloudAuthUserRef.current!==nextUserId)return;
       }
       if (nextSession?.user && prefsRef.current.cloudSyncEnabled !== false) {
-        // Cache-first: hydrate only this verified identity's device snapshot
-        // before the full server reconciliation. Never grant cloud privileges
-        // from the device cache (cloudMode remains false until verification).
+        // Opening MOVO syncs first (owner, 2026-11-11): this identity's device snapshot is loaded underneath, but the
+        // first screen waits for the cloud check so it shows the latest records. It waits at most
+        // LAUNCH_SYNC_WAIT_MS; with no connection at all the saved copy shows at once. refreshCloud releases the
+        // launch screen when it finishes. Never grant cloud privileges from the device cache.
         const cache = loadOfflineWorkspace(nextSession.user.id);
         if (cache && (cache.lastConfirmedAt || cache.dirty)) {
-          if (loadOwnedLocal(nextSession.user.id)) setAuthReady(true);
-          else setLocalPersistenceWarning(true);
+          if (loadOwnedLocal(nextSession.user.id)) {
+            const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+            if (offline) setAuthReady(true);
+            else { clearTimeout(launchWaitRef.current); launchWaitRef.current = setTimeout(() => { if (mounted) setAuthReady(true); }, LAUNCH_SYNC_WAIT_MS); }
+          } else setLocalPersistenceWarning(true);
         }
         refreshCloud(nextSession.user);
       } else if (nextSession?.user) {
@@ -917,7 +924,7 @@ function App() {
       // No Supabase query or other awaited operation inside this callback.
       window.setTimeout(()=>applySession(nextSession).catch(()=>{if(mounted)setAuthReady(true);}),0);
     });
-    return () => { mounted = false; data?.subscription?.unsubscribe(); };
+    return () => { mounted = false; clearTimeout(launchWaitRef.current); data?.subscription?.unsubscribe(); };
   }, [refreshCloud,loadOwnedLocal]);
 
   /* ---------- derived data ---------- */
