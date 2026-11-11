@@ -1,4 +1,9 @@
 
+## 2026-11-12 — iOS smoke-test path trigger correction
+
+The existing iOS workflow PR/push path filters did not include the smoke driver or its host tests, so a standalone simulator recovery patch would not automatically rerun iOS. Added both script paths to both trigger lists. The actual macOS simulator launch/deep-link/screenshot remains mandatory, with no soft-fail. The host-side selection/recovery tests were run before commit; verify new exact-head CI following push.
+
+
 ## 2026-11-12 — PR #274 iOS simulator launch recovery and runtime matching
 
 The exact-head iOS CI compiled and installed the signed-off debug simulator build, but `simctl launch` hung twice for 180 seconds after a slow (>8-minute) first boot; a subsequent retry was started on the unchanged head to distinguish a runner flake. This patch changes **only macOS CI smoke-test tooling**: select the newest available iOS Simulator runtime (avoid Xcode/older runtime mismatch), and restart only the selected simulator after a genuine launch timeout before the single bounded retry. No erase, no skipping launch/deep-link/screenshot, no soft-failing app crash, no native/app/security/finance code changes. Added selection and fail-closed restart tests; a standalone local Python test harness passed 9 tests before commit. The macOS-host tests and actual launch must still pass after the PR push.
