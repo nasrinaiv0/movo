@@ -19,7 +19,7 @@ import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
 import { buildIndexedBalances } from './lib/indexedBalance';
 import { clearHybridOwner } from './lib/hybridLocalStore';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
@@ -1079,6 +1079,11 @@ function App() {
   const screenTrailRef = useRef(null);
   if (!screenTrailRef.current) screenTrailRef.current = createScreenTrail();
   const backMoveRef = useRef(false);
+  /* iPhone edge swipe: a snapshot of each page as it is left, shown blurred under the swipe back to it. */
+  const edgeSwipeOnRef = useRef(false);
+  const pageSnapsRef = useRef(new Map());
+  const swipeBackRef = useRef(false);
+  const swipeScrollRef = useRef(0);
   /*
    * Setup gate (owner, 2026-11-11): until the video guide, the walkthrough, signing in (or choosing this device only)
    * and accepting the Terms and Privacy Policy are done, only those steps show. The dashboard stays hidden and the
@@ -1096,6 +1101,15 @@ function App() {
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
+    if (edgeSwipeOnRef.current && prev !== next && typeof document !== 'undefined') {
+      const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
+      if (main) {
+        snaps.delete(prev);
+        snaps.set(prev, { node: main.cloneNode(true), className: main.className.replace(/\benter-\S+/g, '').trim(), scroll: window.scrollY || 0 });
+        while (snaps.size > 6) snaps.delete(snaps.keys().next().value);
+      }
+    }
+    if (swipeBackRef.current) setMotion('swipe'); // the swipe already showed the page: no entrance motion
     viewRef.current = next;
     setSheet(null); setError(''); setView(next);
     if (next !== 'Settings') setQuery('');
@@ -1118,6 +1132,12 @@ function App() {
     try { go(previous); } finally { backMoveRef.current = false; }
     return true;
   }, [go]);
+  // After a swipe back, the page opens where it was left, before it is first painted (no jump).
+  useLayoutEffect(() => {
+    const y = swipeScrollRef.current; if (!y) return;
+    swipeScrollRef.current = 0;
+    try { window.scrollTo(0, y); } catch { /* jsdom */ }
+  }, [view]);
   useEffect(() => listenForDeviceBack(deviceBack), [deviceBack]);
   // Android: the system back gesture and button come straight to deviceBack (lib/native.js).
   useEffect(() => listenForAndroidBack(deviceBack), [deviceBack]);
@@ -1125,12 +1145,24 @@ function App() {
      (lib/edgeSwipeBack.js). Browsers and Android have their own gesture, which arrives as Back above. */
   useEffect(() => {
     if (nativePlatform() !== 'ios' && !(typeof window !== 'undefined' && window.__MOVO_EDGE_SWIPE__ === true)) return undefined;
-    return startEdgeSwipeBack({
-      onBack: deviceBack,
+    edgeSwipeOnRef.current = true;
+    const backTarget = () => screenTrailRef.current.peek() || (viewRef.current !== 'Home' ? 'Home' : '');
+    const stop = startEdgeSwipeBack({
+      onBack: () => {
+        const snap = pageSnapsRef.current.get(backTarget()); const from = viewRef.current;
+        swipeBackRef.current = true;
+        let moved = false;
+        try { moved = deviceBack(); } finally { swipeBackRef.current = false; }
+        // Land where the page was left, as the preview showed it (not when the swipe only closed a sheet).
+        if (moved && viewRef.current !== from && snap?.scroll) swipeScrollRef.current = snap.scroll;
+        return moved;
+      },
       canGoBack: () => hasBackLayer() || sheetOpenRef.current || viewRef.current !== 'Home',
       surface: () => (hasBackLayer() || sheetOpenRef.current || document.querySelector('[aria-modal="true"]') ? null : document.querySelector('main.screen')),
+      preview: () => pageSnapsRef.current.get(backTarget()) || null,
       animate: canAnimate(),
     });
+    return () => { edgeSwipeOnRef.current = false; pageSnapsRef.current.clear(); stop(); };
   }, [deviceBack]);
   const openLegal = useCallback((next) => {
     if (!['TermsOfService', 'PrivacyPolicy'].includes(view)) setLegalReturnView(view);

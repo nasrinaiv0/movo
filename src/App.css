@@ -8340,3 +8340,13 @@ html.movo-edge-swiping .movo-app main.screen { box-shadow: -14px 0 34px -12px rg
 /* The slid screen must not widen the page: mobile browsers would zoom out and move the fixed bottom nav. */
 html.movo-edge-swiping, html.movo-edge-swiping body { overscroll-behavior-x: none; overflow-x: hidden; }
 html.movo-edge-swiping .movo-app .app-shell { overflow-x: clip; }
+
+/* Swipe back preview (owner, 2026-11-12): the previous page shows under the sliding screen, blurred and dimmed,
+   sliding in with a slight parallax and clearing as the swipe completes. It is a static copy (lib/edgeSwipeBack.js). */
+.movo-app .movo-edge-preview { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: var(--bg); will-change: transform; }
+.movo-app .movo-edge-preview .edge-preview-screen { position: absolute; top: 0; left: 0; right: 0; width: min(100%, 430px); margin: 0 auto; will-change: filter; }
+.movo-app .edge-preview-screen, .movo-app .edge-preview-screen * { animation: none !important; transition: none !important; }
+.movo-app .movo-edge-shade { position: absolute; inset: 0; background: #000; pointer-events: none; }
+html.movo-edge-swiping .movo-app main.screen { position: relative; z-index: 1; min-height: 100dvh; background: var(--bg-grad), var(--bg); }
+.enter-swipe { --dx: 0px; --dy: 0px; }
+.screen.enter-swipe > * { animation: none; }
