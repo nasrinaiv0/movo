@@ -100,6 +100,6 @@ test('the graph follows the filter: a month shows its days, and the filter contr
     expect(host.querySelector('.billing-cycle-chart-column.selected')).toBeNull();
   } finally { act(() => root.unmount()); host.remove(); }
   const source = require('fs').readFileSync(require('path').join(__dirname, 'Transactions.js'), 'utf8');
-  expect(source).toContain('<Icon name="sliders" size={18} />');
+  expect(source).toContain('<Icon name="filterBars" size={18} />');
   expect(source).not.toContain('tx-period-filter-value');
 });

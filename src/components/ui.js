@@ -6,6 +6,7 @@ import { t as tr } from '../lib/i18n';
 import { percentLabel } from '../lib/trend';
 import { isFresh } from '../lib/freshRecords';
 import BrandLogo from './BrandLogo';
+import { pushBackLayer } from '../lib/backNavigation';
 import { categoryOf } from '../lib/categories';
 import { merchantLogoUrl } from '../lib/merchantFavicons';
 
@@ -116,6 +117,7 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
   const drag = useRef(null);
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
+  const closeRef = useRef(null);
   const close = () => {
     if (closing) return;
     if (!canAnimate()) { onClose(); return; }
@@ -148,12 +150,16 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       }
     };
     document.addEventListener('keydown', handleTab);
+    // The device's Back button closes this sheet before it changes screen (lib/backNavigation.js).
+    const leaveBackLayer = pushBackLayer(() => closeRef.current?.());
     return () => {
+      leaveBackLayer();
       document.removeEventListener('keydown', handleTab);
       const previous = previousFocusRef.current;
       if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus();
     };
   }, []);
+  closeRef.current = close;
   const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
   const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
   const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };

@@ -111,7 +111,7 @@ export default function Transactions({ c }) {
   const visibleGroups = groups.map(g => { const items = g.items.slice(0, Math.max(remaining, 0)); remaining -= items.length; return { ...g, items }; }).filter(g => g.items.length);
   const cycleFilter = (
     <label className={'tx-period-filter icon-only' + (isCurrent ? '' : ' is-set')} aria-label={`${tr('Filter by billing cycle')}: ${cycleLabel}`} title={cycleLabel}>
-      <Icon name="sliders" size={18} />
+      <Icon name="filterBars" size={18} />
       <select aria-label={tr('Select billing cycle')} value={selectedCycle} onChange={e => setMonth(e.target.value === currentCycle ? '' : e.target.value)}>
         <option value="all">{tr('All')}</option>
         {billingCycleOptions(months, currentCycle).slice(1).map(option => <option key={option.value} value={option.value}>{tr(option.label)}</option>)}

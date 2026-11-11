@@ -25,6 +25,25 @@ Owner requests with screenshots.
 - **Profile photo**: the image type check had an over-escaped pattern that rejected every file; it accepts any
   `image/*` type again (`screens/Profile.js`, `screens/EditProfilePhoto.test.js`).
 
+## Second pass, same day (owner requests with screenshots)
+- **Sign-in page** (`components/AuthPanel.*`): centred text and a calm staggered entrance; after a code is sent the
+  field becomes six boxes that arrive one after another, each digit rises into its box and the next box takes the
+  highlight (one real field underneath, so paste and the phone's code autofill still work; main's automatic check at
+  six digits is unchanged). No transparent buttons on the page. Apple and Google buttons are black on light themes and
+  white on dark ones, with marks of the same size.
+- **Filter icon**: the Transactions billing-cycle filter uses the solid three-bar mark from the owner's reference
+  (`Icon` name `filterBars`).
+- **Device Back** (`lib/backNavigation.js`, `App.js`, `components/ui.js`): the Android back button and gesture and
+  the browser's Back close the open sheet first, then return through the screens visited, then to Home; from Home
+  with nothing open they leave the app as usual. A link that only changes the "#" part (a MOVO log link) is not
+  treated as Back. No native code changed: the Android WebView's own back handling drives it.
+
+## Not changed (needs a decision or a device)
+- "Sync before the first screen": main (#271) deliberately shows the saved copy at once and has a test for it; making
+  the first screen wait for the cloud reverses that and is left for the owner to confirm.
+- Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
+  possible in this environment.
+
 ## Merged with main on 2026-11-11
 The branch was merged with `main` keeping main's hybrid sync (#261) and sign-in startup fix (#271) wherever the two
 differed (owner decision). The branch's own parallel sync work and its one-time-code change were dropped; this branch

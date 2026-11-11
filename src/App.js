@@ -7,6 +7,7 @@ import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from '.
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
 import { canUseFeatureInMode, effectiveAccessPlan, effectivePlan } from './lib/planAccess';
+import { closeTopBackLayer, createScreenTrail, listenForDeviceBack } from './lib/backNavigation';
 import { appIconById, appIconUnlocked } from './lib/appIcons';
 import { setNativeAppIcon } from './lib/native';
 import PlanOffer from './components/PlanOffer';
@@ -1086,16 +1087,38 @@ function App() {
 
   /* ---------- actions ---------- */
   const [planTab, setPlanTab] = useState('overview');
+  // Device Back (lib/backNavigation.js): the screens visited, and a flag while Back itself is moving between them.
+  const screenTrailRef = useRef(null);
+  if (!screenTrailRef.current) screenTrailRef.current = createScreenTrail();
+  const backMoveRef = useRef(false);
   const go = useCallback((next, params = {}) => {
     if (params.filter) setTxFilter(params.filter);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
+    if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
     viewRef.current = next;
     setSheet(null); setError(''); setView(next);
     if (next !== 'Settings') setQuery('');
     try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
   }, []);
+  /*
+   * The device's own Back (Android button or gesture, browser Back) closes the open sheet first, then returns to the
+   * previous screen, then to Home; from Home with nothing open it leaves the app as usual.
+   */
+  const sheetOpenRef = useRef(false);
+  sheetOpenRef.current = !!sheet;
+  useEffect(() => listenForDeviceBack(() => {
+    // Any open sheet first (each one registers itself, wherever its state lives), then App-level ones.
+    if (closeTopBackLayer()) return true;
+    if (sheetOpenRef.current) { setSheet(null); return true; }
+    const current = viewRef.current;
+    const previous = screenTrailRef.current.back() || (current !== 'Home' ? 'Home' : '');
+    if (!previous || previous === current) return false;
+    backMoveRef.current = true;
+    try { go(previous); } finally { backMoveRef.current = false; }
+    return true;
+  }), [go]);
   const openLegal = useCallback((next) => {
     if (!['TermsOfService', 'PrivacyPolicy'].includes(view)) setLegalReturnView(view);
     go(next);
