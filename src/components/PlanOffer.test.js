@@ -28,7 +28,10 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   expect(tiles.map(t => t.querySelector('strong').textContent)).toEqual(['Free', 'Pro', 'Pro+']);
   expect(fills(tiles[0])).toContain('#10a866'); // green Free
   expect(fills(tiles[1])).toContain('#e3b04a'); // gold Pro
-  expect(fills(tiles[2])).toContain('#dcd9ef'); // platinum Pro+
+  // Platinum Pro+ is a neutral metallic mark (brushed sheen), not lavender.
+  expect(tiles[2].querySelector('svg.movo-mark').classList.contains('is-metal')).toBe(true);
+  expect(Array.from(tiles[2].querySelectorAll('svg.movo-mark path')).map(p => p.getAttribute('data-tone'))).toContain('#d8dadc');
+  expect(Array.from(tiles[2].querySelectorAll('stop')).map(stop => stop.getAttribute('stop-color'))).not.toContain('#dcd9ef');
   // No "Gold MOVO" / "Platinum MOVO" labels on the tiles: the mark's colour says it (owner, 2026-11-09).
   expect(el.querySelector('.plan-tile-chip')).toBeNull();
   expect(tiles.map(t => t.textContent)).toEqual(['FreeCurrent', 'Pro', 'Pro+']);

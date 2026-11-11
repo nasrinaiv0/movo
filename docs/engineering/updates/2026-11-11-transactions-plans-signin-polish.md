@@ -48,6 +48,13 @@ Owner requests with screenshots.
 - **Sign-in, calmer**: the agreement, the "code sent" note, "Use a different email", "Resend" and "Continue with this
   device only" are plain text again (no panels or filled buttons), with tighter spacing and smaller type.
 
+## Platinum, metallic (owner, same day)
+- Pro+ platinum was lavender (#dcd9ef / #9d97c4). It is now a neutral white-silver with a brushed-metal sheen on the
+  MOVO mark (`MovoLogo` tone `platinum`, the only tone drawn with gradients), a graphite badge tile with a fine silver
+  edge, neutral silver glows in the plans panel and Plan & Usage, a platinum Pro+ action and platinum check marks.
+- The iOS Platinum app icon was re-rendered with the same sheen (`scripts/app-icons/render.cjs`); the Bronze, Silver
+  and Gold icons re-rendered byte-identical. The icon only changes on a phone after a new iOS build.
+
 ## Not changed (needs a device)
 - Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
   possible in this environment.

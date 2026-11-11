@@ -142,7 +142,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       {selected.tier !== 'free' && other && <small>{tr('or {price} / {period}', { price: other.priceString, period: tr(period === 'monthly' ? 'year' : 'month') })}{saving > 0 && period === 'monthly' ? <em> {tr('(save {n}%)', { n: saving })}</em> : null}</small>}
       {trialOffer && <small className="plan-trial-note">{tr('No payment, no automatic charge')}</small>}
     </div>
-    <div className="plan-features" key={selected.tier}>
+    <div className={`plan-features tier-${selected.tier}`} key={selected.tier}>
       <b>{tr(selected.heading)}</b>
       <ul>{selected.features.map((item, i) => <li key={item} style={{ '--i': i }}><Icon name="check" size={15} strokeWidth={2.4} />{tr(item)}</li>)}</ul>
     </div>
