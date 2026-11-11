@@ -17,3 +17,12 @@ Critical billing hardening: the 7-day retention job now deletes only *completed*
 5. Review every SQL migration, maintenance lock limits, changed roles, and staging tests; obtain manual production change authorization and coordinated DB-first deploy. Do not merge PR until the protocol passes.
 
 No paid staging branch, production migration, live deletion, billing change, main merge, or App Store submission was performed.
+
+## Exact production-migration reconciliation (read-only, 12 Nov 2026)
+
+- Repository: **40** numbered SQL migration files. MOVO production Supabase: **35** recorded migration versions. Exactly **19** version numbers match; there are **21** local versions absent from remote history and **16** remote versions absent from the repository. Some entries represent renamed/re-timestamped SQL, not necessarily missing database schema. Do not call `supabase migration repair` based on matching filenames, and do not push all repository migrations to production.
+- Live aggregate preflight: 0 cross-owner transaction/schedule links, 0 cross-owner last-transaction links, 0 unsafe transaction amounts; 3 preference rows with archive content; 0 overdue IAP acknowledgements; 0 overdue dismissed automations. Legacy authenticated direct transaction UPDATE and DELETE grants and policies exist.
+- Supabase offered an **isolated development branch at $0.01344/hour**. Creation is blocked pending the owner's explicit cost agreement. Staging CI currently exercises disposable PostgreSQL databases only; this does not validate remote Auth, Storage, RLS policy provisioning, production schema drift or Vercel preview environment credentials.
+- The branch's test harness proves that old raw-write clients would lose UPDATE/DELETE capability under the strict grant-revocation migration. Until minimum supported Play/App Store build versions and actual adoption evidence are verified, merging and applying that migration remain blocked.
+
+**No production SQL or data was modified.** Both the PR review gate and global paid release remain NO-GO until this real-stage exercise and verified backup/restore pass.
