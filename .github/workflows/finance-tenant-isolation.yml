@@ -23,8 +23,6 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: movo-isolated-ci-only
           POSTGRES_DB: postgres
-        ports:
-          - 55432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 5s
@@ -35,14 +33,32 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Install local PostgreSQL client only
+      # Use the client utilities already shipped in the disposable postgres:18
+      # service image. The runner's Ubuntu apt mirror is not a release gate.
+      - name: Use PostgreSQL clients inside the isolated service
+        env:
+          MOVO_TEST_PG_CONTAINER: ${{ job.services.postgres.id }}
+          PGPASSWORD: movo-isolated-ci-only
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client
+          set -euo pipefail
+          test -n "${MOVO_TEST_PG_CONTAINER:?Postgres service is missing}"
+          client_dir="${RUNNER_TEMP}/movo-pg-client"
+          mkdir -p "$client_dir"
+          for client in psql createdb dropdb; do
+            cat > "$client_dir/$client" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          exec docker exec -i -e "PGPASSWORD=${PGPASSWORD:?}" "${MOVO_TEST_PG_CONTAINER:?}" "$(basename "$0")" "$@"
+          SH
+            chmod 0700 "$client_dir/$client"
+          done
+          "$client_dir/psql" -h 127.0.0.1 -p 5432 -U postgres -d postgres -X -v ON_ERROR_STOP=1 -Atqc 'SELECT 1' | grep -qx '1'
+          printf '%s\n' "$client_dir" >> "$GITHUB_PATH"
       - name: Run migrations and cross-account authorization against disposable localhost DB
         env:
           MOVO_TEST_PGHOST: 127.0.0.1
-          MOVO_TEST_PGPORT: "55432"
+          MOVO_TEST_PGPORT: "5432"
           MOVO_TEST_PGUSER: postgres
+          MOVO_TEST_PG_CONTAINER: ${{ job.services.postgres.id }}
           PGPASSWORD: movo-isolated-ci-only
         run: python3 scripts/test-finance-rpc-isolation-local.py

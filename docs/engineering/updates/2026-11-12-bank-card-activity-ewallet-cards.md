@@ -21,3 +21,13 @@ The Wallet → Cards carousel and pile now include active e-wallets, which remai
 
 ## Rollback
 Feature is a pure view change; revert its UI/helper/catalog changes to restore previous layout without any data rollback.
+
+## 2026-11-12 — Follow-up: PostgreSQL client CI DNS repair
+
+**Observed failure:** Finance Tenant Isolation GitHub Actions run 43060104116 exited 100 while `apt-get install postgresql-client` could not resolve `azure.archive.ubuntu.com`. The local PostgreSQL service started successfully, but the cross-tenant SQL tests never ran; there was no proven SQL/RLS failure.
+
+**Minimal repair:** Remove the network-dependent apt step and the now-unused runner port mapping. Add thin `psql`, `createdb` and `dropdb` wrappers in `$RUNNER_TEMP` that call `docker exec -i` on `job.services.postgres.id`. `PGPASSWORD` is injected only into that disposable service process; the Python test harness keeps its loopback-only host guard, dedicated randomly named test database, cleanup and fail-closed behavior. Client connections point to PostgreSQL port 5432 inside the service. The wrapper forwards SQL standard input and propagates nonzero exit status. It does **not** skip, mock, disable, or downgrade the tenant-isolation assertions.
+
+**Pre-commit validation:** Local command-forwarding harness checked `psql`, `createdb`, `dropdb`, arguments, password scoping, and SQL stdin; all 3 passed. GitHub Actions docs confirm `job.services.postgres.id` is the service container ID. Actual PostgreSQL migration and tenant tests must still run in GitHub Actions before merge.
+
+**Release gates:** Await exact-head full regressions, production build, hybrid sync, tenant isolation, and verified preview behavior. Vercel Sandbox access was previously rejected with HTTP 402; a Vercel deployment READY status alone is not a browser smoke test. No production release or legal-policy claim from this CI infrastructure change.
