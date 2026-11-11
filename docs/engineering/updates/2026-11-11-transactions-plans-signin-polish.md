@@ -66,6 +66,15 @@ Owner requests with screenshots.
   tabs); Pro is gold. The free month keeps the app accent. Settings → Appearance (and Profile → App Appearance) has
   **Navigation accent**: the plan colour or the app accent (pref `navAccent`, synced like other preferences).
 
+## Payments logged at the device's time (owner follow-up)
+- Logging a scheduled transaction, a bill payment from a reminder, a credit-card payment or a credit purchase used a
+  fixed time (noon UTC on the due date, which reads as 8 PM in the Philippines and can land on the wrong day further
+  west). They now record the moment they are logged, in the device's own time zone (`lib/loggedAt.js`). A credit-card
+  payment or purchase back-dated to another day keeps that day, at noon local time.
+- A scheduled occurrence is still logged once: the app now finds an earlier log by its occurrence reference
+  (`movo-schedule:<id>:<date>`, unique per account in the database) instead of by its time.
+- Loan and money-owed reminders and the subscription form already used the current time.
+
 ## Not changed (needs a device)
 - Sync speed and Google Play release smoothness were not measured or tuned here: no Android build or device run was
   possible in this environment.

@@ -7,6 +7,7 @@ import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from '.
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
 import { canUseFeatureInMode, effectiveAccessPlan, effectivePlan } from './lib/planAccess';
+import { loggedAt } from './lib/loggedAt';
 import { closeTopBackLayer, createScreenTrail, listenForDeviceBack } from './lib/backNavigation';
 import { appIconById, appIconUnlocked } from './lib/appIcons';
 import { setNativeAppIcon } from './lib/native';
@@ -1710,7 +1711,8 @@ function App() {
     if (!account || account.account_type !== 'card' || account.cardKind !== 'credit') throw new Error('Choose a valid credit card.');
     const amount = Number(entry.amount);
     if (!Number.isFinite(amount) || amount <= 0 || amount >= 1e17) throw new Error('Enter a valid purchase amount.');
-    const occurred_at = new Date(`${entry.date || new Date().toISOString().slice(0, 10)}T12:00:00`).toISOString();
+    // Today's purchase records the device's current time; a chosen earlier day keeps that day (lib/loggedAt.js).
+    const occurred_at = loggedAt(entry.date);
     const note = `Credit purchase · APR ${Number(entry.annual_rate) || 0}% · ${Number(entry.months) || 1} month payoff estimate · estimated total ${Number(entry.after_interest_amount) || amount} ${account.currency || base}`;
     const payload = { merchant: String(entry.merchant || '').trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: account.currency || base, transaction_type: 'expense', category: 'Shopping', account_id: account.id, occurred_at, note };
     if (!payload.merchant) throw new Error('Enter the merchant name.');
@@ -1736,7 +1738,7 @@ function App() {
       const from = accountsView.find(a => a.id === fromAccountId && !a.is_archived && a.id !== cardId);
       if (!card || !from) throw new Error(tr('Choose the account you paid from.'));
       const id = newRecordId();
-      const payload = { merchant: `${tr('Card payment')} · ${card.institution_name || card.name}`.slice(0, 160), amount: value, currency: from.currency || base, transaction_type: 'transfer', category: 'Transfer', account_id: from.id, transfer_to_account_id: card.id, occurred_at: new Date(`${day}T12:00:00`).toISOString(), note: '' };
+      const payload = { merchant: `${tr('Card payment')} · ${card.institution_name || card.name}`.slice(0, 160), amount: value, currency: from.currency || base, transaction_type: 'transfer', category: 'Transfer', account_id: from.id, transfer_to_account_id: card.id, occurred_at: loggedAt(day), note: '' };
       const written = cloudMode ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
       const row = written.offline ? { ...payload, id, source: 'Manual' } : written.value;
       if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
