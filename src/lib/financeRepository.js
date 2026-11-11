@@ -1,3 +1,4 @@
+import { writeHybridFinance } from './hybridFinanceWriter';
 import { supabase } from './supabaseClient';
 import { removeAllAccountQr } from './accountQrStorage';
 import { fetchAllRows } from './supabasePagination';
@@ -86,12 +87,14 @@ export async function createAccount(account, userId) {
   if (!Number.isFinite(openingBalance) || Math.abs(openingBalance) >= 1e17) throw new Error('Enter a valid opening balance.');
   const allowedTypes = ['bank', 'card', 'e_wallet', 'cash', 'investment', 'other'];
   const accountType = allowedTypes.includes(account.account_type) ? account.account_type : 'other';
-  return unwrap(await requireClient().from('financial_accounts').insert({
+  const payload = {
     ...clientId(account?.id), user_id: userId, name, account_type: accountType,
     institution_name: typeof account.institution_name === 'string' ? account.institution_name.trim().slice(0, 100) || null : null,
     currency: /^[A-Z]{3}$/.test(account.currency || 'PHP') ? (account.currency || 'PHP') : 'PHP',
     opening_balance: Math.round(openingBalance * 100) / 100,
-  }).select().single());
+  };
+  const recordId = payload.id || globalThis.crypto.randomUUID();
+  return writeHybridFinance({group:'financial_accounts',kind:'create',recordId,payload,ownerId:userId});
 }
 /** Fetch the complete owner-scoped ledger; never truncate balance inputs. */
 export async function listTransactions({ from, to, accountId } = {}) {
@@ -119,7 +122,7 @@ export async function createTransaction(transaction, userId) {
   const currency = /^[A-Z]{3}$/.test(transaction.currency || 'PHP') ? (transaction.currency || 'PHP') : 'PHP';
   const occurredAt = transaction.occurred_at || new Date().toISOString();
   if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
-  return unwrap(await requireClient().from('transactions').insert({
+  const payload = {
     ...clientId(transaction?.id), user_id: userId, account_id: transaction.account_id, ...(transaction.schedule_id ? { schedule_id: transaction.schedule_id } : {}),
     transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
@@ -131,11 +134,13 @@ export async function createTransaction(transaction, userId) {
     payment_reference: typeof transaction.payment_reference === 'string' ? transaction.payment_reference.trim().slice(0, 120) || null : null,
     receipt_note: typeof transaction.receipt_note === 'string' ? transaction.receipt_note.trim().slice(0, 500) || null : null,
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
-  }).select().single());
+  };
+  const recordId = payload.id || globalThis.crypto.randomUUID();
+  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId});
 }
 export async function deleteTransaction(transactionId) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
-  return unwrap(await requireClient().rpc('delete_transaction_with_reversals', { p_transaction_id: transactionId }));
+  return writeHybridFinance({group:'transactions',kind:'delete',recordId:transactionId,payload:null});
 }
 export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
@@ -155,7 +160,7 @@ export async function updateTransaction(transactionId, transaction) {
   const currency = /^[A-Z]{3}$/.test(transaction.currency || 'PHP') ? (transaction.currency || 'PHP') : 'PHP';
   const occurredAt = transaction.occurred_at || new Date().toISOString();
   if (Number.isNaN(Date.parse(occurredAt))) throw new Error('Enter a valid transaction date.');
-  return unwrap(await requireClient().from('transactions').update({
+  const update = {
     account_id: transaction.account_id,
     transfer_to_account_id: type === 'transfer' ? transaction.transfer_to_account_id : null,
     transaction_type: type, amount: Math.round(amount * 100) / 100, currency, merchant,
@@ -165,7 +170,8 @@ export async function updateTransaction(transactionId, transaction) {
     receipt_note: typeof transaction.receipt_note === 'string' ? transaction.receipt_note.trim().slice(0, 500) || null : null,
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
     occurred_at: occurredAt,
-  }).eq('id', transactionId).select().single());
+  };
+  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update});
 }
 
 export async function updateAccount(accountId, account) {
@@ -191,7 +197,7 @@ export async function updateAccount(accountId, account) {
   }
   if (typeof account?.is_archived === 'boolean') update.is_archived = account.is_archived;
   if (!Object.keys(update).length) throw new Error('Provide at least one account change.');
-  return unwrap(await requireClient().from('financial_accounts').update(update).eq('id', accountId).select().single());
+  return writeHybridFinance({group:'financial_accounts',kind:'update',recordId:accountId,payload:update});
 }
 
 const validBudget = (category, limit) => {

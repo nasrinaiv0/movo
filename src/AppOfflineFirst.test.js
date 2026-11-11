@@ -1,8 +1,12 @@
+import 'fake-indexeddb/auto';
+import { webcrypto } from 'crypto';
+import { clearHybridOwner } from './lib/hybridLocalStore';
+if(typeof global.structuredClone!=='function')global.structuredClone=value=>JSON.parse(JSON.stringify(value));
+Object.defineProperty(globalThis,'crypto',{value:webcrypto,configurable:true});
 /*
  * Offline-first, end to end with a signed-in account (Cloud Sync on): a save that cannot reach the cloud lands on
- * the account's device copy, every page shows it, a deletion is remembered, and when the connection is back MOVO says
- * so and uploads the changes once the person taps "Sync local to cloud", then returns to cloud mode. The cloud is an
- * in-memory stand-in.
+ * the account's device copy, every page shows it, a deletion is remembered, and when the connection is back the
+ * changes upload automatically and the app returns to cloud mode. The cloud is an in-memory stand-in.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -104,6 +108,7 @@ const nav = (container, name) => click(container, name);
 describe('offline-first with Cloud Sync on', () => {
   let container; let root;
   beforeEach(async () => {
+    await clearHybridOwner(OWNER);
     mockNet.down = false; mockRevision = 0; mockCalls.create = []; mockCalls.insert = []; mockCalls.remove = []; mockCalls.signOut = 0;
     mockServer.accounts = [{ id: ACCOUNT, user_id: OWNER, name: 'BPI', account_type: 'bank', institution_name: 'BPI', currency: 'PHP', opening_balance: 5000, is_archived: false, display_order: 0, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z' }];
     mockServer.transactions = [{ id: EXISTING, user_id: OWNER, account_id: ACCOUNT, transfer_to_account_id: null, transaction_type: 'expense', amount: 120, currency: 'PHP', merchant: 'Bakery', category: 'Food', note: null, occurred_at: '2026-11-08T03:00:00+00:00', source: 'manual', external_reference: null, is_pending: false, created_at: '2026-11-08T03:00:00Z', updated_at: mockStamp(), payment_reference: null, receipt_note: null, receipt_path: null, schedule_id: null }];
@@ -113,10 +118,11 @@ describe('offline-first with Cloud Sync on', () => {
     root = createRoot(container);
     await act(async () => { root.render(<App />); });
     await waitFor(() => loadOfflineWorkspace(OWNER)?.lastConfirmedAt, 'the first cloud sync');
+    await waitFor(() => container.querySelector('.bottom-nav button[aria-label="Wallet"]'), 'the hydrated application');
   });
   afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
 
-  test('a save without internet lands on the device copy, a deletion is remembered, and both upload after Sync local to cloud', async () => {
+  test('a save without internet lands on the device copy, a deletion is remembered, and both upload only after approval', async () => {
     // 1. The connection drops while Cloud Sync is on; logging from the chat still works.
     mockNet.down = true;
     await nav(container, 'NasrinAI');
@@ -155,33 +161,14 @@ describe('offline-first with Cloud Sync on', () => {
     expect(copy.working.transactions.map(t => t.id)).toEqual([sentId]);
     expect(mockServer.transactions.map(t => t.id)).toEqual([EXISTING]);
 
-    // While offline, every page shows the offline state with the number of changes kept on this device.
-    expect(container.querySelector('.sync-pill').textContent).toContain('Offline · 2 changes saved on this device');
-    expect(loadOfflineWorkspace(OWNER).held).toBe(true);
-
-    // 4. The connection returns: MOVO says so and offers the sync, but uploads nothing by itself.
+    // 4. The connection returns: the new record uploads, the deletion is applied, and the device copy is clean.
     mockNet.down = false;
     await act(async () => { window.dispatchEvent(new Event('online')); });
-    await waitFor(() => container.querySelector('.sync-notice'), 'the reconnect notice');
-    const notice = container.querySelector('.sync-notice');
-    expect(notice.textContent).toContain('Your internet connection has been restored.');
-    expect(notice.textContent).toContain('2 changes on this device are ready to sync.');
-    expect(notice.querySelector('.sync-notice-action').textContent).toBe('Sync local to cloud');
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 150)); });
-    expect(mockCalls.insert).toHaveLength(0);
-    expect(mockCalls.remove).toHaveLength(0);
     expect(loadOfflineWorkspace(OWNER).dirty).toBe(true);
-    // Coming back to the foreground, or another reconnect, still uploads nothing.
-    await act(async () => { window.dispatchEvent(new Event('online')); document.dispatchEvent(new Event('visibilitychange')); });
-    await act(async () => { await new Promise(resolve => setTimeout(resolve, 150)); });
+    expect(loadOfflineWorkspace(OWNER).requiresManualSync).toBe(true);
     expect(mockCalls.insert).toHaveLength(0);
-
-    // 5. "Sync local to cloud": the new record uploads, the deletion is applied, and the device copy is clean.
     await click(container, 'Sync local to cloud');
     await waitFor(() => loadOfflineWorkspace(OWNER).dirty === false, 'the approved upload');
-    expect(container.querySelector('.sync-notice')).toBeNull();
-    expect(container.querySelector('.sync-pill')).toBeNull();
-    expect(loadOfflineWorkspace(OWNER).held).toBe(false);
     expect(mockCalls.insert).toEqual([[expect.objectContaining({ id: sentId, merchant: 'Grab' }), OWNER]]);
     expect(mockCalls.remove).toEqual([[EXISTING, expect.any(String), OWNER]]);
     expect(mockServer.transactions.map(t => t.id)).toEqual([sentId]);

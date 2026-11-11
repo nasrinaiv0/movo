@@ -7939,6 +7939,16 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   .referral-qr figcaption { display: flex; justify-content: center; align-items: baseline; gap: 5px; }
 }
 
+/* MOVO hybrid reconnect reminder: compact, solid colors, no gradient/border. */
+.movo-sync-restored { position: fixed; z-index: 110; left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: calc(82px + env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 12px; background: var(--surface-solid, var(--card-solid, #fff)); color: var(--text, #171923); border-radius: 16px; box-shadow: 0 8px 26px rgba(0,0,0,.14); animation: movo-sync-enter .28s ease-out both; }
+.movo-sync-restored-icon { color: var(--accent, #10a866); font-size: 23px; font-weight: 700; }
+.movo-sync-restored-message { display: grid; flex: 1 1 170px; gap: 2px; font-size: 13px; line-height: 1.35; }
+.movo-sync-restored-message span { color: var(--muted, #858997); font-size: 12px; }
+.movo-sync-restored-action { color: white; background: var(--accent, #078552); padding: 9px 12px; min-height: 42px; border: 0; border-radius: 10px; font-size: 12px; font-weight: 650; cursor: pointer; }
+.movo-sync-restored-dismiss { background: transparent; color: inherit; border: 0; min-height: 42px; min-width: 36px; font-size: 23px; cursor: pointer; }
+.movo-sync-restored button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+@keyframes movo-sync-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media(prefers-reduced-motion:reduce){ .movo-sync-restored { animation: none; } }
 /* ---------- Confirmation dialog (2026-11-09): log out and every destructive action ----------
    Compact centred dialog in MOVO's language: solid surfaces, no gradients, no button borders, 48px buttons,
    red only for the destructive action. 200ms opacity/scale in and out; none with reduced motion. */
@@ -8100,69 +8110,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .balance-card.notched .balance-label-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .movo-app .balance-card.notched .balance-label .plain-icon { flex: none; }
 .movo-app[dir="rtl"] .balance-card.notched .balance-label { align-self: flex-end; }
-
-/* ---------- Sync status (2026-11-09, section 5): bar above the dock, reconnect notice, sync sheet ----------
-   Solid surfaces only, no gradients or button borders, 44px+ touch targets, 220ms ease-out in, none with reduced
-   motion. The bar steps aside for sheets and the busy indicator (App.js); the toast rises above it. */
-.movo-app .sync-bar { position: fixed; z-index: 105; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 24px), 460px); display: flex; justify-content: center; pointer-events: none; }
-.movo-app .sync-bar.over-composer { bottom: calc(var(--toast-lift, 224px) + env(safe-area-inset-bottom)); }
-.movo-app:is(.layout-tablet, .layout-desktop) .sync-bar { left: calc(var(--side-w) + (100vw - var(--side-w)) / 2); bottom: calc(24px + env(safe-area-inset-bottom)); width: min(calc(100vw - var(--side-w) - 48px), 560px); }
-.movo-app .sync-bar > * { pointer-events: auto; animation: sync-in var(--dur-modal, 220ms) var(--ease-out, ease-out) both; }
-.movo-app.movo-app .sync-pill { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--sheet-bg, var(--card-solid, #fff)); color: var(--text); font: inherit; font-size: 13px; font-weight: 650; box-shadow: 0 6px 22px rgba(0,0,0,.14); cursor: pointer; }
-.movo-app .sync-pill-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.movo-app .sync-pill .movo-icon { flex: none; color: var(--muted); }
-.movo-app .sync-pill-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.movo-app .sync-pill.tone-blue .sync-pill-dot { background: var(--accent); }
-.movo-app .sync-pill.tone-amber .sync-pill-dot { background: #e0a100; }
-.movo-app .sync-pill.tone-red .sync-pill-dot { background: var(--red); }
-.movo-app .sync-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; width: 100%; padding: 12px 8px 12px 14px; border-radius: 20px; background: var(--sheet-bg, var(--card-solid, #fff)); color: var(--text); box-shadow: 0 10px 30px rgba(0,0,0,.16); }
-.movo-app .sync-notice-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 30%; background: rgba(var(--accent-rgb), .12); color: var(--accent-ink, var(--accent)); }
-.movo-app .sync-notice-text { display: grid; gap: 2px; flex: 1 1 160px; min-width: 0; }
-.movo-app .sync-notice-text strong { font-size: 14px; font-weight: 700; line-height: 1.3; }
-.movo-app .sync-notice-text span { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
-.movo-app.movo-app .sync-notice-action { flex: 1 0 auto; min-height: 44px; padding: 0 16px; border: 0; border-radius: 16px; background: var(--accent); color: var(--on-accent, #fff); font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.movo-app.movo-app .sync-notice-action:disabled { opacity: .5; }
-.movo-app.movo-app .sync-notice-hide { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
-.movo-app.movo-app :is(.sync-pill, .sync-notice-action, .sync-notice-hide):active:not(:disabled) { transform: scale(.97); }
-.movo-app.movo-app :is(.sync-pill, .sync-notice-action, .sync-notice-hide):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* Content can scroll clear of the bar. */
-.movo-app.has-sync-bar .screen { padding-bottom: calc(var(--sync-bar-room, 64px) + 96px + env(safe-area-inset-bottom)); }
-.movo-app .toast.raised { z-index: 106; }
-@keyframes sync-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-/* Solid, like the conflict cards: the sheet itself is glass and the page behind must not show through the status. */
-.movo-app .sync-sheet .sync-summary { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 18px; background: var(--card-solid, #fff); box-shadow: 0 2px 10px rgba(0,0,0,.06); }
-.movo-app .sync-summary-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 30%; background: var(--field); color: var(--muted); }
-.movo-app .sync-summary.tone-green .sync-summary-icon { color: var(--green); }
-.movo-app .sync-summary.tone-blue .sync-summary-icon { color: var(--accent-ink, var(--accent)); }
-.movo-app .sync-summary.tone-amber .sync-summary-icon { color: #b77900; }
-.movo-app .sync-summary.tone-red .sync-summary-icon { color: var(--red); }
-.movo-app .sync-sheet .sync-summary { color: var(--text); }
-.movo-app .sync-summary > div { display: grid; gap: 4px; min-width: 0; }
-.movo-app .sync-summary strong { font-size: 15px; font-weight: 750; }
-.movo-app .sync-summary p { margin: 0; color: var(--text); font-size: 13.5px; line-height: 1.45; }
-.movo-app .sync-summary small { color: var(--muted); font-size: 12px; line-height: 1.4; }
-.movo-app .sync-conflicts { display: grid; gap: 12px; margin-top: 14px; }
-.movo-app .sync-conflicts-hint { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-.movo-app .sync-conflict { display: grid; gap: 10px; padding: 14px; border-radius: var(--r-card, 22px); background: var(--card-solid, #fff); box-shadow: 0 2px 10px rgba(0,0,0,.06); }
-.movo-app .sync-conflict header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
-.movo-app .sync-conflict header strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
-.movo-app .sync-conflict header span { flex: none; color: var(--muted); font-size: 12px; }
-.movo-app .sync-versions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.movo-app .sync-version { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px; border-radius: 14px; background: var(--field); }
-.movo-app .sync-version > small { color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
-.movo-app .sync-version dl { display: grid; gap: 5px; margin: 0; }
-.movo-app .sync-version dl > div { display: grid; gap: 1px; min-width: 0; padding: 2px 4px; border-radius: 8px; }
-.movo-app .sync-version dl > div.changed { background: rgba(var(--accent-rgb), .12); }
-.movo-app .sync-version dt { color: var(--muted); font-size: 11px; }
-.movo-app .sync-version dd { margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-.movo-app .sync-version-deleted { margin: 0; color: var(--red); font-size: 13px; font-weight: 650; }
-.movo-app .sync-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.movo-app.movo-app .sync-choice button { min-height: 48px; min-width: 0; padding: 0 10px; white-space: normal; line-height: 1.2; }
-.movo-app.movo-app .sync-sheet-action { width: 100%; min-height: 48px; margin-top: 16px; }
-.movo-app .sync-sheet-note { margin: 8px 0 0; color: var(--muted); font-size: 12.5px; text-align: center; }
-@media (max-width: 359px) { .movo-app .sync-versions, .movo-app .sync-choice { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .movo-app .sync-bar > * { animation: none; } }
 
 /* ---------- Transactions: billing-cycle filter is an icon; the graph follows it (2026-11-11) ----------
    The filter shows the filter icon only (its label was cut off: "Prese…"); a small dot marks a cycle other than the

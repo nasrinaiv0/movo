@@ -71,6 +71,7 @@ describe('native store purchase lifecycle', () => {
     global.fetch.mockResolvedValue({ ok: true, json: async () => ({ enabled: false }) });
     await expect(purchaseStoreProduct('com.nasrinai.movo.pro.monthly', session)).rejects.toThrow('Subscriptions are not available yet');
     expect(NativePurchases.purchaseProduct).not.toHaveBeenCalled();
+    expect(global.fetch.mock.calls[0][0]).toBe('/api/purchases/config?platform=apple');
   });
 
   test('maps Google Play base-plan identifiers to configured MOVO product IDs', async () => {
@@ -114,6 +115,7 @@ describe('native store purchase lifecycle', () => {
       autoAcknowledgePurchases: false,
     }));
     expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[0][0]).toBe('/api/purchases/config?platform=google');
     expect(NativePurchases.acknowledgePurchase).not.toHaveBeenCalled();
     expect(result.tier).toBe('pro_plus');
   });

@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './platform';
 import { MovoNative } from './native';
 
@@ -77,7 +78,8 @@ function iconPng(svg, original = false) {
 
 /** Start mirroring. Returns a stop function. Does nothing outside the iOS app. */
 export function startNativeChrome() {
-  if (!isNativeApp() || typeof document === 'undefined') return () => {};
+  // Only iOS installs native Liquid Glass bars. Android must retain the web header and dock.
+  if (!isNativeApp() || Capacitor.getPlatform() !== 'ios' || typeof document === 'undefined') return () => {};
   const root = document.documentElement;
   root.classList.add('native-chrome');
   let buttons = { back: null, actions: [], tabs: [] };

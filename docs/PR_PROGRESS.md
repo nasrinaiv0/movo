@@ -1,3 +1,39 @@
+## 2026-11-11 — PR #273: Repair Android auth build and native navigation
+
+Fix Android's missing top and bottom bars by limiting iOS Liquid Glass native-chrome substitution to iOS; keep Android's five-tab web dock and page headers. Add Android platform regression coverage. Repair Google Play's signed AAB pipeline by injecting the public Supabase project URL and anon/publishable key from the protected GitHub release environment at CRA build time; reject missing/invalid public values and server-secret roles. Add Node release-guard tests to PR signing CI. No billing, accounting, database, iOS layout, or production release changes. Vercel Sandbox testing was attempted but blocked with HTTP 402 payment_required. CI and real Android testing are required before merging or publishing. Details: `docs/engineering/updates/2026-11-11-android-auth-chrome.md`.
+
+## 2026-11-11 — PR #271: Repair sign-in startup and owner-cache hydration
+
+Keep the entitlement refresher stable while the auth listener recovers the owner journal, preserve the full Supabase session after OTP verification, and render a recovered confirmed/dirty owner cache while cloud checks continue. Concurrent entitlement checks share a bounded request per owner/token. New accounts keep the initial-load gate and paid cloud access remains server-verified. Regression coverage includes delayed recovery, token refresh, cross-owner isolation and timeout/retry. Local validation: 194 suites / 1,183 tests, typecheck and production build passed. Vercel Sandbox verification is blocked by HTTP 402 payment_required; no production rollout. Details: `docs/engineering/updates/2026-11-11-signin-startup.md`.
+
+## 2026-11-10 — PR #270: Correct GitHub manual Play versionCode input serialization
+
+GitHub Actions manual runs #4 and #5 failed before signing: the workflow_dispatch number input formatted integer versionCode 1 as `1.0`, which the strict integer validator correctly rejected. Change the workflow input to string to preserve owner-entered integer text without relaxing validation. Keep the signed AAB build restricted to reviewed main and the protected google-play-release environment. The four signing repository secrets are set but the real signed AAB, physical Android-device tests, hybrid financial sync acceptance, and Google Play production authorization are not yet verified. See `docs/engineering/updates/2026-11-10-play-version-code-dispatch.md`.
+
+## 2026-11-10 — Owner audit foreign keys blocking user account deletion
+
+Stage ON DELETE SET NULL and strictly verified internal-FK-only audit anonymization for four owner tables. Prevents the immutable audit trigger from obstructing account erasure while preserving append-only event history. Adds synthetic full deletion/forgery regression to isolated PostgreSQL finance CI. No production migrations or customer data changes. See docs/engineering/updates/2026-11-10-owner-account-deletion-fks.md.
+
+## 2026-11-10 — Non-destructive release database performance indexes (staged)
+
+Addressed five Supabase advisor findings with idempotent FK indexes and local PostgreSQL assertions wired into the financial tenant-isolation CI. No customer database changes, RLS weakening, or billing enablement. Independent CI and Vercel Sandbox verification are required before merge; production migration awaits explicit release verification. See docs/engineering/updates/2026-11-10-release-db-fk-indexes.md.
+
+## 2026-11-10 — Fix false negative after successful CI test signing
+
+The disposable CI-only signing test reached `app:signReleaseBundle` and Gradle reported `BUILD SUCCESSFUL`, but the subsequent `printf | grep -q` verification was vulnerable to SIGPIPE under `pipefail`. Replaced the pipeline with a captured-string assertion that still fails closed on unsigned bundles. The workflow must pass anew on its exact head before merging. Source: `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Require explicit monotonic Google Play Android versionCode
+
+The protected main-only signed AAB workflow now asks for an owner-selected Android `version_code` and rejects invalid/out-of-range values. Android Gradle reads this value only when set; normal CI remains at versionCode 1. On each subsequent Google Play upload, the owner must choose a code greater than all prior uploaded bundles; only Play Console can confirm this. The ephemeral-key PR signature test remains non-publishable. Implementation and release limitations: `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Reconcile Google Play signing PR #264 and add disposable signed-path CI
+
+Rebased the Google Play-only signing workflow over the reviewed Google-only provider readiness fix. Production bundle creation stays manual, main-only and protected by the GitHub `google-play-release` environment. Added an isolated, PR-triggered CI job using a disposable test key to exercise the Android release signing path and `jarsigner` without publishing any artifact or using production secrets. Existing unsigned native CI remains. This is not a signed Play AAB or launch authorization. See `docs/engineering/updates/2026-11-10-google-play-release.md`.
+
+## 2026-11-10 — Google-only provider checkout readiness isolation (draft PR #267)
+
+Addressed Google Play native checkout readiness incorrectly requiring Apple IAP signing credentials. Added strict Google/Apple-specific checks, fail-closed handling of unknown platforms, backwards-compatible legacy all-provider gate, and native purchase regression coverage. Vercel Sandbox based on main f2311f2 passed targeted billing tests (2 suites / 7 tests) and full CI-style production build. No production key, billing activation, or database writes. Exact-PR-head GitHub CI and preview must pass before merge. Release remains blocked on signed AAB, Google Play license/device tests, hybrid sync and console compliance. Engineering notes: docs/engineering/updates/2026-11-10-google-only-billing-gate.md.
+
 ## 2026-11-09 — Integration hardening for #258 and #259
 
 Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
@@ -6,13 +42,13 @@ Resolved shared-app, plan panel and translation conflicts while retaining verifi
 
 ## 2026-11-11 — Transactions filter icon and graph by filter, plans panels, sign-in buttons, referral line
 
-The Transactions billing-cycle filter is the filter icon (its label was cut off) and the graph under Total Spent follows it: the days of the chosen cycle, or every cycle for "All". MR DIY shows its logo in the notification detail. The plans panel and Plan & Usage are compact with lighter text, nothing repeated, a fixed bottom action and a tier-coloured glow with calm fade-ins. Apple and Google sign-in buttons share one surface and show "Continue with" plus the company mark. The "n of 10 friends subscribed" line is removed. Display only; details in `docs/engineering/updates/2026-11-11-transactions-plans-signin-polish.md`.
+The Transactions billing-cycle filter is the filter icon (its label was cut off) and the graph under Total Spent follows it: the days of the chosen cycle, or every cycle for "All". MR DIY shows its logo in the notification detail. The plans panel and Plan & Usage are compact with lighter text, nothing repeated, a fixed bottom action and a tier-coloured glow with calm fade-ins. Apple and Google sign-in buttons share one surface and show "Continue with" plus the company mark. The "n of 10 friends subscribed" line is removed. The profile photo picker accepts images again (an over-escaped type check rejected every file). Display only; details in `docs/engineering/updates/2026-11-11-transactions-plans-signin-polish.md`.
 
-## 2026-11-10 — Offline/online sync, section 5 (verified locally; no pull request yet)
+Validation after merging `main` (main's sync kept): 195 suites / 1,190 tests, typecheck and strict build pass locally. No pull request, preview or CI run yet; WebKit and native builds were not run.
 
-Takes over section 5 from draft #261 on `claude/movo-ui-motion-refinement-vafrxa`. **Opening MOVO now syncs by itself and the first screen waits for it**, so it shows the latest records without tapping "Offline & online sync"; changes saved offline upload in that sync. A reconnect while MOVO is open shows "Your internet connection has been restored." with **Sync local to cloud** and uploads nothing until tapped. Records changed both on the device and in the account are shown side by side to keep one or the other, per record, never by clock. Automatic attempts back off 5s → 5min with jitter; one status shows on every page. Fixed along the way: a healthy launch that started as "Offline" for several seconds, a first screen that did not wait for the sync, and a pending-change count one step behind. No schema, RLS or API change. Checks, limits (only accounts and transactions sync offline; WebKit and native builds not run): `docs/engineering/updates/2026-11-10-offline-online-sync.md`.
+## 2026-11-10 — Section 5 sync work on `claude/movo-ui-motion-refinement-vafrxa` (superseded by #261)
 
-Validation: 191 suites / 1,170 tests, typecheck and strict build pass locally; the sync flow passes 37 checks in headless Chromium against a local stand-in for the cloud. No Vercel preview or pull-request CI yet; WebKit and native builds were not run.
+The parallel offline/online sync work on this branch (held changes, conflict review sheet, backoff, status bar) was dropped on 2026-11-11 when the branch was merged with `main`: the owner chose to keep the hybrid sync merged in #261 and the sign-in startup fix from #271. No part of that parallel engine is on the branch any more; its commits remain in the branch history only. What was kept from the branch is listed in the 2026-11-11 entry above.
 
 ## 2026-11-09 — Home balance arrow back at the bottom right (fix for a #263 regression)
 
@@ -654,3 +690,12 @@ A second network-offline transition now checks the last confirmed owner-scoped b
 Implemented production-only Apple/Google verification, pinned Apple trust root, strict OIDC/schema validation, fenced atomic state transitions, revocation tombstones, event deduplication, predecessor cleanup and encrypted server-acknowledgment retries. Includes a source-level hostile audit, deployable SQL, setup changes and regression tests. Vercel Sandbox: integrated build/typecheck and 170 suites/1,036 tests passed; final focused 33 tests passed; PostgreSQL behavioral and separate-connection concurrency tests passed; mobile browser render smoke passed. Migration and three new server settings are required before deployment; no production migration performed. See `docs/engineering/updates/2026-11-09-mobile-iap-hostile-audit.md`.
 
 - PR #260 integration with PR #258: 173 suites / 1,063 tests, typecheck and build passed in Vercel Sandbox. Atomic referral awards/refund reversals and points-to-Pro plan access passed PostgreSQL regressions. The GitHub source tree matches the tested Sandbox tree. No production changes.
+
+
+## 2026-11-10 — Google Play Android OAuth release audit (PR #266)
+- Registered restricted browser-resolvable Android `movo://auth-callback` and `movo://log` native intent filters to match existing Supabase PKCE and log handlers; no extra permissions or broad catch-all schemes.
+- Added Android manifest deep-link and backup regression tests.
+- Aligned historical store setup documentation with live Pro/Pro+ four-product catalogue, without changing checkout or subscriptions.
+- Vercel Sandbox on unchanged production base SHA plus these files: 185 Jest suites / 1,123 tests passed, typecheck/optimized build passed; XML parser passed; production dependency advisory count zero. Browser smoke at phone and desktop widths: HTTP 200, no JS exceptions or horizontal overflow. This does not certify native Android device behavior.
+- Full evidence and pending *NO-GO* gates: `docs/audits/2026-11-10-google-play-release-audit.md` and `docs/engineering/updates/2026-11-10-google-play-native-oauth-release-audit.md`.
+- PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.

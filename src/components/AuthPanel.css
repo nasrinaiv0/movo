@@ -59,6 +59,17 @@
 /* Terms / Privacy links inside the agreement sentence (no separate link row). */
 .auth-legal-link { display: inline; padding: 0; border: 0; background: none; color: var(--accent-ink, var(--accent, #10a866)); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 
+/* Deliberate, reduced-motion-aware progress for automatic email-code verification. */
+.auth-code-form .auth-code { transition: background-color .2s ease, box-shadow .2s ease; }
+.auth-code-progress { height: 3px; background: var(--field, rgba(120,120,120,.16)); border-radius: 10px; overflow: hidden; }
+.auth-code-progress > div { height: 100%; background: var(--accent, #10a866); border-radius: inherit; transition: width .16s ease-out; }
+.auth-verifying .auth-code { box-shadow: 0 0 0 2px var(--accent, #10a866); }
+.auth-verifying .auth-code-progress > div { animation: auth-progress-pulse 1.2s ease-in-out infinite; }
+.auth-verifying-spinner { display: inline-block; flex: none; width: 14px; height: 14px; margin-right: 7px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: auth-check-spin .7s linear infinite; vertical-align: middle; }
+@keyframes auth-check-spin { to { transform: rotate(360deg); } }
+@keyframes auth-progress-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .auth-verifying .auth-code-progress > div, .auth-verifying-spinner { animation: none; } .auth-code-progress > div, .auth-code-form .auth-code { transition: none; } }
+
 /* Sign-in providers (owner, 2026-11-11): both buttons share one neutral surface, and the company mark stands in for
    its name ("Continue with" + logo). The accessible name still says Apple or Google. */
 .auth-card .auth-provider, .theme-dark .auth-card .auth-provider { gap: 8px; border: 1px solid var(--line, #e2e4ea); background: color-mix(in srgb, var(--text, #171923) 7%, var(--card-solid, #fff)); color: var(--text, #171923); }

@@ -22,6 +22,14 @@ Owner requests with screenshots.
   "Continue with" followed by the company mark; the accessible names still say Apple and Google.
 - **Refer MOVO**: the "n of 10 friends subscribed" line is removed (referrals are counted in points).
 
+- **Profile photo**: the image type check had an over-escaped pattern that rejected every file; it accepts any
+  `image/*` type again (`screens/Profile.js`, `screens/EditProfilePhoto.test.js`).
+
+## Merged with main on 2026-11-11
+The branch was merged with `main` keeping main's hybrid sync (#261) and sign-in startup fix (#271) wherever the two
+differed (owner decision). The branch's own parallel sync work and its one-time-code change were dropped; this branch
+now differs from `main` only by the changes on this page.
+
 ## Verification
 New tests for the daily and all-cycle rows, the graph, the MR DIY match, the plans panel tile selection and the
 referral sheet; screenshots from the built app at 390px (light, and dark for sign-in). Full Jest, typecheck and

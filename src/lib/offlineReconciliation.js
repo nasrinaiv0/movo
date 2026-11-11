@@ -151,11 +151,7 @@ export function planOfflineReconciliation({
         continue;
       }
       if (existsInBase && server === undefined) {
-        // Removed in the cloud (on another device, or by Clear all data there). Cloud reads are complete and
-        // owner-scoped, so a missing row is a deletion. It is accepted only when this device left the row exactly as
-        // last confirmed; a row this device also changed is a conflict, never recreated or dropped automatically.
-        if (sameFinanceRecord(device, ancestor)) download.push({group,id,change:'delete',expected:ancestor});
-        else conflicts.push({group,id,reason:'remote_row_missing_without_tombstone',base:ancestor,local:device});
+        conflicts.push({group,id,reason:'remote_row_missing_without_tombstone',base:ancestor,local:device});
         continue;
       }
       if (!existsInBase) {

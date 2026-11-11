@@ -1,0 +1,59 @@
+// Plans, Plan & Usage and sign-in buttons (2026-11-11). Machine-assisted, review before commercial multilingual release.
+export default [
+  [
+    "Continue with {brand}",
+    "Magpatuloy gamit ang {brand}",
+    "المتابعة باستخدام {brand}",
+    "使用 {brand} 继续",
+    "Continuar con {brand}",
+    "Continua con {brand}",
+    "Weiter mit {brand}",
+    "Continuer avec {brand}",
+    "Continuar com {brand}",
+    "{brand} で続ける",
+    "{brand}(으)로 계속",
+    "{brand} के साथ जारी रखें"
+  ],
+  [
+    "No payment, no automatic charge",
+    "Walang bayad, walang awtomatikong singil",
+    "بلا دفع ولا خصم تلقائي",
+    "无需付款，不会自动扣费",
+    "Sin pago, sin cargo automático",
+    "Nessun pagamento, nessun addebito automatico",
+    "Keine Zahlung, keine automatische Abbuchung",
+    "Aucun paiement, aucun prélèvement automatique",
+    "Sem pagamento, sem cobrança automática",
+    "お支払い不要・自動課金なし",
+    "결제 없음, 자동 청구 없음",
+    "कोई भुगतान नहीं, कोई अपने-आप शुल्क नहीं"
+  ],
+  [
+    "View plans",
+    "Tingnan ang mga plan",
+    "عرض الخطط",
+    "查看套餐",
+    "Ver planes",
+    "Vedi i piani",
+    "Tarife ansehen",
+    "Voir les forfaits",
+    "Ver planos",
+    "プランを見る",
+    "요금제 보기",
+    "प्लान देखें"
+  ],
+  [
+    "Active until {date}",
+    "Aktibo hanggang {date}",
+    "نشطة حتى {date}",
+    "有效期至 {date}",
+    "Activo hasta el {date}",
+    "Attivo fino al {date}",
+    "Aktiv bis {date}",
+    "Actif jusqu'au {date}",
+    "Ativo até {date}",
+    "{date} まで有効",
+    "{date}까지 활성",
+    "{date} तक सक्रिय"
+  ]
+];

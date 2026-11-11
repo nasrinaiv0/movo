@@ -26,17 +26,6 @@ test('cloud addition while device unchanged downloads to confirmed local snapsho
  expect(result.ok).toBe(true);expect(result.downloaded).toBe(1);
  expect(result.workspace.working.transactions).toHaveLength(1);
 });
-test('a transaction deleted on another device while this one was offline does not block the upload',async()=>{
- // The cloud no longer has T; this device never touched T but added N.
- const newTx={...tx,id:N,amount:14};
- const env=deps(rows([account],[]));
- const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[tx]),rows([account],[tx,newTx])),...env});
- expect(result.ok).toBe(true);expect(result.uploaded).toBe(1);expect(result.downloaded).toBe(1);
- expect(env.getRemote().transactions.map(x=>x.id)).toEqual([N]);
- // The deleted row is not recreated, and the device copy follows the cloud.
- expect(env.getCalls().created).toHaveBeenCalledTimes(1);
- expect(result.workspace.working.transactions.map(x=>x.id)).toEqual([N]);
-});
 test('concurrent conflicting transaction edits are not uploaded or overwritten',async()=>{
  const env=deps(rows([account],[{...tx,amount:12}]));
  const result=await reconcileAndCommitOfflineWorkspace({ownerId:OWNER,workspace:ws(rows([account],[tx]),rows([account],[{...tx,amount:10}])),...env});

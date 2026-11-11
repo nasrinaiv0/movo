@@ -114,55 +114,30 @@ describe('MOVO Google OAuth sign-in', () => {
     expect(onAuthenticated).not.toHaveBeenCalled();
   });
 
-  const codeInput = () => container.querySelector('input[autocomplete="one-time-code"]');
-  const pause = ms => act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
-  const reachCodeStep = async (email) => { accept(); setValue(container.querySelector('input[type="email"]'), email); await submit(); };
-
-  test('a code that arrives whole (pasted or filled in from the message) is checked without a tap, once', async () => {
-    await reachCodeStep('auto@example.com');
-    setValue(codeInput(), '12345678'); // codes can be 6 to 10 digits
-    await pause(250);
-    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
-    expect(verifyEmailCode).toHaveBeenCalledWith('auto@example.com', '12345678');
-    expect(onAuthenticated).toHaveBeenCalledWith({ id: 'u1' });
-    await pause(250);
-    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
-  });
-
-  test('a typed code is never sent early: it waits for the button', async () => {
-    await reachCodeStep('typed@example.com');
-    for (const partial of ['1', '12', '123', '1234', '12345', '123456']) setValue(codeInput(), partial);
-    await pause(250);
-    expect(verifyEmailCode).not.toHaveBeenCalled();
+  test('automatically verifies a complete six-digit OTP without a submit click', async () => {
+    accept();
+    setValue(container.querySelector('input[type="email"]'), 'auto@example.com');
     await submit();
+    setValue(container.querySelector('input[autocomplete="one-time-code"]'), '123456');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 260)); });
     expect(verifyEmailCode).toHaveBeenCalledTimes(1);
-    expect(verifyEmailCode).toHaveBeenCalledWith('typed@example.com', '123456');
+    expect(verifyEmailCode).toHaveBeenCalledWith('auto@example.com', '123456');
+    expect(onAuthenticated).toHaveBeenCalledWith({ id: 'u1' });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 220)); });
+    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
   });
 
-  test('a wrong pasted code shows the error and is not retried by itself; the button still works', async () => {
-    verifyEmailCode.mockRejectedValueOnce(new Error('expired'));
-    await reachCodeStep('wrong@example.com');
-    setValue(codeInput(), '654321');
-    await pause(250);
+  test('a wrong auto-submitted OTP is not repeatedly retried without editing', async () => {
+    verifyEmailCode.mockRejectedValue(new Error('expired'));
+    accept();
+    setValue(container.querySelector('input[type="email"]'), 'expired@example.com');
+    await submit();
+    setValue(container.querySelector('input[autocomplete="one-time-code"]'), '654321');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 280)); });
     expect(container.textContent).toContain('That code is not valid or has expired.');
     expect(verifyEmailCode).toHaveBeenCalledTimes(1);
-    await pause(300);
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 280)); });
     expect(verifyEmailCode).toHaveBeenCalledTimes(1);
-    expect(onAuthenticated).not.toHaveBeenCalled();
-    await submit();
-    expect(verifyEmailCode).toHaveBeenCalledTimes(2);
-    expect(onAuthenticated).toHaveBeenCalledWith({ id: 'u1' });
-  });
-
-  test('a second submit while a code is being checked is ignored', async () => {
-    let finish; verifyEmailCode.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-    await reachCodeStep('double@example.com');
-    setValue(codeInput(), '123456');
-    await pause(250);
-    await submit(); await submit();
-    expect(verifyEmailCode).toHaveBeenCalledTimes(1);
-    await act(async () => { finish({ session: { user: { id: 'u1' } } }); });
-    expect(onAuthenticated).toHaveBeenCalledTimes(1);
   });
 
   test('Apple sign-in starts only after consent', async () => {
