@@ -1,4 +1,9 @@
 
+## 2026-11-12 — Repair native finance encrypted vault test fixture
+
+Jest jsdom omits structuredClone needed by fake-indexeddb for JSON-only encrypted envelopes. The new test fixture adds a narrowly scoped structuredClone polyfill without modifying production code or cipher behavior. Exact-head CI must pass; this does not activate the native encrypted vault as the authoritative finance store.
+
+
 ## 2026-11-12 — Country-specific Play compliance worksheet and port-free finance CI
 
 Google Play jurisdiction-specific release matrix added for 25 initial jurisdictions, explicitly BLOCKED pending console territory eligibility, local legal review, merchant verification and consumer/security evidence; this is not 176-country legal clearance. Added structured Play Financial features and Data safety declaration worksheet, using MOVO features and avoiding unsupported claims. Finance test CI uses docker exec into its disposable PostgreSQL service; removed unneeded host port 55432 mapping after a concurrent CI runner job failed binding an already-in-use port. Test logic and database data unchanged.

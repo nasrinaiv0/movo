@@ -12,6 +12,10 @@ let stored;
 beforeAll(() => {
   Object.defineProperty(global, 'TextEncoder', { configurable: true, value: TextEncoder });
   Object.defineProperty(global, 'TextDecoder', { configurable: true, value: TextDecoder });
+  // Test-only: JSON envelopes use structured clone in IndexedDB, which jsdom omits.
+  if (typeof global.structuredClone !== 'function') {
+    Object.defineProperty(global, 'structuredClone', { configurable: true, value: value => JSON.parse(JSON.stringify(value)) });
+  }
 });
 beforeEach(() => {
   stored = null;
