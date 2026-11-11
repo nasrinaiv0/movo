@@ -8229,3 +8229,15 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .plan-tile.selected.tier-pro_plus { filter: drop-shadow(0 0 14px rgba(214,226,238,.45)); }
 .movo-app .plan-features.tier-pro_plus li .movo-icon { color: #cfe8ee; }
 @media (prefers-reduced-motion: reduce) { .movo-app .plan-badge-mark.tone-platinum::after { animation: none; display: none; } }
+
+
+/* Bank / card transaction source selector: compact, touch-friendly, no gradients. */
+.movo-app .account-hub-sources { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; min-width:0; }
+.movo-app .account-hub-sources button { display:grid; align-content:center; gap:4px; min-width:0; min-height:52px; padding:9px 11px; text-align:left; border:0; border-radius:12px; background:var(--field); color:var(--text); }
+.movo-app .account-hub-sources button.active { background:var(--card-solid); box-shadow:inset 0 0 0 1px var(--accent); }
+.movo-app .account-hub-sources button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.movo-app .account-hub-sources strong { min-width:0; overflow-wrap:anywhere; font-size:12px; font-weight:700; }
+.movo-app .account-hub-sources small { min-width:0; color:var(--muted); overflow-wrap:anywhere; font-size:10px; line-height:1.3; }
+.movo-app .account-hub-activity-row { display:grid; gap:3px; min-width:0; }
+.movo-app .account-hub-activity-origin { color:var(--muted); font-size:10px; font-weight:600; padding:0 3px; }
+.movo-app .account-hub-more { width:100%; min-height:42px; }

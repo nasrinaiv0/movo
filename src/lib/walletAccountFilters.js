@@ -4,7 +4,8 @@ export const WALLET_FILTERS = Object.freeze(['All', 'Cards', 'Bank Accounts', 'E
 const OTHER_ACCOUNT_TYPES = Object.freeze(['cash', 'investment', 'coupon', 'gift_card', 'other']);
 
 export const WALLET_ACCOUNT_TYPES = Object.freeze({
-  Cards: ['card'],
+  // E-wallets are card-shaped wallet assets too; keep the dedicated E-Wallets filter intact.
+  Cards: ['card', 'e_wallet'],
   'Bank Accounts': ['bank'],
   'E-Wallets': ['e_wallet'],
   Others: OTHER_ACCOUNT_TYPES,

@@ -9,11 +9,14 @@ import { estimateCashback } from '../lib/cashback';
 import { listScheduledTransactions } from '../lib/scheduledTransactions';
 import { listGoals, listGoalAllocations } from '../lib/obligationsRepository';
 import { t as tr } from '../lib/i18n';
+import { accountActivityRows, linkedBankIdForCard, linkedCardsForBank } from '../lib/bankCardActivity';
 
 const TABS = [['overview', 'Account overview'], ['activity', 'Transactions'], ['connected', 'Connected items'], ['more', 'More']];
 
 export default function AccountDetailsSheet({ account, accounts = [], transactions = [], prefs = {}, subscriptions = [], plans = [], cloudMode = false, toBase, show = true, holder, base = 'PHP', qrCodeDisplay = '', canEdit = true, onClose, onEdit, onArchive, onAddTransaction, onOpenTransaction, onOpenAccount, transactionBalances, showBalanceAfterTransaction = true }) {
   const [tab, setTab] = useState('overview');
+  const [activityScope, setActivityScope] = useState('all');
+  const [activityLimit, setActivityLimit] = useState(50);
   const [qrOpen, setQrOpen] = useState(false);
   const [scheduled, setScheduled] = useState([]);
   const [scheduleReady, setScheduleReady] = useState(false);
@@ -24,12 +27,9 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
   const qrCode = qrCodeDisplay || (typeof storedQr === 'string' && storedQr.startsWith('data:image/png;base64,') ? storedQr : '');
   const cardNetwork = prefs.cardNetworks?.[account.id] || account.cardNetwork || '';
   const cardStyleId = prefs.cardStyles?.[account.id] || '';
-  const linkedCards = useMemo(() => accounts.filter(item => item.account_type === 'card' && item.id !== account.id && (
-    prefs.cardBankLinks?.[item.id] === account.id ||
-    (item.issuerBankId || prefs.accountStyles?.[item.id]?.issuerBankId) === account.id
-  )), [accounts, account.id, prefs.cardBankLinks, prefs.accountStyles]);
+  const linkedCards = useMemo(() => linkedCardsForBank(account, accounts, prefs), [account, accounts, prefs.cardBankLinks, prefs.accountStyles]);
   const linkedParent = useMemo(() => account.account_type === 'card'
-    ? accounts.find(item => item.id === (prefs.cardBankLinks?.[account.id] || account.linkedAccountId || account.issuerBankId || prefs.accountStyles?.[account.id]?.issuerBankId))
+    ? accounts.find(item => item.id === linkedBankIdForCard(account, prefs))
     : null, [accounts, account, prefs.cardBankLinks, prefs.accountStyles]);
   const allocationAccountIds = useMemo(() => new Set([account.id, ...(account.account_type === 'card' && account.cardKind === 'debit' && linkedParent?.id ? [linkedParent.id] : [])]), [account.id, account.account_type, account.cardKind, linkedParent?.id]);
   const planFundRows = useMemo(() => plans.flatMap(plan => (Array.isArray(plan.fundingAllocations) ? plan.fundingAllocations : [])
@@ -40,8 +40,19 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
     .map(item => ({ ...item, label: item.goal_name || tr('Savings goal'), source: 'goal' })), [goalAllocations, allocationAccountIds]);
   const allocatedFundRows = [...goalFundRows, ...planFundRows].sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
   const allocatedFundTotal = allocatedFundRows.reduce((sum, item) => sum + (toBase ? toBase(Number(item.amount) || 0, item.currency || currency) : (Number(item.amount) || 0)), 0);
-  const relatedTransactions = useMemo(() => transactions.filter(item => item.account_id === account.id || item.transfer_to_account_id === account.id), [transactions, account.id]);
-  const recentTransactions = relatedTransactions.slice(0, 30);
+  // Bank overview combines the bank and its linked cards; card overview remains strictly per card.
+  // Each ledger row appears once, even when both sides of a transfer belong to this bank.
+  const relatedTransactions = useMemo(() => accountActivityRows(transactions,
+    account.account_type === 'bank' ? [account.id, ...linkedCards.map(card => card.id)] : [account.id]
+  ), [transactions, account.id, account.account_type, linkedCards]);
+  const recentTransactions = relatedTransactions.slice(0, 5);
+  const activityTransactions = useMemo(() => {
+    if (account.account_type !== 'bank' || activityScope === 'all') return relatedTransactions;
+    if (activityScope === 'bank') return accountActivityRows(transactions, [account.id]);
+    return linkedCards.some(card => card.id === activityScope)
+      ? accountActivityRows(transactions, [activityScope]) : relatedTransactions;
+  }, [account.account_type, account.id, activityScope, linkedCards, relatedTransactions, transactions]);
+  useEffect(() => { setActivityScope('all'); setActivityLimit(50); }, [account.id]);
   const expenses = relatedTransactions.filter(item => item.type === 'expense' || item.transaction_type === 'expense');
   const recentSpend = expenses.filter(item => { const timestamp = Date.parse(item.date || item.occurred_at || ''); const age = Date.now() - timestamp; return Number.isFinite(timestamp) && age >= 0 && age <= 30 * 86400000; }).reduce((sum, item) => sum + Math.max(0, Number(item.amount) || 0), 0);
   const info = creditInfo(account);
@@ -100,18 +111,41 @@ export default function AccountDetailsSheet({ account, accounts = [], transactio
         </div>
         <div className="account-hub-section">
           <h3>{tr('Recent account activity')}</h3>
-          {recentTransactions.slice(0, 5).map(item => <TransactionRow key={item.id} t={item} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(item.id) : undefined} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
+          {recentTransactions.map(item => <TransactionRow key={item.id} t={item} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(item.id) : undefined} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
           {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
         </div>
       </>}
       {tab === 'activity' && <div className="account-hub-section">
-        <h3>{tr('Account transaction history')}</h3>
-        {recentTransactions.map(item => <TransactionRow key={item.id} t={item} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(item.id) : undefined} show={show} onOpen={() => onOpenTransaction?.(item)} />)}
-        {!recentTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
+        <h3>{tr(account.account_type === 'bank' ? 'Bank and card transactions' : 'Account transaction history')}</h3>
+        {account.account_type === 'bank' && linkedCards.length > 0 && <div className="account-hub-sources" role="group" aria-label={tr('Transaction source')}>
+          {[
+            { id: 'all', title: tr('All activity'), subtitle: tr('Bank + {n} linked cards', { n: linkedCards.length }), count: relatedTransactions.length },
+            { id: 'bank', title: tr('Bank account'), subtitle: account.name, count: accountActivityRows(transactions, [account.id]).length },
+            ...linkedCards.map((card, index) => ({
+              id: card.id,
+              title: tr('Card {n}', { n: index + 1 }) + (card.mask ? ` · •••• ${card.mask}` : ''),
+              subtitle: tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card'),
+              count: accountActivityRows(transactions, [card.id]).length,
+            })),
+          ].map(source => <button type="button" key={source.id} className={activityScope === source.id ? 'active' : ''} aria-pressed={activityScope === source.id} onClick={() => { setActivityScope(source.id); setActivityLimit(50); }}>
+            <strong>{source.title}</strong><small>{source.subtitle} · {source.count} {tr('transactions')}</small>
+          </button>)}
+        </div>}
+        {activityTransactions.slice(0, activityLimit).map(item => <div key={item.id} className="account-hub-activity-row">
+          {account.account_type === 'bank' && activityScope === 'all' && <small className="account-hub-activity-origin">{
+            (() => {
+              const card = linkedCards.find(entry => entry.id === item.account_id);
+              return card ? `${tr('Card')}${card.mask ? ` · •••• ${card.mask}` : ` · ${card.name}`}` : tr('Bank account');
+            })()
+          }</small>}
+          <TransactionRow t={item} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(item.id) : undefined} show={show} onOpen={() => onOpenTransaction?.(item)} />
+        </div>)}
+        {!activityTransactions.length && <p className="empty">{tr('No transactions recorded for this account yet.')}</p>}
+        {activityTransactions.length > activityLimit && <button type="button" className="secondary-button account-hub-more" onClick={() => setActivityLimit(limit => limit + 50)}>{tr('Show more transactions')} ({activityTransactions.length - activityLimit})</button>}
       </div>}
       {tab === 'connected' && <>
         {account.account_type !== 'card' && <section className="account-hub-section"><h3>{tr('Cards connected to this account')}</h3>
-          {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('Card number not added')}</small></button>)}
+          {linkedCards.map(card => <button type="button" className="account-hub-linked" key={card.id} onClick={() => onOpenAccount?.(card.id)}><span><Icon name="card" size={18}/><b>{card.institution_name || card.name}</b></span><small>{tr(card.cardKind === 'credit' ? 'Credit card' : 'Debit card')} · {card.mask ? `•••• ${card.mask}` : tr('Card number not added')} · {accountActivityRows(transactions, [card.id]).length} {tr('transactions')}</small></button>)}
           {!linkedCards.length && <p className="empty">{tr('No cards connected to this account yet.')}</p>}
         </section>}
         <section className="account-hub-section account-allocated-funds" aria-label={tr('Allocated funds for goals and plans')}>
