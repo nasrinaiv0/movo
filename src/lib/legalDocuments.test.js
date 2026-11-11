@@ -6,7 +6,7 @@ describe('public app-store legal documents', () => {
       const html = fs.readFileSync(path.join(process.cwd(), 'public', route + '.html'), 'utf8');
       expect(html).toMatch(/<!doctype html>/i);
       expect(html).toContain('MOVO');
-      expect(html).toContain('November 6, 2026');
+      expect(html).toContain('November 11, 2026');
       expect(html).toContain('support@nasrinai.com');
       expect(html).toMatch(/<h2>/);
       expect(html).not.toContain('<div id="root"></div>');

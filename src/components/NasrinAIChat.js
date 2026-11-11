@@ -15,7 +15,7 @@ import { SubIcon } from '../screens/Subscriptions';
 import { catalogFor } from '../lib/subscriptions';
 import { MOVO_FINANCIAL_SUGGESTIONS, MOVO_PLACEHOLDER_EXAMPLES } from '../lib/movoPrompts';
 
-const ackKey = (id) => `movo.ai.ack.v1.${id}`;
+const ackKey = (id) => `movo.ai.ack.v2.${id}`;
 const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) === '1'; } catch { return false; } };
 const MAX = 1600;
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
@@ -157,7 +157,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         const { data, error: sessionError } = await supabase.auth.getSession();
         const token = data?.session?.access_token || session?.access_token;
         if (sessionError || !token) return;
-        const response = await fetch(apiUrl('/api/nasrinai/chat'), { headers: { Authorization: 'Bearer ' + token } });
+        if (accountEpoch !== requestEpochRef.current) return;
+      const response = await fetch(apiUrl('/api/nasrinai/chat'), { headers: { Authorization: 'Bearer ' + token } });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(result.error || 'history_load_failed');
         if (active) {
@@ -400,9 +401,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     window.speechSynthesis?.cancel();
   };
 
-  const stopVoice = () => {
+  const stopVoice = (keepFinalClip = true) => {
     // Keep the final clip eligible for STT even after the user taps Stop.
-    finalSegmentRef.current = recorderRef.current?.state === 'recording';
+    finalSegmentRef.current = keepFinalClip && recorderRef.current?.state === 'recording';
     voiceRef.current = false; setListening(false);
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
@@ -436,6 +437,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       const bytes = new Uint8Array(await blobBuffer(blob));
       let binary = '';
       for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+      if (accountEpoch !== requestEpochRef.current) return;
       const response = await fetch(apiUrl('/api/nasrinai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
@@ -632,6 +634,17 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     item.run?.();
   };
 
+  const withdrawConsent = () => {
+    try { localStorage.removeItem(ackKey(session.user.id)); }
+    catch { setError(tr('Could not update your saved consent. Clear MOVO data on this device to remove it.')); return; }
+    ++requestEpochRef.current;
+    stopVoice(false);
+    setBusy(false);
+    setPrivacyAccepted(false);
+    setConsentOpen(false);
+    setError('');
+  };
+
   const reset = () => {
     setMessages([]);
     setConversationId(null);
@@ -645,6 +658,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     <header className="movo-ai-chat-header">
       <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={24} state={busy ? phase : undefined} /></div>
       <div className="movo-ai-heading"><h1>{tr('NasrinAI')}</h1><p>{tr('Private financial copilot · MOVO')}</p></div>
+      {session?.user && privacyAccepted && <button type="button" className="movo-ai-reset" onClick={withdrawConsent} aria-label={tr('Withdraw NasrinAI consent on this device')} title={tr('Withdraw NasrinAI consent on this device')}><Icon name="shield" size={17} strokeWidth={2} /></button>}
       <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noopener noreferrer" aria-label={tr('Open NasrinAI.com in a new tab')} title={tr('NasrinAI.com')}><Icon name="external" size={17} strokeWidth={2} /></a>
       <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label={tr('Start a new chat')} title={tr('Start a new chat')}><Icon name="plus" size={18} strokeWidth={2} /></button>
     </header>
@@ -694,10 +708,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <h2 id="movo-ai-consent-title">{tr('Before you start')}</h2>
         <ul>
           <li id="movo-ai-context-disclosure"><Icon name="lock" size={16} strokeWidth={2} /><span>{tr('When you send a message, MOVO sends it with a limited, account-scoped snapshot of relevant account labels, recent transactions and budgets to NasrinAI. This consent is separate from accepting the Terms of Service.')}</span></li>
+          <li><Icon name="mic" size={16} strokeWidth={2} /><span>{tr('If you use the microphone, MOVO sends short audio clips to NasrinAI and its voice providers for transcription. NasrinAI and its AI providers process messages and permitted financial context to generate replies.')}</span></li>
           <li><Icon name="info" size={16} strokeWidth={2} /><span>{tr('AI can make mistakes. Verify important calculations.')}</span></li>
           <li><Icon name="shield" size={16} strokeWidth={2} /><span>{tr('Financial actions are not performed from chat.')}</span></li>
         </ul>
-        <p className="movo-ai-consent-legal">{rich('By continuing you consent to share limited financial context with NasrinAI, as described in the {privacy} and {terms}.', { privacy: <button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button>, terms: <button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>{tr('Terms')}</button> })}</p>
+        <p className="movo-ai-consent-legal">{rich('By continuing you consent to this sharing. You can withdraw consent on this device from the shield button in chat. See the {privacy} and {terms}.', { privacy: <button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button>, terms: <button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>{tr('Terms')}</button> })}</p>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setConsentOpen(false)}>{tr('Not now')}</button><button type="button" className="primary-button" onClick={accept} autoFocus>{tr('I understand')}</button></div>
       </div>
     </div>}

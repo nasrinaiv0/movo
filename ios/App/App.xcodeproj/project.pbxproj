@@ -20,6 +20,7 @@
 		A1B2C3D4E5F6071829304002 /* MovoNativePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304012 /* MovoNativePlugin.swift */; };
 		A1B2C3D4E5F6071829304003 /* GlassChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304013 /* GlassChrome.swift */; };
 		A1B2C3D4E5F6071829304004 /* MOVOAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */; };
+		A1B2C3D4E5F6071829304005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		A1B2C3D4E5F6071829304012 /* MovoNativePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovoNativePlugin.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304013 /* GlassChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassChrome.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOVOAppIntents.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +85,7 @@
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
 				504EC3131FED79650016851F /* Info.plist */,
+				A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
 			);
@@ -156,6 +159,7 @@
 			files = (
 				504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */,
 				50B271D11FEDC1A000F3C39B /* public in Resources */,
+				A1B2C3D4E5F6071829304005 /* PrivacyInfo.xcprivacy in Resources */,
 				504EC30F1FED79650016851F /* Assets.xcassets in Resources */,
 				50379B232058CBB4000EE86E /* capacitor.config.json in Resources */,
 				504EC30D1FED79650016851F /* Main.storyboard in Resources */,

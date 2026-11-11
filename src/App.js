@@ -74,7 +74,7 @@ import { buildTransactionRunningBalances } from './lib/transactionRunningBalance
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
-import { listenForAppUrls } from './lib/native';
+import { clearNativeMovoPreferences, listenForAppUrls } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
@@ -361,6 +361,7 @@ function App() {
   const [toast, setToast] = useState('');
   const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
   const pendingLocalDataRef = useRef(null);
+  const erasedAccountRef = useRef(null);
   // Prevent duplicate cloud loads on INITIAL_SESSION, SIGNED_IN and TOKEN_REFRESHED.
   // This guard also prevents an older user's cloud response from replacing local records.
   const cloudAuthUserRef = useRef(null);
@@ -409,6 +410,7 @@ function App() {
   const show = prefs.showBalance !== false;
   const setShow = useCallback((v) => setPref('showBalance', !!v), [setPref]);
   useEffect(() => {
+    if (erasedAccountRef.current) return;
     try {
       // The local automation credential stays only in the native vault.
       // Preferences mirroring may persist harmless theme/notification settings.
@@ -467,6 +469,7 @@ function App() {
       .catch(() => { trialAutoRef.current = ''; });
   }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement?.trialEligible, refreshEntitlement, notify]);
   useEffect(() => {
+    if (erasedAccountRef.current) return;
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
       return;
@@ -1631,37 +1634,72 @@ function App() {
     setSheet(null); notify(tr('CSV export prepared.'));
   };
   const [clearText, setClearText] = useState('');
+  const [erasedOwner, setErasedOwner] = useState(null);
   const clearAll = async () => {
-    if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    if (clearText.trim().toUpperCase() !== 'DELETE' || busy) return;
     setBusy(true); setError('');
     try {
-      if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
-      const qrCleanup = Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
-      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
+      if (cloudMode && session?.user) {
+        await deleteAllCloudData(session.user.id);
+        setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]);
+      }
+      // Do not announce completion when private files or the hybrid device
+      // journal could not be removed. Keep the sheet open for retry on failure.
+      await Promise.all([
+        clearLocalAccountQr(),
+        clearLocalAttachments(),
+        ...(session?.user?.id && typeof indexedDB !== 'undefined' ? [clearHybridOwner(session.user.id)] : []),
+      ]);
+      const wipe = (store) => {
+        Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k));
+      };
+      wipe(localStorage); wipe(sessionStorage);
+      if (!clearLocalFinanceData()) throw new Error('finance_cleanup_failed');
+      if (!clearCustomStickers()) throw new Error('sticker_cleanup_failed');
+      await clearNativeMovoPreferences();
+      setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
-      await qrCleanup;
-      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
-    } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
-    finally { setBusy(false); }
+    } catch {
+      setError(`${tr('Could not remove it. Please try again.')} ${tr('Retry device cleanup')}`);
+    } finally { setBusy(false); }
   };
   /* Delete the MOVO account itself (App Store 5.1.1(v)): server deletes the account and its cloud data, then this
      device is cleared and signed out. */
   const deleteAccount = async () => {
-    if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    const ownerId = erasedOwner || session?.user?.id;
+    if (!ownerId || busy || (!erasedOwner && clearText.trim().toUpperCase() !== 'DELETE')) return;
     setBusy(true); setError('');
     try {
-      await deleteMyAccount();
-      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
-      await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
-      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
-      setSheet(null); setClearText('');
-      notify(tr('Your MOVO account was deleted.'));
-      signOut().catch(() => {}).finally(() => window.location.reload());
-    } catch { setError(tr('Could not delete your account. Check your connection and try again.')); }
-    finally { setBusy(false); }
+      if (!erasedOwner) {
+        try { await deleteMyAccount(ownerId); }
+        catch { setError(tr('Could not delete your account. Check your connection and try again.')); return; }
+        erasedAccountRef.current = ownerId;
+        setErasedOwner(ownerId);
+      }
+
+      cloudSyncRequestedRef.current = false;
+      ++cloudLoadEpochRef.current;
+      prefsSync.current.ready = false;
+      window.clearTimeout(prefsSync.current.timer);
+      pendingLocalDataRef.current = null;
+      const results = await Promise.allSettled([
+        ...(typeof indexedDB === 'undefined' ? [] : [clearHybridOwner(ownerId)]),
+        clearLocalAccountQr(),
+        clearLocalAttachments(),
+        ...(isNativeApp() ? [saveNativeAutomationKey('')] : []),
+        signOut(),
+      ]);
+      for (const store of [localStorage, sessionStorage]) {
+        for (const key of Object.keys(store)) if (key.startsWith('movo.') || key.startsWith('sb-')) store.removeItem(key);
+      }
+      if (!clearCustomStickers()) throw new Error('sticker_cleanup_failed');
+      await clearNativeMovoPreferences();
+      if (results.some(result => result.status === 'rejected')) throw new Error('device_cleanup_failed');
+      window.location.reload();
+    } catch {
+      setError(tr('Your MOVO account was deleted. Some data remains on this device. Retry device cleanup.'));
+    } finally { setBusy(false); }
   };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
   // Saves with the real channel (applepay, googlepay, bank, notification). Until migration 20261102010000 is applied the
@@ -1836,7 +1874,11 @@ function App() {
         try { return [accountId, await getLocalAccountQr(cacheKey) || '']; } catch { return [accountId, '']; }
       }
       if (!userId || typeof value !== 'string') return [accountId, ''];
-      try { const signedUrl = await getAccountQrSignedUrl(userId, value); cacheSignedAccountQr(userId, accountId, signedUrl).catch(() => {}); return [accountId, signedUrl]; }
+      try {
+        const signedUrl = await getAccountQrSignedUrl(userId, value);
+        if (live && !erasedAccountRef.current) cacheSignedAccountQr(userId, accountId, signedUrl).catch(() => {});
+        return [accountId, signedUrl];
+      }
       catch {
         try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; }
         catch { return [accountId, '']; }
@@ -1850,7 +1892,7 @@ function App() {
     if (!userId) return undefined;
     let live = true;
     loadPreferences(userId).then(row => {
-      if (!live) return;
+      if (!live || erasedAccountRef.current) return;
       if (row?.prefs && typeof row.prefs === 'object' && !Array.isArray(row.prefs)) {
         setPrefs(cur => mergePreferences(DEFAULTS, cur, cloudSafePreferences(row.prefs)));
         if (Array.isArray(row.stickers) && row.stickers.length) replaceCustomStickers(unionById(row.stickers, getCustomStickers(), 40));
@@ -2629,13 +2671,13 @@ function App() {
 
         </div>
       </Sheet>}
-      {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} subtitle={tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
+      {sheet?.name === 'deleteAccount' && <Sheet title={erasedOwner ? tr('Account deleted') : tr('Delete your account?')} subtitle={erasedOwner ? undefined : tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { if (!busy && !erasedOwner) { setSheet(null); setClearText(''); } }} label={tr('Delete Account')}>
         <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
         <p className="form-hint">{tr('You can request account deletion in MOVO or at movo.nasrinai.com/account-deletion.html. Deleting your MOVO account does not automatically cancel a subscription billed by Apple or Google; cancel it in your store account to stop renewal.')}</p>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); deleteAccount(); }}>
-          <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>
+          {!erasedOwner && <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>}
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
+          <div className="sheet-actions">{!erasedOwner && <button type="button" className="secondary-button" disabled={busy} onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button>}<button type="submit" className="danger-button" disabled={busy || (!erasedOwner && clearText.trim().toUpperCase() !== 'DELETE')}>{busy ? tr('Deleting…') : erasedOwner ? tr('Retry device cleanup') : tr('Delete my account')}</button></div>
         </form>
       </Sheet>}
       {sheet?.name === 'clear' && <Sheet title={tr('Clear all data?')} subtitle={cloudMode ? tr('Permanently deletes everything in your MOVO account (transactions, accounts, budgets and NasrinAI chats) and all MOVO data on this device. Your sign-in stays.') : tr('Permanently deletes all MOVO data on this device: transactions, accounts, budgets, plans, scans, mascot, card styles and preferences.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear all data')}>

@@ -52,7 +52,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = jest.fn();
 
 const click = async (container, name) => {
-  const button = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === name || item.textContent.trim() === name);
+  const button = Array.from(container.querySelectorAll('button')).find(item => item.getAttribute('aria-label') === name || item.textContent.trim() === name || item.querySelector('strong')?.textContent === name);
   if (!button) throw new Error('Button not found: ' + name);
   await act(async () => { button.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
 };
@@ -92,6 +92,17 @@ describe('sign-in session handoff', () => {
     await act(async () => { mockAuthCallback('TOKEN_REFRESHED', { ...session, access_token: 'renewed-token' }); await new Promise(resolve => setTimeout(resolve, 10)); });
     expect(container.querySelector('.bottom-nav')).not.toBeNull();
     expect(mockGetEntitlements).toHaveBeenLastCalledWith({ ...session, access_token: 'renewed-token' });
+  });
+
+  test('a signed-in user in device mode can open account deletion without a cloud entitlement', async () => {
+    const working = { financial_accounts: [], transactions: [] };
+    saveOfflineWorkspace(OWNER, { version: 2, owner: OWNER, baseline: working, working, dirty: false, lastConfirmedAt: '2026-11-10T00:00:00Z' });
+    await act(async () => { mockAuthCallback('SIGNED_IN', session); await new Promise(resolve => setTimeout(resolve, 10)); });
+    await act(async () => { mockReleaseRecovery(); });
+    await nav(container, 'Menu');
+    await click(container, 'Settings');
+    await click(container, 'Delete Account');
+    expect(container.querySelector('[aria-label="Type DELETE to confirm"]')).not.toBeNull();
   });
 
   test('a different owner cannot see another account cache while first cloud load is pending', async () => {

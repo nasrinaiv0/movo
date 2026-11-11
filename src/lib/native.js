@@ -44,6 +44,13 @@ export async function restoreNativeStorage(storage = typeof window !== 'undefine
   };
 }
 
+/** Await removal of the native mirror before reporting device cleanup complete. */
+export async function clearNativeMovoPreferences() {
+  if (!isNativeApp()) return;
+  const { keys } = await Preferences.keys();
+  await Promise.all(keys.filter(key => KEEP.test(key)).map(key => Preferences.remove({ key })));
+}
+
 /* ---------- Links: movo://auth-callback (sign-in return) and movo://log?… (payment links) ---------- */
 
 /** Parse a movo:// URL into what the app should do with it. Pure, so it is unit-tested. */

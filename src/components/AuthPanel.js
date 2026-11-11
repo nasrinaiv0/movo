@@ -107,9 +107,9 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </header>
 
     <label className="auth-legal">
-      <input type="checkbox" aria-label={tr('Accept MOVO Terms of Service and Privacy Policy')} checked={legalAccepted} onChange={e => { setLegalAccepted(e.target.checked); if (e.target.checked) setError(''); }} />
+      <input type="checkbox" aria-label={tr('Accept MOVO Terms of Service and Privacy Policy')} aria-describedby="auth-legal-declaration" checked={legalAccepted} onChange={e => { setLegalAccepted(e.target.checked); if (e.target.checked) setError(''); }} />
       {/* The document names in the sentence are the links, so they are not repeated in a second row. */}
-      <span>{rich('I agree to the {terms} and acknowledge the {privacy}.', {
+      <span id="auth-legal-declaration">{rich('I confirm I am at least 18, agree to the {terms}, and acknowledge the {privacy}.', {
         terms: <button type="button" className="auth-legal-link" onClick={(e) => { e.preventDefault(); onOpenLegal?.('TermsOfService'); }}>{tr('Terms of Service')}</button>,
         privacy: <button type="button" className="auth-legal-link" onClick={(e) => { e.preventDefault(); onOpenLegal?.('PrivacyPolicy'); }}>{tr('Privacy Policy')}</button>,
       })}</span>

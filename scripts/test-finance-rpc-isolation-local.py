@@ -110,6 +110,12 @@ def main():
             "five audited foreign-key covering index assertions")
         sql((ROOT / "supabase/tests/owner_account_deletion_fks.test.sql").read_text(),
             "owner audit immutability and account deletion without FK obstruction")
+        sql((ROOT / "supabase/tests/account_erasure_retention.test.sql").read_text(),
+            "Direct transaction denial, owner-only account erasure and bounded retention")
+        sql((ROOT / "supabase/tests/bills_payments.test.sql").read_text(),
+            "bill payments, ledger amounts and cross-tenant denial")
+        sql((ROOT / "supabase/tests/obligation_account_postings.test.sql").read_text(),
+            "obligation cash-posting and authorization contracts")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_"):
