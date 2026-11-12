@@ -1,3 +1,11 @@
+## 2026-11-12 — Android bottom navigation: instant response, lighter animation
+
+Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
+- **Instant response:** the tapped tab and the highlight now change on touch-down (11–23 ms), the screen still appears about as fast, and a cancelled touch puts the bar back.
+- **Lighter drawing:** the Android app uses a lighter blur for the bar, with no transform or width transitions on it; the highlight and icons animate on their own layers.
+
+Validation: new App test, Jest 224 suites / 1,350 tests, `tsc`, strict build, browser check in light and dark. Not run: a real Android phone. See `docs/engineering/updates/2026-11-12-android-bottom-nav.md`.
+
 ## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
 
 - **Before commit:** compared the exact branches `3e47d69` (PR #287) and `e7d7126` (main) against merge base `7a65b55`. Only `docs/PR_PROGRESS.md` overlaps; main adds `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md` which is absent from PR #287.

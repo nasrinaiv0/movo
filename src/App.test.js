@@ -505,6 +505,27 @@ describe('MOVO finance frontend', () => {
     expect(Math.round((walletBalance() - balanceBefore) * 100) / 100).toBe(1250);
   });
 
+  test('bottom bar: the tapped tab turns active on touch-down, and a cancelled touch puts the bar back (owner, 2026-11-12)', () => {
+    const bar = container.querySelector('.bottom-nav');
+    const tab = name => bar.querySelector(`button[aria-label="${name}"]`);
+    const active = () => [...bar.querySelectorAll('.nav-item.nav-active')].map(b => b.getAttribute('aria-label'));
+    expect(active()).toEqual(['Home']);
+    // Each tab carries its outline and filled icon; CSS shows the filled one on the active tab.
+    expect(tab('Wallet').querySelectorAll('svg.nav-glyph-off, svg.nav-glyph-on')).toHaveLength(2);
+    // Touch-down on Wallet: active straight away, before any click or render.
+    act(() => { tab('Wallet').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true })); });
+    expect(active()).toEqual(['Wallet']);
+    expect(bar.querySelector('.nav-pill').style.getPropertyValue('--idx')).toBe('1');
+    // The finger slides away (scroll): the touch is cancelled and the bar shows Home again.
+    act(() => { tab('Wallet').dispatchEvent(new MouseEvent('pointercancel', { bubbles: true })); });
+    expect(active()).toEqual(['Home']);
+    expect(bar.querySelector('.nav-pill').style.getPropertyValue('--idx')).toBe('0');
+    expect(container.querySelector('h1').textContent).not.toBe('Wallet');
+    // A real tap opens Wallet and the bar stays in step.
+    act(() => { tab('Wallet').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true })); tab('Wallet').click(); });
+    expect(active()).toEqual(['Wallet']);
+  });
+
   test('opens and closes the add-transaction sheet', () => {
     nav(container, 'Transactions');
     clickButton(container, 'Quick actions');
