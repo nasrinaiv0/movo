@@ -78,7 +78,8 @@ npx cap sync ios      # copy an existing build/ only
 - Completed legal details and a privacy policy URL; a reviewer demo account.
 - **Before Google/Apple sign-in works in the app:** add `movo://auth-callback` to Supabase → Authentication → URL
   Configuration → Redirect URLs, and enable the Apple provider. Email codes work without this.
-- Paid plans must use In-App Purchase on iOS (guideline 3.1.1); the first release ships without them.
+- Paid plans must use Apple's In-App Purchase on iOS. MOVO includes a StoreKit purchase/restore flow, but `MOVO_STORE_BILLING_ENABLED` must stay disabled until signed TestFlight verification, App Store Connect products, notifications, entitlements and expiry/refund tests pass. Do not activate purchases using client-only plan status or bypass the server verification gate.
+- Apple TestFlight purchases are **Sandbox** purchases. MOVO's production receipt verifier and database entitlement commit intentionally reject Sandbox receipts and must not be loosened. Use a separately isolated staging backend/DB to exercise real Sandbox purchase-to-entitlement flows, or leave subscriptions unavailable until that test environment has been validated. A signed IPA alone is not a paid-billing acceptance test.
 
 ## Codemagic (phase 4)
 
@@ -104,3 +105,23 @@ every PR that touches `ios/`, `src/` or the Capacitor config. It proves the Swif
 - Native Sign in with Apple (the system Apple ID sheet) is not used yet; Apple sign-in goes through the browser sheet.
 - Notifications are local (shown while MOVO runs or is resumed); there is no server push yet.
 - The visual result of the glass bars has to be checked on a device or simulator (first TestFlight build, phase 4).
+
+## Release safety gates (2026-11-11)
+
+The current unsigned macOS workflow also compiles the **Release configuration** for a generic physical iOS target, executes packaging contract unit tests, boots an iPhone Simulator, opens a Siri deep link and uploads a smoke screenshot. This proves native **compilation and startup**, not Apple signing, real login, cloud sync or on-device payments. The workflow is deliberately triggered by changes anywhere in `src/`, `api/`, `ios/`, `public/` or release infrastructure.
+
+`scripts/check-ios-release-readiness.cjs` fails closed when a bundled-web app is accidentally converted into a remote wrapper; the native bundle ID changes; signing, icon or permission metadata disappears; or native auto-finishing of transactions is enabled. It checks the **actual** App Store icon is an opaque 1024×1024 RGB PNG. Run `node --test scripts/check-ios-release-readiness.test.cjs && node scripts/check-ios-release-readiness.cjs` before every archive.
+
+Codemagic uses locked dependencies, checks for Xcode 26+, and signs only through the owner's `MOVO_ASC` App Store Connect integration. Configure `movo_web` with the public Supabase URL and publishable/anon client key; never place service-role secrets, Apple signing private keys or database passwords in the iOS bundle. An uploaded TestFlight build must be independently inspected in App Store Connect.
+
+**Mandatory owner and tester acceptance gates, not automated by this source repository:**
+
+1. Confirm Apple Developer membership, the `com.nasrinai.movo` App ID, signed App Store IPA, valid provisioning and TestFlight processing. No signed build has yet been verified here.
+2. Test fresh OTP signup, auto-continuation, returning session, Google and Apple callbacks, background/foreground lock, biometric cancel and sign-out on a real iPhone.
+3. Verify that offline account/transaction writes load after force-quit, reconnect through explicit Sync local to cloud, keep cents exact and never cross Supabase user ownership boundaries.
+4. Test receipt capture, photo picker, microphone transcription, Siri review and local notifications with granted, denied and revoked permissions.
+5. Validate account deletion, restored purchases, canceled purchases, auto-renewal, server notifications, refunds and expiration. Use Apple's Sandbox through an isolated staging entitlement environment; do not grant production paid/referral credits for Sandbox receipts.
+6. Produce and inspect Xcode's privacy manifest report for all included Capacitor/third-party SDKs; complete App Store privacy disclosures, age rating, legal/support URLs, support contact, review notes and sample credentials.
+7. Validate small and large iPhone layouts and keyboard/safe-area responsiveness using the **final signed TestFlight artifact**.
+
+**Release decision:** Do not mark public iOS distribution ready until these gates have evidence. Vercel Sandbox access returned `402 payment_required` during this audit; resolving that billing restriction is an external requirement, not a code patch.

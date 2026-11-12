@@ -26,6 +26,20 @@
 - Precommit evidence: exact main SHA `2b9a1cf` and a standalone Python AES-GCM/AAD test. **GitHub full suite, native compiles and physical devices still pending.** No Supabase/production modification, no merge/redeploy.
 - Detailed record: `docs/engineering/updates/2026-11-12-financial-offline-cache-encryption.md`.
 
+## 2026-11-12 — PR #293 follow-up: App Store id read like the billing settings
+
+The preview sent iPhone links to the web app, so the stored `APPLE_APP_ID` did not match the strict digits-only format (its value was not inspected). It is now read with the same tolerance as the billing check: surrounding spaces, quotes and an `id` prefix are accepted. Anything that is not a plausible App Store id still falls back to the web app with the code. New test. See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
+## 2026-11-12 — Referral QR codes open the App Store and Google Play with each person's own code
+
+Owner request: the referral QR code should link to the App Store and Google Play, with a unique referral id per user. Before this, `/api/download` only sent people to a store when `MOVO_IOS_APP_STORE_URL` / `MOVO_ANDROID_STORE_URL` were set. Neither is set in production, so every QR code opened the web app.
+- **Android:** always Google Play (`com.nasrinai.movo`). The person's code travels in Google Play's install referrer (`utm_source=movo_referral&utm_medium=qr&movo_ref=M78038`). On first launch the Android app reads it once (new `MovoNative.installReferrer`, Play Install Referrer library 2.2) and fills in the friend's code in the plans panel and Refer MOVO.
+- **iPhone:** the App Store page from the existing `APPLE_APP_ID` server setting (or `MOVO_IOS_APP_STORE_URL`). Apple passes nothing from a link to the installed app, so a link that carries a code first shows a short page with the code and a "Copy code and open the App Store" button. Without a code it goes straight to the store.
+- Only exact store addresses are produced, the referral code is the only value carried, and the code counts only after sign-in when the server accepts it.
+- Privacy Policy section 18 (referral codes and download links) added; Privacy effective date is now November 12, 2026, so everyone accepts the updated version once.
+
+Validation: Jest 225 suites / 1,357 tests, `tsc`, strict build, and a browser check of the iPhone page under the site CSP in light and dark: the code was copied and the App Store opened, with no console errors. Not run: an Android build (CI compiles it), a real Play install. The Android part needs a new Play release (version code above 7). See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
 ## 2026-11-12 — Android bottom navigation: instant response, lighter animation
 
 Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
@@ -977,6 +991,18 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.
 
 
+## 2026-11-11 — PR #272 iOS release pipeline hardening (not yet App Store certified)
+- Keep the existing React/Capacitor/Swift architecture, product screens, financial calculations, sync/RLS and StoreKit production entitlement verification unchanged.
+- Expand GitHub macOS iOS CI trigger coverage to all app/auth/billing/backend changes; compile the unsigned Release iPhone target alongside simulator Debug and deep-link smoke.
+- Add source packaging assertions with five negative-regression tests for the canonical bundle ID, strict local bundled web assets, positive build versions, native privacy permissions, secure post-verification StoreKit finishing, actual opaque 1024px RGB App Store icon, and deterministic signed TestFlight CI configuration.
+- Codemagic TestFlight uses npm lockfile verification and Xcode 26+ preflight, with existing App Store signing integration unchanged.
+- No owner Apple credentials or signed distribution IPA are verified here; production DB still rejects sandbox entitlements, Vercel Sandbox access returns 402, and real-device TestFlight purchase/login/privacy acceptance is a NO-GO gate.
+- Detailed source and release evidence: `docs/engineering/updates/2026-11-11-ios-release-safety-gates.md`.
+
+- PR #272 macOS CI first attempt caught a release-contract matcher that recognized unpinned `npm ci` but not the explicitly pinned `npx npm@11.19.1 ci`; corrected the check and its negative test without weakening the lockfile requirement. Codemagic avoids re-running the same tests in the web build stage. Exact-head native and full CI rerun required.
+
+- Follow-up iOS guard source check: ensured the pinned `npm@11.19.1 ci` regular expression uses actual JavaScript regex word boundaries rather than escaped literals. Verify via the next exact-head macOS build; no release approved before successful CI.
+
 ## 2026-11-12 — PR #275: Bank and linked-card transactions; e-wallet cards
 - Bank Accounts → Account details now displays a read-only combined transaction history for the bank and all active explicitly linked debit and issuing-bank credit cards, with Bank-only and individual-card filters. A transaction involving both sides of the group appears once; each card's standalone history stays isolated. Transactions tab pages through full history at 50 rows per page.
 - Wallet → Cards includes e-wallets in the existing carousel and My Cards pile while keeping their independent E-Wallets filter, type, balances, QR codes, and sync state. No database, accounting, or RLS migrations.
@@ -984,3 +1010,15 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Initial GitHub suite: 195/196 suites passed; i18n key coverage was the one failure and has since been fixed; await exact-head verification. Vercel Sandbox returned HTTP 402 payment_required for create/resume: UI test blocked. Release stays unmerged. Details: docs/engineering/updates/2026-11-12-bank-card-activity-ewallet-cards.md.
 
 - **2026-11-12 PR #275 CI infrastructure hardening:** GitHub's two-user PostgreSQL tenant-isolation workflow failed *before executing any SQL* because Ubuntu's apt mirror DNS failed during `postgresql-client` installation. Replaced network-dependent apt installs with short-lived, stdin-safe `psql`, `createdb`, and `dropdb` wrappers that execute the official PostgreSQL 18 client binaries inside the same disposable GitHub Actions service container (no host-mapped database port). The Python tenant-isolation tests remain unchanged and must still complete successfully. Source, shell invocation/STDIN forwarding validated before commit; rerun all required checks on the new exact head, verify preview and preserve NO-MERGE gate until all checks are green.
+
+## 2026-11-12 — Node.js 26 LTS runtime alignment (new PR)
+- Baseline `2b9a1cf7720043c48c20d37d6f64e45e9f5e272a` (main and live production); Vercel already uses Node 26.x, while six Node-based GitHub workflows had seven Node 22 setup steps.
+- Feature branch: `chore/node26-lts-ci-20261112`. Root `.nvmrc` and package engine pin Node 26, and every Node setup step now sources `.nvmrc`; Phase 1 validates the major. Dependencies, DB, mobile signing and production remain unchanged.
+- Exact-head Phase 1, Android native/R8, disposable Play AAB, iOS simulator, IAP and hybrid-sync security, PostgreSQL finance isolation, and Vercel preview are required before merge. No release or merge authorized.
+- Dated plan/evidence: `docs/engineering/updates/2026-11-12-node26-runtime-ci.md`. Vercel Sandbox returned HTTP 402; test through available CI and preview.
+
+## 2026-11-13 — iOS simulator timeout mitigation for Node 26 PR #288
+- Both iOS runner attempts at `7af5cb32641c096d00fe6240b779b983821df7dd` passed compilation, install, app launch and deep-link delivery but timed out capturing a CoreSimulator screenshot; the CoreSimulator diagnostic command also timed out.
+- Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
+- Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
+- No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.

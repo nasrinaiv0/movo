@@ -12,6 +12,8 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.PluginMethod;
+import com.android.installreferrer.api.InstallReferrerClient;
+import com.android.installreferrer.api.InstallReferrerStateListener;
 import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
 import com.google.android.play.core.review.ReviewManagerFactory;
@@ -19,6 +21,7 @@ import com.google.android.play.core.review.ReviewManagerFactory;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -70,6 +73,56 @@ public class MovoNativePlugin extends Plugin {
                 .build();
         generator.init(spec);
         return generator.generateKey();
+    }
+
+    /**
+     * Referral download links (api/download.js): Google Play keeps the "referrer" value of the store link that led to
+     * this install, e.g. "utm_source=movo_referral&utm_medium=qr&movo_ref=M78038". Returns that text (or "" when there
+     * is none, Play is unavailable, or the app was not installed from Play). Read once by src/lib/installReferral.js;
+     * the app only keeps a valid referral code from it, and the server decides whether the code counts.
+     */
+    @PluginMethod
+    public void installReferrer(PluginCall call) {
+        final AtomicBoolean answered = new AtomicBoolean(false);
+        final InstallReferrerClient client;
+        try {
+            client = InstallReferrerClient.newBuilder(getContext()).build();
+        } catch (Exception e) {
+            resolveReferrer(call, answered, "");
+            return;
+        }
+        try {
+            client.startConnection(new InstallReferrerStateListener() {
+                @Override
+                public void onInstallReferrerSetupFinished(int responseCode) {
+                    String referrer = "";
+                    if (responseCode == InstallReferrerClient.InstallReferrerResponse.OK) {
+                        try {
+                            final String value = client.getInstallReferrer().getInstallReferrer();
+                            if (value != null && value.length() <= 1024) referrer = value;
+                        } catch (Exception ignored) {
+                            referrer = "";
+                        }
+                    }
+                    try { client.endConnection(); } catch (Exception ignored) { }
+                    resolveReferrer(call, answered, referrer);
+                }
+
+                @Override
+                public void onInstallReferrerServiceDisconnected() {
+                    resolveReferrer(call, answered, "");
+                }
+            });
+        } catch (Exception e) {
+            resolveReferrer(call, answered, "");
+        }
+    }
+
+    private void resolveReferrer(PluginCall call, AtomicBoolean answered, String referrer) {
+        if (!answered.compareAndSet(false, true)) return;
+        final JSObject result = new JSObject();
+        result.put("referrer", referrer);
+        call.resolve(result);
     }
 
     /**

@@ -26,6 +26,7 @@ beforeEach(() => {
   delete process.env.MOVO_REFERRAL_POINTS_ENABLED;
   delete process.env.MOVO_IOS_APP_STORE_URL;
   delete process.env.MOVO_ANDROID_STORE_URL;
+  delete process.env.APPLE_APP_ID;
   rpc = jest.fn().mockResolvedValue({ data: { claimed: true }, error: null });
   createClient.mockImplementation(() => ({
     auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: USER } }, error: null }) },
@@ -33,7 +34,7 @@ beforeEach(() => {
   }));
 });
 afterAll(() => {
-  ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'MOVO_REFERRAL_POINTS_ENABLED', 'MOVO_IOS_APP_STORE_URL', 'MOVO_ANDROID_STORE_URL'].forEach(k => delete process.env[k]);
+  ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'MOVO_REFERRAL_POINTS_ENABLED', 'MOVO_IOS_APP_STORE_URL', 'MOVO_ANDROID_STORE_URL', 'APPLE_APP_ID'].forEach(k => delete process.env[k]);
 });
 const post = (body, auth = 'Bearer signed-in') => ({ method: 'POST', headers: { authorization: auth }, body });
 
@@ -113,25 +114,73 @@ test('free month: short and older codes are sent, wrong ones refused, returned e
   expect(r.statusCode).toBe(429);
 });
 
-test('download: sends each platform to its store once listed, otherwise to the web app with the code', () => {
-  let r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'm78038' } }, r);
+const PLAY = 'https://play.google.com/store/apps/details?id=com.nasrinai.movo';
+const playRef = code => `${PLAY}&referrer=${encodeURIComponent(`utm_source=movo_referral&utm_medium=qr&movo_ref=${code}`)}`;
+
+test('download (Android): always Google Play, with the friend’s code in the install referrer', () => {
+  let r = res(); download({ method: 'GET', query: { platform: 'android', ref: 'm78038' } }, r);
+  expect(r.statusCode).toBe(302);
+  expect(r.headers.Location).toBe(playRef('M78038'));
+  expect(new URL(r.headers.Location).searchParams.get('id')).toBe('com.nasrinai.movo');
+  expect(new URLSearchParams(new URL(r.headers.Location).searchParams.get('referrer')).get('movo_ref')).toBe('M78038');
+  r = res(); download({ method: 'GET', query: { platform: 'android' } }, r);
+  expect(r.headers.Location).toBe(PLAY);
+  // Each person's code gives a different link.
+  r = res(); download({ method: 'GET', query: { platform: 'android', ref: 'M12345' } }, r);
+  expect(r.headers.Location).toBe(playRef('M12345'));
+});
+
+test('download (iPhone): the App Store from APPLE_APP_ID, with a page that shows and copies the code', () => {
+  process.env.APPLE_APP_ID = '6754321098';
+  let r = res(); download({ method: 'GET', query: { platform: 'ios' } }, r);
+  expect(r.statusCode).toBe(302);
+  expect(r.headers.Location).toBe('https://apps.apple.com/app/id6754321098');
+  r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'm78038' } }, r);
+  expect(r.statusCode).toBe(200);
+  expect(r.headers['Content-Type']).toBe('text/html; charset=utf-8');
+  const html = r.end.mock.calls[0][0];
+  expect(html).toContain('data-ref="M78038"');
+  expect(html).toContain('href="https://apps.apple.com/app/id6754321098"');
+  expect(html).toContain('<script src="/get-movo.js" defer></script>');
+  expect(html).not.toMatch(/<script>(?!<\/script>)/); // no inline script (the site CSP blocks it)
+  // A configured App Store address wins.
+  process.env.MOVO_IOS_APP_STORE_URL = 'https://apps.apple.com/ph/app/movo/id1234567890';
+  r = res(); download({ method: 'GET', query: { platform: 'ios' } }, r);
+  expect(r.headers.Location).toBe('https://apps.apple.com/ph/app/movo/id1234567890');
+  r = res(); download({ method: 'HEAD', query: { platform: 'ios', ref: 'M78038' } }, r);
+  expect(r.end).toHaveBeenCalledWith('');
+});
+
+test('download (iPhone): APPLE_APP_ID is read the way the billing settings are written', () => {
+  for (const value of [' 6754321098 ', '"6754321098"', 'id6754321098']) {
+    process.env.APPLE_APP_ID = value;
+    const r = res(); download({ method: 'GET', query: { platform: 'ios' } }, r);
+    expect(r.headers.Location).toBe('https://apps.apple.com/app/id6754321098');
+  }
+  for (const value of ['', '0', '42', 'com.nasrinai.movo', '6754321098x', '1e12']) {
+    process.env.APPLE_APP_ID = value;
+    const r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'M78038' } }, r);
+    expect(r.headers.Location).toBe('/?download=ios&ref=M78038');
+  }
+});
+
+test('download (iPhone): until the App Store id is known, the web app keeps the code', () => {
+  delete process.env.APPLE_APP_ID;
+  const r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'm78038' } }, r);
   expect(r.statusCode).toBe(302);
   expect(r.headers.Location).toBe('/?download=ios&ref=M78038');
-  process.env.MOVO_IOS_APP_STORE_URL = 'https://apps.apple.com/ph/app/movo/id1234567890';
-  process.env.MOVO_ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.nasrinai.movo';
-  r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'M78038' } }, r);
-  expect(r.headers.Location).toBe('https://apps.apple.com/ph/app/movo/id1234567890');
-  r = res(); download({ method: 'GET', query: { platform: 'android' } }, r);
-  expect(r.headers.Location).toBe('https://play.google.com/store/apps/details?id=com.nasrinai.movo');
 });
 
 test('download: never redirects to an unexpected address and ignores bad input', () => {
   process.env.MOVO_IOS_APP_STORE_URL = 'https://evil.example/app/id1234567890';
   process.env.MOVO_ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.someone.else';
+  process.env.APPLE_APP_ID = '12345"><script>';
   let r = res(); download({ method: 'GET', query: { platform: 'ios', ref: '"><script>' } }, r);
   expect(r.headers.Location).toBe('/?download=ios');
   r = res(); download({ method: 'GET', query: { platform: 'android', ref: 'M78038' } }, r);
-  expect(r.headers.Location).toBe('/?download=android&ref=M78038');
+  expect(r.headers.Location).toBe(playRef('M78038'));
+  r = res(); download({ method: 'GET', query: { platform: 'android', ref: '"><script>' } }, r);
+  expect(r.headers.Location).toBe(PLAY);
   r = res(); download({ method: 'GET', query: { platform: 'https://evil.example', ref: 'M78038' } }, r);
   expect(r.headers.Location).toBe('/?ref=M78038');
   r = res(); download({ method: 'GET', query: { platform: '__proto__' } }, r);
