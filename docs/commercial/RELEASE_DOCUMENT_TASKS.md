@@ -20,7 +20,7 @@ These tasks cannot be completed by changing application code alone. They remain 
 - [ ] Configure Google Play service account, API access, Pub/Sub notifications, and notification URL.
 - [ ] Add all production secrets to Vercel; never commit credentials.
 - [ ] Complete App Store privacy labels and Google Play Data Safety / Financial Features declarations based on actual SDK data flows.
-- [ ] Provide reviewer credentials and complete store metadata/screenshots.
+- [ ] Provide reviewer credentials and complete store metadata/screenshots. Screenshots (8 per store, from the real build): `store/screenshots/`.
 - [ ] Upload signed iOS and Android builds and complete TestFlight / Play internal testing.
 
 ## Operational sign-off
