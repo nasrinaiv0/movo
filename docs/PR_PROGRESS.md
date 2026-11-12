@@ -1,3 +1,7 @@
+## 2026-11-12 — Plan & Usage: more room for the text
+
+Owner request: "give more space to the texts". Plan & Usage now has more space between the plan row, the usage tiles and the note, inside the tiles and in the note's line spacing, with a clear gap above the button and no fading shadow over the last line. Tile labels wrap (hyphenated in the reader's language) instead of being cut. The tiles become two rows of two below 400px wide, and the plan's date wraps instead of truncating. Checked in the browser with no truncated text at 375 and 430px, at the Largest text size, in English, German and Filipino. Validation: Jest, strict build. CSS only (see `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`).
+
 ## 2026-11-12 — Plan & Usage opens on the current plan; OpenRouter as MOVO's fallback AI provider
 
 - **Plan & Usage (owner recording):** the sheet showed "Free · On this device" and "Upgrade MOVO" for about 3 seconds before switching to "Pro+". It now opens on the plan MOVO already verified at launch and re-checks quietly in the background, so the current plan shows in the first frame (12–19ms in the browser check). A plan not yet checked shows "Checking…", never "Free". The layout is now compact: one plan row with a Cloud/Local tag, usage as four small tiles, one billing note, Restore and Manage as text links, and the main button.

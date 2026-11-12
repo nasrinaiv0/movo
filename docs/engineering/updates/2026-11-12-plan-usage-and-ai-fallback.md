@@ -54,6 +54,15 @@
 - when both fail, the original error is returned, the conversation removed and nothing saved;
 - an invalid key means no extra call.
 
+## Follow-up: more room for the text
+The owner asked to "give more space to the texts". Changes in `src/App.css` (end of file):
+- More space between the plan row, the tiles and the note, inside the tiles (13px vertical), and in the note (line-height 1.6, 16px above, 18px below).
+- The button bar no longer casts a fading shadow over the note.
+- Tile labels wrap with `hyphens: auto` instead of an ellipsis. Below 400px wide the tiles use 2 columns.
+- The plan's "Active until …" may wrap.
+
+Checked in the browser: no truncated text at 375px and 430px, default and Largest text size, in English, German and Filipino. Labels wrap to two lines where a translation is long.
+
 ## Owner action
 Add `OPENROUTER_API_KEY` (Sensitive, Production) in Vercel → movo → Settings → Environment Variables, then redeploy. Optionally set `OPENROUTER_MODEL`, for example `anthropic/claude-sonnet-4.5`; leave it empty for `openrouter/auto`. Until the key is added, MOVO behaves as before.
 

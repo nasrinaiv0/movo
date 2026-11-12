@@ -8707,3 +8707,18 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app .plan-usage-sheet .plan-usage-note { margin: 10px 2px 0; font-size: 11.5px; line-height: 1.4; color: var(--muted); }
 .movo-app.movo-app .plan-usage-sheet .plan-usage-foot { padding-top: 12px; box-shadow: 0 -10px 10px -10px var(--card-solid, #fff); }
 .movo-app.movo-app .plan-usage-sheet .plan-usage-note { margin-bottom: 2px; }
+/* Plan & Usage: more room for the text (owner, 2026-11-12). */
+.movo-app.movo-app .plan-usage-sheet .plan-usage-current { gap: 12px; margin-top: 12px; padding: 14px 14px 14px 12px; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-name { gap: 3px; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-name small { line-height: 1.35; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-mode { padding: 4px 11px; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-stats { margin-top: 14px; gap: 8px; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-stats li { gap: 4px; padding: 13px 3px 12px; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-stats small { font-size: 11px; line-height: 1.3; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-links { margin-top: 12px; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-note { margin: 16px 4px 18px; font-size: 12px; line-height: 1.6; }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-foot { padding-top: 4px; box-shadow: none; }
+/* Usage tiles: labels wrap (hyphenated in the reader's language) instead of being cut; two rows on narrow phones. */
+.movo-app.movo-app .plan-usage-sheet .plan-usage-stats small { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-hyphens: auto; hyphens: auto; }
+@media (max-width: 399px) { .movo-app.movo-app .plan-usage-sheet .plan-usage-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.movo-app.movo-app .plan-usage-sheet .plan-usage-name small { white-space: normal; overflow: visible; text-overflow: clip; }
