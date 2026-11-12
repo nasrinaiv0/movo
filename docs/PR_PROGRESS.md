@@ -1,3 +1,34 @@
+## 2026-11-13 — PR #294 safe conflict integration, precommit record
+
+- Compared PR #294 exact head a05152d, latest main 2922eef, and their common doc baseline before building this integration.
+- Keep PR #294's documented guide and CI repairs; retain ALL newer main progress, including referral and iOS release-harness entries.
+- Retain main's full legal policy and recent referral disclosures; add only the reviewed Security & Data Guide navigation link. Do not alter legal clauses, policy dates, or data retention.
+- The remaining eight PR file objects are reused verbatim. No production, schema, native code, cloud account, or billing changes.
+- Post-integration requirements: exact-head CI, Vercel preview and legal review; physical screen reader and phone-device tests remain unverified and are not claimed complete.
+
+## 2026-11-13 — PR #294 CI 2nd regression: Jest resets module mock implementations
+
+- Exact commit `1396197` GitHub Phase 1 and Vercel preview each failed on **one** Settings guide click test, while 224 of 225 test suites and 1,354 of 1,355 tests passed. Read-only finance tenant isolation passed.
+- Unlike the previous Capacitor proxy spy failure, `Browser.open` is now a Jest mock function. However, MOVO Jest setup resets mock implementations between tests, causing a bare `Browser.open()` to return undefined; the actual Settings handler expects a Promise and calls `.catch()`.
+- Fix in test setup: explicitly `Browser.open.mockReset()` and `Browser.open.mockImplementation(() => Promise.resolve())` immediately before the click. **Do not change the production async Browser.open handler or suppress rejection handling.**
+- Precommit documentation recorded before the fix. Exact-head full regression + preview must be rerun. Keep PR open and production untouched.
+
+## 2026-11-13 — PR #294 preview CI repair (documented before commit)
+
+- First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.
+- Result in the Vercel runner: 224/225 suites passed and 1,354/1,355 tests passed, then the build script exited nonzero. Correct the **test double**, not the product plugin or security gate.
+- Add a `jest.mock('@capacitor/browser')` module mock with a real `jest.fn()` and assert the Settings row invokes `Browser.open` with the canonical security URL.
+- Customer clarity: remove internal PR numbers from the public HTML and say the enhanced offline encryption is in testing and **not part of the current production release**. Retain exact PR references in internal engineering notes and the source docs.
+- No production release, merge, database mutation, security control relaxation, or third-party API change. Rerun exact-head GitHub CI and Vercel preview after the fix.
+
+## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
+
+- Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.
+- Drafted standalone `/security` guide, companion editorial markdown, legal-policy navigation links, and Settings entry point via Capacitor Browser; no existing legal clauses or policy dates changed.
+- Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
+- Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
+- Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
+
 ## 2026-11-12 — PR #293 follow-up: App Store id read like the billing settings
 
 The preview sent iPhone links to the web app, so the stored `APPLE_APP_ID` did not match the strict digits-only format (its value was not inspected). It is now read with the same tolerance as the billing check: surrounding spaces, quotes and an `id` prefix are accepted. Anything that is not a plausible App Store id still falls back to the web app with the code. New test. See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
