@@ -1,3 +1,11 @@
+## 2026-11-12 - Release protection and store declarations (non-PR documentation branch)
+
+- Owner request: secure unprotected `main` and close legal/store declaration gaps; no PR or production modification authorized in this session.
+- Verified `main` 2b9a1cf is not branch protected; repository rulesets empty. Connected GitHub App lacks protection-admin write scope, so owner must enable the rule in Settings.
+- Prepared exact always-running CI choices and guidance for an owner-applied rule; do not make path-filtered workflows universal required checks.
+- Prepared Play financial/Data safety and Apple App Privacy declaration draft, legal identity/age/retention/review blockers; **no store declarations submitted, legal documents published, branch protections applied, or completed compliance claimed**.
+- Documentation-only branch `docs/movo-release-governance-declarations-20261112`, prepared on the exact main source and without a PR. See `docs/security/MAIN_BRANCH_PROTECTION_2026-11-12.md`, `docs/commercial/STORE_DECLARATIONS_DRAFT_2026-11-12.md` and `docs/engineering/updates/2026-11-12-release-governance-store-compliance.md`.
+
 ## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
 
 - **Before commit:** compared the exact branches `3e47d69` (PR #287) and `e7d7126` (main) against merge base `7a65b55`. Only `docs/PR_PROGRESS.md` overlaps; main adds `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md` which is absent from PR #287.
