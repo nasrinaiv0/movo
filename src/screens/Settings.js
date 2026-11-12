@@ -282,6 +282,9 @@ export default function Settings({ c }) {
     ] },
     { title: tr('Data & Sync'), rows: [
       { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.deviceCopyAccess ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
+      { icon: 'refresh', title: tr('Sync automatically when back online'),
+        sub: tr('On: changes you make offline upload to your MOVO account by themselves once the connection returns. Off: MOVO asks you first.'),
+        toggle: 'autoSyncOnReconnect' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
       { icon: 'refresh', title: tr('Offline & online sync'), sub: c.syncState?.message || tr('Changes are kept on this device until safely reconciled.'), onClick: c.session?.user ? () => c.retrySync?.() : undefined },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },

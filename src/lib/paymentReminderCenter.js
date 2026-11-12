@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { cachedList } from './offlineReadCache';
 
 const db = () => { if (!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
@@ -10,7 +11,7 @@ const readLocalPreferences = () => {
   try { return { ...defaultPreferences(), ...(JSON.parse(window.localStorage.getItem(LOCAL_PREF_KEY)||'{}')) }; }
   catch { return defaultPreferences(); }
 };
-export async function getReminderPreferences(userId) {
+async function getReminderPreferencesFromCloud(userId) {
   if (!userId) return readLocalPreferences();
   const row = unwrap(await db().from('payment_reminder_preferences').select('*').eq('user_id', userId).maybeSingle());
   return row ? { ...row, quiet_start: row.quiet_start ? String(row.quiet_start).slice(0,5) : null, quiet_end: row.quiet_end ? String(row.quiet_end).slice(0,5) : null } : defaultPreferences();
@@ -167,7 +168,7 @@ export async function recordReminderEvent(userId, event) {
   }).select().single());
 }
 
-export async function listReminderEvents(userId, limit = 50) {
+async function listReminderEventsFromCloud(userId, limit = 50) {
   if (!userId) return [];
   return unwrap(await db().from('payment_reminder_events').select('*')
     .eq('user_id', userId).order('created_at', { ascending: false }).limit(Math.max(1, Math.min(100, limit)))) || [];
@@ -215,3 +216,7 @@ export function reminderOccurrenceAllowsDisplay(events = [], entry, offset = 0, 
   const previous=matches.find(event=>Number(event.reminder_offset)===Number(offset));
   return reminderEventAllowsDisplay(previous,now);
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const getReminderPreferences = (...args) => cachedList('reminderPreferences', () => getReminderPreferencesFromCloud(...args), args.map(String).join(','));
+export const listReminderEvents = (...args) => cachedList('reminderEvents', () => listReminderEventsFromCloud(...args), args.map(String).join(','));

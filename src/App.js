@@ -26,6 +26,7 @@ import './App.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
 import { Sheet } from './components/ui';
+import ReconnectSyncPrompt from './components/ReconnectSyncPrompt';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
 import ScheduledDuePrompt from './components/ScheduledDuePrompt';
@@ -168,7 +169,7 @@ const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || ''
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
-  notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
+  notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, autoSyncOnReconnect: false, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'auto', cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
@@ -290,6 +291,11 @@ function App() {
   const [offlineOwnerId, setOfflineOwnerId] = useState(null);
   const [syncState, setSyncState] = useState({status:'idle',message:'',uploaded:0,downloaded:0});
   const [restoredConnection, setRestoredConnection] = useState(false);
+  // "Not now" on the reconnect pop-up: keep the small reminder instead until the changes sync (owner, 2026-11-12).
+  const [reconnectDeferred, setReconnectDeferred] = useState(false);
+  // One automatic sync attempt per reconnection (see the reconnect effect below).
+  const autoSyncTriedRef = useRef(false);
+  const [autoSyncFailed, setAutoSyncFailed] = useState(false);
   const syncActiveRef = useRef(false);
   const lastSyncRetryRef = useRef(false); // the last failed sync only needs the connection back
   const [view, setView] = useState('Home');
@@ -430,6 +436,10 @@ function App() {
     setRawTxs(next.working.transactions);
     setCloudPostings(next.working.accounting_postings||[]);
     setCloudActivities(next.working.accounting_activities||[]);
+    // A subscriber's budgets and bills come from the same synced device copy offline (owner, 2026-11-12).
+    setCloudBills(next.working.financial_bills||[]);
+    setCloudBillOccurrences(next.working.bill_occurrences||[]);
+    setCloudBudgets(next.working.budgets||[]);
     setCloudMode(false);
     return true;
   }, []);
@@ -753,7 +763,7 @@ function App() {
     return true;
   };
   useEffect(() => {
-    const wentOffline=()=>{setRestoredConnection(false);if(cloudMode)switchToDeviceCopy();};
+    const wentOffline=()=>{setRestoredConnection(false);autoSyncTriedRef.current=false;setAutoSyncFailed(false);if(cloudMode)switchToDeviceCopy();};
     const cameOnline=()=>{
       const ownerId=session?.user?.id;
       const workspace=ownerId?loadOfflineWorkspace(ownerId):null;
@@ -767,6 +777,27 @@ function App() {
       window.removeEventListener('online',cameOnline);
     };
   },[cloudMode,switchToDeviceCopy,session?.user?.id]);
+  /*
+   * Back online with changes made offline (owner, 2026-11-12). With "Sync automatically when back online" on, they
+   * upload silently once the connection has settled; otherwise MOVO asks first (ReconnectSyncPrompt below). Either
+   * way the upload goes through the same verified path as "Sync now" (sign-in, plan and conflict checks).
+   */
+  // One automatic attempt per reconnection: if it does not finish (server busy, plan or conflict check), MOVO asks
+  // with the pop-up instead of retrying in a loop. A new offline period or a completed sync allows the next one.
+  useEffect(() => {
+    if (syncState.status === 'synced') { autoSyncTriedRef.current = false; setAutoSyncFailed(false); }
+  }, [syncState.status]);
+  useEffect(() => {
+    if (!restoredConnection) { setReconnectDeferred(false); return undefined; }
+    if (prefs.autoSyncOnReconnect !== true || busy || reconnectDeferred) return undefined;
+    if (autoSyncTriedRef.current) { setAutoSyncFailed(true); return undefined; }
+    const timer = setTimeout(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      autoSyncTriedRef.current = true;
+      syncNow();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [restoredConnection, prefs.autoSyncOnReconnect, busy, reconnectDeferred, syncNow]);
   // Retry only ordinary online failures; never release a manually held offline queue.
   const waitingForNetwork = !cloudMode && !!session?.user?.id && prefs.cloudSyncEnabled !== false
     && syncState.retry === true && !loadOfflineWorkspace(session.user.id)?.requiresManualSync;
@@ -794,6 +825,47 @@ function App() {
     }
   },[switchToDeviceCopy]);
   /*
+   * Online saves, local first (owner, 2026-11-12): input → this device → dashboard → silent cloud sync. `start` gets
+   * an onLocal callback; this resolves as soon as the change is committed on this device, with { local, upload },
+   * while the cloud upload (`upload`, a cloudWrite result) carries on in the background. Mistakes caught before the
+   * device commit (validation, sign-in) still reject here, so the form can show them. A write with no device step
+   * resolves with cloudWrite's own result, exactly as before.
+   */
+  const uploadsInFlightRef = useRef(0);
+  const localFirstWrite = useCallback((start) => new Promise((resolve, reject) => {
+    const holder = { settled: false, upload: null };
+    holder.upload = cloudWrite(() => start(record => {
+      if (holder.settled) return;
+      holder.settled = true;
+      uploadsInFlightRef.current += 1;
+      const upload = Promise.resolve().then(() => holder.upload).finally(() => { uploadsInFlightRef.current -= 1; });
+      resolve({ local: record, upload });
+    }));
+    holder.upload.then(result => { if (!holder.settled) { holder.settled = true; resolve(result); } },
+      error => { if (!holder.settled) { holder.settled = true; reject(error); } });
+  }), [cloudWrite]);
+  /*
+   * Local-first create for the quick inputs (NasrinAI chat logging, card purchases, card payments). Resolves with
+   * { row } to show now, or { offline: true } when the cloud could not be reached (the caller then saves on the device
+   * copy as before). The upload finishes silently: a confirmed save swaps in the server copy, a dropped connection
+   * keeps the record on this device for the next sync, and a refusal removes it from the screen and says why.
+   */
+  const createLocalFirst = useCallback(async (payload) => {
+    const ownerId = session.user.id;
+    const written = await localFirstWrite(onLocal => createTransaction(payload, ownerId, { onLocal }));
+    if (written.offline) return { offline: true };
+    if (!written.local) return { row: written.value };
+    const row = { ...written.local, created_at: written.local.created_at || new Date().toISOString() };
+    written.upload.then(async (result) => {
+      if (result?.offline) { await persistHybridLocalRows(ownerId, 'transactions', [row]).catch(() => {}); return; }
+      if (result?.value) setRawTxs(cur => cur.map(x => x.id === row.id ? result.value : x));
+    }, (cause) => {
+      setRawTxs(cur => cur.filter(x => x.id !== row.id));
+      notify(tr('This change could not be saved to your MOVO account: {reason}', { reason: cause?.message || tr('Please try again.') }));
+    });
+    return { row };
+  }, [localFirstWrite, session, notify]);
+  /*
    * While online, keep this account's device copy matched to the cloud after each change, from a fresh owner-checked
    * cloud read (never from what is on screen), so a dropped connection continues from current records.
    */
@@ -805,11 +877,12 @@ function App() {
     const epoch=cloudLoadEpochRef.current;
     let live=true;
     const timer=setTimeout(async()=>{
-      if(syncActiveRef.current)return;
+      // Never refresh the device copy while a local-first save is still uploading (its record is not in the cloud yet).
+      if(syncActiveRef.current||uploadsInFlightRef.current>0)return;
       try{
         const fresh=await withTimeout(fetchOfflineSyncCloud(ownerId),CLOUD_READ_TIMEOUT_MS);
         const latest=loadOfflineWorkspace(ownerId);
-        if(!live||syncActiveRef.current||epoch!==cloudLoadEpochRef.current||cloudAuthUserRef.current!==ownerId||!latest)return;
+        if(!live||syncActiveRef.current||uploadsInFlightRef.current>0||epoch!==cloudLoadEpochRef.current||cloudAuthUserRef.current!==ownerId||!latest)return;
         if(!cleanCopyCheck(ownerId,latest,fresh).ok)return;
         const shared={...latest.working,...fresh};
         saveOfflineWorkspace(ownerId,{...latest,baseline:shared,working:shared,dirty:false,
@@ -1035,7 +1108,8 @@ function App() {
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer' || t.transaction_type === 'allocation').slice(0, 4), [homeStats]);
-  const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
+  // Offline, a signed-in subscriber keeps their synced budgets (the device copy), not this device's guest list.
+  const budgets = useMemo(() => (cloudMode || deviceCopyAccess ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, deviceCopyAccess, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   const spendingLimitList = useMemo(() => spendingLimitProgress((prefs.spendingLimits || []).map(l => ({ ...l, monthly_limit: toBase(Number(l.monthly_limit), l.currency || 'PHP'), currency: base })), homeStats.list, accountsView), [prefs.spendingLimits, homeStats, accountsView, toBase, base]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
@@ -1313,19 +1387,49 @@ function App() {
         },
       } : null;
       let savedTransaction = null;
+      // Resolves true once a local-first save is confirmed by the cloud (false when it stayed on this device).
+      let backgroundUpload = null;
       if (online) {
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
         const payload = { id: newId || undefined, merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
-        const written = await cloudWrite(() => editingId ? updateTransaction(editingId, payload) : auto.source ? createAutomated({ ...payload, ...auto }) : createTransaction(payload, session.user.id));
+        // Local first (owner, 2026-11-12): the change is committed on this device and shown at once; the cloud upload
+        // finishes silently. A subscription payment also records the payment attempt, which needs the cloud row
+        // first, so it keeps waiting for the cloud as before.
+        const write = (onLocal) => editingId ? updateTransaction(editingId, payload, { onLocal }) : auto.source ? createAutomated({ ...payload, ...auto }) : createTransaction(payload, session.user.id, { onLocal });
+        const before = editingId ? rawTxs.find(x => x.id === editingId) : null;
+        const written = paidSub ? await cloudWrite(() => write()) : await localFirstWrite(write);
         if (written.offline) online = false;
         else {
-          const row = written.value;
+          const row = written.local
+            ? { ...(before || {}), ...written.local, ...(editingId ? {} : { created_at: written.local.created_at || new Date().toISOString() }) }
+            : written.value;
           const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
           savedTransaction = transactionRow;
           if (!editingId) markFresh(row.id);
           setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
-          notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
+          notify(written.local ? (editingId ? tr('Transaction updated.') : tr('Transaction saved.'))
+            : editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
           if (!editingId) { celebrate(); maybeAskForReview(rawTxs.length + 1); }
+          if (written.local) {
+            const recordId = transactionRow.id;
+            const ownerId = session.user.id;
+            backgroundUpload = written.upload.then(async (result) => {
+              if (result?.offline) {
+                // The connection dropped mid-upload: the change stays on this device and syncs when back online.
+                await persistHybridLocalRows(ownerId, 'transactions', [transactionRow]).catch(() => {});
+                return false;
+              }
+              const server = result?.value;
+              if (server) setRawTxs(cur => cur.map(x => x.id === recordId ? (subscriptionPaymentState ? { ...server, subscription_payment_state: subscriptionPaymentState } : server) : x));
+              return true;
+            }, (cause) => {
+              // The server refused the change (permission or a rule the form cannot check): undo it on screen.
+              setRawTxs(cur => editingId ? cur.map(x => x.id === recordId ? (before || x) : x) : cur.filter(x => x.id !== recordId));
+              notify(tr('This change could not be saved to your MOVO account: {reason}', { reason: cause?.message || tr('Please try again.') }));
+              if (uploadedReceiptPath && supabase) supabase.storage.from('movo-receipts').remove([uploadedReceiptPath]).catch(() => {});
+              return false;
+            });
+          }
         }
       }
       if (!online) {
@@ -1359,8 +1463,17 @@ function App() {
           : item));
         notify(tr('Subscription payment recorded. Next billing date updated.'));
       }
-      if (!editingId && online && session?.user) await refreshCloud(session.user);
-      if (online && oldReceiptPath && oldReceiptPath !== receiptPath) await supabase.storage.from('movo-receipts').remove([oldReceiptPath]).catch(() => {});
+      // After a local-first save these run silently once the cloud has confirmed it; otherwise as before.
+      if (!editingId && online && session?.user) {
+        const user = session.user;
+        if (backgroundUpload) backgroundUpload.then(done => { if (done) refreshCloud(user).catch(() => {}); });
+        else await refreshCloud(user);
+      }
+      if (online && oldReceiptPath && oldReceiptPath !== receiptPath) {
+        const removeOld = () => supabase.storage.from('movo-receipts').remove([oldReceiptPath]).catch(() => {});
+        if (backgroundUpload) backgroundUpload.then(done => { if (done) removeOld(); });
+        else await removeOld();
+      }
       setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null);
     } catch (err) {
       if (uploadedReceiptPath && supabase) await supabase.storage.from('movo-receipts').remove([uploadedReceiptPath]).catch(() => {});
@@ -1669,6 +1782,8 @@ function App() {
   const saveBudget = async ({ id, category: picked, monthly_limit }) => {
     // Budgets are kept per compact category id (custom text stays as written).
     const c = categoryOf(picked); const category = c.custom ? picked : c.primary;
+    // Budgets of a cloud account are changed in the cloud; offline they stay readable until the connection returns.
+    if (!cloudMode && deviceCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return; }
     if (cloudMode && session?.user) {
       const row = id ? await updateBudget(id, { category, monthly_limit, currency: base }) : await createBudget({ category, monthly_limit, currency: base }, session.user.id);
       setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
@@ -1679,6 +1794,7 @@ function App() {
     notify(tr('Budget saved.'));
   };
   const deleteBudget = (id) => {
+    if (!cloudMode && deviceCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return Promise.resolve(false); }
     const row = (cloudMode ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
     return confirm({
       ...deleteRecord(row ? categoryFullLabel(row.category) : '', { impact: [tr('Your transactions are not changed.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
@@ -1792,12 +1908,12 @@ function App() {
     const payload = { merchant: String(entry.merchant || '').trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: account.currency || base, transaction_type: 'expense', category: 'Shopping', account_id: account.id, occurred_at, note };
     if (!payload.merchant) throw new Error('Enter the merchant name.');
     const id = newRecordId();
-    const written = cloudMode ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
-    const row = written.offline ? { ...payload, id, source: 'Manual', created_at: new Date().toISOString() } : written.value;
+    const written = cloudMode ? await createLocalFirst({ ...payload, id }) : { offline: true };
+    const row = written.offline ? { ...payload, id, source: 'Manual', created_at: new Date().toISOString() } : written.row;
     if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
     setRawTxs(cur => [row, ...cur]);
     return row;
-  }, [accountsView, base, cloudMode, cloudWrite, session]);
+  }, [accountsView, base, cloudMode, createLocalFirst, session]);
   /*
    * A credit-card payment paid from one of the person's accounts is a transfer (account → card): the card owes less
    * and the account holds less, so the total balance stays right. Without a source account it is only noted on the
@@ -1814,15 +1930,15 @@ function App() {
       if (!card || !from) throw new Error(tr('Choose the account you paid from.'));
       const id = newRecordId();
       const payload = { merchant: `${tr('Card payment')} · ${card.institution_name || card.name}`.slice(0, 160), amount: value, currency: from.currency || base, transaction_type: 'transfer', category: 'Transfer', account_id: from.id, transfer_to_account_id: card.id, occurred_at: loggedAt(day), note: '' };
-      const written = cloudMode ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
-      const row = written.offline ? { ...payload, id, source: 'Manual' } : written.value;
+      const written = cloudMode ? await createLocalFirst({ ...payload, id }) : { offline: true };
+      const row = written.offline ? { ...payload, id, source: 'Manual' } : written.row;
       if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
       setRawTxs(cur => [row, ...cur]);
       payment.transaction_id = String(row.id);
     }
     setPrefs(p => ({ ...p, creditCardPayments: { ...(p.creditCardPayments || {}), [cardId]: [...(p.creditCardPayments?.[cardId] || []), payment] } }));
     return payment;
-  }, [accountsView, base, cloudMode, cloudWrite, session]);
+  }, [accountsView, base, cloudMode, createLocalFirst, session]);
   const autoLogFor = useCallback(async (entry) => {
     const account = matchAccount(entry.card, accountsView.filter(a => !a.is_archived));
     if (!account) { notify(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
@@ -1857,9 +1973,9 @@ function App() {
       if (dup) { skipped.push({ ...payload, id: `dup-${skipped.length}-${dup.id}`, duplicateOf: dup, entry: e, accountName: account?.name || '' }); continue; }
       const id = newRecordId();
       // Offline-first: once the cloud cannot be reached, the rest of the entries are saved on the device copy.
-      const written = online ? await cloudWrite(() => createTransaction({ ...payload, id }, session.user.id)) : { offline: true };
+      const written = online ? await createLocalFirst({ ...payload, id }) : { offline: true };
       if (written.offline) online = false;
-      const row = written.offline ? { ...payload, id, source: 'Manual' } : written.value;
+      const row = written.offline ? { ...payload, id, source: 'Manual' } : written.row;
       if(written.offline) if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[row]);
       saved.push({ ...row, accountName: account?.name || '' });
     }
@@ -1870,7 +1986,7 @@ function App() {
       celebrate();
     } else if (skipped.length) notify(dupText(skipped[0].duplicateOf));
     return [...saved, ...skipped];
-  }, [accountsView, cloudMode, cloudWrite, session, base, notify, rawTxs, celebrate]);
+  }, [accountsView, cloudMode, createLocalFirst, session, base, notify, rawTxs, celebrate]);
   /* Chat shortcuts: one tap to log, scan or read a MOVO section; summaries are worked out on this device. */
   const chatSummary = (range) => {
     const label = range === 'today' ? tr('Today') : tr('This month');
@@ -2783,7 +2899,7 @@ function App() {
         prefs={prefs}
         subscriptions={subscriptions}
         plans={plans}
-        cloudMode={cloudMode}
+        cloudMode={cloudMode || deviceCopyAccess}
         toBase={toBase}
         show={show}
         holder={user?.name}
@@ -2866,7 +2982,12 @@ function App() {
       {sheet?.name === 'recentLogs' && <RecentLogsSheet transactionBalances={transactionBalances} showBalanceAfterTransaction={prefs.showBalanceAfterTransaction !== false} logs={txs.filter(t => rawIds.has(t.id) && logStamp(t) > sheet.since)} failed={inbox} accounts={formAccounts} show={show} refDate={refDate} onOpen={openTx} onLog={logInboxItem} onDismiss={dismissInboxItem} onClose={closeRecentLogs} />}
       {searchOpen && <SearchOverlay txs={txs} show={show} refDate={refDate} onOpen={openTx} onClose={() => setSearchOpen(false)} />}
       <LoggedBurst id={burst?.id} label={burst?.label} badge={burst?.badge} onDone={endBurst} />
-      {restoredConnection && !!session?.user?.id && !cloudMode && prefs.cloudSyncEnabled !== false && (
+      {restoredConnection && !!session?.user?.id && !cloudMode && prefs.cloudSyncEnabled !== false && (prefs.autoSyncOnReconnect !== true || autoSyncFailed) && !reconnectDeferred && (
+        <ReconnectSyncPrompt busy={busy} count={unsyncedChangeCount(loadOfflineWorkspace(session.user.id))}
+          onSync={(always) => { if (always) setPref('autoSyncOnReconnect', true); syncNow(); }}
+          onLater={(always) => { if (always) setPref('autoSyncOnReconnect', true); setReconnectDeferred(true); }} />
+      )}
+      {restoredConnection && !!session?.user?.id && !cloudMode && prefs.cloudSyncEnabled !== false && reconnectDeferred && (
         <div className="movo-sync-restored" role="status" aria-live="polite">
           <span className="movo-sync-restored-icon" aria-hidden="true">↗</span>
           <div className="movo-sync-restored-message">

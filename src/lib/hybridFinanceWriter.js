@@ -3,8 +3,12 @@ import { loadOfflineWorkspace, saveOfflineWorkspace } from './offlineWorkspaceSt
 import { commitLocalFinanceChange, acknowledgeDirectHybridWrite, rejectDirectHybridWrite, listOwnerSyncOperations } from './hybridLocalStore';
 import { applyHybridCloudOperation, syncRequestId } from './hybridSyncCloudAdapter';
 
-/** Local durable intent -> atomic cloud RPC -> durable ACK -> caller render. */
-export async function writeHybridFinance({ group, kind, recordId, payload, ownerId }) {
+/**
+ * Local durable intent -> atomic cloud RPC -> durable ACK -> caller render.
+ * `onLocal(record)` (owner, 2026-11-12) is called once the change is committed on this device and before the cloud
+ * call, so the app can show it at once and let the upload finish silently (input -> local -> dashboard -> cloud).
+ */
+export async function writeHybridFinance({ group, kind, recordId, payload, ownerId, onLocal }) {
   if(!supabase)throw new Error('MOVO cloud storage is not configured.');
   const { data, error } = await supabase.auth.getSession();
   const owner = data?.session?.user?.id;
@@ -25,6 +29,10 @@ export async function writeHybridFinance({ group, kind, recordId, payload, owner
   const createdAt = previous?.updated_at || payload?.occurred_at || '1970-01-01T00:00:00.000Z';
   await commitLocalFinanceChange({ownerId:owner,group,kind,record:{...previous,...payload,id:recordId},
     origin:'online',operationId:op.id,createdAt,expectedUpdatedAt:op.expectedUpdatedAt});
+  if (typeof onLocal === 'function' && kind !== 'delete') {
+    // A display callback must never break or reorder the durable write.
+    try { onLocal({ ...previous, ...payload, id: recordId }); } catch { /* ignore */ }
+  }
   let acknowledgement;
   try { acknowledgement = await applyHybridCloudOperation(op); }
   catch(error){

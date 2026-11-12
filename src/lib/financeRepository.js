@@ -5,6 +5,7 @@ import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp, nativePlatform } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
+import { cachedList } from './offlineReadCache';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
@@ -136,7 +137,7 @@ export async function listTransactions({ from, to, accountId } = {}) {
     return query;
   });
 }
-export async function createTransaction(transaction, userId) {
+export async function createTransaction(transaction, userId, { onLocal } = {}) {
   if (!userId) throw new Error('A signed-in user is required.');
   const amount = Number(transaction?.amount);
   const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
@@ -164,7 +165,7 @@ export async function createTransaction(transaction, userId) {
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
   };
   const recordId = payload.id || globalThis.crypto.randomUUID();
-  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId});
+  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId,onLocal});
 }
 export async function deleteTransaction(transactionId) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
@@ -174,7 +175,7 @@ export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
 }
 
-export async function updateTransaction(transactionId, transaction) {
+export async function updateTransaction(transactionId, transaction, { onLocal } = {}) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
   const amount = Number(transaction?.amount);
   const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
@@ -199,7 +200,7 @@ export async function updateTransaction(transactionId, transaction) {
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
     occurred_at: occurredAt,
   };
-  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update});
+  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update,onLocal});
 }
 
 export async function updateAccount(accountId, account) {
@@ -273,7 +274,7 @@ export async function purgeArchivedAutomations(days = 90, now = new Date()) {
   const { error } = await requireClient().from('movo_automation_inbox').delete().eq('status', 'dismissed').lt('resolved_at', cutoff);
   if (error && !/PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) throw error;
 }
-export async function listBudgets() {
+async function listBudgetsFromCloud() {
   return unwrap(await requireClient().from('budgets')
     .select('id,category,monthly_limit,currency,starts_on,is_active').eq('is_active', true).order('category', { ascending: true }));
 }
@@ -347,3 +348,6 @@ export async function restoreTransactionLinks(reversedTransactionId, restoredTra
     p_restored_transaction_id: restoredTransactionId,
   }));
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listBudgets = (...args) => cachedList('budgets', () => listBudgetsFromCloud(...args));

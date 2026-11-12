@@ -1,3 +1,39 @@
+## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
+
+- **Before commit:** compared the exact branches `3e47d69` (PR #287) and `e7d7126` (main) against merge base `7a65b55`. Only `docs/PR_PROGRESS.md` overlaps; main adds `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md` which is absent from PR #287.
+- Preserve all PR #287 offline-first sync, subscriber offline records, referral and Android sign-in progress, followed by the whole updated main progress (including PR #286 release-gate notes). Carry forward main's added Android release-gate report. No app, tests, build, database or production environment code is changed as part of the conflict resolution.
+- Test gates: require exact-merge-head GitHub checks and mergeability verification. No claims of real Android/iPhone, cloud financial data, or live Vercel preview tests. **Leave PR #287 open and do not merge.**
+- Detailed record: `docs/engineering/updates/2026-11-12-pr287-conflict-resolution.md`.
+
+## 2026-11-12 — Subscribers' records offline; referral field loads with the panel
+
+- **Offline records (owner: "all data should be available offline after the customer subscribes"):**
+  - Budgets, bills and bill dates now come from the synced device copy offline; budgets previously switched to the device's guest list.
+  - Financial planning and the Home planning card work offline; they used to say "Sign in to manage your financial records".
+  - A new per-account read cache (`lib/offlineReadCache.js`) keeps the last copy of every cloud list: loans, receivables, goals, allocations, bills and payments, scheduled transactions, payment attempts, reminders, budgets and the ledger. It shows that copy when the cloud can't be reached; it never hides server errors and never mixes accounts.
+  - Changes to these records wait until back online, with a clear note.
+  - Signed-out people still see no account records (privacy); they reappear after signing in, online or offline.
+- **Referral code:** the field shows as soon as the plans panel opens, with no extra step and no waiting for sign-in. A code typed while signed out is kept for after sign-in.
+- **Android Google sign-in (v7):** the auth logs show the app's pre-check succeeding and no request reaching Google's step, so the failure is on the phone, either in the secure-storage or the browser step. The exact on-screen message is needed to choose the fix.
+
+Validation: Jest 224 suites / 1,349 tests, `tsc`. See `docs/engineering/updates/2026-11-12-offline-records-and-referral.md`. Not run: real devices.
+
+## 2026-11-12 — Offline/online sync: local first, silent cloud sync, back-online prompt
+
+Owner request: online, input → local → dashboard → silent cloud sync; offline, input → local → dashboard; back online, a setting chooses automatic sync or asking first with a professional pop-up.
+- **Online:** a new or edited transaction (form, NasrinAI chat, card purchase or payment) is committed on the device and shown at once, and the cloud upload finishes in the background.
+  - A confirmed upload swaps in the server copy.
+  - A dropped connection falls back to the existing offline path.
+  - A server refusal removes the row and explains why.
+  - Form mistakes are still caught first. A subscription payment still waits for the cloud.
+- **Offline:** unchanged.
+- **Back online:** new setting, Settings → Data & Sync → "Sync automatically when back online" (off by default).
+  - Off: a centered pop-up, "You're back online", asks to sync the N changes made offline, with "Not now", "Sync now" and an "Always sync automatically" option. "Not now" keeps a small reminder.
+  - On: the changes upload by themselves, one attempt per reconnection, falling back to the pop-up if it can't finish.
+  - Uploads always go through the same verified sync (sign-in, plan, conflict checks).
+
+No RLS, policy or server changes. Validation: new writer, pop-up and end-to-end tests; Jest 223 suites / 1,342 tests, `tsc`, strict build; browser check offline → online in light and dark. Not run: real devices. See `docs/engineering/updates/2026-11-12-offline-online-sync.md`.
+
 ## 2026-11-12 — #286 brought up to date with main
 
 Main gained the same owner billing-test isolation in #285 (20beb70), in a broader form: it clears every store billing setting and restores the whole environment, so it covers `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and the other Google Play keys. The merge keeps main's version of `src/owner/ownerApi.test.js`. #286 contributes its documentation and the verified AAB v7 evidence below. No app code changes.

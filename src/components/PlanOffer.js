@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
-import { clearPendingReferralCode, pendingReferralCode, trialReferralCode } from '../lib/referrals';
+import { clearPendingReferralCode, pendingReferralCode, savePendingReferralCode, trialReferralCode } from '../lib/referrals';
 import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
 import { apiUrl } from '../lib/platform';
@@ -57,8 +57,9 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   const [period, setPeriod] = useState('monthly');
   const [products, setProducts] = useState([]);
   // A friend's code from a download link (?ref=M78038) is filled in, ready to use.
+  // The field is part of the panel from the first frame (owner, 2026-11-12): no "Have a referral code?" step and no
+  // waiting for sign-in or the plan check to load.
   const [code, setCode] = useState(() => pendingReferralCode());
-  const [showCode, setShowCode] = useState(() => Boolean(pendingReferralCode()));
   const eligible = !entitlement || entitlement.trialEligible;
   const plan = effectivePlan(entitlement);
   const onTrial = entitlement?.source === 'trial' && plan === 'pro';
@@ -88,7 +89,8 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   const tileSaving = (tier) => tier === 'free' || period !== 'annual' ? 0
     : annualSavingPercent([{ monthly: productFor(tier, 'monthly'), annual: productFor(tier, 'annual') }]);
   const claim = async () => {
-    if (!session?.access_token) { onSignIn(); return; }
+    // Signed out: keep the typed code on this device, so it is filled in again after signing in.
+    if (!session?.access_token) { savePendingReferralCode(code); onSignIn(); return; }
     setBusy(true); setError('');
     try {
       // Short codes such as M78038 (any case, spaces ignored); older 24-character codes still work.
@@ -161,9 +163,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       <b>{tr(selected.heading)}</b>
       <ul>{selected.features.map((item, i) => <li key={item} style={{ '--i': i }}><Icon name="check" size={15} strokeWidth={2.4} />{tr(item)}</li>)}</ul>
     </div>
-    {trialOffer && session?.access_token && (showCode
-      ? <input className="plan-referral-input" maxLength={24} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code, e.g. M78038')} aria-label={tr('Referral code')} autoCapitalize="none" autoComplete="off" />
-      : <button type="button" className="link-button plan-referral-toggle" onClick={() => setShowCode(true)}>{tr('Have a referral code?')}</button>)}
+    {trialOffer && <input className="plan-referral-input" maxLength={24} value={code} onChange={e => setCode(e.target.value)} placeholder={tr('Referral code, e.g. M78038')} aria-label={tr('Referral code')} autoCapitalize="none" autoComplete="off" />}
     <div className="plan-panel-foot">
     {error && <p role="alert" className="form-error">{error}</p>}
     <button type="button" key={selected.tier} className={`plan-cta tier-${selected.tier}`} disabled={busy || action.disabled} onClick={action.run}>{action.label}</button>

@@ -70,6 +70,30 @@ test('a first-time person gets the free month with the white MOVO mark and no au
   cleanup();
 });
 
+test('the referral code field is there as soon as the panel opens, signed in or not (owner, 2026-11-12)', async () => {
+  window.localStorage.removeItem('movo.pendingReferral.v1');
+  // Signed in: the field shows at once, with no "Have a referral code?" step.
+  let view = await render({ session, entitlement: { tier: 'free', trialEligible: true } });
+  expect(view.el.querySelector('input.plan-referral-input')).not.toBeNull();
+  expect(button(view.el, 'Have a referral code?')).toBeUndefined();
+  view.cleanup();
+  // Still loading the plan check (no entitlement yet) and signed out: the field is there too, and a code typed now
+  // is kept for after sign-in.
+  view = await render({ session: null, entitlement: null });
+  const input = view.el.querySelector('input.plan-referral-input');
+  expect(input).not.toBeNull();
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'm78038');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => view.el.querySelector('.plan-cta').click());
+  expect(view.handlers.onSignIn).toHaveBeenCalled();
+  view.cleanup();
+  view = await render({ session, entitlement: { tier: 'free', trialEligible: true } });
+  expect(view.el.querySelector('input.plan-referral-input').value).toBe('M78038');
+  view.cleanup();
+});
+
 test('in the app, the store price drives the panel and Continue buys the selected plan and period', async () => {
   isNativePurchasePlatform.mockReturnValue(true);
   getStoreProducts.mockResolvedValue([
