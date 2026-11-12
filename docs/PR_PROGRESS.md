@@ -949,6 +949,18 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.
 
 
+## 2026-11-11 — PR #272 iOS release pipeline hardening (not yet App Store certified)
+- Keep the existing React/Capacitor/Swift architecture, product screens, financial calculations, sync/RLS and StoreKit production entitlement verification unchanged.
+- Expand GitHub macOS iOS CI trigger coverage to all app/auth/billing/backend changes; compile the unsigned Release iPhone target alongside simulator Debug and deep-link smoke.
+- Add source packaging assertions with five negative-regression tests for the canonical bundle ID, strict local bundled web assets, positive build versions, native privacy permissions, secure post-verification StoreKit finishing, actual opaque 1024px RGB App Store icon, and deterministic signed TestFlight CI configuration.
+- Codemagic TestFlight uses npm lockfile verification and Xcode 26+ preflight, with existing App Store signing integration unchanged.
+- No owner Apple credentials or signed distribution IPA are verified here; production DB still rejects sandbox entitlements, Vercel Sandbox access returns 402, and real-device TestFlight purchase/login/privacy acceptance is a NO-GO gate.
+- Detailed source and release evidence: `docs/engineering/updates/2026-11-11-ios-release-safety-gates.md`.
+
+- PR #272 macOS CI first attempt caught a release-contract matcher that recognized unpinned `npm ci` but not the explicitly pinned `npx npm@11.19.1 ci`; corrected the check and its negative test without weakening the lockfile requirement. Codemagic avoids re-running the same tests in the web build stage. Exact-head native and full CI rerun required.
+
+- Follow-up iOS guard source check: ensured the pinned `npm@11.19.1 ci` regular expression uses actual JavaScript regex word boundaries rather than escaped literals. Verify via the next exact-head macOS build; no release approved before successful CI.
+
 ## 2026-11-12 — PR #275: Bank and linked-card transactions; e-wallet cards
 - Bank Accounts → Account details now displays a read-only combined transaction history for the bank and all active explicitly linked debit and issuing-bank credit cards, with Bank-only and individual-card filters. A transaction involving both sides of the group appears once; each card's standalone history stays isolated. Transactions tab pages through full history at 50 rows per page.
 - Wallet → Cards includes e-wallets in the existing carousel and My Cards pile while keeping their independent E-Wallets filter, type, balances, QR codes, and sync state. No database, accounting, or RLS migrations.
