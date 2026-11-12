@@ -9,6 +9,7 @@ import { t as tr } from '../lib/i18n';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
+import { DEFAULT_SCENERY, GLOWS, HERO_FEATURE, ZODIAC, glowBackground, isPremiumHero, zodiacBackground } from '../lib/homeHero';
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
@@ -368,6 +369,50 @@ function SceneryPicker({ c }) {
   </section>;
 }
 
+/*
+ * Home header background (owner, 2026-11-12): scenery for everyone; the twelve zodiac constellations and glowing
+ * colour fields for Pro and Pro+. Premium tiles show their plan; choosing one without it opens MOVO plans.
+ */
+const HERO_TABS = [['scenery', 'Scenery'], ['zodiac', 'Zodiac'], ['glow', 'Glow']];
+export function HomeHeroPicker({ c }) {
+  const { can, requireFeature } = usePlan();
+  const { prefs, setPref } = c;
+  const current = prefs.homeHero || 'auto';
+  const [tab, setTab] = useState(() => (current.startsWith('zodiac:') ? 'zodiac' : current.startsWith('glow:') ? 'glow' : 'scenery'));
+  const [all, setAll] = useState(false);
+  const premium = can(HERO_FEATURE);
+  const pick = (id) => { if (isPremiumHero(id) && !requireFeature(HERO_FEATURE)) return; setPref('homeHero', id); setAll(false); };
+  const lock = !premium && <span className="hero-lock" aria-hidden="true"><Icon name="lock" size={11} /> {tr('Pro')}</span>;
+  const tile = (id, name, style, extra) => <button type="button" key={id} className={`hero-tile${current === id ? ' selected' : ''}${extra || ''}`} aria-pressed={current === id}
+    aria-label={isPremiumHero(id) && !premium ? tr('{name} (Pro)', { name }) : name} onClick={() => pick(id)}>
+    <span className="hero-tile-art" style={style} aria-hidden="true" />{isPremiumHero(id) && lock}<small>{name}</small>
+  </button>;
+  const sceneryTile = (sc) => tile(`scenery:${sc.id}`, sc.name, { backgroundImage: `url("${sc.thumb}")` });
+  const shortList = SCENERIES.slice(0, PICKS);
+  const chosen = current.startsWith('scenery:') && SCENERIES.find(sc => `scenery:${sc.id}` === current);
+  if (chosen && !shortList.includes(chosen)) shortList.unshift(chosen);
+  const defaultThumb = SCENERIES.find(sc => sc.id === DEFAULT_SCENERY)?.thumb;
+  return <section className="card pad hero-settings">
+    <div className="seg-control hero-tabs" role="tablist" aria-label={tr('Home header style')}>
+      {HERO_TABS.map(([key, label]) => <button type="button" role="tab" key={key} aria-selected={tab === key} onClick={() => setTab(key)}>{tr(label)}{key !== 'scenery' && !premium && <Icon name="lock" size={11} />}</button>)}
+    </div>
+    <div className="hero-row" role="group" aria-label={tr('Home header background')}>
+      {tab === 'scenery' && <>
+        {tile('auto', tr('Default'), { backgroundImage: defaultThumb ? `url("${defaultThumb}")` : undefined })}
+        {tile('plain', tr('None'), undefined, ' plain')}
+        {shortList.map(sceneryTile)}
+        <button type="button" className="hero-tile more" onClick={() => setAll(true)}><span className="hero-tile-art" aria-hidden="true" /><small>{tr('All')} · {SCENERIES.length}</small></button>
+      </>}
+      {tab === 'zodiac' && ZODIAC.map(z => tile(`zodiac:${z.id}`, tr(z.name), { background: `${zodiacBackground(z)} 70% top / cover no-repeat` }))}
+      {tab === 'glow' && GLOWS.map(g => tile(`glow:${g.id}`, tr(g.name), { background: glowBackground(g) }, ' glow'))}
+    </div>
+    <p className="form-note">{premium ? tr('The header stays at the top of Home as you scroll.') : tr('Zodiac and glow headers come with Pro and Pro+. The header stays at the top of Home as you scroll.')}</p>
+    {all && <Sheet title={tr('Home header scenery')} subtitle={tr('{n} sceneries', { n: SCENERIES.length })} onClose={() => setAll(false)} label={tr('Home header scenery')}>
+      <div className="hero-grid">{SCENERIES.map(sceneryTile)}</div>
+    </Sheet>}
+  </section>;
+}
+
 /** Font style and text size. Sizes scale all text without changing the layout (see lib/fontPrefs.js). */
 export function TextSettings({ c }) {
   const { prefs, setPref } = c;
@@ -407,6 +452,8 @@ export function Appearance({ c }) {
         <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
         <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
     </section>
+    <h2 className="group-title">{tr('Home header')}</h2>
+    <HomeHeroPicker c={c} />
     <h2 className="group-title">{tr('Background')}</h2>
     <SceneryPicker c={c} />
     <h2 className="group-title">{tr('Preview')}</h2>

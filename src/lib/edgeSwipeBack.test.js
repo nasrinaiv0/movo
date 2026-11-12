@@ -1,4 +1,4 @@
-import { startEdgeSwipeBack, EDGE_PX } from './edgeSwipeBack';
+import { startEdgeSwipeBack, EDGE_PX, FINISH_MS } from './edgeSwipeBack';
 
 const W = 400;
 let stop, surface, onBack, canGoBack;
@@ -27,7 +27,14 @@ test('a swipe in from the left edge past a third of the width goes back; the scr
   expect(document.documentElement.classList.contains('movo-edge-swiping')).toBe(true);
   touch('touchmove', 200);
   touch('touchend', 0);
+  // The screen finishes sliding out first, then Back runs and everything is reset.
+  expect(onBack).not.toHaveBeenCalled();
+  expect(surface.style.transform).toBe(`translate3d(${W}px,0,0)`);
+  expect(document.documentElement.classList.contains('movo-edge-swiping')).toBe(true);
+  touch('touchstart', 6); touch('touchmove', 200); // no second swipe while finishing
+  jest.advanceTimersByTime(FINISH_MS + 50);
   expect(onBack).toHaveBeenCalledTimes(1);
+  expect(onBack).toHaveBeenCalledWith({ swiped: true });
   expect(surface.style.transform).toBe('');
   expect(document.documentElement.classList.contains('movo-edge-swiping')).toBe(false);
 });
@@ -38,6 +45,7 @@ test('a swipe in from the right edge (moving left) also goes back, sliding the s
   expect(surface.style.transform).toMatch(/translate3d\(-/);
   touch('touchmove', W - 220);
   touch('touchend', 0);
+  jest.advanceTimersByTime(FINISH_MS + 50);
   expect(onBack).toHaveBeenCalledTimes(1);
 });
 
@@ -62,6 +70,7 @@ test('a quick flick goes back even before a third of the width', () => {
   now.mockReturnValue(1100); touch('touchmove', 90);
   touch('touchend', 0);
   now.mockRestore();
+  jest.advanceTimersByTime(FINISH_MS + 50);
   expect(onBack).toHaveBeenCalledTimes(1);
 });
 
@@ -99,4 +108,61 @@ test('with reduced motion nothing moves, but the swipe still goes back', () => {
   expect(surface.style.transform).toBe('');
   touch('touchmove', 250); touch('touchend', 0);
   expect(onBack).toHaveBeenCalledTimes(1);
+});
+
+describe('previous page preview', () => {
+  const snapshot = () => { const node = document.createElement('main'); node.innerHTML = '<h1 id="t">Wallet</h1><button>Pay</button>'; return { node, className: 'screen is-scrolled', scroll: 120 }; };
+  const layer = () => document.querySelector('.movo-edge-preview');
+  beforeEach(() => {
+    stop();
+    const host = document.createElement('div'); host.className = 'app-shell'; document.body.append(host); host.append(surface);
+    stop = startEdgeSwipeBack({ onBack, canGoBack, surface: () => surface, preview: snapshot, animate: true });
+  });
+  afterEach(() => { document.querySelectorAll('.app-shell').forEach(n => n.remove()); });
+
+  test('a blurred, dimmed copy of the previous page sits under the screen and clears as the swipe goes on', () => {
+    touch('touchstart', 4); touch('touchmove', 40);
+    const l = layer();
+    expect(l).not.toBeNull();
+    expect(l.nextElementSibling).toBe(surface); // directly under the sliding screen
+    expect(l.getAttribute('aria-hidden')).toBe('true');
+    const page = l.querySelector('.edge-preview-screen');
+    expect(page.className).toBe('screen is-scrolled edge-preview-screen');
+    expect(page.textContent).toBe('WalletPay');
+    expect(page.style.transform).toBe('translate3d(0,-120px,0)'); // where the page was left
+    const blurAt = () => parseFloat(/blur\(([\d.]+)px\)/.exec(page.style.filter)[1]);
+    const shadeAt = () => parseFloat(l.querySelector('.movo-edge-shade').style.opacity);
+    const parallaxAt = () => parseFloat(/translate3d\((-?[\d.]+)px/.exec(l.style.transform)[1]);
+    const [b1, s1, p1] = [blurAt(), shadeAt(), parallaxAt()];
+    expect(b1).toBeGreaterThan(4); expect(s1).toBeGreaterThan(0.35); expect(p1).toBeLessThan(-80);
+    touch('touchmove', 300);
+    expect(blurAt()).toBeLessThan(b1); expect(shadeAt()).toBeLessThan(s1); expect(parallaxAt()).toBeGreaterThan(p1);
+    touch('touchend', 0);
+    expect(blurAt()).toBe(0); expect(shadeAt()).toBe(0); // fully in view while the screen slides out
+    jest.advanceTimersByTime(FINISH_MS + 50);
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(layer()).toBeNull();
+  });
+
+  test('a cancelled swipe slides the preview back out and removes it', () => {
+    const now = jest.spyOn(Date, 'now');
+    now.mockReturnValue(1000); touch('touchstart', 4);
+    now.mockReturnValue(1500); touch('touchmove', 40);
+    now.mockReturnValue(2000); touch('touchmove', 80);
+    touch('touchend', 0); now.mockRestore();
+    expect(layer()).not.toBeNull();
+    jest.advanceTimersByTime(260);
+    expect(layer()).toBeNull();
+    expect(onBack).not.toHaveBeenCalled();
+    expect(document.documentElement.classList.contains('movo-edge-swiping')).toBe(false);
+  });
+
+  test('no preview with a sheet open or with reduced motion', () => {
+    stop(); stop = startEdgeSwipeBack({ onBack, canGoBack, surface: () => null, preview: snapshot, animate: true });
+    touch('touchstart', 4); touch('touchmove', 60);
+    expect(layer()).toBeNull(); touch('touchend', 0);
+    stop(); stop = startEdgeSwipeBack({ onBack, canGoBack, surface: () => surface, preview: snapshot, animate: false });
+    touch('touchstart', 4); touch('touchmove', 60);
+    expect(layer()).toBeNull(); touch('touchend', 0);
+  });
 });

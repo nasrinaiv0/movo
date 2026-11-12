@@ -29,7 +29,8 @@ export function readChrome(doc = document) {
       back: !!back,
       backLabel: back?.getAttribute('aria-label') || 'Back',
       backSvg: back?.querySelector('svg') || null,
-      actions: actions.map(b => ({ label: b.getAttribute('aria-label') || b.textContent.trim(), dot: !!b.querySelector('.red-dot'), svg: b.querySelector('svg') })),
+      // primary: the Plus ("add") action, drawn as a filled circle; the other icons have no background.
+      actions: actions.map(b => ({ label: b.getAttribute('aria-label') || b.textContent.trim(), dot: !!b.querySelector('.red-dot'), primary: b.classList.contains('header-add-action') || b.classList.contains('accent'), svg: b.querySelector('svg') })),
     },
     dock: {
       // Hidden during setup too: the web nav is locked (App.js setupDone) until the Terms are accepted.
@@ -101,7 +102,7 @@ export function startNativeChrome() {
       // The iOS dock tints its active tab with this colour: the plan colour (platinum / gold, a solid tone because the
       // native bar cannot draw the web gradient) when the navigation follows the plan, else the app accent.
       accent: toHex(styles.getPropertyValue('--nav-tier').trim() || styles.getPropertyValue('--accent').trim() || '#10a866'),
-      top: { hidden: state.top.hidden, title: state.top.title, back: state.top.back, backLabel: state.top.backLabel, backIcon, actions: state.top.actions.map((a, i) => ({ label: a.label, dot: a.dot, icon: actionIcons[i] })) },
+      top: { hidden: state.top.hidden, title: state.top.title, back: state.top.back, backLabel: state.top.backLabel, backIcon, actions: state.top.actions.map((a, i) => ({ label: a.label, dot: a.dot, primary: a.primary, icon: actionIcons[i] })) },
       dock: { ...state.dock, tabs: state.dock.tabs.map((t, i) => ({ label: t.label, badge: t.badge, original: t.original, icon: tabIcons[i] })) },
     };
     const key = JSON.stringify(payload);

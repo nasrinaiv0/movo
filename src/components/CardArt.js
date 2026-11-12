@@ -217,9 +217,11 @@ const NETWORKS = { visa: 'Visa', mastercard: 'Mastercard', 'american express': '
  *   bottom: masked number, balance · card network
  * Any sticker can sit behind it; with none, a palette matched to the institution is drawn.
  */
-export default function CardArt({ a, show, styleId, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape', qrCode = '', onQrClick }) {
+export default function CardArt({ a, show, styleId, preview, compact, displayMode = 'details', visibleFields = {}, cardNetwork = '', orientation = 'landscape', qrCode = '', onQrClick, formatSample = false }) {
   const { can } = usePlan();
-  if (!can('portraitCards')) orientation = 'landscape';
+  // Without Pro, cards are drawn landscape. A format sample (the Portrait tile in Sort & view) still shows the true
+  // portrait layout so people can see what they would get; choosing it asks to upgrade (Wallet.setWv).
+  if (!can('portraitCards') && !formatSample) orientation = 'landscape';
   if ((isStorageStickerId(styleId) && !can('premiumStickers')) || (String(styleId || '').startsWith('custom:') && !can('styleUploads'))) styleId = '';
   if (!can('cardAnimations')) compact = true;
   const custom = useCustomStickers();

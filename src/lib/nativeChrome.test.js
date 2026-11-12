@@ -51,3 +51,10 @@ test('the native dock stays hidden while setup is unfinished (locked web nav)', 
     <nav class="bottom-nav is-locked"><button class="nav-item nav-active" aria-label="Home" disabled><svg></svg></button><button class="nav-item" aria-label="Wallet" disabled><svg></svg></button></nav>`);
   expect(readChrome(doc).dock.hidden).toBe(true);
 });
+
+test('the Plus action is marked primary so the native top bar draws it filled; other icons are plain', () => {
+  const doc = page(`<main class="screen"><header class="screen-header root"><div class="title-block"><h1>Wallet</h1></div>
+    <div class="header-actions"><div class="header-utility-group"><button class="round-button" aria-label="Edit"><svg></svg></button><button class="round-button" aria-label="Notifications"><svg></svg></button></div>
+    <button class="round-button accent header-add-action" aria-label="New account"><svg></svg></button></div></header></main>`);
+  expect(readChrome(doc).top.actions.map(a => [a.label, a.primary])).toEqual([['Edit', false], ['Notifications', false], ['New account', true]]);
+});

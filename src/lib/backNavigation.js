@@ -23,6 +23,8 @@ export function createScreenTrail(limit = 40) {
     /** The screen to return to, removed from the trail; undefined when there is none. */
     back() { return trail.pop(); },
     clear() { trail = []; },
+    /** The screen Back would return to, without removing it. */
+    peek() { return trail[trail.length - 1]; },
     size() { return trail.length; },
   };
 }
