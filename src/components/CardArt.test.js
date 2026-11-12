@@ -56,3 +56,13 @@ test('debit cards continue to show their balance without credit utilization', ()
   expect(el.querySelector('.ccx-balance').textContent).toContain('522,300');
   act(() => root.unmount());
 });
+
+test('without a plan, cards are landscape, but the Portrait format sample still shows the portrait layout', () => {
+  const a = { id: 'p', name: 'Atome', institution_name: 'Atome', account_type: 'card', cardKind: 'credit', balance: -559, currency: 'PHP' };
+  const used = render(<CardArt a={a} show orientation="portrait" />);
+  expect(used.el.querySelector('.credit-card').className).toContain('orientation-landscape');
+  act(() => used.root.unmount());
+  const sample = render(<CardArt a={a} show orientation="portrait" formatSample />);
+  expect(sample.el.querySelector('.credit-card').className).toContain('orientation-portrait');
+  act(() => sample.root.unmount());
+});

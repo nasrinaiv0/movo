@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { isInteracting, modalOpen } from './interaction';
 
 /*
  * The MOVO ram: a small WebGL scene for the Home mascot. The model, texture and part weights live in
@@ -182,6 +183,8 @@ function spriteTextures() {
  * Mounts the ram into `container`. Returns { setMood, poke, setActive, dispose }.
  * `still` renders single frames (reduced motion): the mood still shows, nothing loops.
  */
+const FRAME_MS = 1000 / 30 - 2; // a 30 fps cap (with a little slack so 60 Hz screens hit every other frame)
+
 export function createRamScene(container, { mood = 'cute', still = false, base = '/mascot/', onReady, onError } = {}) {
   let disposed = false; let active = true; let raf = 0; let ready = false;
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
@@ -386,8 +389,13 @@ export function createRamScene(container, { mood = 'cute', still = false, base =
     renderer.render(scene, cam);
   }
 
+  /*
+   * Draw at most 30 times a second, and skip drawing while the person is touching or scrolling or a sheet or dialog
+   * is open (lib/interaction.js): the idle animation then never competes with taps, scrolling or pop-ups.
+   */
   function frame(now) {
     raf = 0; if (disposed || !active) return;
+    if ((last && now - last < FRAME_MS) || isInteracting() || modalOpen()) { raf = requestAnimationFrame(frame); return; }
     const dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016; last = now;
     step(dt); raf = requestAnimationFrame(frame);
   }

@@ -4,6 +4,7 @@ import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
 import { captureReferralFromUrl } from './lib/referrals';
+import { installInteractionTracking } from './lib/interaction';
 
 // The owner console (/owner) loads separately; customers never download it.
 const OwnerConsole = React.lazy(() => import('./owner/OwnerConsole'));
@@ -20,6 +21,9 @@ const ownerRoute = window.location.pathname === '/owner' || window.location.path
 if (ownerRoute) document.getElementById('movo-splash')?.remove();
 // A friend's download link (?ref=M78038) keeps the code on this device for the free month or Refer MOVO.
 else captureReferralFromUrl();
+
+// Passive touch tracking: decorative animation steps aside while the person interacts, and iOS shows :active at once.
+installInteractionTracking();
 
 const root = createRoot(container);
 const render = () => root.render(

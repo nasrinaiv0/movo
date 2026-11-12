@@ -21,7 +21,13 @@ test('iOS Keychain and Android Keystore protect refresh tokens at rest', () => {
 });
 test('native app switcher previews and Android device backups are protected', () => {
   expect(fromRoot('ios/App/App/SceneDelegate.swift')).toContain('sceneWillResignActive');
-  expect(fromRoot('android/app/src/main/java/com/nasrinai/movo/MainActivity.java')).toContain('FLAG_SECURE');
+  // Screenshots are allowed while MOVO is in use (owner, 2026-11-12); the recent-apps preview stays covered.
+  const activity = fromRoot('android/app/src/main/java/com/nasrinai/movo/MainActivity.java');
+  expect(activity).toContain('setRecentsScreenshotEnabled(false)');
+  expect(activity).toMatch(/onPause\(\) \{[\s\S]*?addFlags\(WindowManager\.LayoutParams\.FLAG_SECURE\)[\s\S]*?super\.onPause\(\)/);
+  expect(activity).toMatch(/onResume\(\) \{[\s\S]*?clearFlags\(WindowManager\.LayoutParams\.FLAG_SECURE\)/);
+  const onCreate = activity.slice(activity.indexOf('onCreate('), activity.indexOf('onPause('));
+  expect(onCreate).not.toMatch(/addFlags\(WindowManager\.LayoutParams\.FLAG_SECURE\)/);
   expect(fromRoot('android/app/src/main/AndroidManifest.xml')).toContain('android:allowBackup="false"');
   expect(fromRoot('android/app/src/main/res/xml/data_extraction_rules.xml')).toContain('<device-transfer>');
 });

@@ -154,14 +154,10 @@ export default function TutorialVideo({ onDone, chapters = CHAPTERS, src = VIDEO
   const fill = (i) => (i < index ? 100 : i > index ? 0 : Math.min(100, Math.max(0, ((time - chapters[i].at) / Math.max(0.1, end(i) - chapters[i].at)) * 100)));
   const toggleSound = () => { const v = videoRef.current; const next = !muted; if (v) v.muted = next; setMuted(next); if (!next && !playing) play(); };
 
+  // The recording plays on a phone screen (owner, 2026-11-12): a generic modern phone with a dynamic-island cut-out,
+  // a status bar and a home indicator, drawn in CSS so it stays sharp at any size. Caption and controls sit around it.
   return <div className="tv-backdrop" role="presentation">
-    <div className="tv-player tv-film" role="dialog" aria-modal="true" aria-label={tr('MOVO video guide')} aria-roledescription={tr('video')}>
-      <video ref={videoRef} className="tv-video" src={src} poster={poster} playsInline preload="auto" muted={muted}
-        aria-label={tr('MOVO video guide')}
-        onTimeUpdate={e => setTime(e.currentTarget.currentTime || 0)} onLoadedMetadata={e => setDuration(e.currentTarget.duration || 0)}
-        onPlay={() => { setPlaying(true); setEnded(false); }} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); setEnded(true); }}
-        onError={() => setFailed(true)} />
-      <div className="tv-shade" aria-hidden="true" />
+    <div className="tv-player tv-film tv-framed" role="dialog" aria-modal="true" aria-label={tr('MOVO video guide')} aria-roledescription={tr('video')}>
       <div className="tv-progress" aria-hidden="true">{chapters.map((c, i) => <span key={c.id}><i style={{ width: `${ended ? 100 : fill(i)}%` }} /></span>)}</div>
       <div className="tv-top">
         <span className="tv-count">{tr('{n} of {total}', { n: index + 1, total: chapters.length })}</span>
@@ -169,10 +165,28 @@ export default function TutorialVideo({ onDone, chapters = CHAPTERS, src = VIDEO
         <button type="button" className="tv-icon" aria-label={playing ? tr('Pause') : tr('Play')} onClick={() => (playing ? pause() : play())}><Icon name={playing ? 'pause' : 'play'} size={16} /></button>
         <button type="button" className="tv-skip" onClick={() => onDone('skipped')}>{tr('Skip')}</button>
       </div>
-      <div className="tv-hold" onPointerDown={() => { if (playing) { heldRef.current = true; pause(); } }} onPointerUp={() => { if (heldRef.current) { heldRef.current = false; play(); } }} onPointerLeave={() => { if (heldRef.current) { heldRef.current = false; play(); } }} aria-hidden="true" />
-      <button type="button" className="tv-tap tv-prev" aria-label={tr('Previous')} onClick={() => seek(index - 1)} disabled={index === 0} />
-      <button type="button" className="tv-tap tv-next" aria-label={tr('Next')} onClick={() => seek(index + 1)} />
-      {!playing && !ended && <button type="button" className="tv-bigplay" aria-label={tr('Play')} onClick={play}><Icon name="play" size={30} /></button>}
+      <div className="tv-stage-frame">
+        <div className="tv-device">
+          <div className="tv-screen">
+            <div className="tv-statusbar" aria-hidden="true">
+              <b>9:41</b><span className="tv-island" />
+              <span className="tv-sb-icons"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" /><rect x="5" y="5.5" width="3" height="6.5" rx="1" /><rect x="10" y="3" width="3" height="9" rx="1" /><rect x="15" y="0" width="3" height="12" rx="1" /></svg>
+                <svg viewBox="0 0 16 12"><path d="M8 11.4 5.6 8.9a3.4 3.4 0 0 1 4.8 0Z" /><path d="M3.4 6.7a6.5 6.5 0 0 1 9.2 0l-1.4 1.4a4.5 4.5 0 0 0-6.4 0Z" /><path d="M1.2 4.5a9.6 9.6 0 0 1 13.6 0l-1.4 1.4a7.6 7.6 0 0 0-10.8 0Z" /></svg>
+                <svg viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" strokeOpacity=".45" /><rect x="2.5" y="2.5" width="19" height="8" rx="2" /><rect x="25" y="4.5" width="1.6" height="4" rx=".8" opacity=".45" /></svg></span>
+            </div>
+            <video ref={videoRef} className="tv-video" src={src} poster={poster} playsInline preload="auto" muted={muted}
+              aria-label={tr('MOVO video guide')}
+              onTimeUpdate={e => setTime(e.currentTarget.currentTime || 0)} onLoadedMetadata={e => setDuration(e.currentTarget.duration || 0)}
+              onPlay={() => { setPlaying(true); setEnded(false); }} onPause={() => setPlaying(false)} onEnded={() => { setPlaying(false); setEnded(true); }}
+              onError={() => setFailed(true)} />
+            <span className="tv-homebar" aria-hidden="true" />
+            {!playing && !ended && <button type="button" className="tv-bigplay" aria-label={tr('Play')} onClick={play}><Icon name="play" size={30} /></button>}
+          </div>
+        </div>
+        <div className="tv-hold" onPointerDown={() => { if (playing) { heldRef.current = true; pause(); } }} onPointerUp={() => { if (heldRef.current) { heldRef.current = false; play(); } }} onPointerLeave={() => { if (heldRef.current) { heldRef.current = false; play(); } }} aria-hidden="true" />
+        <button type="button" className="tv-tap tv-prev" aria-label={tr('Previous')} onClick={() => seek(index - 1)} disabled={index === 0} />
+        <button type="button" className="tv-tap tv-next" aria-label={tr('Next')} onClick={() => seek(index + 1)} />
+      </div>
       <div className="tv-caption" key={chapter.id}>
         <h2>{tr(chapter.title)}</h2>
         <p aria-live="polite">{tr(chapter.text)}</p>

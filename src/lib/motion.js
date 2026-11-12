@@ -6,14 +6,23 @@ export function canAnimate() {
   try { return !window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return true; }
 }
 
+/*
+ * Going back to a page shows it as it was, at once (owner, 2026-11-12): for a moment after a Back, amounts that
+ * appear start at their value instead of counting up from zero.
+ */
+let instantUntil = 0;
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+export function showInstantly(ms = 500) { instantUntil = now() + ms; }
+export function isInstant() { return now() < instantUntil; }
+
 /** Eases a number toward `target` (ease-out quart). First paint counts up from zero. */
 /** Balances ease between values in 400ms (chart range of the motion system); the value shown at rest is always exact. */
 export function useCountUp(target, duration = 400) {
-  const animate = canAnimate();
+  const animate = canAnimate() && !isInstant();
   const [value, setValue] = useState(animate ? 0 : target);
   const from = useRef(animate ? 0 : target);
   useEffect(() => {
-    if (!canAnimate()) { setValue(target); from.current = target; return undefined; }
+    if (!canAnimate() || isInstant()) { setValue(target); from.current = target; return undefined; }
     const start = performance.now(); const origin = from.current; let raf;
     const tick = (now) => {
       const t = Math.min(1, (now - start) / duration); const eased = 1 - (1 - t) ** 4;
