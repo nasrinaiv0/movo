@@ -8351,3 +8351,51 @@ html.movo-edge-swiping .movo-app main.screen { position: relative; z-index: 1; m
 .enter-back { --dx: 0px; --dy: 0px; }
 /* Back shows the page at once (App.js finishes nested entrance animations before paint as well). */
 .screen.enter-back, .screen.enter-back > * { animation: none; }
+
+/* ===== Top header buttons (owner, 2026-11-12) =====
+   Icons stand on the page: no capsule, border, ring or fill around the utility icons or the back button, and they
+   sit closer together (40px apart, 44px tall touch areas). Only the Plus ("add") button keeps its filled circle.
+   Applies on the web and Android; the iPhone app's native top bar does the same in GlassChrome.swift. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.header-utility-group, .home-utility-pill, .header-action-buttons) {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center;
+  width: auto !important;
+  grid-template-columns: none !important;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.header-utility-group, .home-utility-pill, .header-action-buttons)::before,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.header-utility-group, .home-utility-pill, .header-action-buttons)::after { display: none !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.round-button, .back-button, .home-header-action):not(.accent):not(.header-add-action) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: 0;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.round-button, .back-button, .home-header-action):not(.accent):not(.header-add-action)::after { display: none !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.header-utility-group, .home-utility-pill) > :is(.round-button, .home-header-action) {
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  border-radius: 12px !important;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.round-button, .back-button, .home-header-action):not(.accent):not(.header-add-action):active { opacity: .55; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app :is(.screen-header, .sub-header) :is(.round-button, .back-button, .home-header-action):not(.accent):not(.header-add-action):focus-visible { outline: 2px solid var(--accent) !important; outline-offset: -4px; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen-header .header-actions { gap: 6px !important; column-gap: 6px !important; }
+
+/* Light mode with no scenery: an off-white ("milk white") page instead of cool grey. Tinted themes keep theirs. */
+.movo-app.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purple):not(.tint-orange) { --bg: #faf9f6; background: #faf9f6; }
+body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purple):not(.tint-orange)) { background: #faf9f6; }

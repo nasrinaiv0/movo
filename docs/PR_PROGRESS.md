@@ -1,3 +1,7 @@
+## 2026-11-12 — Plain header buttons and an off-white light background
+
+Owner request: top header icons have no capsule, border or fill and sit closer together (40 px apart, 44 px tall touch areas); only the Plus buttons stay filled, on the web/Android and in the iPhone app's native top bar. Light mode with no scenery uses an off-white `#faf9f6` page. Validation: Jest 204 suites / 1,240 tests, tsc, strict build, light/dark header screenshots (see `docs/engineering/updates/2026-11-12-header-buttons-milk-white.md`). Not run: real phones.
+
 ## 2026-11-12 — Back shows the previous page faster
 
 Owner request: going back now shows the previous page at once. Back moves (device Back, swipe, on-screen back arrow) skip the entrance motion, finish nested entrance animations before the first paint, show amounts at their value instead of counting up, and restore the page's scroll position. Measured after Back (production build, mobile emulation): 490–1,090 ms before, 20–120 ms after. Forward navigation is unchanged. Validation: Jest 204 suites / 1,239 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-faster-back.md`).
