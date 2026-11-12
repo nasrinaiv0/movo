@@ -1,3 +1,13 @@
+## 2026-11-12 — Plans panel: follows light/dark mode; amounts on every plan
+
+Owner request: improve the plans panel's colour adaptability in light and dark mode, and organize it with amounts.
+- In light mode the panel now uses MOVO's off-white sheet, with readable gold and platinum accents and light selected-tile tints; dark mode keeps the black panel.
+- Each tier tile shows its amount. Free shows ₱0 (home currency). In the apps, Pro and Pro+ show the store's own localized price per month or year for the chosen period, and Annual shows the best saving (for example −17%). On the website, where there is no store, they say "Price in app"; no price is invented, per `docs/commercial/STORE_BILLING_SETUP.md`.
+- The repeated "Price shown by the App Store or Google Play" line is gone, and the large price appears only when the store provides one.
+- The panel sizes to its content instead of a fixed 800px height.
+
+Validation: Jest 219 suites / 1,320 tests (PlanOffer tests updated: tile amounts, saving badge, no invented web price), strict build, browser screenshots in light and dark. See `docs/engineering/updates/2026-11-12-plans-panel-light-and-prices.md`. Not run: store prices on a real device.
+
 ## 2026-11-12 — Account pickers: icon and amount only for the available balance
 
 Owner request: in the transfer sheet, remove the "Available balance" text and show only the wallet icon and the amount. The account pickers in the transaction sheet (From, To and Paid with) now show the wallet icon, or the card icon for credit, followed by the amount. "Available balance" and "Available credit" stay as screen-reader text, so VoiceOver and TalkBack still say them. With the room freed, the full amount shows instead of "₱1…". Below 400px wide, the two side-by-side pickers use a 24px logo and tighter gaps, so amounts such as ₱123,152.00 fit. Checked in the browser at 430, 390, 375 and 360px with no truncation. Validation: Jest (`AccountPicker.test.js` asserts the label is screen-reader-only), strict build. Not run: real devices.

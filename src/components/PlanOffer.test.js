@@ -36,11 +36,13 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   expect(stops).toEqual(expect.arrayContaining(['#f1d3e2', '#cdeef2', '#f3e7c8'])); // rose, aqua, champagne
   // No "Gold MOVO" / "Platinum MOVO" labels on the tiles: the mark's colour says it (owner, 2026-11-09).
   expect(el.querySelector('.plan-tile-chip')).toBeNull();
-  expect(tiles.map(t => t.textContent)).toEqual(['FreeCurrent', 'Pro', 'Pro+']);
+  // Every tile shows its amount (owner, 2026-11-12): Free ₱0; paid plans the store price, or "Price in app" without a store.
+  expect(tiles.map(t => t.textContent)).toEqual(['CurrentFree₱0', 'ProPrice in app', 'Pro+Price in app']);
   expect(tiles[1].getAttribute('aria-checked')).toBe('true');
-  // On the web no price is invented.
-  expect(el.textContent).toContain('Price shown by the App Store or Google Play');
-  expect(el.textContent).not.toMatch(/₱\s?\d/);
+  // On the web no price is invented: paid tiles say "Price in app"; the only amount is Free's ₱0.
+  expect(el.querySelectorAll('.plan-tile-price.is-note')).toHaveLength(2);
+  expect(el.textContent).not.toMatch(/₱\s?[1-9]/);
+  expect(el.querySelector('.plan-price')).toBeNull();
   cleanup();
 });
 
@@ -69,8 +71,13 @@ test('in the app, the store price drives the panel and Continue buys the selecte
   expect(el.querySelector('.plan-price').textContent).toContain('₱349.00');
   expect(el.querySelector('.plan-price').textContent).toContain('or ₱3,490.00 / year');
   expect(el.querySelector('.plan-price').textContent).toContain('(save 17%)');
-  await act(async () => button(el, 'Annual').click());
+  // The tiles carry the store amount for the chosen period, and Annual shows the saving.
+  expect(el.querySelectorAll('.plan-tile-price')[2].textContent).toBe('₱349.00/mo');
+  const annualButton = Array.from(el.querySelectorAll('.plan-period button')).find(b => b.textContent.startsWith('Annual'));
+  expect(annualButton.querySelector('.plan-period-save').textContent).toBe('−17%');
+  await act(async () => annualButton.click());
   expect(el.querySelector('.plan-price strong').textContent).toBe('₱3,490.00');
+  expect(el.querySelectorAll('.plan-tile-price')[2].textContent).toBe('₱3,490.00/yr');
   await act(async () => el.querySelector('.plan-cta').click());
   expect(purchaseStoreProduct).toHaveBeenCalledWith('com.nasrinai.movo.proplus.annual', session);
   expect(handlers.onRefresh).toHaveBeenCalled();

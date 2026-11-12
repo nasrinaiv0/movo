@@ -8779,3 +8779,44 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   .movo-app.movo-app .tx-accounts.two .acct-pick-chevron { width: 14px; height: 14px; }
   .movo-app.movo-app .tx-accounts.two .acct-pick-availability strong { font-size: 11px; }
 }
+
+/* ===== Plans panel: amounts on every tier and light/dark adaptability (owner, 2026-11-12) ===== */
+.movo-app .plan-tile { padding-top: 14px; }
+.movo-app .plan-tile-price { min-width: 0; max-width: 100%; padding: 0 4px; font-size: 12.5px; font-weight: 650; color: var(--pp-ink); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .plan-tile-price.is-note { font-size: 11px; font-weight: 500; color: var(--pp-muted); white-space: normal; text-align: center; line-height: 1.25; }
+.movo-app .plan-tile .plan-tile-badge { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 2px 8px; border-radius: 99px; background: var(--pp-ink); color: var(--pp-bg, #09090a); font-size: 10px; font-weight: 700; white-space: nowrap; }
+.movo-app .plan-tiles { padding-top: 6px; }
+.movo-app .plan-period button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.movo-app .plan-period-save { padding: 1px 6px; border-radius: 99px; background: color-mix(in srgb, var(--pp-green) 22%, transparent); color: var(--pp-green); font-size: 11px; font-style: normal; font-weight: 700; }
+
+/* Light mode: the panel follows the app's off-white sheet instead of staying black. Gold and platinum accents are
+   darkened enough to read on white; the action buttons keep their tier colours. */
+.movo-app.movo-app.movo-app:not(.theme-dark) .sheet.plan-panel {
+  --pp-ink: #15151a; --pp-muted: #6b6b76; --pp-line: rgba(20, 20, 30, .1); --pp-tile: #f2f1ed; --pp-bg: #faf9f6;
+  --pp-gold-soft: #9a6f12; --pp-plat-ink: #6d7385; --pp-green: #1f9d5c;
+  background: #faf9f6; box-shadow: 0 -14px 50px rgba(0, 0, 0, .14);
+}
+.movo-app.movo-app.movo-app:not(.theme-dark) .sheet.plan-panel .sheet-grabber { background: rgba(0, 0, 0, .18); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .sheet.plan-panel .sheet-close { background: rgba(0, 0, 0, .06); color: var(--pp-ink); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-period { background: rgba(0, 0, 0, .04); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-period button.selected { background: #fff; color: var(--pp-ink); box-shadow: 0 1px 6px rgba(0, 0, 0, .1); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile { background: var(--pp-tile); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-free { background: #e7f5ed; filter: none; box-shadow: 0 0 0 1.5px #3dba78, 0 8px 22px -12px rgba(31, 157, 92, .55); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-pro { background: #fbf2da; filter: none; box-shadow: 0 0 0 1.5px #d9ac45, 0 8px 22px -12px rgba(201, 150, 40, .6); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-pro_plus { background: #eceef3; filter: none; box-shadow: 0 0 0 1.5px #a9aec0, 0 8px 22px -12px rgba(100, 108, 130, .55); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-features { background: #fff; border-color: var(--pp-line); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-features li .movo-icon { color: #b58517; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-features.tier-free li .movo-icon { color: var(--pp-green); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-features.tier-pro_plus li .movo-icon { color: var(--pp-plat-ink); }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-price small em { color: #9a6f12; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-panel-foot { background: #faf9f6; box-shadow: 0 -18px 18px -6px #faf9f6; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-cta.tier-pro_plus { background: #dfe2e8; color: #15151a; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-cta.tier-free { background: #1f9d5c; color: #fff; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .sheet.plan-panel .plan-referral-input { background: #fff; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile .plan-tile-badge { background: var(--pp-ink); color: #fff; }
+/* The plans panel sizes to its content (it was a fixed 800px tall with an empty band above the button). */
+.movo-app.movo-app.movo-app .sheet.plan-offer-sheet.plan-panel { height: auto; max-height: 94dvh; }
+.movo-app.movo-app.movo-app .plan-panel .plan-panel-foot { margin-top: 4px; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-free { border-color: #3dba78; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-pro { border-color: #d9ac45; }
+.movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-pro_plus { border-color: #a9aec0; }
