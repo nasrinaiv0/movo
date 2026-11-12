@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { webcrypto } from 'crypto';
 import { cachedList, readCachedList, writeCachedList } from './offlineReadCache';
 import { supabase } from './supabaseClient';
-import { CACHE_PREFIX } from './financeCacheCrypto';
+import { CACHE_PREFIX, encryptFinancialCache } from './financeCacheCrypto';
 
 jest.mock('./supabaseClient', () => ({ supabase: { auth: { getSession: jest.fn() } } }));
 jest.mock('./platform', () => ({ isNativeApp: () => false }));
@@ -18,6 +18,7 @@ beforeEach(() => { window.localStorage.clear(); signedIn(OWNER); });
 
 test('cloud lists are encrypted with AES-256-GCM and available offline after restart', async () => {
   const rows = [{ id: 'l1', name: 'Private car loan', amount: 1234.56 }];
+  await expect(encryptFinancialCache(OWNER, 'loans', { owner: OWNER, savedAt: '2026-11-12', rows })).resolves.toContain('"ct"');
   await expect(cachedList('loans', async () => rows)).resolves.toEqual(rows);
   const raw = localStorage.getItem(CACHE_PREFIX + OWNER + ':loans');
   expect(raw).not.toContain('Private car loan');

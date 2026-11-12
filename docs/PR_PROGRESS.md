@@ -1,3 +1,10 @@
+## 2026-11-12 — PR #289 CI repair (documented before commit)
+
+- Initial exact-head Phase 1 CI on `73db23e` **failed**; 220/225 suites passed. Root evidence: new encryption tests could not persist a non-extractable CryptoKey under jsdom's fake IndexedDB; the Jest-only TextEncoder polyfill was read-only and broke existing suites assigning it.
+- Fix **test harness only**: writable TextEncoder/TextDecoder and Node's native structuredClone for CryptoKey preservation in jsdom. Do not weaken AES-GCM or tampering tests. Add direct cryptographic assertions so a future failure surfaces its original exception instead of a masked cache miss.
+- Additional independent hardening: serialize the browser key's final check-and-put in one IndexedDB read/write transaction to prevent two tabs creating different keys. No signed-in data, backend schema or live systems changed.
+- Validate with exact-head CI, native Android/iOS builds and preview; PR remains open and unmerged.
+
 ## 2026-11-12 — Offline financial read-cache encryption (PR staging, production unchanged)
 
 - Owner asked to harden financial data stored in plaintext by PR #287's new `offlineReadCache.js`.

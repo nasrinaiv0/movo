@@ -41,3 +41,9 @@
 4. Simulate local quota and migration interruption. Verify encrypted copy is never replaced by plaintext and unsynced IndexedDB operations remain intact.
 5. Test web Safari/Chrome with non-extractable CryptoKey persistence, tamper, and loss of IndexedDB key. Document browser-origin/XSS limitation.
 6. Verify Android native debug/release compilation, iOS native compilation, app bundle signing, CI and Vercel **preview** before any production action.
+
+## Follow-up CI repair after first run (before commit)
+- Phase 1 on `73db23e` failed the Jest suite: 5 failing suites, including test-only writable TextEncoder conflict; new Web/Native finance cache tests returned missing ciphertext under jsdom's fake IndexedDB, indicating missing native structuredClone for non-extractable CryptoKey test serialization. The cause will be confirmed by added direct crypto assertions on the next CI run.
+- Test setup now uses writable Node TextEncoder/Decoder and Node built-in structuredClone (no production polyfills). Native App and web browser cryptography are unchanged.
+- Browser IndexedDB key initialization is hardened with an atomic re-check inside the final readwrite transaction to stop races across tabs.
+- No PR merge, production deployment or destructive migration.

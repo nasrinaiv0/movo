@@ -1,7 +1,7 @@
 import { webcrypto } from 'crypto';
 import { Preferences } from '@capacitor/preferences';
 import { MovoNative } from './native';
-import { CACHE_PREFIX, CACHE_VAULT_KEY } from './financeCacheCrypto';
+import { CACHE_PREFIX, CACHE_VAULT_KEY, encryptFinancialCache } from './financeCacheCrypto';
 import { readCachedList, writeCachedList, migrateLegacyOfflineReadCache } from './offlineReadCache';
 
 jest.mock('./supabaseClient', () => ({ supabase: { auth: { getSession: jest.fn(async () => ({ data: { session: null } })) } } }));
@@ -26,6 +26,7 @@ beforeAll(() => {
 beforeEach(() => { localStorage.clear(); legacyPreferences.clear(); });
 
 test('native app keeps only ciphertext in web storage; vault key lives in Keychain / Keystore', async () => {
+  await expect(encryptFinancialCache(OWNER, 'loans', { owner: OWNER, savedAt: '2026-11-12', rows: [] })).resolves.toContain('"ct"');
   expect(await writeCachedList(OWNER, 'loans', [{ name: 'Private student loan', balance: 8400 }])).toBe(true);
   expect(MovoNative.secureSet).toHaveBeenCalledWith({ key: CACHE_VAULT_KEY, value: expect.any(String) });
   const raw = localStorage.getItem(key('loans'));

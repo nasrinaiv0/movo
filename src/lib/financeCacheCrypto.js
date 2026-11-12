@@ -85,6 +85,7 @@ async function getWebKey(engine) {
     open.onsuccess = async () => {
       database = open.result;
       try {
+        // Fast path: an existing non-exportable key can be used without a write.
         const current = await new Promise((done, error) => {
           const req = database.transaction(DB_STORE, 'readonly').objectStore(DB_STORE).get(DB_KEY);
           req.onsuccess = () => done(req.result);
@@ -93,15 +94,23 @@ async function getWebKey(engine) {
         if (current) { database.close(); resolve(current); return; }
         if (cacheContainsCiphertext()) throw new Error('offline_cache_key_missing');
         const generated = await engine.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-        await new Promise((done, error) => {
+        // The final get-and-put happen in ONE transaction. Another tab may
+        // have initialized the key while WebCrypto generated ours.
+        const selected = await new Promise((done, error) => {
           const tx = database.transaction(DB_STORE, 'readwrite');
-          tx.objectStore(DB_STORE).put(generated, DB_KEY);
-          tx.oncomplete = done;
+          const store = tx.objectStore(DB_STORE);
+          const recheck = store.get(DB_KEY);
+          let key = generated;
+          recheck.onsuccess = () => {
+            if (recheck.result) key = recheck.result;
+            else store.put(generated, DB_KEY);
+          };
+          tx.oncomplete = () => done(key);
           tx.onabort = () => error(tx.error);
           tx.onerror = () => error(tx.error);
         });
         database.close();
-        resolve(generated);
+        resolve(selected);
       } catch (error) { database.close(); reject(error); }
     };
   });
