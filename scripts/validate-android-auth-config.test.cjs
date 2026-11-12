@@ -6,7 +6,7 @@ const path = require('node:path');
 const { validateAndroidAuthConfig } = require('./validate-android-auth-config.cjs');
 
 const valid = {
-  REACT_APP_SUPABASE_URL: 'https://example.supabase.co',
+  REACT_APP_SUPABASE_URL: 'https://cjsjmorqvuvvwbfyztiz.supabase.co',
   REACT_APP_SUPABASE_ANON_KEY: 'sb_publishable_' + 'a'.repeat(40),
 };
 
@@ -21,9 +21,28 @@ test('missing build-time variables block signed Android builds', () => {
 });
 
 test('non-HTTPS and non-root auth origins are blocked', () => {
-  for (const url of ['http://example.supabase.co', 'https://example.supabase.co/auth/v1', 'https://example.supabase.co?key=1']) {
+  for (const url of ['http://cjsjmorqvuvvwbfyztiz.supabase.co', 'https://cjsjmorqvuvvwbfyztiz.supabase.co/auth/v1', 'https://cjsjmorqvuvvwbfyztiz.supabase.co?key=1']) {
     assert.notDeepEqual(validateAndroidAuthConfig({ ...valid, REACT_APP_SUPABASE_URL: url }), []);
   }
+});
+
+test('a different Supabase project is rejected even if it has valid HTTPS and a public key', () => {
+  const errors = validateAndroidAuthConfig({ ...valid, REACT_APP_SUPABASE_URL: 'https://wquuqyjbznijpmiwerdv.supabase.co' });
+  assert.ok(errors.some(message => message.includes('MOVO Supabase project')));
+});
+
+test('a legacy public anon JWT with another project ref is rejected', () => {
+  const payload = Buffer.from(JSON.stringify({ role: 'anon', ref: 'wquuqyjbznijpmiwerdv' })).toString('base64url');
+  const key = 'eyJhbGciOiJIUzI1NiJ9.' + payload + '.signature';
+  assert.ok(validateAndroidAuthConfig({ ...valid, REACT_APP_SUPABASE_ANON_KEY: key })
+    .some(message => message.includes('different Supabase project')));
+});
+
+test('unknown credential formats and non-anon JWTs are rejected', () => {
+  assert.notDeepEqual(validateAndroidAuthConfig({ ...valid, REACT_APP_SUPABASE_ANON_KEY: 'opaqueButUnrecognizedTokenOfSufficientLength' }), []);
+  const payload = Buffer.from(JSON.stringify({ role: 'authenticated' })).toString('base64url');
+  assert.ok(validateAndroidAuthConfig({ ...valid, REACT_APP_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiJ9.' + payload + '.signature' })
+    .some(message => message.includes('anon role')));
 });
 
 test('service-role and secret keys cannot be embedded in the mobile bundle', () => {

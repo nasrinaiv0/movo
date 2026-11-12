@@ -1,3 +1,15 @@
+## 2026-11-12 — PR #282 Android-only sign-in follow-up (before new implementation)
+- Verified downloaded signed Google Play AAB run #43149512317 against actual project URL and active MOVO public key, Browser plugin and native auth callback. The broken installed Android version still needs identification; web authentication is not being modified.
+- Implemented: Android-only email-link callback to `movo://auth-callback`, safe native Browser/Keystore failure diagnostics, and tests for Android, web and iOS behavioral isolation, plus three new messages translated across 11 languages. Live Android device callback and delivery still not proven; keep website/iOS intact. See `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md`. **No merge or production change.**
+
+
+## 2026-11-12 — PR #282: Google and email sign-in recovery; Android public project binding
+- Investigated MOVO production Auth logs (Google redirects/login and limited email events) and Vercel/GitHub build-env separation; did not assume that Google or email is disabled globally.
+- Hardened signed Android AAB configuration: only the verified MOVO Supabase project origin is accepted, and unsafe/non-anon/mismatched legacy keys are rejected at build time. Public `sb_publishable_...` keys still require manual confirmation that they come from MOVO.
+- Google, Apple, and email OTP now classify provider-disabled, bad API key, SMTP/template, rate-limit and network errors into safe user-facing messages; no raw server errors or secrets are rendered. Native browser cancellation releases the loading state.
+- Added focused guard and UI unit tests plus seven new error messages translated in all 11 supported languages; see `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md` for complete investigation, provider settings and release checklist.
+- First exact-head CI found missing new i18n keys (1,277 / 1,278 tests passed), so seven 11-language catalogue rows were added without weakening translation coverage; added signed Android auth validator tests to Phase 1 PR CI. This PR is **no-merge/no-publish** pending all exact-head CI tests, Vercel preview (Sandbox create returned 402 payment_required), live Supabase Google OAuth + SMTP/template configuration, physical Android Google/OTP login and data isolation verification. Production not modified.
+
 ## 2026-11-12 — Fix: Portrait card format preview without a plan
 
 Bug (owner screenshot): on Free, the Portrait tile in Wallet → Sort & view drew a landscape card squeezed into the portrait box, because `CardArt` turns every card landscape without `portraitCards`. The tile now passes `formatSample`, so it shows the true portrait layout as a sample, marked Pro. Choosing it still opens plans, and cards in the wallet stay landscape until Pro is active. Validation: Jest 209 suites / 1,257 tests, tsc, strict build, browser check as Free and Pro+ (see `docs/engineering/updates/2026-11-12-portrait-format-sample.md`). Not run: real devices.
