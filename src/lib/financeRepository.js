@@ -1,6 +1,5 @@
 import { writeHybridFinance } from './hybridFinanceWriter';
 import { supabase } from './supabaseClient';
-import { removeAllAccountQr } from './accountQrStorage';
 import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp, nativePlatform } from './platform';
@@ -305,36 +304,28 @@ export async function savePreferences(userId, prefs, stickers) {
   return unwrap(await requireClient().from('user_preferences').upsert(row, { onConflict: 'user_id' }).select('updated_at').single());
 }
 
-/**
- * Permanently deletes the signed-in user's own records. Row-level security limits every delete to auth.uid();
- * the explicit user filter is a second guard. Transactions go before accounts (accounts are referenced with
- * ON DELETE RESTRICT); deleting conversations cascades to their messages and server-side mappings.
- */
-/** Permanently deletes the signed-in person's MOVO account and all of its cloud data (server: api/account/delete.js). */
-export async function deleteMyAccount() {
+async function eraseMyData(action, userId) {
   const session = unwrap(await requireClient().auth.getSession())?.session;
-  if (!session?.access_token) throw new Error('sign_in_required');
-  const response = await fetch(apiUrl('/api/account/delete'), {
+  if (!session?.access_token || (userId && session.user?.id !== userId)) throw new Error('sign_in_required');
+  const response = await fetch(apiUrl('/api/account/' + action), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
     body: JSON.stringify({ confirm: 'DELETE' }),
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result.deleted) throw new Error(result.error || 'delete_failed');
+  if (!response.ok || !result[action === 'clear' ? 'cleared' : 'deleted']) {
+    throw new Error(result.error || 'delete_failed');
+  }
   return true;
+}
+
+export async function deleteMyAccount(userId) {
+  return eraseMyData('delete', userId);
 }
 
 export async function deleteAllCloudData(userId) {
   if (!userId) throw new Error('A signed-in user is required.');
-  const client = requireClient();
-  // Remove private QR objects before account rows are cleared; RLS restricts this to the current owner.
-  await removeAllAccountQr(userId);
-  for (const table of ['transactions', 'budgets', 'financial_accounts', 'movo_ai_conversations']) {
-    unwrap(await client.from(table).delete().eq('user_id', userId));
-  }
-  // Synced preferences live in an optional table: if its migration is not applied yet there is nothing to delete.
-  const prefs = await client.from('user_preferences').delete().eq('user_id', userId);
-  if (prefs.error && !isMissingTable(prefs.error)) throw prefs.error;
+  return eraseMyData('clear', userId);
 }
 
 

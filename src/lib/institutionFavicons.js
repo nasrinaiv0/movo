@@ -342,11 +342,11 @@ const FAVICON_ENDPOINT = 'https://www.google.com/s2/favicons';
  */
 /*
  * Review status. The owner approved Google S2 dynamic favicons for every curated entry on 2026-11-01 (identification
- * only; see docs/legal/THIRD_PARTY_BRANDS_DYNAMIC_FAVICONS_AND_SUBSCRIPTIONS.md). An entry without its own status uses
- * that approval; set reviewStatus: 'BLOCKED' on an entry to stop its remote icon (e.g. after a rights-holder request).
+ * only; see docs/legal/THIRD_PARTY_BRANDS_DYNAMIC_FAVICONS_AND_SUBSCRIPTIONS.md). Owner preference
+ * never establishes third-party brand rights or commercial use of Google's favicon endpoint.
  */
 export const OWNER_APPROVAL = 'APPROVED_BY_OWNER';
-export const APPROVED_STATUSES = [OWNER_APPROVAL, 'APPROVED_POLICY_REVIEW', 'APPROVED_BY_COUNSEL'];
+export const APPROVED_STATUSES = ['APPROVED_POLICY_REVIEW', 'APPROVED_BY_COUNSEL'];
 
 const byLowerName = new Map(Object.keys(INSTITUTION_FAVICONS).map(k => [k.toLowerCase(), k]));
 
@@ -356,7 +356,7 @@ export function getInstitutionFaviconUrl(institutionName, { size = 128, countryC
   const key = byLowerName.get(institutionName.trim().toLowerCase());
   const entry = key ? INSTITUTION_FAVICONS[key] : null;
   if (!entry) return null;
-  if (!APPROVED_STATUSES.includes(entry.reviewStatus || OWNER_APPROVAL)) return null;
+  if (!APPROVED_STATUSES.includes(entry.reviewStatus)) return null;
   if (countryCode && entry.countryCode && entry.countryCode !== countryCode) return null;
 
   const safeSize = [16, 32, 48, 64, 128].includes(Number(size)) ? Number(size) : 128;

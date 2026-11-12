@@ -14,7 +14,7 @@ test('an account without a fetchable logo becomes a MOVO card in the picked fini
   expect(card.className).toContain('movo-platinum');
   expect(card.getAttribute('aria-label')).toBe('Tiny Rural Bank · MOVO');
   expect(el.querySelector('.ccx-name').textContent).toBe('MOVO');
-  expect(el.querySelector('.ccx-sub').textContent).toBe('Financial Tracker');
+  expect(el.querySelector('.ccx-sub').textContent).toBe('Tiny Rural Bank');
   expect(el.querySelector('.ccx-type').textContent).toBe('Debit CardPlatinum');
   expect(el.querySelector('.ccx-watermark svg.movo-mark')).not.toBeNull();
   expect(el.querySelector('.ccx-net.net-mastercard')).not.toBeNull();
@@ -22,15 +22,16 @@ test('an account without a fetchable logo becomes a MOVO card in the picked fini
   act(() => root.unmount());
 });
 
-test('cash with no finish is a green MOVO card; a known bank keeps its own face and logo', () => {
+test('cash and unreviewed banks use branded local artwork but retain their own account name', () => {
   const cash = render(<CardArt a={{ id: 'k', name: 'Cash', account_type: 'cash', balance: 500, currency: 'PHP' }} show />);
   expect(cash.el.querySelector('.credit-card').className).toContain('movo-green');
   expect(cash.el.querySelector('.ccx-type').textContent).toBe('Cash');
   act(() => cash.root.unmount());
   const bpi = render(<CardArt a={{ id: 'b', name: 'BPI', institution_name: 'BPI', account_type: 'card', cardKind: 'debit', balance: 1, currency: 'PHP' }} show />);
-  expect(bpi.el.querySelector('.credit-card').className).not.toContain('ccx-movo');
-  expect(bpi.el.querySelector('.ccx-logo img')).not.toBeNull();
-  expect(bpi.el.querySelector('.ccx-name').textContent).toBe('BPI');
+  expect(bpi.el.querySelector('.credit-card').className).toContain('ccx-movo');
+  expect(bpi.el.querySelector('.ccx-logo img')).toBeNull();
+  expect(bpi.el.querySelector('.ccx-name').textContent).toBe('MOVO');
+  expect(bpi.el.querySelector('.ccx-sub').textContent).toBe('BPI');
   act(() => bpi.root.unmount());
 });
 

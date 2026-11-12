@@ -45,7 +45,7 @@ public class MovoNativePlugin extends Plugin {
 
     private String validateKey(PluginCall call) {
         final String key = call.getString("key");
-        if (key == null || !(key.equals("movo-autolog-key") || (key.startsWith("sb-") && key.contains("-auth-token"))) || key.length() >= 128) {
+        if (key == null || !(key.equals("movo-autolog-key") || key.equals("movo-finance-vault-key-v1") || (key.startsWith("sb-") && key.contains("-auth-token"))) || key.length() >= 128) {
             call.reject("invalid_secure_auth_key");
             return null;
         }

@@ -146,11 +146,18 @@ describe('MOVO store purchase verification', () => {
     await verifyApple('signed',userId);
     expect(verifiedEnvironments.every(e=>e==='Production')).toBe(true);
   });
-  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_CANCELED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
+  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PENDING_PURCHASE_CANCELED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
     googleOverrides.subscriptionState=state;
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(['active','grace_period']).not.toContain(result.status);
   });
+  test.each([[86400000, 'active'], [-1000, 'expired']])('uses verified expiry for a canceled Play subscription (%s ms)', async (offset, status) => {
+    googleOverrides.subscriptionState = 'SUBSCRIPTION_STATE_CANCELED';
+    googleOverrides.lineItems = [{ productId: 'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() + offset).toISOString() }];
+    const result = await verifyGoogle('token', 'com.nasrinai.movo.proplus.monthly', userId);
+    expect(result).toMatchObject({ status, paidVerified: status === 'active' });
+  });
+
   test('rejects Google test purchases and cross-account bindings',async()=>{
     googleOverrides.testPurchase={};
     await expect(verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).rejects.toThrow('sandbox_purchase_rejected');

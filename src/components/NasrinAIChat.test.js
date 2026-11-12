@@ -71,7 +71,8 @@ describe('NasrinAI consent and legal links', () => {
     expect(disclosure.textContent).toContain('limited, account-scoped snapshot');
     expect(disclosure.textContent).toContain('recent transactions');
     expect(disclosure.textContent).toContain('separate from accepting the Terms of Service');
-    expect(dialog.textContent).not.toContain('can never access');
+    expect(dialog.textContent).toContain('short audio clips');
+    expect(dialog.textContent).toContain('voice providers');
 
     act(() => button('Not now').click());
     expect(container.querySelector('[role="dialog"]')).toBeNull();
@@ -87,6 +88,18 @@ describe('NasrinAI consent and legal links', () => {
     expect(onOpenLegal).toHaveBeenNthCalledWith(1, 'PrivacyPolicy');
     expect(onOpenLegal).toHaveBeenNthCalledWith(2, 'TermsOfService');
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('withdrawal removes device consent and prevents another AI request', async () => {
+    await act(async () => button('I understand').click());
+    expect(localStorage.getItem('movo.ai.ack.v2.user-1')).toBe('1');
+    global.fetch.mockClear();
+    act(() => button('Withdraw NasrinAI consent on this device').click());
+    expect(localStorage.getItem('movo.ai.ack.v2.user-1')).toBeNull();
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Summarize my spending');
+    act(() => container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   });
 
   test('Enter adds a new line instead of sending; only the send button sends', async () => {

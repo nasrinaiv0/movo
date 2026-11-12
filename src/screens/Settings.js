@@ -273,7 +273,7 @@ export default function Settings({ c }) {
       { icon: 'face', title: tr('Face ID / Touch ID'), sub: !bio ? tr('This device or browser does not offer Face ID / Touch ID.') : lock.enabled ? tr('Unlock Movo with your face or fingerprint.') : tr('Turn on App Lock first.'), toggle: 'biometrics' },
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
-      ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
+      ...(c.session?.user?.id ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },
     { title: tr('Transaction History'), rows: [
       { icon: 'list', title: tr('Show balance after each transaction'),

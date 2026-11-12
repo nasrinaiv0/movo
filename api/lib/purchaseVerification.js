@@ -155,7 +155,8 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   const statusMap = {
     SUBSCRIPTION_STATE_ACTIVE: 'active',
     SUBSCRIPTION_STATE_IN_GRACE_PERIOD: 'grace_period',
-    SUBSCRIPTION_STATE_CANCELED: 'expired',
+    // An ordinary cancellation stops renewal while the verified term is still active.
+    SUBSCRIPTION_STATE_CANCELED: expiresAt.getTime() > Date.now() ? 'active' : 'expired',
     SUBSCRIPTION_STATE_PAUSED: 'paused',
     SUBSCRIPTION_STATE_ON_HOLD: 'on_hold',
     SUBSCRIPTION_STATE_EXPIRED: 'expired',

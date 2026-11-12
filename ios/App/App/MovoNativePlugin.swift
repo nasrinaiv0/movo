@@ -39,7 +39,7 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func authKey(_ call: CAPPluginCall) -> String? {
         guard let key = call.getString("key"),
-              (key == "movo-autolog-key" || (key.hasPrefix("sb-") && key.contains("-auth-token"))),
+              (key == "movo-autolog-key" || key == "movo-finance-vault-key-v1" || (key.hasPrefix("sb-") && key.contains("-auth-token"))),
               key.count < 128 else {
             call.reject("invalid_secure_auth_key")
             return nil

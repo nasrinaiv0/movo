@@ -265,7 +265,7 @@ test('credit spend history follows its source transaction and hides deleted or r
 });
 
 
-test('credit card planning shows institution favicon and calculated spend, interest, utilization and post-payment balance', async () => {
+test('credit card planning uses approved fallback and preserves spend, interest, utilization and post-payment balance', async () => {
   const el = document.createElement('div'); document.body.appendChild(el); const root = createRoot(el);
   const card = { id: 'aub-card', name: 'AUB', institution_name: 'Asia United Bank (AUB)', mask: '2556', account_type: 'card', cardKind: 'credit', currency: 'PHP', balance: -10000, creditLimit: 50000 };
   await act(async () => root.render(<FinancialPlanning c={{ cloudMode: true, base: 'PHP', show: true, accountsView: [...accounts, card],
@@ -275,7 +275,9 @@ test('credit card planning shows institution favicon and calculated spend, inter
   }} />));
   await act(async () => Array.from(el.querySelectorAll('.chip-row button')).find(button => button.textContent.includes('Credit cards')).click());
   const cardEl = el.querySelector('.fp-credit-card');
-  expect(cardEl.querySelector('.fp-credit-card-logo').getAttribute('src')).toContain('domain=aub.com.ph');
+  expect(cardEl.querySelector('.fp-credit-card-logo')).toBeNull();
+  expect(cardEl.querySelector('.stat-icon.tone-red svg')).not.toBeNull();
+  expect(cardEl.textContent).toContain('Asia United Bank (AUB)');
   expect(cardEl.textContent).toContain('Amount Spent'); expect(cardEl.textContent).toContain('6,000.00');
   expect(cardEl.textContent).toContain('Amount After Interest'); expect(cardEl.textContent).toContain('8,160.00');
   expect(cardEl.textContent).toContain('12.0%'); expect(cardEl.textContent).toContain('8,000.00');

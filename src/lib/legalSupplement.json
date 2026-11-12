@@ -42,7 +42,8 @@
       "heading": "16. Third-party content and support",
       "paragraphs": [
         "Bank and payment-network names, merchant logos and product names may belong to their respective owners and do not imply partnership or endorsement. Market-data and AI services can provide information that is incomplete or unavailable. Third-party services may have additional terms.",
-        "To report an inaccurate calculation, disputed purchase entitlement, unauthorized access or data-handling concern, contact support@nasrinai.com. Include the affected feature and relevant non-secret details only; do not email passwords, one-time codes or full card numbers."
+        "To report an inaccurate calculation, disputed purchase entitlement, unauthorized access or data-handling concern, contact support@nasrinai.com. Include the affected feature and relevant non-secret details only; do not email passwords, one-time codes or full card numbers.",
+        "MOVO's published contact address is 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines. The Data Protection Officer is Nasrin Abubakar (dpo@nasrinai.com); general support remains support@nasrinai.com."
       ]
     },
     {
@@ -86,8 +87,8 @@
     {
       "heading": "14. How long data stays and how deletion works",
       "paragraphs": [
-        "Local-only data remains on the current device or browser profile until you clear it, delete app/browser storage or the device removes it. Signed-in cloud records, chat history and preferences remain while your account is active unless you delete them or request a supported removal. Certain items moved into MOVO's Archive are retained for up to 90 days before scheduled removal; this Archive period does not apply to every type of deleted record.",
-        "Use Settings → Delete Account in MOVO or the public account-deletion page to request removal of your cloud account and associated personal data. Local data on another device may need separate clearing. Some data may remain temporarily in backups, security logs or records that must lawfully be retained for accounting, fraud prevention, dispute resolution or legal claims; such exceptions should be limited to applicable purposes and retention requirements. Deleting MOVO does not cancel an Apple or Google subscription.",
+        "Local-only data remains on the current device or browser profile until you clear it, delete app/browser storage or the device removes it. Signed-in cloud records, chat history and preferences remain while your account is active unless you delete them or request a supported removal. Eligible Archive entries expire after 90 days. Cleanup timing differs between cloud and local storage.",
+        "Use Settings → Security & Privacy → Delete Account in MOVO or the public account-deletion page to request removal of your cloud account and associated personal data. Local data on another device may need separate clearing. Some data may remain temporarily in backups, security logs or records that must lawfully be retained for accounting, fraud prevention, dispute resolution or legal claims; such exceptions should be limited to applicable purposes and retention requirements. Deleting MOVO does not cancel an Apple or Google subscription.",
         "Backup, incident and legally retained records may have different retention periods depending on the underlying service and legal obligations. This notice does not promise immediate removal from every backup or third-party system; contact our privacy team to ask about a particular record."
       ],
       "links": [
@@ -120,8 +121,10 @@
     {
       "heading": "17. Children, policy updates and operator information",
       "paragraphs": [
-        "MOVO is not designed for children. If you believe a minor's data was submitted improperly, please contact support@nasrinai.com so it can be reviewed.",
-        "MOVO is operated by the developer or legal operator identified in the applicable app-store listing. For identity or privacy questions and requests, contact support@nasrinai.com. Material policy changes will be dated and communicated as required by law; changes in optional processing may require renewed notice or consent."
+        "MOVO is for adults aged 18 and older. If you believe a minor's data was submitted improperly, please contact support@nasrinai.com so it can be reviewed.",
+        "MOVO is operated by the developer or legal operator identified in the applicable app-store listing. For identity or privacy questions and requests, contact support@nasrinai.com. Material policy changes will be dated and communicated as required by law; changes in optional processing may require renewed notice or consent.",
+        "MOVO's designated Data Protection Officer is Nasrin Abubakar. To request access, correction, deletion or other privacy rights or report a suspected privacy incident, email dpo@nasrinai.com. General support is support@nasrinai.com. A DPO contact does not substitute for publishing the verified legal controller and its physical address or appointing any required local representatives.",
+        "MOVO's contact and privacy correspondence address is 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines. This address is supplied for publication; identification and registration of the legal controller and any locally required representatives must still be independently verified before international paid distribution."
       ]
     }
   ]
