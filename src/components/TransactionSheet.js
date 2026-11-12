@@ -14,6 +14,57 @@ const TYPE_LABEL = { expense: 'Expense', income: 'Income', transfer: 'Transfer' 
 const keyFor = (k) => ({ '*': '×', x: '×', '/': '÷', '-': '−', Enter: '=', Backspace: '⌫', Escape: null, Delete: 'AC' }[k] ?? k);
 const pretty = (expr) => tokenize(expr).map(t => (/^\d/.test(t) || t.startsWith('.') ? Number(t).toLocaleString(getFormatLocale(), { maximumFractionDigits: 2 }) + (t.endsWith('.') ? '.' : '') : ` ${t} `)).join('');
 
+const RECEIPT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const RECEIPT_MAX = 10 * 1024 * 1024;
+const fileSize = (bytes) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
+/**
+ * Receipt picker (owner, 2026-11-12): a tappable card instead of the browser's file input. Shows a thumbnail (or a
+ * PDF mark), the file name, size and where it is kept, with Replace and Remove. Wrong types and files over 10 MB are
+ * refused at once (the save checks again). Removing an existing receipt marks it for deletion on save.
+ */
+export function ReceiptField({ form, setForm, cloudMode }) {
+  const [error, setError] = useState('');
+  const [preview, setPreview] = useState('');
+  const file = form.receipt_file || null;
+  const attached = !!file || !!form.receipt_path;
+  const isImage = !!file && file.type.startsWith('image/');
+  useEffect(() => {
+    if (!isImage || typeof URL === 'undefined' || !URL.createObjectURL) { setPreview(''); return undefined; }
+    const url = URL.createObjectURL(file); setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, isImage]);
+  const pick = (event) => {
+    const chosen = event.target.files?.[0];
+    event.target.value = '';
+    if (!chosen) return;
+    if (!RECEIPT_TYPES.includes(chosen.type) || chosen.size > RECEIPT_MAX) { setError(tr('Use a JPG, PNG, WebP or PDF receipt smaller than 10 MB.')); return; }
+    setError('');
+    setForm({ ...form, receipt_file: chosen });
+  };
+  const remove = () => {
+    setError('');
+    // A receipt already saved with this record is deleted when the change is saved.
+    setForm({ ...form, receipt_file: null, receipt_path: '', receipt_path_to_delete: form.receipt_path_to_delete || form.receipt_path || '' });
+  };
+  const where = cloudMode ? tr('Stored with your cloud record') : tr('Saved on this device');
+  const input = <input type="file" className="tx-receipt-input" accept={RECEIPT_TYPES.join(',')} aria-label={attached ? tr('Replace') : tr('Add receipt')} onChange={pick} />;
+  return <div className="tx-receipt-wrap">
+    {attached ? <div className="tx-receipt has-file">
+      <span className="tx-receipt-thumb" aria-hidden="true">{preview ? <img src={preview} alt="" /> : <Icon name={file && !isImage ? 'doc' : 'receipt'} size={22} />}</span>
+      <span className="tx-receipt-text"><strong>{file ? file.name : tr('Receipt attached')}</strong><small>{file ? `${fileSize(file.size)} · ${where}` : where}</small></span>
+      <label className="tx-receipt-replace">{tr('Replace')}{input}</label>
+      <button type="button" className="tx-receipt-remove" onClick={remove} aria-label={tr('Remove receipt')}><Icon name="close" size={16} /></button>
+    </div> : <label className="tx-receipt">
+      <span className="tx-receipt-thumb" aria-hidden="true"><Icon name="receipt" size={22} /></span>
+      <span className="tx-receipt-text"><strong>{tr('Add receipt')}</strong><small>{tr('Photo or PDF · up to 10 MB')}</small></span>
+      <span className="tx-receipt-plus" aria-hidden="true"><Icon name="plus" size={18} /></span>
+      {input}
+    </label>}
+    {error && <p className="form-error" role="alert">{error}</p>}
+  </div>;
+}
+
 /** Calculator-first add/edit transaction sheet: type the amount on the keypad, pick a category, save. */
 export default function TransactionSheet({ currency = 'PHP', form, setForm, editing, accounts, cloudMode, busy, error, onSave, onClose, onScan, autoCategory = false, showBalance = true }) {
   // Auto categorization: suggest a category from the description until the person picks one themselves.
@@ -97,8 +148,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
       <button type="button" className="tx-pad-toggle" onClick={() => setPadOpen(false)} aria-label={tr('Hide keypad')}><Icon name="down" size={18} /></button>
     </div> : <button type="button" className="tx-pad-show" onClick={() => setPadOpen(true)}><Icon name="calc" size={16} /> {tr('Show keypad')}</button>}
 
-    <label className="tx-note">Receipt attachment<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" aria-label="Attach receipt" onChange={e => { const file=e.target.files?.[0]; if(file) setForm({ ...form, receipt_file:file }); }} /></label>
-    {(form.receipt_file || form.receipt_path) && <p className="form-note">{form.receipt_file?.name || 'Receipt attached'} · {cloudMode ? 'Stored with your cloud record' : 'Saved on this device'}</p>}
+    <ReceiptField form={form} setForm={setForm} cloudMode={cloudMode} />
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="tx-bottom">
       <button type="submit" className="primary-button tx-save" disabled={!canSave}>{busy ? tr('Saving…') : editing ? tr('Save changes') : tr(`Save ${TYPE_LABEL[type]}`)}</button>

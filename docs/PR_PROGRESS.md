@@ -1,3 +1,7 @@
+## 2026-11-12 — Receipt picker in the transaction sheet
+
+Owner request: improve the receipt upload UI (it showed the browser's "Choose File · no file selected"). It is now a tappable card: a receipt icon, "Add receipt", "Photo or PDF · up to 10 MB" and a plus button. Once chosen, it shows a photo thumbnail (or a document mark for PDFs), the file name, size and where it is kept, with Replace and Remove. Wrong types and files over 10 MB are refused at once (the save still checks). Removing a receipt already saved marks it for deletion when the change is saved. Translated into 11 languages; the old label was untranslated. Validation: Jest (`ReceiptField.test.js`), strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-receipt-picker.md`). Not run: real devices.
+
 ## 2026-11-12 — Plan & Usage: more room for the text
 
 Owner request: "give more space to the texts". Plan & Usage now has more space between the plan row, the usage tiles and the note, inside the tiles and in the note's line spacing, with a clear gap above the button and no fading shadow over the last line. Tile labels wrap (hyphenated in the reader's language) instead of being cut. The tiles become two rows of two below 400px wide, and the plan's date wraps instead of truncating. Checked in the browser with no truncated text at 375 and 430px, at the Largest text size, in English, German and Filipino. Validation: Jest, strict build. CSS only (see `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`).
