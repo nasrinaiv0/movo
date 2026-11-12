@@ -12,6 +12,9 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.PluginMethod;
+import com.google.android.play.core.review.ReviewInfo;
+import com.google.android.play.core.review.ReviewManager;
+import com.google.android.play.core.review.ReviewManagerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -67,6 +70,34 @@ public class MovoNativePlugin extends Plugin {
                 .build();
         generator.init(spec);
         return generator.generateKey();
+    }
+
+    /**
+     * Rate MOVO (src/lib/reviewPrompt.js): Google Play's own in-app review card. Play decides whether it appears
+     * (quota) and never reports what was rated; MOVO only learns that the flow finished.
+     */
+    @PluginMethod
+    public void requestReview(PluginCall call) {
+        final android.app.Activity activity = getActivity();
+        final JSObject result = new JSObject();
+        if (activity == null) {
+            result.put("requested", false);
+            call.resolve(result);
+            return;
+        }
+        final ReviewManager manager = ReviewManagerFactory.create(activity);
+        manager.requestReviewFlow().addOnCompleteListener(request -> {
+            if (!request.isSuccessful()) {
+                result.put("requested", false);
+                call.resolve(result);
+                return;
+            }
+            final ReviewInfo info = request.getResult();
+            manager.launchReviewFlow(activity, info).addOnCompleteListener(done -> {
+                result.put("requested", true);
+                call.resolve(result);
+            });
+        });
     }
 
     @PluginMethod

@@ -23,6 +23,8 @@ const MOUTH = { x: 0.016, y: 0.074 };
 
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const smooth = (v) => { const t = clamp01(v); return t * t * (3 - 2 * t); };
+/** Height of the ram's feet in the scene: it always stands here, on the Total balance box below it. */
+export const FEET_Y = -0.93;
 const bump = (p) => (p <= 0 || p >= 1 ? 0 : Math.sin(Math.PI * p));
 const lerp = (a, b, t) => a + (b - a) * t;
 
@@ -39,8 +41,9 @@ function smilePose(t) {
   p.head = [-0.08, 0.06 * Math.sin(t * 1.2), 0.1 * Math.sin(t * 2.4)];
   p.armL = [-1.35, 0, -0.45 + 0.32 * Math.sin(t * 7.5)];
   p.armR = [0.05 * hop + 0.025 * Math.sin(t * 3), -0.08 * Math.sin(t * 2.4), 0, 0];
-  p.legL = [0.035 * hop + 0.02 * Math.max(0, Math.sin(t * 5)), 0.01];
-  p.legR = [0.035 * hop + 0.02 * Math.max(0, -Math.sin(t * 5)), 0.01];
+  // Feet stay on the Total balance box (owner, 2026-11-12): the happy hop is a bounce in place, one foot at a time.
+  p.legL = [0.02 * Math.max(0, Math.sin(t * 5)), 0.01];
+  p.legR = [0.02 * Math.max(0, -Math.sin(t * 5)), 0.01];
   p.flap = 1.8; p.cloth = 1.4; p.browLift = 0.022; p.browTilt = -0.25;
   p.happyEyes = 1; p.open = 1; p.smileLine = 1; p.blush = 0.75;
   return p;
@@ -217,7 +220,7 @@ export function createRamScene(container, { mood = 'cute', still = false, base =
   };
   mat.customProgramCacheKey = () => 'movo-ram-v1';
 
-  const rig = new THREE.Group(); rig.position.y = -0.93; scene.add(rig);
+  const rig = new THREE.Group(); rig.position.y = FEET_Y; scene.add(rig);
   const disposables = [mat];
   const track = (o) => { disposables.push(o); return o; };
   const tex = spriteTextures(); Object.values(tex).forEach(track);
@@ -333,9 +336,10 @@ export function createRamScene(container, { mood = 'cute', still = false, base =
     }
 
     // body
-    rig.position.y = -0.93 + p.bodyY * amp; const sy = 1 + p.squash * amp; const sxz = 1 - p.squash * 0.5 * amp;
+    // The ram stands on the Total balance box (owner, 2026-11-12): the rig's origin is at its feet and it never leaves
+    // that line, in any mood or tap reaction. Moods still bounce, stretch and squash in place (scaled from the feet).
+    rig.position.y = FEET_Y; const sy = 1 + p.squash * amp; const sxz = 1 - p.squash * 0.5 * amp;
     rig.scale.set(sxz, sy, sxz); rig.rotation.set(p.rotX, p.rotY * amp, p.rotZ * amp);
-    const air = Math.max(0, p.bodyY * amp); parts.shadow.scale.setScalar(1 - air * 1.6); parts.shadow.material.opacity = 1 - air * 3;
     U.uHead.value.set(p.head[0], p.head[1] * amp, p.head[2] * amp); parts.head.rotation.set(U.uHead.value.x, U.uHead.value.y, U.uHead.value.z);
     U.uArmL.value.set(p.armL[0], p.armL[1], p.armL[2]); U.uArmR.value.set(p.armR[0], p.armR[1], p.armR[2], 0);
     U.uLegs.value.set(p.legL[0], p.legL[1], p.legR[0], p.legR[1]);

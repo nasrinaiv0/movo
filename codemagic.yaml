@@ -3,8 +3,9 @@
 # One-time setup in Codemagic (owner):
 #   1. Teams → Integrations → Developer Portal → connect the App Store Connect API key and name it MOVO_ASC
 #      (role: App Manager). Codemagic then creates the distribution certificate and provisioning profile itself.
-#   2. Environment variables → group "movo_web" with REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY
-#      (the same public browser values Vercel uses). Never put the service role key here.
+#   2. Optional: environment variables → group "movo_web" with REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.
+#      The public values already come from .env.production; set the group only to override them. Never put the
+#      service role key here.
 #   3. Start "iOS TestFlight" manually, or push a tag like ios-v1.0.0.
 workflows:
   ios-testflight:
@@ -53,12 +54,10 @@ workflows:
           CI=true npm test -- --runInBand --watchAll=false
       - name: Build the web app
         script: |
-          if [ -z "$REACT_APP_SUPABASE_URL" ] || [ -z "$REACT_APP_SUPABASE_ANON_KEY" ]; then
-            echo "Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY to the movo_web group." >&2
-            exit 1
-          fi
+          # The public cloud connection comes from .env.production (the movo_web group, when set, takes precedence).
           # Tests already passed above; avoid a second prebuild test suite on signed CI.
           CI=true npx react-scripts build
+          node scripts/check-bundled-cloud-config.cjs build
       - name: Copy the web app into the iOS project
         script: npx cap sync ios
       - name: Signing profiles

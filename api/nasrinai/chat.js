@@ -4,6 +4,7 @@ const { hasPlan } = require('../lib/planAccess');
 const { createClient } = require('@supabase/supabase-js');
 const { classifyNasrinAIKeyFormat } = require('./key-format.cjs');
 const { parseVoiceResponse } = require('./voice-stream.cjs');
+const { askOpenRouter, openRouterConfigured } = require('./openrouter-fallback.cjs');
 
 const MAX_MESSAGE_CHARS = 1600;
 const MAX_UPSTREAM_CONTEXT_CHARS = 3800;
@@ -236,14 +237,13 @@ module.exports = async function handler(req, res) {
   if (!supabaseUrl || !anonKey) {
     return json(res, 503, { error: 'movo_auth_not_configured', message: 'MOVO sign-in is not configured on the server.' });
   }
-  if (!nasrinKey) {
+  // OpenRouter is MOVO's fallback AI provider (api/nasrinai/openrouter-fallback.cjs): chat still works with only it.
+  const fallbackReady = openRouterConfigured();
+  if (!nasrinKey && !fallbackReady) {
     return json(res, 503, {
       error: 'nasrinai_not_configured',
       message: 'NasrinAI is temporarily unavailable. Please contact support.'
     });
-  }
-  if (req.method === 'POST' && !nasrinKey) {
-    return json(res, 503, { error: 'nasrinai_not_configured', message: 'NasrinAI chat is not configured on the MOVO server yet.' });
   }
 
   try {
@@ -257,6 +257,7 @@ module.exports = async function handler(req, res) {
     // Model-backed STT for MOVO hands-free chat. Audio is transient and is
     // forwarded only to the configured NasrinAI service; never persisted/logged.
     if (req.method === 'POST' && req.body?.action === 'transcribe') {
+      if (!nasrinKey) return json(res, 503, { error: 'transcription_unavailable' });
       const encoded = typeof req.body?.audioBase64 === 'string' ? req.body.audioBase64 : '';
       const mime = typeof req.body?.mime === 'string' && /^audio\/(webm|mp4|ogg|wav|mpeg)(;|$)/i.test(req.body.mime) ? req.body.mime.split(';')[0] : '';
       if (!mime || !encoded || encoded.length > 3_200_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
@@ -358,113 +359,110 @@ module.exports = async function handler(req, res) {
     // current question and bounded finance context through its enforced MOVO
     // scope, with no prior provider conversation history.
     const voiceMode = req.body?.voiceMode === true;
-    const upstreamBody = buildUpstreamBody(message, context);
-    if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
-    const upstreamStartedAt = Date.now();
-    let upstream;
-    let responseText = '';
-    let payload = null;
-    try {
-      upstream = await fetch(nasrinBase + '/v1/chat', {
-        method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + nasrinKey,
-          'Content-Type': 'application/json',
-          Accept: voiceMode ? 'application/x-ndjson' : 'application/json',
-          'X-Client-Info': voiceMode ? 'movo-financial-voice' : 'movo-financial-copilot'
-        },
-        body: JSON.stringify(upstreamBody),
-        signal: AbortSignal.timeout(25000)
-      });
-      const upstreamLength = Number(upstream.headers?.get?.('content-length') || 0);
-      if (voiceMode && upstreamLength > 10_500_000) {
-        await cleanupNewConversation();
-        return json(res, 502, { error: 'voice_reply_too_large' });
+    // NasrinAI first. Any failure becomes { fail } (status + safe body) instead of an immediate reply, so MOVO's
+    // fallback provider can answer before the person sees an error.
+    const askNasrinAI = async () => {
+      if (!nasrinKey) return { fail: { status: 503, body: { error: 'nasrinai_not_configured', message: 'NasrinAI is temporarily unavailable. Please contact support.' } } };
+      const upstreamBody = buildUpstreamBody(message, context);
+      if (voiceMode) Object.assign(upstreamBody, { stream: true, voice: true, speak_voice: 'openai:cedar' });
+      const upstreamStartedAt = Date.now();
+      let upstream;
+      let responseText = '';
+      let payload = null;
+      try {
+        upstream = await fetch(nasrinBase + '/v1/chat', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + nasrinKey,
+            'Content-Type': 'application/json',
+            Accept: voiceMode ? 'application/x-ndjson' : 'application/json',
+            'X-Client-Info': voiceMode ? 'movo-financial-voice' : 'movo-financial-copilot'
+          },
+          body: JSON.stringify(upstreamBody),
+          signal: AbortSignal.timeout(25000)
+        });
+        const upstreamLength = Number(upstream.headers?.get?.('content-length') || 0);
+        if (voiceMode && upstreamLength > 10_500_000) return { fail: { status: 502, body: { error: 'voice_reply_too_large' } } };
+        responseText = await upstream.text();
+        if (voiceMode && responseText.length > 10_500_000) return { fail: { status: 502, body: { error: 'voice_reply_too_large' } } };
+        if (voiceMode && upstream.ok) {
+          const { done, audioParts, hasError } = parseVoiceResponse(responseText);
+          if (hasError) payload = { error: { code: 'voice_reply_failed' } };
+          else if (done) payload = { ...done, reply: extractReply(done), audioParts };
+        } else {
+          try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
+        }
+      } catch (error) {
+        const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+        console.error('[movo-nasrinai-upstream]', timeout ? 'timeout' : 'network_error');
+        return { fail: { status: 502, body: {
+          error: timeout ? 'nasrinai_timeout' : 'nasrinai_unreachable',
+          message: timeout
+            ? 'NasrinAI took too long to respond. Please try again.'
+            : 'MOVO could not connect to NasrinAI. Please try again shortly.'
+        } } };
       }
-      responseText = await upstream.text();
-      if (voiceMode && responseText.length > 10_500_000) {
-        await cleanupNewConversation();
-        return json(res, 502, { error: 'voice_reply_too_large' });
+      const elapsedMs = Date.now() - upstreamStartedAt;
+      if (!upstream.ok) {
+        // Log only status, a strict allowlisted application error code, retry
+        // metadata and latency. Never log prompts, financial context, keys,
+        // provider messages, response bodies, or arbitrary upstream error fields.
+        const upstreamErrorCode = classifyUpstreamErrorCode(payload);
+        const retryAfterSeconds = safeRetryAfterSeconds(upstream.headers?.get?.('retry-after'));
+        console.error(
+          '[movo-nasrinai-upstream]',
+          'http_' + upstream.status,
+          'error_code_' + upstreamErrorCode,
+          'key_format_' + classifyNasrinAIKeyFormat(nasrinKey),
+          ...(retryAfterSeconds ? ['retry_after_seconds_' + retryAfterSeconds] : []),
+          'latency_ms_' + elapsedMs
+        );
+        // A reached NasrinAI budget is a deliberate limit: it is not bypassed through the fallback provider.
+        const noFallback = upstreamErrorCode === 'budget_reached';
+        if (upstream.status === 401 || upstream.status === 403) {
+          return { noFallback, fail: { status: 502, body: { error: 'nasrinai_auth_rejected', message: 'MOVO could not authenticate with NasrinAI. Please contact support.' } } };
+        }
+        if (upstream.status === 429) {
+          return { noFallback, fail: { status: 429, retryAfterSeconds, body: { error: 'nasrinai_rate_limited', message: 'NasrinAI is temporarily busy. Please try again shortly.' } } };
+        }
+        if (upstream.status === 400 || upstream.status === 413 || upstream.status === 422) {
+          return { noFallback, fail: { status: 502, body: { error: 'nasrinai_request_rejected', message: 'NasrinAI rejected the request format. The issue has been recorded for troubleshooting.' } } };
+        }
+        return { noFallback, fail: { status: 502, body: { error: 'nasrinai_request_failed', message: 'NasrinAI could not answer right now. Please try again shortly.' } } };
       }
-      if (voiceMode && upstream.ok) {
-        const { done, audioParts, hasError } = parseVoiceResponse(responseText);
-        if (hasError) payload = { error: { code: 'voice_reply_failed' } };
-        else if (done) payload = { ...done, reply: extractReply(done), audioParts };
+      if (!payload || typeof payload !== 'object') {
+        console.error('[movo-nasrinai-upstream]', 'invalid_json_response', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+        return { fail: { status: 502, body: { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' } } };
+      }
+      if (!hasConfirmedMovoScope(payload)) {
+        console.error('[movo-nasrinai-upstream]', 'scope_unconfirmed', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+        return { fail: { status: 502, body: {
+          error: 'nasrinai_scope_unconfirmed',
+          message: 'MOVO could not verify isolated context processing by NasrinAI. No reply was accepted; please try again later.'
+        } } };
+      }
+      const reply = extractReply(payload);
+      if (!reply) {
+        console.error('[movo-nasrinai-upstream]', 'missing_reply', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
+        return { fail: { status: 502, body: { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' } } };
+      }
+      console.info('[movo-nasrinai-upstream]', 'success', 'latency_ms_' + elapsedMs);
+      return { reply, audioParts: voiceMode && Array.isArray(payload.audioParts) ? payload.audioParts : undefined };
+    };
 
-      } else {
-        try { payload = responseText ? JSON.parse(responseText) : null; } catch { payload = null; }
-      }
-    } catch (error) {
-      await cleanupNewConversation();
-      const timeout = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-      console.error('[movo-nasrinai-upstream]', timeout ? 'timeout' : 'network_error');
-      return json(res, 502, {
-        error: timeout ? 'nasrinai_timeout' : 'nasrinai_unreachable',
-        message: timeout
-          ? 'NasrinAI took too long to respond. Please try again.'
-          : 'MOVO could not connect to NasrinAI. Please try again shortly.'
-      });
+    let answer = await askNasrinAI();
+    if (answer.fail && !answer.noFallback && fallbackReady) {
+      // Same question, same bounded context; text only (voice mode then speaks it with the device voice).
+      const fallback = await askOpenRouter({ message, contextJson: buildContextPayload(context) });
+      if (fallback.reply) answer = { reply: safeText(fallback.reply, MAX_RESPONSE_CHARS) };
     }
-    const elapsedMs = Date.now() - upstreamStartedAt;
-    if (!upstream.ok) {
+    if (answer.fail || !answer.reply) {
       await cleanupNewConversation();
-      // Log only status, a strict allowlisted application error code, retry
-      // metadata and latency. Never log prompts, financial context, keys,
-      // provider messages, response bodies, or arbitrary upstream error fields.
-      const upstreamErrorCode = classifyUpstreamErrorCode(payload);
-      const retryAfterSeconds = safeRetryAfterSeconds(upstream.headers?.get?.('retry-after'));
-      console.error(
-        '[movo-nasrinai-upstream]',
-        'http_' + upstream.status,
-        'error_code_' + upstreamErrorCode,
-        'key_format_' + classifyNasrinAIKeyFormat(nasrinKey),
-        ...(retryAfterSeconds ? ['retry_after_seconds_' + retryAfterSeconds] : []),
-        'latency_ms_' + elapsedMs
-      );
-      if (upstream.status === 401 || upstream.status === 403) {
-        return json(res, 502, {
-          error: 'nasrinai_auth_rejected',
-          message: 'MOVO could not authenticate with NasrinAI. Please contact support.'
-        });
-      }
-      if (upstream.status === 429) {
-        if (retryAfterSeconds) res.setHeader('Retry-After', String(retryAfterSeconds));
-        return json(res, 429, {
-          error: 'nasrinai_rate_limited',
-          message: 'NasrinAI is temporarily busy. Please try again shortly.'
-        });
-      }
-      if (upstream.status === 400 || upstream.status === 413 || upstream.status === 422) {
-        return json(res, 502, {
-          error: 'nasrinai_request_rejected',
-          message: 'NasrinAI rejected the request format. The issue has been recorded for troubleshooting.'
-        });
-      }
-      return json(res, 502, {
-        error: 'nasrinai_request_failed',
-        message: 'NasrinAI could not answer right now. Please try again shortly.'
-      });
+      const fail = answer.fail || { status: 502, body: { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' } };
+      if (fail.retryAfterSeconds) res.setHeader('Retry-After', String(fail.retryAfterSeconds));
+      return json(res, fail.status, fail.body);
     }
-    if (!payload || typeof payload !== 'object') {
-      await cleanupNewConversation();
-      console.error('[movo-nasrinai-upstream]', 'invalid_json_response', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
-      return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
-    }
-    if (!hasConfirmedMovoScope(payload)) {
-      await cleanupNewConversation();
-      console.error('[movo-nasrinai-upstream]', 'scope_unconfirmed', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
-      return json(res, 502, {
-        error: 'nasrinai_scope_unconfirmed',
-        message: 'MOVO could not verify isolated context processing by NasrinAI. No reply was accepted; please try again later.'
-      });
-    }
-    const reply = extractReply(payload);
-    if (!reply) {
-      await cleanupNewConversation();
-      console.error('[movo-nasrinai-upstream]', 'missing_reply', 'http_' + upstream.status, 'latency_ms_' + elapsedMs);
-      return json(res, 502, { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' });
-    }
-    console.info('[movo-nasrinai-upstream]', 'success', 'latency_ms_' + elapsedMs);
+    const reply = answer.reply;
     // Persist the turn only after NasrinAI successfully produced a reply.
     // Failed/rate-limited upstream calls must not leave a misleading user-only
     // message in MOVO history.
@@ -486,7 +484,7 @@ module.exports = async function handler(req, res) {
       conversationId: conversation.id,
       title: conversation.title,
       reply,
-      ...(voiceMode && Array.isArray(payload.audioParts) ? { audioParts: payload.audioParts } : {}),
+      ...(answer.audioParts ? { audioParts: answer.audioParts } : {}),
       privacy: { scope: 'current_user_only', dataShared: 'minimum_financial_context' }
     });
   } catch (error) {

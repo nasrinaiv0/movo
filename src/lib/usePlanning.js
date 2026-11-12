@@ -55,7 +55,10 @@ export function planningSummary({ accounts = [], loans = [], receivables = [], g
 }
 
 export default function usePlanning(c) {
-  const cloud = !!c.cloudMode;
+  // A subscriber offline keeps their records (owner, 2026-11-12): the lists come from the last copy kept on this device
+  // (lib/offlineReadCache.js) while the account's device copy is in use.
+  const offline = !c.cloudMode && !!c.deviceCopyAccess;
+  const cloud = !!c.cloudMode || offline;
   const [data, setData] = useState({ loans: [], receivables: [], goals: [], allocations: [], planAllocations: [], occurrences: [], payments: [] });
   const [loaded, setLoaded] = useState(!cloud);
   const [error, setError] = useState('');
@@ -76,10 +79,11 @@ export default function usePlanning(c) {
     const failed = requests.some(result => result.status === 'rejected') || goalAllocationResults.some(result => result.status === 'rejected');
     setData({ loans, receivables, goals, allocations, planAllocations, occurrences, payments });
     setError(failed
-      ? 'Some financial data could not be loaded. Check your connection and database setup, then tap refresh. Your records have not been changed.'
+      ? (offline ? 'Some records have not been saved on this device yet. They appear once you are back online.'
+        : 'Some financial data could not be loaded. Check your connection and database setup, then tap refresh. Your records have not been changed.')
       : '');
     setLoaded(true);
-  }, [cloud]);
+  }, [cloud, offline]);
 
   useEffect(() => {
     reload().catch(error => {
@@ -98,5 +102,5 @@ export default function usePlanning(c) {
   }), [data.occurrences, data.payments, subscriptionData]);
   const plans = useMemo(() => planGoalData(c.plans || [], data.planAllocations, toBase || ((v) => v)), [c.plans, data.planAllocations, toBase]);
   const summary = useMemo(() => planningSummary({ ...data, ...integrations, plans: c.plans || [], accounts, toBase: toBase || ((v) => v), today }), [data, integrations, c.plans, accounts, toBase, today]);
-  return { ...data, accounts, plans, subscriptionData, summary, loaded, error, reload, cloud };
+  return { ...data, accounts, plans, subscriptionData, summary, loaded, error, reload, cloud, offline };
 }

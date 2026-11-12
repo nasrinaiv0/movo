@@ -13,7 +13,8 @@ import { DEFAULT_SCENERY, GLOWS, HERO_FEATURE, ZODIAC, glowBackground, isPremium
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
-import { getStoreProducts, getStoreEntitlements, restoreStorePurchases, purchaseStoreProduct, manageStoreSubscriptions, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
+import { getStoreProducts, getStoreEntitlements, purchaseStoreProduct, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
+import SubscriptionLinks from '../components/SubscriptionLinks';
 
 export const ACCENTS = [['green', '#086b3a'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#d32f2f'], ['slate', '#334155']];
 export const THEMES = [
@@ -147,8 +148,13 @@ function LockSheet({ c, onClose }) {
 /** Store purchases are verified server-side; the store supplies localized price metadata. */
 export function UsageSheet({ c, onClose }) {
   const [storeProducts, setStoreProducts] = useState([]);
+  // Opens on the plan MOVO already verified at launch (c.entitlement), so the current plan shows at once; the sheet
+  // then re-checks in the background and updates quietly. It never shows "Free" for a plan it has not checked yet.
   const [storeEntitlement, setStoreEntitlement] = useState(null);
+  const shownEntitlement = storeEntitlement || c.entitlement || null;
+  const planKnown = !!storeEntitlement || !!c.entitlement || !!c.entitlementReady || !c.session?.access_token;
   const [purchaseBusy, setPurchaseBusy] = useState(false);
+  const [checkFailed, setCheckFailed] = useState(false);
   const [purchaseMessage, setPurchaseMessage] = useState('');
   const nativePurchases = isNativePurchasePlatform();
 
@@ -156,26 +162,14 @@ export function UsageSheet({ c, onClose }) {
     let live = true;
     if (!c.session?.access_token) return () => { live = false; };
     (nativePurchases ? syncStorePurchases(c.session) : getStoreEntitlements(c.session)).then((value) => { if (live) setStoreEntitlement(value); }).catch(() => {
-      if (live) setPurchaseMessage(tr('Could not load your verified subscription status.'));
+      // Keep showing the plan verified at launch; only say so when there is none to show.
+      if (live && !c.entitlement) { setCheckFailed(true); setPurchaseMessage(tr('Could not load your verified subscription status.')); }
     });
     if (nativePurchases) getStoreProducts().then((items) => { if (live) setStoreProducts(items); }).catch((error) => {
       if (live) setPurchaseMessage(error.message || tr('Store products are not available right now.'));
     });
     return () => { live = false; };
   }, [c.session?.access_token, nativePurchases]);
-
-  const runRestore = async () => {
-    setPurchaseBusy(true); setPurchaseMessage('');
-    try {
-      const result = await restoreStorePurchases(c.session);
-      setStoreEntitlement(result.entitlement); await c.refreshEntitlement?.();
-      setPurchaseMessage(result.restoredCount
-        ? tr('Your purchases were restored and verified.')
-        : tr('No active MOVO subscription was found for this store account.'));
-    } catch (error) {
-      setPurchaseMessage(error.message || tr('Could not restore purchases. Please try again.'));
-    } finally { setPurchaseBusy(false); }
-  };
 
   const runPurchase = async (productIdentifier) => {
     setPurchaseBusy(true); setPurchaseMessage('');
@@ -189,31 +183,30 @@ export function UsageSheet({ c, onClose }) {
     } finally { setPurchaseBusy(false); }
   };
 
-  const rows = [
-    [tr('Access mode'), c.cloudMode ? tr('Cloud') : tr('Local (offline)')],
+  const stats = [
     [tr('Transactions'), String(c.txs?.length || 0)],
     [tr('Accounts'), String(c.accountsView?.length || 0)],
-    [tr('Subscriptions tracked'), String(c.subscriptions?.length || 0)],
-    [tr('Storage on this device'), fmtBytes(storageUsed())],
+    [tr('Subscriptions'), String(c.subscriptions?.length || 0)],
+    [tr('Storage'), fmtBytes(storageUsed())],
   ];
 
   // One compact summary of the current plan; the plan comparison lives in the plans panel only.
-  const tier = storeEntitlement?.active && PLAN_LABELS[storeEntitlement.tier] ? storeEntitlement.tier : 'free';
-  const planName = tier === 'free' ? tr('Free') : PLAN_LABELS[tier];
-  const planNote = tier === 'free' ? tr('On this device')
-    : storeEntitlement.expiresAt ? tr('Active until {date}', { date: longDate(storeEntitlement.expiresAt) }) : tr('Active');
+  const tier = !planKnown ? 'checking' : shownEntitlement?.active && PLAN_LABELS[shownEntitlement.tier] ? shownEntitlement.tier : 'free';
+  const planName = tier === 'checking' ? (checkFailed ? '—' : tr('Checking…')) : tier === 'free' ? tr('Free') : PLAN_LABELS[tier];
+  const planNote = tier === 'checking' ? '' : tier === 'free' ? tr('On this device')
+    : shownEntitlement.expiresAt ? tr('Active until {date}', { date: longDate(shownEntitlement.expiresAt) }) : tr('Active');
 
   return <Sheet center title={tr('Plan & Usage')} onClose={onClose} label={tr('Plan & Usage')} className="plan-usage-sheet">
     {!c.cloudMode && !c.deviceCopyAccess && <p className="form-hint" role="status">Local mode is active. Pro and Pro+ features are paused, but any existing subscription stays on record. Local tracking, manual transactions and import/export remain available. Enable Cloud Sync to restore eligible plan access.</p>}
-    <div className={`plan-usage-current tier-${tier}`}>
-      <span className="plan-usage-mark" aria-hidden="true"><MovoMark size={26} tone={tier === 'pro_plus' ? 'platinum' : tier === 'pro' ? 'gold' : 'color'} /></span>
-      <span className="plan-usage-name"><small>{tr('Plan')}</small><strong>{planName}</strong></span>
-      <em>{planNote}</em>
+    <div className={`plan-usage-current tier-${tier}`} aria-busy={tier === 'checking' ? 'true' : undefined}>
+      <span className="plan-usage-mark" aria-hidden="true"><MovoMark size={24} tone={tier === 'pro_plus' ? 'platinum' : tier === 'pro' ? 'gold' : 'color'} /></span>
+      <span className="plan-usage-name"><strong>{planName}</strong>{planNote && <small>{planNote}</small>}</span>
+      <span className="plan-usage-mode">{c.cloudMode ? tr('Cloud') : tr('Local (offline)')}</span>
     </div>
-    <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+    <ul className="plan-usage-stats">{stats.map(([k, v]) => <li key={k}><strong>{v}</strong><small>{k}</small></li>)}</ul>
     {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}
     {nativePurchases && <>
-      {storeEntitlement?.source !== 'store' && <>
+      {shownEntitlement?.source !== 'store' && <>
         <h3 className="group-title">{tr('Available plans')}</h3>
         <div className="card pad">
           {storeProducts.length ? storeProducts.map((product) => <div className="settings-row" key={product.productIdentifier}>
@@ -222,14 +215,12 @@ export function UsageSheet({ c, onClose }) {
           </div>) : <p className="form-hint">{tr('Store subscription products are not available yet.')}</p>}
         </div>
       </>}
-      <div className="sheet-actions">
-        <button type="button" className="secondary-button" disabled={purchaseBusy || !c.session?.access_token} onClick={runRestore}>{purchaseBusy ? tr('Please wait…') : tr('Restore purchases')}</button>
-        <button type="button" className="secondary-button" disabled={purchaseBusy || storeEntitlement?.source !== 'store'} onClick={() => manageStoreSubscriptions().catch((error) => setPurchaseMessage(error.message || tr('Could not open subscription management.')))}>{tr('Manage subscription')}</button>
-      </div>
     </>}
-    {!nativePurchases && <p className="form-hint">{tr('Store purchases and restore are available in the MOVO iOS and Android apps.')}</p>}
+    {/* Always shown, in the apps and on the website, signed in or not (owner, 2026-11-12). */}
+    <SubscriptionLinks session={c.session} onSignIn={c.startAccount ? () => { onClose(); c.startAccount('signin'); } : undefined}
+      onRefresh={async (value) => { if (value) setStoreEntitlement(value); await c.refreshEntitlement?.(); }} className="plan-usage-links" />
     {purchaseMessage && <p className="form-hint" role="status" aria-live="polite">{purchaseMessage}</p>}
-    <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
+    <p className="form-hint plan-usage-note">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}{!nativePurchases && <> {tr('Subscribe in the MOVO iOS or Android app.')}</>}</p>
     <div className="plan-usage-foot">
       <button type="button" className="primary-button plan-usage-action" onClick={() => { onClose(); c.openPlans?.(); }}>{tier === 'free' ? tr('Upgrade MOVO') : tr('View plans')}</button>
     </div>
@@ -257,7 +248,7 @@ export default function Settings({ c }) {
   };
   const sections = [
     { title: tr('Account'), rows: [
-      { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('EditProfile') },
+      { icon: 'user', title: tr('Profile'), sub: tr('Personal information'), onClick: () => go('Profile') },
       { icon: 'download', title: tr('Import & Export'), sub: tr('Read and save your financial backup on any plan'), onClick: () => c.openBackup?.() },
       { icon: 'database', title: tr('Plan & Usage'), sub: c.cloudMode || c.deviceCopyAccess ? tr('Your plan and usage') : tr('Local mode · paid features paused'), onClick: () => setPanel('usage') },
       { icon: 'layout', title: tr('Connected Accounts'), sub: tr('Manually tracked accounts; no bank connection is active.'), onClick: () => go('Wallet') },
@@ -291,6 +282,9 @@ export default function Settings({ c }) {
     ] },
     { title: tr('Data & Sync'), rows: [
       { icon: 'cloud', title: tr('Cloud Sync'), sub: c.cloudMode ? tr('Cloud sync is active. Turning it off pauses paid features; cloud-only records are not copied automatically.') : c.deviceCopyAccess ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : c.session?.user ? tr('Local mode: paid features paused; cloud records remain stored in your account.') : tr('Sign in to enable secure cloud sync.'), toggle: 'cloudSync' },
+      { icon: 'refresh', title: tr('Sync automatically when back online'),
+        sub: tr('On: changes you make offline upload to your MOVO account by themselves once the connection returns. Off: MOVO asks you first.'),
+        toggle: 'autoSyncOnReconnect' },
       { icon: 'database', title: tr('Local Storage'), sub: tr('{size} used on this device · {n} records', { size: fmtBytes(storageUsed()), n: c.txs?.length || 0 }) },
       { icon: 'refresh', title: tr('Offline & online sync'), sub: c.syncState?.message || tr('Changes are kept on this device until safely reconciled.'), onClick: c.session?.user ? () => c.retrySync?.() : undefined },
       { icon: 'refresh', title: tr('Auto Categorization'), sub: tr('Picks a category from the description as you type; you can always change it.'), toggle: 'autocat' },

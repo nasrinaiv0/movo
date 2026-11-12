@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { BILL_CATEGORIES, BILL_FREQUENCIES } from './bills';
+import { cachedList } from './offlineReadCache';
 
 const requireClient = () => { if (!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
@@ -28,16 +29,16 @@ export async function setBillStatus(id, status) {
   if (!['active', 'paused', 'cancelled'].includes(status)) throw new Error('Invalid bill status.');
   return unwrap(await requireClient().from('financial_bills').update({ status, updated_at: new Date().toISOString() }).eq('id', id).select().single());
 }
-export async function listBills() {
+async function listBillsFromCloud() {
   return unwrap(await requireClient().from('financial_bills').select('*').order('created_at', { ascending: false }).limit(500));
 }
 /** Generates missing occurrences (server side, idempotent) and returns the recent and upcoming ones. */
-export async function listOccurrences(until, since) {
+async function listOccurrencesFromCloud(until, since) {
   const client = requireClient();
   unwrap(await client.rpc('ensure_bill_occurrences', { p_until: until }));
   return unwrap(await client.from('bill_occurrences').select('*').gte('due_date', since).lte('due_date', until).order('due_date').limit(2000));
 }
-export async function listBillPayments(since) {
+async function listBillPaymentsFromCloud(since) {
   return unwrap(await requireClient().from('bill_payments').select('id,occurrence_id,amount,currency,method,account_id,transaction_id,paid_at,status').eq('status', 'active').gte('paid_at', since).order('paid_at', { ascending: false }).limit(2000));
 }
 /** method 'recorded' needs an account and creates one expense; 'external' only reconciles. */
@@ -53,3 +54,8 @@ export async function recordBillPayment({ occurrence_id, amount, method = 'recor
 export async function updateOccurrence(id, { actual_amount = null, late_fee = null, cancel = false }) {
   return unwrap(await requireClient().rpc('update_bill_occurrence', { p_occurrence_id: id, p_actual_amount: actual_amount, p_late_fee: late_fee, p_cancel: cancel }));
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listBills = (...args) => cachedList('bills', () => listBillsFromCloud(...args));
+export const listOccurrences = (...args) => cachedList('billOccurrences', () => listOccurrencesFromCloud(...args), args.map(String).join(','), { latest: true });
+export const listBillPayments = (...args) => cachedList('billPayments', () => listBillPaymentsFromCloud(...args), args.map(String).join(','), { latest: true });

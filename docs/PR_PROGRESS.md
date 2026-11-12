@@ -1,3 +1,176 @@
+## 2026-11-12 — Android bottom navigation: instant response, lighter animation
+
+Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
+- **Instant response:** the tapped tab and the highlight now change on touch-down (11–23 ms), the screen still appears about as fast, and a cancelled touch puts the bar back.
+- **Lighter drawing:** the Android app uses a lighter blur for the bar, with no transform or width transitions on it; the highlight and icons animate on their own layers.
+
+Validation: new App test, Jest 224 suites / 1,350 tests, `tsc`, strict build, browser check in light and dark. Not run: a real Android phone. See `docs/engineering/updates/2026-11-12-android-bottom-nav.md`.
+
+## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
+
+- **Before commit:** compared the exact branches `3e47d69` (PR #287) and `e7d7126` (main) against merge base `7a65b55`. Only `docs/PR_PROGRESS.md` overlaps; main adds `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md` which is absent from PR #287.
+- Preserve all PR #287 offline-first sync, subscriber offline records, referral and Android sign-in progress, followed by the whole updated main progress (including PR #286 release-gate notes). Carry forward main's added Android release-gate report. No app, tests, build, database or production environment code is changed as part of the conflict resolution.
+- Test gates: require exact-merge-head GitHub checks and mergeability verification. No claims of real Android/iPhone, cloud financial data, or live Vercel preview tests. **Leave PR #287 open and do not merge.**
+- Detailed record: `docs/engineering/updates/2026-11-12-pr287-conflict-resolution.md`.
+
+## 2026-11-12 — Subscribers' records offline; referral field loads with the panel
+
+- **Offline records (owner: "all data should be available offline after the customer subscribes"):**
+  - Budgets, bills and bill dates now come from the synced device copy offline; budgets previously switched to the device's guest list.
+  - Financial planning and the Home planning card work offline; they used to say "Sign in to manage your financial records".
+  - A new per-account read cache (`lib/offlineReadCache.js`) keeps the last copy of every cloud list: loans, receivables, goals, allocations, bills and payments, scheduled transactions, payment attempts, reminders, budgets and the ledger. It shows that copy when the cloud can't be reached; it never hides server errors and never mixes accounts.
+  - Changes to these records wait until back online, with a clear note.
+  - Signed-out people still see no account records (privacy); they reappear after signing in, online or offline.
+- **Referral code:** the field shows as soon as the plans panel opens, with no extra step and no waiting for sign-in. A code typed while signed out is kept for after sign-in.
+- **Android Google sign-in (v7):** the auth logs show the app's pre-check succeeding and no request reaching Google's step, so the failure is on the phone, either in the secure-storage or the browser step. The exact on-screen message is needed to choose the fix.
+
+Validation: Jest 224 suites / 1,349 tests, `tsc`. See `docs/engineering/updates/2026-11-12-offline-records-and-referral.md`. Not run: real devices.
+
+## 2026-11-12 — Offline/online sync: local first, silent cloud sync, back-online prompt
+
+Owner request: online, input → local → dashboard → silent cloud sync; offline, input → local → dashboard; back online, a setting chooses automatic sync or asking first with a professional pop-up.
+- **Online:** a new or edited transaction (form, NasrinAI chat, card purchase or payment) is committed on the device and shown at once, and the cloud upload finishes in the background.
+  - A confirmed upload swaps in the server copy.
+  - A dropped connection falls back to the existing offline path.
+  - A server refusal removes the row and explains why.
+  - Form mistakes are still caught first. A subscription payment still waits for the cloud.
+- **Offline:** unchanged.
+- **Back online:** new setting, Settings → Data & Sync → "Sync automatically when back online" (off by default).
+  - Off: a centered pop-up, "You're back online", asks to sync the N changes made offline, with "Not now", "Sync now" and an "Always sync automatically" option. "Not now" keeps a small reminder.
+  - On: the changes upload by themselves, one attempt per reconnection, falling back to the pop-up if it can't finish.
+  - Uploads always go through the same verified sync (sign-in, plan, conflict checks).
+
+No RLS, policy or server changes. Validation: new writer, pop-up and end-to-end tests; Jest 223 suites / 1,342 tests, `tsc`, strict build; browser check offline → online in light and dark. Not run: real devices. See `docs/engineering/updates/2026-11-12-offline-online-sync.md`.
+
+## 2026-11-12 — #286 brought up to date with main
+
+Main gained the same owner billing-test isolation in #285 (20beb70), in a broader form: it clears every store billing setting and restores the whole environment, so it covers `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and the other Google Play keys. The merge keeps main's version of `src/owner/ownerApi.test.js`. #286 contributes its documentation and the verified AAB v7 evidence below. No app code changes.
+
+## 2026-11-12 — Android sign-in: "not configured" fixed for every app build
+
+Owner report: Google and email sign-in in the Android app said "not configured".
+
+- **Cause:** that app was built without MOVO's public Supabase connection. Those values lived only in Vercel, the protected GitHub release environment and Codemagic, so Android Studio, local, CI or older builds had none.
+- **Fix:** the two public values (project URL and publishable key) are now committed in `.env.production`, so every production build has them, while environment settings still override them.
+  - A new test keeps that file to exactly those two public values and rejects anything secret.
+  - A new build check fails any Android or iPhone build whose app lacks the connection. It runs in the Android CI build, the Google Play jobs and Codemagic.
+- **Verified:** a build with no settings now includes the connection, a build with settings keeps its own, and the live sign-in service accepts the key with Google and email enabled.
+- **Owner action:** install a new Android build made from main after this merges (the app on the phone keeps its old code).
+
+Not run: sign-in on a real Android device. See `docs/engineering/updates/2026-11-12-android-signin-config.md`.
+
+## 2026-11-12 — "Save 20%" on the plans when Annual is chosen
+
+Owner follow-up, with a reference paywall whose layout was not copied: the saving belongs on the plans. When Annual is selected, Pro and Pro+ each show a green "Save 20%" pill on the card's top edge. The figure comes from each plan's own store prices when loaded, else the owner's 20%. The current plan keeps its "Current" badge, Monthly shows no saving, and the toggle no longer carries the badge. Restore purchases and Manage subscription drop the "·" separator, which dangled when they wrapped. Validation: `PlanOffer.test.js` updated, full Jest suite, `tsc`, strict build, browser screenshots in light and dark at 430, 375 and 360px including German and Filipino at the Largest text size. Not run: real devices.
+
+## 2026-11-12 — Restore purchases and Manage subscription always shown
+
+Owner request: there should always be buttons to restore purchases and manage subscriptions. Both now appear in the plans panel and in Plan & Usage, for every person, in the apps and on the website, signed in or not, and they are never disabled.
+- **In the apps:** Restore uses the App Store or Google Play restore, which the server verifies. Manage opens the store's subscription page.
+- **On the website:** Restore re-checks the account's verified plan. Manage offers the App Store and Google Play subscription pages.
+- **Signed out:** Restore opens sign-in.
+
+No change to purchase verification or entitlements. Validation: new `SubscriptionLinks.test.js`, updated plans panel and Plan & Usage tests, Jest 221 suites / 1,328 tests, `tsc`, strict build, browser check (see `docs/engineering/updates/2026-11-12-restore-manage-always.md`). Not run: the store dialogs on real devices. Follow-up: 7d20d6f was pushed with one outdated `App.test.js` assertion (the old website note). It is fixed in the next commit, and the full suite passes.
+
+## 2026-11-12 — "Save 20%" on the Annual plan
+
+Owner request: show a 20% saving for the annual plan. The Annual toggle in the plans panel now reads "Save 20%", translated into 11 languages. In the apps the figure comes from the App Store or Google Play prices, so it always matches what the store charges. It reads 20% when the annual plans are priced at 80% of twelve months, which is now in `docs/commercial/STORE_BILLING_SETUP.md`. The website has no store prices and shows the owner's 20%. The toggle grows to fit the badge on one line; checked at 430, 375 and 360px, including German and Filipino at the Largest text size. Validation: new `storeProducts.test.js`, updated `PlanOffer.test.js`, full Jest suite, `tsc`, strict build (see `docs/engineering/updates/2026-11-12-annual-save-20.md`). Owner action: set the annual prices in the store consoles. Not run: real devices.
+
+## 2026-11-12 — Plans panel: centered pop-up
+
+Owner request: the "Upgrade MOVO" plans panel should be centered on the screen. It now opens as a centered pop-up, like the transaction details. It sits in the middle of the screen with equal space above and below, using the larger safe area on both sides. It has no border, only a soft shadow, and no drag handle; the close button stays. The Continue button stays inside the rounded corners. If the panel is taller than the screen it scrolls, with Continue pinned. Checked in the browser at 430×932, 390×844 and 375×667 in light and dark: top gap equals bottom gap, and no scrolling at any of those sizes. No plan, price or purchase logic changed. Validation: Jest 219 suites / 1,320 tests, `tsc`, strict build (see `docs/engineering/updates/2026-11-12-plans-panel-centered.md`). Not run: real devices.
+
+## 2026-11-12 — Production build fix: owner billing test isolated from the build machine
+
+The production deployment of `main` after #284 failed on Vercel: `npm run build` runs the tests first, and the owner billing-readiness test read Vercel's real Google Play settings and saw Google checkout as ready. The test now clears every store billing setting before it runs and restores the environment afterwards. Production kept serving the previous deployment. Reproduced locally with fake Google Play settings, then fixed. The full suite passes with and without Vercel-like settings. Test-only change (see `docs/engineering/updates/2026-11-12-owner-test-env-isolation.md`). Separately, Vercel now refuses new deployments ("Account is blocked"); this needs the owner in the Vercel dashboard.
+
+## 2026-11-12 — Transaction details: middle of the screen, no outline
+
+Owner follow-up: "center meaning center of the screen, and less border especially for dark mode". The details pop-up now sits in the middle of the screen with equal space above and below. On phones with a notch or home indicator the larger safe area is used on both sides, so it stays at the exact middle. It has no border, outline or inner highlight; a soft shadow sets it apart. In dark mode the lines between rows are gone and spacing separates them; in light mode they are fainter. CSS only. Measured in the browser at 430×932, 390×844 and 375×667 in light and dark: top gap equals bottom gap and the border width is 0. Validation: Jest, strict build. Not run: real devices.
+
+### Follow-up: verified post-merge signed AAB v7 and CI evidence (2026-11-12)
+- Signed manual Play workflow run #43180913336 succeeded on main `3d96b2e`. Recovered artifact `movo-google-play-aab-28`, inspected packaged JS, Android manifest, versionCode **7**, current MOVO Supabase URL and matching enabled publishable key; independent JAR signature verification succeeded.
+- **Installed versionCode / live device OAuth result unknown**. Do not change working web OAuth settings or publish production; check existing Play internal/closed release before uploading another AAB. Main Vercel build failed an env-dependent test; PR #286 isolates it, with both GitHub CI checks green on initial head. Vercel preview remains blocked by account/deployment status, not verified.
+- Detailed proof and gates: `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md`.
+
+## 2026-11-12 — Android sign-in release gate: isolate Vercel billing test from live secrets
+
+- Earlier PR #282 Android Google/email auth code merged, but prior signed AAB #17 predates it; currently installed Android version unverified.
+- Latest main Vercel deployment failed 1/1,320 tests because owner billing readiness test inherited live `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and expected missing credentials. Add that key to the test's save/restore fixture and explicitly unset it before the negative-case assertion; business logic, auth, credentials, database and production remain unchanged.
+- No merge/store publication until exact-head CI, Android release compilation, preview and real-device Google/email sign-in pass. See `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md`.
+
+## 2026-11-12 — Transaction details: centered, with spent and logged times
+
+Owner request: place the transaction details at the center and add the time it was logged and the time it was spent. The details now open as a centered pop-up, with the name, the signed amount and the type centered on top. The details card adds two times: **Spent** (Received for income, Transferred for transfers), which is the transaction's date and time, and **Logged**, which is when the record was saved in MOVO (`created_at`). Cloud records already had a logged time; new records saved on the device now get one too. That stamp is display-only: uploads build their own payloads and reconciliation ignores `created_at`. Older local records without a saved time show only Spent. Validation: Jest 219 suites / 1,320 tests, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
+
+## 2026-11-12 — Plans panel: follows light/dark mode; amounts on every plan
+
+Owner request: improve the plans panel's colour adaptability in light and dark mode, and organize it with amounts.
+- In light mode the panel now uses MOVO's off-white sheet, with readable gold and platinum accents and light selected-tile tints; dark mode keeps the black panel.
+- Each tier tile shows its amount. Free shows ₱0 (home currency). In the apps, Pro and Pro+ show the store's own localized price per month or year for the chosen period, and Annual shows the best saving (for example −17%). On the website, where there is no store, they say "Price in app"; no price is invented, per `docs/commercial/STORE_BILLING_SETUP.md`.
+- The repeated "Price shown by the App Store or Google Play" line is gone, and the large price appears only when the store provides one.
+- The panel sizes to its content instead of a fixed 800px height.
+
+Validation: Jest 219 suites / 1,320 tests (PlanOffer tests updated: tile amounts, saving badge, no invented web price), strict build, browser screenshots in light and dark. See `docs/engineering/updates/2026-11-12-plans-panel-light-and-prices.md`. Not run: store prices on a real device.
+
+## 2026-11-12 — Account pickers: icon and amount only for the available balance
+
+Owner request: in the transfer sheet, remove the "Available balance" text and show only the wallet icon and the amount. The account pickers in the transaction sheet (From, To and Paid with) now show the wallet icon, or the card icon for credit, followed by the amount. "Available balance" and "Available credit" stay as screen-reader text, so VoiceOver and TalkBack still say them. With the room freed, the full amount shows instead of "₱1…". Below 400px wide, the two side-by-side pickers use a 24px logo and tighter gaps, so amounts such as ₱123,152.00 fit. Checked in the browser at 430, 390, 375 and 360px with no truncation. Validation: Jest (`AccountPicker.test.js` asserts the label is screen-reader-only), strict build. Not run: real devices.
+
+## 2026-11-12 — Transaction details: solid, compact and organized
+
+Owner request: make the transaction details solid (not transparent), more compact and organized. The sheet is now a solid surface with no glass blur in light and dark. The amount leads, large and signed by type (− expense, + income in green), with a Type chip. Account and Category (with subcategory) sit in one grouped card, and Note, references and Receipt note appear only when present. The duplicate "Date & time" row is gone, since the date is the subtitle. View receipt is a full-width row, and Edit and Delete are 48px buttons; Edit is no longer glaring white in dark mode. Validation: Jest, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
+
+## 2026-11-12 — Receipt picker in the transaction sheet
+
+Owner request: improve the receipt upload UI (it showed the browser's "Choose File · no file selected"). It is now a tappable card: a receipt icon, "Add receipt", "Photo or PDF · up to 10 MB" and a plus button. Once chosen, it shows a photo thumbnail (or a document mark for PDFs), the file name, size and where it is kept, with Replace and Remove. Wrong types and files over 10 MB are refused at once (the save still checks). Removing a receipt already saved marks it for deletion when the change is saved. Translated into 11 languages; the old label was untranslated. Validation: Jest (`ReceiptField.test.js`), strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-receipt-picker.md`). Not run: real devices.
+
+## 2026-11-12 — Plan & Usage: more room for the text
+
+Owner request: "give more space to the texts". Plan & Usage now has more space between the plan row, the usage tiles and the note, inside the tiles and in the note's line spacing, with a clear gap above the button and no fading shadow over the last line. Tile labels wrap (hyphenated in the reader's language) instead of being cut. The tiles become two rows of two below 400px wide, and the plan's date wraps instead of truncating. Checked in the browser with no truncated text at 375 and 430px, at the Largest text size, in English, German and Filipino. Validation: Jest, strict build. CSS only (see `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`).
+
+## 2026-11-12 — Plan & Usage opens on the current plan; OpenRouter as MOVO's fallback AI provider
+
+- **Plan & Usage (owner recording):** the sheet showed "Free · On this device" and "Upgrade MOVO" for about 3 seconds before switching to "Pro+". It now opens on the plan MOVO already verified at launch and re-checks quietly in the background, so the current plan shows in the first frame (12–19ms in the browser check). A plan not yet checked shows "Checking…", never "Free". The layout is now compact: one plan row with a Cloud/Local tag, usage as four small tiles, one billing note, Restore and Manage as text links, and the main button.
+- **Fallback AI provider:** when NasrinAI cannot answer (not configured, unreachable, timeout, busy, rejected the request or key, or an unusable reply), the server asks OpenRouter instead (`api/nasrinai/openrouter-fallback.cjs`).
+  - Every MOVO version (web, iPhone, Android) uses this one route, so the fallback covers all of them.
+  - OpenRouter gets the same question and bounded, sanitized context, with no user id or email. Providers that may store or train on data are excluded (`data_collection: deny`).
+  - A reached NasrinAI budget is not bypassed. Voice transcription stays on NasrinAI. Voice replies from the fallback are spoken with the device voice.
+  - Needs the server-only `OPENROUTER_API_KEY` in Vercel (optional `OPENROUTER_MODEL`, default `openrouter/auto`).
+
+Validation: Jest 218 suites / 1,316 tests, tsc, strict build, production dependency audit (0), browser screenshots in light and dark. See `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`. Not run: real devices; a live OpenRouter call (no key is configured yet).
+
+## 2026-11-12 — The ram stays standing on the Total balance box
+
+Owner request: "keep the mascot stand in the box like before" (confirmed: keep the bigger ram standing on Total balance). The 3D ram's body no longer leaves its feet line in any mood or tap reaction (`FEET_Y` in `lib/ramScene.js`; the rig's origin is at the feet). Happy moods still bounce, stretch and squash in place, and the happy hop now lifts one foot at a time instead of both. Measured over 14 frames in the browser: the lowest point stays at 129.5–131.5px against the card's top edge at 128px (before: up to 5px above it on each hop). Validation: Jest, tsc, strict build, `ramGrounded.test.js` (see `docs/engineering/updates/2026-11-12-ram-stays-grounded.md`). Not run: real devices.
+
+## 2026-11-12 — Settings → Profile route; sign-in and subscription audit (iOS and Android)
+
+- **Settings → Profile** now opens the Profile screen, not the edit form. Profile's back arrow returns to the screen it was opened from (Settings or Menu), using the screen trail.
+- **Sign-in audit** (production, read only):
+  - Email codes and Google work on the web and in the apps. `movo://auth-callback` is accepted as a return address.
+  - **Apple is switched off in Supabase Auth** (`Unsupported provider: provider is not enabled`), so Continue with Apple fails everywhere. Owner action: enable Apple under Supabase → Authentication → Providers with an Apple Services ID and key. App Store guideline 4.8 expects it for an iOS app that offers Google.
+  - Fixed: a switched-off provider used to open Supabase's raw error page in the browser. MOVO now checks the public provider list first and shows its own customer message. The Apple and Google messages are rewritten for customers in 11 languages.
+- **Subscription audit** (production, read only):
+  - Google Play checkout is ready (`/api/purchases/config?platform=google` → enabled).
+  - **App Store checkout is blocked** (`enabled:false`): one Apple billing setting fails validation, most likely `APPLE_APP_ID`, which must be the numeric Apple ID from App Store Connect.
+  - The billing tables and functions exist. `movo_plan_status` only reports on the caller's own account, and only production purchases count.
+  - New: the owner Command Center's Billing view lists store checkout readiness with the names of failing settings, never values (owner and two-factor only).
+
+Validation: Jest 215 suites / 1,306 tests, tsc, strict build. See `docs/engineering/updates/2026-11-12-signin-subscriptions-audit.md`. Not run: real devices, real purchases.
+
+## 2026-11-12 — Rate MOVO reminder (App Store / Google Play)
+
+Owner request: remind people to rate MOVO. The iPhone and Android apps now ask the store's own rating dialog to appear: Apple's StoreKit review request (`AppStore.requestReview` on iOS 16+, `SKStoreReviewController` on 15) and Google Play In-App Review. Both stores require their own dialog (Apple guideline 5.6.1 disallows custom review prompts, and Google asks apps not to pre-ask), so MOVO adds no screen of its own and only chooses the moment.
+
+The request comes about 1.8 s after a new record is saved, never over a sheet, the lock screen or setup. It needs at least 7 days with MOVO, 5 different days of use and 10 records, and then at most once every 120 days and 3 times a year. The stores may still show nothing and never report a rating. The counters stay on the device (`movo.reviewPrompt.v1`, removed by Clear All Data); the website never asks.
+
+No legal text change: MOVO collects and shares nothing new. Validation: Jest 214 suites / 1,301 tests, tsc, strict build. Native compile runs in CI (`build-ios`, `native-android`). See `docs/engineering/updates/2026-11-12-rate-movo-reminder.md`. Not run: real devices or store review dialogs (they appear only in installed TestFlight / Play builds).
+
+## 2026-11-12 — Zodiac Home headers follow the owner's reference video (softer)
+
+Owner request with a reference video: zodiac headers now use the same indigo-purple night for every sign. A thin gold zodiac wheel carries all twelve symbols, with the person's sign at the top and brightest; they are drawn as vector paths because phones may render the Unicode symbols as colour emoji. A flowing purple ribbon of light replaces the hills, and the slow drifting light over zodiac headers is lavender. Opacity is kept lower than the reference, as asked. The element now only tints the ribbon's far end. Validation: Jest 212 suites / 1,294 tests, tsc, strict build, browser screenshots of several signs (see `docs/engineering/updates/2026-11-12-zodiac-reference-video.md`). Not run: real devices.
+
 ## 2026-11-12 — PR #282 Android-only sign-in follow-up (before new implementation)
 - Verified downloaded signed Google Play AAB run #43149512317 against actual project URL and active MOVO public key, Browser plugin and native auth callback. The broken installed Android version still needs identification; web authentication is not being modified.
 - Implemented: Android-only email-link callback to `movo://auth-callback`, safe native Browser/Keystore failure diagnostics, and tests for Android, web and iOS behavioral isolation, plus three new messages translated across 11 languages. Live Android device callback and delivery still not proven; keep website/iOS intact. See `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md`. **No merge or production change.**
