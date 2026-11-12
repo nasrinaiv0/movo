@@ -285,6 +285,9 @@ describe('MOVO finance frontend', () => {
     // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
     const header = () => container.querySelector('.home-hero-block');
     expect(header().className).toContain('hero-scenery');
+    // Pro+ gets the platinum glowing edge (Pro gets gold; Free gets none).
+    expect(header().className).toContain('hero-tier-plus');
+    expect(header().querySelector('.hero-edge')).not.toBeNull();
     expect(header().querySelector('.home-header')).not.toBeNull();
     expect(header().querySelector('.balance-card')).not.toBeNull();
     expect(container.querySelectorAll('.balance-card').length).toBe(1);

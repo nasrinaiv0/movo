@@ -8589,3 +8589,91 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .cloud-plan-notice .cpn-actions { display: grid; gap: 6px; }
 .movo-app .cloud-plan-notice .cpn-primary { width: 100%; }
 .movo-app .cloud-plan-notice .cpn-later { min-height: 44px; justify-self: center; font-weight: 600; color: var(--muted); }
+
+/* ===== Home header refinements (owner, 2026-11-12) =====
+   1. The pinned header runs to both screen edges (0px), while Total balance keeps the page's side space.
+   2. The ram is bigger, starts 1px under the top inset and stands on the Total balance card (feet on its top edge,
+      a soft contact shadow), so it no longer floats; the greeting moves right to make room.
+   3. Pro and Pro+ get a glowing header edge in their badge colour: gold for Pro, platinum for Pro+. */
+.movo-app { --hero-bleed: 18px; }
+.movo-app.layout-tablet { --hero-bleed: 32px; }
+.movo-app.layout-desktop { --hero-bleed: 40px; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) {
+  margin-left: calc(-1 * var(--hero-bleed)) !important;
+  margin-right: calc(-1 * var(--hero-bleed)) !important;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block { padding-left: var(--hero-bleed) !important; padding-right: var(--hero-bleed) !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero { padding-left: calc(var(--hero-bleed) + 2px) !important; padding-right: calc(var(--hero-bleed) + 2px) !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .screen-header.home-header {
+  margin-left: calc(-1 * var(--hero-bleed)) !important;
+  margin-right: calc(-1 * var(--hero-bleed)) !important;
+  padding-left: var(--hero-bleed) !important;
+  padding-right: var(--hero-bleed) !important;
+}
+
+/* The ram: its box spans the header's height; the stage hangs from the bottom so the feet meet the card's top edge
+   (header gap 12px + the model's 5% bottom margin, overlapping the edge by 2px). */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot {
+  --ram-size: 131px;
+  grid-row: 1 / -1;
+  align-self: stretch;
+  width: calc(var(--ram-size) * .86);
+  height: auto;
+  min-height: 68px;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot .ram-stage {
+  width: var(--ram-size);
+  height: var(--ram-size);
+  top: auto;
+  bottom: calc(-12px - var(--ram-size) * .067);
+  left: calc(var(--ram-size) * -.104);
+  transform: none !important;
+}
+/* A standalone hero (Total balance not first) has no card under it: the ram stands on the header's lower edge. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero > .ram-mascot .ram-stage { bottom: calc(-14px - var(--ram-size) * .052); }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot .ram-stage::before {
+  content: '';
+  position: absolute;
+  left: 22%;
+  right: 16%;
+  bottom: 2%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .38), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot .ram-glow { inset: 10% 14% 26%; opacity: .7; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot .ram-bubble { left: calc(var(--ram-size) * .74); top: 64px; }
+[dir="rtl"] .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot .ram-stage { left: auto; right: calc(var(--ram-size) * -.104); }
+[dir="rtl"] .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot .ram-bubble { left: auto; right: calc(var(--ram-size) * .74); }
+/* The header stays pinned at full size, so the ram keeps its size and footing while the page scrolls. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen.is-scrolled :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot { width: calc(var(--ram-size) * .86); }
+/* The greeting starts after the ram with a little more room. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero).has-ram { column-gap: clamp(8px, 2.4vw, 14px) !important; }
+@media (max-width: 389px) {
+  .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot { --ram-size: 112px; }
+}
+@media (max-width: 349px) {
+  .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-mascot { --ram-size: 100px; }
+}
+
+/* Pro / Pro+ glowing edge: a bright hairline that brightens toward the lower centre, plus a soft outer glow. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block).hero-tier-pro { --hero-edge: #f4c76a; --hero-edge-hi: #fff1c9; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block).hero-tier-plus { --hero-edge: #c9d4ee; --hero-edge-hi: #ffffff; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block).hero-tier {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hero-edge) 80%, transparent), 0 3px 14px -1px color-mix(in srgb, var(--hero-edge) 75%, transparent), 0 10px 34px -6px color-mix(in srgb, var(--hero-edge) 45%, transparent), 0 18px 36px -22px rgba(0, 0, 0, .6) !important;
+}
+.movo-app .screen .hero-edge {
+  position: absolute;
+  inset: -3px 0 0;
+  z-index: 3;
+  padding: 0 2px 2px;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Brightest at the lower centre, fading up the sides; the top edge sits under the status bar and is clipped. */
+  background: radial-gradient(130% 100% at 50% 100%, var(--hero-edge-hi, #fff) 0, var(--hero-edge, #f4c76a) 45%, color-mix(in srgb, var(--hero-edge, #f4c76a) 0%, transparent) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  filter: drop-shadow(0 0 4px var(--hero-edge, #f4c76a));
+}

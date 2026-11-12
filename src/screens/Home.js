@@ -57,8 +57,11 @@ export default function Home({ c }) {
   const { show, setShow, stats, deltas, breakdown, recent, refDate, homeRefDate, homeMonthKey, setHomeMonthKey, homeYears = [], homeMonthStats, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
   const [editing, setEditing] = useState(false);
   // Pinned header with a scenery, zodiac or glow background (lib/homeHero.js); premium ones need Pro or Pro+.
-  const { can } = usePlan() || {};
+  const { can, plan } = usePlan() || {};
   const hero = resolveHero(prefs.homeHero, { premium: !!can?.(HERO_FEATURE) });
+  // Pro and Pro+ get a glowing header edge in their badge colour (gold / platinum), whatever background they chose.
+  const heroTier = hero && can?.(HERO_FEATURE) ? ` hero-tier hero-tier-${plan === 'pro_plus' ? 'plus' : 'pro'}` : '';
+  const heroEdge = heroTier ? <span className="hero-edge" aria-hidden="true" /> : null;
   const startEditing = () => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } };
   const [mascotSheet, setMascotSheet] = useState(false);
   const [periodSheet, setPeriodSheet] = useState(false);
@@ -162,7 +165,8 @@ export default function Home({ c }) {
     const firstBox = arrange(boxes.filter(b => b.node), homeLayout).find(b => !hiddenBoxes.includes(b.id));
     const hoist = !!hero && !editing && firstBox?.id === 'balance';
     const heroStyle = hero ? { '--hero-bg': hero.background, '--hero-glow': hero.glow || 'transparent' } : undefined;
-    const header = <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}${hero ? ' home-hero-ink' : ''}${hero && !hoist ? ` home-hero hero-${hero.kind}` : ''}`} style={hero && !hoist ? heroStyle : undefined} data-hero={hero && !hoist ? hero.id : undefined}>
+    const header = <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}${hero ? ' home-hero-ink' : ''}${hero && !hoist ? ` home-hero hero-${hero.kind}${heroTier}` : ''}`} style={hero && !hoist ? heroStyle : undefined} data-hero={hero && !hoist ? hero.id : undefined}>
+      {!hoist && heroEdge}
       {ramOn ? <RamMascot mood={ram.mood} message={ramMessage} onChangeMascot={() => setMascotSheet(true)} />
         : <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
           {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}
@@ -178,7 +182,8 @@ export default function Home({ c }) {
       </div>
     </header>;
     return <>
-      {hoist ? <div className={`home-hero-block hero-${hero.kind}`} style={heroStyle} data-hero={hero.id}>
+      {hoist ? <div className={`home-hero-block hero-${hero.kind}${heroTier}`} style={heroStyle} data-hero={hero.id}>
+        {heroEdge}
         {header}
         <div className={`box-slot size-${sizeOf(firstBox, homeLayout)}`}>{firstBox.node({ size: sizeOf(firstBox, homeLayout), style: styleOf(firstBox, homeLayout) })}</div>
       </div> : header}

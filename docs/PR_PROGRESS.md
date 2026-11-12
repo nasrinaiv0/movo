@@ -1,3 +1,14 @@
+## 2026-11-12 — Home header: edge to edge, grounded ram, glowing Pro edge
+
+Owner request:
+- The pinned Home header now reaches both screen edges (0px). Total balance keeps the page's 18px side space.
+- The ram is bigger (131px; 112px under 390px wide, 100px under 350px). Its top sits 1px under the top inset, and it stands on the Total balance card's top edge instead of floating. Its size and footing stay the same while scrolling. The greeting moves right, from 98px to 141px.
+- Pro and Pro+ get a glowing header edge in their badge colour: gold for Pro, platinum for Pro+. It is brightest at the lower centre and fades up the sides. Free gets no edge.
+
+The ram's happy hop in its idle animation is unchanged; it takes off and lands back on the card.
+
+Validation: Jest 209 suites / 1,256 tests, tsc, strict build, browser screenshots (Pro, Pro+, Free, 360px, right-to-left, a header without Total balance, scrolled). See `docs/engineering/updates/2026-11-12-home-header-edges.md`. Not run: real devices.
+
 ## 2026-11-12 — Cloud Sync paused: a calm panel instead of the red banner
 
 Owner request: remove the top banner "Cloud Sync requires verified active access. Local records remain on this device." When a cloud write is refused because the plan is not active, MOVO now shows a centred panel (`components/CloudPlanNotice.js`): "Cloud Sync is paused", records are safe on this device, nothing is deleted, sync restarts once Pro is active, with View plans and Not now. It shows at most once a day (`cloudPlanNoticeDay`), never over another sheet, the setup gate or the lock screen. Other sync errors still use the banner. Translated into 11 languages. Validation: Jest 208 suites / 1,253 tests, tsc, strict build, browser check against the mock cloud with an inactive plan in light and dark (panel shown, no banner) (see `docs/engineering/updates/2026-11-12-cloud-sync-paused-panel.md`). Not run: real devices.
