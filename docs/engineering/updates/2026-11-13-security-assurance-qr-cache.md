@@ -48,3 +48,6 @@ Changes prepared: valid PNG signature fixture; canonical `src/lib/legalSupplemen
 
 At `3d6a786fd9b17b43345a079946c694ec0fb2adb7`, Phase 1 had 228/229 passing test suites, 1,378/1,379 passing tests. The new QR cipher, crash-safe migration, canonical legal documents, and previous offline sync timeout scenario all passed. Only the UI legal navigation test expected old November 11 / November 6 effective dates. Update it to November 13 for both policies, matching the material versioned consent update. No changes to product storage or authorization; rerun exact head.
 
+
+## Concurrent PR #292 integration, before commit
+An independent user/collaborator merged GitHub PR #292 (Android bottom-nav faster response) into main SHA `636eb358f217d8dd645b223e89c1f87db3b12854` during verification. Our open PR #291 then became `mergeable_state=dirty` because both branches touch `src/App.test.js` and `docs/PR_PROGRESS.md`. Rather than touch production, we integrate the already-landed navigation code/docs into the PR branch only, carrying forward the exact 21-line bottom-navigation regression test while preserving Nov 13 legal/version assertions and QR/finance security tests. The merge commit lists both parents and never forces branch history. All exact new-head gates require rerun; previous main SHA may have its own queued production build independent of us.

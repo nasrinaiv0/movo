@@ -1,3 +1,18 @@
+## 2026-11-13 — PR #291 non-production merge of concurrent PR #292 (precommit)
+
+- An independent collaborator merged [PR #292](https://github.com/nasrinaiv0/movo/pull/292) to main `636eb35` while PR #291's security checks were running. **We did not merge PR #292 or trigger the queued Vercel production deployment.**
+- PR #292 changed `src/App.js`, `src/App.css`, `src/App.test.js`, `docs/PR_PROGRESS.md` and added `docs/engineering/updates/2026-11-12-android-bottom-nav.md`; no finance-vault, QR cipher, API authorization, legal generator or database changes.
+- **Integration plan**: on the existing *non-production PR branch only*, preserve PR #291's legal consent/finance test changes and add PR #292's new touch-down bottom-nav test; take PR #292's App.js/App.css and progress document, and retain all prior encryption/security audit records. Create a two-parent merge commit on PR #291 (parents `3c15601` and `636eb35`) so the open PR is mergeable again without force-pushing or altering main.
+- CI for `3c15601` passed Phase 1: **229/229 suites, 1,379/1,379 tests**, hybrid security, PG tenant isolation and IAP integrity; Android Gradle native compilation was in progress; iOS queued and Vercel preview queued. New integration head **must rerun all checks** because navigation code has changed. No production or database modification.
+
+## 2026-11-12 — Android bottom navigation: instant response, lighter animation
+
+Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
+- **Instant response:** the tapped tab and the highlight now change on touch-down (11–23 ms), the screen still appears about as fast, and a cancelled touch puts the bar back.
+- **Lighter drawing:** the Android app uses a lighter blur for the bar, with no transform or width transitions on it; the highlight and icons animate on their own layers.
+
+Validation: new App test, Jest 224 suites / 1,350 tests, `tsc`, strict build, browser check in light and dark. Not run: a real Android phone. See `docs/engineering/updates/2026-11-12-android-bottom-nav.md`.
+
 ## 2026-11-13 — PR #291 second CI iteration (precommit record)
 
 - Exact-head `3d6a786` Phase 1 regression: **228/229 suites, 1,378/1,379 tests passed**. Atomic QR upgrade tests, legal generator, user-facing security contracts and earlier offline CSV-sync test PASSED. The one remaining test in `src/App.test.js` asserts old Terms/Privacy UI effective dates (Nov 11 and Nov 6) while current staged legal pages correctly show **Nov 13**.
