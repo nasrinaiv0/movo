@@ -1,0 +1,102 @@
+// Google/email authentication recovery messages (2026-11-12). Columns: English, Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi.
+// Human linguist review recommended before public multilingual release.
+export default [
+  [
+    "Apple sign-in is not enabled for MOVO. Check the Apple provider settings or use email sign-in.",
+    "Hindi naka-enable ang pag-sign in gamit ang Apple sa MOVO. Suriin ang mga setting ng Apple provider o gamitin ang email.",
+    "تسجيل الدخول باستخدام Apple غير مفعّل في MOVO. تحقّق من إعدادات موفّر Apple أو سجّل الدخول بالبريد الإلكتروني.",
+    "MOVO 尚未启用 Apple 登录。请检查 Apple 登录提供商设置，或使用电子邮件登录。",
+    "El inicio de sesión con Apple no está habilitado en MOVO. Revisa la configuración del proveedor de Apple o usa el correo electrónico.",
+    "L'accesso con Apple non è abilitato in MOVO. Controlla le impostazioni del provider Apple o accedi con l'email.",
+    "Die Anmeldung mit Apple ist in MOVO nicht aktiviert. Prüfe die Apple-Anbietereinstellungen oder melde dich per E-Mail an.",
+    "La connexion avec Apple n'est pas activée dans MOVO. Vérifiez les paramètres du fournisseur Apple ou connectez-vous par e-mail.",
+    "O login com Apple não está ativado no MOVO. Verifique as configurações do provedor Apple ou entre por e-mail.",
+    "MOVO では Apple でのサインインが有効になっていません。Apple プロバイダーの設定を確認するか、メールでサインインしてください。",
+    "MOVO에서 Apple 로그인이 활성화되어 있지 않습니다. Apple 제공업체 설정을 확인하거나 이메일로 로그인하세요.",
+    "MOVO में Apple से साइन इन सक्षम नहीं है। Apple प्रदाता की सेटिंग जाँचें या ईमेल से साइन इन करें।"
+  ],
+  [
+    "Could not connect to MOVO sign-in. Check your internet connection and try again.",
+    "Hindi makakonekta sa MOVO sign-in. Suriin ang internet connection at subukan muli.",
+    "تعذّر الاتصال بخدمة تسجيل الدخول في MOVO. تحقّق من اتصالك بالإنترنت وحاول مجددًا.",
+    "无法连接 MOVO 登录服务。请检查网络连接后重试。",
+    "No se pudo conectar al inicio de sesión de MOVO. Comprueba tu conexión a Internet e inténtalo de nuevo.",
+    "Impossibile connettersi al servizio di accesso MOVO. Controlla la connessione Internet e riprova.",
+    "Keine Verbindung zur MOVO-Anmeldung. Prüfe deine Internetverbindung und versuche es erneut.",
+    "Impossible de se connecter au service de connexion MOVO. Vérifiez votre connexion Internet et réessayez.",
+    "Não foi possível conectar ao login do MOVO. Verifique sua conexão com a internet e tente novamente.",
+    "MOVO のサインインサービスに接続できません。インターネット接続を確認して再試行してください。",
+    "MOVO 로그인 서비스에 연결할 수 없습니다. 인터넷 연결을 확인한 후 다시 시도하세요.",
+    "MOVO साइन-इन सेवा से कनेक्ट नहीं हो सका। अपना इंटरनेट कनेक्शन जाँचें और दोबारा कोशिश करें।"
+  ],
+  [
+    "Google sign-in is not enabled for MOVO. Check the Google provider settings or use email sign-in.",
+    "Hindi naka-enable ang pag-sign in gamit ang Google sa MOVO. Suriin ang mga setting ng Google provider o gamitin ang email.",
+    "تسجيل الدخول باستخدام Google غير مفعّل في MOVO. تحقّق من إعدادات موفّر Google أو سجّل الدخول بالبريد الإلكتروني.",
+    "MOVO 尚未启用 Google 登录。请检查 Google 登录提供商设置，或使用电子邮件登录。",
+    "El inicio de sesión con Google no está habilitado en MOVO. Revisa la configuración del proveedor de Google o usa el correo electrónico.",
+    "L'accesso con Google non è abilitato in MOVO. Controlla le impostazioni del provider Google o accedi con l'email.",
+    "Die Anmeldung mit Google ist in MOVO nicht aktiviert. Prüfe die Google-Anbietereinstellungen oder melde dich per E-Mail an.",
+    "La connexion avec Google n'est pas activée dans MOVO. Vérifiez les paramètres du fournisseur Google ou connectez-vous par e-mail.",
+    "O login com Google não está ativado no MOVO. Verifique as configurações do provedor Google ou entre por e-mail.",
+    "MOVO では Google でのサインインが有効になっていません。Google プロバイダーの設定を確認するか、メールでサインインしてください。",
+    "MOVO에서 Google 로그인이 활성화되어 있지 않습니다. Google 제공업체 설정을 확인하거나 이메일로 로그인하세요.",
+    "MOVO में Google से साइन इन सक्षम नहीं है। Google प्रदाता की सेटिंग जाँचें या ईमेल से साइन इन करें।"
+  ],
+  [
+    "MOVO could not deliver email codes. The email provider or OTP template needs attention. Please try again later.",
+    "Hindi maipadala ng MOVO ang mga email code. Kailangang suriin ang email provider o OTP template. Subukan muli mamaya.",
+    "تعذّر على MOVO إرسال رموز البريد الإلكتروني. يجب مراجعة موفّر البريد الإلكتروني أو قالب الرمز لمرة واحدة. حاول لاحقًا.",
+    "MOVO 无法发送电子邮件验证码。电子邮件服务提供商或一次性验证码模板需要检查。请稍后重试。",
+    "MOVO no pudo enviar los códigos por correo. Es necesario revisar el proveedor de correo o la plantilla OTP. Inténtalo más tarde.",
+    "MOVO non è riuscito a inviare i codici via email. È necessario verificare il provider email o il modello OTP. Riprova più tardi.",
+    "MOVO konnte die E-Mail-Codes nicht zustellen. Der E-Mail-Anbieter oder die OTP-Vorlage muss geprüft werden. Versuche es später erneut.",
+    "MOVO n'a pas pu envoyer les codes par e-mail. Le fournisseur de messagerie ou le modèle OTP doit être vérifié. Réessayez plus tard.",
+    "O MOVO não conseguiu enviar os códigos por e-mail. O provedor de e-mail ou o modelo de OTP precisa ser verificado. Tente novamente mais tarde.",
+    "MOVO からメール認証コードを送信できませんでした。メールサービスまたは OTP テンプレートの確認が必要です。後でもう一度お試しください。",
+    "MOVO에서 이메일 인증 코드를 보내지 못했습니다. 이메일 제공업체 또는 OTP 템플릿을 확인해야 합니다. 나중에 다시 시도하세요.",
+    "MOVO ईमेल कोड नहीं भेज सका। ईमेल प्रदाता या OTP टेम्पलेट की जाँच आवश्यक है। कृपया बाद में फिर कोशिश करें।"
+  ],
+  [
+    "This MOVO app build has an invalid cloud configuration. Install an updated version or contact support.",
+    "May maling cloud configuration ang bersyong ito ng MOVO. Mag-install ng bagong bersyon o makipag-ugnayan sa support.",
+    "يحتوي هذا الإصدار من تطبيق MOVO على إعدادات سحابية غير صالحة. ثبّت إصدارًا محدّثًا أو تواصل مع الدعم.",
+    "当前 MOVO 应用版本的云端配置无效。请安装更新版本或联系支持团队。",
+    "Esta versión de MOVO tiene una configuración de nube no válida. Instala una versión actualizada o contacta con soporte.",
+    "Questa versione di MOVO ha una configurazione cloud non valida. Installa la versione aggiornata o contatta l'assistenza.",
+    "Diese MOVO-App-Version hat eine ungültige Cloud-Konfiguration. Installiere eine aktualisierte Version oder kontaktiere den Support.",
+    "Cette version de MOVO possède une configuration cloud incorrecte. Installez une version à jour ou contactez l'assistance.",
+    "Esta versão do MOVO tem uma configuração de nuvem inválida. Instale uma versão atualizada ou entre em contato com o suporte.",
+    "この MOVO アプリのクラウド設定に問題があります。最新版をインストールするか、サポートにお問い合わせください。",
+    "현재 MOVO 앱 버전의 클라우드 설정이 올바르지 않습니다. 업데이트된 버전을 설치하거나 지원팀에 문의하세요.",
+    "MOVO ऐप के इस संस्करण का क्लाउड कॉन्फ़िगरेशन अमान्य है। नया संस्करण इंस्टॉल करें या सहायता टीम से संपर्क करें।"
+  ],
+  [
+    "Too many code requests. Please wait a few minutes before trying again.",
+    "Masyadong maraming kahilingan para sa code. Maghintay ng ilang minuto bago subukan muli.",
+    "عدد طلبات الرمز كبير جدًا. يرجى الانتظار بضع دقائق قبل المحاولة مجددًا.",
+    "验证码请求次数过多。请等待几分钟后重试。",
+    "Demasiadas solicitudes de código. Espera unos minutos antes de volver a intentarlo.",
+    "Troppe richieste di codice. Attendi qualche minuto prima di riprovare.",
+    "Zu viele Code-Anfragen. Warte einige Minuten, bevor du es erneut versuchst.",
+    "Trop de demandes de code. Attendez quelques minutes avant de réessayer.",
+    "Muitas solicitações de código. Aguarde alguns minutos antes de tentar novamente.",
+    "認証コードのリクエストが多すぎます。数分待ってから再試行してください。",
+    "인증 코드 요청이 너무 많습니다. 몇 분 후에 다시 시도하세요.",
+    "बहुत अधिक कोड अनुरोध किए गए हैं। दोबारा कोशिश करने से पहले कुछ मिनट प्रतीक्षा करें।"
+  ],
+  [
+    "Too many sign-in attempts. Please wait a few minutes before trying again.",
+    "Masyadong maraming pagtatangkang mag-sign in. Maghintay ng ilang minuto bago subukan muli.",
+    "عدد محاولات تسجيل الدخول كبير جدًا. يرجى الانتظار بضع دقائق قبل المحاولة مجددًا.",
+    "登录尝试次数过多。请等待几分钟后重试。",
+    "Demasiados intentos de inicio de sesión. Espera unos minutos antes de volver a intentarlo.",
+    "Troppi tentativi di accesso. Attendi qualche minuto prima di riprovare.",
+    "Zu viele Anmeldeversuche. Warte einige Minuten, bevor du es erneut versuchst.",
+    "Trop de tentatives de connexion. Attendez quelques minutes avant de réessayer.",
+    "Muitas tentativas de login. Aguarde alguns minutos antes de tentar novamente.",
+    "サインインの試行回数が多すぎます。数分待ってから再試行してください。",
+    "로그인 시도가 너무 많습니다. 몇 분 후에 다시 시도하세요.",
+    "बहुत अधिक साइन-इन प्रयास हुए हैं। दोबारा कोशिश करने से पहले कुछ मिनट प्रतीक्षा करें।"
+  ]
+];

@@ -24,7 +24,7 @@ Audit base main 9c423c7; native changes staged until compiled and reviewed.
 | 16 | Queries and schemas | PARTIAL | Supabase queries and selective body validation, no uniform schema gate |
 | 17 | Rate limiting | PARTIAL | Automation RPC throttling, broad API/OTP limits not proved |
 | 18 | Secrets/automatic scanning | PARTIAL | Production npm audit clean, code scans and dependency monitoring incomplete |
-| 19 | Error privacy/screen masking | STAGED | iOS opaque cover, Android FLAG_SECURE and generic API errors |
+| 19 | Error privacy/screen masking | STAGED | iOS opaque cover, Android recent-apps preview hidden (`setRecentsScreenshotEnabled(false)` on Android 13+, `FLAG_SECURE` only while pausing on older versions) and generic API errors. Since 2026-11-12 (owner decision) screenshots are allowed while the app is in use. |
 | 20 | Session dashboard | GAP | No remote session revoke UI |
 | 21 | Biometrics | PARTIAL | iOS and browser local app lock; Android native biometrics not validated |
 | 22 | Alerts/deletion/security.txt | PARTIAL | Self-service deletion; staged disclosure policy, missing login email alerts |

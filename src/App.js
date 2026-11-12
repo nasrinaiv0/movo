@@ -19,7 +19,7 @@ import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
 import { buildIndexedBalances } from './lib/indexedBalance';
 import { clearHybridOwner } from './lib/hybridLocalStore';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
@@ -36,6 +36,7 @@ import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import SetupAgreement from './components/SetupAgreement';
+import CloudPlanNotice from './components/CloudPlanNotice';
 import { LEGAL_VERSION, hasAcceptedLegal } from './lib/legalVersion';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
@@ -60,7 +61,7 @@ import { supportsAccountQr } from './lib/accountQrEligibility';
 import LoyaltySheet from './components/LoyaltySheet';
 import { isLoyaltyType, normalizeLoyaltyCard, visibleLoyaltyCards } from './lib/loyaltyCards';
 import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
-import { canAnimate, revealChange } from './lib/motion';
+import { canAnimate, revealChange, showInstantly } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
@@ -168,7 +169,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'auto', cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
@@ -297,6 +298,8 @@ function App() {
   const lastTab = useRef(0);
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [prefs, setPrefs] = useState(readPrefs);
+  // Cloud Sync paused for lack of a plan: shown as a panel (components/CloudPlanNotice.js), at most once a day.
+  const [cloudPlanNotice, setCloudPlanNotice] = useState(false);
   const prefsRef = useRef(prefs);
   /*
    * Paid features follow the server-verified plan. Offline-first: while Cloud Sync is on but the connection is down
@@ -523,7 +526,7 @@ function App() {
       // No answer at all means the server could not be reached: keep working on the device and retry later.
       if(verified===null)throw Object.assign(Error('Cloud is unreachable. Changes are saved on this device and upload automatically when you are back online.'),{retryable:true});
       if(!canUseFeature(verified,'cloudWrite'))
-        throw Error('Cloud Sync requires verified active access. Local records remain on this device.');
+        throw Object.assign(Error('Cloud Sync requires verified active access. Local records remain on this device.'),{planRequired:true});
       if(cloudAuthUserRef.current!==ownerId||!cloudSyncRequestedRef.current||loadEpoch!==cloudLoadEpochRef.current)return false;
       const today=new Date();
       const dateKey=d=>String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -553,7 +556,7 @@ function App() {
       if(previous?.dirty){
         // This same owner-specific entitlement was verified before the read.
         if (!canUseFeature(verified,'cloudWrite'))
-          throw Error('Offline changes are saved. Active cloud-write plan verification is required to upload them.');
+          throw Object.assign(Error('Offline changes are saved. Active cloud-write plan verification is required to upload them.'),{planRequired:true});
         // Every cloud step has a deadline, so a slow connection ends this attempt (and the next retry picks up
         // where it stopped) instead of leaving the sync hanging.
         const timed=(fn,ms=CLOUD_WRITE_TIMEOUT_MS)=>(...args)=>withTimeout(fn(...args),ms);
@@ -612,7 +615,9 @@ function App() {
       // A superseded attempt (signed out, Cloud Sync switched, or a newer save) leaves the current state alone.
       if(cloudAuthUserRef.current===ownerId&&cloudSyncRequestedRef.current&&loadEpoch===cloudLoadEpochRef.current){
         setSyncState({status:'pending',retry,message,uploaded:0,downloaded:0});
-        if(!retry)setError(message);
+        // A missing plan is not an error to shout about: a calm panel explains it (at most once a day) instead.
+        if(cause?.planRequired)setCloudPlanNotice(true);
+        else if(!retry)setError(message);
         const restored=loadOwnedLocal(ownerId);
         if(!restored) setLocalPersistenceWarning(true);
         setCloudMode(false);
@@ -1084,6 +1089,13 @@ function App() {
   const screenTrailRef = useRef(null);
   if (!screenTrailRef.current) screenTrailRef.current = createScreenTrail();
   const backMoveRef = useRef(false);
+  /* iPhone edge swipe: a snapshot of each page as it is left, shown blurred under the swipe back to it. */
+  const edgeSwipeOnRef = useRef(false);
+  const pageSnapsRef = useRef(new Map());
+  const swipeBackRef = useRef(false);
+  // Back shows the previous page at once, where it was left (owner, 2026-11-12).
+  const scrollMemoRef = useRef(new Map());
+  const backPaintRef = useRef(null);
   /*
    * Setup gate (owner, 2026-11-11): until the video guide, the walkthrough, signing in (or choosing this device only)
    * and accepting the Terms and Privacy Policy are done, only those steps show. The dashboard stays hidden and the
@@ -1099,8 +1111,27 @@ function App() {
     if (params.filter) setTxFilter(params.filter);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
+    // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
+    const isBack = prev !== next && (backMoveRef.current || swipeBackRef.current || screenTrailRef.current.peek() === next);
+    if (prev !== next) {
+      const memo = scrollMemoRef.current; memo.delete(prev); memo.set(prev, window.scrollY || 0);
+      while (memo.size > 20) memo.delete(memo.keys().next().value);
+    }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
+    if (edgeSwipeOnRef.current && prev !== next && typeof document !== 'undefined') {
+      const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
+      if (main) {
+        snaps.delete(prev);
+        snaps.set(prev, { node: main.cloneNode(true), className: main.className.replace(/\benter-\S+/g, '').trim(), scroll: window.scrollY || 0 });
+        while (snaps.size > 6) snaps.delete(snaps.keys().next().value);
+      }
+    }
+    if (isBack) {
+      // No entrance motion, amounts at their value, and the scroll where the page was left (applied before paint).
+      setMotion('back'); showInstantly(500);
+      backPaintRef.current = { scroll: scrollMemoRef.current.get(next) || 0 };
+    } else backPaintRef.current = null;
     viewRef.current = next;
     setSheet(null); setError(''); setView(next);
     if (next !== 'Settings') setQuery('');
@@ -1123,6 +1154,27 @@ function App() {
     try { go(previous); } finally { backMoveRef.current = false; }
     return true;
   }, [go]);
+  /*
+   * After Back, before the page is painted: finish every one-off entrance animation inside it (looping ones keep
+   * running) and put the scroll back where the page was left. Content that mounts a frame later is caught once more.
+   */
+  useLayoutEffect(() => {
+    const back = backPaintRef.current; if (!back) return undefined;
+    backPaintRef.current = null;
+    const settle = () => {
+      const main = document.querySelector('main.screen');
+      try {
+        main?.getAnimations?.({ subtree: true }).forEach(a => {
+          const timing = a.effect?.getTiming?.();
+          if (timing && timing.iterations !== Infinity && a.playState !== 'finished') a.finish();
+        });
+      } catch { /* older engines: the short entrance plays */ }
+      if (back.scroll && Math.abs((window.scrollY || 0) - back.scroll) > 2) { try { window.scrollTo(0, back.scroll); } catch { /* jsdom */ } }
+    };
+    settle();
+    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(settle) : null;
+    return () => { if (raf !== null) cancelAnimationFrame(raf); };
+  }, [view]);
   useEffect(() => listenForDeviceBack(deviceBack), [deviceBack]);
   // Android: the system back gesture and button come straight to deviceBack (lib/native.js).
   useEffect(() => listenForAndroidBack(deviceBack), [deviceBack]);
@@ -1130,12 +1182,19 @@ function App() {
      (lib/edgeSwipeBack.js). Browsers and Android have their own gesture, which arrives as Back above. */
   useEffect(() => {
     if (nativePlatform() !== 'ios' && !(typeof window !== 'undefined' && window.__MOVO_EDGE_SWIPE__ === true)) return undefined;
-    return startEdgeSwipeBack({
-      onBack: deviceBack,
+    edgeSwipeOnRef.current = true;
+    const backTarget = () => screenTrailRef.current.peek() || (viewRef.current !== 'Home' ? 'Home' : '');
+    const stop = startEdgeSwipeBack({
+      onBack: () => {
+        swipeBackRef.current = true;
+        try { return deviceBack(); } finally { swipeBackRef.current = false; }
+      },
       canGoBack: () => hasBackLayer() || sheetOpenRef.current || viewRef.current !== 'Home',
       surface: () => (hasBackLayer() || sheetOpenRef.current || document.querySelector('[aria-modal="true"]') ? null : document.querySelector('main.screen')),
+      preview: () => pageSnapsRef.current.get(backTarget()) || null,
       animate: canAnimate(),
     });
+    return () => { edgeSwipeOnRef.current = false; pageSnapsRef.current.clear(); stop(); };
   }, [deviceBack]);
   const openLegal = useCallback((next) => {
     if (!['TermsOfService', 'PrivacyPolicy'].includes(view)) setLegalReturnView(view);
@@ -2544,7 +2603,9 @@ function App() {
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
+          // Instant feedback on touch-down (owner, 2026-11-12): the highlight starts sliding before the screen renders.
+          const pressNav = (e) => { if (center || e.button > 0) return; const pill = e.currentTarget.parentElement?.querySelector('.nav-pill'); const idx = NAV.findIndex(n => n[2] === target); if (pill && idx >= 0) { pill.style.setProperty('--idx', String(idx)); pill.classList.remove('hidden'); } };
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onPointerDown={pressNav} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={27} /></span> : <Icon name={icon} size={29} strokeWidth={1.8} filled={active} />}</span>
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
@@ -2637,6 +2698,9 @@ function App() {
       {showTour && !locked && !prefs.tutorialSeen && <TutorialVideo onDone={() => setPref('tutorialSeen', true)} />}
       {showTour && !locked && prefs.tutorialSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {guideOpen && !locked && <TutorialVideo onDone={() => setGuideOpen(false)} />}
+      {cloudPlanNotice && setupDone && !locked && !sheet && prefs.cloudPlanNoticeDay !== todayKey && <CloudPlanNotice
+        onPlans={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); setSheet({ name: 'planOffer', feature: 'cloudWrite' }); }}
+        onClose={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); }} />}
       {/* Last setup step, after the free-month panel above: accept the Terms and Privacy Policy, then the dashboard
           opens. Reading either one returns here. */}
       {setupGateOn && authReady && !locked && prefs.onboarded && prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && <SetupAgreement onOpenLegal={openLegal}

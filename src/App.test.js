@@ -241,6 +241,23 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.bottom-nav .nav-item[aria-current="page"]').getAttribute('aria-label')).toBe('Wallet');
   });
 
+  test('Back shows the previous page at once, where it was left; going forward still plays the entrance', async () => {
+    const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
+    const main = () => container.querySelector('main.screen');
+    nav(container, 'Wallet');
+    expect(main().className).not.toContain('enter-back');
+    Object.defineProperty(window, 'scrollY', { value: 420, configurable: true });
+    nav(container, 'Transactions');
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    expect(main().className).toContain('enter-tab-right');
+    window.scrollTo.mockClear();
+    await back();
+    expect(container.querySelector('.bottom-nav .nav-active').getAttribute('aria-label')).toBe('Wallet');
+    expect(main().className).toContain('enter-back');
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 420);
+    delete window.scrollY;
+  });
+
   test('the device Back button closes an open sheet, then returns through the screens visited, then to Home', async () => {
     const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
     const current = () => container.querySelector('.bottom-nav .nav-item[aria-current="page"]')?.getAttribute('aria-label');
@@ -262,6 +279,29 @@ describe('MOVO finance frontend', () => {
     expect(current()).toBe('Home');
     await back(); // nothing left: Home stays
     expect(current()).toBe('Home');
+  });
+
+  test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
+    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
+    const header = () => container.querySelector('.home-hero-block');
+    expect(header().className).toContain('hero-scenery');
+    // Pro+ gets the platinum glowing edge (Pro gets gold; Free gets none).
+    expect(header().className).toContain('hero-tier-plus');
+    expect(header().querySelector('.hero-edge')).not.toBeNull();
+    expect(header().querySelector('.home-header')).not.toBeNull();
+    expect(header().querySelector('.balance-card')).not.toBeNull();
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
+    openProfile(container);
+    clickButton(container, 'Settings');
+    act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    const tab = Array.from(container.querySelectorAll('.hero-tabs [role="tab"]')).find(b => b.textContent === 'Zodiac');
+    act(() => tab.click());
+    const leo = Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Leo');
+    act(() => leo.click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('zodiac:leo');
+    nav(container, 'Home');
+    expect(header().className).toContain('hero-zodiac');
+    expect(header().getAttribute('data-hero')).toBe('zodiac:leo');
   });
 
   test('Pro+ colours the bottom navigation platinum by default, and Appearance can switch it to the app accent', () => {
@@ -1158,5 +1198,30 @@ describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
     swipe(4, 300);
     expect(container.querySelector('.sheet-backdrop')).toBeNull();
     expect(active()).toBe('Wallet');
+  });
+});
+
+describe('Home header block (owner, 2026-11-12)', () => {
+  let container; let root;
+  const start = (prefs) => {
+    window.localStorage.clear(); seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true, ...prefs }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    act(() => root.render(<App />));
+  };
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
+
+  test('when another box comes first, the header stands alone with the background and Total balance stays in the list', () => {
+    start({ layouts: { home: { order: ['summary', 'balance'] } } });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(container.querySelector('.home-header').className).toContain('home-hero');
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
+  });
+
+  test('with no background the header is plain and nothing is pinned with it', () => {
+    start({ homeHero: 'plain' });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(container.querySelector('.home-header').className).not.toContain('home-hero');
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
   });
 });

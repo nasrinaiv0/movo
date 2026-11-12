@@ -1,3 +1,70 @@
+## 2026-11-12 — PR #282 Android-only sign-in follow-up (before new implementation)
+- Verified downloaded signed Google Play AAB run #43149512317 against actual project URL and active MOVO public key, Browser plugin and native auth callback. The broken installed Android version still needs identification; web authentication is not being modified.
+- Implemented: Android-only email-link callback to `movo://auth-callback`, safe native Browser/Keystore failure diagnostics, and tests for Android, web and iOS behavioral isolation, plus three new messages translated across 11 languages. Live Android device callback and delivery still not proven; keep website/iOS intact. See `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md`. **No merge or production change.**
+
+
+## 2026-11-12 — PR #282: Google and email sign-in recovery; Android public project binding
+- Investigated MOVO production Auth logs (Google redirects/login and limited email events) and Vercel/GitHub build-env separation; did not assume that Google or email is disabled globally.
+- Hardened signed Android AAB configuration: only the verified MOVO Supabase project origin is accepted, and unsafe/non-anon/mismatched legacy keys are rejected at build time. Public `sb_publishable_...` keys still require manual confirmation that they come from MOVO.
+- Google, Apple, and email OTP now classify provider-disabled, bad API key, SMTP/template, rate-limit and network errors into safe user-facing messages; no raw server errors or secrets are rendered. Native browser cancellation releases the loading state.
+- Added focused guard and UI unit tests plus seven new error messages translated in all 11 supported languages; see `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md` for complete investigation, provider settings and release checklist.
+- First exact-head CI found missing new i18n keys (1,277 / 1,278 tests passed), so seven 11-language catalogue rows were added without weakening translation coverage; added signed Android auth validator tests to Phase 1 PR CI. This PR is **no-merge/no-publish** pending all exact-head CI tests, Vercel preview (Sandbox create returned 402 payment_required), live Supabase Google OAuth + SMTP/template configuration, physical Android Google/OTP login and data isolation verification. Production not modified.
+
+## 2026-11-12 — Fix: Portrait card format preview without a plan
+
+Bug (owner screenshot): on Free, the Portrait tile in Wallet → Sort & view drew a landscape card squeezed into the portrait box, because `CardArt` turns every card landscape without `portraitCards`. The tile now passes `formatSample`, so it shows the true portrait layout as a sample, marked Pro. Choosing it still opens plans, and cards in the wallet stay landscape until Pro is active. Validation: Jest 209 suites / 1,257 tests, tsc, strict build, browser check as Free and Pro+ (see `docs/engineering/updates/2026-11-12-portrait-format-sample.md`). Not run: real devices.
+
+## 2026-11-12 — Home header: edge to edge, grounded ram, glowing Pro edge
+
+Owner request:
+- The pinned Home header now reaches both screen edges (0px). Total balance keeps the page's 18px side space.
+- The ram is bigger (131px; 112px under 390px wide, 100px under 350px). Its top sits 1px under the top inset, and it stands on the Total balance card's top edge instead of floating. Its size and footing stay the same while scrolling. The greeting moves right, from 98px to 141px.
+- Pro and Pro+ get a glowing header edge in their badge colour: gold for Pro, platinum for Pro+. It is brightest at the lower centre and fades up the sides. Free gets no edge.
+
+The ram's happy hop in its idle animation is unchanged; it takes off and lands back on the card.
+
+Validation: Jest 209 suites / 1,256 tests, tsc, strict build, browser screenshots (Pro, Pro+, Free, 360px, right-to-left, a header without Total balance, scrolled). See `docs/engineering/updates/2026-11-12-home-header-edges.md`. Not run: real devices.
+
+## 2026-11-12 — Cloud Sync paused: a calm panel instead of the red banner
+
+Owner request: remove the top banner "Cloud Sync requires verified active access. Local records remain on this device." When a cloud write is refused because the plan is not active, MOVO now shows a centred panel (`components/CloudPlanNotice.js`): "Cloud Sync is paused", records are safe on this device, nothing is deleted, sync restarts once Pro is active, with View plans and Not now. It shows at most once a day (`cloudPlanNoticeDay`), never over another sheet, the setup gate or the lock screen. Other sync errors still use the banner. Translated into 11 languages. Validation: Jest 208 suites / 1,253 tests, tsc, strict build, browser check against the mock cloud with an inactive plan in light and dark (panel shown, no banner) (see `docs/engineering/updates/2026-11-12-cloud-sync-paused-panel.md`). Not run: real devices.
+
+## 2026-11-12 — Faster buttons and pop-ups on phones
+
+Owner report: animations delayed and unresponsive on Android and iPhone. The 3D mascot is capped at 30 fps and pauses while touching, scrolling or with a sheet or dialog open. Glow headers no longer repaint every frame. Press states are instant, sheets and dialogs enter within about 200 ms without staggered content, and the nav highlight moves on touch-down. Measured at 4× CPU: sheets settle in 260–340 ms (was 355–645), and Home has no long tasks with a sheet open. Validation: Jest 207 suites / 1,252 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-tap-and-popup-responsiveness.md`). Not run: real devices.
+
+## 2026-11-12 — Video guide shown in a phone frame
+
+Owner request with a reference image: the tutorial recording now plays on a CSS-drawn modern phone (slim bezel, side buttons, dynamic-island cut-out, status bar, home indicator) on a light stage. Controls sit above and the translated caption and button below. The 9:20 phone shows the whole recording uncropped. Validation: Jest 206 suites / 1,250 tests, tsc, strict build, screenshots at 390/430 px and desktop (see `docs/engineering/updates/2026-11-12-tutorial-phone-frame.md`).
+
+## 2026-11-12 — Zodiac headers in the style of the owner's reference (kept subtle)
+
+The zodiac art now follows the owner's reference, restrained: a night sky with a faint Milky Way, a thin golden zodiac wheel framing the sign's constellation, a few sparkles and gold-rimmed hills above the balance card. There is a new Celestial glow (green and gold) and a soft glow around the balance card on premium headers. Validation: Jest, tsc, strict build, browser screenshots for each element (see `docs/engineering/updates/2026-11-12-celestial-zodiac-art.md`).
+
+## 2026-11-12 — Pinned header down to Total balance, new search icon, equal header spacing
+
+Owner requests: the search icon has a bigger lens and a shorter handle. The pinned Home header now reaches down to the bottom of Total balance, which is drawn inside it. Header buttons start 28 px from the top on Home, Wallet, Transactions and Menu (measured; was 44 on Home). Validation: Jest 206 suites / 1,249 tests, tsc, strict build, browser measurements (see `docs/engineering/updates/2026-11-12-header-block-search-icon.md`).
+
+## 2026-11-12 — Pinned Home header with scenery, zodiac and glow backgrounds
+
+Owner request: the Home header stays pinned at the top with rounded bottom corners over a background. It defaults to a scenery picture for everyone; Pro and Pro+ can pick all 12 zodiac constellations (original generated SVG) or 6 glowing backgrounds in Settings → Appearance → Home header. Free users see them locked; choosing one opens plans. Validation: Jest 206 suites / 1,247 tests, tsc, strict build, light/dark browser screenshots (see `docs/engineering/updates/2026-11-12-home-header-hero.md`). Not run: real phones.
+
+## 2026-11-12 — Plain header buttons and an off-white light background
+
+Owner request: top header icons have no capsule, border or fill and sit closer together (40 px apart, 44 px tall touch areas); only the Plus buttons stay filled, on the web/Android and in the iPhone app's native top bar. Light mode with no scenery uses an off-white `#faf9f6` page. Validation: Jest 204 suites / 1,240 tests, tsc, strict build, light/dark header screenshots (see `docs/engineering/updates/2026-11-12-header-buttons-milk-white.md`). Not run: real phones.
+
+## 2026-11-12 — Back shows the previous page faster
+
+Owner request: going back now shows the previous page at once. Back moves (device Back, swipe, on-screen back arrow) skip the entrance motion, finish nested entrance animations before the first paint, show amounts at their value instead of counting up, and restore the page's scroll position. Measured after Back (production build, mobile emulation): 490–1,090 ms before, 20–120 ms after. Forward navigation is unchanged. Validation: Jest 204 suites / 1,239 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-faster-back.md`).
+
+## 2026-11-12 — Screenshots work on Android
+
+Owner request: screenshots (and screen recording) now work in the Android app; `FLAG_SECURE` is no longer set while MOVO is in use. The recent-apps preview still hides balances: blank via `setRecentsScreenshotEnabled(false)` on Android 13+, and `FLAG_SECURE` only while the app goes to the background on older versions. iOS already allows screenshots and keeps its app-switcher cover. Validation: security contract test updated, Jest, strict build; Android compile in CI `native-android`. Not run: a real Android phone (see `docs/engineering/updates/2026-11-12-android-screenshots.md`).
+
+## 2026-11-12 — Blurred previous-page preview during swipe back
+
+Owner request: while swiping back on iPhone, the previous page now shows underneath, blurred, dimmed and parallaxed, clearing as the swipe completes; it is a static copy taken when the page was left. The returned page opens without an entrance animation at its previous scroll position, with no flash (per-frame browser check). Validation: Jest 203 suites / 1,237 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-swipe-back-preview.md`). Not run: a real iPhone.
+
 ## 2026-11-12 — Swipe back on iPhone and Android
 
 Owner request: swipe from the edge to go back. The iPhone app gets an edge swipe (left edge → right, or right edge → left) that follows the finger and closes the open sheet or returns to the previous screen. Android's back button and system gesture now call MOVO's Back directly, and at Home the app moves to the background. Browsers keep their own swipe. Validation: Jest 203 suites / 1,234 tests, tsc, strict build, browser touch check (see `docs/engineering/updates/2026-11-12-swipe-back.md`). Not run: real devices.

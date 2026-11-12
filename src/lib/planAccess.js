@@ -1,5 +1,5 @@
 export const PLAN_LABELS = { free: 'Free', pro: 'Pro', pro_plus: 'Pro+' };
-export const PRO_FEATURES = ['premiumStickers', 'portraitCards', 'cardAnimations', 'insights', 'customMoneyFlow', 'styleUploads', 'fullAI', 'receiptScan', 'cloudWrite', 'advancedWidgets'];
+export const PRO_FEATURES = ['premiumStickers', 'portraitCards', 'cardAnimations', 'insights', 'customMoneyFlow', 'styleUploads', 'fullAI', 'receiptScan', 'cloudWrite', 'advancedWidgets', 'headerThemes'];
 export const PLUS_FEATURES = ['automation', 'premiumMascots', 'premiumUI'];
 
 // An expired or unknown entitlement never unlocks a feature. This is a UI mirror;

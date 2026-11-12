@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import { removeAllAccountQr } from './accountQrStorage';
 import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
-import { apiUrl, appOrigin, isNativeApp } from './platform';
+import { apiUrl, appOrigin, isNativeApp, nativePlatform } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
 
 const requireClient = () => {
@@ -22,7 +22,13 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function sendEmailCode(email) {
   const address = String(email || '').trim();
   if (!EMAIL_RE.test(address) || address.length > 254) throw new Error('invalid_email');
-  const emailRedirectTo = typeof window !== 'undefined' ? appOrigin() : undefined;
+  // Typed OTP stays in-app on every platform. If a provider/template sends a
+  // sign-in link instead, Android must return to its installed package and
+  // exchange the PKCE code rather than opening a separate website session.
+  // Preserve the existing iOS and browser behavior.
+  const emailRedirectTo = nativePlatform() === 'android'
+    ? AUTH_CALLBACK
+    : (typeof window !== 'undefined' ? appOrigin() : undefined);
   return unwrap(await requireClient().auth.signInWithOtp({ email: address, options: { shouldCreateUser: true, ...(emailRedirectTo ? { emailRedirectTo } : {}) } }));
 }
 export async function verifyEmailCode(email, code) {
@@ -33,7 +39,7 @@ export async function verifyEmailCode(email, code) {
 async function signInWithProvider(provider, queryParams) {
   const client = requireClient();
   if (isNativeApp()) {
-    // The iOS app opens the provider in the system browser sheet; Supabase returns to movo://auth-callback with a
+    // iOS and Android open the provider in the system browser; Supabase returns to movo://auth-callback with a
     // PKCE code, which finishOAuth() exchanges for a session.
     const data = unwrap(await client.auth.signInWithOAuth({ provider, options: { redirectTo: AUTH_CALLBACK, skipBrowserRedirect: true, ...(queryParams ? { queryParams } : {}) } }));
     if (!data?.url) throw new Error('oauth_url_missing');
@@ -43,7 +49,7 @@ async function signInWithProvider(provider, queryParams) {
   const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
   return unwrap(await client.auth.signInWithOAuth({ provider, options: { ...(redirectTo ? { redirectTo } : {}), ...(queryParams ? { queryParams } : {}) } }));
 }
-/** iOS app: finish Google/Apple sign-in from the movo://auth-callback code. */
+/** Native apps: exchange the PKCE code from Google, Apple or an email sign-in link. */
 export async function finishOAuth(code) {
   if (!code) throw new Error('oauth_code_missing');
   return unwrap(await requireClient().auth.exchangeCodeForSession(code));

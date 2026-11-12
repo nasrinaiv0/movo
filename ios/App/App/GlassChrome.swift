@@ -45,8 +45,9 @@ private extension UIColor {
 private final class GlassSurface: UIVisualEffectView {
     var onLayout: (() -> Void)?
 
-    init(radius: CGFloat) {
-        super.init(effect: chromeGlassEffect())
+    /// `clear` gives a plain, transparent container (no glass, no border): used for the top bar's buttons.
+    init(radius: CGFloat, clear: Bool = false) {
+        super.init(effect: clear ? nil : chromeGlassEffect())
         translatesAutoresizingMaskIntoConstraints = false
         layer.cornerRadius = radius
         layer.cornerCurve = .continuous
@@ -106,11 +107,20 @@ private final class ChromeButton: UIButton {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
-    func configure(image: UIImage?, label: String?, showDot: Bool, tint: UIColor) {
+    /// `fill` draws the button as a filled circle (the Plus action); other buttons have no background.
+    func configure(image: UIImage?, label: String?, showDot: Bool, tint: UIColor, fill: UIColor? = nil) {
         setImage(image, for: .normal)
-        tintColor = tint
+        tintColor = fill == nil ? tint : .white
+        backgroundColor = fill
+        layer.cornerRadius = fill == nil ? 0 : bounds.width / 2
+        layer.cornerCurve = .circular
         accessibilityLabel = label
         dot.isHidden = !showDot
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if backgroundColor != nil { layer.cornerRadius = bounds.width / 2 }
     }
 }
 
@@ -122,10 +132,12 @@ final class GlassChrome: NSObject {
 
     private let topBar = UIView()
     private let topBlur = FadingBlur()
-    private let backGlass = GlassSurface(radius: 22)
+    // Top bar buttons stand on the page with no capsule or border (owner, 2026-11-12); the soft blur behind the bar
+    // keeps them readable over content.
+    private let backGlass = GlassSurface(radius: 22, clear: true)
     private let backButton = ChromeButton(size: 44)
     private let titleLabel = UILabel()
-    private let actionsGlass = GlassSurface(radius: 22)
+    private let actionsGlass = GlassSurface(radius: 22, clear: true)
     private let actionsStack = UIStackView()
     private var actionButtons: [ChromeButton] = []
     private var titleAfterBack: NSLayoutConstraint!
@@ -205,8 +217,8 @@ final class GlassChrome: NSObject {
             actionsGlass.centerYAnchor.constraint(equalTo: content.centerYAnchor),
             actionsStack.topAnchor.constraint(equalTo: actionsGlass.contentView.topAnchor, constant: 2),
             actionsStack.bottomAnchor.constraint(equalTo: actionsGlass.contentView.bottomAnchor, constant: -2),
-            actionsStack.leadingAnchor.constraint(equalTo: actionsGlass.contentView.leadingAnchor, constant: 4),
-            actionsStack.trailingAnchor.constraint(equalTo: actionsGlass.contentView.trailingAnchor, constant: -4)
+            actionsStack.leadingAnchor.constraint(equalTo: actionsGlass.contentView.leadingAnchor),
+            actionsStack.trailingAnchor.constraint(equalTo: actionsGlass.contentView.trailingAnchor)
         ])
     }
 
@@ -277,7 +289,10 @@ final class GlassChrome: NSObject {
             guard index < actions.count else { button.isHidden = true; continue }
             let action = actions[index]
             button.isHidden = false
-            button.configure(image: chromeImage(action["icon"] as? String), label: action["label"] as? String, showDot: flag(action["dot"]), tint: .label)
+            let primary = flag(action["primary"])
+            button.configure(image: chromeImage(action["icon"] as? String), label: action["label"] as? String, showDot: flag(action["dot"]), tint: .label, fill: primary ? accent : nil)
+            // A little room before the filled Plus; the plain icons sit edge to edge.
+            if index > 0 { actionsStack.setCustomSpacing(primary ? 6 : 0, after: actionButtons[index - 1]) }
         }
         actionsGlass.isHidden = actions.isEmpty
     }

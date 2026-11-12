@@ -32,6 +32,18 @@ describe('video guide (recording of the real app, narrated)', () => {
     expect(done).toHaveBeenCalledWith('finished');
   });
 
+  test('the recording plays on a phone screen with a status bar and home indicator; captions sit outside the phone', () => {
+    act(() => root.render(<TutorialVideo onDone={() => {}} />));
+    const device = host.querySelector('.tv-framed .tv-device');
+    expect(device).not.toBeNull();
+    const screen = device.querySelector('.tv-screen');
+    expect(screen.querySelector('.tv-statusbar .tv-island')).not.toBeNull();
+    expect(screen.querySelector('video.tv-video')).not.toBeNull();
+    expect(screen.querySelector('.tv-homebar')).not.toBeNull();
+    expect(device.querySelector('.tv-caption')).toBeNull();
+    expect(host.querySelector('.tv-framed > .tv-caption')).not.toBeNull();
+  });
+
   test('the chapters flash account deletion, the logo disclosure and the Terms', () => {
     const text = CHAPTERS.map(c => `${c.title} ${c.text}`).join(' ');
     expect(text).toMatch(/delete your account/);
