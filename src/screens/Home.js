@@ -13,6 +13,8 @@ import { mascotMood, moodMessage } from '../lib/mascotMood';
 import { dayKey, money, monthLabel, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { fontScaleOf } from '../lib/fontPrefs';
+import { usePlan } from '../lib/PlanContext';
+import { HERO_FEATURE, resolveHero } from '../lib/homeHero';
 
 const BALANCE_STYLES = [['line', 'Line'], ['bars', 'Bars'], ['off', 'Off']];
 const FLOW_STYLES = [['bars', 'Bars'], ['lines', 'Lines'], ['net', 'Net']];
@@ -54,6 +56,9 @@ function toMascot(file) {
 export default function Home({ c }) {
   const { show, setShow, stats, deltas, breakdown, recent, refDate, homeRefDate, homeMonthKey, setHomeMonthKey, homeYears = [], homeMonthStats, user, unread, go, prefs, setPref, txs, budgetList = [], plans = [] } = c;
   const [editing, setEditing] = useState(false);
+  // Pinned header with a scenery, zodiac or glow background (lib/homeHero.js); premium ones need Pro or Pro+.
+  const { can } = usePlan() || {};
+  const hero = resolveHero(prefs.homeHero, { premium: !!can?.(HERO_FEATURE) });
   const startEditing = () => { setEditing(true); try { window.scrollTo?.({ top: 0, behavior: 'smooth' }); } catch { /* jsdom */ } };
   const [mascotSheet, setMascotSheet] = useState(false);
   const [periodSheet, setPeriodSheet] = useState(false);
@@ -147,7 +152,7 @@ export default function Home({ c }) {
   ];
 
   return <>
-    <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}`}>
+    <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}${hero ? ` home-hero hero-${hero.kind}` : ''}`} style={hero ? { '--hero-bg': hero.background, '--hero-glow': hero.glow || 'transparent' } : undefined} data-hero={hero?.id}>
       {ramOn ? <RamMascot mood={ram.mood} message={ramMessage} onChangeMascot={() => setMascotSheet(true)} />
         : <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
           {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}

@@ -1,3 +1,7 @@
+## 2026-11-12 — Pinned Home header with scenery, zodiac and glow backgrounds
+
+Owner request: the Home header stays pinned at the top with rounded bottom corners over a background. It defaults to a scenery picture for everyone; Pro and Pro+ can pick all 12 zodiac constellations (original generated SVG) or 6 glowing backgrounds in Settings → Appearance → Home header. Free users see them locked; choosing one opens plans. Validation: Jest 206 suites / 1,247 tests, tsc, strict build, light/dark browser screenshots (see `docs/engineering/updates/2026-11-12-home-header-hero.md`). Not run: real phones.
+
 ## 2026-11-12 — Plain header buttons and an off-white light background
 
 Owner request: top header icons have no capsule, border or fill and sit closer together (40 px apart, 44 px tall touch areas); only the Plus buttons stay filled, on the web/Android and in the iPhone app's native top bar. Light mode with no scenery uses an off-white `#faf9f6` page. Validation: Jest 204 suites / 1,240 tests, tsc, strict build, light/dark header screenshots (see `docs/engineering/updates/2026-11-12-header-buttons-milk-white.md`). Not run: real phones.

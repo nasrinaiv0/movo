@@ -8399,3 +8399,82 @@ html.movo-edge-swiping .movo-app main.screen { position: relative; z-index: 1; m
 /* Light mode with no scenery: an off-white ("milk white") page instead of cool grey. Tinted themes keep theirs. */
 .movo-app.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purple):not(.tint-orange) { --bg: #faf9f6; background: #faf9f6; }
 body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purple):not(.tint-orange)) { background: #faf9f6; }
+
+/* ===== Home header hero (owner, 2026-11-12) =====
+   The Home header stays pinned at the top, runs edge to edge into the status-bar area and has rounded lower
+   corners over a background: scenery for everyone, zodiac constellations and glows for Pro and Pro+
+   (lib/homeHero.js). A scrim keeps the white greeting and icons readable on any picture. */
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero {
+  --hero-pull: max(18px, env(safe-area-inset-top));
+  position: sticky !important;
+  top: 0;
+  z-index: 35;
+  margin-top: calc(-1 * var(--hero-pull)) !important;
+  margin-bottom: 14px;
+  padding-top: calc(var(--hero-pull) + 8px) !important;
+  padding-bottom: 14px !important;
+  border-radius: 0 0 28px 28px;
+  background: var(--hero-bg) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  color: #fff;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: 0 16px 36px -24px rgba(0, 0, 0, .6) !important;
+}
+.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero { --hero-pull: calc(env(safe-area-inset-top) + 62px); }
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .46), rgba(0, 0, 0, .12) 72%), linear-gradient(0deg, rgba(0, 0, 0, .24), rgba(0, 0, 0, 0) 55%);
+  opacity: 1 !important;
+}
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero:is(.hero-zodiac, .hero-glow)::before {
+  background: linear-gradient(90deg, rgba(0, 0, 0, .28), rgba(0, 0, 0, 0) 70%);
+}
+/* A slow, calm glow drifting across premium headers. */
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero:is(.hero-zodiac, .hero-glow)::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--hero-glow, #fff) 35%, transparent), transparent 70%);
+  opacity: .5;
+  animation: hero-drift 14s ease-in-out infinite alternate;
+}
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero.hero-glow::after { background: radial-gradient(closest-side, rgba(255, 255, 255, .22), transparent 70%); }
+@keyframes hero-drift { from { transform: translate3d(-18%, -6%, 0); } to { transform: translate3d(22%, 8%, 0); } }
+@media (prefers-reduced-motion: reduce) { .movo-app .screen > .screen-header.home-header.home-hero::after { animation: none !important; } }
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero :is(.home-greeting, .home-greeting h1, .home-greeting small, .home-greeting-context) {
+  color: #fff !important;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, .35);
+}
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero :is(.home-greeting small, .home-greeting-context) { color: rgba(255, 255, 255, .84) !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero .header-action-buttons > button > .movo-icon,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero .header-action-buttons > button > svg {
+  color: #fff !important;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, .35));
+}
+.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero .red-dot { box-shadow: 0 0 0 2px rgba(0, 0, 0, .25); }
+
+/* Picker (Settings → Appearance → Home header). */
+.movo-app .hero-settings { display: grid; gap: 12px; }
+.movo-app .hero-tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
+.movo-app .hero-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.movo-app .hero-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 4px 4px 6px; margin: -4px -4px 0; scroll-snap-type: x proximity; }
+.movo-app .hero-row::-webkit-scrollbar { display: none; }
+.movo-app .hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.movo-app .hero-tile { position: relative; flex: none; width: 140px; padding: 0; border: 0; background: none; color: var(--text); text-align: start; scroll-snap-align: start; cursor: pointer; }
+.movo-app .hero-grid .hero-tile { width: auto; }
+.movo-app .hero-tile-art { display: block; aspect-ratio: 16 / 7; border-radius: 4px 4px 16px 16px; background: var(--field) center / cover no-repeat; box-shadow: inset 0 0 0 1px var(--line); }
+.movo-app .hero-tile.plain .hero-tile-art { background: var(--bg); }
+.movo-app .hero-tile.more .hero-tile-art { background: var(--field); }
+.movo-app .hero-tile.selected .hero-tile-art { box-shadow: 0 0 0 2px var(--accent), 0 6px 18px -10px var(--accent); }
+.movo-app .hero-tile small { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .hero-lock { position: absolute; top: 6px; right: 6px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 99px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 10.5px; font-weight: 700; }
+.movo-app.movo-app .hero-tabs button[aria-selected="true"] { background: var(--card-solid); color: var(--text); box-shadow: 0 1px 6px rgba(0, 0, 0, .08); }
+.movo-app.movo-app .hero-tabs button[aria-selected="false"] { background: transparent; box-shadow: none; }

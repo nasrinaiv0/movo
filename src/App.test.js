@@ -281,6 +281,23 @@ describe('MOVO finance frontend', () => {
     expect(current()).toBe('Home');
   });
 
+  test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
+    const header = () => container.querySelector('.home-header');
+    expect(header().className).toContain('home-hero');
+    expect(header().className).toContain('hero-scenery');
+    openProfile(container);
+    clickButton(container, 'Settings');
+    act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    const tab = Array.from(container.querySelectorAll('.hero-tabs [role="tab"]')).find(b => b.textContent === 'Zodiac');
+    act(() => tab.click());
+    const leo = Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Leo');
+    act(() => leo.click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('zodiac:leo');
+    nav(container, 'Home');
+    expect(header().className).toContain('hero-zodiac');
+    expect(header().getAttribute('data-hero')).toBe('zodiac:leo');
+  });
+
   test('Pro+ colours the bottom navigation platinum by default, and Appearance can switch it to the app accent', () => {
     const root_ = () => container.querySelector('.movo-app');
     expect(root_().className).toContain('nav-tier-platinum');
