@@ -36,6 +36,7 @@ import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import SetupAgreement from './components/SetupAgreement';
+import CloudPlanNotice from './components/CloudPlanNotice';
 import { LEGAL_VERSION, hasAcceptedLegal } from './lib/legalVersion';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
@@ -168,7 +169,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'auto', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'auto', cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
@@ -297,6 +298,8 @@ function App() {
   const lastTab = useRef(0);
   const [legalReturnView, setLegalReturnView] = useState('Profile');
   const [prefs, setPrefs] = useState(readPrefs);
+  // Cloud Sync paused for lack of a plan: shown as a panel (components/CloudPlanNotice.js), at most once a day.
+  const [cloudPlanNotice, setCloudPlanNotice] = useState(false);
   const prefsRef = useRef(prefs);
   /*
    * Paid features follow the server-verified plan. Offline-first: while Cloud Sync is on but the connection is down
@@ -522,7 +525,7 @@ function App() {
       // No answer at all means the server could not be reached: keep working on the device and retry later.
       if(verified===null)throw Object.assign(Error('Cloud is unreachable. Changes are saved on this device and upload automatically when you are back online.'),{retryable:true});
       if(!canUseFeature(verified,'cloudWrite'))
-        throw Error('Cloud Sync requires verified active access. Local records remain on this device.');
+        throw Object.assign(Error('Cloud Sync requires verified active access. Local records remain on this device.'),{planRequired:true});
       if(cloudAuthUserRef.current!==ownerId||!cloudSyncRequestedRef.current||loadEpoch!==cloudLoadEpochRef.current)return false;
       const today=new Date();
       const dateKey=d=>String(d.getFullYear())+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -552,7 +555,7 @@ function App() {
       if(previous?.dirty){
         // This same owner-specific entitlement was verified before the read.
         if (!canUseFeature(verified,'cloudWrite'))
-          throw Error('Offline changes are saved. Active cloud-write plan verification is required to upload them.');
+          throw Object.assign(Error('Offline changes are saved. Active cloud-write plan verification is required to upload them.'),{planRequired:true});
         // Every cloud step has a deadline, so a slow connection ends this attempt (and the next retry picks up
         // where it stopped) instead of leaving the sync hanging.
         const timed=(fn,ms=CLOUD_WRITE_TIMEOUT_MS)=>(...args)=>withTimeout(fn(...args),ms);
@@ -611,7 +614,9 @@ function App() {
       // A superseded attempt (signed out, Cloud Sync switched, or a newer save) leaves the current state alone.
       if(cloudAuthUserRef.current===ownerId&&cloudSyncRequestedRef.current&&loadEpoch===cloudLoadEpochRef.current){
         setSyncState({status:'pending',retry,message,uploaded:0,downloaded:0});
-        if(!retry)setError(message);
+        // A missing plan is not an error to shout about: a calm panel explains it (at most once a day) instead.
+        if(cause?.planRequired)setCloudPlanNotice(true);
+        else if(!retry)setError(message);
         const restored=loadOwnedLocal(ownerId);
         if(!restored) setLocalPersistenceWarning(true);
         setCloudMode(false);
@@ -2681,6 +2686,9 @@ function App() {
       {showTour && !locked && !prefs.tutorialSeen && <TutorialVideo onDone={() => setPref('tutorialSeen', true)} />}
       {showTour && !locked && prefs.tutorialSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
       {guideOpen && !locked && <TutorialVideo onDone={() => setGuideOpen(false)} />}
+      {cloudPlanNotice && setupDone && !locked && !sheet && prefs.cloudPlanNoticeDay !== todayKey && <CloudPlanNotice
+        onPlans={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); setSheet({ name: 'planOffer', feature: 'cloudWrite' }); }}
+        onClose={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); }} />}
       {/* Last setup step, after the free-month panel above: accept the Terms and Privacy Policy, then the dashboard
           opens. Reading either one returns here. */}
       {setupGateOn && authReady && !locked && prefs.onboarded && prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && <SetupAgreement onOpenLegal={openLegal}

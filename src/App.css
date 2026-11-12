@@ -8574,3 +8574,18 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app .confirm-dialog, .movo-app.movo-app.movo-app .confirm-backdrop { animation-duration: 180ms !important; }
 .movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block):is(.hero-zodiac, .hero-glow)::after { animation: none !important; transform: translate3d(12%, 0, 0); }
 .movo-app .bottom-nav .nav-pill { will-change: transform; }
+
+/* ===== Cloud Sync paused panel (owner, 2026-11-12) =====
+   Replaces the red banner at the top: a calm, premium centred panel that says the records are safe and offers plans. */
+.movo-app .sheet.cloud-plan-notice { text-align: center; padding-top: 26px; }
+.movo-app .cloud-plan-notice .cpn-art { position: relative; display: grid; place-items: center; width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 30%; background: var(--card-solid); box-shadow: 0 0 0 1px var(--line), 0 18px 40px -22px color-mix(in srgb, var(--accent) 70%, transparent); }
+.movo-app .cloud-plan-notice .cpn-glow { position: absolute; inset: -18px; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%); }
+.movo-app .cloud-plan-notice .cpn-cloud { position: absolute; right: -6px; bottom: -6px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--on-accent, #fff); box-shadow: 0 0 0 3px var(--card-solid); }
+.movo-app .cloud-plan-notice .cpn-title { margin: 8px 0 4px; font-size: 21px; letter-spacing: -.01em; }
+.movo-app .cloud-plan-notice .cpn-text { margin: 0 auto 12px; max-width: 300px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+.movo-app .cloud-plan-notice .cpn-points { list-style: none; margin: 0 0 16px; padding: 12px 14px; display: grid; gap: 10px; text-align: start; border-radius: 18px; background: var(--field); }
+.movo-app .cloud-plan-notice .cpn-points li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; }
+.movo-app .cloud-plan-notice .cpn-point-icon { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-tile, 30%); background: rgba(127, 127, 127, .14); background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-ink, var(--accent)); }
+.movo-app .cloud-plan-notice .cpn-actions { display: grid; gap: 6px; }
+.movo-app .cloud-plan-notice .cpn-primary { width: 100%; }
+.movo-app .cloud-plan-notice .cpn-later { min-height: 44px; justify-self: center; font-weight: 600; color: var(--muted); }
