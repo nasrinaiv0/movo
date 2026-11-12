@@ -1,3 +1,14 @@
+## 2026-11-12 — Plan & Usage opens on the current plan; OpenRouter as MOVO's fallback AI provider
+
+- **Plan & Usage (owner recording):** the sheet showed "Free · On this device" and "Upgrade MOVO" for about 3 seconds before switching to "Pro+". It now opens on the plan MOVO already verified at launch and re-checks quietly in the background, so the current plan shows in the first frame (12–19ms in the browser check). A plan not yet checked shows "Checking…", never "Free". The layout is now compact: one plan row with a Cloud/Local tag, usage as four small tiles, one billing note, Restore and Manage as text links, and the main button.
+- **Fallback AI provider:** when NasrinAI cannot answer (not configured, unreachable, timeout, busy, rejected the request or key, or an unusable reply), the server asks OpenRouter instead (`api/nasrinai/openrouter-fallback.cjs`).
+  - Every MOVO version (web, iPhone, Android) uses this one route, so the fallback covers all of them.
+  - OpenRouter gets the same question and bounded, sanitized context, with no user id or email. Providers that may store or train on data are excluded (`data_collection: deny`).
+  - A reached NasrinAI budget is not bypassed. Voice transcription stays on NasrinAI. Voice replies from the fallback are spoken with the device voice.
+  - Needs the server-only `OPENROUTER_API_KEY` in Vercel (optional `OPENROUTER_MODEL`, default `openrouter/auto`).
+
+Validation: Jest 218 suites / 1,316 tests, tsc, strict build, production dependency audit (0), browser screenshots in light and dark. See `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`. Not run: real devices; a live OpenRouter call (no key is configured yet).
+
 ## 2026-11-12 — The ram stays standing on the Total balance box
 
 Owner request: "keep the mascot stand in the box like before" (confirmed: keep the bigger ram standing on Total balance). The 3D ram's body no longer leaves its feet line in any mood or tap reaction (`FEET_Y` in `lib/ramScene.js`; the rig's origin is at the feet). Happy moods still bounce, stretch and squash in place, and the happy hop now lifts one foot at a time instead of both. Measured over 14 frames in the browser: the lowest point stays at 129.5–131.5px against the card's top edge at 128px (before: up to 5px above it on each hop). Validation: Jest, tsc, strict build, `ramGrounded.test.js` (see `docs/engineering/updates/2026-11-12-ram-stays-grounded.md`). Not run: real devices.

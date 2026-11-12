@@ -788,8 +788,11 @@ describe('MOVO finance frontend', () => {
     expect(plan.tagName).toBe('BUTTON');
     act(() => plan.click());
     const sheet = container.querySelector('[role="dialog"][aria-label="Plan & Usage"]');
-    expect(sheet.textContent).toContain('Free');
-    expect(sheet.textContent).toMatch(/Transactions\d+/);
+    // The account in these tests is Pro+: the sheet shows it at once from the plan verified at launch, never "Free".
+    expect(sheet.querySelector('.plan-usage-current').className).toContain('tier-pro_plus');
+    expect(sheet.textContent).toContain('Pro+');
+    expect(sheet.textContent).not.toMatch(/\bFree\b/);
+    expect(sheet.textContent).toMatch(/\d+Transactions/);
     expect(sheet.textContent).toContain('Store purchases and restore are available');
     clickButton(container, 'Close Plan & Usage');
     const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
