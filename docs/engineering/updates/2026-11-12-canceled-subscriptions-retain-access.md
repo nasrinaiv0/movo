@@ -18,3 +18,8 @@
 - Avoid stale notification replay, double acknowledgement and referral re-credit; keep renewal and revocation semantics independent.
 - Official policy: https://developer.android.com/google/play/billing/lifecycle/subscriptions and https://developer.apple.com/documentation/appstoreservernotifications/notificationtype
 - NO PR, merge, production release or production DB modification was authorized.
+
+## Exact-head preview CI remediation
+- Initial Vercel preview for `5839b9d` failed only the catalogue coverage test: `Canceled · access until {date}` was not translated into all supported languages. The other 223 test suites passed (1,354 passing assertions).
+- Added all 11 supported translations with the same `{date}` placeholder. The string is machine-assisted and should be proofread by native speakers before regional commercial release.
+- Rebuild and check Vercel preview for this new exact commit; do not assume success before it finishes.
