@@ -8820,3 +8820,9 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-free { border-color: #3dba78; }
 .movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-pro { border-color: #d9ac45; }
 .movo-app.movo-app.movo-app:not(.theme-dark) .plan-tile.selected.tier-pro_plus { border-color: #a9aec0; }
+/* Transaction details as a centered pop-up (owner, 2026-11-12): name, amount and type centered on top. */
+.movo-app .tx-detail-sheet .tx-detail-hero { justify-items: center; text-align: center; margin: 0 0 14px; }
+.movo-app .tx-detail-sheet .tx-detail-name { margin: 0; max-width: 100%; font-size: 17px; font-weight: 650; line-height: 1.25; color: var(--text); overflow-wrap: anywhere; }
+.movo-app .tx-detail-sheet .tx-detail-chips { justify-content: center; }
+.movo-app.movo-app .sheet.tx-detail-sheet { padding-top: 22px; }
+.movo-app .tx-detail-list dd { font-variant-numeric: tabular-nums; }

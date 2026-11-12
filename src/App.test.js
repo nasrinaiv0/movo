@@ -714,7 +714,13 @@ describe('MOVO finance frontend', () => {
     act(() => { jest.advanceTimersByTime(250); });
     jest.useRealTimers();
     expect(container.querySelector('.search-overlay')).toBeNull();
-    expect(container.querySelector('[aria-label="Transaction details"], .sheet').textContent).toContain('Netflix');
+    const details = container.querySelector('[aria-label="Transaction details"], .sheet');
+    expect(details.textContent).toContain('Netflix');
+    // Centered pop-up with when the money was spent; "Logged" appears when the record has a saved time.
+    expect(details.querySelector('.tx-detail-name').textContent).toBe('Netflix');
+    const labels = Array.from(details.querySelectorAll('.tx-detail-list dt')).map(dt => dt.textContent);
+    expect(labels).toContain('Spent');
+    if (labels.includes('Logged')) expect(labels.indexOf('Logged')).toBe(labels.indexOf('Spent') + 1);
   });
 
   test('liquid glass can be switched off and its clarity adjusted', () => {

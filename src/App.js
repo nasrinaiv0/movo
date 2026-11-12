@@ -1335,7 +1335,7 @@ function App() {
         const existing = editingId ? (cloudMode ? ownerCopy?.working.transactions : rawTxs)?.find(x => x.id === editingId) : null;
         if (editingId && !existing) throw new Error(tr('This record is not on this device yet. Try again when you are back online.'));
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source);
-        const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual' }) };
+        const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual', created_at: new Date().toISOString() }) };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
         if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[transactionRow]);
         savedTransaction = transactionRow;
@@ -2798,10 +2798,11 @@ function App() {
         onOpenAccount={id => { setSelectedCardId(id); setSheet({ name: 'cardDetails', id }); }}
       />}
 
-      {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')} className="tx-detail-sheet">
-        {/* Transaction details (owner, 2026-11-12): solid, compact and grouped. The amount leads, signed by type, with
-            its type as a chip; one card holds the rest. The date is the subtitle, so it is not repeated. */}
+      {detailTx && <Sheet title="" center onClose={() => setSheet(null)} label={tr('Transaction details')} className="tx-detail-sheet">
+        {/* Transaction details (owner, 2026-11-12): a solid, centered pop-up. The name and amount lead, signed by type,
+            with its type as a chip; one card holds the rest, including when it was spent and when it was logged. */}
         <div className={`tx-detail-hero type-${detailTx.type}`}>
+          <h2 className="tx-detail-name">{detailTx.merchant}</h2>
           <strong className="tx-detail-amount">{detailTx.type === 'expense' ? '−' : detailTx.type === 'income' ? '+' : ''}{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}</strong>
           {detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}
           <span className="tx-detail-chips"><span className="tx-detail-chip">{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</span></span>
@@ -2809,6 +2810,9 @@ function App() {
         <dl className="tx-detail-list">
           <div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>
           <div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div>
+          {/* Two times (owner, 2026-11-12): when the money moved, and when the record was logged in MOVO. */}
+          <div><dt>{tr(detailTx.type === 'income' ? 'Received' : detailTx.type === 'transfer' ? 'Transferred' : 'Spent')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>
+          {Number.isFinite(Date.parse(detailTx.created_at)) && <div><dt>{tr('Logged')}</dt><dd>{longDate(detailTx.created_at)}, {timeLabelFull(detailTx.created_at)}</dd></div>}
           {detailTx.note && <div className="wide"><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}
           {refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}
           {detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}

@@ -1,3 +1,7 @@
+## 2026-11-12 — Transaction details: centered, with spent and logged times
+
+Owner request: place the transaction details at the center and add the time it was logged and the time it was spent. The details now open as a centered pop-up, with the name, the signed amount and the type centered on top. The details card adds two times: **Spent** (Received for income, Transferred for transfers), which is the transaction's date and time, and **Logged**, which is when the record was saved in MOVO (`created_at`). Cloud records already had a logged time; new records saved on the device now get one too. That stamp is display-only: uploads build their own payloads and reconciliation ignores `created_at`. Older local records without a saved time show only Spent. Validation: Jest 219 suites / 1,320 tests, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
+
 ## 2026-11-12 — Plans panel: follows light/dark mode; amounts on every plan
 
 Owner request: improve the plans panel's colour adaptability in light and dark mode, and organize it with amounts.
