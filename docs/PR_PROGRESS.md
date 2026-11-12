@@ -1,3 +1,11 @@
+## 2026-11-13 — PR #291 red first-head CI; documented repairs before commit
+
+- Initial exact-head `0c0f04b` CI: **226/229 suites and 1,376/1,379 tests passed**; red Phase 1, hybrid-accounting, Android web/Jest gate; Vercel preview ERROR. Supabase tenant-isolation and IAP-integrity checks passed. iOS queued.
+- **QR regression fixture:** invented `iVBORw0KGgp=` was intentionally rejected by the PNG-signature validator, incorrectly used in the legacy migration success test. Replace fixture with valid PNG signature; keep MIME spoof rejection, whole-transaction rollback and tamper detection tests.
+- **Canonical legal generator:** Privacy/Terms pages were updated in staged code, but `src/lib/legalSupplement.json` source-of-truth was not. Amend the canonical legal security paragraph, regenerate canonical Privacy/Terms exact bytes, and bump both `src/lib/legalVersion.js` dates to 13 Nov 2026; require renewed user acceptance for material changes. Update legal/version tests to reject previously accepted 11 Nov version. Do not publish legal changes to production before separate release approval.
+- **Offline CSV CI:** one `AppOfflineFirst.test.js` previously green on parent PR #290 timed out waiting for clean cloud-sync projection after mock upload. Neither QR implementation nor trust docs edits the financial writer. Preserve the test and financial accounting code unchanged for a clean rerun; if reproducible, inspect actual sync state rather than masking accounting regression.
+- Validate exact-head full Jest, QR migration, legal generator, Android native compile, iOS simulator and Vercel preview. No main, database, production or store changes.
+
 ## 2026-11-13 — Security assurance / encrypted QR cache follow-up (DOCUMENTED BEFORE COMMIT)
 
 - Owner requested an evidence-based document explaining why MOVO is designed to protect user data and safe security hardening inside the code. Read live Supabase schema/advisors, open PRs #289/#290, Vercel production commit, legal pages and QR local storage.

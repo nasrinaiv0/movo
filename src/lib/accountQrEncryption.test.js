@@ -5,7 +5,7 @@ import {
 import { isSealedFinance } from './financeVault';
 
 const QR = 'data:image/png;base64,iVBORw0KGgo=';
-const QR2 = 'data:image/png;base64,iVBORw0KGgp=';
+const QR2 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA';
 const DB_NAME = 'movo-account-media-v1';
 const STORE_NAME = 'account-qr';
 

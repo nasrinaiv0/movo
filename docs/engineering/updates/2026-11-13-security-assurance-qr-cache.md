@@ -36,3 +36,10 @@
 
 - Static source review and security controls documented, **no new QR integration CI result yet**. Previous parent PR #290 automated tests green. Future logs must reference the exact new PR commit, not inherited parent checks.
 - Vercel managed sandbox previously returned HTTP 402 `payment_required`; no billing settings changed or paid environment created. GitHub disposable CI is the available execution platform.
+
+## First-run CI follow-up and repair rationale (documented before repair commit)
+
+On `0c0f04b071a884e2a96f31844390141e3035a503`, Phase 1, hybrid-accounting and Android stopped in Jest with 3 failing suites (226/229 passing, 1,376/1,379 passing). Vercel preview failed; tenant isolation and IAP checks passed. Investigation found (1) test-only invalid PNG fixture in QR migration (validator working as designed), (2) static legal pages manually edited without updating canonical generator, and (3) a potentially flaky existing CSV auto-upload/clean-state wait on a test that passed in parent PR #290.
+
+Changes prepared: valid PNG signature fixture; canonical `src/lib/legalSupplement.json` updated; matching legal-policy generator/date/re-consent logic and expected test version; canonical generated `public/privacy.html` and `public/terms.html` byte-for-byte equality independently verified before commit. NO weakening of ciphertext validation, no changes to financial journal, no production mutation. Keep CSV sync test unchanged for rerun; investigate if repeatable. All gates still required.
+
