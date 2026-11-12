@@ -1,9 +1,11 @@
+import { loadFinanceJson, saveFinanceJson } from './financeVault';
 /**
  * Atomic, account-scoped offline workspace for a verified signed-in user.
  * Each snapshot contains a last-confirmed common ancestor + working rows.
  * Deliberately never reads the legacy guest wallet from another user's cache.
  *
- * Browser localStorage is NOT encryption; do not claim physical/XSS security.
+ * Device snapshots are authenticated-encrypted before being written to localStorage.
+ * Keys are device bound; encryption does NOT defend against an active XSS.
  */
 const PREFIX='movo.offline.workspace.v2.';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,13 +19,13 @@ function allOwned(groups, owner) {
 function copy(groups){return JSON.parse(JSON.stringify(groups));}
 export function loadOfflineWorkspace(ownerId){
  const k=key(ownerId);if(!k)return null;
- try {
-  const json=storage()?.getItem(k);if(!json)return null;
-  const saved=JSON.parse(json);
-  if(saved?.version!==2||saved.owner!==ownerId||!isValidGroups(saved.baseline)
-    ||!isValidGroups(saved.working)||!allOwned(saved.baseline,ownerId)||!allOwned(saved.working,ownerId))return null;
-  return saved;
- }catch{return null;}
+ // Do not swallow tamper/key failures as 'empty data': callers must NOT
+ // overwrite an unreadable encrypted workspace with an empty snapshot.
+ const saved=loadFinanceJson(k);if(!saved)return null;
+ if(saved?.version!==2||saved.owner!==ownerId||!isValidGroups(saved.baseline)
+   ||!isValidGroups(saved.working)||!allOwned(saved.baseline,ownerId)||!allOwned(saved.working,ownerId))
+   throw new Error('financial_workspace_integrity_failed');
+ return saved;
 }
 export function saveOfflineWorkspace(ownerId, snapshot){
  const k=key(ownerId),local=storage();
@@ -36,10 +38,8 @@ export function saveOfflineWorkspace(ownerId, snapshot){
   deletedRows:snapshot.deletedRows||{},
   syncError:snapshot.syncError?String(snapshot.syncError).slice(0,220):''};
  try {
-  const data=JSON.stringify(value);
-  local.setItem(k,data);
-  // Surface quota or no-op failures instead of claiming a saved copy.
-  return local.getItem(k)===data;
+  // Seal and verify synchronously: callers never acknowledge an uncommitted save.
+  return saveFinanceJson(k,value);
  }catch{return false;}
 }
 /** Atomic workspace refresh; never modify last confirmed remote baseline. */

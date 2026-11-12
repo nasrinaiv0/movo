@@ -79,7 +79,7 @@
     {
       "heading": "13. Security and account separation",
       "paragraphs": [
-        "MOVO uses account authentication, database access controls and transport-security measures for applicable cloud services. These are designed to reduce unauthorized access, but no internet or device storage can be guaranteed completely secure. A local app lock is a convenience control and does not itself encrypt local browser records or replace server authentication.",
+        "MOVO uses account authentication, database access controls and transport-security measures for applicable cloud services. These are designed to reduce unauthorized access, but no internet or device storage can be guaranteed completely secure. A local app lock is a convenience control and does not itself encrypt records or replace server authentication. Finance-vault encryption, where available, is a separate safeguard.",
         "Only provide information necessary for the function you choose. Protect your phone and account access, sign out of shared devices and avoid putting passwords, PINs, CVVs or one-time passcodes in chat prompts, receipts or support requests. Security incidents and legally notifiable breaches are handled according to applicable law."
       ]
     },
