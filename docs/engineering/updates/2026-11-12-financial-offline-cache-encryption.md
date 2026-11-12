@@ -47,3 +47,7 @@
 - Test setup now uses writable Node TextEncoder/Decoder and Node built-in structuredClone (no production polyfills). Native App and web browser cryptography are unchanged.
 - Browser IndexedDB key initialization is hardened with an atomic re-check inside the final readwrite transaction to stop races across tabs.
 - No PR merge, production deployment or destructive migration.
+
+## Second CI run (documented before commit)
+- Second exact-head run `0bf4be8`: Web cache tests green; 224/225 Jest suites passed. Native test failed because mock implementations were set only in `beforeAll` and reset by Jest. The mock secureSet returned without persisting, accurately triggering the new `offline_cache_key_write_unverified` safety check.
+- Restore native mock implementations in `beforeEach`. Do not remove encryption verification or weaken the fail-closed behavior. Native binary build and preview require fresh exact-head checks.

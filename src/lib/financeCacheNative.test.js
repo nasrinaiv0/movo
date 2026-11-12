@@ -17,13 +17,17 @@ const legacyPreferences = new Map();
 
 beforeAll(() => {
   Object.defineProperty(globalThis, 'crypto', { configurable: true, value: webcrypto });
+});
+beforeEach(() => {
+  // react-scripts Jest resets mocks between tests; restore behavior per test.
   MovoNative.secureGet.mockImplementation(async ({ key }) => ({ value: key === CACHE_VAULT_KEY ? sealedKey : null }));
   MovoNative.secureSet.mockImplementation(async ({ key, value }) => { if (key !== CACHE_VAULT_KEY) throw new Error('wrong_key'); sealedKey = value; });
   Preferences.keys.mockImplementation(async () => ({ keys: Array.from(legacyPreferences.keys()) }));
   Preferences.get.mockImplementation(async ({ key }) => ({ value: legacyPreferences.get(key) ?? null }));
   Preferences.remove.mockImplementation(async ({ key }) => { legacyPreferences.delete(key); });
+  localStorage.clear();
+  legacyPreferences.clear();
 });
-beforeEach(() => { localStorage.clear(); legacyPreferences.clear(); });
 
 test('native app keeps only ciphertext in web storage; vault key lives in Keychain / Keystore', async () => {
   await expect(encryptFinancialCache(OWNER, 'loans', { owner: OWNER, savedAt: '2026-11-12', rows: [] })).resolves.toContain('"ct"');

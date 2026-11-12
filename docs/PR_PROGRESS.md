@@ -1,3 +1,9 @@
+## 2026-11-12 — PR #289 native test mock lifecycle repair (documented before commit)
+
+- The second CI rerun reached 224/225 passing Jest suites; Vercel preview build failed only for `financeCacheNative.test.js` (4 checks), while Web AES-GCM tests now passed.
+- Cause: React-scripts/Jest resets mock implementations between tests; the native test attached `MovoNative.secureGet`, `secureSet` and Preferences methods in `beforeAll`. Their implementation was gone when called, so test-only wrapped-key verification failed.
+- Fix mocks in `beforeEach`; retain sealed test key for the test module to validate persistence. No production, native encryption implementation or accounting data changed. Recheck exact new SHA; keep PR unmerged.
+
 ## 2026-11-12 — PR #289 CI repair (documented before commit)
 
 - Initial exact-head Phase 1 CI on `73db23e` **failed**; 220/225 suites passed. Root evidence: new encryption tests could not persist a non-extractable CryptoKey under jsdom's fake IndexedDB; the Jest-only TextEncoder polyfill was read-only and broke existing suites assigning it.
