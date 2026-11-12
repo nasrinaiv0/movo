@@ -42,8 +42,11 @@ async function scrubNativeLegacy(key) {
   if (value !== null && value !== undefined) throw new Error('offline_cache_legacy_scrub_failed');
 }
 
+// Lists are arrays; a few reads (reminder preferences) return one settings object.
+const cacheable = rows => rows !== null && typeof rows === 'object';
+
 function verifiedPayload(value, ownerId) {
-  return value && value.owner === ownerId && Array.isArray(value.rows) &&
+  return value && value.owner === ownerId && cacheable(value.rows) &&
     typeof value.savedAt === 'string' ? value : null;
 }
 
@@ -60,7 +63,7 @@ async function persistEncrypted(key, ownerId, name, payload) {
 
 export async function writeCachedList(ownerId, name, rows, savedAt = new Date().toISOString()) {
   const key = keyFor(ownerId, name);
-  if (!key || !Array.isArray(rows)) return false;
+  if (!key || !cacheable(rows)) return false;
   return locked(key, async () => {
     try {
       return await persistEncrypted(key, ownerId, name, { owner: ownerId, savedAt, rows });
@@ -142,7 +145,7 @@ export async function cachedList(name, load, variant = '', { latest = false } = 
   const exact = variant ? name + '|' + variant : name;
   try {
     const rows = await withTimeout(load(), CLOUD_READ_TIMEOUT_MS);
-    if (ownerId && Array.isArray(rows)) {
+    if (ownerId && cacheable(rows)) {
       await writeCachedList(ownerId, exact, rows);
       if (variant && latest) await writeCachedList(ownerId, name, rows);
     }

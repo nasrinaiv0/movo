@@ -1,3 +1,8 @@
+## 2026-11-12 — PR #289 review fix: reminder preferences stay available offline
+
+- Review found that the encrypted cache accepted only lists, so reminder preferences (one settings object) silently stopped being kept for offline use. The cache now accepts lists and settings objects; both are still AES-GCM encrypted, owner-bound and network-failure-only.
+- Main merged in (PR_PROGRESS conflict only). New test covers the settings object. See `docs/engineering/updates/2026-11-12-offline-cache-settings-object.md`.
+
 ## 2026-11-12 — PR #289 native test mock lifecycle repair (documented before commit)
 
 - The second CI rerun reached 224/225 passing Jest suites; Vercel preview build failed only for `financeCacheNative.test.js` (4 checks), while Web AES-GCM tests now passed.
@@ -20,6 +25,7 @@
 - **Scope limitation:** other plaintext accounting stores (`offlineWorkspaceStore`, `localFinanceStore`, and IndexedDB `hybridLocalStore` ledger/outbox) are not changed: rewriting their synchronous/atomic persistence without a proven compatibility plan risks destroying unsynced transactions. This remains a high-priority unresolved whole-app storage issue.
 - Precommit evidence: exact main SHA `2b9a1cf` and a standalone Python AES-GCM/AAD test. **GitHub full suite, native compiles and physical devices still pending.** No Supabase/production modification, no merge/redeploy.
 - Detailed record: `docs/engineering/updates/2026-11-12-financial-offline-cache-encryption.md`.
+
 ## 2026-11-12 — Android bottom navigation: instant response, lighter animation
 
 Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
