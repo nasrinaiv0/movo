@@ -1,3 +1,10 @@
+## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
+
+- **Before commit:** compared the exact branches `3e47d69` (PR #287) and `e7d7126` (main) against merge base `7a65b55`. Only `docs/PR_PROGRESS.md` overlaps; main adds `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md` which is absent from PR #287.
+- Preserve all PR #287 offline-first sync, subscriber offline records, referral and Android sign-in progress, followed by the whole updated main progress (including PR #286 release-gate notes). Carry forward main's added Android release-gate report. No app, tests, build, database or production environment code is changed as part of the conflict resolution.
+- Test gates: require exact-merge-head GitHub checks and mergeability verification. No claims of real Android/iPhone, cloud financial data, or live Vercel preview tests. **Leave PR #287 open and do not merge.**
+- Detailed record: `docs/engineering/updates/2026-11-12-pr287-conflict-resolution.md`.
+
 ## 2026-11-12 — Subscribers' records offline; referral field loads with the panel
 
 - **Offline records (owner: "all data should be available offline after the customer subscribes"):**
@@ -26,6 +33,10 @@ Owner request: online, input → local → dashboard → silent cloud sync; offl
   - Uploads always go through the same verified sync (sign-in, plan, conflict checks).
 
 No RLS, policy or server changes. Validation: new writer, pop-up and end-to-end tests; Jest 223 suites / 1,342 tests, `tsc`, strict build; browser check offline → online in light and dark. Not run: real devices. See `docs/engineering/updates/2026-11-12-offline-online-sync.md`.
+
+## 2026-11-12 — #286 brought up to date with main
+
+Main gained the same owner billing-test isolation in #285 (20beb70), in a broader form: it clears every store billing setting and restores the whole environment, so it covers `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and the other Google Play keys. The merge keeps main's version of `src/owner/ownerApi.test.js`. #286 contributes its documentation and the verified AAB v7 evidence below. No app code changes.
 
 ## 2026-11-12 — Android sign-in: "not configured" fixed for every app build
 
@@ -68,6 +79,17 @@ The production deployment of `main` after #284 failed on Vercel: `npm run build`
 ## 2026-11-12 — Transaction details: middle of the screen, no outline
 
 Owner follow-up: "center meaning center of the screen, and less border especially for dark mode". The details pop-up now sits in the middle of the screen with equal space above and below. On phones with a notch or home indicator the larger safe area is used on both sides, so it stays at the exact middle. It has no border, outline or inner highlight; a soft shadow sets it apart. In dark mode the lines between rows are gone and spacing separates them; in light mode they are fainter. CSS only. Measured in the browser at 430×932, 390×844 and 375×667 in light and dark: top gap equals bottom gap and the border width is 0. Validation: Jest, strict build. Not run: real devices.
+
+### Follow-up: verified post-merge signed AAB v7 and CI evidence (2026-11-12)
+- Signed manual Play workflow run #43180913336 succeeded on main `3d96b2e`. Recovered artifact `movo-google-play-aab-28`, inspected packaged JS, Android manifest, versionCode **7**, current MOVO Supabase URL and matching enabled publishable key; independent JAR signature verification succeeded.
+- **Installed versionCode / live device OAuth result unknown**. Do not change working web OAuth settings or publish production; check existing Play internal/closed release before uploading another AAB. Main Vercel build failed an env-dependent test; PR #286 isolates it, with both GitHub CI checks green on initial head. Vercel preview remains blocked by account/deployment status, not verified.
+- Detailed proof and gates: `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md`.
+
+## 2026-11-12 — Android sign-in release gate: isolate Vercel billing test from live secrets
+
+- Earlier PR #282 Android Google/email auth code merged, but prior signed AAB #17 predates it; currently installed Android version unverified.
+- Latest main Vercel deployment failed 1/1,320 tests because owner billing readiness test inherited live `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and expected missing credentials. Add that key to the test's save/restore fixture and explicitly unset it before the negative-case assertion; business logic, auth, credentials, database and production remain unchanged.
+- No merge/store publication until exact-head CI, Android release compilation, preview and real-device Google/email sign-in pass. See `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md`.
 
 ## 2026-11-12 — Transaction details: centered, with spent and logged times
 
