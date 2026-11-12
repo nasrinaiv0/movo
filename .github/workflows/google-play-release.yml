@@ -48,6 +48,8 @@ jobs:
         run: node --test scripts/validate-android-auth-config.test.cjs
       - name: Run unit tests, typecheck and build bundled assets
         run: CI=true npm run build
+      - name: Check the app bundles MOVO's public cloud connection (sign-in)
+        run: node scripts/check-bundled-cloud-config.cjs build
       - name: Synchronize native Android assets
         run: npx cap sync android
       - name: Install Android API 36 SDK
@@ -125,6 +127,8 @@ jobs:
           set -euo pipefail
           node scripts/validate-android-auth-config.cjs
           CI=true npm run build
+      - name: Check the app bundles MOVO's public cloud connection (sign-in)
+        run: node scripts/check-bundled-cloud-config.cjs build
       - name: Synchronize Android native assets
         run: npx cap sync android
       - name: Validate requested Play versionCode

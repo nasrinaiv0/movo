@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { createTransaction } from './financeRepository';
+import { cachedList } from './offlineReadCache';
 
 const client = () => { if (!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
@@ -19,7 +20,7 @@ export function nextScheduledDate(date, frequency) {
 }
 const validAmount = value => { const n=Number(value); if(!Number.isFinite(n)||n<=0||n>=1e16) throw new Error('Enter an amount greater than zero.'); return Math.round(n*100)/100; };
 
-export async function listScheduledTransactions() {
+async function listScheduledTransactionsFromCloud() {
   return unwrap(await client().from('scheduled_transactions').select('*').in('status',['scheduled','paused']).order('scheduled_for').limit(500));
 }
 export async function createScheduledTransaction(input, userId) {
@@ -86,3 +87,6 @@ export async function logScheduledTransaction(item, accountId = item.account_id,
 export async function cancelScheduledTransaction(id) {
   return unwrap(await client().from('scheduled_transactions').update({status:'cancelled'}).eq('id',id).eq('status','scheduled').select().single());
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listScheduledTransactions = (...args) => cachedList('scheduledTransactions', () => listScheduledTransactionsFromCloud(...args));

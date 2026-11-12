@@ -86,8 +86,10 @@ npx cap sync ios      # copy an existing build/ only
 
 1. App Store Connect → Users and Access → Integrations → create an API key (App Manager); download the `.p8` once.
 2. Codemagic → Team → Integrations → Developer Portal → add that key and name it **`MOVO_ASC`**.
-3. Codemagic → the MOVO app → Environment variables → group **`movo_web`**: `REACT_APP_SUPABASE_URL` and
-   `REACT_APP_SUPABASE_ANON_KEY` (the public browser values Vercel uses; never the service role key).
+3. Optional: Codemagic → the MOVO app → Environment variables → group **`movo_web`**: `REACT_APP_SUPABASE_URL` and
+   `REACT_APP_SUPABASE_ANON_KEY`. These public values already come from `.env.production` (2026-11-12); set the group
+   only to override them. Never the service role key. The build fails if the app would lack the cloud connection
+   (`scripts/check-bundled-cloud-config.cjs`).
 4. App Store Connect → My Apps → + → iOS app, bundle id `com.nasrinai.movo`, name MOVO.
 5. Start **iOS TestFlight** in Codemagic, or push a tag `ios-vX.Y.Z`. Codemagic creates the distribution
    certificate and profile, builds, signs (build number = Codemagic build number) and uploads to TestFlight.

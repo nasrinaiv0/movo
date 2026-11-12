@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { cachedList } from './offlineReadCache';
 
 const unwrap = ({data,error}) => { if(error) throw error; return data; };
 const db = () => { if(!supabase) throw new Error('MOVO cloud storage is not configured.'); return supabase; };
@@ -42,8 +43,11 @@ export async function recordPaymentAttempt(userId, input) {
   }).select().single());
 }
 
-export async function listPaymentAttempts(userId, limit=50) {
+async function listPaymentAttemptsFromCloud(userId, limit=50) {
   if(!userId) return [];
   return unwrap(await db().from('payment_attempts').select('*').eq('user_id',userId)
     .order('created_at',{ascending:false}).limit(Math.max(1,Math.min(100,limit))))||[];
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listPaymentAttempts = (...args) => cachedList('paymentAttempts', () => listPaymentAttemptsFromCloud(...args), args.map(String).join(','));

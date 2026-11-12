@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { fetchAllRows } from './supabasePagination';
 import { buildMonthlyInterestSchedule } from './loanInterest';
+import { cachedList } from './offlineReadCache';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured.');
@@ -25,7 +26,7 @@ const validDate = value => {
 };
 
 /** List functions rely on RLS as the primary ownership boundary. */
-export async function listAccountingPostings() {
+async function listAccountingPostingsFromCloud() {
   const client=requireClient();
   const [postings,loans,receivables]=await Promise.all([
     fetchAllRows(()=>client.from('accounting_postings').select('id,account_id,signed_amount,currency,source_type,source_id,occurred_at').order('occurred_at',{ascending:false}).order('id',{ascending:false})),
@@ -38,7 +39,7 @@ export async function listAccountingPostings() {
 }
 
 /** Non-cash accounting events that must appear in expense analytics without posting cash a second time. */
-export async function listAccountingActivities() {
+async function listAccountingActivitiesFromCloud() {
   const client = requireClient();
   const [loanResult, receivableResult, allocationResult] = await Promise.all([
     fetchAllRows(() => client.from('loan_events').select('id,event_type,amount,currency,occurred_at,note').in('event_type', ['interest_payment','fee']).is('reversed_at', null).order('occurred_at', { ascending: false }).order('id', { ascending: false })).then(data => ({ data, error: null })),
@@ -72,7 +73,7 @@ export async function listAccountingActivities() {
   return [...loanRows, ...receivableRows, ...allocationRows];
 }
 
-export async function listLoans() {
+async function listLoansFromCloud() {
   return unwrap(await requireClient().from('financial_loans').select('*').order('created_at', { ascending: false }));
 }
 export async function createLoan(input, userId) {
@@ -98,7 +99,7 @@ export async function createLoan(input, userId) {
     throw error;
   }
 }
-export async function listLoanEvents(loanId) {
+async function listLoanEventsFromCloud(loanId) {
   if (!loanId) throw new Error('A loan ID is required.');
   return unwrap(await requireClient().from('loan_events').select('*').eq('loan_id', loanId).order('occurred_at', { ascending: false }));
 }
@@ -139,7 +140,7 @@ export async function recordLoanEvent(input) {
   }));
 }
 
-export async function listReceivables() {
+async function listReceivablesFromCloud() {
   return unwrap(await requireClient().from('financial_receivables').select('*').order('created_at', { ascending: false }));
 }
 export async function createReceivable(input, userId) {
@@ -193,7 +194,7 @@ export async function deleteReceivable(receivableId, userId) {
   }).eq('id', receivableId).eq('user_id', userId).neq('status', 'archived').select().single());
 }
 
-export async function listReceivableEvents(receivableId) {
+async function listReceivableEventsFromCloud(receivableId) {
   if (!receivableId) throw new Error('A receivable ID is required.');
   return unwrap(await requireClient().from('receivable_events').select('*').eq('receivable_id', receivableId).order('occurred_at', { ascending: false }));
 }
@@ -210,7 +211,7 @@ export async function recordReceivableEvent(input) {
   }));
 }
 
-export async function listGoals() {
+async function listGoalsFromCloud() {
   return unwrap(await requireClient().from('savings_goals').select('*').order('created_at', { ascending: false }));
 }
 export async function createGoal(input, userId) {
@@ -221,7 +222,7 @@ export async function createGoal(input, userId) {
     notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
   }).select().single());
 }
-export async function listGoalAllocations(goalId) {
+async function listGoalAllocationsFromCloud(goalId) {
   if (!goalId) throw new Error('A goal ID is required.');
   return unwrap(await requireClient().from('goal_allocations').select('*').eq('goal_id', goalId).order('created_at', { ascending: false }));
 }
@@ -242,7 +243,7 @@ export async function releaseGoalAllocation(allocationId) {
 
 
 /** Account-backed plan reservations; these are earmarks, not cash transactions. */
-export async function listPlanAllocations() {
+async function listPlanAllocationsFromCloud() {
   return unwrap(await requireClient().from('plan_funding_allocations').select('*').order('created_at', { ascending: false }).limit(2000));
 }
 export async function allocatePlanFunds(input) {
@@ -263,3 +264,14 @@ export async function reverseAllocationEvent(eventId) {
   if (!eventId) throw new Error('An allocation event ID is required.');
   return unwrap(await requireClient().rpc('reverse_allocation_event', { p_event_id: eventId }));
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listAccountingPostings = (...args) => cachedList('accountingPostings', () => listAccountingPostingsFromCloud(...args));
+export const listAccountingActivities = (...args) => cachedList('accountingActivities', () => listAccountingActivitiesFromCloud(...args));
+export const listLoans = (...args) => cachedList('loans', () => listLoansFromCloud(...args));
+export const listLoanEvents = (...args) => cachedList('loanEvents', () => listLoanEventsFromCloud(...args), args.map(String).join(','));
+export const listReceivables = (...args) => cachedList('receivables', () => listReceivablesFromCloud(...args));
+export const listReceivableEvents = (...args) => cachedList('receivableEvents', () => listReceivableEventsFromCloud(...args), args.map(String).join(','));
+export const listGoals = (...args) => cachedList('goals', () => listGoalsFromCloud(...args));
+export const listGoalAllocations = (...args) => cachedList('goalAllocations', () => listGoalAllocationsFromCloud(...args), args.map(String).join(','));
+export const listPlanAllocations = (...args) => cachedList('planAllocations', () => listPlanAllocationsFromCloud(...args));

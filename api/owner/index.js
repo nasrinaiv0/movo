@@ -1,6 +1,7 @@
 'use strict';
 // MOVO Owner Command Center. This endpoint is never authorized by client-supplied
 // role, email, plan, query string, or public REACT_APP configuration.
+const { billingConfigurationIssues } = require('../lib/billingReadiness');
 const { createClient } = require('@supabase/supabase-js');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const TIER = new Set(['pro','pro_plus']);
@@ -169,7 +170,13 @@ async function handler(req,res) {
         if(error) throw Error('billing_records_unavailable');
         storeRecords=data||[];
       }
-      return reply(res,200,{metrics,signupSeries,kpis,...(view==='billing'?{storeRecords,limitedTo:100}:{}),
+      // Owner-only (MFA): which store checkouts the server allows, and the NAMES of settings that fail validation.
+      // Values are never read into the response.
+      const storeReadiness=view==='billing'?Object.fromEntries(['apple','google'].map(platform=>{
+        const issues=billingConfigurationIssues(process.env,platform);
+        return [platform,{enabled:process.env.MOVO_STORE_BILLING_ENABLED==='true'&&issues.length===0,switchedOn:process.env.MOVO_STORE_BILLING_ENABLED==='true',settingsToFix:issues}];
+      })):undefined;
+      return reply(res,200,{metrics,signupSeries,kpis,...(view==='billing'?{storeRecords,storeReadiness,limitedTo:100}:{}),
         revenue:{status:'not_integrated'},
         storeSettlements:{status:'not_integrated'},currency:'PHP',
         message:'Only database-backed counts are shown. Revenue and retention require verified integrations.'});

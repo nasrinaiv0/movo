@@ -5,6 +5,7 @@ import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp, nativePlatform } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
+import { cachedList } from './offlineReadCache';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
@@ -36,8 +37,30 @@ export async function verifyEmailCode(email, code) {
   if (!/^\d{6,10}$/.test(token)) throw new Error('invalid_code');
   return unwrap(await requireClient().auth.verifyOtp({ email: String(email || '').trim(), token, type: 'email' }));
 }
+/**
+ * Whether MOVO's sign-in service has this provider switched on (the public /auth/v1/settings list). Without this
+ * check a disabled provider opens a raw error page in the browser instead of MOVO's own message. An unknown answer
+ * (offline, slow or unexpected reply) counts as on, so a network blip never blocks sign-in.
+ */
+export async function oauthProviderEnabled(provider, { fetchImpl = globalThis.fetch, timeoutMs = 4000 } = {}) {
+  const url = process.env.REACT_APP_SUPABASE_URL; const key = process.env.REACT_APP_SUPABASE_ANON_KEY;
+  if (!url || !key || typeof fetchImpl !== 'function') return true;
+  const controller = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const response = await fetchImpl(`${String(url).replace(/\/+$/, '')}/auth/v1/settings`, { headers: { apikey: key }, signal: controller?.signal });
+    if (!response?.ok) return true;
+    const settings = await response.json();
+    return settings?.external?.[provider] !== false;
+  } catch {
+    return true;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 async function signInWithProvider(provider, queryParams) {
   const client = requireClient();
+  if (!(await oauthProviderEnabled(provider))) throw Object.assign(new Error('provider_not_enabled'), { code: 'oauth_provider_not_supported' });
   if (isNativeApp()) {
     // iOS and Android open the provider in the system browser; Supabase returns to movo://auth-callback with a
     // PKCE code, which finishOAuth() exchanges for a session.
@@ -114,7 +137,7 @@ export async function listTransactions({ from, to, accountId } = {}) {
     return query;
   });
 }
-export async function createTransaction(transaction, userId) {
+export async function createTransaction(transaction, userId, { onLocal } = {}) {
   if (!userId) throw new Error('A signed-in user is required.');
   const amount = Number(transaction?.amount);
   const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
@@ -142,7 +165,7 @@ export async function createTransaction(transaction, userId) {
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
   };
   const recordId = payload.id || globalThis.crypto.randomUUID();
-  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId});
+  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId,onLocal});
 }
 export async function deleteTransaction(transactionId) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
@@ -152,7 +175,7 @@ export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
 }
 
-export async function updateTransaction(transactionId, transaction) {
+export async function updateTransaction(transactionId, transaction, { onLocal } = {}) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
   const amount = Number(transaction?.amount);
   const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
@@ -177,7 +200,7 @@ export async function updateTransaction(transactionId, transaction) {
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
     occurred_at: occurredAt,
   };
-  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update});
+  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update,onLocal});
 }
 
 export async function updateAccount(accountId, account) {
@@ -251,7 +274,7 @@ export async function purgeArchivedAutomations(days = 90, now = new Date()) {
   const { error } = await requireClient().from('movo_automation_inbox').delete().eq('status', 'dismissed').lt('resolved_at', cutoff);
   if (error && !/PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) throw error;
 }
-export async function listBudgets() {
+async function listBudgetsFromCloud() {
   return unwrap(await requireClient().from('budgets')
     .select('id,category,monthly_limit,currency,starts_on,is_active').eq('is_active', true).order('category', { ascending: true }));
 }
@@ -325,3 +348,6 @@ export async function restoreTransactionLinks(reversedTransactionId, restoredTra
     p_restored_transaction_id: restoredTransactionId,
   }));
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listBudgets = (...args) => cachedList('budgets', () => listBudgetsFromCloud(...args));

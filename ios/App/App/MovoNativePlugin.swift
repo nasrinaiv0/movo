@@ -2,6 +2,7 @@ import UIKit
 import Capacitor
 import LocalAuthentication
 import Security
+import StoreKit
 
 /// MOVO's native bridge (JS name "MovoNative").
 /// - Face ID / Touch ID for App Lock (LocalAuthentication; nothing leaves the device).
@@ -18,7 +19,8 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "secureGet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAppIcon", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "consumeWearRequest", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "consumeWearRequest", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise)
     ]
     /// Alternate home-screen icons compiled from Assets.xcassets (ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES).
     private static let alternateIcons: Set<String> = ["AppIcon-Bronze", "AppIcon-Silver", "AppIcon-Gold", "AppIcon-Platinum"]
@@ -152,6 +154,25 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
             UIApplication.shared.setAlternateIconName(name) { error in
                 if let error = error { call.reject(error.localizedDescription) } else { call.resolve() }
             }
+        }
+    }
+
+    /// Rate MOVO (src/lib/reviewPrompt.js): asks StoreKit to show Apple's own rating dialog in the active scene.
+    /// Apple decides whether it appears (at most three times a year) and never reports what was rated.
+    @objc func requestReview(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+                call.resolve(["requested": false])
+                return
+            }
+            if #available(iOS 16.0, *) {
+                Task { @MainActor in AppStore.requestReview(in: scene) }
+            } else {
+                SKStoreReviewController.requestReview(in: scene)
+            }
+            call.resolve(["requested": true])
         }
     }
 

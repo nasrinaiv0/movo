@@ -44,6 +44,8 @@ jobs:
         run: npx --yes npm@11.19.1 ci
       - name: Build web assets and run unit tests
         run: CI=true npm run build
+      - name: Check the app bundles MOVO's public cloud connection (sign-in)
+        run: node scripts/check-bundled-cloud-config.cjs build
       - name: Synchronize Capacitor Android project
         run: npx cap sync android
       - name: Compile debug and R8 release variants (unsigned)
