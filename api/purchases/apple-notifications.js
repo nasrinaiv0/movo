@@ -52,10 +52,18 @@ module.exports = async function handler(req, res) {
           environment: "production",
         };
       }
+      // Turning off auto-renew is not expiration or revocation. Honor
+      // verified paid time; a newer notification can re-enable renewal.
+      if (event.notificationType === "DID_CHANGE_RENEWAL_STATUS" &&
+          event.subtype === "AUTO_RENEW_DISABLED" && verified.status === "active") {
+        verified.status = "canceled";
+      }
+      // The signed notification time orders status transitions; the underlying
+      // transaction might have been signed before the cancellation request.
+      verified.eventAt = new Date(event.signedDate).toISOString();
       if (revoked) {
         verified.status = "revoked";
         verified.paidVerified = false;
-        verified.eventAt = new Date(event.signedDate).toISOString();
       }
       await S.commit(
         db,

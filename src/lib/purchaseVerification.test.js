@@ -146,7 +146,41 @@ describe('MOVO store purchase verification', () => {
     await verifyApple('signed',userId);
     expect(verifiedEnvironments.every(e=>e==='Production')).toBe(true);
   });
-  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_CANCELED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
+  test('Google canceled subscription retains the purchased period and paid-order evidence', async () => {
+    googleOverrides.subscriptionState = 'SUBSCRIPTION_STATE_CANCELED';
+    const expiresAt = new Date(Date.now() + 86400000).toISOString();
+    googleOverrides.lineItems = [{ productId: 'com.nasrinai.movo.proplus.monthly', expiryTime: expiresAt }];
+    const canceled = await verifyGoogle('token', 'com.nasrinai.movo.proplus.monthly', userId);
+    expect(canceled.status).toBe('canceled');
+    expect(canceled.expiresAt).toBe(expiresAt);
+    expect(canceled.paidVerified).toBe(true);
+    expect(canceled.needsAcknowledgement).toBe(true);
+    googleOverrides.lineItems[0].expiryTime = new Date(Date.now() - 1000).toISOString();
+    const expired = await verifyGoogle('token', 'com.nasrinai.movo.proplus.monthly', userId);
+    expect(expired.status).toBe('expired');
+    expect(expired.paidVerified).toBe(false);
+  });
+  test('Google canceled-but-unexpired subscription with refunded order has no paid referral credit', async () => {
+    googleOverrides.subscriptionState = 'SUBSCRIPTION_STATE_CANCELED';
+    googleOrder.state = 'REFUNDED';
+    const result = await verifyGoogle('token', 'com.nasrinai.movo.proplus.monthly', userId);
+    expect(result.status).toBe('canceled');
+    expect(result.paidVerified).toBe(false);
+  });
+  test('Google v2 line-item latestSuccessfulOrderId proves canceled paid entitlement', async () => {
+    googleOverrides.subscriptionState = 'SUBSCRIPTION_STATE_CANCELED';
+    googleOverrides.latestOrderId = undefined;
+    googleOverrides.lineItems = [{
+      productId: 'com.nasrinai.movo.proplus.monthly',
+      latestSuccessfulOrderId: 'GPA.line-item-order',
+      expiryTime: new Date(Date.now() + 86400000).toISOString(),
+    }];
+    const result = await verifyGoogle('token', 'com.nasrinai.movo.proplus.monthly', userId);
+    expect(result.status).toBe('canceled');
+    expect(result.paidVerified).toBe(true);
+    expect(result.storeTransactionId).toBe('GPA.line-item-order');
+  });
+  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
     googleOverrides.subscriptionState=state;
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(['active','grace_period']).not.toContain(result.status);

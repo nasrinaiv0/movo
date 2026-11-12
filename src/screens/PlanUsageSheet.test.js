@@ -56,3 +56,15 @@ test('a Pro+ customer from the store also has both buttons', () => {
   open({ session: { access_token: 't' }, entitlementReady: true, entitlement: { active: true, tier: 'pro_plus', expiresAt: '2027-11-09T00:00:00Z', source: 'store' } });
   expect([...document.querySelectorAll('.subscription-links button')].map(b => b.textContent)).toEqual(['Restore purchases', 'Manage subscription']);
 });
+
+test('Plan & Usage shows canceled renewal without downgrading verified Pro+', () => {
+  open({
+    session: { access_token: 't' },
+    entitlementReady: true,
+    entitlement: { active: true, tier: 'pro_plus', source: 'store', storeStatus: 'canceled', expiresAt: '2027-11-09T00:00:00Z' },
+  });
+  expect(document.querySelector('.plan-usage-current').className).toContain('tier-pro_plus');
+  expect(text()).toContain('Canceled');
+  expect(text()).toContain('access until');
+  expect(text()).toContain('Manage subscription');
+});

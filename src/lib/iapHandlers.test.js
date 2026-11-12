@@ -1,10 +1,10 @@
 /** @jest-environment node */
 jest.mock('@supabase/supabase-js',()=>({createClient:jest.fn()}));
 jest.mock('googleapis',()=>({google:{auth:{OAuth2:jest.fn()}}}));
-jest.mock('../../api/lib/purchaseVerification',()=>({verifyApple:jest.fn(),verifyGoogle:jest.fn(),decodeAppleTransaction:jest.fn()}));
+jest.mock('../../api/lib/purchaseVerification',()=>({verifyApple:jest.fn(),verifyGoogle:jest.fn(),decodeAppleTransaction:jest.fn(),verifyAppleNotification:jest.fn(),getProduct:jest.fn(),appleEntitlement:jest.fn()}));
 jest.mock('../../api/lib/iapSecurity',()=>{
  const real=jest.requireActual('../../api/lib/iapSecurity');
- return {...real,adminClient:jest.fn(),rpc:jest.fn(),lease:jest.fn(),commit:jest.fn(),acknowledge:jest.fn(),duplicate:jest.fn()};
+ return {...real,adminClient:jest.fn(),rpc:jest.fn(),lease:jest.fn(),commit:jest.fn(),acknowledge:jest.fn(),duplicate:jest.fn(),owner:jest.fn()};
 });
 const S=require('../../api/lib/iapSecurity');
 const {google}=require('googleapis');
@@ -59,4 +59,35 @@ test('entitlement listing excludes sandbox even for legacy test-user allowlists'
  expect(response.json.mock.calls[0][0].entitlements.map(e=>e.environment)).toEqual(['production']);
  expect(db.from).not.toHaveBeenCalledWith('movo_store_test_users');
  delete process.env.MOVO_STORE_TEST_USER_IDS;
+});
+
+test.each([
+  ['AUTO_RENEW_DISABLED', 'canceled'],
+  ['AUTO_RENEW_ENABLED', 'active'],
+])('Apple verified renewal notification %s commits %s without shortening paid time', async (subtype, status) => {
+  const appleHook = require('../../api/purchases/apple-notifications');
+  const signedDate = Date.parse('2026-11-12T14:00:00.000Z');
+  const expiration = '2026-12-12T14:00:00.000Z';
+  S.adminClient.mockReturnValue({});
+  S.duplicate.mockResolvedValue(false);
+  S.owner.mockResolvedValue({ user_id: 'owner' });
+  S.lease.mockImplementation(async (_db, _platform, _key, fn) => fn('fence'));
+  S.commit.mockResolvedValue({ status });
+  V.verifyAppleNotification.mockResolvedValue({
+    notificationUUID: 'notification-' + subtype,
+    notificationType: 'DID_CHANGE_RENEWAL_STATUS',
+    subtype,
+    signedDate,
+    data: { signedTransactionInfo: 'verified-transaction' },
+  });
+  V.decodeAppleTransaction.mockResolvedValue({ transaction: { originalTransactionId: 'original', transactionId: 'transaction' } });
+  V.verifyApple.mockResolvedValue({ status: 'active', expiresAt: expiration, paidVerified: true, eventAt: '2026-11-10T00:00:00.000Z' });
+  const response = res();
+  await appleHook({ method: 'POST', body: { signedPayload: 'verified-notification' } }, response);
+  expect(response.status).toHaveBeenCalledWith(200);
+  const committed = S.commit.mock.calls[0][2];
+  expect(committed.status).toBe(status);
+  expect(committed.expiresAt).toBe(expiration);
+  expect(committed.paidVerified).toBe(true);
+  expect(committed.eventAt).toBe(new Date(signedDate).toISOString());
 });

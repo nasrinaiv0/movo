@@ -155,7 +155,7 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   const statusMap = {
     SUBSCRIPTION_STATE_ACTIVE: 'active',
     SUBSCRIPTION_STATE_IN_GRACE_PERIOD: 'grace_period',
-    SUBSCRIPTION_STATE_CANCELED: 'expired',
+    SUBSCRIPTION_STATE_CANCELED: expiresAt.getTime() > Date.now() ? 'canceled' : 'expired',
     SUBSCRIPTION_STATE_PAUSED: 'paused',
     SUBSCRIPTION_STATE_ON_HOLD: 'on_hold',
     SUBSCRIPTION_STATE_EXPIRED: 'expired',
@@ -165,9 +165,9 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   const status = statusMap[state] || 'pending';
   const purchaseTokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
   let paidVerified = false;
-  if (!skipPaymentCheck && ['active', 'grace_period'].includes(status) && data.latestOrderId && publisher.orders?.get) {
+  if (!skipPaymentCheck && ['active', 'grace_period', 'canceled'].includes(status) && (data.latestOrderId || lineItem.latestSuccessfulOrderId) && publisher.orders?.get) {
     // Only an actual positive, processed order qualifies; free trials do not.
-    const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }, { timeout: 15000 }))?.data;
+    const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId || lineItem.latestSuccessfulOrderId }, { timeout: 15000 }))?.data;
     const purchasedLine = order?.lineItems?.find(item => item.productId === productId);
     paidVerified = order?.state === 'PROCESSED' && !!purchasedLine && (Number(purchasedLine.total?.units || 0) > 0 || Number(purchasedLine.total?.nanos || 0) > 0);
   }
@@ -181,7 +181,7 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
     productId,
     tier: product.tier,
     storeSubscriptionKey: purchaseTokenHash,
-    storeTransactionId: String(data.latestOrderId || purchaseTokenHash),
+    storeTransactionId: String(data.latestOrderId || lineItem.latestSuccessfulOrderId || purchaseTokenHash),
     originalTransactionId: null,
     purchaseTokenHash,
     status,

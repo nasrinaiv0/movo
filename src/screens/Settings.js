@@ -193,8 +193,13 @@ export function UsageSheet({ c, onClose }) {
   // One compact summary of the current plan; the plan comparison lives in the plans panel only.
   const tier = !planKnown ? 'checking' : shownEntitlement?.active && PLAN_LABELS[shownEntitlement.tier] ? shownEntitlement.tier : 'free';
   const planName = tier === 'checking' ? (checkFailed ? '—' : tr('Checking…')) : tier === 'free' ? tr('Free') : PLAN_LABELS[tier];
+  const canceledRenewal = tier !== 'free' && shownEntitlement?.source === 'store' && shownEntitlement.storeStatus === 'canceled';
   const planNote = tier === 'checking' ? '' : tier === 'free' ? tr('On this device')
-    : shownEntitlement.expiresAt ? tr('Active until {date}', { date: longDate(shownEntitlement.expiresAt) }) : tr('Active');
+    : shownEntitlement.expiresAt
+      ? (canceledRenewal
+        ? tr('Canceled · access until {date}', { date: longDate(shownEntitlement.expiresAt) })
+        : tr('Active until {date}', { date: longDate(shownEntitlement.expiresAt) }))
+      : tr('Active');
 
   return <Sheet center title={tr('Plan & Usage')} onClose={onClose} label={tr('Plan & Usage')} className="plan-usage-sheet">
     {!c.cloudMode && !c.deviceCopyAccess && <p className="form-hint" role="status">Local mode is active. Pro and Pro+ features are paused, but any existing subscription stays on record. Local tracking, manual transactions and import/export remain available. Enable Cloud Sync to restore eligible plan access.</p>}
