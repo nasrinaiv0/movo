@@ -1,3 +1,7 @@
+## 2026-11-12 — Video guide shown in a phone frame
+
+Owner request with a reference image: the tutorial recording now plays on a CSS-drawn modern phone (slim bezel, side buttons, dynamic-island cut-out, status bar, home indicator) on a light stage. Controls sit above and the translated caption and button below. The 9:20 phone shows the whole recording uncropped. Validation: Jest 206 suites / 1,250 tests, tsc, strict build, screenshots at 390/430 px and desktop (see `docs/engineering/updates/2026-11-12-tutorial-phone-frame.md`).
+
 ## 2026-11-12 — Zodiac headers in the style of the owner's reference (kept subtle)
 
 The zodiac art now follows the owner's reference, restrained: a night sky with a faint Milky Way, a thin golden zodiac wheel framing the sign's constellation, a few sparkles and gold-rimmed hills above the balance card. There is a new Celestial glow (green and gold) and a soft glow around the balance card on premium headers. Validation: Jest, tsc, strict build, browser screenshots for each element (see `docs/engineering/updates/2026-11-12-celestial-zodiac-art.md`).

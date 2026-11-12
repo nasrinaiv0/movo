@@ -8504,3 +8504,60 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header .header-actions { align-items: flex-start !important; }
 /* Premium headers (reference, 2026-11-12, kept subtle): a soft glow that follows the balance card's notched shape. */
 .movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block:is(.hero-zodiac, .hero-glow) .balance-card { box-shadow: none; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .28)) drop-shadow(0 10px 22px color-mix(in srgb, var(--hero-glow, #3fd27f) 32%, transparent)); }
+
+/* ===== Tutorial video in a phone frame (owner, 2026-11-12) =====
+   A soft light stage; the recording plays on a generic modern phone (slim dark bezel, dynamic-island cut-out, side
+   buttons, status bar, home indicator) drawn here. Sizes follow the stage height (container query units, no var()
+   inside those calc()s). Controls and the translated caption sit outside the phone. */
+.movo-app.movo-app.movo-app .tv-player.tv-film.tv-framed {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 0 0 max(16px, env(safe-area-inset-bottom));
+  background: radial-gradient(120% 70% at 50% 35%, #ffffff 0%, #f1f2f5 55%, #e6e8ee 100%);
+  color: #14161a;
+}
+.movo-app.movo-app.movo-app .tv-framed .tv-progress span { background: rgba(20, 22, 26, .12); }
+.movo-app.movo-app.movo-app .tv-framed .tv-progress i { background: #14161a; }
+.movo-app.movo-app.movo-app .tv-framed .tv-top { color: #14161a; }
+.movo-app.movo-app.movo-app .tv-framed .tv-count { color: rgba(20, 22, 26, .6); opacity: 1; }
+.movo-app.movo-app.movo-app .tv-framed :is(.tv-icon, .tv-skip) { background: rgba(20, 22, 26, .07); color: #14161a; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.movo-app.movo-app.movo-app .tv-framed .tv-stage-frame { position: relative; flex: 1 1 auto; min-height: 0; display: grid; place-items: center; container-type: size; padding: 4px 0; }
+.movo-app.movo-app.movo-app .tv-framed .tv-device {
+  position: relative; box-sizing: border-box;
+  height: 60vh; height: min(100cqh, 700px);
+  aspect-ratio: 9 / 20; /* screen minus status bar matches the 720×1560 recording, so nothing is cropped */
+  padding: 9px; padding: calc(min(100cqh, 700px) * .016);
+  border-radius: 54px; border-radius: calc(min(100cqh, 700px) * .085);
+  background: linear-gradient(145deg, #4a4d53 0%, #1b1c1f 18%, #0c0d0f 50%, #1d1e22 82%, #45484e 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .16), inset 0 0 0 3px #0a0a0c, 0 34px 70px -34px rgba(16, 20, 30, .55), 0 14px 26px -16px rgba(16, 20, 30, .35);
+}
+/* Side buttons: action and volume on the left, side button on the right. */
+.movo-app.movo-app.movo-app .tv-framed .tv-device::before,
+.movo-app.movo-app.movo-app .tv-framed .tv-device::after { content: ''; position: absolute; width: 3px; border-radius: 2px; background: linear-gradient(90deg, #2b2d31, #4a4d53); }
+.movo-app.movo-app.movo-app .tv-framed .tv-device::before { left: -3px; top: 19%; height: 4%; box-shadow: 0 9vh 0 0 #34363b, 0 15vh 0 0 #34363b; box-shadow: 0 calc(min(100cqh, 700px) * .085) 0 0 #34363b, 0 calc(min(100cqh, 700px) * .15) 0 0 #34363b; }
+.movo-app.movo-app.movo-app .tv-framed .tv-device::after { right: -3px; top: 27%; height: 10%; }
+.movo-app.movo-app.movo-app .tv-framed .tv-screen {
+  position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden;
+  border-radius: 46px; border-radius: calc(min(100cqh, 700px) * .07);
+  background: #0f0f0f; isolation: isolate;
+}
+.movo-app.movo-app.movo-app .tv-framed .tv-statusbar {
+  position: relative; flex: none; display: flex; align-items: center; justify-content: space-between;
+  height: 38px; height: calc(min(100cqh, 700px) * .062);
+  padding: 0 9%; color: #fff; font-size: 13px; font-size: calc(min(100cqh, 700px) * .024); letter-spacing: -.01em;
+}
+.movo-app.movo-app.movo-app .tv-framed .tv-statusbar b { font-weight: 600; min-width: 22%; }
+.movo-app.movo-app.movo-app .tv-framed .tv-island { position: absolute; left: 50%; top: 22%; width: 31%; height: 56%; transform: translateX(-50%); border-radius: 99px; background: #000; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); }
+.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5%; min-width: 22%; }
+.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons svg { height: 0.82em; width: auto; fill: currentColor; }
+.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons svg:last-child { height: 0.9em; }
+.movo-app.movo-app.movo-app .tv-framed .tv-video { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; height: auto; object-fit: cover; object-position: top center; background: #0f0f0f; }
+.movo-app.movo-app.movo-app .tv-framed .tv-homebar { position: absolute; left: 50%; bottom: 1.1%; width: 34%; height: 4px; transform: translateX(-50%); border-radius: 99px; background: rgba(255, 255, 255, .78); pointer-events: none; }
+.movo-app.movo-app.movo-app .tv-framed .tv-bigplay { left: 50%; top: 46%; }
+.movo-app.movo-app.movo-app .tv-framed .tv-hold { position: absolute; inset: 0; z-index: 1; }
+.movo-app.movo-app.movo-app .tv-framed .tv-tap { top: 0; bottom: 0; width: 30%; }
+.movo-app.movo-app.movo-app .tv-framed .tv-caption { position: relative; left: auto; right: auto; bottom: auto; padding: 0 22px; text-align: center; animation: tv-caption .45s ease-out both; }
+.movo-app.movo-app.movo-app .tv-framed .tv-caption h2 { color: #14161a; text-shadow: none; font-size: 20px; margin: 0 0 4px; }
+.movo-app.movo-app.movo-app .tv-framed .tv-caption p { color: rgba(20, 22, 26, .66); text-shadow: none; font-size: 13.5px; }
+.movo-app.movo-app.movo-app .tv-framed .tv-actions { position: relative; left: auto; right: auto; bottom: auto; padding: 0 18px; }
+.movo-app.movo-app.movo-app .tv-framed .tv-actions .secondary-button { background: rgba(20, 22, 26, .08); color: #14161a; -webkit-backdrop-filter: none; backdrop-filter: none; }
+@media (min-width: 521px) { .movo-app.movo-app.movo-app .tv-player.tv-film.tv-framed { width: min(100%, 440px); height: min(940px, calc(100dvh - 24px)); } }
