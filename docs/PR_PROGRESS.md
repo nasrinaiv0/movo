@@ -1,3 +1,16 @@
+## 2026-11-12 — Android sign-in: "not configured" fixed for every app build
+
+Owner report: Google and email sign-in in the Android app said "not configured".
+
+- **Cause:** that app was built without MOVO's public Supabase connection. Those values lived only in Vercel, the protected GitHub release environment and Codemagic, so Android Studio, local, CI or older builds had none.
+- **Fix:** the two public values (project URL and publishable key) are now committed in `.env.production`, so every production build has them, while environment settings still override them.
+  - A new test keeps that file to exactly those two public values and rejects anything secret.
+  - A new build check fails any Android or iPhone build whose app lacks the connection. It runs in the Android CI build, the Google Play jobs and Codemagic.
+- **Verified:** a build with no settings now includes the connection, a build with settings keeps its own, and the live sign-in service accepts the key with Google and email enabled.
+- **Owner action:** install a new Android build made from main after this merges (the app on the phone keeps its old code).
+
+Not run: sign-in on a real Android device. See `docs/engineering/updates/2026-11-12-android-signin-config.md`.
+
 ## 2026-11-12 — "Save 20%" on the plans when Annual is chosen
 
 Owner follow-up, with a reference paywall whose layout was not copied: the saving belongs on the plans. When Annual is selected, Pro and Pro+ each show a green "Save 20%" pill on the card's top edge. The figure comes from each plan's own store prices when loaded, else the owner's 20%. The current plan keeps its "Current" badge, Monthly shows no saving, and the toggle no longer carries the badge. Restore purchases and Manage subscription drop the "·" separator, which dangled when they wrapped. Validation: `PlanOffer.test.js` updated, full Jest suite, `tsc`, strict build, browser screenshots in light and dark at 430, 375 and 360px including German and Filipino at the Largest text size. Not run: real devices.
