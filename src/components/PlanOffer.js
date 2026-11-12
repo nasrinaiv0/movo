@@ -9,6 +9,7 @@ import { getStoreProducts, isNativePurchasePlatform, purchaseStoreProduct } from
 import { STORE_PRODUCT_BY_ID } from '../lib/storeProducts';
 import { effectivePlan } from '../lib/planAccess';
 import { t as tr } from '../lib/i18n';
+import { money } from '../lib/format';
 
 /*
  * MOVO plans: a compact comparison (swipe or tap a tab) and the first-month-free offer. Every verified first-time
@@ -49,7 +50,7 @@ const PLUS_ONLY = ['automation', 'premiumMascots', 'premiumUI'];
  * the store's own localized price, what the plan adds, one action. Free is the green mark, the free month white,
  * Pro gold, Pro+ platinum. Prices only ever come from the App Store / Google Play; none are invented here.
  */
-export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, onOpenCloudSettings, onOpenTerms, cloudMode = true, feature }) {
+export default function PlanOffer({ session, entitlement, onRefresh, onClose, onSignIn, onPlans, onOpenCloudSettings, onOpenTerms, cloudMode = true, feature, currency = 'PHP' }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [period, setPeriod] = useState('monthly');
@@ -74,6 +75,17 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   const monthly = selected.tier === 'free' ? null : productFor(selected.tier, 'monthly');
   const annual = selected.tier === 'free' ? null : productFor(selected.tier, 'annual');
   const saving = monthly?.price > 0 && annual?.price > 0 ? Math.round((1 - annual.price / (monthly.price * 12)) * 100) : 0;
+  // Each tile shows its own amount for the chosen period (owner, 2026-11-12). Prices only ever come from the store;
+  // without a store (the website) the paid tiles say "Price in app" rather than show an invented number.
+  const tilePrice = (tier) => {
+    if (tier === 'free') return money(0, currency).replace(/[.,]00(?=\D*$)/, '');
+    const item = productFor(tier, period);
+    return item ? `${item.priceString}/${tr(period === 'monthly' ? 'mo' : 'yr')}` : tr('Price in app');
+  };
+  const bestSaving = ['pro', 'pro_plus'].reduce((best, tier) => {
+    const m = productFor(tier, 'monthly'); const y = productFor(tier, 'annual');
+    return m?.price > 0 && y?.price > 0 ? Math.max(best, Math.round((1 - y.price / (m.price * 12)) * 100)) : best;
+  }, 0);
   const claim = async () => {
     if (!session?.access_token) { onSignIn(); return; }
     setBusy(true); setError('');
@@ -125,23 +137,24 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
     </div>
     <div className="plan-period" role="group" aria-label={tr('Billing period')}>
-      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}</button>)}
+      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}{id === 'annual' && bestSaving > 0 && <em className="plan-period-save">−{bestSaving}%</em>}</button>)}
     </div>
     <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
       {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
+        {item.tier === plan && <small className="plan-tile-badge">{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
         <MovoMark size={26} tone={item.tone} />
         <strong>{tr(item.name)}</strong>
-        {item.tier === plan && <small>{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
+        <span className={`plan-tile-price${item.tier !== 'free' && !productFor(item.tier, period) ? ' is-note' : ''}`}>{tilePrice(item.tier)}</span>
       </button>)}
     </div>
-    <div className="plan-price" aria-live="polite" key={`${selected.tier}:${period}`}>
-      {selected.tier === 'free' ? <><strong>{tr('Free')}</strong><span>{tr('always')}</span></>
-        : product ? <><strong>{product.priceString}</strong><span>/ {tr(period === 'monthly' ? 'month' : 'year')}</span></>
-          : trialOffer ? <><MovoMark size={22} tone="white" /><strong>{tr('1 month free')}</strong></>
-            : <span className="plan-price-note">{tr('Price shown by the App Store or Google Play')}</span>}
+    {/* The selected plan's price in large type only when there is one to show: the tiles already carry each plan's
+        amount (₱0 for Free, the store price, or "Price in app" on the website). */}
+    {(product || trialOffer) && <div className="plan-price" aria-live="polite" key={`${selected.tier}:${period}`}>
+      {product ? <><strong>{product.priceString}</strong><span>/ {tr(period === 'monthly' ? 'month' : 'year')}</span></>
+        : <><MovoMark size={22} tone="white" /><strong>{tr('1 month free')}</strong></>}
       {selected.tier !== 'free' && other && <small>{tr('or {price} / {period}', { price: other.priceString, period: tr(period === 'monthly' ? 'year' : 'month') })}{saving > 0 && period === 'monthly' ? <em> {tr('(save {n}%)', { n: saving })}</em> : null}</small>}
       {trialOffer && <small className="plan-trial-note">{tr('No payment, no automatic charge')}</small>}
-    </div>
+    </div>}
     <div className={`plan-features tier-${selected.tier}`} key={selected.tier}>
       <b>{tr(selected.heading)}</b>
       <ul>{selected.features.map((item, i) => <li key={item} style={{ '--i': i }}><Icon name="check" size={15} strokeWidth={2.4} />{tr(item)}</li>)}</ul>

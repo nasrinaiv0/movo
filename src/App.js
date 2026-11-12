@@ -111,6 +111,7 @@ import { ACCENTS } from './screens/Settings';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl, isNativeApp, nativePlatform } from './lib/platform';
+import { noteActiveDay, readReviewState, requestStoreReview, shouldAskForReview, writeReviewState } from './lib/reviewPrompt';
 import { nativeAutomationKey, sanitizeNativePreferenceCache, saveNativeAutomationKey } from './lib/nativeAutomationKey';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
 import { listBills, listOccurrences, createBill } from './lib/billsRepository';
@@ -403,6 +404,13 @@ function App() {
   const layout = useLayout();
   const [burst, setBurst] = useState(null);
   const celebrate = useCallback((label, badge) => setBurst({ id: Date.now(), label, badge }), []);
+  // Rate MOVO (lib/reviewPrompt.js): after a new record is saved, at a good moment, the phone apps ask the store's own
+  // rating dialog to appear. It waits for the save celebration to finish and never shows over a sheet or the lock.
+  const reviewGateRef = useRef({ ready: false, sheet: false });
+  const maybeAskForReview = useCallback((records) => {
+    if (!shouldAskForReview({ platform: nativePlatform(), state: readReviewState(), records })) return;
+    window.setTimeout(() => { const gate = reviewGateRef.current; if (gate.ready && !gate.sheet) requestStoreReview(); }, 1800);
+  }, []);
   const endBurst = useCallback(() => setBurst(null), []);
   const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
@@ -1100,6 +1108,8 @@ function App() {
   const legalAccepted = hasAcceptedLegal(prefs);
   const setupDone = !setupGateOn || (!!prefs.onboarded && legalAccepted);
   const setupDoneRef = useRef(setupDone);
+  // Counts the days MOVO is used (device only) for the Rate MOVO timing.
+  useEffect(() => { if (setupDone) writeReviewState(noteActiveDay(readReviewState(), todayKey)); }, [setupDone, todayKey]);
   setupDoneRef.current = setupDone;
   const go = useCallback((next, params = {}) => {
     if (!setupDoneRef.current && !SETUP_SCREENS.has(next)) return;
@@ -1132,6 +1142,9 @@ function App() {
     if (next !== 'Settings') setQuery('');
     try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
   }, []);
+  // An on-screen back arrow that returns to the screen the person came from (e.g. Profile opened from Settings goes back
+  // to Settings), or to `fallback` when there is no earlier screen. go() treats the trail's top as a return.
+  const goBack = useCallback((fallback) => go(screenTrailRef.current.peek() || fallback), [go]);
   /*
    * The device's own Back (Android button or gesture, browser Back) closes the open sheet first, then returns to the
    * previous screen, then to Home; from Home with nothing open it leaves the app as usual.
@@ -1312,7 +1325,7 @@ function App() {
           if (!editingId) markFresh(row.id);
           setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
           notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
-          if (!editingId) celebrate();
+          if (!editingId) { celebrate(); maybeAskForReview(rawTxs.length + 1); }
         }
       }
       if (!online) {
@@ -1322,14 +1335,14 @@ function App() {
         const existing = editingId ? (cloudMode ? ownerCopy?.working.transactions : rawTxs)?.find(x => x.id === editingId) : null;
         if (editingId && !existing) throw new Error(tr('This record is not on this device yet. Try again when you are back online.'));
         const auto = !editingId && AUTOMATION_SOURCES.includes(form.source);
-        const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual' }) };
+        const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual', created_at: new Date().toISOString() }) };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
         if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[transactionRow]);
         savedTransaction = transactionRow;
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
         notify(cloudMode ? tr('No connection. Saved on this device; it uploads automatically when you are back online.') : editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
-        if (!editingId) celebrate();
+        if (!editingId) { celebrate(); maybeAskForReview(rawTxs.length + 1); }
       }
       if (paidSub && subscriptionNextDue) {
         if (online && session?.user?.id && savedTransaction?.id) {
@@ -2028,6 +2041,7 @@ function App() {
 
   /* ---------- app lock: on open, and again after MOVO has been in the background for a minute ---------- */
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
+  reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   useEffect(() => {
     let hiddenAt = 0;
     const onVis = () => {
@@ -2457,7 +2471,7 @@ function App() {
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
-    entitlement, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
+    entitlement, entitlementReady, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
     syncState,
     deviceCopyAccess,
@@ -2482,7 +2496,7 @@ function App() {
     accountQrDisplay,
     fx,
     refreshFx,
-    show, setShow, prefs, setPref, stats, deltas, txs, transactionBalances, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs, transactionBalances, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, goBack, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),
@@ -2679,7 +2693,7 @@ function App() {
       </Sheet>}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
-      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !locked && !SETUP_READING.has(view) && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
+      {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !locked && !SETUP_READING.has(view) && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} currency={base} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
       {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
       {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
       {/* First run: the video guide, then (skipped or finished) the spotlight walkthrough, then the free month of Pro. */}
@@ -2784,12 +2798,30 @@ function App() {
         onOpenAccount={id => { setSelectedCardId(id); setSheet({ name: 'cardDetails', id }); }}
       />}
 
-      {detailTx && <Sheet title={detailTx.merchant} subtitle={`${longDate(detailTx.date)}, ${timeLabelFull(detailTx.date)}`} onClose={() => setSheet(null)} label={tr('Transaction details')}>
-        <dl className="detail-list"><div><dt>{tr('Amount')}</dt><dd>{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}{detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}</dd></div><div><dt>{tr('Type')}</dt><dd>{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</dd></div><div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div><div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>{detailTx.note && <div><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}<div><dt>{tr('Date & time')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>{refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}{detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}{detailTx.receipt_note && <div><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}</dl>
-        {detailTx.receipt_path && <button type="button" className="secondary-button" onClick={async()=>{const popup=window.open('about:blank','_blank');try{if(detailTx.receipt_path.startsWith('localreceipt:')){const file=await getLocalAttachment(detailTx.receipt_path);if(!file)throw new Error('missing');const url=URL.createObjectURL(file);if(popup)popup.location.href=url;else window.location.assign(url);setTimeout(()=>URL.revokeObjectURL(url),60000);return;}const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}>{tr('View receipt')}</button>}
+      {detailTx && <Sheet title="" center onClose={() => setSheet(null)} label={tr('Transaction details')} className="tx-detail-sheet">
+        {/* Transaction details (owner, 2026-11-12): a solid, centered pop-up. The name and amount lead, signed by type,
+            with its type as a chip; one card holds the rest, including when it was spent and when it was logged. */}
+        <div className={`tx-detail-hero type-${detailTx.type}`}>
+          <h2 className="tx-detail-name">{detailTx.merchant}</h2>
+          <strong className="tx-detail-amount">{detailTx.type === 'expense' ? '−' : detailTx.type === 'income' ? '+' : ''}{shown(show, money(detailTx.origAmount, detailTx.origCurrency))}</strong>
+          {detailTx.origCurrency !== base && <small className="fx-note">≈ {shown(show, money(detailTx.amount, base))}</small>}
+          <span className="tx-detail-chips"><span className="tx-detail-chip">{tr(detailTx.type[0].toUpperCase() + detailTx.type.slice(1))}</span></span>
+        </div>
+        <dl className="tx-detail-list">
+          <div><dt>{tr('Account')}</dt><dd>{detailTx.accountName}</dd></div>
+          <div><dt>{tr('Category')}</dt><dd>{tr(detailTx.category || 'Other')}{detailTx.subcategory ? ` · ${tr(detailTx.subcategory)}` : ''}</dd></div>
+          {/* Two times (owner, 2026-11-12): when the money moved, and when the record was logged in MOVO. */}
+          <div><dt>{tr(detailTx.type === 'income' ? 'Received' : detailTx.type === 'transfer' ? 'Transferred' : 'Spent')}</dt><dd>{longDate(detailTx.date)}, {timeLabelFull(detailTx.date)}</dd></div>
+          {Number.isFinite(Date.parse(detailTx.created_at)) && <div><dt>{tr('Logged')}</dt><dd>{longDate(detailTx.created_at)}, {timeLabelFull(detailTx.created_at)}</dd></div>}
+          {detailTx.note && <div className="wide"><dt>{tr('Note')}</dt><dd>{detailTx.note}</dd></div>}
+          {refOf(detailTx) && <div><dt>{tr('Reference ID')}</dt><dd className="ref-id">{refOf(detailTx)}</dd></div>}
+          {detailTx.payment_reference && <div><dt>{tr('Payment reference')}</dt><dd className="ref-id">{detailTx.payment_reference}</dd></div>}
+          {detailTx.receipt_note && <div className="wide"><dt>{tr('Receipt note')}</dt><dd>{detailTx.receipt_note}</dd></div>}
+        </dl>
+        {detailTx.receipt_path && <button type="button" className="tx-detail-receipt" onClick={async()=>{const popup=window.open('about:blank','_blank');try{if(detailTx.receipt_path.startsWith('localreceipt:')){const file=await getLocalAttachment(detailTx.receipt_path);if(!file)throw new Error('missing');const url=URL.createObjectURL(file);if(popup)popup.location.href=url;else window.location.assign(url);setTimeout(()=>URL.revokeObjectURL(url),60000);return;}const {data,error}=await supabase.storage.from('movo-receipts').createSignedUrl(detailTx.receipt_path,60);if(error)throw error;if(popup)popup.location.href=data.signedUrl;else window.location.assign(data.signedUrl);}catch{popup?.close();notify(tr('Could not open this receipt. Check your connection and sign-in.'));}}}><Icon name="receipt" size={18} /><span>{tr('View receipt')}</span><Icon name="chevron" size={16} /></button>}
         {detailTx.source === 'allocation_event'
-          ? detailTx.can_reverse && <div className="sheet-actions"><button type="button" className="danger-button" aria-label={tr('Reverse')} onClick={() => removeTransaction(detailTx)}><Icon name="undo-2" size={16} /> {tr('Reverse')}</button></div>
-          : detailTx.source !== 'accounting_event' && <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
+          ? detailTx.can_reverse && <div className="sheet-actions tx-detail-actions"><button type="button" className="danger-button" aria-label={tr('Reverse')} onClick={() => removeTransaction(detailTx)}><Icon name="undo-2" size={16} /> {tr('Reverse')}</button></div>
+          : detailTx.source !== 'accounting_event' && <div className="sheet-actions tx-detail-actions"><button type="button" className="secondary-button" onClick={() => openEditTransaction(detailTx)}><Icon name="edit" size={16} /> {tr('Edit')}</button><button type="button" className="danger-button" aria-label={tr('Delete {name}', { name: detailTx.merchant })} onClick={() => removeTransaction(detailTx)}><Icon name="trash" size={16} /> {tr('Delete')}</button></div>}
       </Sheet>}
 
       {pendingLog && <div className="log-prompt" role="alertdialog" aria-label={tr('Log this payment?')}>

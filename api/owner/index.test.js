@@ -127,3 +127,26 @@ test('user directory shows each account effective plan, including trials',async(
   expect(body.plans).toBe('verified');
   expect(body.users[0]).toEqual(expect.objectContaining({plan:'pro',planSource:'trial',lastSignIn:'2026-11-08'}));
 });
+test('billing view reports store checkout readiness by setting NAME only, never values', async()=>{
+  const keys=['MOVO_STORE_BILLING_ENABLED','APPLE_IAP_SIGNING_KEY','APPLE_IAP_KEY_ID','APPLE_IAP_ISSUER_ID','APPLE_APP_ID','MOVO_IAP_TOKEN_ENCRYPTION_KEY','CRON_SECRET'];
+  const saved=Object.fromEntries(keys.map(k=>[k,process.env[k]]));
+  Object.assign(process.env,{MOVO_STORE_BILLING_ENABLED:'true',APPLE_IAP_SIGNING_KEY:'SECRET-SIGNING-VALUE',APPLE_IAP_KEY_ID:'SECRET-KEY-ID',
+    APPLE_IAP_ISSUER_ID:'SECRET-ISSUER',APPLE_APP_ID:'com.nasrinai.movo',MOVO_IAP_TOKEN_ENCRYPTION_KEY:'a'.repeat(64),CRON_SECRET:'c'.repeat(40)});
+  try{
+    createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(admin());
+    const response=res();await handler({method:'GET',headers:{authorization:'Bearer test'},query:{view:'billing'}},response);
+    expect(response.status).toHaveBeenCalledWith(200);
+    const body=response.json.mock.calls[0][0];
+    expect(body.storeReadiness.apple).toEqual({enabled:false,switchedOn:true,settingsToFix:['APPLE_APP_ID']});
+    expect(body.storeReadiness.google.enabled).toBe(false);
+    expect(body.storeReadiness.google.settingsToFix).toEqual(expect.arrayContaining(['GOOGLE_PLAY_SERVICE_ACCOUNT_JSON']));
+    const text=JSON.stringify(body);
+    ['SECRET-SIGNING-VALUE','SECRET-KEY-ID','SECRET-ISSUER','com.nasrinai.movo','private-test-key','a'.repeat(64)].forEach(v=>expect(text).not.toContain(v));
+    // Other views never include it.
+    createClient.mockReturnValueOnce(ownerAuth()).mockReturnValueOnce(admin());
+    const other=res();await handler({method:'GET',headers:{authorization:'Bearer test'},query:{view:'overview'}},other);
+    expect(other.json.mock.calls[0][0].storeReadiness).toBeUndefined();
+  } finally {
+    keys.forEach(k=>{ if(saved[k]===undefined) delete process.env[k]; else process.env[k]=saved[k]; });
+  }
+});

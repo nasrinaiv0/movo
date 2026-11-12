@@ -1,3 +1,71 @@
+## 2026-11-12 — Transaction details: centered, with spent and logged times
+
+Owner request: place the transaction details at the center and add the time it was logged and the time it was spent. The details now open as a centered pop-up, with the name, the signed amount and the type centered on top. The details card adds two times: **Spent** (Received for income, Transferred for transfers), which is the transaction's date and time, and **Logged**, which is when the record was saved in MOVO (`created_at`). Cloud records already had a logged time; new records saved on the device now get one too. That stamp is display-only: uploads build their own payloads and reconciliation ignores `created_at`. Older local records without a saved time show only Spent. Validation: Jest 219 suites / 1,320 tests, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
+
+## 2026-11-12 — Plans panel: follows light/dark mode; amounts on every plan
+
+Owner request: improve the plans panel's colour adaptability in light and dark mode, and organize it with amounts.
+- In light mode the panel now uses MOVO's off-white sheet, with readable gold and platinum accents and light selected-tile tints; dark mode keeps the black panel.
+- Each tier tile shows its amount. Free shows ₱0 (home currency). In the apps, Pro and Pro+ show the store's own localized price per month or year for the chosen period, and Annual shows the best saving (for example −17%). On the website, where there is no store, they say "Price in app"; no price is invented, per `docs/commercial/STORE_BILLING_SETUP.md`.
+- The repeated "Price shown by the App Store or Google Play" line is gone, and the large price appears only when the store provides one.
+- The panel sizes to its content instead of a fixed 800px height.
+
+Validation: Jest 219 suites / 1,320 tests (PlanOffer tests updated: tile amounts, saving badge, no invented web price), strict build, browser screenshots in light and dark. See `docs/engineering/updates/2026-11-12-plans-panel-light-and-prices.md`. Not run: store prices on a real device.
+
+## 2026-11-12 — Account pickers: icon and amount only for the available balance
+
+Owner request: in the transfer sheet, remove the "Available balance" text and show only the wallet icon and the amount. The account pickers in the transaction sheet (From, To and Paid with) now show the wallet icon, or the card icon for credit, followed by the amount. "Available balance" and "Available credit" stay as screen-reader text, so VoiceOver and TalkBack still say them. With the room freed, the full amount shows instead of "₱1…". Below 400px wide, the two side-by-side pickers use a 24px logo and tighter gaps, so amounts such as ₱123,152.00 fit. Checked in the browser at 430, 390, 375 and 360px with no truncation. Validation: Jest (`AccountPicker.test.js` asserts the label is screen-reader-only), strict build. Not run: real devices.
+
+## 2026-11-12 — Transaction details: solid, compact and organized
+
+Owner request: make the transaction details solid (not transparent), more compact and organized. The sheet is now a solid surface with no glass blur in light and dark. The amount leads, large and signed by type (− expense, + income in green), with a Type chip. Account and Category (with subcategory) sit in one grouped card, and Note, references and Receipt note appear only when present. The duplicate "Date & time" row is gone, since the date is the subtitle. View receipt is a full-width row, and Edit and Delete are 48px buttons; Edit is no longer glaring white in dark mode. Validation: Jest, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
+
+## 2026-11-12 — Receipt picker in the transaction sheet
+
+Owner request: improve the receipt upload UI (it showed the browser's "Choose File · no file selected"). It is now a tappable card: a receipt icon, "Add receipt", "Photo or PDF · up to 10 MB" and a plus button. Once chosen, it shows a photo thumbnail (or a document mark for PDFs), the file name, size and where it is kept, with Replace and Remove. Wrong types and files over 10 MB are refused at once (the save still checks). Removing a receipt already saved marks it for deletion when the change is saved. Translated into 11 languages; the old label was untranslated. Validation: Jest (`ReceiptField.test.js`), strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-receipt-picker.md`). Not run: real devices.
+
+## 2026-11-12 — Plan & Usage: more room for the text
+
+Owner request: "give more space to the texts". Plan & Usage now has more space between the plan row, the usage tiles and the note, inside the tiles and in the note's line spacing, with a clear gap above the button and no fading shadow over the last line. Tile labels wrap (hyphenated in the reader's language) instead of being cut. The tiles become two rows of two below 400px wide, and the plan's date wraps instead of truncating. Checked in the browser with no truncated text at 375 and 430px, at the Largest text size, in English, German and Filipino. Validation: Jest, strict build. CSS only (see `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`).
+
+## 2026-11-12 — Plan & Usage opens on the current plan; OpenRouter as MOVO's fallback AI provider
+
+- **Plan & Usage (owner recording):** the sheet showed "Free · On this device" and "Upgrade MOVO" for about 3 seconds before switching to "Pro+". It now opens on the plan MOVO already verified at launch and re-checks quietly in the background, so the current plan shows in the first frame (12–19ms in the browser check). A plan not yet checked shows "Checking…", never "Free". The layout is now compact: one plan row with a Cloud/Local tag, usage as four small tiles, one billing note, Restore and Manage as text links, and the main button.
+- **Fallback AI provider:** when NasrinAI cannot answer (not configured, unreachable, timeout, busy, rejected the request or key, or an unusable reply), the server asks OpenRouter instead (`api/nasrinai/openrouter-fallback.cjs`).
+  - Every MOVO version (web, iPhone, Android) uses this one route, so the fallback covers all of them.
+  - OpenRouter gets the same question and bounded, sanitized context, with no user id or email. Providers that may store or train on data are excluded (`data_collection: deny`).
+  - A reached NasrinAI budget is not bypassed. Voice transcription stays on NasrinAI. Voice replies from the fallback are spoken with the device voice.
+  - Needs the server-only `OPENROUTER_API_KEY` in Vercel (optional `OPENROUTER_MODEL`, default `openrouter/auto`).
+
+Validation: Jest 218 suites / 1,316 tests, tsc, strict build, production dependency audit (0), browser screenshots in light and dark. See `docs/engineering/updates/2026-11-12-plan-usage-and-ai-fallback.md`. Not run: real devices; a live OpenRouter call (no key is configured yet).
+
+## 2026-11-12 — The ram stays standing on the Total balance box
+
+Owner request: "keep the mascot stand in the box like before" (confirmed: keep the bigger ram standing on Total balance). The 3D ram's body no longer leaves its feet line in any mood or tap reaction (`FEET_Y` in `lib/ramScene.js`; the rig's origin is at the feet). Happy moods still bounce, stretch and squash in place, and the happy hop now lifts one foot at a time instead of both. Measured over 14 frames in the browser: the lowest point stays at 129.5–131.5px against the card's top edge at 128px (before: up to 5px above it on each hop). Validation: Jest, tsc, strict build, `ramGrounded.test.js` (see `docs/engineering/updates/2026-11-12-ram-stays-grounded.md`). Not run: real devices.
+
+## 2026-11-12 — Settings → Profile route; sign-in and subscription audit (iOS and Android)
+
+- **Settings → Profile** now opens the Profile screen, not the edit form. Profile's back arrow returns to the screen it was opened from (Settings or Menu), using the screen trail.
+- **Sign-in audit** (production, read only):
+  - Email codes and Google work on the web and in the apps. `movo://auth-callback` is accepted as a return address.
+  - **Apple is switched off in Supabase Auth** (`Unsupported provider: provider is not enabled`), so Continue with Apple fails everywhere. Owner action: enable Apple under Supabase → Authentication → Providers with an Apple Services ID and key. App Store guideline 4.8 expects it for an iOS app that offers Google.
+  - Fixed: a switched-off provider used to open Supabase's raw error page in the browser. MOVO now checks the public provider list first and shows its own customer message. The Apple and Google messages are rewritten for customers in 11 languages.
+- **Subscription audit** (production, read only):
+  - Google Play checkout is ready (`/api/purchases/config?platform=google` → enabled).
+  - **App Store checkout is blocked** (`enabled:false`): one Apple billing setting fails validation, most likely `APPLE_APP_ID`, which must be the numeric Apple ID from App Store Connect.
+  - The billing tables and functions exist. `movo_plan_status` only reports on the caller's own account, and only production purchases count.
+  - New: the owner Command Center's Billing view lists store checkout readiness with the names of failing settings, never values (owner and two-factor only).
+
+Validation: Jest 215 suites / 1,306 tests, tsc, strict build. See `docs/engineering/updates/2026-11-12-signin-subscriptions-audit.md`. Not run: real devices, real purchases.
+
+## 2026-11-12 — Rate MOVO reminder (App Store / Google Play)
+
+Owner request: remind people to rate MOVO. The iPhone and Android apps now ask the store's own rating dialog to appear: Apple's StoreKit review request (`AppStore.requestReview` on iOS 16+, `SKStoreReviewController` on 15) and Google Play In-App Review. Both stores require their own dialog (Apple guideline 5.6.1 disallows custom review prompts, and Google asks apps not to pre-ask), so MOVO adds no screen of its own and only chooses the moment.
+
+The request comes about 1.8 s after a new record is saved, never over a sheet, the lock screen or setup. It needs at least 7 days with MOVO, 5 different days of use and 10 records, and then at most once every 120 days and 3 times a year. The stores may still show nothing and never report a rating. The counters stay on the device (`movo.reviewPrompt.v1`, removed by Clear All Data); the website never asks.
+
+No legal text change: MOVO collects and shares nothing new. Validation: Jest 214 suites / 1,301 tests, tsc, strict build. Native compile runs in CI (`build-ios`, `native-android`). See `docs/engineering/updates/2026-11-12-rate-movo-reminder.md`. Not run: real devices or store review dialogs (they appear only in installed TestFlight / Play builds).
+
 ## 2026-11-12 — Zodiac Home headers follow the owner's reference video (softer)
 
 Owner request with a reference video: zodiac headers now use the same indigo-purple night for every sign. A thin gold zodiac wheel carries all twelve symbols, with the person's sign at the top and brightest; they are drawn as vector paths because phones may render the Unicode symbols as colour emoji. A flowing purple ribbon of light replaces the hills, and the slow drifting light over zodiac headers is lavender. Opacity is kept lower than the reference, as asked. The element now only tints the ribbon's far end. Validation: Jest 212 suites / 1,294 tests, tsc, strict build, browser screenshots of several signs (see `docs/engineering/updates/2026-11-12-zodiac-reference-video.md`). Not run: real devices.

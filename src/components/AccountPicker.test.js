@@ -41,6 +41,9 @@ test('shows available balances and available credit for the selected payment met
   act(() => root.render(<AccountPicker id="availability" label="Paid with" accounts={accounts} value="bank" onChange={() => {}} />));
   expect(el.querySelector('.acct-pick-availability').textContent).toContain('Available balance');
   expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('25,835');
+  // Only the icon and amount show; the words stay for screen readers (owner, 2026-11-12).
+  expect(el.querySelector('.acct-pick-availability .sr-only').textContent).toBe('Available balance');
+  expect(el.querySelector('.acct-pick-availability .movo-icon, .acct-pick-availability svg')).not.toBeNull();
   act(() => root.render(<AccountPicker id="availability" label="Paid with" accounts={accounts} value="credit" onChange={() => {}} />));
   expect(el.querySelector('.acct-pick-availability').textContent).toContain('Available credit');
   expect(el.querySelector('.acct-pick-availability strong').textContent).toContain('37,500');

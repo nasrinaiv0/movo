@@ -281,6 +281,24 @@ describe('MOVO finance frontend', () => {
     expect(current()).toBe('Home');
   });
 
+  test('Settings → Profile opens the Profile screen (not the edit form), and its back arrow returns to Settings', () => {
+    const title = () => container.querySelector('.screen-header h1')?.textContent;
+    nav(container, 'Menu');
+    clickButton(container, 'Settings');
+    expect(title()).toBe('Settings');
+    act(() => Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Profile').click());
+    expect(title()).toBe('Profile');
+    expect(container.querySelector('.profile-card')).not.toBeNull();
+    expect(container.querySelector('#movo-profile-form')).toBeNull();
+    clickButton(container, 'Back');
+    expect(title()).toBe('Settings');
+    // Opened from Menu, Profile's back arrow still returns to Menu.
+    openProfile(container);
+    expect(title()).toBe('Profile');
+    clickButton(container, 'Back');
+    expect(container.querySelector('.menu-hero')).not.toBeNull();
+  });
+
   test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
     // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
     const header = () => container.querySelector('.home-hero-block');
@@ -696,7 +714,13 @@ describe('MOVO finance frontend', () => {
     act(() => { jest.advanceTimersByTime(250); });
     jest.useRealTimers();
     expect(container.querySelector('.search-overlay')).toBeNull();
-    expect(container.querySelector('[aria-label="Transaction details"], .sheet').textContent).toContain('Netflix');
+    const details = container.querySelector('[aria-label="Transaction details"], .sheet');
+    expect(details.textContent).toContain('Netflix');
+    // Centered pop-up with when the money was spent; "Logged" appears when the record has a saved time.
+    expect(details.querySelector('.tx-detail-name').textContent).toBe('Netflix');
+    const labels = Array.from(details.querySelectorAll('.tx-detail-list dt')).map(dt => dt.textContent);
+    expect(labels).toContain('Spent');
+    if (labels.includes('Logged')) expect(labels.indexOf('Logged')).toBe(labels.indexOf('Spent') + 1);
   });
 
   test('liquid glass can be switched off and its clarity adjusted', () => {
@@ -770,8 +794,11 @@ describe('MOVO finance frontend', () => {
     expect(plan.tagName).toBe('BUTTON');
     act(() => plan.click());
     const sheet = container.querySelector('[role="dialog"][aria-label="Plan & Usage"]');
-    expect(sheet.textContent).toContain('Free');
-    expect(sheet.textContent).toMatch(/Transactions\d+/);
+    // The account in these tests is Pro+: the sheet shows it at once from the plan verified at launch, never "Free".
+    expect(sheet.querySelector('.plan-usage-current').className).toContain('tier-pro_plus');
+    expect(sheet.textContent).toContain('Pro+');
+    expect(sheet.textContent).not.toMatch(/\bFree\b/);
+    expect(sheet.textContent).toMatch(/\d+Transactions/);
     expect(sheet.textContent).toContain('Store purchases and restore are available');
     clickButton(container, 'Close Plan & Usage');
     const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
