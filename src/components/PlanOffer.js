@@ -131,7 +131,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   else action = { label: tr('Continue with {plan}', { plan: selected.name }), disabled: true, note: native ? tr('Store subscription products are not available yet.') : tr('Subscribe in the MOVO iOS or Android app.') };
   const markTone = trialOffer || (selected.tier === 'pro' && onTrial) ? 'white' : selected.tone;
 
-  return <Sheet label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
+  return <Sheet center label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
     <div className="plan-panel-head">
       <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
       <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>

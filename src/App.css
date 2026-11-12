@@ -8830,7 +8830,7 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
    below, safe areas included) and has no outline. The light hairline, inner top highlight and glass edge read as a
    bright border in dark mode, so the pop-up is set apart by a soft shadow only. Row dividers are fainter in light
    and gone in dark, where spacing alone separates the rows. */
-.movo-app.movo-app .sheet-backdrop.center:has(> .tx-detail-sheet) {
+.movo-app.movo-app .sheet-backdrop.center:has(> .tx-detail-sheet, > .plan-panel) {
   align-items: center; justify-content: center;
   --tx-pop-gap: max(16px, env(safe-area-inset-top), env(safe-area-inset-bottom));
   padding: var(--tx-pop-gap) 16px;
@@ -8843,3 +8843,15 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .tx-detail-sheet .tx-detail-list > div { border-bottom-color: rgba(16, 24, 40, .06); }
 .movo-app.theme-dark .tx-detail-sheet .tx-detail-list > div { border-bottom: 0; padding: 10px 0; }
 .movo-app.theme-dark .tx-detail-sheet :is(.tx-detail-list, .tx-detail-receipt, .tx-detail-chip, .tx-detail-actions > .secondary-button) { border: 0; box-shadow: none; }
+
+/* Plans panel as a centered pop-up (owner, 2026-11-12): same middle-of-the-screen placement as the transaction details
+   (the backdrop rule above). No drag handle; no bottom safe-area padding, since it no longer touches the screen edge;
+   the sticky Continue footer stays inside the rounded corners; a soft shadow instead of an upward one. */
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet-center.plan-panel {
+  width: 100%; max-width: 420px; max-height: calc(100dvh - 2 * var(--tx-pop-gap, 16px)); margin: auto;
+  border: 0; border-radius: 28px; padding: 18px 18px 0;
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .6);
+}
+.movo-app.movo-app.movo-app.movo-app:not(.theme-dark) .sheet.sheet-center.plan-panel { box-shadow: 0 18px 50px -12px rgba(16, 24, 40, .28); }
+.movo-app.movo-app.movo-app .sheet.sheet-center.plan-panel .plan-panel-foot { padding-bottom: 16px; border-radius: 0 0 28px 28px; }
+.movo-app.movo-app.movo-app .sheet.sheet-center.plan-panel .sheet-close { top: 14px; right: 14px; }
