@@ -1,3 +1,11 @@
+## 2026-11-13 — Security assurance / encrypted QR cache follow-up (DOCUMENTED BEFORE COMMIT)
+
+- Owner requested an evidence-based document explaining why MOVO is designed to protect user data and safe security hardening inside the code. Read live Supabase schema/advisors, open PRs #289/#290, Vercel production commit, legal pages and QR local storage.
+- **Verified** 44/44 public tables have RLS; selected finance/AI table policies enforce `auth.uid() = user_id`; security advisor still has 15 callable SECURITY DEFINER warnings, 15 intentional/no-policy informational findings and 1 leaked-password protection warning. No database, billing or auth-console modification made.
+- **New code (staged)**: seal offline bank/e-wallet QR PNGs with the finance vault; atomic IndexedDB legacy data migration and fail-closed tamper detection; pre-render migration and regression tests. Adds accessible `/security` trust page and non-exaggerated user data security assurance documentation; fixes outdated Privacy/Terms version-dependent encryption descriptions.
+- Existing main production remains at `2b9a1cf7`, and PRs #289/#290 are open. New PR must be stacked on #290 and **not merged or deployed**. All new CI tests, Vercel preview, iOS native and real-device acceptance still pending.
+- Detailed log: `docs/engineering/updates/2026-11-13-security-assurance-qr-cache.md`. Security document: `docs/security/MOVO_USER_DATA_SECURITY_ASSURANCE_2026-11-13.md`.
+
 ## 2026-11-13 — PR #290 exact-head CI red; non-destructive repair before commit
 
 - Exact initial head `89e159c`, Phase 1, hybrid-sync accounting, and Android CI stopped at Jest; **220/227 suites passed, 7 failed (1,347/1,368 tests passed)**. Disposable PG tenant isolation and IAP integrity both passed; no production deploy.

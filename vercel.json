@@ -62,6 +62,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/security",
+      "destination": "/security.html"
+    },
+    {
       "source": "/privacy",
       "destination": "/privacy.html"
     },

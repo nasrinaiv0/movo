@@ -6,6 +6,7 @@ import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
 import { migrateLegacyOfflineReadCache } from './lib/offlineReadCache';
 import { initialiseFinanceVault, migrateFinanceLocalStorage } from './lib/financeVault';
 import { migrateHybridFinanceEncryption } from './lib/hybridFinanceEncryption';
+import { migrateLocalAccountQrEncryption } from './lib/accountQrLocalStore';
 import { captureReferralFromUrl } from './lib/referrals';
 import { installInteractionTracking } from './lib/interaction';
 
@@ -61,6 +62,7 @@ function showFinanceVaultBlocked() {
       await initialiseFinanceVault();
       await migrateFinanceLocalStorage();
       await migrateHybridFinanceEncryption();
+      await migrateLocalAccountQrEncryption();
     }
     // Automation auth secrets have a separate fail-closed vault. An automation
     // vault error must not prevent the finance data already verified from loading.
