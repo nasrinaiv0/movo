@@ -16,3 +16,12 @@ if (typeof globalThis.structuredClone !== 'function') {
     configurable: true, writable: true, value: runInThisContext('structuredClone')
   });
 }
+
+import { webcrypto } from 'crypto';
+import { __initialiseFinanceVaultForTests } from './lib/financeVault';
+// Provide an isolated test-only data key; production MUST initialise from the
+// persistent browser/native vault before rendering any financial UI.
+if (!globalThis.crypto?.getRandomValues) {
+  Object.defineProperty(globalThis, 'crypto', { configurable: true, writable: true, value: webcrypto });
+}
+__initialiseFinanceVaultForTests(new Uint8Array(32).fill(0x73));

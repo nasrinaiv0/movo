@@ -46,6 +46,7 @@ function fromBase64(value) {
 function cacheContainsCiphertext() {
   try {
     const storage = globalThis.localStorage;
+    if (storage.getItem('movo.finance.vault.initialized.v1')) return true;
     for (let i = 0; i < storage.length; i++) {
       const name = storage.key(i);
       if (name?.startsWith(CACHE_PREFIX) && /"v"\s*:\s*2/.test(storage.getItem(name) || '')) return true;
@@ -152,3 +153,6 @@ export async function decryptFinancialCache(ownerId, cacheName, envelope) {
   );
   return JSON.parse(decode(raw));
 }
+
+/** Non-extractable WebCrypto key used by finance vault bootstrap. */
+export async function initialiseFinanceCacheKey() { return getKey(); }
