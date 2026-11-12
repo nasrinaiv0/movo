@@ -69,8 +69,8 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
         setError(tr('Google sign-in could not start in the Android app. Check the app return link and try again.'));
       } else if (kind === 'oauth-not-configured') {
         setError(provider === 'google'
-          ? tr('Google sign-in is not enabled for MOVO. Check the Google provider settings or use email sign-in.')
-          : tr('Apple sign-in is not enabled for MOVO. Check the Apple provider settings or use email sign-in.'));
+          ? tr('Google sign-in isn’t available right now. Continue with your email instead.')
+          : tr('Sign in with Apple isn’t available yet. Continue with Google or your email instead.'));
       } else if (kind === 'invalid-api-key') {
         setError(tr('This MOVO app build has an invalid cloud configuration. Install an updated version or contact support.'));
       } else if (kind === 'rate-limited') {

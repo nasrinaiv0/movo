@@ -50,6 +50,12 @@ export function captureReferralFromUrl(location = typeof window !== 'undefined' 
 export function pendingReferralCode() {
   try { return normalizeReferralCode(window.localStorage.getItem(PENDING_KEY) || '') || ''; } catch { return ''; }
 }
+/** Keeps a code typed before signing in, so it is still there when the plans panel opens again (owner, 2026-11-12). */
+export function savePendingReferralCode(value) {
+  const code = normalizeReferralCode(value || '');
+  try { if (code) window.localStorage.setItem(PENDING_KEY, code); } catch { /* storage blocked: nothing to keep */ }
+  return code;
+}
 export function clearPendingReferralCode() {
   try { window.localStorage.removeItem(PENDING_KEY); } catch { /* nothing stored */ }
 }

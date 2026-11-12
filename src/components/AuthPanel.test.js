@@ -156,7 +156,7 @@ describe('MOVO Google OAuth sign-in', () => {
     accept();
     const google = container.querySelector('.auth-google');
     await act(async () => { google.click(); await Promise.resolve(); });
-    expect(container.textContent).toContain('Google sign-in is not enabled for MOVO.');
+    expect(container.textContent).toContain('Google sign-in isn’t available right now.');
     expect(container.textContent).not.toContain('private provider diagnostics');
     expect(google.disabled).toBe(false);
   });
@@ -196,7 +196,7 @@ describe('MOVO Google OAuth sign-in', () => {
     accept();
     await act(async () => { container.querySelector('.auth-google').click(); await Promise.resolve(); });
     expect(container.textContent).toContain('Google sign-in could not start in the Android app');
-    expect(container.textContent).not.toContain('Google sign-in is not enabled for MOVO.');
+    expect(container.textContent).not.toContain('Google sign-in isn’t available right now.');
     expect(container.textContent).not.toContain('private OAuth diagnostics');
   });
 

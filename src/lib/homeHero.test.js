@@ -44,3 +44,16 @@ test('zodiac and glow need Pro or Pro+; without it the header falls back to the 
   expect(resolveHero('glow:aurora', { premium: true })).toMatchObject({ kind: 'glow' });
   expect(resolveHero('zodiac:unknown', { premium: true }).kind).toBe('scenery');
 });
+
+test('zodiac headers follow the owner reference: indigo sky, all twelve symbols with the sign on top, a light ribbon', () => {
+  const { GLYPHS } = require('./homeHero');
+  expect(Object.keys(GLYPHS).sort()).toEqual(ZODIAC.map(z => z.id).sort());
+  Object.values(GLYPHS).forEach(d => expect(d).toMatch(/^M[\d.\sMCLHVAZ-]+$/));
+  const svg = zodiacSvg(ZODIAC.find(z => z.id === 'leo'));
+  expect(svg).toContain('stop-color="#07061a"'); // same night sky for every sign
+  expect((svg.match(/scale\(/g) || []).length).toBe(12); // twelve symbols on the ring
+  expect(svg.indexOf(GLYPHS.leo)).toBeLessThan(svg.indexOf(GLYPHS.virgo)); // the person's sign is drawn first, at the top
+  expect(svg).toContain('url(#ribbon)');
+  expect(svg).not.toMatch(/<script|<text|href=|on\w+=/i); // drawn paths only: no scripts, links or typed glyphs
+  expect(resolveHero('zodiac:leo', { premium: true }).glow).toBe('#c4b5fd');
+});

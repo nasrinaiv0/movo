@@ -49,3 +49,40 @@ test('explicit SQL rejection is not resurrected as a successful local save',asyn
  await recoverHybridWorkspace(ownerId);
  expect(loadOfflineWorkspace(ownerId).working.financial_accounts).toHaveLength(0);
 });
+
+// Local first (owner, 2026-11-12): the app may show the change as soon as it is safe on this device.
+test('onLocal fires after the device commit and before the cloud call, with the record to show', async()=>{
+ const order=[];
+ const impl=supabase.rpc.getMockImplementation();
+ supabase.rpc.mockImplementation(async(...args)=>{order.push('cloud');return impl(...args);});
+ const onLocal=jest.fn(async()=>{});
+ const shown=[];
+ await writeHybridFinance({...op,onLocal:record=>{
+  order.push('local');shown.push(record);
+  return listOwnerSyncOperations(ownerId).then(ops=>{expect(ops[0].status).toBe('pending');onLocal();});
+ }});
+ expect(order).toEqual(['local','cloud']);
+ expect(shown[0]).toMatchObject({...payload,id:recordId});
+ expect((await listOwnerSyncOperations(ownerId))[0].status).toBe('confirmed');
+});
+test('a failing onLocal display never breaks or skips the durable write', async()=>{
+ const record=await writeHybridFinance({...op,onLocal:()=>{throw new Error('render failed');}});
+ expect(record.id).toBe(recordId);
+ expect((await listOwnerSyncOperations(ownerId))[0].status).toBe('confirmed');
+});
+test('validation that stops before the device commit never calls onLocal', async()=>{
+ supabase.auth.getSession.mockResolvedValue({data:{session:null}});
+ const onLocal=jest.fn();
+ await expect(writeHybridFinance({...op,onLocal})).rejects.toThrow('Cloud sign-in changed or expired');
+ expect(onLocal).not.toHaveBeenCalled();
+ expect(await listOwnerSyncOperations(ownerId)).toHaveLength(0);
+});
+test('a lost connection after onLocal keeps the shown change pending on this device', async()=>{
+ supabase.rpc.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+ const onLocal=jest.fn();
+ await expect(writeHybridFinance({...op,onLocal})).rejects.toThrow('fetch');
+ expect(onLocal).toHaveBeenCalledTimes(1);
+ expect((await listOwnerSyncOperations(ownerId))[0].status).toBe('pending');
+ await recoverHybridWorkspace(ownerId);
+ expect(loadOfflineWorkspace(ownerId).working.financial_accounts).toHaveLength(1);
+});
