@@ -42,3 +42,17 @@ test('signed out: Free with Upgrade', () => {
   expect(text()).toContain('Free');
   expect(text()).toContain('Upgrade MOVO');
 });
+
+test('Restore purchases and Manage subscription are always there, on the website and signed out (owner, 2026-11-12)', () => {
+  const startAccount = jest.fn();
+  open({ session: null, entitlementReady: false, entitlement: null, startAccount });
+  const buttons = [...document.querySelectorAll('.subscription-links button')];
+  expect(buttons.map(b => [b.textContent, b.disabled])).toEqual([['Restore purchases', false], ['Manage subscription', false]]);
+  act(() => buttons[0].click());
+  expect(startAccount).toHaveBeenCalledWith('signin');
+});
+
+test('a Pro+ customer from the store also has both buttons', () => {
+  open({ session: { access_token: 't' }, entitlementReady: true, entitlement: { active: true, tier: 'pro_plus', expiresAt: '2027-11-09T00:00:00Z', source: 'store' } });
+  expect([...document.querySelectorAll('.subscription-links button')].map(b => b.textContent)).toEqual(['Restore purchases', 'Manage subscription']);
+});

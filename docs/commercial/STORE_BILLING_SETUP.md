@@ -17,6 +17,8 @@ Create the following **current** subscription product IDs in Google Play Console
 
 Prices are loaded from the stores and must not be hardcoded in the app. Configure product descriptions, localized prices, subscription group, billing periods, grace period, tax settings, and availability in each store console.
 
+**Annual saving (owner, 2026-11-12):** the plans panel says **"Save 20%"** on Annual. Price each annual base plan at 80% of twelve monthly payments in every country, in both stores (annual = monthly × 12 × 0.8). For example, ₱199/month gives ₱1,910.40/year; round down, never up, so the saving is at least 20%. In the apps, the badge is worked out from the store's own prices (`annualSavingPercent` in `src/lib/storeProducts.js`). If the prices are set differently, the app shows the real figure rather than 20%. The website has no store prices, so it shows the policy figure (`ANNUAL_SAVING_PERCENT`). Keep the two consoles and that constant in step.
+
 ## Required Vercel environment variables
 
 - SUPABASE_URL

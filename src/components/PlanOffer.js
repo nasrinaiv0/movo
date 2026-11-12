@@ -6,8 +6,9 @@ import { Sheet } from './ui';
 import { apiUrl } from '../lib/platform';
 import { MovoMark } from './MovoLogo';
 import { getStoreProducts, isNativePurchasePlatform, purchaseStoreProduct } from '../lib/nativePurchases';
-import { STORE_PRODUCT_BY_ID } from '../lib/storeProducts';
+import { STORE_PRODUCT_BY_ID, annualSavingPercent } from '../lib/storeProducts';
 import { effectivePlan } from '../lib/planAccess';
+import SubscriptionLinks from './SubscriptionLinks';
 import { t as tr } from '../lib/i18n';
 import { money } from '../lib/format';
 
@@ -82,10 +83,10 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     const item = productFor(tier, period);
     return item ? `${item.priceString}/${tr(period === 'monthly' ? 'mo' : 'yr')}` : tr('Price in app');
   };
-  const bestSaving = ['pro', 'pro_plus'].reduce((best, tier) => {
-    const m = productFor(tier, 'monthly'); const y = productFor(tier, 'annual');
-    return m?.price > 0 && y?.price > 0 ? Math.max(best, Math.round((1 - y.price / (m.price * 12)) * 100)) : best;
-  }, 0);
+  // "Save 20%" on each paid plan once Annual is chosen (owner, 2026-11-12); worked out from that plan's store prices
+  // whenever they are loaded, else the owner's annual pricing.
+  const tileSaving = (tier) => tier === 'free' || period !== 'annual' ? 0
+    : annualSavingPercent([{ monthly: productFor(tier, 'monthly'), annual: productFor(tier, 'annual') }]);
   const claim = async () => {
     if (!session?.access_token) { onSignIn(); return; }
     setBusy(true); setError('');
@@ -131,17 +132,18 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   else action = { label: tr('Continue with {plan}', { plan: selected.name }), disabled: true, note: native ? tr('Store subscription products are not available yet.') : tr('Subscribe in the MOVO iOS or Android app.') };
   const markTone = trialOffer || (selected.tier === 'pro' && onTrial) ? 'white' : selected.tone;
 
-  return <Sheet label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
+  return <Sheet center label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
     <div className="plan-panel-head">
       <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
       <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
     </div>
     <div className="plan-period" role="group" aria-label={tr('Billing period')}>
-      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}{id === 'annual' && bestSaving > 0 && <em className="plan-period-save">−{bestSaving}%</em>}</button>)}
+      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}</button>)}
     </div>
     <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
       {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
-        {item.tier === plan && <small className="plan-tile-badge">{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
+        {item.tier === plan ? <small className="plan-tile-badge">{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>
+          : tileSaving(item.tier) > 0 && <small className="plan-tile-badge is-save" key="save">{tr('Save {n}%', { n: tileSaving(item.tier) })}</small>}
         <MovoMark size={26} tone={item.tone} />
         <strong>{tr(item.name)}</strong>
         <span className={`plan-tile-price${item.tier !== 'free' && !productFor(item.tier, period) ? ' is-note' : ''}`}>{tilePrice(item.tier)}</span>
@@ -168,6 +170,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     {action.note && <p className="plan-fine">{action.note}</p>}
     <p className="plan-fine">{selected.tier === 'free' ? tr('Your records stay on this device unless you turn on Cloud Sync.') : trialOffer ? tr('The free month ends on its own; nothing renews.') : tr('Auto-renews unless canceled.')} {onOpenTerms ? <button type="button" className="link-button" onClick={onOpenTerms}>{tr('Terms apply.')}</button> : tr('Terms apply.')}
       {onPlans && selected.tier !== 'free' && <> · <button type="button" className="link-button" onClick={onPlans}>{tr('Plans & purchases')}</button></>}</p>
+    <SubscriptionLinks session={session} onSignIn={onSignIn} onRefresh={() => onRefresh?.()} className="plan-fine" />
     </div>
   </Sheet>;
 }

@@ -799,7 +799,9 @@ describe('MOVO finance frontend', () => {
     expect(sheet.textContent).toContain('Pro+');
     expect(sheet.textContent).not.toMatch(/\bFree\b/);
     expect(sheet.textContent).toMatch(/\d+Transactions/);
-    expect(sheet.textContent).toContain('Store purchases and restore are available');
+    expect(sheet.textContent).toContain('Subscribe in the MOVO iOS or Android app.');
+    // Restore purchases and Manage subscription are always there (owner, 2026-11-12).
+    expect(Array.from(sheet.querySelectorAll('.subscription-links button')).map(b => [b.textContent, b.disabled])).toEqual([['Restore purchases', false], ['Manage subscription', false]]);
     clickButton(container, 'Close Plan & Usage');
     const helpRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Help Center');
     act(() => helpRow.click());
