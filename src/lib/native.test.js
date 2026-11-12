@@ -64,6 +64,11 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   expect(set).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1', value: '[]' });
   window.localStorage.removeItem('movo.local.accounts.v1');
   expect(remove).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
+  // Encrypted finance cache storage is never copied to native Preferences.
+  set.mockClear();
+  const cacheKey = 'movo.readCache.v1:11111111-1111-4111-8111-111111111111:loans';
+  window.localStorage.setItem(cacheKey, '{"v":2,"ct":"ciphertext"}');
+  expect(Preferences.set).not.toHaveBeenCalledWith({ key: cacheKey, value: expect.any(String) });
 });
 
 
