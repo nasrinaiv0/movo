@@ -22,7 +22,8 @@ const VAULT_ID = 'hmac-sha256-v1';
 const KEY_SENTINEL = 'movo.finance.vault.initialized.v1';
 const MAX_PLAINTEXT = 8_000_000;
 export const SEALED_TAG = '__movo_finance_sealed_v1';
-let inMemoryKey = null;
+let inMemoryKey = process.env.NODE_ENV === 'test' && globalThis.__MOVO_TEST_FINANCE_KEY__ instanceof Uint8Array
+  ? new Uint8Array(globalThis.__MOVO_TEST_FINANCE_KEY__) : null;
 let initPromise;
 
 const encode = text => new TextEncoder().encode(text);

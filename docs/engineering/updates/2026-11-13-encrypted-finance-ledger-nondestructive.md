@@ -41,3 +41,8 @@ Inspected exact upstream PR #289 head `b739bd68de28a32d9cb50b83329d10aa14765729`
 - `movo.preferences.v3` can carry some budget/subscription/planning data, and account QR caches/receipt/attachment offline blobs may use other stores; these are NOT covered by the three requested stores. A broader inventory and separate migration are needed before declaring every offline financial datum encrypted.
 - Encrypted localStorage remains exposed to **active** XSS if script can access in-memory encryption logic, and browser-based HMAC keys have origin-profile isolation limitations.
 - This stacked branch depends on PR #289's approved iOS/Android crypto key allowlist and read-cache-key generation. Merging in reverse order would break native boot. Release gate forbids doing so.
+
+## Follow-up on first exact-head CI failures (before repair commit)
+- PR #290 head `89e159ca752e32752ac1d9c120f66d7b919e3a7a`: 7/227 Jest suites failed at full regression step. Android and hybrid-security workflows stopped at the same Jest checks, not Gradle or security/database compilation.
+- Root causes: native restore regex was doubly escaped, so no preference keys matched; importing financeVault globally before Jest's per-test mocks broke native browser, auth, and Android back-button tests; existing App tests expected JSON arrays directly from localStorage now that ciphertext is correctly persisted; fake-indexeddb presents AbortError on atomic abort rather than the injected error string.
+- Repairs limited to startup regex, test-only mock bootstrap and integration assertions, plus failure-message independent atomic rollback assertion. No algorithm weakening, no data deletion, no changes to main/production. Full exact-head rerun mandatory.

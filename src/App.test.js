@@ -16,6 +16,7 @@ jest.mock('./lib/planAccess', () => {
     canUseFeatureInMode: (e, f, cloud, now) => (global.__movoPauseLocalPlans ? actual.canUseFeatureInMode(e, f, cloud, now) : actual.canUseFeature(e, f, now)),
     effectiveAccessPlan: (e, cloud, now) => (global.__movoPauseLocalPlans ? actual.effectiveAccessPlan(e, cloud, now) : actual.effectivePlan(e, now)) };
 });
+import { loadLocalAccounts, loadLocalTransactions } from './lib/localFinanceStore';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -144,8 +145,8 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('h1')?.textContent).not.toBe('Settings');
     expect(container.querySelector('[aria-label="Financial summary"]')?.textContent).not.toEqual(initialSummary);
 
-    const savedAccounts = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'));
-    const savedTransactions = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    const savedAccounts = loadLocalAccounts();
+    const savedTransactions = loadLocalTransactions();
     const newAccounts = savedAccounts.filter(account => account.name === 'Imported BPI');
     expect(newAccounts).toHaveLength(2);
     expect(newAccounts[0].id).not.toBe(newAccounts[1].id);
@@ -196,8 +197,8 @@ describe('MOVO finance frontend', () => {
     const press = async label => { await act(async () => [...container.querySelectorAll('button')].find(item => item.textContent.trim() === label).click()); };
     await press('Save records');
     await press('Confirm save locally');
-    const accounts = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'));
-    const transactions = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    const accounts = loadLocalAccounts();
+    const transactions = loadLocalTransactions();
     const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
     const bank = accounts.find(a => a.name === 'Transfer Bank'); const card = accounts.find(a => a.name === 'Transfer Card');
     expect(bank && card).toBeTruthy();
@@ -464,7 +465,7 @@ describe('MOVO finance frontend', () => {
   });
 
   test('opens a transaction, then deletes it only after confirmation; Cancel changes nothing', async () => {
-    const stored = () => JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').filter(t => t.id === 'demo-1');
+    const stored = () => loadLocalTransactions().filter(t => t.id === 'demo-1');
     const walletBalance = () => { nav(container, 'Wallet'); return Number(container.querySelector('.balance-amount').textContent.replace(/[^0-9.-]/g, '')); };
     const balanceBefore = walletBalance();
     nav(container, 'Transactions');
@@ -764,18 +765,18 @@ describe('MOVO finance frontend', () => {
     expect(rows[0].textContent).toContain('−₱250.00');
     expect(rows[1].textContent).toContain('ChatGPT Plus');
     expect(container.textContent).toContain('Added to your transactions');
-    let saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    let saved = loadLocalTransactions();
     expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => [t.merchant, t.amount, t.category])).toEqual([['Grab', 250, 'transport:ride_hailing'], ['ChatGPT Plus', 699, 'Subscriptions']]);
     await act(async () => { Array.from(rows[0].querySelectorAll('.link-button')).find(b => b.textContent === 'Undo').click(); });
     // Undo deletes a record, so it asks first; Cancel keeps it.
     expect(container.querySelector('.confirm-name').textContent).toBe('Grab');
     await answerConfirm(container, false);
     expect(rows[0].textContent).not.toContain('Removed');
-    expect(JSON.parse(window.localStorage.getItem('movo.local.transactions.v1')).some(t => t.merchant === 'Grab')).toBe(true);
+    expect(loadLocalTransactions().some(t => t.merchant === 'Grab')).toBe(true);
     await act(async () => { Array.from(rows[0].querySelectorAll('.link-button')).find(b => b.textContent === 'Undo').click(); });
     await answerConfirm(container, true);
     expect(rows[0].textContent).toContain('Removed');
-    saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
+    saved = loadLocalTransactions();
     expect(saved.filter(t => t.note === 'Logged from NasrinAI chat').map(t => t.merchant)).toEqual(['ChatGPT Plus']);
     // Money questions are answered on this device at once; other questions still need NasrinAI (and sign-in).
     type('How much did I spend on Grab this month?');
@@ -844,7 +845,7 @@ describe('MOVO finance frontend', () => {
     setInputValue(container.querySelector('#acct-limit'), '50000');
     setInputValue(container.querySelector('#acct-owed'), '1200');
     clickButton(container, 'Add account');
-    const created = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(a => a.account_type === 'card' && a.name === 'GoTyme');
+    const created = loadLocalAccounts().find(a => a.account_type === 'card' && a.name === 'GoTyme');
     expect(created).toBeTruthy();
     expect(created.opening_balance).toBe(-1200); // owed, not taken from the issuing bank
     const savedPrefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
@@ -862,7 +863,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Edit account');
     setInputValue(container.querySelector('#acct-linked-bank'), 'demo-rcbc');
     clickButton(container, 'Save changes');
-    expect(JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).some(a => a.account_type === 'card' && a.name === 'RCBC')).toBe(true);
+    expect(loadLocalAccounts().some(a => a.account_type === 'card' && a.name === 'RCBC')).toBe(true);
     act(() => root.unmount());
     root = createRoot(container);
     act(() => root.render(<App />));
@@ -874,7 +875,7 @@ describe('MOVO finance frontend', () => {
     expect(rcbcCard.getAttribute('aria-current')).toBe('true');
     clickButton(container, 'View Details');
     clickButton(container, 'Archive account');
-    const rcbc = () => JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(account => account.account_type === 'card' && account.name === 'RCBC');
+    const rcbc = () => loadLocalAccounts().find(account => account.account_type === 'card' && account.name === 'RCBC');
     expect(container.querySelector('.confirm-title').textContent).toBe('Archive this account?');
     await answerConfirm(container, false);
     expect(rcbc().is_archived).toBe(false);
@@ -892,7 +893,7 @@ describe('MOVO finance frontend', () => {
     setInputValue(description, 'Edited supermarket');
     clickButton(container, 'Save changes');
     expect(container.textContent).toContain('Edited supermarket');
-    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Edited supermarket');
+    expect(JSON.stringify(loadLocalTransactions())).toContain('Edited supermarket');
     act(() => root.unmount());
     root = createRoot(container);
     act(() => root.render(<App />));
@@ -926,7 +927,7 @@ describe('MOVO finance frontend', () => {
 
     clickButton(container, 'Retry save');
     expect(container.textContent).not.toContain('Local changes may not be saved.');
-    expect(window.localStorage.getItem('movo.local.transactions.v1')).toContain('Storage warning regression');
+    expect(JSON.stringify(loadLocalTransactions())).toContain('Storage warning regression');
   });
 
   test('CSV import action opens a review-first import sheet', () => {
@@ -1022,8 +1023,8 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     act(() => root.unmount());
     const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
     window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, onboarded: true, logsSeenAt: '2026-10-29T02:00:00.000Z' }));
-    const txs = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]');
-    const account = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'))[0];
+    const txs = loadLocalTransactions();
+    const account = loadLocalAccounts()[0];
     window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{ id: 'away-1', merchant: 'Away Cafe', amount: 333, currency: 'PHP', transaction_type: 'expense', category: 'Food & drinks', account_id: account.id, occurred_at: '2026-10-29T02:30:00.000Z', created_at: '2026-10-29T02:30:00.000Z', source: 'applepay' }, ...txs]));
     root = createRoot(container);
     act(() => root.render(<App />));
@@ -1047,7 +1048,7 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     root = createRoot(container);
     act(() => root.render(<App />));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
-    const stored = () => JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').filter(t => Number(t.amount) === 109);
+    const stored = () => loadLocalTransactions().filter(t => Number(t.amount) === 109);
     window.location.hash = `#log?src=applepay&k=${key}&amount=109&merchant=Gadc&card=BPI%20Visa`;
     act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
@@ -1067,7 +1068,7 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     clickButton(container, 'Log');
     const dialog = container.querySelector('[role="dialog"][aria-label="Add transaction"]');
     act(() => dialog.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-    const saved = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]').find(t => t.merchant === 'Starbucks' && Number(t.amount) === 77);
+    const saved = loadLocalTransactions().find(t => t.merchant === 'Starbucks' && Number(t.amount) === 77);
     expect(saved).toMatchObject({ source: 'googlepay' });
   });
 

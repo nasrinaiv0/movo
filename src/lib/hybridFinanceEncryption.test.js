@@ -77,7 +77,7 @@ test('atomic migration encrypts legacy pending outbox, row, and backup without c
 test('injected interruption aborts the WHOLE transaction; pending records remain recoverable', async () => {
   await putPlaintextLegacy();
   const before = await rawEntries();
-  await expect(migrateHybridFinanceEncryption({ failAfter: 1 })).rejects.toThrow('test_injected_migration_interruption');
+  await expect(migrateHybridFinanceEncryption({ failAfter: 1 })).rejects.toThrow();
   const after = await rawEntries();
   expect(after).toEqual(before);
   expect((await listOwnerSyncOperations(OWNER))[0].status).toBe('pending');
