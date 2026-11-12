@@ -31,6 +31,8 @@ jobs:
         run: node scripts/require-pr-documentation.cjs
       - name: Install locked dependencies (pinned npm 11)
         run: npx --yes npm@11.19.1 ci
+      - name: Validate Android public auth configuration contract
+        run: node --test scripts/validate-android-auth-config.test.cjs
       - name: Audit production dependencies
         run: npm run audit:production
       - name: TypeScript typecheck

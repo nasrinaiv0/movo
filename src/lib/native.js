@@ -86,7 +86,18 @@ export function listenForAppUrls({ onAuth } = {}) {
 
 /** Open a sign-in page in the system browser sheet (Google refuses sign-in inside embedded web views). */
 export async function openAuthBrowser(url) {
-  await Browser.open({ url, presentationStyle: 'popover' });
+  try {
+    // On Android this uses Chrome Custom Tabs, not a Google-blocked embedded
+    // WebView. The Capacitor App plugin receives the exact return deep link.
+    await Browser.open({ url, presentationStyle: 'popover' });
+  } catch (cause) {
+    if (nativePlatform() !== 'android') throw cause;
+    // Do not display or log the provider URL or plugin exception: it may
+    // contain transient OAuth state. The UI shows a safe device-specific fix.
+    const error = new Error('android_auth_browser_unavailable');
+    error.code = 'android_auth_browser_unavailable';
+    throw error;
+  }
 }
 
 /* ---------- Notifications ---------- */
