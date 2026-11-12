@@ -1,3 +1,9 @@
+## 2026-11-12 — Android sign-in release gate: isolate Vercel billing test from live secrets
+
+- Earlier PR #282 Android Google/email auth code merged, but prior signed AAB #17 predates it; currently installed Android version unverified.
+- Latest main Vercel deployment failed 1/1,320 tests because owner billing readiness test inherited live `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and expected missing credentials. Add that key to the test's save/restore fixture and explicitly unset it before the negative-case assertion; business logic, auth, credentials, database and production remain unchanged.
+- No merge/store publication until exact-head CI, Android release compilation, preview and real-device Google/email sign-in pass. See `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md`.
+
 ## 2026-11-12 — Transaction details: centered, with spent and logged times
 
 Owner request: place the transaction details at the center and add the time it was logged and the time it was spent. The details now open as a centered pop-up, with the name, the signed amount and the type centered on top. The details card adds two times: **Spent** (Received for income, Transferred for transfers), which is the transaction's date and time, and **Logged**, which is when the record was saved in MOVO (`created_at`). Cloud records already had a logged time; new records saved on the device now get one too. That stamp is display-only: uploads build their own payloads and reconciliation ignores `created_at`. Older local records without a saved time show only Spent. Validation: Jest 219 suites / 1,320 tests, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
