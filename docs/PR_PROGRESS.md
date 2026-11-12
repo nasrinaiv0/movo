@@ -1,3 +1,17 @@
+## 2026-11-12 — PR #293 follow-up: App Store id read like the billing settings
+
+The preview sent iPhone links to the web app, so the stored `APPLE_APP_ID` did not match the strict digits-only format (its value was not inspected). It is now read with the same tolerance as the billing check: surrounding spaces, quotes and an `id` prefix are accepted. Anything that is not a plausible App Store id still falls back to the web app with the code. New test. See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
+## 2026-11-12 — Referral QR codes open the App Store and Google Play with each person's own code
+
+Owner request: the referral QR code should link to the App Store and Google Play, with a unique referral id per user. Before this, `/api/download` only sent people to a store when `MOVO_IOS_APP_STORE_URL` / `MOVO_ANDROID_STORE_URL` were set. Neither is set in production, so every QR code opened the web app.
+- **Android:** always Google Play (`com.nasrinai.movo`). The person's code travels in Google Play's install referrer (`utm_source=movo_referral&utm_medium=qr&movo_ref=M78038`). On first launch the Android app reads it once (new `MovoNative.installReferrer`, Play Install Referrer library 2.2) and fills in the friend's code in the plans panel and Refer MOVO.
+- **iPhone:** the App Store page from the existing `APPLE_APP_ID` server setting (or `MOVO_IOS_APP_STORE_URL`). Apple passes nothing from a link to the installed app, so a link that carries a code first shows a short page with the code and a "Copy code and open the App Store" button. Without a code it goes straight to the store.
+- Only exact store addresses are produced, the referral code is the only value carried, and the code counts only after sign-in when the server accepts it.
+- Privacy Policy section 18 (referral codes and download links) added; Privacy effective date is now November 12, 2026, so everyone accepts the updated version once.
+
+Validation: Jest 225 suites / 1,357 tests, `tsc`, strict build, and a browser check of the iPhone page under the site CSP in light and dark: the code was copied and the App Store opened, with no console errors. Not run: an Android build (CI compiles it), a real Play install. The Android part needs a new Play release (version code above 7). See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
 ## 2026-11-12 — Android bottom navigation: instant response, lighter animation
 
 Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
