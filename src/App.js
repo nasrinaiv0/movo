@@ -60,7 +60,7 @@ import { supportsAccountQr } from './lib/accountQrEligibility';
 import LoyaltySheet from './components/LoyaltySheet';
 import { isLoyaltyType, normalizeLoyaltyCard, visibleLoyaltyCards } from './lib/loyaltyCards';
 import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
-import { canAnimate, revealChange } from './lib/motion';
+import { canAnimate, revealChange, showInstantly } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
@@ -1083,7 +1083,9 @@ function App() {
   const edgeSwipeOnRef = useRef(false);
   const pageSnapsRef = useRef(new Map());
   const swipeBackRef = useRef(false);
-  const swipeScrollRef = useRef(0);
+  // Back shows the previous page at once, where it was left (owner, 2026-11-12).
+  const scrollMemoRef = useRef(new Map());
+  const backPaintRef = useRef(null);
   /*
    * Setup gate (owner, 2026-11-11): until the video guide, the walkthrough, signing in (or choosing this device only)
    * and accepting the Terms and Privacy Policy are done, only those steps show. The dashboard stays hidden and the
@@ -1099,6 +1101,12 @@ function App() {
     if (params.filter) setTxFilter(params.filter);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
+    // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
+    const isBack = prev !== next && (backMoveRef.current || swipeBackRef.current || screenTrailRef.current.peek() === next);
+    if (prev !== next) {
+      const memo = scrollMemoRef.current; memo.delete(prev); memo.set(prev, window.scrollY || 0);
+      while (memo.size > 20) memo.delete(memo.keys().next().value);
+    }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
     if (edgeSwipeOnRef.current && prev !== next && typeof document !== 'undefined') {
@@ -1109,7 +1117,11 @@ function App() {
         while (snaps.size > 6) snaps.delete(snaps.keys().next().value);
       }
     }
-    if (swipeBackRef.current) setMotion('swipe'); // the swipe already showed the page: no entrance motion
+    if (isBack) {
+      // No entrance motion, amounts at their value, and the scroll where the page was left (applied before paint).
+      setMotion('back'); showInstantly(500);
+      backPaintRef.current = { scroll: scrollMemoRef.current.get(next) || 0 };
+    } else backPaintRef.current = null;
     viewRef.current = next;
     setSheet(null); setError(''); setView(next);
     if (next !== 'Settings') setQuery('');
@@ -1132,11 +1144,26 @@ function App() {
     try { go(previous); } finally { backMoveRef.current = false; }
     return true;
   }, [go]);
-  // After a swipe back, the page opens where it was left, before it is first painted (no jump).
+  /*
+   * After Back, before the page is painted: finish every one-off entrance animation inside it (looping ones keep
+   * running) and put the scroll back where the page was left. Content that mounts a frame later is caught once more.
+   */
   useLayoutEffect(() => {
-    const y = swipeScrollRef.current; if (!y) return;
-    swipeScrollRef.current = 0;
-    try { window.scrollTo(0, y); } catch { /* jsdom */ }
+    const back = backPaintRef.current; if (!back) return undefined;
+    backPaintRef.current = null;
+    const settle = () => {
+      const main = document.querySelector('main.screen');
+      try {
+        main?.getAnimations?.({ subtree: true }).forEach(a => {
+          const timing = a.effect?.getTiming?.();
+          if (timing && timing.iterations !== Infinity && a.playState !== 'finished') a.finish();
+        });
+      } catch { /* older engines: the short entrance plays */ }
+      if (back.scroll && Math.abs((window.scrollY || 0) - back.scroll) > 2) { try { window.scrollTo(0, back.scroll); } catch { /* jsdom */ } }
+    };
+    settle();
+    const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame(settle) : null;
+    return () => { if (raf !== null) cancelAnimationFrame(raf); };
   }, [view]);
   useEffect(() => listenForDeviceBack(deviceBack), [deviceBack]);
   // Android: the system back gesture and button come straight to deviceBack (lib/native.js).
@@ -1149,13 +1176,8 @@ function App() {
     const backTarget = () => screenTrailRef.current.peek() || (viewRef.current !== 'Home' ? 'Home' : '');
     const stop = startEdgeSwipeBack({
       onBack: () => {
-        const snap = pageSnapsRef.current.get(backTarget()); const from = viewRef.current;
         swipeBackRef.current = true;
-        let moved = false;
-        try { moved = deviceBack(); } finally { swipeBackRef.current = false; }
-        // Land where the page was left, as the preview showed it (not when the swipe only closed a sheet).
-        if (moved && viewRef.current !== from && snap?.scroll) swipeScrollRef.current = snap.scroll;
-        return moved;
+        try { return deviceBack(); } finally { swipeBackRef.current = false; }
       },
       canGoBack: () => hasBackLayer() || sheetOpenRef.current || viewRef.current !== 'Home',
       surface: () => (hasBackLayer() || sheetOpenRef.current || document.querySelector('[aria-modal="true"]') ? null : document.querySelector('main.screen')),

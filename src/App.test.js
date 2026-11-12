@@ -241,6 +241,23 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.bottom-nav .nav-item[aria-current="page"]').getAttribute('aria-label')).toBe('Wallet');
   });
 
+  test('Back shows the previous page at once, where it was left; going forward still plays the entrance', async () => {
+    const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
+    const main = () => container.querySelector('main.screen');
+    nav(container, 'Wallet');
+    expect(main().className).not.toContain('enter-back');
+    Object.defineProperty(window, 'scrollY', { value: 420, configurable: true });
+    nav(container, 'Transactions');
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    expect(main().className).toContain('enter-tab-right');
+    window.scrollTo.mockClear();
+    await back();
+    expect(container.querySelector('.bottom-nav .nav-active').getAttribute('aria-label')).toBe('Wallet');
+    expect(main().className).toContain('enter-back');
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 420);
+    delete window.scrollY;
+  });
+
   test('the device Back button closes an open sheet, then returns through the screens visited, then to Home', async () => {
     const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
     const current = () => container.querySelector('.bottom-nav .nav-item[aria-current="page"]')?.getAttribute('aria-label');

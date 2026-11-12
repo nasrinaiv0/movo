@@ -8348,5 +8348,6 @@ html.movo-edge-swiping .movo-app .app-shell { overflow-x: clip; }
 .movo-app .edge-preview-screen, .movo-app .edge-preview-screen * { animation: none !important; transition: none !important; }
 .movo-app .movo-edge-shade { position: absolute; inset: 0; background: #000; pointer-events: none; }
 html.movo-edge-swiping .movo-app main.screen { position: relative; z-index: 1; min-height: 100dvh; background: var(--bg-grad), var(--bg); }
-.enter-swipe { --dx: 0px; --dy: 0px; }
-.screen.enter-swipe > * { animation: none; }
+.enter-back { --dx: 0px; --dy: 0px; }
+/* Back shows the page at once (App.js finishes nested entrance animations before paint as well). */
+.screen.enter-back, .screen.enter-back > * { animation: none; }

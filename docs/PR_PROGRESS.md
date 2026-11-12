@@ -1,3 +1,7 @@
+## 2026-11-12 — Back shows the previous page faster
+
+Owner request: going back now shows the previous page at once. Back moves (device Back, swipe, on-screen back arrow) skip the entrance motion, finish nested entrance animations before the first paint, show amounts at their value instead of counting up, and restore the page's scroll position. Measured after Back (production build, mobile emulation): 490–1,090 ms before, 20–120 ms after. Forward navigation is unchanged. Validation: Jest 204 suites / 1,239 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-faster-back.md`).
+
 ## 2026-11-12 — Screenshots work on Android
 
 Owner request: screenshots (and screen recording) now work in the Android app; `FLAG_SECURE` is no longer set while MOVO is in use. The recent-apps preview still hides balances: blank via `setRecentsScreenshotEnabled(false)` on Android 13+, and `FLAG_SECURE` only while the app goes to the background on older versions. iOS already allows screenshots and keeps its app-switcher cover. Validation: security contract test updated, Jest, strict build; Android compile in CI `native-android`. Not run: a real Android phone (see `docs/engineering/updates/2026-11-12-android-screenshots.md`).
