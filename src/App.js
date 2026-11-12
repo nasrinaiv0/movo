@@ -1142,6 +1142,9 @@ function App() {
     if (next !== 'Settings') setQuery('');
     try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
   }, []);
+  // An on-screen back arrow that returns to the screen the person came from (e.g. Profile opened from Settings goes back
+  // to Settings), or to `fallback` when there is no earlier screen. go() treats the trail's top as a return.
+  const goBack = useCallback((fallback) => go(screenTrailRef.current.peek() || fallback), [go]);
   /*
    * The device's own Back (Android button or gesture, browser Back) closes the open sheet first, then returns to the
    * previous screen, then to Home; from Home with nothing open it leaves the app as usual.
@@ -2493,7 +2496,7 @@ function App() {
     accountQrDisplay,
     fx,
     refreshFx,
-    show, setShow, prefs, setPref, stats, deltas, txs, transactionBalances, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, session, cloudMode, supabaseConfigured,
+    show, setShow, prefs, setPref, stats, deltas, txs, transactionBalances, accountsView, accountsByType, recordCreditSpend, refDate, homeRefDate, homeMonthKey: activeHomeMonth, setHomeMonthKey, homeYears, user, unread, go, goBack, session, cloudMode, supabaseConfigured,
     breakdown: homeBreakdown, recent, homeMonthStats: homeStats, openTx, notify, sheet, setSheet, signOutNow, exportCsv, openLegal, legalReturnView, notificationsEnabled: prefs.notifications && prefs.inapp, demoAlertsAvailable: false,
     walletFilter, setWalletFilter, selectedCard, setSelectedCardId, openForm, openGrocery, openTransferTo, openEditAccount,
     txFilter, setTxFilter, month: activeMonth, setMonth, months, sortKey, setSortKey, monthTxs, monthStats, expanded, setExpanded, search, setSearch, openSearch: () => setSearchOpen(true),

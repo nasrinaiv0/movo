@@ -281,6 +281,24 @@ describe('MOVO finance frontend', () => {
     expect(current()).toBe('Home');
   });
 
+  test('Settings → Profile opens the Profile screen (not the edit form), and its back arrow returns to Settings', () => {
+    const title = () => container.querySelector('.screen-header h1')?.textContent;
+    nav(container, 'Menu');
+    clickButton(container, 'Settings');
+    expect(title()).toBe('Settings');
+    act(() => Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Profile').click());
+    expect(title()).toBe('Profile');
+    expect(container.querySelector('.profile-card')).not.toBeNull();
+    expect(container.querySelector('#movo-profile-form')).toBeNull();
+    clickButton(container, 'Back');
+    expect(title()).toBe('Settings');
+    // Opened from Menu, Profile's back arrow still returns to Menu.
+    openProfile(container);
+    expect(title()).toBe('Profile');
+    clickButton(container, 'Back');
+    expect(container.querySelector('.menu-hero')).not.toBeNull();
+  });
+
   test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
     // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
     const header = () => container.querySelector('.home-hero-block');

@@ -1,3 +1,18 @@
+## 2026-11-12 — Settings → Profile route; sign-in and subscription audit (iOS and Android)
+
+- **Settings → Profile** now opens the Profile screen, not the edit form. Profile's back arrow returns to the screen it was opened from (Settings or Menu), using the screen trail.
+- **Sign-in audit** (production, read only):
+  - Email codes and Google work on the web and in the apps. `movo://auth-callback` is accepted as a return address.
+  - **Apple is switched off in Supabase Auth** (`Unsupported provider: provider is not enabled`), so Continue with Apple fails everywhere. Owner action: enable Apple under Supabase → Authentication → Providers with an Apple Services ID and key. App Store guideline 4.8 expects it for an iOS app that offers Google.
+  - Fixed: a switched-off provider used to open Supabase's raw error page in the browser. MOVO now checks the public provider list first and shows its own customer message. The Apple and Google messages are rewritten for customers in 11 languages.
+- **Subscription audit** (production, read only):
+  - Google Play checkout is ready (`/api/purchases/config?platform=google` → enabled).
+  - **App Store checkout is blocked** (`enabled:false`): one Apple billing setting fails validation, most likely `APPLE_APP_ID`, which must be the numeric Apple ID from App Store Connect.
+  - The billing tables and functions exist. `movo_plan_status` only reports on the caller's own account, and only production purchases count.
+  - New: the owner Command Center's Billing view lists store checkout readiness with the names of failing settings, never values (owner and two-factor only).
+
+Validation: Jest 215 suites / 1,306 tests, tsc, strict build. See `docs/engineering/updates/2026-11-12-signin-subscriptions-audit.md`. Not run: real devices, real purchases.
+
 ## 2026-11-12 — Rate MOVO reminder (App Store / Google Play)
 
 Owner request: remind people to rate MOVO. The iPhone and Android apps now ask the store's own rating dialog to appear: Apple's StoreKit review request (`AppStore.requestReview` on iOS 16+, `SKStoreReviewController` on 15) and Google Play In-App Review. Both stores require their own dialog (Apple guideline 5.6.1 disallows custom review prompts, and Google asks apps not to pre-ask), so MOVO adds no screen of its own and only chooses the moment.
