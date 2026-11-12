@@ -151,6 +151,19 @@ test('download (iPhone): the App Store from APPLE_APP_ID, with a page that shows
   expect(r.end).toHaveBeenCalledWith('');
 });
 
+test('download (iPhone): APPLE_APP_ID is read the way the billing settings are written', () => {
+  for (const value of [' 6754321098 ', '"6754321098"', 'id6754321098']) {
+    process.env.APPLE_APP_ID = value;
+    const r = res(); download({ method: 'GET', query: { platform: 'ios' } }, r);
+    expect(r.headers.Location).toBe('https://apps.apple.com/app/id6754321098');
+  }
+  for (const value of ['', '0', '42', 'com.nasrinai.movo', '6754321098x', '1e12']) {
+    process.env.APPLE_APP_ID = value;
+    const r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'M78038' } }, r);
+    expect(r.headers.Location).toBe('/?download=ios&ref=M78038');
+  }
+});
+
 test('download (iPhone): until the App Store id is known, the web app keeps the code', () => {
   delete process.env.APPLE_APP_ID;
   const r = res(); download({ method: 'GET', query: { platform: 'ios', ref: 'm78038' } }, r);

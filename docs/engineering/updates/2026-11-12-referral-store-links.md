@@ -50,3 +50,9 @@ dropped the referral code.
 Revert the commit. The QR codes then open the web app again (the code is still kept there). No database, RLS or
 server-setting changes are involved. An Android build that already contains `installReferrer` keeps working; the
 JavaScript simply stops calling it.
+
+## Follow-up (same day): App Store id format
+On the Vercel preview, Android links reached Google Play with the referrer, but iPhone links fell back to the web app.
+`APPLE_APP_ID` is set for preview, so its stored form did not match the digits-only check. The value was not decrypted
+or read. `appleAppId()` now accepts surrounding spaces, quotes and an `id` prefix, and requires a safe integer of at
+least six digits. Anything else (empty, a bundle id, a placeholder) still falls back to the web app with the code.

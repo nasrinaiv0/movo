@@ -25,8 +25,16 @@ const ANDROID_URL = /^https:\/\/play\.google\.com\/store\/apps\/details\?id=com\
 function iosStore(env) {
   const configured = String(env.MOVO_IOS_APP_STORE_URL || '').trim();
   if (IOS_URL.test(configured)) return configured;
-  const id = String(env.APPLE_APP_ID || '').trim();
-  return /^\d{6,12}$/.test(id) ? `https://apps.apple.com/app/id${id}` : '';
+  const id = appleAppId(env.APPLE_APP_ID);
+  return id ? `https://apps.apple.com/app/id${id}` : '';
+}
+
+/** The numeric App Store id from APPLE_APP_ID: tolerates spaces, quotes and an "id" prefix; '' when it is not one. */
+function appleAppId(value) {
+  const text = String(value || '').trim().replace(/^["']|["']$/g, '').trim().replace(/^id/i, '');
+  if (!/^\d+$/.test(text)) return '';
+  const number = Number(text);
+  return Number.isSafeInteger(number) && number >= 100000 ? String(number) : '';
 }
 
 function androidStore(env) {

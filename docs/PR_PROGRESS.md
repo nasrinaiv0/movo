@@ -1,3 +1,7 @@
+## 2026-11-12 — PR #293 follow-up: App Store id read like the billing settings
+
+The preview sent iPhone links to the web app, so the stored `APPLE_APP_ID` did not match the strict digits-only format (its value was not inspected). It is now read with the same tolerance as the billing check: surrounding spaces, quotes and an `id` prefix are accepted. Anything that is not a plausible App Store id still falls back to the web app with the code. New test. See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
 ## 2026-11-12 — Referral QR codes open the App Store and Google Play with each person's own code
 
 Owner request: the referral QR code should link to the App Store and Google Play, with a unique referral id per user. Before this, `/api/download` only sent people to a store when `MOVO_IOS_APP_STORE_URL` / `MOVO_ANDROID_STORE_URL` were set. Neither is set in production, so every QR code opened the web app.
