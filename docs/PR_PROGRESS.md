@@ -1,3 +1,10 @@
+## 2026-11-13 — PR #294 CI 2nd regression: Jest resets module mock implementations
+
+- Exact commit `1396197` GitHub Phase 1 and Vercel preview each failed on **one** Settings guide click test, while 224 of 225 test suites and 1,354 of 1,355 tests passed. Read-only finance tenant isolation passed.
+- Unlike the previous Capacitor proxy spy failure, `Browser.open` is now a Jest mock function. However, MOVO Jest setup resets mock implementations between tests, causing a bare `Browser.open()` to return undefined; the actual Settings handler expects a Promise and calls `.catch()`.
+- Fix in test setup: explicitly `Browser.open.mockReset()` and `Browser.open.mockImplementation(() => Promise.resolve())` immediately before the click. **Do not change the production async Browser.open handler or suppress rejection handling.**
+- Precommit documentation recorded before the fix. Exact-head full regression + preview must be rerun. Keep PR open and production untouched.
+
 ## 2026-11-13 — PR #294 preview CI repair (documented before commit)
 
 - First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.

@@ -39,3 +39,7 @@ Publish a premium, comprehensible public explanation of **what MOVO does, how it
 ## CI issue found and fixed in next commit (precommit record)
 
 Initial PR #294 commit eecbfbd: Vercel build reported one new Settings test failing (`jest.spyOn(...).mockResolvedValue is not a function`). This is a test setup defect caused by spying on Capacitor's proxy, not an app feature or security breach. Replace that spy with an explicit `jest.mock('@capacitor/browser')`. Keep the actual `Browser.open` implementation in the app. First preview was ERROR; do not merge until a new exact-head READY preview and test success. Also simplify customer page wording by omitting internal PR identifiers; current production encryption limitation remains explicit.
+
+## Second exact-head CI failure and targeted fix (documented precommit)
+
+On `1396197`, GitHub Phase 1 failed 1/225 Jest suites (1/1,355 tests). The new Settings click test used an explicit module mock, but Jest's configured resetMocks cleared the `mockResolvedValue` implementation, so `Browser.open()` returned `undefined` and the real handler's `.catch` threw. Reinstall an async mock implementation **inside this test after resetMocks**; keep production Browser plugin and all security checks unchanged. Vercel preview also ERROR at this commit. The tenant isolation regression was SUCCESS. Recheck exact new head before any merge; no production changes.

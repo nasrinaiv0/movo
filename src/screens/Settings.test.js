@@ -119,7 +119,9 @@ describe('Cloud Sync setting semantics', () => {
 
 test('Security & Privacy guide opens the public, transparent data-security explanation', async () => {
   const { Browser } = require('@capacitor/browser');
-  Browser.open.mockClear();
+  // Jest resets mock implementations between tests; restore this resolved Promise for the click.
+  Browser.open.mockReset();
+  Browser.open.mockImplementation(() => Promise.resolve());
   const container = document.createElement('div'); document.body.appendChild(container);
   const root = createRoot(container);
   try {
