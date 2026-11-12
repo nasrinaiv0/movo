@@ -66,6 +66,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     // Rate MOVO: Google Play In-App Review (src/lib/reviewPrompt.js, MovoNativePlugin.requestReview).
     implementation "com.google.android.play:review:2.0.2"
+    // Referral download links: reads the Google Play install referrer once (MovoNativePlugin.installReferrer).
+    implementation "com.android.installreferrer:installreferrer:2.2"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

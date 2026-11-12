@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 describe('public app-store legal documents', () => {
-  for (const [route, date] of [['terms', 'November 11, 2026'], ['privacy', 'November 6, 2026']]) {
+  for (const [route, date] of [['terms', 'November 11, 2026'], ['privacy', 'November 12, 2026']]) {
     test(route + ' is a standalone HTML legal page rather than the SPA shell', () => {
       const html = fs.readFileSync(path.join(process.cwd(), 'public', route + '.html'), 'utf8');
       expect(html).toMatch(/<!doctype html>/i);
