@@ -137,7 +137,7 @@ export default function Wallet({ c }) {
   // Selecting an account/card should reveal the card display first. Details and editing are explicit follow-up actions.
   const openAccount = (a) => { setSelectedCardId(a.id); setSheet({ name: 'cardDetails', id: a.id }); };
   // Keyed by style so a new look eases in when the card is edited.
-  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape') => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={c.accountQrDisplay?.[a.id] || ''} />;
+  const cardVisual = (a, orientation = wv.cardFormat === 'portrait' ? 'portrait' : 'landscape', formatSample = false) => <CardArt key={`${a.id}:${styleOf(a)}:${displayModeOf(a)}:${orientation}`} orientation={orientation} formatSample={formatSample} a={a} show={show} styleId={styleOf(a)} holder={holder} displayMode={displayModeOf(a)} visibleFields={fieldsOf(a)} cardNetwork={prefs.cardNetworks?.[a.id] || a.cardNetwork || ''} qrCode={c.accountQrDisplay?.[a.id] || ''} />;
   const renderLoyaltyCards = () => loyaltyCards.map(card => <button
     type="button" className="wallet-card-item loyalty-wallet-item" key={'loyalty-' + card.id}
     aria-label={card.name + ' · ' + loyaltyTypeLabel(card)}
@@ -251,8 +251,13 @@ export default function Wallet({ c }) {
       <p className="mini-title wallet-view-title">{tr('Layout')}</p>
       <div className="seg-control wallet-view-control">{VIEWS.map(([key, icon, label]) => <button type="button" key={key} className={wv.view === key ? 'selected' : ''} aria-pressed={wv.view === key} onClick={() => setWv({ view: key })}><Icon name={icon} size={17} /><span>{tr(label)}</span></button>)}</div>
       <p className="mini-title wallet-format-title">{tr('Card format')}</p>
-      <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => <button type="button" key={key} className={wv.cardFormat === key ? 'selected' : ''} aria-pressed={wv.cardFormat === key} onClick={() => setWv({ cardFormat: key })}>
-        <ScaledCard orientation={key}>{selectedCard ? cardVisual(selectedCard, key) : <CardArt orientation={key} a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" />}</ScaledCard><span>{tr(label)}</span></button>)}</div>
+      <div className="format-pick wallet-format-pick">{FORMATS.map(([key, label]) => {
+        const locked = key === 'portrait' && !can('portraitCards');
+        return <button type="button" key={key} className={`${wv.cardFormat === key ? 'selected' : ''}${locked ? ' locked' : ''}`} aria-pressed={wv.cardFormat === key} aria-label={locked ? `${tr(label)} (${tr('Pro')})` : undefined} onClick={() => setWv({ cardFormat: key })}>
+          <ScaledCard orientation={key}>{selectedCard ? cardVisual(selectedCard, key, true) : <CardArt orientation={key} formatSample a={{ id: 'fmt', name: 'Your Bank', institution_name: 'Your Bank', account_type: 'bank', mask: '1234', balance: 12500, currency: 'PHP', contactless: true, brand: 'blue' }} show={show} styleId="" cardNetwork="visa" />}</ScaledCard>
+          {locked && <span className="format-lock" aria-hidden="true"><Icon name="lock" size={11} />{tr('Pro')}</span>}
+          <span>{tr(label)}</span></button>;
+      })}</div>
       {[['fxLandscape', 'Landscape animation', LANDSCAPE_FX], ['fxPortrait', 'Portrait animation', PORTRAIT_FX]].map(([key, title, list]) => <React.Fragment key={key}>
         <p className="mini-title wallet-fx-title">{tr(title)}</p>
         <div className="wallet-fx-row" role="group" aria-label={tr(title)}>{list.map(([fx, label]) => <button type="button" key={fx} className={`wallet-fx-option fx-${fx}${wv[key] === fx ? ' selected' : ''}`} aria-pressed={wv[key] === fx} onClick={() => setWv({ [key]: fx })}><span className="fx-glyph" aria-hidden="true"><i /><i /><i /></span><span>{tr(label)}</span></button>)}</div>

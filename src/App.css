@@ -8677,3 +8677,9 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   filter: drop-shadow(0 0 4px var(--hero-edge, #f4c76a));
 }
+
+/* ===== Card format picker without a plan (2026-11-12) =====
+   The Portrait tile shows the real portrait layout as a sample, marked Pro; choosing it opens plans. */
+.movo-app .format-pick button { position: relative; }
+.movo-app .format-pick button .format-lock { position: absolute; top: 6px; right: 6px; z-index: 2; display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 99px; background: rgba(0, 0, 0, .58); color: #fff; font-size: 10.5px; font-weight: 700; line-height: 1.4; }
+[dir="rtl"] .movo-app .format-pick button .format-lock { right: auto; left: 6px; }

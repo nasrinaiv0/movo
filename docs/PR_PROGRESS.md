@@ -1,3 +1,7 @@
+## 2026-11-12 — Fix: Portrait card format preview without a plan
+
+Bug (owner screenshot): on Free, the Portrait tile in Wallet → Sort & view drew a landscape card squeezed into the portrait box, because `CardArt` turns every card landscape without `portraitCards`. The tile now passes `formatSample`, so it shows the true portrait layout as a sample, marked Pro. Choosing it still opens plans, and cards in the wallet stay landscape until Pro is active. Validation: Jest 209 suites / 1,257 tests, tsc, strict build, browser check as Free and Pro+ (see `docs/engineering/updates/2026-11-12-portrait-format-sample.md`). Not run: real devices.
+
 ## 2026-11-12 — Home header: edge to edge, grounded ram, glowing Pro edge
 
 Owner request:
