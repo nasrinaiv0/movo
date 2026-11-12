@@ -45,3 +45,8 @@ dropped the referral code.
 - The Android referrer needs a new Play build (version code above 7). The QR codes work on the website and in the
   current apps as soon as this deploys.
 - If the Play listing is still limited to testers, people outside the test track will see "not available" in Google Play.
+
+## Rollback
+Revert the commit. The QR codes then open the web app again (the code is still kept there). No database, RLS or
+server-setting changes are involved. An Android build that already contains `installReferrer` keeps working; the
+JavaScript simply stops calling it.
