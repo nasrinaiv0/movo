@@ -1,3 +1,16 @@
+## 2026-11-12 — Subscribers' records offline; referral field loads with the panel
+
+- **Offline records (owner: "all data should be available offline after the customer subscribes"):**
+  - Budgets, bills and bill dates now come from the synced device copy offline; budgets previously switched to the device's guest list.
+  - Financial planning and the Home planning card work offline; they used to say "Sign in to manage your financial records".
+  - A new per-account read cache (`lib/offlineReadCache.js`) keeps the last copy of every cloud list: loans, receivables, goals, allocations, bills and payments, scheduled transactions, payment attempts, reminders, budgets and the ledger. It shows that copy when the cloud can't be reached; it never hides server errors and never mixes accounts.
+  - Changes to these records wait until back online, with a clear note.
+  - Signed-out people still see no account records (privacy); they reappear after signing in, online or offline.
+- **Referral code:** the field shows as soon as the plans panel opens, with no extra step and no waiting for sign-in. A code typed while signed out is kept for after sign-in.
+- **Android Google sign-in (v7):** the auth logs show the app's pre-check succeeding and no request reaching Google's step, so the failure is on the phone, either in the secure-storage or the browser step. The exact on-screen message is needed to choose the fix.
+
+Validation: Jest 224 suites / 1,349 tests, `tsc`. See `docs/engineering/updates/2026-11-12-offline-records-and-referral.md`. Not run: real devices.
+
 ## 2026-11-12 — Offline/online sync: local first, silent cloud sync, back-online prompt
 
 Owner request: online, input → local → dashboard → silent cloud sync; offline, input → local → dashboard; back online, a setting chooses automatic sync or asking first with a professional pop-up.

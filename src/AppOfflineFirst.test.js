@@ -35,7 +35,8 @@ jest.mock('./lib/usePlanEntitlement', () => {
 jest.mock('./lib/supabaseClient', () => ({
   supabaseConfigured: true,
   supabase: {
-    auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) },
+    auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+      getSession: async () => ({ data: { session: { user: { id: '123e4567-e89b-42d3-a456-426614174000' }, access_token: 'test-token' } } }) },
     storage: { from: () => ({ remove: async () => ({}), upload: async () => ({ error: null }) }) },
   },
 }));
@@ -67,13 +68,21 @@ jest.mock('./lib/financeRepository', () => {
     signOut: async () => { mockCalls.signOut += 1; return { localOnly: mockNet.down }; },
   };
 });
-jest.mock('./lib/obligationsRepository', () => ({
-  listAccountingPostings: async () => [],
-  listAccountingActivities: async () => [],
-  listLoans: async () => [],
-  listReceivables: async () => [],
-}));
-jest.mock('./lib/billsRepository', () => ({ listBills: async () => [], listOccurrences: async () => [] }));
+jest.mock('./lib/obligationsRepository', () => {
+  // Like the real repository, every list keeps its last copy for offline reading (lib/offlineReadCache.js).
+  const { cachedList } = jest.requireActual('./lib/offlineReadCache');
+  const list = (name, rows) => () => cachedList(name, async () => { if (mockNet.down) throw mockOffline(); return mockCopy(rows()); });
+  return {
+    listAccountingPostings: list('accountingPostings', () => []),
+    listAccountingActivities: list('accountingActivities', () => []),
+    listLoans: list('loans', () => mockServer.loans || []),
+    listReceivables: list('receivables', () => []),
+    listGoals: list('goals', () => []),
+    listGoalAllocations: async () => [],
+    listPlanAllocations: list('planAllocations', () => []),
+  };
+});
+jest.mock('./lib/billsRepository', () => ({ listBills: async () => [], listOccurrences: async () => [], listBillPayments: async () => [] }));
 jest.mock('./lib/offlineSyncCloudAdapter', () => {
   const actual = jest.requireActual('./lib/offlineSyncCloudAdapter');
   const guard = () => { if (mockNet.down) throw mockOffline(); };
@@ -242,6 +251,27 @@ describe('offline-first with Cloud Sync on', () => {
     const copy = loadOfflineWorkspace(OWNER);
     expect(copy.dirty).toBe(false);
     expect(copy.pendingDeletions).toEqual({});
+  });
+
+  test('offline, a subscriber still sees their loans in Financial planning (last synced copy), read-only', async () => {
+    mockServer.loans = [{ id: 'loan-1', name: 'Car loan', lender: 'BPI', status: 'active', currency: 'PHP', principal: 300000, outstanding_principal: 120000, annual_rate: 8, start_date: '2025-01-01', is_archived: false }];
+    // Online: the screen loads the loan (and keeps a copy on this device).
+    await nav(container, 'Menu');
+    await act(async () => { Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Financial planning')).click(); });
+    await waitFor(() => container.textContent.includes('Loans & debts'), 'the planning screen');
+    await click(container, 'Loans & debts');
+    await waitFor(() => container.textContent.includes('Car loan'), 'the loan online');
+    await nav(container, 'Menu');
+    // The connection drops: the same screen still shows it, says it is the last synced copy, and offers no Add.
+    mockNet.down = true;
+    await act(async () => { window.dispatchEvent(new Event('offline')); });
+    await act(async () => { Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Financial planning')).click(); });
+    await waitFor(() => container.textContent.includes('Loans & debts'), 'the planning screen offline');
+    await click(container, 'Loans & debts');
+    await waitFor(() => container.textContent.includes('Car loan'), 'the loan offline');
+    expect(container.textContent).not.toContain('Sign in to manage your financial records');
+    expect(container.textContent).toContain('You’re offline. These are your records as last synced');
+    expect(container.querySelector('.sub-header button[aria-label="Add"], header button[aria-label="Add"]')).toBeNull();
   });
 
   const logInChat = async (text) => {

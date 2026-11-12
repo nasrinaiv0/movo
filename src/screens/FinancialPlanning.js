@@ -97,7 +97,7 @@ export default function FinancialPlanning({ c }) {
     finally { setBusy(false); }
   };
 
-  const header = <SubHeader title={tr('Financial planning')} onBack={() => c.go('Menu')} right={p.cloud ? <button type="button" className="round-button accent" aria-label={tr('Add')} onClick={() => setSheet({ kind: 'add' })}><Icon name="plus" size={20} /></button> : null} />;
+  const header = <SubHeader title={tr('Financial planning')} onBack={() => c.go('Menu')} right={p.cloud && !p.offline ? <button type="button" className="round-button accent" aria-label={tr('Add')} onClick={() => setSheet({ kind: 'add' })}><Icon name="plus" size={20} /></button> : null} />;
   const hero = <section className="card sub-hero fp-hero" aria-label={tr('Financial position')}>
     <small>{tr('Net worth')}</small>
     <div className="balance-amount"><Money value={summary.position.netWorth} show={show} currency={base} /></div>
@@ -139,6 +139,7 @@ export default function FinancialPlanning({ c }) {
     {header}
     {hero}
     <Chips items={TABS.map(([k, l]) => ({ key: k, label: tr(l), dot: k === 'bills' && bills.overdueCount > 0 }))} value={tab} onChange={pick} label={tr('Financial planning sections')} />
+    {p.offline && <p className="form-hint fp-offline" role="status">{tr('You’re offline. These are your records as last synced; changes are available again when you’re back online.')}</p>}
     {(error || p.error) && <div className="app-alert" role="alert"><span>{error || tr(p.error)}</span>{p.error && <button type="button" className="link-button" aria-label="↻" onClick={() => p.reload()}>↻</button>}</div>}
     {notice && <p className="form-note fp-notice" role="status">{notice}</p>}
 

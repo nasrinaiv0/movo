@@ -5,6 +5,7 @@ import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp, nativePlatform } from './platform';
 import { AUTH_CALLBACK, openAuthBrowser } from './native';
+import { cachedList } from './offlineReadCache';
 
 const requireClient = () => {
   if (!supabase) throw new Error('MOVO cloud storage is not configured. Add the MOVO Supabase URL and publishable key.');
@@ -273,7 +274,7 @@ export async function purgeArchivedAutomations(days = 90, now = new Date()) {
   const { error } = await requireClient().from('movo_automation_inbox').delete().eq('status', 'dismissed').lt('resolved_at', cutoff);
   if (error && !/PGRST205|42P01|does not exist|could not find the table/i.test(`${error.code || ''} ${error.message || ''}`)) throw error;
 }
-export async function listBudgets() {
+async function listBudgetsFromCloud() {
   return unwrap(await requireClient().from('budgets')
     .select('id,category,monthly_limit,currency,starts_on,is_active').eq('is_active', true).order('category', { ascending: true }));
 }
@@ -347,3 +348,6 @@ export async function restoreTransactionLinks(reversedTransactionId, restoredTra
     p_restored_transaction_id: restoredTransactionId,
   }));
 }
+
+// Offline reading (owner, 2026-11-12): the last copy of each list is shown when the cloud cannot be reached.
+export const listBudgets = (...args) => cachedList('budgets', () => listBudgetsFromCloud(...args));

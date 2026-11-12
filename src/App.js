@@ -436,6 +436,10 @@ function App() {
     setRawTxs(next.working.transactions);
     setCloudPostings(next.working.accounting_postings||[]);
     setCloudActivities(next.working.accounting_activities||[]);
+    // A subscriber's budgets and bills come from the same synced device copy offline (owner, 2026-11-12).
+    setCloudBills(next.working.financial_bills||[]);
+    setCloudBillOccurrences(next.working.bill_occurrences||[]);
+    setCloudBudgets(next.working.budgets||[]);
     setCloudMode(false);
     return true;
   }, []);
@@ -1104,7 +1108,8 @@ function App() {
     return monthStats.list.filter(t => (!type || t.type === type) && (!q || [t.merchant, t.category, t.accountName, t.type].join(' ').toLowerCase().includes(q)));
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer' || t.transaction_type === 'allocation').slice(0, 4), [homeStats]);
-  const budgets = useMemo(() => (cloudMode ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgets, prefs.budgets, toBase, base]);
+  // Offline, a signed-in subscriber keeps their synced budgets (the device copy), not this device's guest list.
+  const budgets = useMemo(() => (cloudMode || deviceCopyAccess ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, deviceCopyAccess, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   const spendingLimitList = useMemo(() => spendingLimitProgress((prefs.spendingLimits || []).map(l => ({ ...l, monthly_limit: toBase(Number(l.monthly_limit), l.currency || 'PHP'), currency: base })), homeStats.list, accountsView), [prefs.spendingLimits, homeStats, accountsView, toBase, base]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
@@ -1777,6 +1782,8 @@ function App() {
   const saveBudget = async ({ id, category: picked, monthly_limit }) => {
     // Budgets are kept per compact category id (custom text stays as written).
     const c = categoryOf(picked); const category = c.custom ? picked : c.primary;
+    // Budgets of a cloud account are changed in the cloud; offline they stay readable until the connection returns.
+    if (!cloudMode && deviceCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return; }
     if (cloudMode && session?.user) {
       const row = id ? await updateBudget(id, { category, monthly_limit, currency: base }) : await createBudget({ category, monthly_limit, currency: base }, session.user.id);
       setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
@@ -1787,6 +1794,7 @@ function App() {
     notify(tr('Budget saved.'));
   };
   const deleteBudget = (id) => {
+    if (!cloudMode && deviceCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return Promise.resolve(false); }
     const row = (cloudMode ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
     return confirm({
       ...deleteRecord(row ? categoryFullLabel(row.category) : '', { impact: [tr('Your transactions are not changed.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
@@ -2891,7 +2899,7 @@ function App() {
         prefs={prefs}
         subscriptions={subscriptions}
         plans={plans}
-        cloudMode={cloudMode}
+        cloudMode={cloudMode || deviceCopyAccess}
         toBase={toBase}
         show={show}
         holder={user?.name}
