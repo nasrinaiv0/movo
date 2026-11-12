@@ -1,3 +1,11 @@
+## 2026-11-13 — PR #294 preview CI repair (documented before commit)
+
+- First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.
+- Result in the Vercel runner: 224/225 suites passed and 1,354/1,355 tests passed, then the build script exited nonzero. Correct the **test double**, not the product plugin or security gate.
+- Add a `jest.mock('@capacitor/browser')` module mock with a real `jest.fn()` and assert the Settings row invokes `Browser.open` with the canonical security URL.
+- Customer clarity: remove internal PR numbers from the public HTML and say the enhanced offline encryption is in testing and **not part of the current production release**. Retain exact PR references in internal engineering notes and the source docs.
+- No production release, merge, database mutation, security control relaxation, or third-party API change. Rerun exact-head GitHub CI and Vercel preview after the fix.
+
 ## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
 
 - Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.

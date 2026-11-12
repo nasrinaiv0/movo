@@ -35,3 +35,7 @@ Publish a premium, comprehensible public explanation of **what MOVO does, how it
 - Required: exact-head Jest/i18n/TS/build, security guide contracts, Settings interaction test, Vercel preview `READY`, clean PR check, mobile layout and native browser behavior review. **Do not merge until required gates pass and owner approves.**
 - A polished four-page editable Word explainer was also authored for the user, rendered to four page PNGs and inspected. Word document does not contain code, secrets, or private user data.
 - Pending: manual iPhone Safari / Android Chrome preview smoke, third-party privacy/legal approval, real-device Browser plugin tap where available.
+
+## CI issue found and fixed in next commit (precommit record)
+
+Initial PR #294 commit eecbfbd: Vercel build reported one new Settings test failing (`jest.spyOn(...).mockResolvedValue is not a function`). This is a test setup defect caused by spying on Capacitor's proxy, not an app feature or security breach. Replace that spy with an explicit `jest.mock('@capacitor/browser')`. Keep the actual `Browser.open` implementation in the app. First preview was ERROR; do not merge until a new exact-head READY preview and test success. Also simplify customer page wording by omitting internal PR identifiers; current production encryption limitation remains explicit.

@@ -1,3 +1,4 @@
+jest.mock('@capacitor/browser', () => ({ Browser: { open: jest.fn().mockResolvedValue(undefined) } }));
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import Settings from './Settings';
@@ -118,7 +119,7 @@ describe('Cloud Sync setting semantics', () => {
 
 test('Security & Privacy guide opens the public, transparent data-security explanation', async () => {
   const { Browser } = require('@capacitor/browser');
-  const spy = jest.spyOn(Browser, 'open').mockResolvedValue(undefined);
+  Browser.open.mockClear();
   const container = document.createElement('div'); document.body.appendChild(container);
   const root = createRoot(container);
   try {
@@ -127,10 +128,9 @@ test('Security & Privacy guide opens the public, transparent data-security expla
       .find(node => node.querySelector('strong')?.textContent === 'Security & Privacy');
     expect(row).toBeTruthy();
     await act(async () => row.click());
-    expect(spy).toHaveBeenCalledWith({ url: 'https://movo.nasrinai.com/security' });
+    expect(Browser.open).toHaveBeenCalledWith({ url: 'https://movo.nasrinai.com/security' });
   } finally {
     act(() => root.unmount());
     container.remove();
-    spy.mockRestore();
   }
 });

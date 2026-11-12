@@ -30,8 +30,8 @@ test('production encryption copy is honest and distinguishes pending PRs', () =>
   const terms = read('public/terms.html');
   const privacy = read('public/privacy.html');
   expect(page).toMatch(/production MOVO app does\s*<strong>not<\/strong> yet encrypt all local financial records/i);
-  expect(page).toContain('PRs #289 and #290');
-  expect(page).toContain('still in review');
+  expect(page).toContain('Additional application-level encryption');
+  expect(page).toContain('not yet in the production release');
   expect(terms).toContain('Browser storage is not encrypted by MOVO itself.');
   expect(privacy).toContain('MOVO does not encrypt browser storage itself;');
   expect(guide).toContain('not yet live');
