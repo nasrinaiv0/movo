@@ -8859,3 +8859,15 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app .plan-period { width: max-content; min-width: min(100%, 240px); max-width: 100%; grid-template-columns: repeat(2, minmax(max-content, 1fr)); }
 .movo-app.movo-app .plan-period button { min-width: 0; padding-inline: 12px; white-space: nowrap; }
 .movo-app.movo-app .plan-period-save { flex: none; padding: 2px 7px; font-size: 11px; line-height: 1.3; white-space: nowrap; }
+/* Restore purchases · Manage subscription, always shown (owner, 2026-11-12): plans panel footer and Plan & Usage. */
+.movo-app .subscription-links { display: grid; justify-items: center; gap: 6px; text-align: center; }
+.movo-app .subscription-links-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; }
+.movo-app .subscription-links-row > span { color: var(--muted); }
+.movo-app.movo-app .subscription-links .link-button { min-height: 44px; padding: 0 4px; font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.movo-app .subscription-links-stores { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 13px; }
+.movo-app .subscription-links-stores a { display: inline-flex; align-items: center; min-height: 36px; color: var(--accent-ink, var(--accent)); font-weight: 600; }
+.movo-app .subscription-links-message { margin: 0; max-width: 34ch; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.movo-app.movo-app .sheet.plan-panel .subscription-links { margin-top: -6px; }
+.movo-app.movo-app .sheet.plan-panel .subscription-links .link-button { --button-ink: var(--pp-ink); min-height: 36px; font-size: 12px; color: var(--pp-ink); }
+.movo-app .sheet.plan-panel .subscription-links-row > span, .movo-app .sheet.plan-panel .subscription-links-message { color: var(--pp-muted); }
+.movo-app .sheet.plan-panel .subscription-links-stores a { color: var(--pp-gold-soft); }

@@ -1,3 +1,12 @@
+## 2026-11-12 — Restore purchases and Manage subscription always shown
+
+Owner request: there should always be buttons to restore purchases and manage subscriptions. Both now appear in the plans panel and in Plan & Usage, for every person, in the apps and on the website, signed in or not, and they are never disabled.
+- **In the apps:** Restore uses the App Store or Google Play restore, which the server verifies. Manage opens the store's subscription page.
+- **On the website:** Restore re-checks the account's verified plan. Manage offers the App Store and Google Play subscription pages.
+- **Signed out:** Restore opens sign-in.
+
+No change to purchase verification or entitlements. Validation: new `SubscriptionLinks.test.js`, updated plans panel and Plan & Usage tests, Jest 221 suites / 1,328 tests, `tsc`, strict build, browser check (see `docs/engineering/updates/2026-11-12-restore-manage-always.md`). Not run: the store dialogs on real devices.
+
 ## 2026-11-12 — "Save 20%" on the Annual plan
 
 Owner request: show a 20% saving for the annual plan. The Annual toggle in the plans panel now reads "Save 20%", translated into 11 languages. In the apps the figure comes from the App Store or Google Play prices, so it always matches what the store charges. It reads 20% when the annual plans are priced at 80% of twelve months, which is now in `docs/commercial/STORE_BILLING_SETUP.md`. The website has no store prices and shows the owner's 20%. The toggle grows to fit the badge on one line; checked at 430, 375 and 360px, including German and Filipino at the Largest text size. Validation: new `storeProducts.test.js`, updated `PlanOffer.test.js`, full Jest suite, `tsc`, strict build (see `docs/engineering/updates/2026-11-12-annual-save-20.md`). Owner action: set the annual prices in the store consoles. Not run: real devices.

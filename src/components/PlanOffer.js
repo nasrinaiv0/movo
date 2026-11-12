@@ -8,6 +8,7 @@ import { MovoMark } from './MovoLogo';
 import { getStoreProducts, isNativePurchasePlatform, purchaseStoreProduct } from '../lib/nativePurchases';
 import { STORE_PRODUCT_BY_ID, annualSavingPercent } from '../lib/storeProducts';
 import { effectivePlan } from '../lib/planAccess';
+import SubscriptionLinks from './SubscriptionLinks';
 import { t as tr } from '../lib/i18n';
 import { money } from '../lib/format';
 
@@ -166,6 +167,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     {action.note && <p className="plan-fine">{action.note}</p>}
     <p className="plan-fine">{selected.tier === 'free' ? tr('Your records stay on this device unless you turn on Cloud Sync.') : trialOffer ? tr('The free month ends on its own; nothing renews.') : tr('Auto-renews unless canceled.')} {onOpenTerms ? <button type="button" className="link-button" onClick={onOpenTerms}>{tr('Terms apply.')}</button> : tr('Terms apply.')}
       {onPlans && selected.tier !== 'free' && <> · <button type="button" className="link-button" onClick={onPlans}>{tr('Plans & purchases')}</button></>}</p>
+    <SubscriptionLinks session={session} onSignIn={onSignIn} onRefresh={() => onRefresh?.()} className="plan-fine" />
     </div>
   </Sheet>;
 }

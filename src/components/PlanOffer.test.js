@@ -46,6 +46,9 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   // Annual says "Save 20%" (owner, 2026-11-12), the owner's annual pricing, since the website has no store prices.
   const annualButton = Array.from(el.querySelectorAll('.plan-period button')).find(b => b.textContent.startsWith('Annual'));
   expect(annualButton.querySelector('.plan-period-save').textContent).toBe('Save 20%');
+  // Restore purchases and Manage subscription are always there (owner, 2026-11-12), also on the website.
+  const links = Array.from(el.querySelectorAll('.subscription-links button')).map(b => [b.textContent, b.disabled]);
+  expect(links).toEqual([['Restore purchases', false], ['Manage subscription', false]]);
   cleanup();
 });
 
