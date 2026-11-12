@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import NotchedBox from '../components/NotchedBox';
 import Icon from '../components/Icon';
 import { Chips, IconButton, SectionTitle, Sparkline, MiniBars, Donut, Legend, TransactionRow, Money, Sheet, Trend } from '../components/ui';
-import EditableBoxes from '../components/EditableBoxes';
+import EditableBoxes, { arrange, sizeOf, styleOf } from '../components/EditableBoxes';
 import { UpcomingList } from './Subscriptions';
 import { toDay } from '../lib/subscriptions';
 import MoneyFlow from '../components/MoneyFlow';
@@ -152,7 +152,17 @@ export default function Home({ c }) {
   ];
 
   return <>
-    <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}${hero ? ` home-hero hero-${hero.kind}` : ''}`} style={hero ? { '--hero-bg': hero.background, '--hero-glow': hero.glow || 'transparent' } : undefined} data-hero={hero?.id}>
+    {(() => {
+    /*
+     * The pinned header reaches down to the bottom of Total balance (owner, 2026-11-12): when that box comes first,
+     * it is drawn inside the header block. While customizing, or with another box first, the header stands alone.
+     */
+    const homeLayout = prefs.layouts?.home || {};
+    const hiddenBoxes = homeLayout.hidden || [];
+    const firstBox = arrange(boxes.filter(b => b.node), homeLayout).find(b => !hiddenBoxes.includes(b.id));
+    const hoist = !!hero && !editing && firstBox?.id === 'balance';
+    const heroStyle = hero ? { '--hero-bg': hero.background, '--hero-glow': hero.glow || 'transparent' } : undefined;
+    const header = <header className={`screen-header home-header${ramOn ? ' has-ram' : ''}${hero ? ' home-hero-ink' : ''}${hero && !hoist ? ` home-hero hero-${hero.kind}` : ''}`} style={hero && !hoist ? heroStyle : undefined} data-hero={hero && !hoist ? hero.id : undefined}>
       {ramOn ? <RamMascot mood={ram.mood} message={ramMessage} onChangeMascot={() => setMascotSheet(true)} />
         : <button type="button" className={`mascot${prefs.mascot ? ' has-photo' : ''}`} aria-label={prefs.mascot ? tr('Change your mascot photo') : tr('Add a mascot photo')} onClick={() => setMascotSheet(true)}>
           {prefs.mascot ? <img src={prefs.mascot} alt="" /> : <span>{user.initial}</span>}
@@ -166,9 +176,15 @@ export default function Home({ c }) {
         </div>
         {!balanceShown && periodPill(false)}
       </div>
-    </header>
-
-    <EditableBoxes title={tr('Home')} boxes={boxes} layout={prefs.layouts?.home} editing={editing} onEdit={startEditing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), home: l })} />
+    </header>;
+    return <>
+      {hoist ? <div className={`home-hero-block hero-${hero.kind}`} style={heroStyle} data-hero={hero.id}>
+        {header}
+        <div className={`box-slot size-${sizeOf(firstBox, homeLayout)}`}>{firstBox.node({ size: sizeOf(firstBox, homeLayout), style: styleOf(firstBox, homeLayout) })}</div>
+      </div> : header}
+      <EditableBoxes title={tr('Home')} boxes={boxes} layout={prefs.layouts?.home} editing={editing} skip={hoist ? ['balance'] : []} onEdit={startEditing} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), home: l })} />
+    </>;
+    })()}
     {!editing && <button type="button" className="customize-button" onClick={startEditing}><Icon name="edit" size={16} /> {tr('Customize Home')}</button>}
 
     {periodSheet && <Sheet title={tr('Filter Home by month and year')} onClose={() => setPeriodSheet(false)} label={tr('Filter Home by month and year')} className="home-period-sheet">

@@ -8404,7 +8404,7 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
    The Home header stays pinned at the top, runs edge to edge into the status-bar area and has rounded lower
    corners over a background: scenery for everyone, zodiac constellations and glows for Pro and Pro+
    (lib/homeHero.js). A scrim keeps the white greeting and icons readable on any picture. */
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero {
+.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) {
   --hero-pull: max(18px, env(safe-area-inset-top));
   position: sticky !important;
   top: 0;
@@ -8422,8 +8422,8 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   overflow: hidden;
   box-shadow: 0 16px 36px -24px rgba(0, 0, 0, .6) !important;
 }
-.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero { --hero-pull: calc(env(safe-area-inset-top) + 62px); }
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero::before {
+.native-chrome .movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) { --hero-pull: calc(env(safe-area-inset-top) + 62px); }
+.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block)::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -8432,11 +8432,11 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   background: linear-gradient(90deg, rgba(0, 0, 0, .46), rgba(0, 0, 0, .12) 72%), linear-gradient(0deg, rgba(0, 0, 0, .24), rgba(0, 0, 0, 0) 55%);
   opacity: 1 !important;
 }
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero:is(.hero-zodiac, .hero-glow)::before {
+.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block):is(.hero-zodiac, .hero-glow)::before {
   background: linear-gradient(90deg, rgba(0, 0, 0, .28), rgba(0, 0, 0, 0) 70%);
 }
 /* A slow, calm glow drifting across premium headers. */
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero:is(.hero-zodiac, .hero-glow)::after {
+.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block):is(.hero-zodiac, .hero-glow)::after {
   content: '';
   position: absolute;
   inset: -40%;
@@ -8446,20 +8446,36 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   opacity: .5;
   animation: hero-drift 14s ease-in-out infinite alternate;
 }
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero.hero-glow::after { background: radial-gradient(closest-side, rgba(255, 255, 255, .22), transparent 70%); }
+.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block).hero-glow::after { background: radial-gradient(closest-side, rgba(255, 255, 255, .22), transparent 70%); }
 @keyframes hero-drift { from { transform: translate3d(-18%, -6%, 0); } to { transform: translate3d(22%, 8%, 0); } }
-@media (prefers-reduced-motion: reduce) { .movo-app .screen > .screen-header.home-header.home-hero::after { animation: none !important; } }
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero :is(.home-greeting, .home-greeting h1, .home-greeting small, .home-greeting-context) {
+@media (prefers-reduced-motion: reduce) { .movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block)::after { animation: none !important; } }
+.movo-app.movo-app.movo-app.movo-app .screen .home-header.home-hero-ink :is(.home-greeting, .home-greeting h1, .home-greeting small, .home-greeting-context) {
   color: #fff !important;
   text-shadow: 0 1px 12px rgba(0, 0, 0, .35);
 }
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero :is(.home-greeting small, .home-greeting-context) { color: rgba(255, 255, 255, .84) !important; }
-.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero .header-action-buttons > button > .movo-icon,
-.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero .header-action-buttons > button > svg {
+.movo-app.movo-app.movo-app.movo-app .screen .home-header.home-hero-ink :is(.home-greeting small, .home-greeting-context) { color: rgba(255, 255, 255, .84) !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen .home-header.home-hero-ink .header-action-buttons > button > .movo-icon,
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen .home-header.home-hero-ink .header-action-buttons > button > svg {
   color: #fff !important;
   filter: drop-shadow(0 1px 6px rgba(0, 0, 0, .35));
 }
-.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero .red-dot { box-shadow: 0 0 0 2px rgba(0, 0, 0, .25); }
+.movo-app.movo-app.movo-app.movo-app .screen .home-header.home-hero-ink .red-dot { box-shadow: 0 0 0 2px rgba(0, 0, 0, .25); }
+
+/* Header + Total balance pinned together: the header inside the block is plain, the balance card sits below it. */
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block { padding-bottom: 18px !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .screen-header.home-header {
+  position: relative !important;
+  top: auto;
+  margin: 0 -18px 12px !important;
+  padding: 0 18px !important;
+  background: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .screen-header.home-header::after { display: none !important; }
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot { margin: 0; }
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block .balance-card { box-shadow: 0 14px 32px -18px rgba(0, 0, 0, .55); }
 
 /* Picker (Settings → Appearance → Home header). */
 .movo-app .hero-settings { display: grid; gap: 12px; }
@@ -8478,3 +8494,11 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .hero-lock { position: absolute; top: 6px; right: 6px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 99px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 10.5px; font-weight: 700; }
 .movo-app.movo-app .hero-tabs button[aria-selected="true"] { background: var(--card-solid); color: var(--text); box-shadow: 0 1px 6px rgba(0, 0, 0, .08); }
 .movo-app.movo-app .hero-tabs button[aria-selected="false"] { background: transparent; box-shadow: none; }
+
+/* Header buttons start the same distance from the top on Home, Wallet, Transactions and Menu (owner, 2026-11-12):
+   on Home they align to the top of the header instead of centring against the mascot. */
+.movo-app.movo-app.movo-app.movo-app.movo-app .screen .screen-header.home-header .home-utility-pill { align-self: start !important; margin-top: 0 !important; }
+/* With a hero, its top padding puts the icons where the other pages' header buttons are (screen padding + 10.5px). */
+.movo-app.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) { padding-top: calc(var(--hero-pull) + 10px) !important; }
+/* Header buttons align to the top of their row, so a taller Plus button never shifts the icons. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header .header-actions { align-items: flex-start !important; }

@@ -35,7 +35,8 @@ const rtl = () => typeof document !== 'undefined' && document.documentElement.di
  * hold any box to start, drag the corner handle to resize, swipe a chart sideways to change its style,
  * drag the grip to move, tap − to remove. Hidden boxes wait in a tray at the bottom.
  */
-export default function EditableBoxes({ boxes, layout = {}, editing, onChange, onDone, onEdit, title }) {
+/* `skip`: boxes the page shows elsewhere while not editing (Home draws Total balance inside its pinned header). */
+export default function EditableBoxes({ boxes, layout = {}, editing, onChange, onDone, onEdit, title, skip = [] }) {
   const ordered = arrange(boxes.filter(b => b.node), layout);
   const hidden = new Set(layout.hidden || []);
   const visible = ordered.filter(b => !hidden.has(b.id));
@@ -133,7 +134,7 @@ export default function EditableBoxes({ boxes, layout = {}, editing, onChange, o
   };
 
   if (!editing) {
-    return visible.map(b => <div key={b.id} className={`box-slot size-${sizeOf(b, layout)}`} onPointerDown={startPress} onPointerMove={movePress} onPointerUp={endPress} onPointerCancel={endPress} onPointerLeave={endPress}
+    return visible.filter(b => !skip.includes(b.id)).map(b => <div key={b.id} className={`box-slot size-${sizeOf(b, layout)}`} onPointerDown={startPress} onPointerMove={movePress} onPointerUp={endPress} onPointerCancel={endPress} onPointerLeave={endPress}
       onContextMenu={(e) => { if (onEdit && lastType.current !== 'mouse') e.preventDefault(); }}>{render(b, layout)}</div>);
   }
   return <>

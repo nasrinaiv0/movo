@@ -282,9 +282,12 @@ describe('MOVO finance frontend', () => {
   });
 
   test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
-    const header = () => container.querySelector('.home-header');
-    expect(header().className).toContain('home-hero');
+    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
+    const header = () => container.querySelector('.home-hero-block');
     expect(header().className).toContain('hero-scenery');
+    expect(header().querySelector('.home-header')).not.toBeNull();
+    expect(header().querySelector('.balance-card')).not.toBeNull();
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
     openProfile(container);
     clickButton(container, 'Settings');
     act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
@@ -1192,5 +1195,30 @@ describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
     swipe(4, 300);
     expect(container.querySelector('.sheet-backdrop')).toBeNull();
     expect(active()).toBe('Wallet');
+  });
+});
+
+describe('Home header block (owner, 2026-11-12)', () => {
+  let container; let root;
+  const start = (prefs) => {
+    window.localStorage.clear(); seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true, ...prefs }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    act(() => root.render(<App />));
+  };
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
+
+  test('when another box comes first, the header stands alone with the background and Total balance stays in the list', () => {
+    start({ layouts: { home: { order: ['summary', 'balance'] } } });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(container.querySelector('.home-header').className).toContain('home-hero');
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
+  });
+
+  test('with no background the header is plain and nothing is pinned with it', () => {
+    start({ homeHero: 'plain' });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(container.querySelector('.home-header').className).not.toContain('home-hero');
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
   });
 });

@@ -1,3 +1,7 @@
+## 2026-11-12 — Pinned header down to Total balance, new search icon, equal header spacing
+
+Owner requests: the search icon has a bigger lens and a shorter handle. The pinned Home header now reaches down to the bottom of Total balance, which is drawn inside it. Header buttons start 28 px from the top on Home, Wallet, Transactions and Menu (measured; was 44 on Home). Validation: Jest 206 suites / 1,249 tests, tsc, strict build, browser measurements (see `docs/engineering/updates/2026-11-12-header-block-search-icon.md`).
+
 ## 2026-11-12 — Pinned Home header with scenery, zodiac and glow backgrounds
 
 Owner request: the Home header stays pinned at the top with rounded bottom corners over a background. It defaults to a scenery picture for everyone; Pro and Pro+ can pick all 12 zodiac constellations (original generated SVG) or 6 glowing backgrounds in Settings → Appearance → Home header. Free users see them locked; choosing one opens plans. Validation: Jest 206 suites / 1,247 tests, tsc, strict build, light/dark browser screenshots (see `docs/engineering/updates/2026-11-12-home-header-hero.md`). Not run: real phones.
