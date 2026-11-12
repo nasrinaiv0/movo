@@ -1,3 +1,19 @@
+## 2026-11-12 — Offline/online sync: local first, silent cloud sync, back-online prompt
+
+Owner request: online, input → local → dashboard → silent cloud sync; offline, input → local → dashboard; back online, a setting chooses automatic sync or asking first with a professional pop-up.
+- **Online:** a new or edited transaction (form, NasrinAI chat, card purchase or payment) is committed on the device and shown at once, and the cloud upload finishes in the background.
+  - A confirmed upload swaps in the server copy.
+  - A dropped connection falls back to the existing offline path.
+  - A server refusal removes the row and explains why.
+  - Form mistakes are still caught first. A subscription payment still waits for the cloud.
+- **Offline:** unchanged.
+- **Back online:** new setting, Settings → Data & Sync → "Sync automatically when back online" (off by default).
+  - Off: a centered pop-up, "You're back online", asks to sync the N changes made offline, with "Not now", "Sync now" and an "Always sync automatically" option. "Not now" keeps a small reminder.
+  - On: the changes upload by themselves, one attempt per reconnection, falling back to the pop-up if it can't finish.
+  - Uploads always go through the same verified sync (sign-in, plan, conflict checks).
+
+No RLS, policy or server changes. Validation: new writer, pop-up and end-to-end tests; Jest 223 suites / 1,342 tests, `tsc`, strict build; browser check offline → online in light and dark. Not run: real devices. See `docs/engineering/updates/2026-11-12-offline-online-sync.md`.
+
 ## 2026-11-12 — Android sign-in: "not configured" fixed for every app build
 
 Owner report: Google and email sign-in in the Android app said "not configured".

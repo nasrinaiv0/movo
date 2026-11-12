@@ -136,7 +136,7 @@ export async function listTransactions({ from, to, accountId } = {}) {
     return query;
   });
 }
-export async function createTransaction(transaction, userId) {
+export async function createTransaction(transaction, userId, { onLocal } = {}) {
   if (!userId) throw new Error('A signed-in user is required.');
   const amount = Number(transaction?.amount);
   const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
@@ -164,7 +164,7 @@ export async function createTransaction(transaction, userId) {
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
   };
   const recordId = payload.id || globalThis.crypto.randomUUID();
-  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId});
+  return writeHybridFinance({group:'transactions',kind:'create',recordId,payload,ownerId:userId,onLocal});
 }
 export async function deleteTransaction(transactionId) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
@@ -174,7 +174,7 @@ export function watchAuth(callback) {
   return requireClient().auth.onAuthStateChange((_event, session) => callback(session));
 }
 
-export async function updateTransaction(transactionId, transaction) {
+export async function updateTransaction(transactionId, transaction, { onLocal } = {}) {
   if (typeof transactionId !== 'string' || !transactionId) throw new Error('A transaction ID is required.');
   const amount = Number(transaction?.amount);
   const merchant = typeof transaction?.merchant === 'string' ? transaction.merchant.trim() : '';
@@ -199,7 +199,7 @@ export async function updateTransaction(transactionId, transaction) {
     receipt_path: typeof transaction.receipt_path === 'string' ? transaction.receipt_path.slice(0, 500) || null : null,
     occurred_at: occurredAt,
   };
-  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update});
+  return writeHybridFinance({group:'transactions',kind:'update',recordId:transactionId,payload:update,onLocal});
 }
 
 export async function updateAccount(accountId, account) {

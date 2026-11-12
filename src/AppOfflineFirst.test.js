@@ -17,6 +17,10 @@ const EXISTING = '123e4567-e89b-42d3-a456-426614174002';
 
 const mockNet = { down: false };
 const mockCalls = { create: [], insert: [], remove: [], signOut: 0 };
+// 'offline': every cloud create fails like a lost connection. 'gate': local first, the cloud answers only when the
+// test releases mockGate (resolve) or refuses it (reject).
+const mockCreate = { mode: 'offline' };
+const mockGate = {};
 const mockServer = { accounts: [], transactions: [] };
 const mockOffline = () => Object.assign(new TypeError('Failed to fetch'), {});
 const mockCopy = value => JSON.parse(JSON.stringify(value));
@@ -44,7 +48,14 @@ jest.mock('./lib/financeRepository', () => {
     listTransactions: read(() => mockServer.transactions),
     listBudgets: read(() => []),
     listAutomationInbox: read(() => []),
-    createTransaction: async row => { mockCalls.create.push(row); throw mockOffline(); },
+    createTransaction: async (row, _owner, options = {}) => {
+      mockCalls.create.push(row);
+      if (mockCreate.mode !== 'gate') throw mockOffline();
+      options.onLocal?.({ ...row });
+      await new Promise((resolve, reject) => { mockGate.resolve = resolve; mockGate.reject = reject; });
+      const saved = { ...row, user_id: '123e4567-e89b-42d3-a456-426614174000', source: 'manual', created_at: '2026-11-12T00:00:00Z', updated_at: mockStamp() };
+      mockServer.transactions.push(saved); return saved;
+    },
     deleteTransaction: async id => { if (mockNet.down) throw mockOffline(); mockServer.transactions = mockServer.transactions.filter(t => t.id !== id); return id; },
     updateTransaction: async () => { throw mockOffline(); },
     createAccount: async () => { throw mockOffline(); },
@@ -110,6 +121,7 @@ describe('offline-first with Cloud Sync on', () => {
   beforeEach(async () => {
     await clearHybridOwner(OWNER);
     mockNet.down = false; mockRevision = 0; mockCalls.create = []; mockCalls.insert = []; mockCalls.remove = []; mockCalls.signOut = 0;
+    mockCreate.mode = 'offline'; mockGate.resolve = null; mockGate.reject = null;
     mockServer.accounts = [{ id: ACCOUNT, user_id: OWNER, name: 'BPI', account_type: 'bank', institution_name: 'BPI', currency: 'PHP', opening_balance: 5000, is_archived: false, display_order: 0, created_at: '2026-11-01T00:00:00Z', updated_at: '2026-11-01T00:00:00Z' }];
     mockServer.transactions = [{ id: EXISTING, user_id: OWNER, account_id: ACCOUNT, transfer_to_account_id: null, transaction_type: 'expense', amount: 120, currency: 'PHP', merchant: 'Bakery', category: 'Food', note: null, occurred_at: '2026-11-08T03:00:00+00:00', source: 'manual', external_reference: null, is_pending: false, created_at: '2026-11-08T03:00:00Z', updated_at: mockStamp(), payment_reference: null, receipt_note: null, receipt_path: null, schedule_id: null }];
     window.localStorage.clear();
@@ -167,8 +179,17 @@ describe('offline-first with Cloud Sync on', () => {
     expect(loadOfflineWorkspace(OWNER).dirty).toBe(true);
     expect(loadOfflineWorkspace(OWNER).requiresManualSync).toBe(true);
     expect(mockCalls.insert).toHaveLength(0);
-    await click(container, 'Sync local to cloud');
+    // A centered pop-up asks first (owner, 2026-11-12); nothing uploads until "Sync now".
+    await waitFor(() => container.querySelector('.reconnect-sheet'), 'the reconnect pop-up');
+    const prompt = container.querySelector('.reconnect-sheet');
+    expect(prompt.textContent).toContain('You’re back online');
+    expect(prompt.textContent).toMatch(/sync the (2 changes|changes) you made offline to your MOVO account\?/);
+    expect(prompt.textContent).toContain('Until you sync, these changes stay safely on this device.');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 100)); });
+    expect(mockCalls.insert).toHaveLength(0);
+    await click(container, 'Sync now');
     await waitFor(() => loadOfflineWorkspace(OWNER).dirty === false, 'the approved upload');
+    expect(container.querySelector('.reconnect-sheet')).toBeNull();
     expect(mockCalls.insert).toEqual([[expect.objectContaining({ id: sentId, merchant: 'Grab' }), OWNER]]);
     expect(mockCalls.remove).toEqual([[EXISTING, expect.any(String), OWNER]]);
     expect(mockServer.transactions.map(t => t.id)).toEqual([sentId]);
@@ -221,6 +242,82 @@ describe('offline-first with Cloud Sync on', () => {
     const copy = loadOfflineWorkspace(OWNER);
     expect(copy.dirty).toBe(false);
     expect(copy.pendingDeletions).toEqual({});
+  });
+
+  const logInChat = async (text) => {
+    await nav(container, 'NasrinAI');
+    const box = container.querySelector('textarea#movo-ai-prompt');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set.call(box, text);
+      box.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => { container.querySelector('form.movo-ai-composer').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+  };
+
+  test('"Not now" keeps the offline change on this device with a reminder; syncing later uploads it', async () => {
+    mockNet.down = true;
+    await logInChat('Spent 250 on Grab');
+    await waitFor(() => loadOfflineWorkspace(OWNER)?.dirty === true, 'the offline save');
+    mockNet.down = false;
+    await act(async () => { window.dispatchEvent(new Event('online')); });
+    await waitFor(() => container.querySelector('.reconnect-sheet'), 'the reconnect pop-up');
+    expect(container.querySelector('.reconnect-sheet').textContent).toContain('the 1 change you made offline');
+    expect(Array.from(container.querySelectorAll('button')).filter(b => b.textContent.trim() === 'Not now').length).toBeGreaterThanOrEqual(1);
+    await act(async () => { container.querySelector('.reconnect-sheet .reconnect-actions .secondary-button').click(); });
+    expect(container.querySelector('.reconnect-sheet')).toBeNull();
+    // The change stays on this device, nothing is uploaded, and a small reminder offers to sync later.
+    expect(loadOfflineWorkspace(OWNER).dirty).toBe(true);
+    expect(mockCalls.insert).toHaveLength(0);
+    expect(container.querySelector('.movo-sync-restored')).not.toBeNull();
+    await click(container, 'Sync local to cloud');
+    await waitFor(() => loadOfflineWorkspace(OWNER).dirty === false, 'the later upload');
+    expect(mockCalls.insert).toEqual([[expect.objectContaining({ merchant: 'Grab' }), OWNER]]);
+  });
+
+  test('with "Sync automatically when back online" on, offline changes upload by themselves, with no pop-up', async () => {
+    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, autoSyncOnReconnect: true }));
+    act(() => root.unmount());
+    root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+    await waitFor(() => container.querySelector('.bottom-nav button[aria-label="NasrinAI"]'), 'the reloaded app');
+    mockNet.down = true;
+    await logInChat('Spent 250 on Grab');
+    await waitFor(() => loadOfflineWorkspace(OWNER)?.dirty === true, 'the offline save');
+    mockNet.down = false;
+    await act(async () => { window.dispatchEvent(new Event('online')); });
+    await waitFor(() => loadOfflineWorkspace(OWNER).dirty === false, 'the automatic upload', 6000);
+    expect(mockCalls.insert).toEqual([[expect.objectContaining({ merchant: 'Grab' }), OWNER]]);
+    expect(container.querySelector('.reconnect-sheet')).toBeNull();
+    expect(container.querySelector('.movo-sync-restored')).toBeNull();
+  });
+
+  test('online, a new record shows at once (saved on this device) and the cloud upload finishes silently', async () => {
+    mockCreate.mode = 'gate';
+    await logInChat('Spent 180 on Coffee');
+    // Shown before the cloud has answered.
+    await waitFor(() => container.querySelectorAll('.chat-log-row').length === 1, 'the chat log card');
+    expect(mockCalls.create).toHaveLength(1);
+    expect(mockServer.transactions.some(t => t.merchant === 'Coffee')).toBe(false);
+    await nav(container, 'Transactions');
+    expect(container.textContent).toContain('Coffee');
+    // The cloud confirms later: still shown once, no prompt, nothing left to sync.
+    await act(async () => { mockGate.resolve(); });
+    await waitFor(() => mockServer.transactions.some(t => t.merchant === 'Coffee'), 'the background upload');
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 50)); });
+    expect(container.textContent.match(/Coffee/g).length).toBeGreaterThanOrEqual(1);
+    expect(container.querySelector('.reconnect-sheet')).toBeNull();
+  });
+
+  test('online, a change the server refuses is taken off the screen and explained', async () => {
+    mockCreate.mode = 'gate';
+    await logInChat('Spent 180 on Coffee');
+    await waitFor(() => container.querySelectorAll('.chat-log-row').length === 1, 'the chat log card');
+    await nav(container, 'Transactions');
+    expect(container.textContent).toContain('Coffee');
+    await act(async () => { mockGate.reject(Object.assign(new Error('Your plan does not allow cloud writes.'), { code: '42501' })); });
+    await waitFor(() => !container.textContent.includes('Coffee'), 'the rollback');
+    expect(container.querySelector('.toast').textContent).toContain('This change could not be saved to your MOVO account: Your plan does not allow cloud writes.');
   });
 
   test('logging out asks first, warns about unsynced records offline, keeps them, and opens sign-in', async () => {

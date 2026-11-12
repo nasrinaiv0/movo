@@ -8876,3 +8876,21 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app.movo-app .plan-tile .plan-tile-badge.is-save { background: var(--pp-green, #1f9d5c); color: #fff; font-weight: 700; letter-spacing: .01em; animation: plan-save-in var(--dur-base, 220ms) ease-out both; }
 @keyframes plan-save-in { from { opacity: 0; transform: translate(-50%, 3px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (prefers-reduced-motion: reduce) { .movo-app.movo-app.movo-app.movo-app .plan-tile .plan-tile-badge.is-save { animation: none; } }
+/* Back online: sync prompt (owner, 2026-11-12). A centered, solid pop-up in the same style as the transaction
+   details: icon, title, the question, a reassurance line, the "always" option and two 48px buttons. */
+.movo-app.movo-app .sheet.sheet-center.reconnect-sheet { max-width: 380px; padding: 24px 20px 20px; border: 0 !important; background: var(--card-solid, #fff) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; box-shadow: 0 18px 50px -12px rgba(16, 24, 40, .28) !important; }
+.movo-app.movo-app.movo-app.theme-dark .sheet.sheet-center.reconnect-sheet { box-shadow: 0 24px 60px -10px rgba(0, 0, 0, .7) !important; }
+.movo-app.movo-app .sheet.reconnect-sheet::before, .movo-app.movo-app .sheet.reconnect-sheet::after { opacity: 0 !important; }
+.movo-app.movo-app .sheet-backdrop.center:has(> .reconnect-sheet) { align-items: center; padding: max(16px, env(safe-area-inset-top), env(safe-area-inset-bottom)) 16px; }
+.movo-app .reconnect-hero { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.movo-app .reconnect-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: var(--r-tile, 30%); background: color-mix(in srgb, var(--accent, #10a866) 14%, transparent); color: var(--accent-ink, var(--accent, #10a866)); }
+.movo-app .reconnect-hero h2 { margin: 4px 0 0; font-size: 19px; font-weight: 700; color: var(--text); }
+.movo-app .reconnect-hero p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--text); max-width: 32ch; }
+.movo-app .reconnect-hero small { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.movo-app .reconnect-always { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 14px 0 0; padding: 4px 12px; border-radius: 14px; background: var(--field); font-size: 13px; line-height: 1.35; color: var(--text); cursor: pointer; }
+.movo-app .reconnect-always input { flex: none; width: 20px; height: 20px; margin: 0; accent-color: var(--accent, #10a866); }
+.movo-app.movo-app .reconnect-actions { margin-top: 14px; gap: 10px; }
+.movo-app.movo-app .reconnect-actions > button { min-height: 48px; border-radius: 16px; font-size: 15px; }
+.movo-app.movo-app .reconnect-actions > .secondary-button { background: var(--field) !important; color: var(--text) !important; box-shadow: none !important; border: 0 !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app .sheet.reconnect-sheet .reconnect-actions > .secondary-button,
+.movo-app.movo-app.movo-app.movo-app.movo-app .sheet.reconnect-sheet .reconnect-actions > .secondary-button :is(span, svg) { color: var(--text) !important; }
