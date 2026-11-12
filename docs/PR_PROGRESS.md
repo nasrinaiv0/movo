@@ -1,3 +1,11 @@
+## 2026-11-12 — Rate MOVO reminder (App Store / Google Play)
+
+Owner request: remind people to rate MOVO. The iPhone and Android apps now ask the store's own rating dialog to appear: Apple's StoreKit review request (`AppStore.requestReview` on iOS 16+, `SKStoreReviewController` on 15) and Google Play In-App Review. Both stores require their own dialog (Apple guideline 5.6.1 disallows custom review prompts, and Google asks apps not to pre-ask), so MOVO adds no screen of its own and only chooses the moment.
+
+The request comes about 1.8 s after a new record is saved, never over a sheet, the lock screen or setup. It needs at least 7 days with MOVO, 5 different days of use and 10 records, and then at most once every 120 days and 3 times a year. The stores may still show nothing and never report a rating. The counters stay on the device (`movo.reviewPrompt.v1`, removed by Clear All Data); the website never asks.
+
+No legal text change: MOVO collects and shares nothing new. Validation: Jest 214 suites / 1,301 tests, tsc, strict build. Native compile runs in CI (`build-ios`, `native-android`). See `docs/engineering/updates/2026-11-12-rate-movo-reminder.md`. Not run: real devices or store review dialogs (they appear only in installed TestFlight / Play builds).
+
 ## 2026-11-12 — Zodiac Home headers follow the owner's reference video (softer)
 
 Owner request with a reference video: zodiac headers now use the same indigo-purple night for every sign. A thin gold zodiac wheel carries all twelve symbols, with the person's sign at the top and brightest; they are drawn as vector paths because phones may render the Unicode symbols as colour emoji. A flowing purple ribbon of light replaces the hills, and the slow drifting light over zodiac headers is lavender. Opacity is kept lower than the reference, as asked. The element now only tints the ribbon's far end. Validation: Jest 212 suites / 1,294 tests, tsc, strict build, browser screenshots of several signs (see `docs/engineering/updates/2026-11-12-zodiac-reference-video.md`). Not run: real devices.

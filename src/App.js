@@ -111,6 +111,7 @@ import { ACCENTS } from './screens/Settings';
 import { buildCsv } from './lib/csvExport';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl, isNativeApp, nativePlatform } from './lib/platform';
+import { noteActiveDay, readReviewState, requestStoreReview, shouldAskForReview, writeReviewState } from './lib/reviewPrompt';
 import { nativeAutomationKey, sanitizeNativePreferenceCache, saveNativeAutomationKey } from './lib/nativeAutomationKey';
 import { recordPaymentAttempt } from './lib/paymentAttempts';
 import { listBills, listOccurrences, createBill } from './lib/billsRepository';
@@ -403,6 +404,13 @@ function App() {
   const layout = useLayout();
   const [burst, setBurst] = useState(null);
   const celebrate = useCallback((label, badge) => setBurst({ id: Date.now(), label, badge }), []);
+  // Rate MOVO (lib/reviewPrompt.js): after a new record is saved, at a good moment, the phone apps ask the store's own
+  // rating dialog to appear. It waits for the save celebration to finish and never shows over a sheet or the lock.
+  const reviewGateRef = useRef({ ready: false, sheet: false });
+  const maybeAskForReview = useCallback((records) => {
+    if (!shouldAskForReview({ platform: nativePlatform(), state: readReviewState(), records })) return;
+    window.setTimeout(() => { const gate = reviewGateRef.current; if (gate.ready && !gate.sheet) requestStoreReview(); }, 1800);
+  }, []);
   const endBurst = useCallback(() => setBurst(null), []);
   const dupAck = useRef('');
   const notify = useCallback((msg) => { setToast(msg); window.clearTimeout(window.__movoToast); window.__movoToast = window.setTimeout(() => setToast(''), 2800); }, []);
@@ -1100,6 +1108,8 @@ function App() {
   const legalAccepted = hasAcceptedLegal(prefs);
   const setupDone = !setupGateOn || (!!prefs.onboarded && legalAccepted);
   const setupDoneRef = useRef(setupDone);
+  // Counts the days MOVO is used (device only) for the Rate MOVO timing.
+  useEffect(() => { if (setupDone) writeReviewState(noteActiveDay(readReviewState(), todayKey)); }, [setupDone, todayKey]);
   setupDoneRef.current = setupDone;
   const go = useCallback((next, params = {}) => {
     if (!setupDoneRef.current && !SETUP_SCREENS.has(next)) return;
@@ -1312,7 +1322,7 @@ function App() {
           if (!editingId) markFresh(row.id);
           setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
           notify(editingId ? 'Transaction updated in your MOVO account.' : 'Transaction saved to your MOVO account.');
-          if (!editingId) celebrate();
+          if (!editingId) { celebrate(); maybeAskForReview(rawTxs.length + 1); }
         }
       }
       if (!online) {
@@ -1329,7 +1339,7 @@ function App() {
         if (!editingId) markFresh(row.id);
         setRawTxs(cur => editingId ? cur.map(x => x.id === editingId ? transactionRow : x) : [transactionRow, ...cur]);
         notify(cloudMode ? tr('No connection. Saved on this device; it uploads automatically when you are back online.') : editingId ? 'Transaction updated on this device.' : 'Saved on this device only.');
-        if (!editingId) celebrate();
+        if (!editingId) { celebrate(); maybeAskForReview(rawTxs.length + 1); }
       }
       if (paidSub && subscriptionNextDue) {
         if (online && session?.user?.id && savedTransaction?.id) {
@@ -2028,6 +2038,7 @@ function App() {
 
   /* ---------- app lock: on open, and again after MOVO has been in the background for a minute ---------- */
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
+  reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   useEffect(() => {
     let hiddenAt = 0;
     const onVis = () => {
