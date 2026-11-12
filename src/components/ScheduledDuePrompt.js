@@ -164,7 +164,7 @@ export default function ScheduledDuePrompt({ session, accountsView = [], subscri
         for(const part of parts){
           const partAmount=Number(part.amount);
           if(partAmount>remaining+0.005)throw new Error(tr('A split cannot exceed the remaining bill balance.'));
-          await recordBillPayment({occurrence_id:item.id,amount:partAmount,method:'recorded',account_id:part.account_id,paid_at:`${today()}T12:00:00Z`,key:part.key||paymentKey(item.id,nonce())});
+          await recordBillPayment({occurrence_id:item.id,amount:partAmount,method:'recorded',account_id:part.account_id,paid_at:new Date().toISOString(),key:part.key||paymentKey(item.id,nonce())});
           remaining=Math.max(0,Math.round((remaining-partAmount)*100)/100);setAmount(String(remaining));
           pending=pending.filter(x=>x.id!==part.id);
           setSplits(pending);

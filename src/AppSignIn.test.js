@@ -59,6 +59,7 @@ const click = async (container, name) => {
 const nav = (container, name) => click(container, name);
 
 describe('sign-in session handoff', () => {
+  jest.setTimeout(15000);
   let container; let root;
   const session = { user: { id: OWNER, email: 'owner@example.test' }, access_token: 'complete-session-token' };
   beforeEach(async () => {
@@ -75,14 +76,19 @@ describe('sign-in session handoff', () => {
   });
   afterEach(() => { act(() => root.unmount()); container.remove(); localStorage.clear(); });
 
-  test('auth events recover the owner cache before rendering, without waiting for cloud entitlement', async () => {
+  test('auth events recover the owner cache; the first screen waits briefly for the cloud, then shows the saved copy', async () => {
     const working = { financial_accounts: [{ id: ACCOUNT, user_id: OWNER, name: 'Saved bank', account_type: 'bank', currency: 'PHP', opening_balance: 5000 }], transactions: [] };
     saveOfflineWorkspace(OWNER, { version: 2, owner: OWNER, baseline: working, working, dirty: false, lastConfirmedAt: '2026-11-10T00:00:00Z' });
     await act(async () => { mockAuthCallback('SIGNED_IN', session); await new Promise(resolve => setTimeout(resolve, 10)); });
     expect(container.textContent).toContain('Preparing your secure MOVO space');
     // The real entitlement hook has now rerendered with a complete session.
     // Previously its changing callback tore down the auth effect mid-recovery.
-    await act(async () => { mockReleaseRecovery(); });
+    await act(async () => { mockReleaseRecovery(); await new Promise(resolve => setTimeout(resolve, 50)); });
+    // Opening MOVO syncs first (owner, 2026-11-11): the cloud has not answered, so the launch screen stays…
+    expect(container.querySelector('.bottom-nav')).toBeNull();
+    expect(container.textContent).toContain('Preparing your secure MOVO space');
+    // …for at most four seconds, then the saved copy shows while the check continues.
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 4100)); });
     expect(container.querySelector('.bottom-nav')).not.toBeNull();
     expect(container.textContent).not.toContain('Preparing your secure MOVO space');
     expect(mockGetEntitlements).toHaveBeenCalledTimes(1);
@@ -92,6 +98,20 @@ describe('sign-in session handoff', () => {
     await act(async () => { mockAuthCallback('TOKEN_REFRESHED', { ...session, access_token: 'renewed-token' }); await new Promise(resolve => setTimeout(resolve, 10)); });
     expect(container.querySelector('.bottom-nav')).not.toBeNull();
     expect(mockGetEntitlements).toHaveBeenLastCalledWith({ ...session, access_token: 'renewed-token' });
+  });
+
+  test('with no connection at all, the saved copy shows at once instead of waiting', async () => {
+    const working = { financial_accounts: [{ id: ACCOUNT, user_id: OWNER, name: 'Saved bank', account_type: 'bank', currency: 'PHP', opening_balance: 5000 }], transactions: [] };
+    saveOfflineWorkspace(OWNER, { version: 2, owner: OWNER, baseline: working, working, dirty: false, lastConfirmedAt: '2026-11-10T00:00:00Z' });
+    const online = Object.getOwnPropertyDescriptor(window.navigator, 'onLine');
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => false });
+    try {
+      await act(async () => { mockAuthCallback('SIGNED_IN', session); await new Promise(resolve => setTimeout(resolve, 10)); });
+      await act(async () => { mockReleaseRecovery(); await new Promise(resolve => setTimeout(resolve, 50)); });
+      expect(container.querySelector('.bottom-nav')).not.toBeNull();
+    } finally {
+      if (online) Object.defineProperty(window.navigator, 'onLine', online); else delete window.navigator.onLine;
+    }
   });
 
   test('a different owner cannot see another account cache while first cloud load is pending', async () => {

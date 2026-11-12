@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { sendEmailCode, verifyEmailCode, signInWithApple, signInWithGoogle } from '../lib/financeRepository';
 import { supabaseConfigured } from '../lib/supabaseClient';
+import { authErrorCategory } from '../lib/authErrorCategory';
+import { nativePlatform } from '../lib/platform';
 import { MovoMark } from './MovoLogo';
 import './AuthPanel.css';
 import { t as tr, rich } from '../lib/i18n';
@@ -57,8 +59,30 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     try {
       await (provider === 'apple' ? signInWithApple() : signInWithGoogle());
       // The browser is redirected to the provider; nothing else to do here.
-    } catch {
-      setError(provider === 'apple' ? tr('Apple sign-in could not start. Please try again.') : tr('Google sign-in could not start. Check the OAuth provider configuration and try again.'));
+    } catch (cause) {
+      const kind = authErrorCategory(cause);
+      if (kind === 'android-browser') {
+        setError(tr('Android could not open secure sign-in. Enable Chrome or another supported browser and try again.'));
+      } else if (kind === 'native-secure-storage') {
+        setError(tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.'));
+      } else if (kind === 'oauth-not-configured' && nativePlatform() === 'android' && provider === 'google') {
+        setError(tr('Google sign-in could not start in the Android app. Check the app return link and try again.'));
+      } else if (kind === 'oauth-not-configured') {
+        setError(provider === 'google'
+          ? tr('Google sign-in is not enabled for MOVO. Check the Google provider settings or use email sign-in.')
+          : tr('Apple sign-in is not enabled for MOVO. Check the Apple provider settings or use email sign-in.'));
+      } else if (kind === 'invalid-api-key') {
+        setError(tr('This MOVO app build has an invalid cloud configuration. Install an updated version or contact support.'));
+      } else if (kind === 'rate-limited') {
+        setError(tr('Too many sign-in attempts. Please wait a few minutes before trying again.'));
+      } else if (kind === 'network') {
+        setError(tr('Could not connect to MOVO sign-in. Check your internet connection and try again.'));
+      } else {
+        setError(provider === 'apple' ? tr('Apple sign-in could not start. Please try again.') : tr('Google sign-in could not start. Check the OAuth provider configuration and try again.'));
+      }
+    } finally {
+      // Native browsers return control without necessarily returning a callback
+      // (for example when the user closes Google sign-in); never strand the UI.
       setBusy('');
     }
   }
@@ -73,8 +97,21 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       await sendEmailCode(email);
       setStep('code'); setCode(''); lastAttemptRef.current = ''; setWait(RESEND_SECONDS);
       setNotice(tr('We sent a sign-in code to {email}.', { email: email.trim() }));
-    } catch {
-      setError(tr('We could not send a code right now. Wait a minute and try again.'));
+    } catch (cause) {
+      const kind = authErrorCategory(cause);
+      if (kind === 'native-secure-storage') {
+        setError(tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.'));
+      } else if (kind === 'email-delivery') {
+        setError(tr('MOVO could not deliver email codes. The email provider or OTP template needs attention. Please try again later.'));
+      } else if (kind === 'invalid-api-key') {
+        setError(tr('This MOVO app build has an invalid cloud configuration. Install an updated version or contact support.'));
+      } else if (kind === 'rate-limited') {
+        setError(tr('Too many code requests. Please wait a few minutes before trying again.'));
+      } else if (kind === 'network') {
+        setError(tr('Could not connect to MOVO sign-in. Check your internet connection and try again.'));
+      } else {
+        setError(tr('We could not send a code right now. Wait a minute and try again.'));
+      }
     } finally { setBusy(''); }
   }
 
@@ -91,8 +128,19 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     try {
       const result = await verifyEmailCode(email, token);
       onAuthenticated?.(result?.session?.user ?? result?.user);
-    } catch {
-      setError(tr('That code is not valid or has expired. Check it or send a new one.'));
+    } catch (cause) {
+      const kind = authErrorCategory(cause);
+      if (kind === 'native-secure-storage') {
+        setError(tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.'));
+      } else if (kind === 'invalid-api-key') {
+        setError(tr('This MOVO app build has an invalid cloud configuration. Install an updated version or contact support.'));
+      } else if (kind === 'network') {
+        setError(tr('Could not connect to MOVO sign-in. Check your internet connection and try again.'));
+      } else if (kind === 'rate-limited') {
+        setError(tr('Too many sign-in attempts. Please wait a few minutes before trying again.'));
+      } else {
+        setError(tr('That code is not valid or has expired. Check it or send a new one.'));
+      }
     } finally { verificationRef.current = false; setBusy(''); }
   }
 
@@ -116,8 +164,8 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </label>
 
     <div className="auth-providers">
-      <button className="auth-provider auth-apple" type="button" onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}><AppleMark />{busy === 'apple' ? tr('Please wait…') : tr('Continue with Apple')}</button>
-      <button className="auth-provider auth-google" type="button" onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}><GoogleMark />{busy === 'google' ? tr('Please wait…') : tr('Continue with Google')}</button>
+      <button className="auth-provider auth-apple" type="button" aria-label={tr('Continue with Apple')} onClick={() => oauth('apple')} disabled={!!busy || unavailable} {...disabledProps}>{busy === 'apple' ? tr('Please wait…') : rich('Continue with {brand}', { brand: <AppleMark /> })}</button>
+      <button className="auth-provider auth-google" type="button" aria-label={tr('Continue with Google')} onClick={() => oauth('google')} disabled={!!busy || unavailable} {...disabledProps}>{busy === 'google' ? tr('Please wait…') : rich('Continue with {brand}', { brand: <GoogleMark /> })}</button>
     </div>
 
     <div className="auth-divider" aria-hidden="true"><span>{tr('or use your email')}</span></div>
@@ -126,9 +174,17 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       <label className="auth-field"><span>{tr('Email address')}</span><input type="email" autoComplete="email" inputMode="email" maxLength={254} placeholder="you@example.com" required value={email} onChange={e => setEmail(e.target.value)} /></label>
       <button className="auth-submit" type="submit" disabled={!!busy || unavailable} {...disabledProps}>{busy === 'send' ? tr('Sending…') : tr('Email me a code')}</button>
     </form> : <form className={`auth-form auth-code-form${busy === 'verify' ? ' auth-verifying' : ''}`} onSubmit={verify} noValidate>
-      <label className="auth-field"><span>{tr('Code from your email')}</span><input ref={codeRef} className="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={10} placeholder="••••••" value={code} onChange={e => { setCode(e.target.value.replace(/[^\d]/g, '')); setError(''); }} /></label>
-      <div className="auth-code-progress" role="presentation"><div style={{ width: `${Math.min(100, (code.length / 6) * 100)}%` }} /></div>
+      {/* One real field (so the phone can fill the code from the message) drawn as six boxes. */}
+      <label className="auth-field auth-otp-field"><span>{tr('Code from your email')}</span>
+        <span className={`auth-otp${error ? ' has-error' : ''}`}>
+          <input ref={codeRef} className="auth-code auth-otp-input" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]*" maxLength={6} value={code} onChange={e => { setCode(e.target.value.replace(/[^\d]/g, '').slice(0, 6)); setError(''); }} />
+          <span className="auth-otp-boxes" aria-hidden="true">
+            {[0, 1, 2, 3, 4, 5].map(i => <span key={i} style={{ '--i': i }} className={`auth-otp-box${code[i] ? ' filled' : ''}${i === Math.min(code.length, 5) ? ' active' : ''}`}>{code[i] ? <b key={code[i] + i}>{code[i]}</b> : null}</span>)}
+          </span>
+        </span>
+      </label>
       <button className="auth-submit" type="submit" disabled={!!busy} aria-busy={busy === 'verify'}>{busy === 'verify' ? <><span className="auth-verifying-spinner" aria-hidden="true" />{tr('Checking…')}</> : tr('Verify and sign in')}</button>
+      {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
       <div className="auth-code-actions">
         <button type="button" onClick={() => { setStep('email'); setCode(''); setNotice(''); setError(''); }}>{tr('Use a different email')}</button>
         <button type="button" disabled={wait > 0 || !!busy} onClick={() => sendCode()}>{wait > 0 ? tr('Resend in {n}s', { n: wait }) : tr('Resend code')}</button>
@@ -136,7 +192,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     </form>}
 
     {error && <p className="auth-error" role="alert">{error}</p>}
-    {notice && !error && <p className="auth-notice" role="status">{notice}</p>}
+    {notice && !error && step !== 'code' && <p className="auth-notice" role="status">{notice}</p>}
     {unavailable && <p id="auth-config-note" className="auth-config-note" role="note">{tr('Cloud sign-in is unavailable until deployment configuration is completed. You can continue in local-only mode, but cloud account creation and sign-in will not work until configuration is fixed.')}</p>}
 
     {onContinueLocally && <button className="auth-local" type="button" onClick={() => { if (needsConsent()) return; onContinueLocally(); }}>{tr('Continue with this device only')}</button>}

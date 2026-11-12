@@ -3,7 +3,7 @@ import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { isNativeApp } from './platform';
+import { isNativeApp, nativePlatform } from './platform';
 
 /*
  * iOS app services. Every function here is a no-op (or returns the web answer) outside the app, so the website
@@ -86,7 +86,18 @@ export function listenForAppUrls({ onAuth } = {}) {
 
 /** Open a sign-in page in the system browser sheet (Google refuses sign-in inside embedded web views). */
 export async function openAuthBrowser(url) {
-  await Browser.open({ url, presentationStyle: 'popover' });
+  try {
+    // On Android this uses Chrome Custom Tabs, not a Google-blocked embedded
+    // WebView. The Capacitor App plugin receives the exact return deep link.
+    await Browser.open({ url, presentationStyle: 'popover' });
+  } catch (cause) {
+    if (nativePlatform() !== 'android') throw cause;
+    // Do not display or log the provider URL or plugin exception: it may
+    // contain transient OAuth state. The UI shows a safe device-specific fix.
+    const error = new Error('android_auth_browser_unavailable');
+    error.code = 'android_auth_browser_unavailable';
+    throw error;
+  }
 }
 
 /* ---------- Notifications ---------- */
@@ -135,4 +146,20 @@ export async function nativeAuthenticate(reason) {
 export async function setNativeAppIcon(name) {
   if (!isNativeApp()) return false;
   try { await MovoNative.setAppIcon({ name: name || null }); return true; } catch { return false; }
+}
+
+/*
+ * Android back button and back gesture (owner, 2026-11-12). MOVO handles them itself rather than relying on the web
+ * view's history: `onBack()` closes the open sheet or returns to the previous screen and says whether it did; with
+ * nothing left (Home, nothing open) the app moves to the background like other Android apps. No-op elsewhere.
+ */
+export function listenForAndroidBack(onBack) {
+  if (nativePlatform() !== 'android') return () => {};
+  let handle = null; let stopped = false;
+  CapApp.addListener('backButton', () => {
+    let handled = false;
+    try { handled = onBack() === true; } catch { handled = false; }
+    if (!handled) CapApp.minimizeApp().catch(() => CapApp.exitApp().catch(() => {}));
+  }).then(h => { if (stopped) h.remove(); else handle = h; }).catch(() => {});
+  return () => { stopped = true; handle?.remove?.(); };
 }

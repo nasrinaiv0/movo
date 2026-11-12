@@ -13,6 +13,11 @@ export function isNativeApp() {
   try { return Capacitor.isNativePlatform(); } catch { return false; }
 }
 
+/** 'ios' or 'android' inside the app, 'web' otherwise. */
+export function nativePlatform() {
+  try { return Capacitor.isNativePlatform() ? Capacitor.getPlatform() : 'web'; } catch { return 'web'; }
+}
+
 /** The public origin of MOVO: this site on the web, the production site in the app. */
 export function appOrigin() {
   if (isNativeApp() || typeof window === 'undefined') return WEB_ORIGIN;

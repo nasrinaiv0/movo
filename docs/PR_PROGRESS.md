@@ -1,3 +1,82 @@
+## 2026-11-12 — PR #282 Android-only sign-in follow-up (before new implementation)
+- Verified downloaded signed Google Play AAB run #43149512317 against actual project URL and active MOVO public key, Browser plugin and native auth callback. The broken installed Android version still needs identification; web authentication is not being modified.
+- Implemented: Android-only email-link callback to `movo://auth-callback`, safe native Browser/Keystore failure diagnostics, and tests for Android, web and iOS behavioral isolation, plus three new messages translated across 11 languages. Live Android device callback and delivery still not proven; keep website/iOS intact. See `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md`. **No merge or production change.**
+
+
+## 2026-11-12 — PR #282: Google and email sign-in recovery; Android public project binding
+- Investigated MOVO production Auth logs (Google redirects/login and limited email events) and Vercel/GitHub build-env separation; did not assume that Google or email is disabled globally.
+- Hardened signed Android AAB configuration: only the verified MOVO Supabase project origin is accepted, and unsafe/non-anon/mismatched legacy keys are rejected at build time. Public `sb_publishable_...` keys still require manual confirmation that they come from MOVO.
+- Google, Apple, and email OTP now classify provider-disabled, bad API key, SMTP/template, rate-limit and network errors into safe user-facing messages; no raw server errors or secrets are rendered. Native browser cancellation releases the loading state.
+- Added focused guard and UI unit tests plus seven new error messages translated in all 11 supported languages; see `docs/engineering/updates/2026-11-12-google-email-auth-recovery.md` for complete investigation, provider settings and release checklist.
+- First exact-head CI found missing new i18n keys (1,277 / 1,278 tests passed), so seven 11-language catalogue rows were added without weakening translation coverage; added signed Android auth validator tests to Phase 1 PR CI. This PR is **no-merge/no-publish** pending all exact-head CI tests, Vercel preview (Sandbox create returned 402 payment_required), live Supabase Google OAuth + SMTP/template configuration, physical Android Google/OTP login and data isolation verification. Production not modified.
+
+## 2026-11-12 — Fix: Portrait card format preview without a plan
+
+Bug (owner screenshot): on Free, the Portrait tile in Wallet → Sort & view drew a landscape card squeezed into the portrait box, because `CardArt` turns every card landscape without `portraitCards`. The tile now passes `formatSample`, so it shows the true portrait layout as a sample, marked Pro. Choosing it still opens plans, and cards in the wallet stay landscape until Pro is active. Validation: Jest 209 suites / 1,257 tests, tsc, strict build, browser check as Free and Pro+ (see `docs/engineering/updates/2026-11-12-portrait-format-sample.md`). Not run: real devices.
+
+## 2026-11-12 — Home header: edge to edge, grounded ram, glowing Pro edge
+
+Owner request:
+- The pinned Home header now reaches both screen edges (0px). Total balance keeps the page's 18px side space.
+- The ram is bigger (131px; 112px under 390px wide, 100px under 350px). Its top sits 1px under the top inset, and it stands on the Total balance card's top edge instead of floating. Its size and footing stay the same while scrolling. The greeting moves right, from 98px to 141px.
+- Pro and Pro+ get a glowing header edge in their badge colour: gold for Pro, platinum for Pro+. It is brightest at the lower centre and fades up the sides. Free gets no edge.
+
+The ram's happy hop in its idle animation is unchanged; it takes off and lands back on the card.
+
+Validation: Jest 209 suites / 1,256 tests, tsc, strict build, browser screenshots (Pro, Pro+, Free, 360px, right-to-left, a header without Total balance, scrolled). See `docs/engineering/updates/2026-11-12-home-header-edges.md`. Not run: real devices.
+
+## 2026-11-12 — Cloud Sync paused: a calm panel instead of the red banner
+
+Owner request: remove the top banner "Cloud Sync requires verified active access. Local records remain on this device." When a cloud write is refused because the plan is not active, MOVO now shows a centred panel (`components/CloudPlanNotice.js`): "Cloud Sync is paused", records are safe on this device, nothing is deleted, sync restarts once Pro is active, with View plans and Not now. It shows at most once a day (`cloudPlanNoticeDay`), never over another sheet, the setup gate or the lock screen. Other sync errors still use the banner. Translated into 11 languages. Validation: Jest 208 suites / 1,253 tests, tsc, strict build, browser check against the mock cloud with an inactive plan in light and dark (panel shown, no banner) (see `docs/engineering/updates/2026-11-12-cloud-sync-paused-panel.md`). Not run: real devices.
+
+## 2026-11-12 — Faster buttons and pop-ups on phones
+
+Owner report: animations delayed and unresponsive on Android and iPhone. The 3D mascot is capped at 30 fps and pauses while touching, scrolling or with a sheet or dialog open. Glow headers no longer repaint every frame. Press states are instant, sheets and dialogs enter within about 200 ms without staggered content, and the nav highlight moves on touch-down. Measured at 4× CPU: sheets settle in 260–340 ms (was 355–645), and Home has no long tasks with a sheet open. Validation: Jest 207 suites / 1,252 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-tap-and-popup-responsiveness.md`). Not run: real devices.
+
+## 2026-11-12 — Video guide shown in a phone frame
+
+Owner request with a reference image: the tutorial recording now plays on a CSS-drawn modern phone (slim bezel, side buttons, dynamic-island cut-out, status bar, home indicator) on a light stage. Controls sit above and the translated caption and button below. The 9:20 phone shows the whole recording uncropped. Validation: Jest 206 suites / 1,250 tests, tsc, strict build, screenshots at 390/430 px and desktop (see `docs/engineering/updates/2026-11-12-tutorial-phone-frame.md`).
+
+## 2026-11-12 — Zodiac headers in the style of the owner's reference (kept subtle)
+
+The zodiac art now follows the owner's reference, restrained: a night sky with a faint Milky Way, a thin golden zodiac wheel framing the sign's constellation, a few sparkles and gold-rimmed hills above the balance card. There is a new Celestial glow (green and gold) and a soft glow around the balance card on premium headers. Validation: Jest, tsc, strict build, browser screenshots for each element (see `docs/engineering/updates/2026-11-12-celestial-zodiac-art.md`).
+
+## 2026-11-12 — Pinned header down to Total balance, new search icon, equal header spacing
+
+Owner requests: the search icon has a bigger lens and a shorter handle. The pinned Home header now reaches down to the bottom of Total balance, which is drawn inside it. Header buttons start 28 px from the top on Home, Wallet, Transactions and Menu (measured; was 44 on Home). Validation: Jest 206 suites / 1,249 tests, tsc, strict build, browser measurements (see `docs/engineering/updates/2026-11-12-header-block-search-icon.md`).
+
+## 2026-11-12 — Pinned Home header with scenery, zodiac and glow backgrounds
+
+Owner request: the Home header stays pinned at the top with rounded bottom corners over a background. It defaults to a scenery picture for everyone; Pro and Pro+ can pick all 12 zodiac constellations (original generated SVG) or 6 glowing backgrounds in Settings → Appearance → Home header. Free users see them locked; choosing one opens plans. Validation: Jest 206 suites / 1,247 tests, tsc, strict build, light/dark browser screenshots (see `docs/engineering/updates/2026-11-12-home-header-hero.md`). Not run: real phones.
+
+## 2026-11-12 — Plain header buttons and an off-white light background
+
+Owner request: top header icons have no capsule, border or fill and sit closer together (40 px apart, 44 px tall touch areas); only the Plus buttons stay filled, on the web/Android and in the iPhone app's native top bar. Light mode with no scenery uses an off-white `#faf9f6` page. Validation: Jest 204 suites / 1,240 tests, tsc, strict build, light/dark header screenshots (see `docs/engineering/updates/2026-11-12-header-buttons-milk-white.md`). Not run: real phones.
+
+## 2026-11-12 — Back shows the previous page faster
+
+Owner request: going back now shows the previous page at once. Back moves (device Back, swipe, on-screen back arrow) skip the entrance motion, finish nested entrance animations before the first paint, show amounts at their value instead of counting up, and restore the page's scroll position. Measured after Back (production build, mobile emulation): 490–1,090 ms before, 20–120 ms after. Forward navigation is unchanged. Validation: Jest 204 suites / 1,239 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-faster-back.md`).
+
+## 2026-11-12 — Screenshots work on Android
+
+Owner request: screenshots (and screen recording) now work in the Android app; `FLAG_SECURE` is no longer set while MOVO is in use. The recent-apps preview still hides balances: blank via `setRecentsScreenshotEnabled(false)` on Android 13+, and `FLAG_SECURE` only while the app goes to the background on older versions. iOS already allows screenshots and keeps its app-switcher cover. Validation: security contract test updated, Jest, strict build; Android compile in CI `native-android`. Not run: a real Android phone (see `docs/engineering/updates/2026-11-12-android-screenshots.md`).
+
+## 2026-11-12 — Blurred previous-page preview during swipe back
+
+Owner request: while swiping back on iPhone, the previous page now shows underneath, blurred, dimmed and parallaxed, clearing as the swipe completes; it is a static copy taken when the page was left. The returned page opens without an entrance animation at its previous scroll position, with no flash (per-frame browser check). Validation: Jest 203 suites / 1,237 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-swipe-back-preview.md`). Not run: a real iPhone.
+
+## 2026-11-12 — Swipe back on iPhone and Android
+
+Owner request: swipe from the edge to go back. The iPhone app gets an edge swipe (left edge → right, or right edge → left) that follows the finger and closes the open sheet or returns to the previous screen. Android's back button and system gesture now call MOVO's Back directly, and at Home the app moves to the background. Browsers keep their own swipe. Validation: Jest 203 suites / 1,234 tests, tsc, strict build, browser touch check (see `docs/engineering/updates/2026-11-12-swipe-back.md`). Not run: real devices.
+
+## 2026-11-11 — Narrated video guide of the real app and setup gate
+
+Owner request: the video guide now shows the real MOVO interface with invented sample records, narrated in the owner's "MOVO" ElevenLabs voice (62 s, 3.8 MB H.264/AAC in `public/tutorial/`), with translated captions, chapter skipping, a sound button and the animated scenes as fallback. It flashes account deletion, the no-bank-connection and logo/favicon disclosures and the Terms. New setup gate: dashboard and navigation stay locked until video, walkthrough, sign-in choice, free-month panel and the new Terms/Privacy agreement are done; accepting opens the dashboard. Terms §17 added (effective November 11, 2026); acceptance syncs (newest wins). Validation: Jest 201 suites, tsc, strict build, local browser flow (see `docs/engineering/updates/2026-11-11-video-guide-setup-gate.md`). Not run: iOS/Android devices.
+
+## 2026-11-11 — PR #273: Repair Android auth build and native navigation
+
+Fix Android's missing top and bottom bars by limiting iOS Liquid Glass native-chrome substitution to iOS; keep Android's five-tab web dock and page headers. Add Android platform regression coverage. Repair Google Play's signed AAB pipeline by injecting the public Supabase project URL and anon/publishable key from the protected GitHub release environment at CRA build time; reject missing/invalid public values and server-secret roles. Add Node release-guard tests to PR signing CI. No billing, accounting, database, iOS layout, or production release changes. Vercel Sandbox testing was attempted but blocked with HTTP 402 payment_required. CI and real Android testing are required before merging or publishing. Details: `docs/engineering/updates/2026-11-11-android-auth-chrome.md`.
+
 ## 2026-11-11 — PR #271: Repair sign-in startup and owner-cache hydration
 
 Keep the entitlement refresher stable while the auth listener recovers the owner journal, preserve the full Supabase session after OTP verification, and render a recovered confirmed/dirty owner cache while cloud checks continue. Concurrent entitlement checks share a bounded request per owner/token. New accounts keep the initial-load gate and paid cloud access remains server-verified. Regression coverage includes delayed recovery, token refresh, cross-owner isolation and timeout/retry. Local validation: 194 suites / 1,183 tests, typecheck and production build passed. Vercel Sandbox verification is blocked by HTTP 402 payment_required; no production rollout. Details: `docs/engineering/updates/2026-11-11-signin-startup.md`.
@@ -35,6 +114,16 @@ Addressed Google Play native checkout readiness incorrectly requiring Apple IAP 
 Resolved shared-app, plan panel and translation conflicts while retaining verified native referrals and the premium plan UI. Android CI retries only transient Gradle download errors; native compilation failures remain blocking. Evidence, rollback and outstanding gates: `docs/engineering/updates/2026-11-09-pr258-259-integration.md`. Do not enable rewards or apply the production migration without approval.
 
 # MOVO Pull Request Progress Register
+
+## 2026-11-11 — Transactions filter icon and graph by filter, plans panels, sign-in buttons, referral line
+
+The Transactions billing-cycle filter is the filter icon (its label was cut off) and the graph under Total Spent follows it: the days of the chosen cycle, or every cycle for "All". MR DIY shows its logo in the notification detail. The plans panel and Plan & Usage are compact with lighter text, nothing repeated, a fixed bottom action and a tier-coloured glow with calm fade-ins. Apple and Google sign-in buttons share one surface and show "Continue with" plus the company mark. The "n of 10 friends subscribed" line is removed. Scheduled, bill and card payments are logged at the device's current date and time instead of a fixed noon UTC. Pro+ and Pro colour the active bottom-nav icon platinum or gold by default, with a quiet matching highlight (the iOS native dock gets a solid plan tint), with a Navigation accent switch in Appearance. Pro+ platinum is a platinum base with a holographic, iridescent sheen (mark, badge, Pro+ action, iOS app icon) instead of flat lavender. Third pass (owner confirmed): opening MOVO waits for the sync (at most 4s, at once when offline) so the first screen shows the latest records, changing #271's cache-first first paint on purpose; sign-in secondary actions are text links again and the page is more compact. Second pass: the sign-in page is centred and animated with a six-box code entry, solid buttons only and black/white Apple and Google buttons; the filter uses the owner's solid three-bar icon; the device Back button and gesture close sheets and return through the screens visited. An intermittently failing account Money Flow test was made deterministic. The profile photo picker accepts images again (an over-escaped type check rejected every file). Display only; details in `docs/engineering/updates/2026-11-11-transactions-plans-signin-polish.md`.
+
+Validation after merging `main` (main's sync kept): 200 suites / 1,210 tests, typecheck and strict build pass locally. No pull request, preview or CI run yet; WebKit and native builds were not run.
+
+## 2026-11-10 — Section 5 sync work on `claude/movo-ui-motion-refinement-vafrxa` (superseded by #261)
+
+The parallel offline/online sync work on this branch (held changes, conflict review sheet, backoff, status bar) was dropped on 2026-11-11 when the branch was merged with `main`: the owner chose to keep the hybrid sync merged in #261 and the sign-in startup fix from #271. No part of that parallel engine is on the branch any more; its commits remain in the branch history only. What was kept from the branch is listed in the 2026-11-11 entry above.
 
 ## 2026-11-09 — Home balance arrow back at the bottom right (fix for a #263 regression)
 
@@ -698,3 +787,11 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - PR #272 macOS CI first attempt caught a release-contract matcher that recognized unpinned `npm ci` but not the explicitly pinned `npx npm@11.19.1 ci`; corrected the check and its negative test without weakening the lockfile requirement. Codemagic avoids re-running the same tests in the web build stage. Exact-head native and full CI rerun required.
 
 - Follow-up iOS guard source check: ensured the pinned `npm@11.19.1 ci` regular expression uses actual JavaScript regex word boundaries rather than escaped literals. Verify via the next exact-head macOS build; no release approved before successful CI.
+
+## 2026-11-12 — PR #275: Bank and linked-card transactions; e-wallet cards
+- Bank Accounts → Account details now displays a read-only combined transaction history for the bank and all active explicitly linked debit and issuing-bank credit cards, with Bank-only and individual-card filters. A transaction involving both sides of the group appears once; each card's standalone history stays isolated. Transactions tab pages through full history at 50 rows per page.
+- Wallet → Cards includes e-wallets in the existing carousel and My Cards pile while keeping their independent E-Wallets filter, type, balances, QR codes, and sync state. No database, accounting, or RLS migrations.
+- Added source-isolation, transfer dedupe, per-card history, 65-row pagination, and filter tests. Added seven new UI labels translated in all 11 supported non-English languages.
+- Initial GitHub suite: 195/196 suites passed; i18n key coverage was the one failure and has since been fixed; await exact-head verification. Vercel Sandbox returned HTTP 402 payment_required for create/resume: UI test blocked. Release stays unmerged. Details: docs/engineering/updates/2026-11-12-bank-card-activity-ewallet-cards.md.
+
+- **2026-11-12 PR #275 CI infrastructure hardening:** GitHub's two-user PostgreSQL tenant-isolation workflow failed *before executing any SQL* because Ubuntu's apt mirror DNS failed during `postgresql-client` installation. Replaced network-dependent apt installs with short-lived, stdin-safe `psql`, `createdb`, and `dropdb` wrappers that execute the official PostgreSQL 18 client binaries inside the same disposable GitHub Actions service container (no host-mapped database port). The Python tenant-isolation tests remain unchanged and must still complete successfully. Source, shell invocation/STDIN forwarding validated before commit; rerun all required checks on the new exact head, verify preview and preserve NO-MERGE gate until all checks are green.

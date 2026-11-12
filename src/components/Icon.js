@@ -19,7 +19,8 @@ const P = {
   list: <><rect x="4.4" y="2.9" width="15.2" height="18.2" rx="4.2" /><path d="M8.7 8.7h6.6M8.7 12.4h6.6M8.7 16.1h3.6" /></>,
   user: <><circle cx="12" cy="7.8" r="4.2" /><path d="M4.2 19.8c0-2.8 3.5-4.8 7.8-4.8s7.8 2 7.8 4.8" /></>,
   gearSolid: <path fill="currentColor" stroke="none" fillRule="evenodd" d="M9.2 1.6C9.2.7 9.9 0 10.8 0h2.4c.9 0 1.6.7 1.6 1.6v1.5c1.2.4 2.2 1 3.1 1.8l1.4-.5c.8-.3 1.7 0 2.1.8l1.2 2.1c.5.8.2 1.7-.6 2.2l-1.3.8c.2 1.2.2 2.4 0 3.6l1.3.8c.8.5 1.1 1.4.6 2.2l-1.2 2.1c-.4.8-1.3 1.1-2.1.8l-1.4-.5c-.9.8-1.9 1.4-3.1 1.8v1.5c0 .9-.7 1.6-1.6 1.6h-2.4c-.9 0-1.6-.7-1.6-1.6v-1.5c-1.2-.4-2.2-1-3.1-1.8l-1.4.5c-.8.3-1.7 0-2.1-.8l-1.2-2.1c-.5-.8-.2-1.7.6-2.2l1.3-.8a10 10 0 0 1 0-3.6l-1.3-.8c-.8-.5-1.1-1.4-.6-2.2l1.2-2.1c.4-.8 1.3-1.1 2.1-.8l1.4.5c.9-.8 1.9-1.4 3.1-1.8V1.6ZM12 16.2a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4Z" />,
-  search: <><circle cx="10.6" cy="10.6" r="6.6" /><path d="m15.6 15.6 4.6 4.6" /></>,
+  // Owner, 2026-11-12: a bigger lens and a shorter handle.
+  search: <><circle cx="10.4" cy="10.4" r="7.4" /><path d="m15.9 15.9 3.4 3.4" /></>,
   bell: <><path d="M6 10a6 6 0 0 1 12 0c0 4.2 1.2 5.6 2 6.4.5.5.1 1.4-.6 1.4H4.6c-.7 0-1.1-.9-.6-1.4.8-.8 2-2.2 2-6.4Z" /><path d="M9.8 20.4a2.4 2.4 0 0 0 4.4 0" /></>,
   chevron: <path d="m9.5 5.5 6.5 6.5-6.5 6.5" />,
   back: <path d="M14.5 5.5 8 12l6.5 6.5" />,
@@ -57,6 +58,8 @@ const P = {
   help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9.6a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1.1 1-1.1 1.7M12 17h.01" /></>,
   face: <><path d="M4 8.5V7a3 3 0 0 1 3-3h1.5M15.5 4H17a3 3 0 0 1 3 3v1.5M20 15.5V17a3 3 0 0 1-3 3h-1.5M8.5 20H7a3 3 0 0 1-3-3v-1.5" /><path d="M9 10v1M15 10v1M12 10v3h-1M9.5 15.5c1.4 1 3.6 1 5 0" /></>,
   limits: <path d={LIMITS_GAUGE_PATH} fill="currentColor" fillRule="evenodd" stroke="none" />,
+  // Solid filter mark (owner reference, 2026-11-11): three thick bars, each with a round knob set off by a small gap.
+  filterBars: <><g fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"><path d="M2.7 5h5.9M20.2 5h1.1M2.7 12h.3M14.6 12h6.7M2.7 19h5.9M20.2 19h1.1" /></g><g fill="currentColor" stroke="none"><circle cx="14.4" cy="5" r="3.3" /><circle cx="8.8" cy="12" r="3.3" /><circle cx="14.4" cy="19" r="3.3" /></g></>,
   sliders: <><path d="M3.5 5.2h17M3.5 12h17M3.5 18.8h17" /><circle cx="9" cy="5.2" r="2.4" /><circle cx="16" cy="12" r="2.4" /><circle cx="7" cy="18.8" r="2.4" /></>,
   transactionFilter: <><circle cx="12" cy="12" r="12" fill="#1e1e1e" stroke="none" /><g fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h11M18 4h3M3 12h7M14 12h7M3 20h13M20 20h1M14 1v6M10 9v6M16 17v6" /></g></>,
   // Page-specific reference-matched header glyphs. currentColor inherits the accent/theme ink.

@@ -4,10 +4,9 @@ import { t as tr, rich } from '../lib/i18n';
 import { formatDate } from '../lib/format';
 import { MovoMark } from '../components/MovoLogo';
 import legalSupplement from '../lib/legalSupplement.json';
+import { TERMS_EFFECTIVE_DATE, PRIVACY_EFFECTIVE_DATE } from '../lib/legalVersion';
 import SocialLinks from '../components/SocialLinks';
 
-const TERMS_EFFECTIVE_DATE = '2026-11-06T12:00:00Z';
-const PRIVACY_EFFECTIVE_DATE = '2026-11-06T12:00:00Z';
 
 function LegalNavigation({ c, current }) {
   return <nav className="legal-nav" aria-label={tr('Legal documents')}>

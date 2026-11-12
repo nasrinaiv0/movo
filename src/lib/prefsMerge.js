@@ -9,7 +9,8 @@ import { mergeStreak } from './streak';
 const MAPS = ['cardStyles', 'accountStyles', 'layouts', 'cardBankLinks', 'accountQrCodes', 'loyaltyRewardRules', 'cashbackRules'];
 const ID_LISTS = ['budgets', 'plans', 'subscriptions', 'devices', 'archive', 'cryptoHoldings', 'spendingLimits', 'membershipCards'];
 const STRING_LISTS = { readIds: 500, pushed: 200 };
-const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay'];
+// legalAccepted is a version date (YYYY-MM-DD) and legalAcceptedAt an ISO time: the newest acceptance wins.
+const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay', 'legalAccepted', 'legalAcceptedAt'];
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const list = (v) => (Array.isArray(v) ? v : []);

@@ -73,3 +73,33 @@ test('Total Spent billing-cycle chart renders twelve months with no chart leak w
     expect([...host.querySelectorAll('.billing-cycle-chart-bar')].every(b=>b.style.height==='5%')).toBe(true);
   } finally {act(()=>root.unmount());host.remove()}
 });
+
+test('the graph follows the filter: a month shows its days, and the filter control is an icon with the cycle in its name', () => {
+  const React = require('react');
+  const { createRoot } = require('react-dom/client');
+  const { act } = require('react');
+  const { BillingCycleChart } = require('./Transactions');
+  const { dailyCycleSpending } = require('../lib/billingCycleSpending');
+  global.IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement('div'); document.body.append(host);
+  const root = createRoot(host);
+  try {
+    const rows = dailyCycleSpending([{ type: 'expense', amount: 47, date: '2026-11-10T04:41:00Z' }], '2026-11');
+    act(() => root.render(React.createElement(BillingCycleChart, { cycles: rows, visible: true, title: 'Nov 2026', selectedKey: '2026-11-10' })));
+    expect(host.querySelectorAll('.billing-cycle-chart-bar')).toHaveLength(30);
+    expect(host.querySelector('.billing-cycle-chart-plot').className).toContain('dense');
+    expect(host.querySelector('.billing-cycle-chart-title').textContent).toBe('Nov 2026');
+    const axis = host.querySelectorAll('.billing-cycle-chart-axis span');
+    expect(axis[0].textContent).toBe('Nov 1');
+    expect(axis[1].textContent).toBe('Nov 30');
+    const columns = [...host.querySelectorAll('.billing-cycle-chart-column')];
+    expect(columns.findIndex(c => c.classList.contains('selected'))).toBe(9);
+    expect(columns[9].firstChild.style.height).toBe('100%');
+    // A past cycle marks no single day.
+    act(() => root.render(React.createElement(BillingCycleChart, { cycles: rows, visible: true, title: 'Nov 2026', selectedKey: '' })));
+    expect(host.querySelector('.billing-cycle-chart-column.selected')).toBeNull();
+  } finally { act(() => root.unmount()); host.remove(); }
+  const source = require('fs').readFileSync(require('path').join(__dirname, 'Transactions.js'), 'utf8');
+  expect(source).toContain('<Icon name="filterBars" size={18} />');
+  expect(source).not.toContain('tx-period-filter-value');
+});

@@ -241,6 +241,83 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.bottom-nav .nav-item[aria-current="page"]').getAttribute('aria-label')).toBe('Wallet');
   });
 
+  test('Back shows the previous page at once, where it was left; going forward still plays the entrance', async () => {
+    const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
+    const main = () => container.querySelector('main.screen');
+    nav(container, 'Wallet');
+    expect(main().className).not.toContain('enter-back');
+    Object.defineProperty(window, 'scrollY', { value: 420, configurable: true });
+    nav(container, 'Transactions');
+    Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+    expect(main().className).toContain('enter-tab-right');
+    window.scrollTo.mockClear();
+    await back();
+    expect(container.querySelector('.bottom-nav .nav-active').getAttribute('aria-label')).toBe('Wallet');
+    expect(main().className).toContain('enter-back');
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 420);
+    delete window.scrollY;
+  });
+
+  test('the device Back button closes an open sheet, then returns through the screens visited, then to Home', async () => {
+    const back = () => act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); await new Promise(resolve => setTimeout(resolve, 5)); });
+    const current = () => container.querySelector('.bottom-nav .nav-item[aria-current="page"]')?.getAttribute('aria-label');
+    openProfile(container);
+    clickButton(container, 'Settings');
+    const plan = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Plan & Usage');
+    act(() => plan.click());
+    expect(container.querySelector('[role="dialog"][aria-label="Plan & Usage"]')).not.toBeNull();
+    await back(); // closes the sheet, stays on Settings
+    expect(container.querySelector('[role="dialog"][aria-label="Plan & Usage"]')).toBeNull();
+    expect(Array.from(container.querySelectorAll('.menu-row')).some(row => row.querySelector('strong')?.textContent === 'Plan & Usage')).toBe(true);
+    await back(); // Settings → Profile
+    expect(container.querySelector('.menu-row strong')?.textContent).not.toBe(undefined);
+    expect(Array.from(container.querySelectorAll('.menu-row')).some(row => row.querySelector('strong')?.textContent === 'Plan & Usage')).toBe(false);
+    await back(); // Profile → Menu
+    expect(current()).toBe('Menu');
+    expect(container.querySelector('.menu-hero')).not.toBeNull();
+    await back(); // Menu → Home
+    expect(current()).toBe('Home');
+    await back(); // nothing left: Home stays
+    expect(current()).toBe('Home');
+  });
+
+  test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
+    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
+    const header = () => container.querySelector('.home-hero-block');
+    expect(header().className).toContain('hero-scenery');
+    // Pro+ gets the platinum glowing edge (Pro gets gold; Free gets none).
+    expect(header().className).toContain('hero-tier-plus');
+    expect(header().querySelector('.hero-edge')).not.toBeNull();
+    expect(header().querySelector('.home-header')).not.toBeNull();
+    expect(header().querySelector('.balance-card')).not.toBeNull();
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
+    openProfile(container);
+    clickButton(container, 'Settings');
+    act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    const tab = Array.from(container.querySelectorAll('.hero-tabs [role="tab"]')).find(b => b.textContent === 'Zodiac');
+    act(() => tab.click());
+    const leo = Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Leo');
+    act(() => leo.click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('zodiac:leo');
+    nav(container, 'Home');
+    expect(header().className).toContain('hero-zodiac');
+    expect(header().getAttribute('data-hero')).toBe('zodiac:leo');
+  });
+
+  test('Pro+ colours the bottom navigation platinum by default, and Appearance can switch it to the app accent', () => {
+    const root_ = () => container.querySelector('.movo-app');
+    expect(root_().className).toContain('nav-tier-platinum');
+    openProfile(container);
+    const options = () => Array.from(container.querySelectorAll('.nav-accent-options button'));
+    expect(options().map(b => b.textContent)).toEqual(['Platinum', 'App accent']);
+    expect(options()[0].getAttribute('aria-checked')).toBe('true');
+    act(() => options()[1].click());
+    expect(root_().className).not.toContain('nav-tier-');
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).navAccent).toBe('app');
+    act(() => options()[0].click());
+    expect(root_().className).toContain('nav-tier-platinum');
+  });
+
   test('tapping a membership card opens the same Account details layout as other cards, with Edit card leading to the editor', () => {
     act(() => root.unmount());
     const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
@@ -475,7 +552,7 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: November 6, 2026');
+    expect(container.textContent).toContain('Effective date: November 11, 2026');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
@@ -1011,77 +1088,140 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
 });
 
 
-describe('post-tour third-party logo disclaimer regression coverage', () => {
-  let container;
-  let root;
+describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 2026-11-11)', () => {
+  const { LEGAL_VERSION } = require('./lib/legalVersion');
+  let container; let root;
+  const prefs = () => JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
+  const start = async (stored) => {
+    window.localStorage.clear();
+    seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs(), planWelcomeSeen: true, onboarded: true, tutorialSeen: true, ...stored }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+  };
+  const agreement = () => container.querySelector('.setup-agreement [role="dialog"]');
+  const navButtons = () => Array.from(container.querySelectorAll('.bottom-nav .nav-item'));
+  beforeEach(() => { window.__MOVO_SETUP_GATE__ = true; });
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); delete window.__MOVO_SETUP_GATE__; });
 
-  beforeEach(() => {
-    container = document.createElement('div');
-    document.body.appendChild(container);
-    root = createRoot(container);
+  test('without an acceptance the dashboard is covered and the bottom navigation is locked', async () => {
+    await start({ legalAccepted: '' });
+    expect(agreement()).not.toBeNull();
+    expect(container.querySelector('.bottom-nav').classList.contains('is-locked')).toBe(true);
+    expect(navButtons().every(b => b.disabled)).toBe(true);
+    act(() => navButtons().find(b => b.getAttribute('aria-label') === 'Wallet').click());
+    expect(container.querySelector('.bottom-nav .nav-active')?.getAttribute('aria-label')).toBe('Home');
+    ['never connects to your bank', 'logos', 'delete your account'].forEach(text => expect(agreement().textContent).toContain(text));
   });
 
-  afterEach(() => {
-    act(() => root.unmount());
-    container.remove();
+  test('Accept stays off until the box is ticked; accepting saves the version and opens the dashboard', async () => {
+    await start({ legalAccepted: '' });
+    const accept = container.querySelector('.setup-agreement-accept');
+    expect(accept.disabled).toBe(true);
+    act(() => accept.click());
+    expect(agreement()).not.toBeNull();
+    act(() => container.querySelector('.setup-agreement-check input').click());
+    expect(accept.disabled).toBe(false);
+    act(() => accept.click());
+    expect(agreement()).toBeNull();
+    expect(prefs().legalAccepted).toBe(LEGAL_VERSION);
+    expect(Number.isNaN(Date.parse(prefs().legalAcceptedAt))).toBe(false);
+    expect(navButtons().some(b => b.disabled)).toBe(false);
+    act(() => navButtons().find(b => b.getAttribute('aria-label') === 'Wallet').click());
+    expect(container.querySelector('.bottom-nav .nav-active')?.getAttribute('aria-label')).toBe('Wallet');
   });
 
-  test('both actions remain disabled until the disclaimer checkbox is checked', () => {
-    const onReview = jest.fn();
-    const onDismiss = jest.fn();
-    const { PostTourLegalDisclosure } = require('./App');
-
-    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
-
-    const dialog = container.querySelector('[role="dialog"][aria-labelledby="movo-disclosure-title"]');
-    expect(dialog).not.toBeNull();
-    expect(dialog.querySelector('.legal-disclosure-content')).not.toBeNull();
-    expect(dialog.querySelector('.legal-disclosure-footer')).not.toBeNull();
-
-    const checkbox = dialog.querySelector('input[type="checkbox"]');
-    const reviewLater = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent.includes('Review later'));
-    const reviewTerms = Array.from(dialog.querySelectorAll('button')).find(button => button.textContent.includes('Review Terms & Privacy'));
-
-    expect(checkbox.checked).toBe(false);
-    expect(reviewLater.disabled).toBe(true);
-    expect(reviewTerms.disabled).toBe(true);
-
-    act(() => reviewLater.click());
-    act(() => reviewTerms.click());
-    expect(onDismiss).not.toHaveBeenCalled();
-    expect(onReview).not.toHaveBeenCalled();
-
-    act(() => checkbox.click());
-    expect(checkbox.checked).toBe(true);
-    expect(reviewLater.disabled).toBe(false);
-    expect(reviewTerms.disabled).toBe(false);
+  test('the Terms can be read from the agreement, which returns afterwards', async () => {
+    await start({ legalAccepted: '' });
+    act(() => Array.from(container.querySelectorAll('.setup-agreement-links button')).find(b => b.textContent.includes('Terms of Service')).click());
+    expect(agreement()).toBeNull();
+    expect(container.textContent).toContain('17. Accepting these terms during setup');
+    expect(navButtons().every(b => b.disabled)).toBe(true);
+    act(() => container.querySelector('main .back-button').click());
+    expect(agreement()).not.toBeNull();
   });
 
-  test('acknowledged users can choose either action and only the selected callback runs', () => {
-    const { PostTourLegalDisclosure } = require('./App');
-    const onReview = jest.fn();
-    const onDismiss = jest.fn();
-
-    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
-    act(() => container.querySelector('input[type="checkbox"]').click());
-
-    const reviewLater = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Review later'));
-    act(() => reviewLater.click());
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-    expect(onReview).not.toHaveBeenCalled();
+  test('the free-month panel comes first, then the agreement', async () => {
+    await start({ legalAccepted: '', planWelcomeSeen: false });
+    expect(agreement()).toBeNull();
+    expect(container.querySelector('.plan-panel, [aria-label*="MOVO plans"], .plan-offer')).not.toBeNull();
+    expect(navButtons().every(b => b.disabled)).toBe(true);
+    await act(async () => { container.querySelector('.plan-panel .sheet-close, .sheet-close, [aria-label="Close"]').click(); });
+    expect(prefs().planWelcomeSeen).toBe(true);
+    expect(agreement()).not.toBeNull();
   });
 
-  test('Terms and Privacy action opens the legal review only after acknowledgement', () => {
-    const { PostTourLegalDisclosure } = require('./App');
-    const onReview = jest.fn();
-    const onDismiss = jest.fn();
+  test('an older acceptance asks again; the current one opens straight to the dashboard', async () => {
+    await start({ legalAccepted: '2026-11-06' });
+    expect(agreement()).not.toBeNull();
+    act(() => root.unmount()); container.remove();
+    await start({ legalAccepted: LEGAL_VERSION });
+    expect(agreement()).toBeNull();
+    expect(navButtons().some(b => b.disabled)).toBe(false);
+  });
+});
 
-    act(() => root.render(<PostTourLegalDisclosure onReview={onReview} onDismiss={onDismiss} />));
-    const reviewTerms = Array.from(container.querySelectorAll('button')).find(button => button.textContent.includes('Review Terms & Privacy'));
-    expect(reviewTerms.disabled).toBe(true);
-    act(() => container.querySelector('input[type="checkbox"]').click());
-    act(() => reviewTerms.click());
-    expect(onReview).toHaveBeenCalledTimes(1);
-    expect(onDismiss).not.toHaveBeenCalled();
+
+describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
+  let container; let root;
+  const swipe = (fromX, toX) => {
+    const fire = (type, x) => { const e = new Event(type, { bubbles: true, cancelable: true }); Object.defineProperty(e, 'touches', { value: type === 'touchend' ? [] : [{ clientX: x, clientY: 400 }] }); act(() => { document.body.dispatchEvent(e); }); };
+    fire('touchstart', fromX); fire('touchmove', fromX + (toX - fromX) / 3); fire('touchmove', toX); fire('touchend', 0);
+  };
+  const active = () => container.querySelector('.bottom-nav .nav-active')?.getAttribute('aria-label');
+  beforeEach(async () => {
+    window.__MOVO_EDGE_SWIPE__ = true;
+    Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
+    window.localStorage.clear(); seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    await act(async () => { root.render(<App />); });
+  });
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); delete window.__MOVO_EDGE_SWIPE__; });
+
+  test('swiping in from the left edge returns to the previous screen, and from the right edge too', () => {
+    nav(container, 'Wallet'); nav(container, 'Transactions');
+    expect(active()).toBe('Transactions');
+    swipe(4, 300);
+    expect(active()).toBe('Wallet');
+    swipe(386, 80);
+    expect(active()).toBe('Home');
+    swipe(4, 300); // nothing left: Home stays
+    expect(active()).toBe('Home');
+  });
+
+  test('an open sheet closes first, and the screen stays', () => {
+    nav(container, 'Wallet');
+    clickButton(container, 'New account');
+    expect(container.querySelector('.sheet-backdrop')).not.toBeNull();
+    swipe(4, 300);
+    expect(container.querySelector('.sheet-backdrop')).toBeNull();
+    expect(active()).toBe('Wallet');
+  });
+});
+
+describe('Home header block (owner, 2026-11-12)', () => {
+  let container; let root;
+  const start = (prefs) => {
+    window.localStorage.clear(); seedLocalRecords();
+    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true, ...prefs }));
+    container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
+    act(() => root.render(<App />));
+  };
+  afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
+
+  test('when another box comes first, the header stands alone with the background and Total balance stays in the list', () => {
+    start({ layouts: { home: { order: ['summary', 'balance'] } } });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(container.querySelector('.home-header').className).toContain('home-hero');
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
+  });
+
+  test('with no background the header is plain and nothing is pinned with it', () => {
+    start({ homeHero: 'plain' });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(container.querySelector('.home-header').className).not.toContain('home-hero');
+    expect(container.querySelectorAll('.balance-card').length).toBe(1);
   });
 });

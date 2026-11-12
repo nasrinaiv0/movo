@@ -28,7 +28,12 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   expect(tiles.map(t => t.querySelector('strong').textContent)).toEqual(['Free', 'Pro', 'Pro+']);
   expect(fills(tiles[0])).toContain('#10a866'); // green Free
   expect(fills(tiles[1])).toContain('#e3b04a'); // gold Pro
-  expect(fills(tiles[2])).toContain('#dcd9ef'); // platinum Pro+
+  // Platinum Pro+ is a platinum base with a holographic sheen, not flat lavender.
+  expect(tiles[2].querySelector('svg.movo-mark').classList.contains('is-metal')).toBe(true);
+  expect(Array.from(tiles[2].querySelectorAll('svg.movo-mark path')).map(p => p.getAttribute('data-tone'))).toContain('#d8dadc');
+  const stops = Array.from(tiles[2].querySelectorAll('stop')).map(stop => stop.getAttribute('stop-color'));
+  expect(stops).not.toContain('#dcd9ef');
+  expect(stops).toEqual(expect.arrayContaining(['#f1d3e2', '#cdeef2', '#f3e7c8'])); // rose, aqua, champagne
   // No "Gold MOVO" / "Platinum MOVO" labels on the tiles: the mark's colour says it (owner, 2026-11-09).
   expect(el.querySelector('.plan-tile-chip')).toBeNull();
   expect(tiles.map(t => t.textContent)).toEqual(['FreeCurrent', 'Pro', 'Pro+']);
@@ -59,7 +64,7 @@ test('in the app, the store price drives the panel and Continue buys the selecte
   ]);
   purchaseStoreProduct.mockResolvedValue({});
   const { el, handlers, cleanup } = await render({ session, entitlement: { tier: 'pro', active: true, expiresAt: future, trialEligible: false } });
-  await act(async () => el.querySelector('.plan-arrow.next').click());
+  await act(async () => el.querySelectorAll('.plan-tile')[2].click());
   expect(el.querySelector('.plan-tile.selected strong').textContent).toBe('Pro+');
   expect(el.querySelector('.plan-price').textContent).toContain('₱349.00');
   expect(el.querySelector('.plan-price').textContent).toContain('or ₱3,490.00 / year');

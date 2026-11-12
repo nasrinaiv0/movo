@@ -14,18 +14,28 @@ const ICONS = {
   Bronze: { bg: '#121213', glow: 'rgba(205,138,82,.20)', t: { light: '#efbd8f', mid: '#cd8a52', dark: '#8f5729' } },
   Silver: { bg: '#121213', glow: 'rgba(188,196,206,.18)', t: { light: '#f2f4f7', mid: '#bcc4ce', dark: '#7f8996' } },
   Gold: { bg: '#121213', glow: 'rgba(227,176,74,.22)', t: { light: '#f8dc8c', mid: '#e3b04a', dark: '#a87618' } },
-  Platinum: { bg: '#121213', glow: 'rgba(220,217,239,.20)', t: { light: '#ffffff', mid: '#dcd9ef', dark: '#9d97c4' } },
+  Platinum: { bg: '#121213', glow: 'rgba(205,230,240,.16)', t: { light: '#fbfbfa', mid: '#d8dadc', dark: '#8e9397' },
+    metal: {
+      light: ['#ffffff', '#fbe9f1', '#e8f8fb', '#fff7e6', '#ffffff'],
+      mid: ['#eceef0', '#f1d3e2', '#cdeef2', '#f3e7c8', '#ddd6f1', '#e6e8ea'],
+      dark: ['#b9bec2', '#b49aae', '#86b3b9', '#b9ab86', '#9a95b6', '#a3a8ac'],
+    } },
 };
-const svg = t => `<svg width="620" height="537" viewBox="0 0 120 104" xmlns="http://www.w3.org/2000/svg">
-  <path d="${PATHS.body}" fill="${t.dark}"/><path d="${PATHS.flapLeft}" fill="${t.light}"/>
-  <path d="${PATHS.flapRight}" fill="${t.mid}"/><path d="${PATHS.clasp}" fill="${t.mid}"/>
-  <circle cx="94" cy="76" r="5" fill="${t.light}"/></svg>`;
+// Platinum carries the same holographic sheen as the in-app mark (MovoLogo `metal`); the other tiers stay flat.
+const svg = (t, metal) => {
+  const paint = key => (metal ? `url(#${key})` : t[key]);
+  const defs = metal ? `<defs>${['light', 'mid', 'dark'].map(key => `<linearGradient id="${key}" x1="0" y1="0" x2="1" y2="1">${metal[key].map((c, i) => `<stop offset="${(i / (metal[key].length - 1)) * 100}%" stop-color="${c}"/>`).join('')}</linearGradient>`).join('')}</defs>` : '';
+  return `<svg width="620" height="537" viewBox="0 0 120 104" xmlns="http://www.w3.org/2000/svg">${defs}
+  <path d="${PATHS.body}" fill="${paint('dark')}"/><path d="${PATHS.flapLeft}" fill="${paint('light')}"/>
+  <path d="${PATHS.flapRight}" fill="${paint('mid')}"/><path d="${PATHS.clasp}" fill="${paint('mid')}"/>
+  <circle cx="94" cy="76" r="5" fill="${paint('light')}"/></svg>`;
+};
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1024, height: 1024 }, deviceScaleFactor: 1 });
   for (const [name, icon] of Object.entries(ICONS)) {
     await page.setContent(`<html><body style="margin:0;width:1024px;height:1024px;display:grid;place-items:center;
-      background:radial-gradient(70% 70% at 50% 42%, ${icon.glow}, transparent 70%), ${icon.bg}">${svg(icon.t)}</body></html>`);
+      background:radial-gradient(70% 70% at 50% 42%, ${icon.glow}, transparent 70%), ${icon.bg}">${svg(icon.t, icon.metal)}</body></html>`);
     const out = path.join(__dirname, '../../ios/App/App/Assets.xcassets', `AppIcon-${name}.appiconset`, `AppIcon-${name}.png`);
     require('fs').mkdirSync(path.dirname(out), { recursive: true });
     await page.screenshot({ path: out, omitBackground: false });

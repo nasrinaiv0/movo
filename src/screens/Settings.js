@@ -1,5 +1,5 @@
 import { usePlan } from '../lib/PlanContext';
-import { PlanComparison } from '../components/PlanOffer';
+import { MovoMark } from '../components/MovoLogo';
 import AppIconPicker from '../components/AppIconPicker';
 import { PLAN_LABELS } from '../lib/planAccess';
 import React, { useEffect, useRef, useState } from 'react';
@@ -9,6 +9,7 @@ import { t as tr } from '../lib/i18n';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
+import { DEFAULT_SCENERY, GLOWS, HERO_FEATURE, ZODIAC, glowBackground, isPremiumHero, zodiacBackground } from '../lib/homeHero';
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
@@ -45,6 +46,23 @@ export function ThemePicker({ c, compact }) {
     <h3 className="mini-title">{compact ? tr('App Theme Color') : tr('Accent Color')}</h3>
     <div className="accent-row" role="radiogroup" aria-label={tr('Accent color')}>
       {ACCENTS.map(([key, color]) => <button type="button" key={key} role="radio" aria-checked={prefs.accent === key} aria-label={tr('{name} accent', { name: tr(key[0].toUpperCase() + key.slice(1)) })} className={prefs.accent === key ? 'selected' : ''} style={{ '--dot': color }} onClick={() => setPref('accent', key)}>{prefs.accent === key && <Icon name="check" size={16} strokeWidth={3} />}</button>)}
+    </div>
+    <NavAccentPicker c={c} />
+  </>;
+}
+
+/** Pro and Pro+ only: the bottom navigation follows the plan colour (default) or the app accent. */
+export function NavAccentPicker({ c }) {
+  const plan = c.subscriptionPlan;
+  if (!['pro', 'pro_plus'].includes(plan) || c.entitlement?.source === 'trial') return null;
+  const tierName = plan === 'pro_plus' ? tr('Platinum') : tr('Gold');
+  const value = c.prefs.navAccent === 'app' ? 'app' : 'plan';
+  return <>
+    <h3 className="mini-title">{tr('Navigation accent')}</h3>
+    <div className="nav-accent-options" role="radiogroup" aria-label={tr('Navigation accent')}>
+      {[['plan', tierName, plan === 'pro_plus' ? 'platinum' : 'gold'], ['app', tr('App accent'), 'app']].map(([key, label, swatch]) => <button type="button" key={key} role="radio" aria-checked={value === key} className={value === key ? 'selected' : ''} onClick={() => c.setPref('navAccent', key)}>
+        <span className={`nav-accent-swatch swatch-${swatch}`} aria-hidden="true" />{label}
+      </button>)}
     </div>
   </>;
 }
@@ -172,7 +190,6 @@ export function UsageSheet({ c, onClose }) {
   };
 
   const rows = [
-    [tr('Plan'), storeEntitlement?.tier ? (PLAN_LABELS[storeEntitlement.tier] || 'Free') : tr('Free')],
     [tr('Access mode'), c.cloudMode ? tr('Cloud') : tr('Local (offline)')],
     [tr('Transactions'), String(c.txs?.length || 0)],
     [tr('Accounts'), String(c.accountsView?.length || 0)],
@@ -180,12 +197,20 @@ export function UsageSheet({ c, onClose }) {
     [tr('Storage on this device'), fmtBytes(storageUsed())],
   ];
 
-  return <Sheet center title={tr('Plan & Usage')} subtitle={tr('Manage your MOVO subscription and restore purchases from the store.')} onClose={onClose} label={tr('Plan & Usage')}>
+  // One compact summary of the current plan; the plan comparison lives in the plans panel only.
+  const tier = storeEntitlement?.active && PLAN_LABELS[storeEntitlement.tier] ? storeEntitlement.tier : 'free';
+  const planName = tier === 'free' ? tr('Free') : PLAN_LABELS[tier];
+  const planNote = tier === 'free' ? tr('On this device')
+    : storeEntitlement.expiresAt ? tr('Active until {date}', { date: longDate(storeEntitlement.expiresAt) }) : tr('Active');
+
+  return <Sheet center title={tr('Plan & Usage')} onClose={onClose} label={tr('Plan & Usage')} className="plan-usage-sheet">
     {!c.cloudMode && !c.deviceCopyAccess && <p className="form-hint" role="status">Local mode is active. Pro and Pro+ features are paused, but any existing subscription stays on record. Local tracking, manual transactions and import/export remain available. Enable Cloud Sync to restore eligible plan access.</p>}
-    <PlanComparison />
-    <button type="button" className="secondary-button" onClick={() => { onClose(); c.openPlans?.(); }}>Free trial & referrals</button>
+    <div className={`plan-usage-current tier-${tier}`}>
+      <span className="plan-usage-mark" aria-hidden="true"><MovoMark size={26} tone={tier === 'pro_plus' ? 'platinum' : tier === 'pro' ? 'gold' : 'color'} /></span>
+      <span className="plan-usage-name"><small>{tr('Plan')}</small><strong>{planName}</strong></span>
+      <em>{planNote}</em>
+    </div>
     <dl className="detail-list">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-    {storeEntitlement?.active && <p className="form-hint">{tr('Your verified {tier} subscription is active until {date}.', { tier: storeEntitlement.tier, date: storeEntitlement.expiresAt ? longDate(storeEntitlement.expiresAt) : tr('the current period ends') })}</p>}
     {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}
     {nativePurchases && <>
       {storeEntitlement?.source !== 'store' && <>
@@ -205,6 +230,9 @@ export function UsageSheet({ c, onClose }) {
     {!nativePurchases && <p className="form-hint">{tr('Store purchases and restore are available in the MOVO iOS and Android apps.')}</p>}
     {purchaseMessage && <p className="form-hint" role="status" aria-live="polite">{purchaseMessage}</p>}
     <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
+    <div className="plan-usage-foot">
+      <button type="button" className="primary-button plan-usage-action" onClick={() => { onClose(); c.openPlans?.(); }}>{tier === 'free' ? tr('Upgrade MOVO') : tr('View plans')}</button>
+    </div>
   </Sheet>;
 }
 
@@ -341,6 +369,50 @@ function SceneryPicker({ c }) {
   </section>;
 }
 
+/*
+ * Home header background (owner, 2026-11-12): scenery for everyone; the twelve zodiac constellations and glowing
+ * colour fields for Pro and Pro+. Premium tiles show their plan; choosing one without it opens MOVO plans.
+ */
+const HERO_TABS = [['scenery', 'Scenery'], ['zodiac', 'Zodiac'], ['glow', 'Glow']];
+export function HomeHeroPicker({ c }) {
+  const { can, requireFeature } = usePlan();
+  const { prefs, setPref } = c;
+  const current = prefs.homeHero || 'auto';
+  const [tab, setTab] = useState(() => (current.startsWith('zodiac:') ? 'zodiac' : current.startsWith('glow:') ? 'glow' : 'scenery'));
+  const [all, setAll] = useState(false);
+  const premium = can(HERO_FEATURE);
+  const pick = (id) => { if (isPremiumHero(id) && !requireFeature(HERO_FEATURE)) return; setPref('homeHero', id); setAll(false); };
+  const lock = !premium && <span className="hero-lock" aria-hidden="true"><Icon name="lock" size={11} /> {tr('Pro')}</span>;
+  const tile = (id, name, style, extra) => <button type="button" key={id} className={`hero-tile${current === id ? ' selected' : ''}${extra || ''}`} aria-pressed={current === id}
+    aria-label={isPremiumHero(id) && !premium ? tr('{name} (Pro)', { name }) : name} onClick={() => pick(id)}>
+    <span className="hero-tile-art" style={style} aria-hidden="true" />{isPremiumHero(id) && lock}<small>{name}</small>
+  </button>;
+  const sceneryTile = (sc) => tile(`scenery:${sc.id}`, sc.name, { backgroundImage: `url("${sc.thumb}")` });
+  const shortList = SCENERIES.slice(0, PICKS);
+  const chosen = current.startsWith('scenery:') && SCENERIES.find(sc => `scenery:${sc.id}` === current);
+  if (chosen && !shortList.includes(chosen)) shortList.unshift(chosen);
+  const defaultThumb = SCENERIES.find(sc => sc.id === DEFAULT_SCENERY)?.thumb;
+  return <section className="card pad hero-settings">
+    <div className="seg-control hero-tabs" role="tablist" aria-label={tr('Home header style')}>
+      {HERO_TABS.map(([key, label]) => <button type="button" role="tab" key={key} aria-selected={tab === key} onClick={() => setTab(key)}>{tr(label)}{key !== 'scenery' && !premium && <Icon name="lock" size={11} />}</button>)}
+    </div>
+    <div className="hero-row" role="group" aria-label={tr('Home header background')}>
+      {tab === 'scenery' && <>
+        {tile('auto', tr('Default'), { backgroundImage: defaultThumb ? `url("${defaultThumb}")` : undefined })}
+        {tile('plain', tr('None'), undefined, ' plain')}
+        {shortList.map(sceneryTile)}
+        <button type="button" className="hero-tile more" onClick={() => setAll(true)}><span className="hero-tile-art" aria-hidden="true" /><small>{tr('All')} · {SCENERIES.length}</small></button>
+      </>}
+      {tab === 'zodiac' && ZODIAC.map(z => tile(`zodiac:${z.id}`, tr(z.name), { background: `${zodiacBackground(z)} 70% top / cover no-repeat` }))}
+      {tab === 'glow' && GLOWS.map(g => tile(`glow:${g.id}`, tr(g.name), { background: glowBackground(g) }, ' glow'))}
+    </div>
+    <p className="form-note">{premium ? tr('The header stays at the top of Home as you scroll.') : tr('Zodiac and glow headers come with Pro and Pro+. The header stays at the top of Home as you scroll.')}</p>
+    {all && <Sheet title={tr('Home header scenery')} subtitle={tr('{n} sceneries', { n: SCENERIES.length })} onClose={() => setAll(false)} label={tr('Home header scenery')}>
+      <div className="hero-grid">{SCENERIES.map(sceneryTile)}</div>
+    </Sheet>}
+  </section>;
+}
+
 /** Font style and text size. Sizes scale all text without changing the layout (see lib/fontPrefs.js). */
 export function TextSettings({ c }) {
   const { prefs, setPref } = c;
@@ -380,6 +452,8 @@ export function Appearance({ c }) {
         <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
         <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
     </section>
+    <h2 className="group-title">{tr('Home header')}</h2>
+    <HomeHeroPicker c={c} />
     <h2 className="group-title">{tr('Background')}</h2>
     <SceneryPicker c={c} />
     <h2 className="group-title">{tr('Preview')}</h2>

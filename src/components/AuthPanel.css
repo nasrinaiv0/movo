@@ -69,3 +69,92 @@
 @keyframes auth-check-spin { to { transform: rotate(360deg); } }
 @keyframes auth-progress-pulse { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .auth-verifying .auth-code-progress > div, .auth-verifying-spinner { animation: none; } .auth-code-progress > div, .auth-code-form .auth-code { transition: none; } }
+
+/* Sign-in providers (owner, 2026-11-11): both buttons share one neutral surface, and the company mark stands in for
+   its name ("Continue with" + logo). The accessible name still says Apple or Google. */
+.auth-card .auth-provider, .theme-dark .auth-card .auth-provider { gap: 8px; border: 1px solid var(--line, #e2e4ea); background: color-mix(in srgb, var(--text, #171923) 7%, var(--card-solid, #fff)); color: var(--text, #171923); }
+.auth-card .auth-provider svg { flex: 0 0 22px; width: 22px; height: 22px; }
+
+/* ---------- Sign-in, premium pass (owner, 2026-11-11) ----------
+   Centred text, a calm staggered entrance, solid buttons only (none transparent), Apple and Google in black on light
+   themes and white on dark ones with marks of one size, and the emailed code entered into six boxes that arrive one
+   after another; each digit rises into its box and the next box takes the highlight. Ease-out only, no looping
+   motion besides the checking spinner, and nothing moves with reduced motion. */
+.auth-card { text-align: center; }
+.auth-card > * { animation: auth-rise .42s cubic-bezier(.22,.8,.3,1) both; }
+.auth-card > :nth-child(1) { animation-delay: 0s; } .auth-card > :nth-child(2) { animation-delay: .05s; }
+.auth-card > :nth-child(3) { animation-delay: .1s; } .auth-card > :nth-child(4) { animation-delay: .15s; }
+.auth-card > :nth-child(5) { animation-delay: .2s; } .auth-card > :nth-child(n+6) { animation-delay: .25s; }
+.auth-card .auth-logo .movo-mark { animation: auth-logo-in .6s cubic-bezier(.22,.8,.3,1) both; filter: drop-shadow(0 10px 18px rgba(16,168,102,.35)); }
+.auth-card .auth-legal { text-align: start; }
+.auth-card .auth-field { text-align: center; }
+.auth-card .auth-field input[type="email"] { text-align: center; }
+.auth-card .auth-form { animation: auth-rise .32s cubic-bezier(.22,.8,.3,1) both; }
+.auth-card .auth-provider, .theme-dark .auth-card .auth-provider { gap: 9px; border: 0; background: #000; color: #fff; transition: transform .12s ease-out, opacity .18s ease-out; }
+.theme-dark .auth-card .auth-provider { background: #fff; color: #000; }
+.auth-card .auth-provider svg { flex: 0 0 20px; width: 20px; height: 20px; }
+.auth-card .auth-provider:active:not(:disabled), .auth-card .auth-submit:active:not(:disabled) { transform: scale(.985); }
+.auth-card .auth-submit { transition: transform .12s ease-out, opacity .18s ease-out; }
+.auth-card .auth-code-actions { gap: 8px; }
+.auth-card .auth-code-actions button, .auth-card .auth-local { min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--field, #f1f2f5); color: var(--text, #171923); font-size: 13px; font-weight: 600; }
+.auth-card .auth-code-actions button { flex: 1 1 0; min-width: 0; }
+.auth-card .auth-code-actions button:disabled { color: var(--muted, #858997); }
+.auth-card .auth-local { justify-self: center; }
+
+.auth-otp { position: relative; display: block; }
+.auth-otp-boxes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.auth-otp-box { display: grid; place-items: center; height: 54px; border-radius: 14px; background: var(--field, #f1f2f5); color: var(--text, #171923); font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; animation: auth-box-in .36s cubic-bezier(.22,.8,.3,1) both; animation-delay: calc(var(--i, 0) * 45ms); transition: background-color .16s ease-out, box-shadow .16s ease-out, transform .16s ease-out; }
+.auth-otp-box.filled { background: color-mix(in srgb, var(--accent, #10a866) 12%, var(--field, #f1f2f5)); }
+.auth-otp-box b { font-weight: inherit; animation: auth-digit-in .22s cubic-bezier(.22,.8,.3,1) both; }
+.auth-otp:focus-within .auth-otp-box.active { background: color-mix(in srgb, var(--accent, #10a866) 9%, var(--field, #f1f2f5)); box-shadow: inset 0 -3px 0 var(--accent, #10a866); transform: translateY(-2px); }
+.auth-otp.has-error .auth-otp-box { background: color-mix(in srgb, #e5484d 12%, var(--field, #f1f2f5)); }
+.auth-verifying .auth-otp-box { animation: auth-box-wave .7s ease-out both; animation-delay: calc(var(--i, 0) * 60ms); }
+/* The real field lies over the boxes, invisible but focusable, so typing, paste and code autofill all work. */
+.auth-card .auth-otp .auth-otp-input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; min-height: 0; padding: 0; background: transparent; color: transparent; caret-color: transparent; letter-spacing: 0; font-size: 16px !important; opacity: 1; }
+.auth-card .auth-otp .auth-otp-input:focus { background: transparent; }
+.auth-verifying .auth-code { box-shadow: none; }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes auth-logo-in { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: none; } }
+@keyframes auth-box-in { from { opacity: 0; transform: translateY(8px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes auth-digit-in { from { opacity: 0; transform: translateY(9px) scale(.8); } to { opacity: 1; transform: none; } }
+@keyframes auth-box-wave { 0% { transform: none; } 40% { transform: translateY(-4px); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .auth-card > *, .auth-card .auth-form, .auth-card .auth-logo .movo-mark, .auth-otp-box, .auth-otp-box b, .auth-verifying .auth-otp-box { animation: none; }
+  .auth-otp-box, .auth-card .auth-provider, .auth-card .auth-submit { transition: none; }
+  .auth-otp:focus-within .auth-otp-box.active { transform: none; }
+}
+@media (max-width: 360px) { .auth-otp-boxes { gap: 6px; } .auth-otp-box { height: 48px; font-size: 21px; } }
+/* The invisible code field shows no ring or tint of its own: the active box carries the focus mark. */
+.movo-app .auth-card .auth-otp .auth-otp-input, .movo-app .auth-card .auth-otp .auth-otp-input:focus, .auth-card .auth-otp .auth-otp-input:focus-visible { background: transparent !important; box-shadow: none !important; outline: 0 !important; border: 0 !important; }
+
+/* ---------- Sign-in, calmer and compact (owner, 2026-11-11, second review) ----------
+   Fewer boxes: the agreement, the "code sent" note and the secondary actions are plain text, not panels or buttons;
+   "Use a different email", "Resend" and "Continue with this device only" are text links again, as before. Tighter
+   vertical rhythm, one quiet divider, and the code boxes are the only filled shapes in the form. */
+.auth-card { padding: 22px 20px 16px; }
+.auth-card .auth-head { gap: 4px; }
+.auth-card .auth-logo { margin-bottom: 2px; }
+.auth-card .auth-logo .movo-mark { width: 48px; }
+.auth-card h2 { font-size: 21px; font-weight: 750; }
+.auth-card .auth-description { font-size: 12.5px; }
+.auth-card .auth-legal { justify-content: center; padding: 0; background: none; font-size: 11.5px; color: var(--muted, #858997); text-align: start; }
+.auth-card .auth-legal > span { flex: 0 1 auto; }
+.auth-card .auth-providers { gap: 8px; }
+.auth-card .auth-provider { height: 46px; min-height: 46px; border-radius: 14px; font-size: 14.5px; }
+.auth-card .auth-divider { font-size: 11.5px; }
+.auth-card .auth-form { gap: 10px; }
+.auth-card .auth-field > span { font-size: 11.5px; font-weight: 500; }
+.auth-card .auth-field input[type="email"] { min-height: 46px; }
+.auth-card .auth-submit { min-height: 46px; border-radius: 14px; font-size: 14.5px; font-weight: 650; }
+.auth-otp-boxes { gap: 7px; }
+.auth-otp-box { height: 48px; border-radius: 12px; font-size: 21px; font-weight: 600; }
+.auth-card .auth-code-actions { justify-content: space-between; gap: 12px; margin-top: -2px; }
+.auth-card .auth-code-actions button, .auth-card .auth-local { flex: 0 1 auto; min-height: 32px; padding: 4px 2px; border-radius: 0; background: none; color: var(--accent-ink, var(--accent, #10a866)); font-size: 12.5px; font-weight: 600; }
+.auth-card .auth-code-actions button:disabled { color: var(--muted, #858997); }
+.auth-card .auth-local { color: var(--muted, #858997); }
+.auth-card .auth-notice { padding: 0; background: none; color: var(--muted, #858997); font-size: 12px; text-align: center; }
+.theme-dark .auth-card .auth-notice { background: none; color: var(--muted, #98a0b4); }
+.auth-card .auth-error { padding: 8px 10px; font-size: 12px; text-align: center; }
+.auth-card .auth-privacy { padding-top: 10px; font-size: 11px; }
+@media (max-width: 360px) { .auth-card { padding: 18px 16px 14px; } .auth-otp-box { height: 44px; font-size: 19px; } }
+.movo-app .auth-card .auth-legal, .auth-card .auth-legal { border: 0 !important; box-shadow: none !important; outline: 0; background: none !important; }

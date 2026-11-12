@@ -44,6 +44,8 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npx --yes npm@11.19.1 ci
+      - name: Test Android release auth configuration guard
+        run: node --test scripts/validate-android-auth-config.test.cjs
       - name: Run unit tests, typecheck and build bundled assets
         run: CI=true npm run build
       - name: Synchronize native Android assets
@@ -110,8 +112,19 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npx --yes npm@11.19.1 ci
-      - name: Build and test MOVO web assets
-        run: CI=true npm run build
+      # The signed AAB packages the local CRA build; Vercel env vars are NOT inherited.
+      # Set these in GitHub's protected google-play-release environment:
+      # REACT_APP_SUPABASE_URL (environment variable) and
+      # REACT_APP_SUPABASE_ANON_KEY (environment secret, public anon key only).
+      - name: Validate Android sign-in configuration and build MOVO web assets
+        env:
+          REACT_APP_SUPABASE_URL: ${{ vars.REACT_APP_SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/validate-android-auth-config.cjs
+          CI=true npm run build
       - name: Synchronize Android native assets
         run: npx cap sync android
       - name: Validate requested Play versionCode

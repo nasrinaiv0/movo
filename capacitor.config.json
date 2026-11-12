@@ -5,7 +5,7 @@
   "loggingBehavior": "none",
   "ios": {
     "contentInset": "never",
-    "backgroundColor": "#f5f5f8",
+    "backgroundColor": "#faf9f6",
     "limitsNavigationsToAppBoundDomains": false,
     "preferredContentMode": "mobile"
   },
