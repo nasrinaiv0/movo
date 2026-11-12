@@ -11,6 +11,15 @@
 - This reliably exercises the intended missing-setting path without removing live credentials, changing the owner endpoint, leaking secrets, modifying runtime authorization, or impacting billing and native authentication.
 - Update this dated record and `docs/PR_PROGRESS.md` in the same commit. No database migrations, live environment changes, or App Store / Google Play changes.
 
+
+## Follow-up evidence: signed Android versionCode 7 recovered and inspected
+- Signed Google Play workflow [run #43180913336](https://github.com/nasrinaiv0/movo/actions/runs/43180913336) completed successfully on `main` at `3d96b2e` (after PR #282). Artifact `movo-google-play-aab-28` (artifact ID `13925439791`) contains `app-release.aab` and expires 2026-11-19.
+- Independently extracted the AAB and inspected its compiled main.js and protobuf AndroidManifest.xml. `versionCode=7`, `versionName=1.0`, `applicationId=com.nasrinai.movo`. Compiled assets contain MOVO Supabase URL and `movo://auth-callback`; manifest declares the native callback host.
+- Confirmed the single embedded `sb_publishable_` public key matches an **enabled** key returned by MOVO's connected Supabase project, comparing only fingerprints without exposing the key. `jarsigner -verify` returned `jar verified.` and exit code 0 (warnings about JAR reader differences were present; this is not device testing).
+- There is therefore **a valid post-merge signed AAB**. Do not claim that #17 is the latest or regenerate unnecessarily. The device's installed version and Google Play track distribution remain unknown.
+- Both exact-head GitHub CI checks on initial test-fix commit `88075ce` were green; Vercel preview still blocked by the deployment/account-level gate. Updating documentation creates a new exact head that must be rechecked before merge.
+- Action: verify whether Android versionCode **7** is installed through the testing track. If not, distribute the already signed AAB #28 to internal/closed testing if Play has not already consumed that versionCode. If already installed and sign-in still fails, gather the **on-screen sanitized error category** and check Supabase redirect allowlist/native browser and secure storage on a real device. Never uninstall or clear data before backing up local-only records.
+
 ## Verification and release gates
 - Before commit: reviewed exact failing Vercel assertion and billing readiness condition; verified fixture save/delete/restore anchors and Android callback URI shape. These are static checks, not full CI.
 - Pending: exact PR head Jest, TypeScript, translation, production CRA build, Android Gradle compilation, Vercel preview, security checks and native device acceptance.

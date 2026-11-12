@@ -1,3 +1,8 @@
+### Follow-up: verified post-merge signed AAB v7 and CI evidence (2026-11-12)
+- Signed manual Play workflow run #43180913336 succeeded on main `3d96b2e`. Recovered artifact `movo-google-play-aab-28`, inspected packaged JS, Android manifest, versionCode **7**, current MOVO Supabase URL and matching enabled publishable key; independent JAR signature verification succeeded.
+- **Installed versionCode / live device OAuth result unknown**. Do not change working web OAuth settings or publish production; check existing Play internal/closed release before uploading another AAB. Main Vercel build failed an env-dependent test; PR #286 isolates it, with both GitHub CI checks green on initial head. Vercel preview remains blocked by account/deployment status, not verified.
+- Detailed proof and gates: `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md`.
+
 ## 2026-11-12 — Android sign-in release gate: isolate Vercel billing test from live secrets
 
 - Earlier PR #282 Android Google/email auth code merged, but prior signed AAB #17 predates it; currently installed Android version unverified.
