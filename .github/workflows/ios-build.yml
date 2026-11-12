@@ -42,10 +42,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Node.js (the Capacitor 8 CLI needs Node 22+)
+      - name: Set up Node.js 26 (Capacitor 8 requires Node 22+)
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
       - name: Install dependencies
         run: npx --yes npm@11.19.1 ci
       - name: Build the web app
