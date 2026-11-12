@@ -1,3 +1,31 @@
+## 2026-11-12 — PR #289 review fix: reminder preferences stay available offline
+
+- Review found that the encrypted cache accepted only lists, so reminder preferences (one settings object) silently stopped being kept for offline use. The cache now accepts lists and settings objects; both are still AES-GCM encrypted, owner-bound and network-failure-only.
+- Main merged in (PR_PROGRESS conflict only). New test covers the settings object. See `docs/engineering/updates/2026-11-12-offline-cache-settings-object.md`.
+
+## 2026-11-12 — PR #289 native test mock lifecycle repair (documented before commit)
+
+- The second CI rerun reached 224/225 passing Jest suites; Vercel preview build failed only for `financeCacheNative.test.js` (4 checks), while Web AES-GCM tests now passed.
+- Cause: React-scripts/Jest resets mock implementations between tests; the native test attached `MovoNative.secureGet`, `secureSet` and Preferences methods in `beforeAll`. Their implementation was gone when called, so test-only wrapped-key verification failed.
+- Fix mocks in `beforeEach`; retain sealed test key for the test module to validate persistence. No production, native encryption implementation or accounting data changed. Recheck exact new SHA; keep PR unmerged.
+
+## 2026-11-12 — PR #289 CI repair (documented before commit)
+
+- Initial exact-head Phase 1 CI on `73db23e` **failed**; 220/225 suites passed. Root evidence: new encryption tests could not persist a non-extractable CryptoKey under jsdom's fake IndexedDB; the Jest-only TextEncoder polyfill was read-only and broke existing suites assigning it.
+- Fix **test harness only**: writable TextEncoder/TextDecoder and Node's native structuredClone for CryptoKey preservation in jsdom. Do not weaken AES-GCM or tampering tests. Add direct cryptographic assertions so a future failure surfaces its original exception instead of a masked cache miss.
+- Additional independent hardening: serialize the browser key's final check-and-put in one IndexedDB read/write transaction to prevent two tabs creating different keys. No signed-in data, backend schema or live systems changed.
+- Validate with exact-head CI, native Android/iOS builds and preview; PR remains open and unmerged.
+
+## 2026-11-12 — Offline financial read-cache encryption (PR staging, production unchanged)
+
+- Owner asked to harden financial data stored in plaintext by PR #287's new `offlineReadCache.js`.
+- Prepared AES-256-GCM authenticated encryption per owner/list; native random key wrapped by existing Keychain/Keystore plugin; browser non-extractable WebCrypto key stored in IndexedDB; new ciphertext is never mirrored to Capacitor Preferences.
+- Legacy list-cache JSON is migrated write-verify-then-delete, retried safely after incomplete migration; finance list retrieval remains cloud-first with offline fallback, owner isolation, and no auth-denial downgrade.
+- Expanded tests for encryption, manipulation/cross-account, migration, quota failure, native vault allowlists, Preferences cleanup. New native plugin key allowlist requires separately signed mobile releases.
+- **Scope limitation:** other plaintext accounting stores (`offlineWorkspaceStore`, `localFinanceStore`, and IndexedDB `hybridLocalStore` ledger/outbox) are not changed: rewriting their synchronous/atomic persistence without a proven compatibility plan risks destroying unsynced transactions. This remains a high-priority unresolved whole-app storage issue.
+- Precommit evidence: exact main SHA `2b9a1cf` and a standalone Python AES-GCM/AAD test. **GitHub full suite, native compiles and physical devices still pending.** No Supabase/production modification, no merge/redeploy.
+- Detailed record: `docs/engineering/updates/2026-11-12-financial-offline-cache-encryption.md`.
+
 ## 2026-11-12 — PR #293 follow-up: App Store id read like the billing settings
 
 The preview sent iPhone links to the web app, so the stored `APPLE_APP_ID` did not match the strict digits-only format (its value was not inspected). It is now read with the same tolerance as the billing check: surrounding spaces, quotes and an `id` prefix are accepted. Anything that is not a plausible App Store id still falls back to the web app with the code. New test. See `docs/engineering/updates/2026-11-12-referral-store-links.md`.

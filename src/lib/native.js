@@ -13,7 +13,8 @@ export const MovoNative = registerPlugin('MovoNative');
 export const AUTH_CALLBACK = 'movo://auth-callback';
 
 /* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
-const KEEP = /^movo\.(?!lock\.)/;
+// Financial read caches migrate from legacy Preferences to AES-GCM, never mirror back as plaintext.
+const KEEP = /^movo\.(?!lock\.|readCache\.v1:)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */
