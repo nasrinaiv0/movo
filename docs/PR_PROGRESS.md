@@ -1,3 +1,7 @@
+## 2026-11-12 — Faster buttons and pop-ups on phones
+
+Owner report: animations delayed and unresponsive on Android and iPhone. The 3D mascot is capped at 30 fps and pauses while touching, scrolling or with a sheet or dialog open. Glow headers no longer repaint every frame. Press states are instant, sheets and dialogs enter within about 200 ms without staggered content, and the nav highlight moves on touch-down. Measured at 4× CPU: sheets settle in 260–340 ms (was 355–645), and Home has no long tasks with a sheet open. Validation: Jest 207 suites / 1,252 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-tap-and-popup-responsiveness.md`). Not run: real devices.
+
 ## 2026-11-12 — Video guide shown in a phone frame
 
 Owner request with a reference image: the tutorial recording now plays on a CSS-drawn modern phone (slim bezel, side buttons, dynamic-island cut-out, status bar, home indicator) on a light stage. Controls sit above and the translated caption and button below. The 9:20 phone shows the whole recording uncropped. Validation: Jest 206 suites / 1,250 tests, tsc, strict build, screenshots at 390/430 px and desktop (see `docs/engineering/updates/2026-11-12-tutorial-phone-frame.md`).

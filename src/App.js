@@ -2586,7 +2586,9 @@ function App() {
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
+          // Instant feedback on touch-down (owner, 2026-11-12): the highlight starts sliding before the screen renders.
+          const pressNav = (e) => { if (center || e.button > 0) return; const pill = e.currentTarget.parentElement?.querySelector('.nav-pill'); const idx = NAV.findIndex(n => n[2] === target); if (pill && idx >= 0) { pill.style.setProperty('--idx', String(idx)); pill.classList.remove('hidden'); } };
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onPointerDown={pressNav} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={27} /></span> : <Icon name={icon} size={29} strokeWidth={1.8} filled={active} />}</span>
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
