@@ -43,3 +43,8 @@ On `0c0f04b071a884e2a96f31844390141e3035a503`, Phase 1, hybrid-accounting and An
 
 Changes prepared: valid PNG signature fixture; canonical `src/lib/legalSupplement.json` updated; matching legal-policy generator/date/re-consent logic and expected test version; canonical generated `public/privacy.html` and `public/terms.html` byte-for-byte equality independently verified before commit. NO weakening of ciphertext validation, no changes to financial journal, no production mutation. Keep CSV sync test unchanged for rerun; investigate if repeatable. All gates still required.
 
+
+## Second CI failure analysis (documented before commit)
+
+At `3d6a786fd9b17b43345a079946c694ec0fb2adb7`, Phase 1 had 228/229 passing test suites, 1,378/1,379 passing tests. The new QR cipher, crash-safe migration, canonical legal documents, and previous offline sync timeout scenario all passed. Only the UI legal navigation test expected old November 11 / November 6 effective dates. Update it to November 13 for both policies, matching the material versioned consent update. No changes to product storage or authorization; rerun exact head.
+

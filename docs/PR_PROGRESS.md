@@ -1,3 +1,9 @@
+## 2026-11-13 — PR #291 second CI iteration (precommit record)
+
+- Exact-head `3d6a786` Phase 1 regression: **228/229 suites, 1,378/1,379 tests passed**. Atomic QR upgrade tests, legal generator, user-facing security contracts and earlier offline CSV-sync test PASSED. The one remaining test in `src/App.test.js` asserts old Terms/Privacy UI effective dates (Nov 11 and Nov 6) while current staged legal pages correctly show **Nov 13**.
+- Fix only this stale UI fixture to expect Nov 13; do not change legal publication, canonical data, financial sync code, QR encryption, rollback assertions or production. Verify again with exact-head CI and preview, Android and iOS gates.
+- Production/main unchanged. Both prerequisite PRs #289/#290 and follow-up PR #291 remain open and unmerged. No database/Auth/billing settings changed.
+
 ## 2026-11-13 — PR #291 red first-head CI; documented repairs before commit
 
 - Initial exact-head `0c0f04b` CI: **226/229 suites and 1,376/1,379 tests passed**; red Phase 1, hybrid-accounting, Android web/Jest gate; Vercel preview ERROR. Supabase tenant-isolation and IAP-integrity checks passed. iOS queued.
