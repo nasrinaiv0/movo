@@ -13,7 +13,11 @@ export const MovoNative = registerPlugin('MovoNative');
 export const AUTH_CALLBACK = 'movo://auth-callback';
 
 /* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
-const KEEP = /^movo\.(?!lock\.)/;
+// Financial read caches migrate from legacy Preferences to AES-GCM, never mirror back as plaintext.
+const KEEP = /^movo\.(?!lock\.|readCache\.v1:)/;
+// Do not restore legacy plaintext wallet/workspace keys by generic mirroring.
+// financeVault handles them as a verified, encrypted migration before App mounts.
+const RESTORE = /^movo\.(?!lock\.|readCache\.v1:|local\.accounts\.v1|local\.transactions\.v1|offline\.workspace\.v2\.)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */
@@ -23,7 +27,7 @@ export async function restoreNativeStorage(storage = typeof window !== 'undefine
   try {
     const { keys } = await Preferences.keys();
     for (const key of keys) {
-      if (!KEEP.test(key) || storage.getItem(key) !== null) continue;
+      if (!RESTORE.test(key) || storage.getItem(key) !== null) continue;
       const { value } = await Preferences.get({ key });
       if (value !== null && value !== undefined) storage.setItem(key, value);
     }

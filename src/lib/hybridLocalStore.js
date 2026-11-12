@@ -1,4 +1,5 @@
 import { sameSyncedFinanceFields } from './offlineReconciliation';
+import { secureHybridEntry, revealHybridEntry } from './financeVault';
 import { eligibleSyncOperations, makeSyncOperation, pendingOfflineSyncCount, SyncOrigin, SyncStatus } from './hybridSyncPolicy';
 
 /**
@@ -30,7 +31,15 @@ function validRecord(group, record, ownerId, kind) {
 }
 function request(requestObject) {
   return new Promise((resolve, reject) => {
-    requestObject.onsuccess = () => resolve(requestObject.result);
+    requestObject.onsuccess = () => {
+      try { resolve(revealHybridEntry(requestObject.result)); }
+      catch (error) {
+        // Authentication failure must abort any enclosing write transaction,
+        // not permit its earlier queued mutations to commit.
+        try { if (requestObject.transaction?.mode === 'readwrite') requestObject.transaction.abort(); } catch {}
+        reject(error);
+      }
+    };
     requestObject.onerror = () => reject(requestObject.error || new Error('IndexedDB operation failed'));
   });
 }
@@ -130,11 +139,11 @@ export async function commitLocalFinanceChange({
     }
     if (!Number.isSafeInteger(lastSequence + 1)) throw new Error('Local operation sequence exhausted');
     const localSequence = lastSequence + 1;
-    metadata.put({ ...meta, ownerId, lastOperationSequence: localSequence });
+    metadata.put(secureHybridEntry({ ...meta, ownerId, lastOperationSequence: localSequence }));
     if (kind === 'delete') records.delete(key(ownerId, group, record.id));
-    else records.put({ ownerId, group, recordId: record.id, record: { ...record, user_id: ownerId }, locallyUpdatedAt: createdAt });
-    operations.add({ ...op, group, localSequence, claimGeneration: 0, expectedUpdatedAt,
-      payload: kind === 'delete' ? null : { ...record, user_id: ownerId } });
+    else records.put(secureHybridEntry({ ownerId, group, recordId: record.id, record: { ...record, user_id: ownerId }, locallyUpdatedAt: createdAt }));
+    operations.add(secureHybridEntry({ ...op, group, localSequence, claimGeneration: 0, expectedUpdatedAt,
+      payload: kind === 'delete' ? null : { ...record, user_id: ownerId } }));
     await done;
     return op;
   } catch (error) {
@@ -192,7 +201,7 @@ export async function claimHybridSyncBatch({
     for (const op of owned) {
       if (op.origin === SyncOrigin.OFFLINE && approved.has(op.id) && !op.approvedAt) {
         op.approvedAt = new Date(now).toISOString();
-        store.put(op);
+        store.put(secureHybridEntry(op));
       }
     }
     // Existing pre-sequence entries use revision/time as a conservative fallback.
@@ -238,7 +247,7 @@ export async function claimHybridSyncBatch({
         (stored.origin === SyncOrigin.OFFLINE ? new Date(now).toISOString() : null);
       const next = { ...candidate, status: SyncStatus.IN_FLIGHT,
         approvedAt, claimGeneration, leaseExpiresAt: now + leaseMs };
-      store.put(next);
+      store.put(secureHybridEntry(next));
       claimed.push(next);
       if (claimed.length >= limit) break;
     }
@@ -263,7 +272,7 @@ export async function finalizeHybridSyncOperation({ ownerId, operationId, confir
         !Number.isSafeInteger(claimGeneration) || op.claimGeneration !== claimGeneration ||
         !Number.isSafeInteger(confirmedRevision) || confirmedRevision < op.revision)
       throw new Error('Unverified or superseded sync operation acknowledgement');
-    store.put({ ...op, status: SyncStatus.CONFIRMED, confirmedRevision, leaseExpiresAt: null });
+    store.put(secureHybridEntry({ ...op, status: SyncStatus.CONFIRMED, confirmedRevision, leaseExpiresAt: null }));
     await done;
   } finally { db.close(); }
 }
@@ -280,7 +289,7 @@ export async function requeueHybridSyncOperation({ ownerId, operationId, claimGe
     if (!op || op.ownerId !== ownerId || op.status !== SyncStatus.IN_FLIGHT ||
         !Number.isSafeInteger(claimGeneration) || op.claimGeneration !== claimGeneration)
       throw new Error('Sync claim is no longer owned by this worker');
-    store.put({ ...op, status: SyncStatus.PENDING, leaseExpiresAt: null });
+    store.put(secureHybridEntry({ ...op, status: SyncStatus.PENDING, leaseExpiresAt: null }));
     await done;
   } finally { db.close(); }
 }
@@ -327,9 +336,9 @@ export async function acknowledgeDirectHybridWrite(ownerId, operationId, acknowl
     const newer = owned.some(other => other.group === op.group && other.recordId === op.recordId && other.localSequence > op.localSequence);
     if (!newer && op.kind !== 'delete') {
       validRecord(op.group, acknowledgement.record, ownerId, 'update');
-      tx.objectStore('records').put({ownerId,group:op.group,recordId:op.recordId,record:acknowledgement.record});
+      tx.objectStore('records').put(secureHybridEntry({ownerId,group:op.group,recordId:op.recordId,record:acknowledgement.record}));
     }
-    operations.put({...op,status:SyncStatus.CONFIRMED,acknowledgement,confirmedRevision:acknowledgement.revision});
+    operations.put(secureHybridEntry({...op,status:SyncStatus.CONFIRMED,acknowledgement,confirmedRevision:acknowledgement.revision}));
     await done;
   } catch (error) {
     try { tx?.abort(); } catch { /* already complete */ }
@@ -367,9 +376,9 @@ export async function migrateHybridWorkspace(ownerId, snapshot) {
     const ops=await request(tx.objectStore('operations').index('owner').getAll(IDBKeyRange.only(ownerId)));
     const touched=new Set(ops.map(op=>op.group+':'+op.recordId));
     for (const group of GROUPS) for (const record of snapshot.working[group]) {
-      if (!touched.has(group+':'+record.id)) records.put({ownerId,group,recordId:record.id,record:{...record,user_id:ownerId}});
+      if (!touched.has(group+':'+record.id)) records.put(secureHybridEntry({ownerId,group,recordId:record.id,record:{...record,user_id:ownerId}}));
     }
-    metaStore.put({...meta,ownerId,legacyMigrationVersion:1,legacyBackup:snapshot,migratedAt:new Date().toISOString()});
+    metaStore.put(secureHybridEntry({...meta,ownerId,legacyMigrationVersion:1,legacyBackup:snapshot,migratedAt:new Date().toISOString()}));
     await done;
     return true;
   } catch (error) {
@@ -414,7 +423,7 @@ export async function acknowledgeReconciledWorkspace(ownerId, confirmed, expecte
       const matches=last.kind==='delete'?!remote:sameSyncedFinanceFields(local,remote,last.group);
       if(!matches)continue;
       for(const op of rows)if(allowed.has(op.id)&&op.status!==SyncStatus.CONFIRMED)
-        store.put({...op,status:SyncStatus.CONFIRMED,reconciledAt:new Date().toISOString()});
+        store.put(secureHybridEntry({...op,status:SyncStatus.CONFIRMED,reconciledAt:new Date().toISOString()}));
     }
     await done;
   } finally {db.close();}
@@ -429,10 +438,10 @@ export async function rejectDirectHybridWrite(ownerId, operationId, previousReco
     const done=completed(tx), store=tx.objectStore('operations');
     const op=await request(store.get(operationId));
     if(op?.ownerId===ownerId&&op.status===SyncStatus.PENDING){
-      store.put({...op,status:SyncStatus.FAILED});
+      store.put(secureHybridEntry({...op,status:SyncStatus.FAILED}));
       const all=await request(store.index('owner').getAll(IDBKeyRange.only(ownerId)));
       if(!all.some(other=>other.group===op.group&&other.recordId===op.recordId&&other.localSequence>op.localSequence)){
-        if(previousRecord)tx.objectStore('records').put({ownerId,group:op.group,recordId:op.recordId,record:previousRecord});
+        if(previousRecord)tx.objectStore('records').put(secureHybridEntry({ownerId,group:op.group,recordId:op.recordId,record:previousRecord}));
         else tx.objectStore('records').delete(key(ownerId,op.group,op.recordId));
       }
     }
@@ -458,11 +467,11 @@ export async function commitLocalFinanceBatch(ownerId, changes, origin='offline'
     let sequence=existing.reduce((n,op)=>Math.max(n,op.localSequence||0),meta?.lastOperationSequence||0);
     if(!Number.isSafeInteger(sequence+inputs.length))throw new Error('Local operation sequence exhausted');
     for(const op of inputs){
-      tx.objectStore('operations').add({...op,localSequence:++sequence,claimGeneration:0});
+      tx.objectStore('operations').add(secureHybridEntry({...op,localSequence:++sequence,claimGeneration:0}));
       if(op.kind==='delete')tx.objectStore('records').delete(key(ownerId,op.group,op.recordId));
-      else tx.objectStore('records').put({ownerId,group:op.group,recordId:op.recordId,record:op.payload,locallyUpdatedAt:createdAt});
+      else tx.objectStore('records').put(secureHybridEntry({ownerId,group:op.group,recordId:op.recordId,record:op.payload,locallyUpdatedAt:createdAt}));
     }
-    metaStore.put({...meta,ownerId,lastOperationSequence:sequence});await done;
+    metaStore.put(secureHybridEntry({...meta,ownerId,lastOperationSequence:sequence}));await done;
     return inputs.map(op=>op.id);
   }catch(error){try{tx?.abort();}catch{}if(done)await done.catch(()=>{});throw error;}
   finally{db.close();}
@@ -474,7 +483,7 @@ export async function approveHybridOperations(ownerId, operationIds) {
     const tx=db.transaction('operations','readwrite'),done=completed(tx),store=tx.objectStore('operations');
     const ops=await request(store.index('owner').getAll(IDBKeyRange.only(ownerId)));
     for(const op of ops)if(ids.has(op.id)&&op.origin==='offline'&&!op.approvedAt)
-      store.put({...op,approvedAt:new Date().toISOString()});
+      store.put(secureHybridEntry({...op,approvedAt:new Date().toISOString()}));
     await done;
   }finally{db.close();}
 }

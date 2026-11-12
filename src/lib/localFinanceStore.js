@@ -1,3 +1,4 @@
+import { loadFinanceJson, saveFinanceJson } from './financeVault';
 const TRANSACTIONS_KEY = 'movo.local.transactions.v1';
 const ACCOUNTS_KEY = 'movo.local.accounts.v1';
 const SAMPLES_KEY = 'movo.samples.enabled.v1'; // legacy flag, removed on Clear All
@@ -6,18 +7,14 @@ function storage() {
   try { return typeof window !== 'undefined' ? window.localStorage : null; } catch { return null; }
 }
 function readArray(key) {
-  try {
-    const raw = storage()?.getItem(key);
-    const value = raw ? JSON.parse(raw) : [];
-    return Array.isArray(value) ? value : [];
-  } catch { return []; }
+  const value = loadFinanceJson(key);
+  return Array.isArray(value) ? value : [];
 }
 function writeJson(key, value) {
   try {
     const store = storage();
     if (!store) return false;
-    store.setItem(key, JSON.stringify(value));
-    return true;
+    return saveFinanceJson(key, value);
   } catch { return false; }
 }
 

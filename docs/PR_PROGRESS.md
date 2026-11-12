@@ -1,3 +1,44 @@
+## 2026-11-13 — PR #290 exact-head CI red; non-destructive repair before commit
+
+- Exact initial head `89e159c`, Phase 1, hybrid-sync accounting, and Android CI stopped at Jest; **220/227 suites passed, 7 failed (1,347/1,368 tests passed)**. Disposable PG tenant isolation and IAP integrity both passed; no production deploy.
+- Found and corrected **native restore regex with double-escaped literal backslashes**; it prevented reading harmless `movo.preferences.v3`. Use correct regex escaping, still skip sensitive raw finance keys during generic restore.
+- Removed a **static financeVault import in Jest global setup** which preloaded native/platform code before per-test mocks, breaking native auth/browser/back-button tests. Test-only finance key now passed as a global byte array read only during financeVault module init in `NODE_ENV=test`. Ensure JSDOM supplies full WebCrypto, not just `getRandomValues`.
+- Updated `src/App.test.js` to assert through normal decrypted storage interfaces instead of interpreting encrypted localStorage as plaintext arrays; retain actual UI/accounting expectations.
+- IndexedDB interrupted-upgrade test expects a failed abort, and still verifies the entire original raw journal is byte-for-byte unchanged; fake-indexeddb reports a standard AbortError instead of the injected exception.
+- Release gates: rerun all exact-head tests + Android/iOS compiles + Vercel preview. Preserve both pending journal and old installation data. **Do not merge or deploy**.
+
+## 2026-11-13 — Separate staged financial ledger encryption PR (precommit)
+
+- Scope: protect synchronous `offlineWorkspaceStore` and `localFinanceStore` and the atomic IndexedDB `hybridLocalStore` pending outbox, without changing accounting transaction IDs, tombstones, approvals or cloud state.
+- Design: audited sync XChaCha20-Poly1305 cipher and HKDF domain separation from PR #289's mobile Keychain/Keystore seed; browser non-extractable HMAC-based local key; encrypted, verified pre-render legacy migration and whole-transaction IDB rollback.
+- Protect startup against key loss (block UI, never show empty wallet), keep legacy pref conflict in encrypted recovery capsule, and retain async native mirroring of ciphertext.
+- Tested: standalone Python AEAD round-trip/tamper-property check. Vercel temporary sandbox **unavailable due 402 payment_required**; no billing action taken. Use GitHub's disposable CI. Native hardware acceptance and rollback/downgrade safety are release blockers.
+- This is a **stacked PR based on #289, not a production change**. Do not merge or redeploy. Exact-head tests pending.
+- Detailed precommit record: `docs/engineering/updates/2026-11-13-encrypted-finance-ledger-nondestructive.md`.
+
+## 2026-11-12 — PR #289 native test mock lifecycle repair (documented before commit)
+
+- The second CI rerun reached 224/225 passing Jest suites; Vercel preview build failed only for `financeCacheNative.test.js` (4 checks), while Web AES-GCM tests now passed.
+- Cause: React-scripts/Jest resets mock implementations between tests; the native test attached `MovoNative.secureGet`, `secureSet` and Preferences methods in `beforeAll`. Their implementation was gone when called, so test-only wrapped-key verification failed.
+- Fix mocks in `beforeEach`; retain sealed test key for the test module to validate persistence. No production, native encryption implementation or accounting data changed. Recheck exact new SHA; keep PR unmerged.
+
+## 2026-11-12 — PR #289 CI repair (documented before commit)
+
+- Initial exact-head Phase 1 CI on `73db23e` **failed**; 220/225 suites passed. Root evidence: new encryption tests could not persist a non-extractable CryptoKey under jsdom's fake IndexedDB; the Jest-only TextEncoder polyfill was read-only and broke existing suites assigning it.
+- Fix **test harness only**: writable TextEncoder/TextDecoder and Node's native structuredClone for CryptoKey preservation in jsdom. Do not weaken AES-GCM or tampering tests. Add direct cryptographic assertions so a future failure surfaces its original exception instead of a masked cache miss.
+- Additional independent hardening: serialize the browser key's final check-and-put in one IndexedDB read/write transaction to prevent two tabs creating different keys. No signed-in data, backend schema or live systems changed.
+- Validate with exact-head CI, native Android/iOS builds and preview; PR remains open and unmerged.
+
+## 2026-11-12 — Offline financial read-cache encryption (PR staging, production unchanged)
+
+- Owner asked to harden financial data stored in plaintext by PR #287's new `offlineReadCache.js`.
+- Prepared AES-256-GCM authenticated encryption per owner/list; native random key wrapped by existing Keychain/Keystore plugin; browser non-extractable WebCrypto key stored in IndexedDB; new ciphertext is never mirrored to Capacitor Preferences.
+- Legacy list-cache JSON is migrated write-verify-then-delete, retried safely after incomplete migration; finance list retrieval remains cloud-first with offline fallback, owner isolation, and no auth-denial downgrade.
+- Expanded tests for encryption, manipulation/cross-account, migration, quota failure, native vault allowlists, Preferences cleanup. New native plugin key allowlist requires separately signed mobile releases.
+- **Scope limitation:** other plaintext accounting stores (`offlineWorkspaceStore`, `localFinanceStore`, and IndexedDB `hybridLocalStore` ledger/outbox) are not changed: rewriting their synchronous/atomic persistence without a proven compatibility plan risks destroying unsynced transactions. This remains a high-priority unresolved whole-app storage issue.
+- Precommit evidence: exact main SHA `2b9a1cf` and a standalone Python AES-GCM/AAD test. **GitHub full suite, native compiles and physical devices still pending.** No Supabase/production modification, no merge/redeploy.
+- Detailed record: `docs/engineering/updates/2026-11-12-financial-offline-cache-encryption.md`.
+
 ## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
 
 - **Before commit:** compared the exact branches `3e47d69` (PR #287) and `e7d7126` (main) against merge base `7a65b55`. Only `docs/PR_PROGRESS.md` overlaps; main adds `docs/engineering/updates/2026-11-12-android-auth-release-gate-test-isolation.md` which is absent from PR #287.
