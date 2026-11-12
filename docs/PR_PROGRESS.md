@@ -5,7 +5,7 @@ Owner request: there should always be buttons to restore purchases and manage su
 - **On the website:** Restore re-checks the account's verified plan. Manage offers the App Store and Google Play subscription pages.
 - **Signed out:** Restore opens sign-in.
 
-No change to purchase verification or entitlements. Validation: new `SubscriptionLinks.test.js`, updated plans panel and Plan & Usage tests, Jest 221 suites / 1,328 tests, `tsc`, strict build, browser check (see `docs/engineering/updates/2026-11-12-restore-manage-always.md`). Not run: the store dialogs on real devices.
+No change to purchase verification or entitlements. Validation: new `SubscriptionLinks.test.js`, updated plans panel and Plan & Usage tests, Jest 221 suites / 1,328 tests, `tsc`, strict build, browser check (see `docs/engineering/updates/2026-11-12-restore-manage-always.md`). Not run: the store dialogs on real devices. Follow-up: 7d20d6f was pushed with one outdated `App.test.js` assertion (the old website note). It is fixed in the next commit, and the full suite passes.
 
 ## 2026-11-12 — "Save 20%" on the Annual plan
 

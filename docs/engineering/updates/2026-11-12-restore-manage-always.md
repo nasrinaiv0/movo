@@ -47,5 +47,10 @@ Owner: "make sure there is always button for restore and manage subscriptions."
   375×667 and stays centered; Plan & Usage shows both buttons and the two store links.
 - Not run: the store restore and manage dialogs on real iPhone / Android devices.
 
+## Follow-up fix
+7d20d6f was pushed with one failing test: `App.test.js` still expected the old website note ("Store purchases and restore
+are available…"), which this change replaced on purpose. The test now expects the new note and also checks that both
+buttons are present and enabled. The full suite passes: 221 suites / 1,328 tests.
+
 ## Rollback
 Revert this commit.
