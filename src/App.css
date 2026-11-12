@@ -8741,3 +8741,29 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .tx-receipt-plus { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--on-accent, #fff); }
 .movo-app .tx-receipt-replace { position: relative; flex: none; display: inline-grid; place-items: center; min-height: 44px; padding: 0 12px; border-radius: 99px; background: var(--card-solid, #fff); color: var(--accent-ink, var(--accent)); font-size: 13px; font-weight: 600; cursor: pointer; overflow: hidden; }
 .movo-app .tx-receipt-remove { flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin-right: -6px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
+
+/* ===== Transaction details sheet (owner, 2026-11-12): solid, compact, organized ===== */
+.movo-app.movo-app .sheet.tx-detail-sheet { background: var(--card-solid, #fff) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.movo-app.movo-app .sheet.tx-detail-sheet::before, .movo-app.movo-app .sheet.tx-detail-sheet::after { opacity: 0 !important; }
+.movo-app .tx-detail-hero { display: grid; justify-items: start; gap: 6px; margin: 4px 0 14px; }
+.movo-app .tx-detail-amount { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text); }
+.movo-app .tx-detail-hero.type-income .tx-detail-amount { color: var(--green, #16a34a); }
+.movo-app .tx-detail-hero .fx-note { color: var(--muted); font-size: 12.5px; }
+.movo-app .tx-detail-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.movo-app .tx-detail-chip { padding: 3px 10px; border-radius: 99px; background: var(--field); color: var(--muted); font-size: 12px; font-weight: 600; }
+.movo-app .tx-detail-list { margin: 0; padding: 2px 14px; border-radius: 16px; background: var(--field); }
+.movo-app .tx-detail-list > div { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; min-width: 0; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.movo-app .tx-detail-list > div:last-child { border-bottom: 0; }
+.movo-app .tx-detail-list dt { flex: none; color: var(--muted); font-size: 13px; }
+.movo-app .tx-detail-list dd { margin: 0; min-width: 0; font-size: 14px; font-weight: 600; text-align: end; overflow-wrap: anywhere; }
+.movo-app .tx-detail-list > div.wide { display: grid; gap: 3px; }
+.movo-app .tx-detail-list > div.wide dd { text-align: start; font-weight: 500; line-height: 1.4; }
+.movo-app .tx-detail-list .ref-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.movo-app .tx-detail-receipt { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; margin-top: 10px; padding: 0 14px; border: 0; border-radius: 16px; background: var(--field); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; text-align: start; cursor: pointer; }
+.movo-app .tx-detail-receipt span { flex: 1; }
+.movo-app .tx-detail-receipt .movo-icon:first-child { color: var(--accent-ink, var(--accent)); }
+.movo-app.movo-app .tx-detail-actions { margin-top: 14px; gap: 10px; }
+.movo-app.movo-app .tx-detail-actions > button { min-height: 48px; border-radius: 16px; font-size: 15px; }
+.movo-app.movo-app .tx-detail-actions > .secondary-button { background: var(--field) !important; color: var(--text) !important; box-shadow: none !important; border: 0 !important; }
+.movo-app.movo-app.movo-app.movo-app.movo-app .sheet.tx-detail-sheet .tx-detail-actions > .secondary-button,
+.movo-app.movo-app.movo-app.movo-app.movo-app .sheet.tx-detail-sheet .tx-detail-actions > .secondary-button :is(span, svg, .movo-icon) { color: var(--text) !important; }
