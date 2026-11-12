@@ -2471,7 +2471,7 @@ function App() {
   const c = {
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
-    entitlement, entitlementReady, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
+    entitlement, entitlementReady, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), startAccount, openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
     setCloudSyncEnabled,
     syncState,
     deviceCopyAccess,

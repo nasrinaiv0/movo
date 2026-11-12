@@ -13,7 +13,8 @@ import { DEFAULT_SCENERY, GLOWS, HERO_FEATURE, ZODIAC, glowBackground, isPremium
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
-import { getStoreProducts, getStoreEntitlements, restoreStorePurchases, purchaseStoreProduct, manageStoreSubscriptions, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
+import { getStoreProducts, getStoreEntitlements, purchaseStoreProduct, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
+import SubscriptionLinks from '../components/SubscriptionLinks';
 
 export const ACCENTS = [['green', '#086b3a'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#d32f2f'], ['slate', '#334155']];
 export const THEMES = [
@@ -170,19 +171,6 @@ export function UsageSheet({ c, onClose }) {
     return () => { live = false; };
   }, [c.session?.access_token, nativePurchases]);
 
-  const runRestore = async () => {
-    setPurchaseBusy(true); setPurchaseMessage('');
-    try {
-      const result = await restoreStorePurchases(c.session);
-      setStoreEntitlement(result.entitlement); await c.refreshEntitlement?.();
-      setPurchaseMessage(result.restoredCount
-        ? tr('Your purchases were restored and verified.')
-        : tr('No active MOVO subscription was found for this store account.'));
-    } catch (error) {
-      setPurchaseMessage(error.message || tr('Could not restore purchases. Please try again.'));
-    } finally { setPurchaseBusy(false); }
-  };
-
   const runPurchase = async (productIdentifier) => {
     setPurchaseBusy(true); setPurchaseMessage('');
     try {
@@ -227,13 +215,12 @@ export function UsageSheet({ c, onClose }) {
           </div>) : <p className="form-hint">{tr('Store subscription products are not available yet.')}</p>}
         </div>
       </>}
-      <div className="plan-usage-links">
-        <button type="button" className="link-button" disabled={purchaseBusy || !c.session?.access_token} onClick={runRestore}>{purchaseBusy ? tr('Please wait…') : tr('Restore purchases')}</button>
-        <button type="button" className="link-button" disabled={purchaseBusy || shownEntitlement?.source !== 'store'} onClick={() => manageStoreSubscriptions().catch((error) => setPurchaseMessage(error.message || tr('Could not open subscription management.')))}>{tr('Manage subscription')}</button>
-      </div>
     </>}
+    {/* Always shown, in the apps and on the website, signed in or not (owner, 2026-11-12). */}
+    <SubscriptionLinks session={c.session} onSignIn={c.startAccount ? () => { onClose(); c.startAccount('signin'); } : undefined}
+      onRefresh={async (value) => { if (value) setStoreEntitlement(value); await c.refreshEntitlement?.(); }} className="plan-usage-links" />
     {purchaseMessage && <p className="form-hint" role="status" aria-live="polite">{purchaseMessage}</p>}
-    <p className="form-hint plan-usage-note">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}{!nativePurchases && <> {tr('Store purchases and restore are available in the MOVO iOS and Android apps.')}</>}</p>
+    <p className="form-hint plan-usage-note">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}{!nativePurchases && <> {tr('Subscribe in the MOVO iOS or Android app.')}</>}</p>
     <div className="plan-usage-foot">
       <button type="button" className="primary-button plan-usage-action" onClick={() => { onClose(); c.openPlans?.(); }}>{tier === 'free' ? tr('Upgrade MOVO') : tr('View plans')}</button>
     </div>

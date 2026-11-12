@@ -1,3 +1,45 @@
+## 2026-11-12 — Android sign-in: "not configured" fixed for every app build
+
+Owner report: Google and email sign-in in the Android app said "not configured".
+
+- **Cause:** that app was built without MOVO's public Supabase connection. Those values lived only in Vercel, the protected GitHub release environment and Codemagic, so Android Studio, local, CI or older builds had none.
+- **Fix:** the two public values (project URL and publishable key) are now committed in `.env.production`, so every production build has them, while environment settings still override them.
+  - A new test keeps that file to exactly those two public values and rejects anything secret.
+  - A new build check fails any Android or iPhone build whose app lacks the connection. It runs in the Android CI build, the Google Play jobs and Codemagic.
+- **Verified:** a build with no settings now includes the connection, a build with settings keeps its own, and the live sign-in service accepts the key with Google and email enabled.
+- **Owner action:** install a new Android build made from main after this merges (the app on the phone keeps its old code).
+
+Not run: sign-in on a real Android device. See `docs/engineering/updates/2026-11-12-android-signin-config.md`.
+
+## 2026-11-12 — "Save 20%" on the plans when Annual is chosen
+
+Owner follow-up, with a reference paywall whose layout was not copied: the saving belongs on the plans. When Annual is selected, Pro and Pro+ each show a green "Save 20%" pill on the card's top edge. The figure comes from each plan's own store prices when loaded, else the owner's 20%. The current plan keeps its "Current" badge, Monthly shows no saving, and the toggle no longer carries the badge. Restore purchases and Manage subscription drop the "·" separator, which dangled when they wrapped. Validation: `PlanOffer.test.js` updated, full Jest suite, `tsc`, strict build, browser screenshots in light and dark at 430, 375 and 360px including German and Filipino at the Largest text size. Not run: real devices.
+
+## 2026-11-12 — Restore purchases and Manage subscription always shown
+
+Owner request: there should always be buttons to restore purchases and manage subscriptions. Both now appear in the plans panel and in Plan & Usage, for every person, in the apps and on the website, signed in or not, and they are never disabled.
+- **In the apps:** Restore uses the App Store or Google Play restore, which the server verifies. Manage opens the store's subscription page.
+- **On the website:** Restore re-checks the account's verified plan. Manage offers the App Store and Google Play subscription pages.
+- **Signed out:** Restore opens sign-in.
+
+No change to purchase verification or entitlements. Validation: new `SubscriptionLinks.test.js`, updated plans panel and Plan & Usage tests, Jest 221 suites / 1,328 tests, `tsc`, strict build, browser check (see `docs/engineering/updates/2026-11-12-restore-manage-always.md`). Not run: the store dialogs on real devices. Follow-up: 7d20d6f was pushed with one outdated `App.test.js` assertion (the old website note). It is fixed in the next commit, and the full suite passes.
+
+## 2026-11-12 — "Save 20%" on the Annual plan
+
+Owner request: show a 20% saving for the annual plan. The Annual toggle in the plans panel now reads "Save 20%", translated into 11 languages. In the apps the figure comes from the App Store or Google Play prices, so it always matches what the store charges. It reads 20% when the annual plans are priced at 80% of twelve months, which is now in `docs/commercial/STORE_BILLING_SETUP.md`. The website has no store prices and shows the owner's 20%. The toggle grows to fit the badge on one line; checked at 430, 375 and 360px, including German and Filipino at the Largest text size. Validation: new `storeProducts.test.js`, updated `PlanOffer.test.js`, full Jest suite, `tsc`, strict build (see `docs/engineering/updates/2026-11-12-annual-save-20.md`). Owner action: set the annual prices in the store consoles. Not run: real devices.
+
+## 2026-11-12 — Plans panel: centered pop-up
+
+Owner request: the "Upgrade MOVO" plans panel should be centered on the screen. It now opens as a centered pop-up, like the transaction details. It sits in the middle of the screen with equal space above and below, using the larger safe area on both sides. It has no border, only a soft shadow, and no drag handle; the close button stays. The Continue button stays inside the rounded corners. If the panel is taller than the screen it scrolls, with Continue pinned. Checked in the browser at 430×932, 390×844 and 375×667 in light and dark: top gap equals bottom gap, and no scrolling at any of those sizes. No plan, price or purchase logic changed. Validation: Jest 219 suites / 1,320 tests, `tsc`, strict build (see `docs/engineering/updates/2026-11-12-plans-panel-centered.md`). Not run: real devices.
+
+## 2026-11-12 — Production build fix: owner billing test isolated from the build machine
+
+The production deployment of `main` after #284 failed on Vercel: `npm run build` runs the tests first, and the owner billing-readiness test read Vercel's real Google Play settings and saw Google checkout as ready. The test now clears every store billing setting before it runs and restores the environment afterwards. Production kept serving the previous deployment. Reproduced locally with fake Google Play settings, then fixed. The full suite passes with and without Vercel-like settings. Test-only change (see `docs/engineering/updates/2026-11-12-owner-test-env-isolation.md`). Separately, Vercel now refuses new deployments ("Account is blocked"); this needs the owner in the Vercel dashboard.
+
+## 2026-11-12 — Transaction details: middle of the screen, no outline
+
+Owner follow-up: "center meaning center of the screen, and less border especially for dark mode". The details pop-up now sits in the middle of the screen with equal space above and below. On phones with a notch or home indicator the larger safe area is used on both sides, so it stays at the exact middle. It has no border, outline or inner highlight; a soft shadow sets it apart. In dark mode the lines between rows are gone and spacing separates them; in light mode they are fainter. CSS only. Measured in the browser at 430×932, 390×844 and 375×667 in light and dark: top gap equals bottom gap and the border width is 0. Validation: Jest, strict build. Not run: real devices.
+
 ## 2026-11-12 — Transaction details: centered, with spent and logged times
 
 Owner request: place the transaction details at the center and add the time it was logged and the time it was spent. The details now open as a centered pop-up, with the name, the signed amount and the type centered on top. The details card adds two times: **Spent** (Received for income, Transferred for transfers), which is the transaction's date and time, and **Logged**, which is when the record was saved in MOVO (`created_at`). Cloud records already had a logged time; new records saved on the device now get one too. That stamp is display-only: uploads build their own payloads and reconciliation ignores `created_at`. Older local records without a saved time show only Spent. Validation: Jest 219 suites / 1,320 tests, strict build, browser screenshots in light and dark (see `docs/engineering/updates/2026-11-12-transaction-details.md`). Not run: real devices.
