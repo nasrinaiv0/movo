@@ -83,8 +83,10 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     const item = productFor(tier, period);
     return item ? `${item.priceString}/${tr(period === 'monthly' ? 'mo' : 'yr')}` : tr('Price in app');
   };
-  // "Save 20%" on Annual (owner, 2026-11-12); worked out from the store's prices whenever they are loaded.
-  const bestSaving = annualSavingPercent(['pro', 'pro_plus'].map(tier => ({ monthly: productFor(tier, 'monthly'), annual: productFor(tier, 'annual') })));
+  // "Save 20%" on each paid plan once Annual is chosen (owner, 2026-11-12); worked out from that plan's store prices
+  // whenever they are loaded, else the owner's annual pricing.
+  const tileSaving = (tier) => tier === 'free' || period !== 'annual' ? 0
+    : annualSavingPercent([{ monthly: productFor(tier, 'monthly'), annual: productFor(tier, 'annual') }]);
   const claim = async () => {
     if (!session?.access_token) { onSignIn(); return; }
     setBusy(true); setError('');
@@ -136,11 +138,12 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
     </div>
     <div className="plan-period" role="group" aria-label={tr('Billing period')}>
-      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}{id === 'annual' && bestSaving > 0 && <em className="plan-period-save">{tr('Save {n}%', { n: bestSaving })}</em>}</button>)}
+      {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}</button>)}
     </div>
     <div className="plan-tiles" role="radiogroup" aria-label={tr('Compare plans')}>
       {PLANS.map((item, i) => <button type="button" role="radio" aria-checked={index === i} key={item.tier} className={`plan-tile tier-${item.tier}${index === i ? ' selected' : ''}`} onClick={() => setIndex(i)}>
-        {item.tier === plan && <small className="plan-tile-badge">{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>}
+        {item.tier === plan ? <small className="plan-tile-badge">{onTrial && item.tier === 'pro' ? tr('Free month') : tr('Current')}</small>
+          : tileSaving(item.tier) > 0 && <small className="plan-tile-badge is-save" key="save">{tr('Save {n}%', { n: tileSaving(item.tier) })}</small>}
         <MovoMark size={26} tone={item.tone} />
         <strong>{tr(item.name)}</strong>
         <span className={`plan-tile-price${item.tier !== 'free' && !productFor(item.tier, period) ? ' is-note' : ''}`}>{tilePrice(item.tier)}</span>

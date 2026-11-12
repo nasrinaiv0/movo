@@ -43,9 +43,15 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   expect(el.querySelectorAll('.plan-tile-price.is-note')).toHaveLength(2);
   expect(el.textContent).not.toMatch(/₱\s?[1-9]/);
   expect(el.querySelector('.plan-price')).toBeNull();
-  // Annual says "Save 20%" (owner, 2026-11-12), the owner's annual pricing, since the website has no store prices.
-  const annualButton = Array.from(el.querySelectorAll('.plan-period button')).find(b => b.textContent.startsWith('Annual'));
-  expect(annualButton.querySelector('.plan-period-save').textContent).toBe('Save 20%');
+  // "Save 20%" sits on the Pro and Pro+ plans once Annual is chosen (owner, 2026-11-12): the owner's annual pricing,
+  // since the website has no store prices. Free keeps its "Current" badge; Monthly shows no saving.
+  const saves = () => Array.from(el.querySelectorAll('.plan-tile')).map(t => t.querySelector('.plan-tile-badge.is-save')?.textContent || '');
+  expect(saves()).toEqual(['', '', '']);
+  await act(async () => button(el, 'Annual').click());
+  expect(saves()).toEqual(['', 'Save 20%', 'Save 20%']);
+  expect(el.querySelectorAll('.plan-tile')[0].querySelector('.plan-tile-badge').textContent).toBe('Current');
+  await act(async () => button(el, 'Monthly').click());
+  expect(saves()).toEqual(['', '', '']);
   // Restore purchases and Manage subscription are always there (owner, 2026-11-12), also on the website.
   const links = Array.from(el.querySelectorAll('.subscription-links button')).map(b => [b.textContent, b.disabled]);
   expect(links).toEqual([['Restore purchases', false], ['Manage subscription', false]]);
@@ -80,8 +86,10 @@ test('in the app, the store price drives the panel and Continue buys the selecte
   // The tiles carry the store amount for the chosen period, and Annual shows the saving.
   expect(el.querySelectorAll('.plan-tile-price')[2].textContent).toBe('₱349.00/mo');
   const annualButton = Array.from(el.querySelectorAll('.plan-period button')).find(b => b.textContent.startsWith('Annual'));
-  expect(annualButton.querySelector('.plan-period-save').textContent).toBe('Save 17%');
   await act(async () => annualButton.click());
+  // With store prices the plan's own saving shows (17% here); the current plan (Pro) keeps "Current" instead.
+  expect(el.querySelectorAll('.plan-tile')[2].querySelector('.plan-tile-badge.is-save').textContent).toBe('Save 17%');
+  expect(el.querySelectorAll('.plan-tile')[1].querySelector('.plan-tile-badge').textContent).toBe('Current');
   expect(el.querySelector('.plan-price strong').textContent).toBe('₱3,490.00');
   expect(el.querySelectorAll('.plan-tile-price')[2].textContent).toBe('₱3,490.00/yr');
   await act(async () => el.querySelector('.plan-cta').click());

@@ -54,7 +54,6 @@ export default function SubscriptionLinks({ session, onSignIn, onRefresh, classN
   return <div className={`subscription-links ${className}`.trim()}>
     <div className="subscription-links-row">
       <button type="button" className="link-button" disabled={busy} onClick={restore}>{busy ? tr('Please wait…') : tr('Restore purchases')}</button>
-      <span aria-hidden="true">·</span>
       <button type="button" className="link-button" aria-expanded={native ? undefined : stores} onClick={manage}>{tr('Manage subscription')}</button>
     </div>
     {stores && <div className="subscription-links-stores">

@@ -8861,8 +8861,8 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app .plan-period-save { flex: none; padding: 2px 7px; font-size: 11px; line-height: 1.3; white-space: nowrap; }
 /* Restore purchases · Manage subscription, always shown (owner, 2026-11-12): plans panel footer and Plan & Usage. */
 .movo-app .subscription-links { display: grid; justify-items: center; gap: 6px; text-align: center; }
-.movo-app .subscription-links-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; }
-.movo-app .subscription-links-row > span { color: var(--muted); }
+.movo-app .subscription-links-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 20px; }
+.movo-app .subscription-links-row > span { display: none; }
 .movo-app.movo-app .subscription-links .link-button { min-height: 44px; padding: 0 4px; font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .movo-app .subscription-links-stores { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 13px; }
 .movo-app .subscription-links-stores a { display: inline-flex; align-items: center; min-height: 36px; color: var(--accent-ink, var(--accent)); font-weight: 600; }
@@ -8871,3 +8871,8 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app .sheet.plan-panel .subscription-links .link-button { --button-ink: var(--pp-ink); min-height: 36px; font-size: 12px; color: var(--pp-ink); }
 .movo-app .sheet.plan-panel .subscription-links-row > span, .movo-app .sheet.plan-panel .subscription-links-message { color: var(--pp-muted); }
 .movo-app .sheet.plan-panel .subscription-links-stores a { color: var(--pp-gold-soft); }
+/* "Save 20%" moves onto the Pro and Pro+ plans when Annual is chosen (owner, 2026-11-12). A green pill on the plan's
+   top edge, where "Current" sits on the current plan; it fades in calmly. */
+.movo-app.movo-app.movo-app.movo-app .plan-tile .plan-tile-badge.is-save { background: var(--pp-green, #1f9d5c); color: #fff; font-weight: 700; letter-spacing: .01em; animation: plan-save-in var(--dur-base, 220ms) ease-out both; }
+@keyframes plan-save-in { from { opacity: 0; transform: translate(-50%, 3px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .movo-app.movo-app.movo-app.movo-app .plan-tile .plan-tile-badge.is-save { animation: none; } }
