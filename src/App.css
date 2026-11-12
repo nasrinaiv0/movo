@@ -8767,3 +8767,15 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app .tx-detail-actions > .secondary-button { background: var(--field) !important; color: var(--text) !important; box-shadow: none !important; border: 0 !important; }
 .movo-app.movo-app.movo-app.movo-app.movo-app .sheet.tx-detail-sheet .tx-detail-actions > .secondary-button,
 .movo-app.movo-app.movo-app.movo-app.movo-app .sheet.tx-detail-sheet .tx-detail-actions > .secondary-button :is(span, svg, .movo-icon) { color: var(--text) !important; }
+
+/* Account picker availability (owner, 2026-11-12): only the wallet (or card) icon and the amount; the words
+   "Available balance / credit" stay for screen readers only. The amount sits right after the icon, full width. */
+.movo-app.movo-app .acct-pick-availability { gap: 5px; margin-top: 3px; }
+.movo-app.movo-app .acct-pick-availability strong { margin-left: 0; flex: 0 1 auto; font-size: 12px; }
+.movo-app.movo-app .tx-accounts.two .acct-pick-availability strong { font-size: 11.5px; }
+@media (max-width: 399px) {
+  .movo-app.movo-app .tx-accounts.two .acct-pick { gap: 5px; padding: 7px 7px 7px 8px; }
+  .movo-app.movo-app .tx-accounts.two .acct-pick-logo { flex-basis: 24px; width: 24px; height: 24px; }
+  .movo-app.movo-app .tx-accounts.two .acct-pick-chevron { width: 14px; height: 14px; }
+  .movo-app.movo-app .tx-accounts.two .acct-pick-availability strong { font-size: 11px; }
+}
