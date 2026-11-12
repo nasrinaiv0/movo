@@ -9,7 +9,7 @@ import { t as tr } from '../lib/i18n';
 import { longDate, money } from '../lib/format';
 import { countryName } from '../lib/regions';
 import { SCENERIES, PHOTO, toSceneryPhoto } from '../lib/scenery';
-import { DEFAULT_SCENERY, GLOWS, HERO_FEATURE, ZODIAC, isPremiumHero, zodiacBackground } from '../lib/homeHero';
+import { DEFAULT_SCENERY, GLOWS, HERO_FEATURE, ZODIAC, glowBackground, isPremiumHero, zodiacBackground } from '../lib/homeHero';
 import { enablePush, pushSupported, pushGranted } from '../lib/alerts';
 import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
@@ -403,8 +403,8 @@ export function HomeHeroPicker({ c }) {
         {shortList.map(sceneryTile)}
         <button type="button" className="hero-tile more" onClick={() => setAll(true)}><span className="hero-tile-art" aria-hidden="true" /><small>{tr('All')} · {SCENERIES.length}</small></button>
       </>}
-      {tab === 'zodiac' && ZODIAC.map(z => tile(`zodiac:${z.id}`, tr(z.name), { background: `${zodiacBackground(z)} 72% center / cover no-repeat` }))}
-      {tab === 'glow' && GLOWS.map(g => tile(`glow:${g.id}`, tr(g.name), { background: g.bg }, ' glow'))}
+      {tab === 'zodiac' && ZODIAC.map(z => tile(`zodiac:${z.id}`, tr(z.name), { background: `${zodiacBackground(z)} 70% top / cover no-repeat` }))}
+      {tab === 'glow' && GLOWS.map(g => tile(`glow:${g.id}`, tr(g.name), { background: glowBackground(g) }, ' glow'))}
     </div>
     <p className="form-note">{premium ? tr('The header stays at the top of Home as you scroll.') : tr('Zodiac and glow headers come with Pro and Pro+. The header stays at the top of Home as you scroll.')}</p>
     {all && <Sheet title={tr('Home header scenery')} subtitle={tr('{n} sceneries', { n: SCENERIES.length })} onClose={() => setAll(false)} label={tr('Home header scenery')}>

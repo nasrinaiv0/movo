@@ -8502,3 +8502,5 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) { padding-top: calc(var(--hero-pull) + 10px) !important; }
 /* Header buttons align to the top of their row, so a taller Plus button never shifts the icons. */
 .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header .header-actions { align-items: flex-start !important; }
+/* Premium headers (reference, 2026-11-12, kept subtle): a soft glow that follows the balance card's notched shape. */
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block:is(.hero-zodiac, .hero-glow) .balance-card { box-shadow: none; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .28)) drop-shadow(0 10px 22px color-mix(in srgb, var(--hero-glow, #3fd27f) 32%, transparent)); }

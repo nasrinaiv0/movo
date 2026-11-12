@@ -10,11 +10,16 @@ test('all twelve zodiac constellations, each a well-formed figure', () => {
     z.lines.forEach(([a, b]) => { expect(z.stars[a]).toBeDefined(); expect(z.stars[b]).toBeDefined(); });
     const svg = zodiacSvg(z);
     expect(svg.startsWith('<svg')).toBe(true);
-    expect((svg.match(/<line /g) || []).length).toBe(z.lines.length);
+    expect((svg.match(/<line /g) || []).length).toBe(z.lines.length + 36 + 12); // figure + wheel ticks and spokes
     expect(svg).not.toMatch(/<script|href=/); // generated art only: nothing executable, nothing fetched
   });
   expect(zodiacSvg(ZODIAC[0])).toBe(zodiacSvg(ZODIAC[0])); // same stars every time
-  expect(GLOWS.length).toBeGreaterThanOrEqual(6);
+  expect(GLOWS.length).toBeGreaterThanOrEqual(7);
+  // The celestial glow is the same restrained night-sky artwork with a single star in the wheel.
+  const celestial = resolveHero('glow:celestial', { premium: true });
+  expect(celestial.kind).toBe('glow');
+  expect(celestial.background).toMatch(/^url\("data:image\/svg\+xml,/);
+  expect(decodeURIComponent(celestial.background)).not.toMatch(/<script|href=/);
 });
 
 test('the default is a scenery; plain shows none; scenery choices resolve to their picture', () => {

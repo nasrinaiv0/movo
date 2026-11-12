@@ -1,3 +1,7 @@
+## 2026-11-12 — Zodiac headers in the style of the owner's reference (kept subtle)
+
+The zodiac art now follows the owner's reference, restrained: a night sky with a faint Milky Way, a thin golden zodiac wheel framing the sign's constellation, a few sparkles and gold-rimmed hills above the balance card. There is a new Celestial glow (green and gold) and a soft glow around the balance card on premium headers. Validation: Jest, tsc, strict build, browser screenshots for each element (see `docs/engineering/updates/2026-11-12-celestial-zodiac-art.md`).
+
 ## 2026-11-12 — Pinned header down to Total balance, new search icon, equal header spacing
 
 Owner requests: the search icon has a bigger lens and a shorter handle. The pinned Home header now reaches down to the bottom of Total balance, which is drawn inside it. Header buttons start 28 px from the top on Home, Wallet, Transactions and Menu (measured; was 44 on Home). Validation: Jest 206 suites / 1,249 tests, tsc, strict build, browser measurements (see `docs/engineering/updates/2026-11-12-header-block-search-icon.md`).

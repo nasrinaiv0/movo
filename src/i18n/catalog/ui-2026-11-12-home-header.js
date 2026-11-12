@@ -28,4 +28,5 @@ export default [
   ["Ocean glow", "Liwanag ng dagat", "توهج المحيط", "海洋光晕", "Brillo oceánico", "Bagliore oceano", "Ozeanleuchten", "Lueur océane", "Brilho do oceano", "オーシャングロウ", "오션 글로우", "समुद्री चमक"],
   ["Rose dusk", "Rosas na takipsilim", "غسق وردي", "玫瑰暮色", "Atardecer rosa", "Crepuscolo rosa", "Rosa Abenddämmerung", "Crépuscule rose", "Crepúsculo rosa", "ローズダスク", "로즈 황혼", "गुलाबी सांझ"],
   ["Zodiac & glow Home headers", "Mga zodiac at glow na header ng Home", "رؤوس الأبراج والتوهج للصفحة الرئيسية", "星座和光晕首页顶栏", "Cabeceras de Inicio de zodiaco y resplandor", "Intestazioni Home zodiaco e bagliore", "Tierkreis- und Leucht-Köpfe für die Startseite", "En-têtes d’accueil zodiaque et lueur", "Cabeçalhos do Início de zodíaco e brilho", "星座とグロウのホームヘッダー", "별자리·글로우 홈 헤더", "राशि और चमक वाले होम हेडर"],
+  ["Celestial", "Celestial", "سماوي", "星空", "Celestial", "Celeste", "Himmlisch", "Céleste", "Celestial", "セレスティアル", "셀레스티얼", "दिव्य आकाश"],
 ];

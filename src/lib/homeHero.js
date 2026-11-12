@@ -39,7 +39,9 @@ export const ZODIAC = [
   { id: 'pisces', name: 'Pisces', element: 'water', stars: [[0.1, 0.2], [0.04, 0.08], [0.16, 0.04], [0.22, 0.3], [0.4, 0.52], [0.54, 0.72], [0.66, 0.6], [0.8, 0.52], [0.9, 0.42], [0.94, 0.58], [0.84, 0.64]], lines: [[1, 2], [2, 0], [0, 1], [0, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10], [10, 7]] },
 ];
 
+const CELESTIAL = { sky: ['#03140d', '#0b3020'], glow: '#3fd27f', glow2: '#f2c86a' };
 export const GLOWS = [
+  { id: 'celestial', name: 'Celestial', art: true },
   { id: 'aurora', name: 'Aurora', bg: 'radial-gradient(120% 90% at 8% 0%, rgba(52,211,153,.75), transparent 58%), radial-gradient(90% 80% at 92% 18%, rgba(34,211,238,.65), transparent 60%), radial-gradient(80% 90% at 55% 110%, rgba(167,139,250,.6), transparent 62%), #071322' },
   { id: 'nebula', name: 'Nebula', bg: 'radial-gradient(100% 90% at 85% 10%, rgba(236,72,153,.7), transparent 58%), radial-gradient(110% 90% at 10% 90%, rgba(124,58,237,.75), transparent 60%), radial-gradient(60% 60% at 50% 40%, rgba(96,165,250,.35), transparent 70%), #12091f' },
   { id: 'platinum', name: 'Platinum', bg: 'radial-gradient(90% 80% at 15% 10%, rgba(226,232,240,.55), transparent 60%), radial-gradient(80% 70% at 85% 30%, rgba(203,213,225,.45), transparent 62%), radial-gradient(70% 80% at 60% 100%, rgba(186,230,253,.35), transparent 60%), linear-gradient(140deg, #23262d, #121418)' },
@@ -50,33 +52,67 @@ export const GLOWS = [
 
 // A small seeded generator so each sign always gets the same background stars.
 const rng = (seed) => () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+const f = (n) => n.toFixed(1);
 
-/** The SVG artwork for a zodiac sign: night sky, element glow, background stars and the glowing constellation. */
-export function zodiacSvg(sign, { width = 860, height = 360 } = {}) {
-  const el = ELEMENTS[sign.element];
-  const rand = rng(ZODIAC.indexOf(sign) * 977 + 31);
-  const field = Array.from({ length: 70 }, () => {
-    const x = rand() * width; const y = rand() * height; const r = 0.5 + rand() * 1.3; const o = 0.25 + rand() * 0.55;
-    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" fill="#fff" opacity="${o.toFixed(2)}"/>`;
+/*
+ * Night-sky artwork in the spirit of the owner's reference (2026-11-12), kept restrained: a seeded starfield, a faint
+ * Milky Way, a thin golden zodiac wheel (rings, ticks and twelve markers, no glyphs, which phones may draw as emoji)
+ * framing the sign's constellation, a few four-point sparkles and low hills with a golden rim of light. Drawn at
+ * 860×600 for the pinned block (header + Total balance); the header alone shows its top part.
+ */
+export function zodiacSvg(sign, { palette, seed } = {}) {
+  const width = 860; const height = 600;
+  const el = palette || ELEMENTS[sign.element];
+  const rand = rng((seed ?? ZODIAC.indexOf(sign)) * 977 + 31);
+  const field = Array.from({ length: 90 }, () => {
+    const x = rand() * width; const y = rand() * height * 0.62; const r = 0.5 + rand() * 1.2; const o = 0.2 + rand() * 0.55;
+    return `<circle cx="${f(x)}" cy="${f(y)}" r="${r.toFixed(2)}" fill="#fff" opacity="${o.toFixed(2)}"/>`;
   }).join('');
-  // The figure sits to the right, away from the mascot and greeting.
-  const box = { x: width * 0.46, y: height * 0.12, w: width * 0.5, h: height * 0.78 };
-  const at = ([x, y]) => [box.x + x * box.w, box.y + y * box.h];
-  const lines = sign.lines.map(([a, b]) => { const [x1, y1] = at(sign.stars[a]); const [x2, y2] = at(sign.stars[b]); return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`; }).join('');
-  const stars = sign.stars.map((p, i) => { const [x, y] = at(p); const r = i === 0 ? 5 : 3.6; return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(r * 3.2).toFixed(1)}" fill="url(#halo)"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="#fff"/>`; }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">`
-    + `<defs><linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${el.sky[0]}"/><stop offset="1" stop-color="${el.sky[1]}"/></linearGradient>`
-    + `<radialGradient id="g1" cx="0.78" cy="0.35" r="0.6"><stop offset="0" stop-color="${el.glow}" stop-opacity=".55"/><stop offset="1" stop-color="${el.glow}" stop-opacity="0"/></radialGradient>`
-    + `<radialGradient id="g2" cx="0.15" cy="1" r="0.7"><stop offset="0" stop-color="${el.glow2}" stop-opacity=".3"/><stop offset="1" stop-color="${el.glow2}" stop-opacity="0"/></radialGradient>`
+  const sparkle = (x, y, s, o) => `<path d="M${f(x)} ${f(y - s)}Q${f(x + s * 0.12)} ${f(y - s * 0.12)} ${f(x + s)} ${f(y)}Q${f(x + s * 0.12)} ${f(y + s * 0.12)} ${f(x)} ${f(y + s)}Q${f(x - s * 0.12)} ${f(y + s * 0.12)} ${f(x - s)} ${f(y)}Q${f(x - s * 0.12)} ${f(y - s * 0.12)} ${f(x)} ${f(y - s)}Z" fill="#fff" opacity="${o}"/><circle cx="${f(x)}" cy="${f(y)}" r="${f(s * 0.9)}" fill="url(#halo)" opacity="${o}"/>`;
+  const sparkles = [[96, 58, 11, 0.9], [300, 30, 7, 0.7], [790, 70, 9, 0.8], [690, 232, 6, 0.6], [180, 196, 5, 0.55], [840, 190, 6, 0.6]].map(a => sparkle(...a)).join('');
+  // The wheel, right of the greeting.
+  const cx = 560; const cy = 150; const R = 128; const r = 98;
+  const ticks = Array.from({ length: 36 }, (_, i) => { const a = (i / 36) * Math.PI * 2; const long = i % 3 === 0; const r1 = R - (long ? 9 : 5); return `<line x1="${f(cx + Math.cos(a) * r1)}" y1="${f(cy + Math.sin(a) * r1)}" x2="${f(cx + Math.cos(a) * R)}" y2="${f(cy + Math.sin(a) * R)}"/>`; }).join('');
+  const marks = Array.from({ length: 12 }, (_, i) => { const a = ((i + 0.5) / 12) * Math.PI * 2; const mr = (R + r) / 2; return `<circle cx="${f(cx + Math.cos(a) * mr)}" cy="${f(cy + Math.sin(a) * mr)}" r="2.6" fill="${el.glow2}" opacity=".85"/>`; }).join('');
+  const spokes = Array.from({ length: 12 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return `<line x1="${f(cx + Math.cos(a) * 42)}" y1="${f(cy + Math.sin(a) * 42)}" x2="${f(cx + Math.cos(a) * r)}" y2="${f(cy + Math.sin(a) * r)}"/>`; }).join('');
+  // The sign's constellation, inside the wheel (or a single bright star for the plain celestial sky).
+  let figure = sparkle(cx, cy, 20, 0.95);
+  if (sign) {
+    const box = 120; const at = ([x, y]) => [cx - box / 2 + x * box, cy - box / 2 + y * box];
+    const lines = sign.lines.map(([a, b]) => { const [x1, y1] = at(sign.stars[a]); const [x2, y2] = at(sign.stars[b]); return `<line x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"/>`; }).join('');
+    const stars = sign.stars.map((pt, i) => { const [x, y] = at(pt); const sr = i === 0 ? 3.6 : 2.6; return `<circle cx="${f(x)}" cy="${f(y)}" r="${f(sr * 3.4)}" fill="url(#halo)"/><circle cx="${f(x)}" cy="${f(y)}" r="${sr}" fill="#fff"/>`; }).join('');
+    figure = `<g stroke="#fff" stroke-opacity=".55" stroke-width="1.4" stroke-linecap="round">${lines}</g>${stars}`;
+  }
+  const hills = `<path d="M0 226 C120 186 210 180 300 202 C390 224 470 214 560 186 C650 160 760 170 860 198 L860 600 L0 600 Z" fill="url(#hill)"/>`
+    + `<path d="M0 226 C120 186 210 180 300 202 C390 224 470 214 560 186 C650 160 760 170 860 198" fill="none" stroke="url(#rim)" stroke-width="2.2"/>`
+    + `<path d="M0 262 C140 236 260 244 380 256 C500 268 620 244 860 232 L860 600 L0 600 Z" fill="${el.sky[0]}" opacity=".55"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMin slice">`
+    + `<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${el.sky[0]}"/><stop offset=".55" stop-color="${el.sky[1]}"/><stop offset="1" stop-color="${el.sky[0]}"/></linearGradient>`
+    + `<radialGradient id="g1" cx="${cx / width}" cy="${cy / height}" r="0.45"><stop offset="0" stop-color="${el.glow}" stop-opacity=".42"/><stop offset="1" stop-color="${el.glow}" stop-opacity="0"/></radialGradient>`
+    + `<radialGradient id="g2" cx="0.12" cy="0.62" r="0.5"><stop offset="0" stop-color="${el.glow2}" stop-opacity=".18"/><stop offset="1" stop-color="${el.glow2}" stop-opacity="0"/></radialGradient>`
+    + `<linearGradient id="milky" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+    + `<linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${el.sky[1]}"/><stop offset="1" stop-color="${el.sky[0]}"/></linearGradient>`
+    + `<linearGradient id="rim" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${el.glow2}" stop-opacity=".15"/><stop offset=".45" stop-color="${el.glow2}" stop-opacity=".85"/><stop offset=".75" stop-color="${el.glow2}" stop-opacity=".5"/><stop offset="1" stop-color="${el.glow2}" stop-opacity=".1"/></linearGradient>`
     + `<radialGradient id="halo"><stop offset="0" stop-color="${el.glow2}" stop-opacity=".9"/><stop offset=".35" stop-color="${el.glow}" stop-opacity=".35"/><stop offset="1" stop-color="${el.glow}" stop-opacity="0"/></radialGradient></defs>`
     + `<rect width="${width}" height="${height}" fill="url(#sky)"/><rect width="${width}" height="${height}" fill="url(#g1)"/><rect width="${width}" height="${height}" fill="url(#g2)"/>`
-    + `<g>${field}</g><g stroke="#fff" stroke-opacity=".5" stroke-width="1.6" stroke-linecap="round">${lines}</g><g>${stars}</g></svg>`;
+    + `<path d="M520 -20 L900 -20 L900 60 L600 260 Z" fill="url(#milky)"/>`
+    + `<g>${field}</g>`
+    + `<g fill="none" stroke="${el.glow2}" stroke-linecap="round"><circle cx="${cx}" cy="${cy}" r="${R}" stroke-opacity=".5" stroke-width="1.4"/><circle cx="${cx}" cy="${cy}" r="${r}" stroke-opacity=".38" stroke-width="1"/><circle cx="${cx}" cy="${cy}" r="${R + 14}" stroke-opacity=".14" stroke-width="5"/><g stroke-opacity=".38" stroke-width="1">${ticks}</g><g stroke-opacity=".14" stroke-width="1">${spokes}</g></g>${marks}`
+    + `${figure}${sparkles}${hills}</svg>`;
 }
 const svgUrl = (svg) => `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 const zodiacCache = new Map();
 export const zodiacBackground = (sign) => {
   if (!zodiacCache.has(sign.id)) zodiacCache.set(sign.id, svgUrl(zodiacSvg(sign)));
   return zodiacCache.get(sign.id);
+};
+
+let celestialUrl = '';
+/** CSS background for a glow: the celestial sky is artwork, the others are layered gradients. */
+export const glowBackground = (glow) => {
+  if (!glow.art) return glow.bg;
+  if (!celestialUrl) celestialUrl = svgUrl(zodiacSvg(null, { palette: CELESTIAL, seed: 99 }));
+  return `${celestialUrl} center top / cover no-repeat`;
 };
 
 /** True for choices that need Pro or Pro+. */
@@ -90,8 +126,8 @@ export function resolveHero(choice, { premium = false } = {}) {
   const id = String(choice || 'auto');
   if (id === 'plain') return null;
   if (isPremiumHero(id) && !premium) return resolveHero('auto');
-  if (id.startsWith('zodiac:')) { const sign = ZODIAC.find(z => `zodiac:${z.id}` === id); if (sign) return { kind: 'zodiac', id, background: `${zodiacBackground(sign)} center / cover no-repeat`, glow: ELEMENTS[sign.element].glow }; }
-  if (id.startsWith('glow:')) { const glow = GLOWS.find(g => `glow:${g.id}` === id); if (glow) return { kind: 'glow', id, background: glow.bg }; }
+  if (id.startsWith('zodiac:')) { const sign = ZODIAC.find(z => `zodiac:${z.id}` === id); if (sign) return { kind: 'zodiac', id, background: `${zodiacBackground(sign)} center top / cover no-repeat`, glow: ELEMENTS[sign.element].glow }; }
+  if (id.startsWith('glow:')) { const glow = GLOWS.find(g => `glow:${g.id}` === id); if (glow) return { kind: 'glow', id, background: glowBackground(glow), glow: glow.art ? CELESTIAL.glow : undefined }; }
   const sceneryId = id.startsWith('scenery:') ? id.slice(8) : DEFAULT_SCENERY;
   const scenery = SCENERIES.find(s => s.id === sceneryId) || SCENERIES.find(s => s.id === DEFAULT_SCENERY) || SCENERIES[0];
   return scenery ? { kind: 'scenery', id: `scenery:${scenery.id}`, background: `url("${scenery.src}") center / cover no-repeat` } : null;
