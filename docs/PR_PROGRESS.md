@@ -1,3 +1,7 @@
+## 2026-11-12 — Production build fix: owner billing test isolated from the build machine
+
+The production deployment of `main` after #284 failed on Vercel: `npm run build` runs the tests first, and the owner billing-readiness test read Vercel's real Google Play settings and saw Google checkout as ready. The test now clears every store billing setting before it runs and restores the environment afterwards. Production kept serving the previous deployment. Reproduced locally with fake Google Play settings, then fixed. The full suite passes with and without Vercel-like settings. Test-only change (see `docs/engineering/updates/2026-11-12-owner-test-env-isolation.md`). Separately, Vercel now refuses new deployments ("Account is blocked"); this needs the owner in the Vercel dashboard.
+
 ## 2026-11-12 — Transaction details: middle of the screen, no outline
 
 Owner follow-up: "center meaning center of the screen, and less border especially for dark mode". The details pop-up now sits in the middle of the screen with equal space above and below. On phones with a notch or home indicator the larger safe area is used on both sides, so it stays at the exact middle. It has no border, outline or inner highlight; a soft shadow sets it apart. In dark mode the lines between rows are gone and spacing separates them; in light mode they are fainter. CSS only. Measured in the browser at 430×932, 390×844 and 375×667 in light and dark: top gap equals bottom gap and the border width is 0. Validation: Jest, strict build. Not run: real devices.
