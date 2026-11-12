@@ -114,3 +114,23 @@ describe('Cloud Sync setting semantics', () => {
     expect(context.setCloudSyncEnabled).toHaveBeenCalledWith(true);
   });
 });
+
+
+test('Security & Privacy guide opens the public, transparent data-security explanation', async () => {
+  const { Browser } = require('@capacitor/browser');
+  const spy = jest.spyOn(Browser, 'open').mockResolvedValue(undefined);
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    act(() => root.render(<Settings c={makeContext()} />));
+    const row = Array.from(container.querySelectorAll('.menu-row'))
+      .find(node => node.querySelector('strong')?.textContent === 'Security & Privacy');
+    expect(row).toBeTruthy();
+    await act(async () => row.click());
+    expect(spy).toHaveBeenCalledWith({ url: 'https://movo.nasrinai.com/security' });
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    spy.mockRestore();
+  }
+});

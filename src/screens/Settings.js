@@ -3,6 +3,7 @@ import { MovoMark } from '../components/MovoLogo';
 import AppIconPicker from '../components/AppIconPicker';
 import { PLAN_LABELS } from '../lib/planAccess';
 import React, { useEffect, useRef, useState } from 'react';
+import { Browser } from '@capacitor/browser';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 import { t as tr } from '../lib/i18n';
@@ -272,6 +273,7 @@ export default function Settings({ c }) {
       { icon: 'lock', title: tr('App Lock'), sub: lock.enabled ? tr('On · passcode required to open Movo') : tr('Off · require a passcode to open Movo'), onClick: () => setPanel('lock') },
       { icon: 'face', title: tr('Face ID / Touch ID'), sub: !bio ? tr('This device or browser does not offer Face ID / Touch ID.') : lock.enabled ? tr('Unlock Movo with your face or fingerprint.') : tr('Turn on App Lock first.'), toggle: 'biometrics' },
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
+      { icon: 'shield', title: tr('Security & Privacy'), sub: tr('Read how MOVO handles your information'), onClick: () => Browser.open({ url: 'https://movo.nasrinai.com/security' }).catch(() => {}) },
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
       ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },

@@ -1,3 +1,11 @@
+## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
+
+- Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.
+- Drafted standalone `/security` guide, companion editorial markdown, legal-policy navigation links, and Settings entry point via Capacitor Browser; no existing legal clauses or policy dates changed.
+- Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
+- Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
+- Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
+
 ## 2026-11-12 — Android bottom navigation: instant response, lighter animation
 
 Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
