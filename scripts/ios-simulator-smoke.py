@@ -7,6 +7,7 @@ execute xcrun and establish that the iOS app actually launched.
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -38,18 +39,30 @@ def run_command(args, timeout):
 def choose_iphone(simulator_json):
     try:
         data = json.loads(simulator_json)
-        phones = [
-            device
-            for devices in data["devices"].values()
-            for device in devices
-            if device.get("isAvailable") and "iPhone" in device.get("name", "")
-            and device.get("udid")
-        ]
-    except (ValueError, KeyError, TypeError) as error:
+        phones = []
+        for runtime, devices in data["devices"].items():
+            # Prefer the newest installed iOS runtime. The runner may ship older
+            # runtimes that don't match the selected Xcode version.
+            match = re.search(r"(?:^|[.])iOS[- ](\d+)[._-](\d+)", runtime)
+            version = tuple(map(int, match.groups())) if match else (-1, -1)
+            for device in devices:
+                if (device.get("isAvailable") and "iPhone" in device.get("name", "")
+                        and device.get("udid")):
+                    phones.append({**device, "_runtime": runtime, "_version": version})
+    except (ValueError, KeyError, TypeError, AttributeError) as error:
         raise SmokeFailure("Could not parse available CoreSimulator devices") from error
     if not phones:
         raise SmokeFailure("No available iPhone Simulator on the macOS runner")
-    return sorted(phones, key=lambda device: device.get("state") != "Booted")[0]
+    return sorted(
+        phones,
+        key=lambda device: (
+            -device["_version"][0],
+            -device["_version"][1],
+            device.get("state") != "Booted",
+            device.get("name", ""),
+        ),
+    )[0]
+
 
 
 def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep):
@@ -72,12 +85,33 @@ def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.s
     raise SmokeFailure("Simulator launch did not complete")
 
 
+def capture_screenshot_with_timeout_retry(device_id, screenshot, *, runner=run_command, sleeper=time.sleep):
+    """Retry one CoreSimulator screenshot timeout without masking repeat failures.
+
+    App install, launch and deep-link failures remain hard failures. A second
+    screenshot timeout or a non-timeout error still fails the iOS CI gate.
+    """
+    command = ["xcrun", "simctl", "io", device_id, "screenshot", screenshot]
+    for attempt in (1, 2):
+        try:
+            runner(command, timeout=90)
+            return
+        except SmokeFailure as error:
+            if not error.timed_out or attempt == 2:
+                raise
+            print("::warning::CoreSimulator screenshot timed out; "
+                  "waiting 15 seconds and retrying once.", flush=True)
+            sleeper(15)
+    raise SmokeFailure("Simulator screenshot failed after bounded retries")
+
+
 def smoke(app, screenshot):
     if not os.path.isdir(app):
         raise SmokeFailure(f"Simulator .app is missing: {app}")
     device = choose_iphone(run_command(["xcrun", "simctl", "list", "devices", "available", "--json"], 30))
     device_id = device["udid"]
-    print(f"Simulator selected: {device['name']} ({device_id}), state={device.get('state')}", flush=True)
+    print(f"Simulator selected: {device['name']} ({device_id}), "
+          f"runtime={device.get('_runtime')}, state={device.get('state')}", flush=True)
     if device.get("state") != "Booted":
         run_command(["xcrun", "simctl", "boot", device_id], 90)
     print("Waiting for complete CoreSimulator first boot (up to 10 minutes).", flush=True)
@@ -89,7 +123,7 @@ def smoke(app, screenshot):
                  "movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test"], 90)
     time.sleep(3)
     os.makedirs(os.path.dirname(os.path.abspath(screenshot)), exist_ok=True)
-    run_command(["xcrun", "simctl", "io", device_id, "screenshot", screenshot], 90)
+    capture_screenshot_with_timeout_retry(device_id, screenshot)
     if not os.path.isfile(screenshot):
         raise SmokeFailure("simctl screenshot reported success but did not create an image")
     print("Native iOS app installed, launched, received a deep link, and captured a screenshot.")

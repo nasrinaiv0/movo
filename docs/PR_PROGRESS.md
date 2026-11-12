@@ -954,3 +954,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Feature branch: `chore/node26-lts-ci-20261112`. Root `.nvmrc` and package engine pin Node 26, and every Node setup step now sources `.nvmrc`; Phase 1 validates the major. Dependencies, DB, mobile signing and production remain unchanged.
 - Exact-head Phase 1, Android native/R8, disposable Play AAB, iOS simulator, IAP and hybrid-sync security, PostgreSQL finance isolation, and Vercel preview are required before merge. No release or merge authorized.
 - Dated plan/evidence: `docs/engineering/updates/2026-11-12-node26-runtime-ci.md`. Vercel Sandbox returned HTTP 402; test through available CI and preview.
+
+## 2026-11-13 — iOS simulator timeout mitigation for Node 26 PR #288
+- Both iOS runner attempts at `7af5cb32641c096d00fe6240b779b983821df7dd` passed compilation, install, app launch and deep-link delivery but timed out capturing a CoreSimulator screenshot; the CoreSimulator diagnostic command also timed out.
+- Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
+- Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
+- No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
