@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
-import { clearPendingReferralCode, pendingReferralCode, savePendingReferralCode, trialReferralCode } from '../lib/referrals';
+import { PENDING_REFERRAL_EVENT, clearPendingReferralCode, pendingReferralCode, savePendingReferralCode, trialReferralCode } from '../lib/referrals';
 import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
 import { apiUrl } from '../lib/platform';
@@ -60,6 +60,12 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   // The field is part of the panel from the first frame (owner, 2026-11-12): no "Have a referral code?" step and no
   // waiting for sign-in or the plan check to load.
   const [code, setCode] = useState(() => pendingReferralCode());
+  // A code from a Google Play download link can arrive a moment after the app opens; fill it in if the field is empty.
+  useEffect(() => {
+    const fill = (event) => setCode(current => current || event.detail || '');
+    window.addEventListener(PENDING_REFERRAL_EVENT, fill);
+    return () => window.removeEventListener(PENDING_REFERRAL_EVENT, fill);
+  }, []);
   const eligible = !entitlement || entitlement.trialEligible;
   const plan = effectivePlan(entitlement);
   const onTrial = entitlement?.source === 'trial' && plan === 'pro';

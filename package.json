@@ -2,6 +2,9 @@
   "name": "movo",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "26.x"
+  },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",
     "@capacitor/android": "^8.6.0",
