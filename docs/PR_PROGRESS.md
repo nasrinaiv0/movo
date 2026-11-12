@@ -20,6 +20,13 @@
 - **Scope limitation:** other plaintext accounting stores (`offlineWorkspaceStore`, `localFinanceStore`, and IndexedDB `hybridLocalStore` ledger/outbox) are not changed: rewriting their synchronous/atomic persistence without a proven compatibility plan risks destroying unsynced transactions. This remains a high-priority unresolved whole-app storage issue.
 - Precommit evidence: exact main SHA `2b9a1cf` and a standalone Python AES-GCM/AAD test. **GitHub full suite, native compiles and physical devices still pending.** No Supabase/production modification, no merge/redeploy.
 - Detailed record: `docs/engineering/updates/2026-11-12-financial-offline-cache-encryption.md`.
+## 2026-11-12 — Android bottom navigation: instant response, lighter animation
+
+Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
+- **Instant response:** the tapped tab and the highlight now change on touch-down (11–23 ms), the screen still appears about as fast, and a cancelled touch puts the bar back.
+- **Lighter drawing:** the Android app uses a lighter blur for the bar, with no transform or width transitions on it; the highlight and icons animate on their own layers.
+
+Validation: new App test, Jest 224 suites / 1,350 tests, `tsc`, strict build, browser check in light and dark. Not run: a real Android phone. See `docs/engineering/updates/2026-11-12-android-bottom-nav.md`.
 
 ## 2026-11-12 — PR #287 merge-conflict resolution (docs-only overlap)
 
