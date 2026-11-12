@@ -33,3 +33,22 @@ Request: "place this at the center and add time for logging and time when it was
 
 ## Rollback
 Revert the commit.
+
+## Follow-up: middle of the screen, no outline (owner, 2026-11-12)
+
+Owner: "center meaning center of the screen / and less border especially for dark mode".
+
+- **Position:** the backdrop centres the pop-up in both directions. Its top and bottom padding are equal: `max(16px, safe-area top, safe-area bottom)`. So on an iPhone (top inset about 59px, bottom about 34px) the pop-up is still at the exact middle, not shifted down.
+- **Border:** `border: 0`, no outline, and no inner top highlight on `.sheet.sheet-center.tx-detail-sheet`. The glass edge and the 0.5px highlight had read as a bright frame in dark mode. Instead, a soft shadow sets the pop-up apart (deeper in dark).
+- **Dividers:** in dark mode the lines between Account, Category, Spent and Logged are removed, and 10px row spacing separates them. In light mode they are fainter (6% ink).
+
+Measured with Playwright (CSS px; gaps measured from the viewport edges):
+
+| Viewport | Theme | Top gap | Bottom gap | Border |
+| --- | --- | --- | --- | --- |
+| 430×932 | light | 281 | 281 | 0 |
+| 430×932 | dark | 287 | 287 | 0 |
+| 390×844 | light / dark | 237 / 243 | 237 / 243 | 0 |
+| 375×667 | light / dark | 149 / 154 | 149 / 154 | 0 |
+
+Not run: real iPhone or Android devices.

@@ -8826,3 +8826,20 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .tx-detail-sheet .tx-detail-chips { justify-content: center; }
 .movo-app.movo-app .sheet.tx-detail-sheet { padding-top: 22px; }
 .movo-app .tx-detail-list dd { font-variant-numeric: tabular-nums; }
+/* Transaction details pop-up (owner, 2026-11-12, follow-up): sits in the middle of the screen (equal space above and
+   below, safe areas included) and has no outline. The light hairline, inner top highlight and glass edge read as a
+   bright border in dark mode, so the pop-up is set apart by a soft shadow only. Row dividers are fainter in light
+   and gone in dark, where spacing alone separates the rows. */
+.movo-app.movo-app .sheet-backdrop.center:has(> .tx-detail-sheet) {
+  align-items: center; justify-content: center;
+  --tx-pop-gap: max(16px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+  padding: var(--tx-pop-gap) 16px;
+}
+.movo-app.movo-app.movo-app .sheet.sheet-center.tx-detail-sheet {
+  margin: auto; border: 0 !important; outline: 0;
+  box-shadow: 0 18px 50px -12px rgba(16, 24, 40, .28) !important;
+}
+.movo-app.movo-app.movo-app.theme-dark .sheet.sheet-center.tx-detail-sheet { box-shadow: 0 24px 60px -10px rgba(0, 0, 0, .7) !important; }
+.movo-app .tx-detail-sheet .tx-detail-list > div { border-bottom-color: rgba(16, 24, 40, .06); }
+.movo-app.theme-dark .tx-detail-sheet .tx-detail-list > div { border-bottom: 0; padding: 10px 0; }
+.movo-app.theme-dark .tx-detail-sheet :is(.tx-detail-list, .tx-detail-receipt, .tx-detail-chip, .tx-detail-actions > .secondary-button) { border: 0; box-shadow: none; }
