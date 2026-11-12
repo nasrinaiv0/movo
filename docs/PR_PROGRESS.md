@@ -1,3 +1,7 @@
+## 2026-11-12 — The ram stays standing on the Total balance box
+
+Owner request: "keep the mascot stand in the box like before" (confirmed: keep the bigger ram standing on Total balance). The 3D ram's body no longer leaves its feet line in any mood or tap reaction (`FEET_Y` in `lib/ramScene.js`; the rig's origin is at the feet). Happy moods still bounce, stretch and squash in place, and the happy hop now lifts one foot at a time instead of both. Measured over 14 frames in the browser: the lowest point stays at 129.5–131.5px against the card's top edge at 128px (before: up to 5px above it on each hop). Validation: Jest, tsc, strict build, `ramGrounded.test.js` (see `docs/engineering/updates/2026-11-12-ram-stays-grounded.md`). Not run: real devices.
+
 ## 2026-11-12 — Settings → Profile route; sign-in and subscription audit (iOS and Android)
 
 - **Settings → Profile** now opens the Profile screen, not the edit form. Profile's back arrow returns to the screen it was opened from (Settings or Menu), using the screen trail.
