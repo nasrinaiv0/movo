@@ -968,3 +968,15 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Initial GitHub suite: 195/196 suites passed; i18n key coverage was the one failure and has since been fixed; await exact-head verification. Vercel Sandbox returned HTTP 402 payment_required for create/resume: UI test blocked. Release stays unmerged. Details: docs/engineering/updates/2026-11-12-bank-card-activity-ewallet-cards.md.
 
 - **2026-11-12 PR #275 CI infrastructure hardening:** GitHub's two-user PostgreSQL tenant-isolation workflow failed *before executing any SQL* because Ubuntu's apt mirror DNS failed during `postgresql-client` installation. Replaced network-dependent apt installs with short-lived, stdin-safe `psql`, `createdb`, and `dropdb` wrappers that execute the official PostgreSQL 18 client binaries inside the same disposable GitHub Actions service container (no host-mapped database port). The Python tenant-isolation tests remain unchanged and must still complete successfully. Source, shell invocation/STDIN forwarding validated before commit; rerun all required checks on the new exact head, verify preview and preserve NO-MERGE gate until all checks are green.
+
+## 2026-11-12 — Node.js 26 LTS runtime alignment (new PR)
+- Baseline `2b9a1cf7720043c48c20d37d6f64e45e9f5e272a` (main and live production); Vercel already uses Node 26.x, while six Node-based GitHub workflows had seven Node 22 setup steps.
+- Feature branch: `chore/node26-lts-ci-20261112`. Root `.nvmrc` and package engine pin Node 26, and every Node setup step now sources `.nvmrc`; Phase 1 validates the major. Dependencies, DB, mobile signing and production remain unchanged.
+- Exact-head Phase 1, Android native/R8, disposable Play AAB, iOS simulator, IAP and hybrid-sync security, PostgreSQL finance isolation, and Vercel preview are required before merge. No release or merge authorized.
+- Dated plan/evidence: `docs/engineering/updates/2026-11-12-node26-runtime-ci.md`. Vercel Sandbox returned HTTP 402; test through available CI and preview.
+
+## 2026-11-13 — iOS simulator timeout mitigation for Node 26 PR #288
+- Both iOS runner attempts at `7af5cb32641c096d00fe6240b779b983821df7dd` passed compilation, install, app launch and deep-link delivery but timed out capturing a CoreSimulator screenshot; the CoreSimulator diagnostic command also timed out.
+- Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
+- Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
+- No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.

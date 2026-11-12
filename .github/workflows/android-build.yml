@@ -36,10 +36,10 @@ jobs:
           test -n "$SDKMANAGER"
           "$SDKMANAGER" --version
           "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
-      - name: Set up Node 22
+      - name: Set up Node 26
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
       - name: Install locked dependencies
         run: npx --yes npm@11.19.1 ci
       - name: Build web assets and run unit tests
