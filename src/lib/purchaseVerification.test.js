@@ -146,10 +146,27 @@ describe('MOVO store purchase verification', () => {
     await verifyApple('signed',userId);
     expect(verifiedEnvironments.every(e=>e==='Production')).toBe(true);
   });
-  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_CANCELED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
+  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
     googleOverrides.subscriptionState=state;
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(['active','grace_period']).not.toContain(result.status);
+  });
+  test('keeps Google Play canceled subscriptions active through verified expiry, then expires them', async () => {
+    googleOverrides.subscriptionState = 'SUBSCRIPTION_STATE_CANCELED';
+    googleOverrides.lineItems = [{productId:'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() + 86400000).toISOString()}];
+    const valid = await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
+    expect(valid.status).toBe('active');
+    expect(Date.parse(valid.expiresAt)).toBeGreaterThan(Date.now());
+    googleOverrides.lineItems = [{productId:'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() - 86400000).toISOString()}];
+    const expired = await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
+    expect(expired.status).toBe('expired');
+  });
+  test('explicitly revoked and expired Google subscriptions never resume access from a future expiry', async () => {
+    googleOverrides.lineItems = [{productId:'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() + 86400000).toISOString()}];
+    for (const state of ['SUBSCRIPTION_STATE_EXPIRED','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD']) {
+      googleOverrides.subscriptionState = state;
+      expect((await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).status).not.toBe('active');
+    }
   });
   test('rejects Google test purchases and cross-account bindings',async()=>{
     googleOverrides.testPurchase={};

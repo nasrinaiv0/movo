@@ -14,4 +14,4 @@
 3. Recheck Phase 1, iOS/Android native CI, billing/security CI, Vercel preview and exact branch head. Preserve real-device and billing-RTDN checks as manual release gates.
 
 ## Implementation verification (fill after tests)
-Pending. This progress document was committed before application code.
+Code patch and tests prepared in a subsequent isolated commit, together with a PR_PROGRESS entry. Exact-head CI, preview, and manual device checks still pending.

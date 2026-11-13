@@ -1022,3 +1022,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
 - Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
 - No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
+
+## 2026-11-13 — Isolated P0 Google Play cancellation-through-expiry
+- Base `5b616ce`; planning document committed first in `docs/engineering/updates/2026-11-13-google-play-cancel-expiry-p0.md`.
+- Map server-verified `SUBSCRIPTION_STATE_CANCELED` to active while expiry is future; to expired at or after expiry. Explicit expired, paused, on-hold remain denied.
+- Add synthetic purchase verification regression tests for both cancellation timing cases and denied states. No database migration, production change, release, signed AAB, or merge.
+- Pending exact-head CI, preview, manual Google Play license-tester cancellation and expiry proof.
