@@ -174,6 +174,69 @@ class IosSimulatorSmokeTests(unittest.TestCase):
                 runner=runner, sleeper=lambda _: None)
 
 
+    def test_openurl_success_does_not_restart_simulator(self):
+        runner = mock.Mock(return_value="")
+        sleeper = mock.Mock()
+        smoke.open_log_url_with_one_cold_recovery("device1", "/tmp/MOVO.app", runner=runner, sleeper=sleeper)
+        runner.assert_called_once_with(
+            ["xcrun", "simctl", "openurl", "device1", smoke.SMOKE_LOG_URL], timeout=90)
+        sleeper.assert_not_called()
+
+    def test_openurl_timeout_restarts_and_replays_before_success(self):
+        calls = []
+        count = 0
+        def runner(args, timeout):
+            nonlocal count
+            calls.append((args, timeout))
+            if args[1:3] == ["simctl", "openurl"]:
+                count += 1
+                if count == 1:
+                    raise smoke.SmokeFailure("CoreSimulator stuck", timed_out=True)
+            return ""
+        smoke.open_log_url_with_one_cold_recovery(
+            "device1", "/tmp/MOVO.app", runner=runner, sleeper=lambda _: None)
+        commands = [args for args, _ in calls]
+        self.assertEqual(2, count)
+        self.assertEqual(["xcrun", "simctl", "shutdown", "device1"], commands[1])
+        self.assertIn(["xcrun", "simctl", "boot", "device1"], commands)
+        self.assertIn(["xcrun", "simctl", "install", "device1", "/tmp/MOVO.app"], commands)
+        self.assertIn(["xcrun", "simctl", "launch", "device1", smoke.BUNDLE_ID], commands)
+        self.assertEqual(["xcrun", "simctl", "openurl", "device1", smoke.SMOKE_LOG_URL], commands[-1])
+
+    def test_second_openurl_timeout_is_a_hard_failure(self):
+        commands = []
+        def runner(args, timeout):
+            commands.append(args)
+            if args[1:3] == ["simctl", "openurl"]:
+                raise smoke.SmokeFailure("CoreSimulator still stuck", timed_out=True)
+            return ""
+        with self.assertRaisesRegex(smoke.SmokeFailure, "still stuck"):
+            smoke.open_log_url_with_one_cold_recovery(
+                "device1", "/tmp/MOVO.app", runner=runner, sleeper=lambda _: None)
+        self.assertEqual(2, sum(args[1:3] == ["simctl", "openurl"] for args in commands))
+
+    def test_openurl_non_timeout_failure_is_not_retried(self):
+        runner = mock.Mock(side_effect=smoke.SmokeFailure("app refused URL"))
+        with self.assertRaisesRegex(smoke.SmokeFailure, "refused"):
+            smoke.open_log_url_with_one_cold_recovery(
+                "device1", "/tmp/MOVO.app", runner=runner, sleeper=mock.Mock())
+        runner.assert_called_once()
+
+    def test_openurl_recovery_reboot_failure_fails_without_false_success(self):
+        calls = []
+        def runner(args, timeout):
+            calls.append(args)
+            if args[1:3] == ["simctl", "openurl"]:
+                raise smoke.SmokeFailure("timeout", timed_out=True)
+            if args[1:3] == ["simctl", "boot"]:
+                raise smoke.SmokeFailure("boot unavailable")
+            return ""
+        with self.assertRaisesRegex(smoke.SmokeFailure, "boot unavailable"):
+            smoke.open_log_url_with_one_cold_recovery(
+                "device1", "/tmp/MOVO.app", runner=runner, sleeper=lambda _: None)
+        self.assertEqual(1, sum(args[1:3] == ["simctl", "openurl"] for args in calls))
+
+
 def subprocess_timeout():
     import subprocess
     return subprocess.TimeoutExpired(["xcrun"], 5)

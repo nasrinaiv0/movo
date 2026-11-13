@@ -1045,3 +1045,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Integrated reviewed PR #299 exact displayed Google Play offer token selection and strict base-plan match, plus PR #295 screenshot-stall cold recovery without bypassing a real screenshot or native restart.
 - Preserve original P0 OAuth + cancellation + license-test sandbox scopes, tenant isolation, strict Google verification and encrypted acknowledgement.
 - Exact-head Phase 1, Android, iOS, finance, IAP, referral and Vercel preview must rerun. Do not merge, publish signed AAB, alter live env or apply migrations.
+
+## 2026-11-13 — PR #298 iOS CoreSimulator openurl timeout (exact-head failure)
+- At `4c7bb464`, iOS run #43359864159 compiled Debug/Release, installed and launched iPhone Simulator, but `simctl openurl movo://log` and subsequent simulator diagnostics timed out. The native smoke gate remained RED.
+- Isolated fix planned and committed first in `docs/engineering/updates/2026-11-13-p0-ios-openurl-timeout.md`; exact-head one-job rerun requested before remediation.
+- Add **timeout-only, one-time** disposable CoreSimulator cold restart, reinstall, re-launch and deep-link replay; any second timeout, non-timeout error or reboot/install failure remains RED. Screenshot remains mandatory. Unit tests verify all success/failure branches.
+- Vercel exact-head preview READY and served root HTTP 200; its billing config `enabled:false` is an intentionally fail-closed preview environment state, with sensitive provider secrets production-scoped. Do not expose secrets to preview.
+- No deployment, production mutation, merge, signed AAB, store upload or live Supabase migration.

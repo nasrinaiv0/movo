@@ -16,4 +16,4 @@
 - Manual signed iOS/Android and Play purchase gates remain distinct.
 
 ## Results
-Pending implementation and exact-head rerun; this diagnosis is committed before code.
+The bounded deep-link recovery and five host tests were added in a later implementation commit alongside docs/PR_PROGRESS.md. iOS/macOS exact-head CI, Vercel preview and all manual Play/Android gates remain required; no CI result is asserted without verification.
