@@ -21,3 +21,7 @@
 
 ## AI client transport (precommit)
 - New browser/Capacitor AI transport: image downsize to JPEG in memory (<2.2M data URL), PDF extracts text locally then sends only text; reads Supabase session bearer; calls existing MOVO origin via apiUrl; bounded timeout; no credentials in query string or localStorage.
+
+## Direct-save scanner UI (precommit)
+- Scanner now opts in to AI analysis per receipt, renders merchant, date, category, item breakdown, taxes, tender/change, shows grouped registered AccountPicker (bank/cards/e-wallets/cash/other). Only an explicit Log invokes the existing validated saveTransaction writer with a supplied draft; no calculator route. Discard clears transient receipt.
+- Existing saveTransaction is refactored to accept an optional draft and return boolean, preserving all duplicate, RLS-scoped cloud/local-first, currency, date and account validation. Prevent double-click; on error keep review visible. Scan results never auto-save to legacy localStorage log.

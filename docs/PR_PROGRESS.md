@@ -1044,3 +1044,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — AI receipt capture transport (before commit)
 
 - AI client converts permitted 15MB-or-smaller receipt photos to bounded JPEG, or reads PDF text locally. Sends only the selected receipt after explicit consent from scanner UI; bearer session required. API key remains server-only. No production configuration changes. Full UI/direct save still in progress.
+
+## 2026-11-14 — Direct receipt log UI (documented before commit)
+
+- Added AI consent and review UX, category and item summaries, account picker for registered bank/card/e-wallet/cash/other and direct Log/Discard. Reuses the existing validated financial writer (without opening the calculator). Added explicit response status and duplicate refusal handling; no auto persistence of AI scan photo/text. Preview and device acceptance pending.
