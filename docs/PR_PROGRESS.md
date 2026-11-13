@@ -1022,3 +1022,14 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
 - Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
 - No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
+
+## 2026-11-13 — P0 Google Play license-test isolation
+- Documented design first on isolated `fix/google-play-test-purchase-isolation-20261113` from `5b616ce` in `docs/engineering/updates/2026-11-13-google-play-test-purchase-p0.md`.
+- Google-verified `testPurchase` classification; server allowlist gates sandbox RPC and plan access, with no production paid referral credit. Unknown-owner test RTDN never mints an entitlement.
+- Includes synthetic Jest and disposable PostgreSQL billing tests. No production migration, deployment, main edit, store upload or merge.
+- Exact-head CI, Vercel preview, Android signed internal build, and purchase/acknowledgement/restore/cancellation/revocation on Play license-test accounts remain gates.
+
+## 2026-11-13 — Fix first disposable IAP assertion without weakening entitlement isolation
+- First PR #297 IAP CI run #43355492063 failed a test that mistakenly assumed no store source after sandbox allowlist removal; a distinct legitimate synthetic production receipt still existed.
+- Correct only the synthetic sandbox tier assertion: pro_plus while test allowlisted, production pro after allowlist removal. Security migration and runtime guards unchanged.
+- Progress and failure diagnosis were documented before this code commit in docs/engineering/updates/2026-11-13-google-play-sandbox-ci-diagnosis.md.
