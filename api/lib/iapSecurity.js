@@ -94,7 +94,7 @@ async function rpc(db, name, args) {
   const { data, error } = await db.rpc(name, args);
   if (error)
     throw new Error(
-      ["purchase_already_linked", "iap_busy", "iap_lease_expired"].find((c) =>
+      ["purchase_already_linked", "iap_busy", "iap_lease_expired", "test_account_not_enabled", "invalid_store_state"].find((c) =>
         String(error.message).includes(c),
       ) || "iap_database_unavailable",
     );
@@ -110,7 +110,8 @@ function failure(res, error) {
   const invalid = [
     "invalid_request",
     "purchase_account_mismatch",
-    "sandbox_purchase_rejected",
+    "test_account_not_enabled",
+    "invalid_store_state",
     "apple_transaction_verification_failed",
     "apple_notification_verification_failed",
     "apple_bundle_mismatch",

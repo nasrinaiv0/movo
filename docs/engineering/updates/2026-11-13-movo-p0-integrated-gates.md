@@ -22,4 +22,4 @@
 - Cross-PR review and all required checks green before merge; **NO MERGE / NO PRODUCTION DEPLOYMENT / NO AAB UPLOAD**.
 
 ## Results
-Pending CI and actual device evidence. This plan was committed before integration code.
+After the advance-plan commit, the cross-PR implementation combines PR #295/#296/#297 and reconciles the Google verifier with explicit canceled+testPurchase regression coverage. Phase 1's first attempt correctly rejected the implementation commit because it did not ALSO include an updated dated engineering note in the SAME code commit, despite the initial plan being committed first. This update is included in the single corrected implementation commit, with an existing PR_PROGRESS modification. Run the new exact-head CI and preview; do not infer physical store or device proof.

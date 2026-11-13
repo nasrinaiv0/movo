@@ -146,14 +146,31 @@ describe('MOVO store purchase verification', () => {
     await verifyApple('signed',userId);
     expect(verifiedEnvironments.every(e=>e==='Production')).toBe(true);
   });
-  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_CANCELED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
+  test.each(['SUBSCRIPTION_STATE_PENDING','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD','SUBSCRIPTION_STATE_EXPIRED'])('does not grant access for %s',async state=>{
     googleOverrides.subscriptionState=state;
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(['active','grace_period']).not.toContain(result.status);
   });
-  test('rejects Google test purchases and cross-account bindings',async()=>{
+  test('Google canceled subscriptions remain active before server expiry and expire after it',async()=>{
+    googleOverrides.subscriptionState='SUBSCRIPTION_STATE_CANCELED';
+    googleOverrides.lineItems=[{productId:'com.nasrinai.movo.proplus.monthly',expiryTime:new Date(Date.now()+86400000).toISOString()}];
+    expect((await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).status).toBe('active');
+    googleOverrides.lineItems=[{productId:'com.nasrinai.movo.proplus.monthly',expiryTime:new Date(Date.now()-86400000).toISOString()}];
+    expect((await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).status).toBe('expired');
+  });
+  test('Google license-test cancellation never qualifies as paid referral',async()=>{
+    googleOverrides.testPurchase={};googleOverrides.subscriptionState='SUBSCRIPTION_STATE_CANCELED';
+    googleOverrides.lineItems=[{productId:'com.nasrinai.movo.proplus.monthly',expiryTime:new Date(Date.now()+86400000).toISOString()}];
+    expect(await verifyGoogle('test-token','com.nasrinai.movo.proplus.monthly',userId)).toMatchObject({environment:'sandbox',status:'active',paidVerified:false});
+    googleOverrides.lineItems=[{productId:'com.nasrinai.movo.proplus.monthly',expiryTime:new Date(Date.now()-86400000).toISOString()}];
+    expect((await verifyGoogle('test-token','com.nasrinai.movo.proplus.monthly',userId)).status).toBe('expired');
+  });
+  test('verifies license-test tokens as sandbox with no paid referral or cross-account bypass',async()=>{
     googleOverrides.testPurchase={};
-    await expect(verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).rejects.toThrow('sandbox_purchase_rejected');
+    orderLookupFailure=true;
+    const verified=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
+    expect(verified).toMatchObject({environment:'sandbox',status:'active',paidVerified:false,needsAcknowledgement:true});
+    expect(verified.purchaseTokenHash).toMatch(/^[a-f0-9]{64}$/);
     googleOverrides={externalAccountIdentifiers:{obfuscatedExternalAccountId:appAccountTokenForUser('attacker')}};
     await expect(verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).rejects.toThrow('purchase_account_mismatch');
   });
