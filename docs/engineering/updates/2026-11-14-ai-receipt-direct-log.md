@@ -37,3 +37,6 @@
 
 ## Full Jest repair (precommit)
 - Phase 1 reached 227 passing suites, three failing assertions. Update stale App Privacy date assertion to Nov 14. Provide an AbortSignal.timeout feature-detection fallback for jsdom mocking while retaining Node 26's real provider timeout in production. This is a compatibility repair, not a relaxation of financial checks. Revalidate at new exact head.
+
+## Direct Log/Discard interaction regressions (precommit)
+- New React/Jest scanner integration tests for opt-in analysis, account-only selection + direct Log with one write, Discard with zero writes, failed save retains review, and the original ₱159/₱500/₱341 receipt accounting. External provider mocked; physical device and real API still pending.

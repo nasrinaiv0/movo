@@ -1065,3 +1065,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 
 - Exact `306c4b1d190c` passed 227/229 suites (1,377/1,380 tests). Failures: a stale Privacy Policy date assertion (Nov 12 versus correctly updated Nov 14), and two mocked AI API tests returning HTTP 503 because the jsdom AbortSignal shim omits `AbortSignal.timeout`.
 - Fix assertion and use the native timeout when available (Node 26 production), with a test-runtime-compatible signal fallback; no server key, user data, or ledger logic changed. Rerun full CI, native and preview before merge.
+
+## 2026-11-14 — Scanner direct Log/Discard integration tests (documented before commit)
+
+- Added focused DOM tests: consented analyze, choose a registered e-wallet, Log once directly with VAT/change retained as details; Discard never writes; failed write keeps review open. Requires exact-head CI. No production or store change.
