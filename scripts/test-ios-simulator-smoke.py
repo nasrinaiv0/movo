@@ -115,6 +115,65 @@ class IosSimulatorSmokeTests(unittest.TestCase):
         self.assertFalse(caught.exception.timed_out)
 
 
+    def test_cold_restart_only_after_double_screenshot_timeout(self):
+        calls = []
+        screenshot_attempts = [smoke.SmokeFailure("screenshot stuck", timed_out=True),
+                               smoke.SmokeFailure("still stuck", timed_out=True), None]
+        def runner(args, timeout):
+            calls.append((args, timeout))
+            if args[1:3] == ["simctl", "io"]:
+                result = screenshot_attempts.pop(0)
+                if result:
+                    raise result
+            return ""
+        smoke.capture_screenshot_with_one_cold_recovery(
+            "device1", "/tmp/movo.app", "/tmp/movo-test.png",
+            runner=runner, sleeper=lambda _: None)
+        commands = [args for args, _ in calls]
+        self.assertEqual(3, sum(cmd[1:3] == ["simctl", "io"] for cmd in commands))
+        self.assertIn(["xcrun", "simctl", "shutdown", "device1"], commands)
+        self.assertIn(["xcrun", "simctl", "boot", "device1"], commands)
+        self.assertIn(["xcrun", "simctl", "install", "device1", "/tmp/movo.app"], commands)
+        self.assertIn(["xcrun", "simctl", "launch", "device1", smoke.BUNDLE_ID], commands)
+        self.assertTrue(any(cmd[1:3] == ["simctl", "openurl"] for cmd in commands))
+
+    def test_non_timeout_screenshot_failure_never_restarts_simulator(self):
+        calls = []
+        def runner(args, timeout):
+            calls.append(args)
+            raise smoke.SmokeFailure("screenshot denied")
+        with self.assertRaisesRegex(smoke.SmokeFailure, "denied"):
+            smoke.capture_screenshot_with_one_cold_recovery(
+                "device1", "/tmp/movo.app", "/tmp/test.png",
+                runner=runner, sleeper=lambda _: None)
+        self.assertEqual(1, len(calls))
+
+    def test_second_failure_after_cold_restart_fails_the_gate(self):
+        calls = []
+        def runner(args, timeout):
+            calls.append(args)
+            if args[1:3] == ["simctl", "io"]:
+                raise smoke.SmokeFailure("stalled", timed_out=True)
+            return ""
+        with self.assertRaisesRegex(smoke.SmokeFailure, "stalled"):
+            smoke.capture_screenshot_with_one_cold_recovery(
+                "device1", "/tmp/movo.app", "/tmp/test.png",
+                runner=runner, sleeper=lambda _: None)
+        self.assertEqual(4, sum(cmd[1:3] == ["simctl", "io"] for cmd in calls))
+
+    def test_restart_deep_link_error_still_fails_ci(self):
+        def runner(args, timeout):
+            if args[1:3] == ["simctl", "io"]:
+                raise smoke.SmokeFailure("stalled", timed_out=True)
+            if args[1:3] == ["simctl", "openurl"]:
+                raise smoke.SmokeFailure("deep link refused")
+            return ""
+        with self.assertRaisesRegex(smoke.SmokeFailure, "deep link refused"):
+            smoke.capture_screenshot_with_one_cold_recovery(
+                "device1", "/tmp/movo.app", "/tmp/test.png",
+                runner=runner, sleeper=lambda _: None)
+
+
 def subprocess_timeout():
     import subprocess
     return subprocess.TimeoutExpired(["xcrun"], 5)

@@ -9,4 +9,4 @@
 - Record test results and any failures, do not skip or weaken the screenshot or offer-token checks.
 
 ## Implementation and evidence
-Pending. This plan was committed before the follow-up application-code commit.
+Follow-up implementation now includes exact-offer Android checkout from PR #299 and a strict screenshot service recovery from PR #295, with supporting Jest and Python tests. Require new exact-head native Android, iOS and billing CI; previews and physical device checks remain release gates.

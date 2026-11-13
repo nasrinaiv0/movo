@@ -1039,3 +1039,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Integrated PR #295 Android Google PKCE callback and native-storage diagnostics, PR #296 cancellation-through-expiry and PR #297 allowlisted, server-verified Google Play sandbox test receipts into isolated branch `integration/movo-p0-android-play-20261113` on main `5b616ce`.
 - Shared Google verifier and tests reconciled to cover *both* testPurchase and CANCELED with future/past expiry. No provider, keys, production settings or migrations applied. Signed device and Google Play purchase evidence remains manual.
 - Exact-head Phase 1, Android, iOS, finance, IAP, referral, and Vercel preview all required. No merge, deploy or Play release.
+
+## 2026-11-13 — Combined MOVO P0 cross-PR follow-up: precise Play offer + iOS simulator recovery
+- Prior progress plan: `docs/engineering/updates/2026-11-13-movo-p0-followup-ios-offer.md` committed **before** this code change.
+- Integrated reviewed PR #299 exact displayed Google Play offer token selection and strict base-plan match, plus PR #295 screenshot-stall cold recovery without bypassing a real screenshot or native restart.
+- Preserve original P0 OAuth + cancellation + license-test sandbox scopes, tenant isolation, strict Google verification and encrypted acknowledgement.
+- Exact-head Phase 1, Android, iOS, finance, IAP, referral and Vercel preview must rerun. Do not merge, publish signed AAB, alter live env or apply migrations.
