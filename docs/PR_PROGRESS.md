@@ -1040,3 +1040,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — AI receipt vision backend PR (documented before commit)
 
 - Baseline main `c8bd8191475c280c9316fefb1ace9dc363c77eb1`. Add signed-in, Pro-gated AI receipt image/text parser using existing server-only OpenRouter production key with strict input size, origin and consent gates. No receipt contents/images retained at MOVO server; provider retention remains subject to its policy. New client and UI follow separately. PR not merged, no production change.
+
+## 2026-11-14 — AI receipt capture transport (before commit)
+
+- AI client converts permitted 15MB-or-smaller receipt photos to bounded JPEG, or reads PDF text locally. Sends only the selected receipt after explicit consent from scanner UI; bearer session required. API key remains server-only. No production configuration changes. Full UI/direct save still in progress.

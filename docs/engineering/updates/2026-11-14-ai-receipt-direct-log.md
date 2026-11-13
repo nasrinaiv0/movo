@@ -18,3 +18,6 @@
 ## Backend implementation (precommit)
 - Added bounded authenticated receipt vision endpoint and JSON normalization tests. Provider: existing production OpenRouter API key; fixed vision-capable OpenRouter model, configurable by server-only MOVO_RECEIPT_VISION_MODEL. Preview currently does NOT have OPENROUTER_API_KEY (checked key names only); live AI preview needs a scoped preview key, not a production secret copy.
 - Explicit per-scan consent; JWT getUser, entitlement, same-origin allowlist, no ledgers or account metadata sent to provider; data_collection deny requested. Server never saves source photo or logs provider output.
+
+## AI client transport (precommit)
+- New browser/Capacitor AI transport: image downsize to JPEG in memory (<2.2M data URL), PDF extracts text locally then sends only text; reads Supabase session bearer; calls existing MOVO origin via apiUrl; bounded timeout; no credentials in query string or localStorage.
