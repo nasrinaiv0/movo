@@ -9,4 +9,4 @@
 - No merge, production deployment, Play AAB publication or iOS distribution; rerun exact-head Phase 1/iOS/Android/finance/Vercel.
 
 ## Implementation evidence
-Pending. Plan was committed before code.
+Implemented strict timeout-only, one-time cold simulator restart after two screenshot timeouts; reinstalled/ relaunched app and re-ran the deep link before requiring the final screenshot. Added four mock orchestration tests for recovery, non-timeout, repeated failure and deep-link regression. No native app auth or billing changes. Exact-head CI, iOS macOS runner and Vercel preview remain to verify.
