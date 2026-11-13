@@ -25,3 +25,6 @@
 ## Direct-save scanner UI (precommit)
 - Scanner now opts in to AI analysis per receipt, renders merchant, date, category, item breakdown, taxes, tender/change, shows grouped registered AccountPicker (bank/cards/e-wallets/cash/other). Only an explicit Log invokes the existing validated saveTransaction writer with a supplied draft; no calculator route. Discard clears transient receipt.
 - Existing saveTransaction is refactored to accept an optional draft and return boolean, preserving all duplicate, RLS-scoped cloud/local-first, currency, date and account validation. Prevent double-click; on error keep review visible. Scan results never auto-save to legacy localStorage log.
+
+## Review UI and API tests (precommit)
+- Added compact review styling, reduced-motion fallback, item-level category correction and zero-rated sales field. Regression tests cover exact ₱159 sample, VAT/500/341 accounting, untrusted model input, JWT/consent/plan gates and provider error behavior. Preview and physical devices still require acceptance.

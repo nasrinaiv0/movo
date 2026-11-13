@@ -1048,3 +1048,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — Direct receipt log UI (documented before commit)
 
 - Added AI consent and review UX, category and item summaries, account picker for registered bank/card/e-wallet/cash/other and direct Log/Discard. Reuses the existing validated financial writer (without opening the calculator). Added explicit response status and duplicate refusal handling; no auto persistence of AI scan photo/text. Preview and device acceptance pending.
+
+## 2026-11-14 — Receipt AI review UI and test coverage (before commit)
+
+- Responsive, no-gradient review and account picker UI, item-category editing, privacy-capped AI extraction security tests. No production/main/deployment modification.

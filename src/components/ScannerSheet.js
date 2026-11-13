@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
 import ReceiptBreakdown from './ReceiptBreakdown';
+import './ReceiptAiReview.css';
 import AccountPicker from './AccountPicker';
 import { scanReceiptWithAI } from '../lib/aiReceipt';
 import { categoryId, guessCategory as classifyMerchant, categoryFullLabel, PRIMARY, GROUPS } from '../lib/categories';
