@@ -22,4 +22,4 @@
 - Manual acceptance: operator enters tester's **verified MOVO auth.users ID** into service-role-only `movo_store_test_users` in a nonproduction test environment; install signed Play internal AAB; verify purchase, upgrade, restore, renewal, cancellation, expiry, RTDN, and refund/revoke; test ordinary user isolation.
 
 ## Implementation record
-Pending. This plan is committed before application code.
+Proposed code, migration and tests prepared with PR_PROGRESS entry after the separate planning commit. Exact-head CI, preview and operator tests remain release gates.

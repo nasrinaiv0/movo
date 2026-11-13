@@ -151,9 +151,12 @@ describe('MOVO store purchase verification', () => {
     const result=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
     expect(['active','grace_period']).not.toContain(result.status);
   });
-  test('rejects Google test purchases and cross-account bindings',async()=>{
+  test('verifies license-test tokens as sandbox with no paid referral or cross-account bypass',async()=>{
     googleOverrides.testPurchase={};
-    await expect(verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).rejects.toThrow('sandbox_purchase_rejected');
+    orderLookupFailure=true;
+    const verified=await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId);
+    expect(verified).toMatchObject({environment:'sandbox',status:'active',paidVerified:false,needsAcknowledgement:true});
+    expect(verified.purchaseTokenHash).toMatch(/^[a-f0-9]{64}$/);
     googleOverrides={externalAccountIdentifiers:{obfuscatedExternalAccountId:appAccountTokenForUser('attacker')}};
     await expect(verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).rejects.toThrow('purchase_account_mismatch');
   });
