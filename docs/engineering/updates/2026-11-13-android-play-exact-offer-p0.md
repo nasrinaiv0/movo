@@ -15,4 +15,4 @@
 4. Run Phase 1, Android native, iOS native, IAP security, Vercel preview and integrated P0 regression. Real Play Console offer/price testing remains a physical-device gate.
 
 ## Implementation evidence
-Pending; this plan is committed before code.
+Implementation prepared in the later code commit with PR_PROGRESS. Added exact quoted offer token forwarding and synthetic regression, with no production changes. Exact-head CI and physical Play internal checkout remain required.

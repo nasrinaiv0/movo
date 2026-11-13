@@ -1022,3 +1022,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
 - Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
 - No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
+
+## 2026-11-13 — P0 Google Play offer-specific price and checkout handoff
+- Isolated `fix/android-play-exact-offer-selection-20261113`, baseline main `5b616ce`; advance-plan document `docs/engineering/updates/2026-11-13-android-play-exact-offer-p0.md` committed first.
+- Exact price shown by PlanOffer now passes the selected Google Play product object, including ephemeral `offerToken`, into purchaseStoreProduct; native plugin selects exactly that offer instead of the first available offer on the base plan.
+- Strict base-plan match; stale token must fail closed, never silently switch offers. Legacy string callers/iOS unaffected. Added synthetic purchase/price assertion coverage.
+- Native builds, UI, IAP, Phase 1, preview, Play device real offer tests required. No merge, production or signed AAB.
