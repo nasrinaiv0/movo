@@ -1052,3 +1052,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — Receipt AI review UI and test coverage (before commit)
 
 - Responsive, no-gradient review and account picker UI, item-category editing, privacy-capped AI extraction security tests. No production/main/deployment modification.
+
+## 2026-11-14 — Privacy disclosure update for consented remote receipt analysis (documented before commit)
+
+- Added an AI receipt privacy section to the in-app and public canonical English disclosures: explicit opt-in, OpenRouter/model-provider processing, cross-border/privacy caveats, no raw photo logs at MOVO proxy, logged-record retention rules, review responsibilities. Bumped Privacy effective date to Nov 14 and legal acceptance version. Kept Terms date unchanged. No production deploy or provider configuration changes.

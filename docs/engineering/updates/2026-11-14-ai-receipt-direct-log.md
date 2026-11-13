@@ -28,3 +28,6 @@
 
 ## Review UI and API tests (precommit)
 - Added compact review styling, reduced-motion fallback, item-level category correction and zero-rated sales field. Regression tests cover exact ₱159 sample, VAT/500/341 accounting, untrusted model input, JWT/consent/plan gates and provider error behavior. Preview and physical devices still require acceptance.
+
+## Privacy and store metadata (precommit)
+- Added paragraph 19 on remote provider scan, retention caveat, separate explicit consent, alternatives, rights, security, and new acceptance effective date Nov 14. Generated public privacy HTML via the same canonical section renderer. This materially changes photo processing compared with offline scanner: verify Play Data Safety and Apple App Privacy declarations before release. No automatic policy assertion of vendor zero retention.
