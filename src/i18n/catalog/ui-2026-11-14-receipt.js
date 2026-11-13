@@ -1,0 +1,15 @@
+// Machine-assisted translations. Review against local financial terminology before store rollout.
+// [English, Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi]
+export default [
+  ["Receipt details", "Mga detalye ng resibo", "تفاصيل الإيصال", "收据详情", "Detalles del recibo", "Dettagli della ricevuta", "Belegdetails", "Détails du reçu", "Detalhes do recibo", "レシートの詳細", "영수증 상세 정보", "रसीद का विवरण"],
+  ["Review extracted details", "Suriin ang nakuhang detalye", "راجع التفاصيل المستخرجة", "检查识别结果", "Revisa los datos extraídos", "Verifica i dati estratti", "Erkannte Angaben prüfen", "Vérifiez les données extraites", "Confira os dados extraídos", "読み取り結果を確認", "인식한 정보 확인", "निकाले गए विवरण जाँचें"],
+  ["Receipt items", "Mga item sa resibo", "عناصر الإيصال", "收据商品", "Artículos del recibo", "Articoli sullo scontrino", "Belegpositionen", "Articles du reçu", "Itens do recibo", "レシートの商品", "영수증 항목", "रसीद की वस्तुएँ"],
+  ["Included with item", "Kasama sa item", "مرفق مع العنصر", "随商品附带", "Incluido con el artículo", "Incluso con l'articolo", "Im Artikel enthalten", "Inclus avec l'article", "Incluído no item", "商品に含まれるもの", "상품에 포함", "वस्तु के साथ शामिल"],
+  ["Line total", "Kabuuan ng item", "إجمالي البند", "该项合计", "Total del artículo", "Totale della voce", "Positionssumme", "Total de la ligne", "Total do item", "項目の合計", "항목 합계", "पंक्ति का कुल"],
+  ["Payment and tax", "Bayad at buwis", "الدفع والضريبة", "付款与税费", "Pago e impuestos", "Pagamento e imposte", "Zahlung und Steuern", "Paiement et taxes", "Pagamento e impostos", "支払いと税金", "결제 및 세금", "भुगतान और कर"],
+  ["Cash tendered", "Ibinayad na cash", "النقد المدفوع", "实收现金", "Efectivo entregado", "Contanti consegnati", "Gegebenes Bargeld", "Espèces remises", "Dinheiro entregue", "預り金", "받은 현금", "दिया गया नकद"],
+  ["Taxable sales", "Mga benta na may buwis", "مبيعات خاضعة للضريبة", "应税销售额", "Ventas sujetas a impuestos", "Vendite imponibili", "Steuerpflichtige Umsätze", "Ventes taxables", "Vendas tributáveis", "課税対象売上", "과세 매출", "कर योग्य बिक्री"],
+  ["VAT exempt sales", "Mga bentang hindi saklaw ng VAT", "مبيعات معفاة من الضريبة", "免征增值税销售额", "Ventas exentas de IVA", "Vendite esenti IVA", "Umsätze ohne Mehrwertsteuer", "Ventes exonérées de TVA", "Vendas isentas de IVA", "非課税売上", "부가세 면세 매출", "वैट मुक्त बिक्री"],
+  ["VAT / tax", "VAT / buwis", "ضريبة القيمة المضافة / الضريبة", "增值税／税费", "IVA / impuesto", "IVA / imposta", "MwSt. / Steuer", "TVA / taxe", "IVA / imposto", "消費税／税金", "부가세 / 세금", "वैट / कर"],
+  ["VAT and cash change are details, not additional expenses.", "Detalye lamang ang VAT at sukli, hindi dagdag na gastos.", "الضريبة والباقي النقدي تفاصيل وليسا مصروفات إضافية.", "增值税和找零只是明细，不是额外支出。", "El IVA y el cambio son detalles, no gastos adicionales.", "IVA e resto sono dettagli, non spese aggiuntive.", "MwSt. und Wechselgeld sind Angaben, keine weiteren Ausgaben.", "La TVA et la monnaie sont des détails, pas des dépenses supplémentaires.", "IVA e troco são detalhes, não despesas adicionais.", "消費税とお釣りは明細であり、追加支出ではありません。", "세금과 거스름돈은 세부 정보이며 추가 지출이 아닙니다.", "वैट और लौटाए गए पैसे विवरण हैं, अतिरिक्त खर्च नहीं।"],
+];
