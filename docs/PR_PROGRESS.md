@@ -1030,3 +1030,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Added deterministic parsed amount/item components/discount/VAT/payment details with editable scanner review, automatic note prefill and safe missing-total fail-closed behavior; preserve local OCR and existing transaction validation.
 - Early CI on initial multi-commit prototype: financial tenant isolation PASSED; Phase 1 FAILED **only** on the preexisting per-commit documentation guard because individual implementation commits omitted these two progress files. Conserve the initial documented planning commit and consolidate prototype into one code commit that touches both required documents.
 - Required next checks: rerun GitHub Phase 1, finance isolation, iOS, Vercel preview, compare exact head and test real iPhone/Android receipt capture before merge. Leave PR open.
+
+## 2026-11-14 — PR #300 localization verification repair (documented before commit)
+
+- Exact head `7904a6bb773a` passed the per-commit documentation guard and financial isolation. Phase 1 failed on `src/lib/i18n.test.js`: ten new labels were missing from the 11-language catalogue (source review uncovered additional dynamic warning strings).
+- Add translations for all ten static labels plus three dynamic warning messages. No scanner amounts, accounting logic, data contracts, native permissions or production behavior changes beyond localized copy.
+- Pending: rerun Phase 1, typecheck/build, iOS, Vercel preview and hardware acceptance; keep this PR open.

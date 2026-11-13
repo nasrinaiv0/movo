@@ -30,3 +30,6 @@
 - Implemented structured fields, editable scanner review, guarded total detection, synthetic receipt regression and UI coverage; retains existing encrypted/local record flow without schema changes.
 - Original PR #300 run failed its *per-commit progress documentation gate* before tests ran; finance isolation passed. The branch's implementation history was consolidated into a single code commit that updates both this dated report and `docs/PR_PROGRESS.md` in that same commit, preserving the original planning commit.
 - No physical-device OCR acceptance yet; no merge authorized.
+
+## Localization CI repair (precommit)
+- After documented-history consolidation, the exact-head Phase 1 i18n test surfaced ten missing labels. Add the complete 11-language entries, including dynamic parser warnings, in the same commit as both required progress documents. All financial/accounting code is unchanged by this repair. Translations remain machine-assisted and need in-market review.
