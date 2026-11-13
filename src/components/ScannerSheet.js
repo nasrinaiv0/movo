@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
+import ReceiptBreakdown from './ReceiptBreakdown';
 import { Sheet } from './ui';
 import { readDocumentText, parseReceipt, guessCategory, warmUpOcr } from '../lib/ocr';
 import { money, shown, getFormatLocale, baseCurrency } from '../lib/format';
@@ -78,9 +79,25 @@ export default function ScannerSheet({ show, onLog, onClose }) {
   };
   const choose = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) process(f); };
   const log = () => {
-    update(scans.map(s => (s.id === active.id ? { ...s, ...active, status: 'logged' } : s)));
-    const note = [active.reason, active.fee ? `Fee ${active.fee}` : '', active.ref ? `Ref ${active.ref}` : ''].filter(Boolean).join(' · ') || 'Scanned receipt';
-    onLog({ type: active.type === 'income' ? 'income' : 'expense', merchant: active.merchant || 'Receipt', amount: active.amount ? String(active.amount) : '', category: active.type === 'income' ? 'Income' : active.category, occurred_at: active.date || '', time: active.time || '', ref: active.ref || '', bank: active.bank || '', last4: active.last4 || '', note });
+    if (!Number.isFinite(Number(active.amount)) || Number(active.amount) <= 0 || Number(active.amount) >= 1e12) {
+      setError(tr('No total was found. Enter the amount before logging.'));
+      return;
+    }
+    const items = (active.items || []).slice(0, 15).filter(item => item.name.trim());
+    const itemNote = items.map(item => [item.quantity + '× ' + item.name, (item.options || []).length ? '(' + item.options.join(', ') + ')' : '', Number(item.total || 0).toFixed(2)].filter(Boolean).join(' ')).join('; ');
+    const note = [
+      active.reason && !(items.length === 1 && active.reason === items[0].name) ? active.reason : '',
+      itemNote ? 'Items: ' + itemNote : '',
+      active.tax != null ? 'VAT/tax ' + Number(active.tax).toFixed(2) + (active.taxIncluded ? ' included' : '') : '',
+      active.taxableSales != null ? 'Taxable sales ' + Number(active.taxableSales).toFixed(2) : '',
+      active.cashTendered != null ? 'Cash ' + Number(active.cashTendered).toFixed(2) : '',
+      active.change != null ? 'Change ' + Number(active.change).toFixed(2) : '',
+      active.fee ? 'Fee ' + active.fee : '',
+      active.ref ? 'Ref ' + active.ref : '',
+    ].filter(Boolean).join(' · ').slice(0, 950) || 'Scanned receipt';
+    // This only opens the editable transaction sheet; it does not commit a financial record.
+    update(scans.map(s => (s.id === active.id ? { ...s, ...active, status: 'review' } : s)));
+    onLog({ type: active.type === 'income' ? 'income' : 'expense', merchant: active.merchant || 'Receipt', amount: String(active.amount), category: active.type === 'income' ? 'Income' : active.category, occurred_at: active.date || '', time: active.time || '', ref: active.ref || '', bank: active.bank || '', last4: active.last4 || '', note });
   };
 
   return <Sheet title={mode === 'review' ? tr('Review scan') : tr('Scan receipt')} subtitle={mode === 'review' ? tr('Check the details before logging.') : tr('Photograph or upload a receipt, invoice or payment confirmation. Files are read on this device and never uploaded.')} onClose={() => { stopCamera(); onClose(); }} label={tr('Scan receipt')}>
@@ -111,9 +128,10 @@ export default function ScannerSheet({ show, onLog, onClose }) {
       <div className="form-grid"><label>{tr('Bank or wallet')}<input value={active.bank || ''} maxLength={60} onChange={e => setActive({ ...active, bank: e.target.value })} placeholder={tr('Optional')} /></label>
         <label>{tr('Fee')}<input inputMode="decimal" value={active.fee || ''} onChange={e => setActive({ ...active, fee: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} placeholder="0.00" /></label></div>
       <label>{tr('Reason')}<input value={active.reason || ''} maxLength={120} onChange={e => setActive({ ...active, reason: e.target.value })} placeholder={tr('Optional')} /></label>
+      <ReceiptBreakdown receipt={active} onChange={setActive} />
       <details className="scan-text"><summary>{tr('Text found')}</summary><pre>{active.text || tr('No text found.')}</pre></details>
       {!active.amount && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}
-      <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setMode('home'); }}>{tr('Discard')}</button><button type="submit" className="primary-button">{tr('Log transaction')}</button></div>
+      <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setMode('home'); }}>{tr('Discard')}</button><button type="submit" className="primary-button" disabled={!(Number(active.amount) > 0) || Number(active.amount) >= 1e12}>{tr('Log transaction')}</button></div>
     </form>}
     {error && <p className="form-error" role="alert">{error}</p>}
     {mode === 'home' && scans.length > 0 && <section className="scan-log" aria-label={tr('Scan log')}>
