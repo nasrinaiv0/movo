@@ -21,6 +21,10 @@ describe('safe Supabase Auth error classification', () => {
     [{ code: 'secure_auth_write_failed' }, 'native-secure-storage'],
     [{ code: 'secure_auth_read_failed' }, 'native-secure-storage'],
     [{ message: 'secure_auth_legacy_cleanup_failed' }, 'native-secure-storage'],
+    [{ code: 'invalid_secure_auth_key' }, 'native-secure-storage'],
+    [{ code: 'invalid_secure_auth_value' }, 'native-secure-storage'],
+    [{ code: 'secure_auth_delete_failed' }, 'native-secure-storage'],
+    [{ message: 'MovoNative plugin is not implemented on android' }, 'native-secure-storage'],
     [{ message: 'Failed to fetch' }, 'network'],
     [null, 'unknown'],
   ])('maps %p to %s without echoing provider details', (error, kind) => {

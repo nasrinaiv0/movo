@@ -105,6 +105,35 @@ def capture_screenshot_with_timeout_retry(device_id, screenshot, *, runner=run_c
     raise SmokeFailure("Simulator screenshot failed after bounded retries")
 
 
+def capture_screenshot_with_one_cold_recovery(device_id, app, screenshot, *,
+                                               runner=run_command, sleeper=time.sleep):
+    """Recover from a stuck CoreSimulator screenshot service at most once.
+
+    A successful launch and deep link is never enough on its own: this CI smoke
+    requires a screenshot from the same app after the recovery. Non-timeout
+    errors, installation failures and failed reboots must still fail the job.
+    """
+    try:
+        capture_screenshot_with_timeout_retry(device_id, screenshot, runner=runner, sleeper=sleeper)
+        return
+    except SmokeFailure as error:
+        if not error.timed_out:
+            raise
+    print("::warning::CoreSimulator screenshot service stalled twice; "
+          "cold restarting the disposable simulator and repeating full native smoke once.", flush=True)
+    runner(["xcrun", "simctl", "shutdown", device_id], timeout=90)
+    runner(["xcrun", "simctl", "boot", device_id], timeout=90)
+    runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=450)
+    runner(["xcrun", "simctl", "install", device_id, app], timeout=180)
+    launch_with_cold_boot_retry(device_id, runner=runner, sleeper=sleeper)
+    sleeper(5)
+    runner(["xcrun", "simctl", "openurl", device_id,
+            "movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test"], timeout=90)
+    sleeper(3)
+    # The screenshot remains mandatory after restart; a second stall fails CI.
+    capture_screenshot_with_timeout_retry(device_id, screenshot, runner=runner, sleeper=sleeper)
+
+
 def smoke(app, screenshot):
     if not os.path.isdir(app):
         raise SmokeFailure(f"Simulator .app is missing: {app}")
@@ -123,7 +152,7 @@ def smoke(app, screenshot):
                  "movo://log?src=siri_shortcut&amount=12.34&merchant=Simulator%20Test"], 90)
     time.sleep(3)
     os.makedirs(os.path.dirname(os.path.abspath(screenshot)), exist_ok=True)
-    capture_screenshot_with_timeout_retry(device_id, screenshot)
+    capture_screenshot_with_one_cold_recovery(device_id, app, screenshot)
     if not os.path.isfile(screenshot):
         raise SmokeFailure("simctl screenshot reported success but did not create an image")
     print("Native iOS app installed, launched, received a deep link, and captured a screenshot.")

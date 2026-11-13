@@ -74,15 +74,31 @@ export function readAppUrl(url) {
 /** Listen for movo:// links. `onAuth({ code, error })` finishes sign-in; log links reuse the web #/log handler. */
 export function listenForAppUrls({ onAuth } = {}) {
   if (!isNativeApp()) return () => {};
+  let active = true;
+  let lastAuthCode = null;
   const handle = ({ url }) => {
+    if (!active) return;
     const link = readAppUrl(url);
     if (!link) return;
-    if (link.kind === 'auth') { Browser.close().catch(() => {}); onAuth?.(link); }
+    if (link.kind === 'auth') {
+      // Android singleTask already clears the Custom Tab during a deep-link return.
+      // Browser.close() here can reopen the last OAuth page or strand the browser
+      // controller in @capacitor/browser 8.0.5. iOS still needs an explicit close.
+      // A callback can arrive through both appUrlOpen and getLaunchUrl; exchange
+      // each one-time PKCE code at most once without persisting or logging it.
+      if (link.code && link.code === lastAuthCode) return;
+      if (link.code) lastAuthCode = link.code;
+      if (nativePlatform() !== 'android') Browser.close().catch(() => {});
+      onAuth?.(link);
+    }
     if (link.kind === 'log') window.location.hash = link.hash;
   };
   const pending = CapApp.addListener('appUrlOpen', handle);
   CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
-  return () => { pending.then(h => h.remove()).catch(() => {}); };
+  return () => {
+    active = false;
+    pending.then(h => h?.remove()).catch(() => {});
+  };
 }
 
 /** Open a sign-in page in the system browser sheet (Google refuses sign-in inside embedded web views). */
