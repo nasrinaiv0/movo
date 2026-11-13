@@ -1036,3 +1036,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Exact head `7904a6bb773a` passed the per-commit documentation guard and financial isolation. Phase 1 failed on `src/lib/i18n.test.js`: ten new labels were missing from the 11-language catalogue (source review uncovered additional dynamic warning strings).
 - Add translations for all ten static labels plus three dynamic warning messages. No scanner amounts, accounting logic, data contracts, native permissions or production behavior changes beyond localized copy.
 - Pending: rerun Phase 1, typecheck/build, iOS, Vercel preview and hardware acceptance; keep this PR open.
+
+## 2026-11-14 — AI receipt vision backend PR (documented before commit)
+
+- Baseline main `c8bd8191475c280c9316fefb1ace9dc363c77eb1`. Add signed-in, Pro-gated AI receipt image/text parser using existing server-only OpenRouter production key with strict input size, origin and consent gates. No receipt contents/images retained at MOVO server; provider retention remains subject to its policy. New client and UI follow separately. PR not merged, no production change.

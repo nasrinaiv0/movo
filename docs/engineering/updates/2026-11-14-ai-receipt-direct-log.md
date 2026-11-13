@@ -14,3 +14,7 @@
 - ₱159 McDonald's sample remains one expense; ₱500 tendered and ₱341 change never change the ledger amount; included VAT ₱17.04 is not a separate charge; item-level categories kept.
 - Scanner correctly blocks missing account/invalid amount/duplicate, **Discard** without writing, direct **Log** once and no calculator route.
 - Full Jest, typecheck, production build, finance tenant-isolation, iOS, Vercel preview; real-device iPhone/Android signed-in AI imaging and financial-transaction acceptance remains required before merge.
+
+## Backend implementation (precommit)
+- Added bounded authenticated receipt vision endpoint and JSON normalization tests. Provider: existing production OpenRouter API key; fixed vision-capable OpenRouter model, configurable by server-only MOVO_RECEIPT_VISION_MODEL. Preview currently does NOT have OPENROUTER_API_KEY (checked key names only); live AI preview needs a scoped preview key, not a production secret copy.
+- Explicit per-scan consent; JWT getUser, entitlement, same-origin allowlist, no ledgers or account metadata sent to provider; data_collection deny requested. Server never saves source photo or logs provider output.
