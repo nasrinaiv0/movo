@@ -23,3 +23,7 @@
 
 ## Implementation record
 Proposed code, migration and tests prepared with PR_PROGRESS entry after the separate planning commit. Exact-head CI, preview and operator tests remain release gates.
+## 2026-11-13 — Fix first disposable IAP assertion without weakening entitlement isolation
+- First PR #297 IAP CI run #43355492063 failed a test that mistakenly assumed no store source after sandbox allowlist removal; a distinct legitimate synthetic production receipt still existed.
+- Correct only the synthetic sandbox tier assertion: pro_plus while test allowlisted, production pro after allowlist removal. Security migration and runtime guards unchanged.
+- Progress and failure diagnosis were documented before this code commit in docs/engineering/updates/2026-11-13-google-play-sandbox-ci-diagnosis.md.
