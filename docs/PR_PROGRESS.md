@@ -1022,3 +1022,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
 - Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
 - No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
+
+## 2026-11-13 — PR #295: Android Google OAuth browser return hardening
+- Owner report: Google sign-in in the Android app fails with a misleading generic OAuth provider message. Live Supabase logs include Google redirects/logins; provider availability alone is not a proven root cause.
+- Cause addressed: Android `@capacitor/browser` 8.0.5 `Browser.close()` can replay a native-deep-link OAuth URL or strand Chrome Custom Tabs (upstream ionic-team/capacitor-plugins#2610). On Android, deep-link activation already clears the custom tab; iOS still requires closing it.
+- Changes: skip Browser.close on Android callback, deduplicate identical one-time PKCE authorization codes from launch intents and appUrlOpen, ignore late callbacks on unmount, recognize native Keystore/Capacitor vault failures with a safe diagnostic category. No auth bypass, credential logging, insecure WebView, client secret, or production configuration change.
+- Regression: `src/lib/nativeOAuthReturn.test.js` covers Android/iOS lifecycle, duplicate PKCE codes, unrelated links, late intents, and new attempts. Native error-classification cases added. Refer to `docs/engineering/updates/2026-11-13-android-google-oauth-handoff.md` for progress recorded before implementation.
+- Initial PR CI failed documentation-per-code-commit gate before tests; restage the exact reviewed changes into one documented commit, then recheck full CI, native Android, Vercel preview. Do not merge or publish without exact-head CI and real-device sign-in proof; Supabase native redirect allowlist remains unverified.

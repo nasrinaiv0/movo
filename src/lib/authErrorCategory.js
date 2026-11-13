@@ -9,7 +9,7 @@ export function authErrorCategory(cause) {
   const detail = (code + ' ' + message).slice(0, 600).toLowerCase();
 
   if (/android_auth_browser_unavailable/.test(detail)) return 'android-browser';
-  if (/secure_auth_(?:read|write|legacy_cleanup)_failed|secure_auth_storage_native_only|invalid_auth_storage_key/.test(detail)) return 'native-secure-storage';
+  if (/secure_auth_[a-z_]*_failed|secure_auth_storage_native_only|invalid_(?:secure_auth|auth_storage)_(?:key|value)|movonative.{0,80}(?:not implemented|unavailable|not registered)|(?:not implemented|unavailable|not registered).{0,80}movonative/.test(detail)) return 'native-secure-storage';
   if (/invalid.?api.?key|api.?key.?invalid|invalid.?jwt|missing.?api.?key|invalid.?publishable.?key/.test(detail)) {
     return 'invalid-api-key';
   }
