@@ -71,7 +71,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
   const analyze = async (basic = false) => {
     if (!pendingFile) return;
     setMode('working'); setError('');
-    setStatus(basic ? tr('Reading your receipt on this device…') : 'AI reading receipt…');
+    setStatus(basic ? tr('Reading your receipt on this device…') : tr('AI reading receipt…'));
     try {
       const fields = basic ? (() => null)() : await scanReceiptWithAI(pendingFile);
       let result = fields;
@@ -79,7 +79,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
       let text = '';
       if (basic) {
         text = await readDocumentText(pendingFile);
-        if (!text.trim()) throw new Error('No readable text was found. Try a sharper photo.');
+        if (!text.trim()) throw new Error(tr('No readable text was found. Try a sharper photo.'));
         result = parseReceipt(text);
         source = 'device';
       }
@@ -96,7 +96,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
       setPendingFile(null); setActive(entry); setMode('review');
     } catch (cause) {
       setMode('consent');
-      setError(cause?.name === 'AbortError' ? 'AI scan timed out. Try again.' : (cause?.message || 'Could not scan receipt.'));
+      setError(cause?.name === 'AbortError' ? tr('AI scan timed out. Try again.') : (cause?.message || tr('Could not scan receipt.')));
     } finally { setStatus(''); }
   };
   // Capture straight at OCR size (≤1600px) so reading starts sooner.
@@ -111,12 +111,12 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
   const log = async () => {
     if (submittingRef.current) return;
     const selected = (accounts || []).find(a => String(a.id) === String(accountId) && !a.is_archived);
-    if (!selected) { setError('Choose a registered bank, card, e-wallet or other account.'); return; }
+    if (!selected) { setError(tr('Choose a registered bank, card, e-wallet or other account.')); return; }
     if (!active?.merchant?.trim() || !(Number(active.amount) > 0) || Number(active.amount) >= 1e11) {
       setError(tr('No total was found. Enter the amount before logging.')); return;
     }
     if (active.currency && selected.currency && active.currency !== selected.currency) {
-      setError('Receipt currency differs from the selected account. Choose an account with matching currency.'); return;
+      setError(tr('Receipt currency differs from the selected account. Choose an account with matching currency.')); return;
     }
     submittingRef.current = true; setSubmitting(true); setError('');
     const items = (active.items || []).slice(0, 60).filter(item => item.name?.trim());
@@ -156,12 +156,12 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
       });
       if (ok) { setActive(null); setPendingFile(null); setMode('home'); }
       // A false result keeps this review open, e.g. duplicate confirmation or failed save.
-    } catch (cause) { setError(cause?.message || 'Transaction could not be saved.'); }
+    } catch (cause) { setError(cause?.message || tr('Transaction could not be saved.')); }
     finally { submittingRef.current = false; setSubmitting(false); }
   };
 
   return <Sheet title={mode === 'review' ? tr('Review scan') : tr('Scan receipt')}
-    subtitle={mode === 'review' ? tr('Check the details before logging.') : 'AI extracts receipt details and suggests categories. You choose the payment account before logging.'}
+    subtitle={mode === 'review' ? tr('Check the details before logging.') : tr('AI extracts receipt details and suggests categories. You choose the payment account before logging.')}
     onClose={() => { stopCamera(); setPendingFile(null); onClose(); }} label={tr('Scan receipt')}>
     <input ref={photoRef} type="file" accept="image/*" hidden onChange={choose} aria-label={tr('Upload a photo or screenshot')} />
     <input ref={docRef} type="file" accept="image/*,application/pdf,.pdf" hidden onChange={choose} aria-label={tr('Upload a receipt or invoice')} />
@@ -174,13 +174,13 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
     </div>}
     {mode === 'consent' && <div className="scan-consent">
       <Icon name="sparkles" size={28} />
-      <strong>AI receipt scan</strong>
-      <p>With your permission, this receipt image or extracted PDF text is sent to MOVO's AI provider to read and categorize it. Do not scan PINs, CVVs or one-time codes. You can discard it without logging.</p>
+      <strong>{tr('AI receipt scan')}</strong>
+      <p>{tr("With your permission, this receipt image or extracted PDF text is sent to MOVO's AI provider to read and categorize it. Do not scan PINs, CVVs or one-time codes. You can discard it without logging.")}</p>
       <div className="sheet-actions">
         <button type="button" className="secondary-button" onClick={() => { setPendingFile(null); setError(''); setMode('home'); }}>{tr('Discard')}</button>
-        <button type="button" className="primary-button" onClick={() => analyze(false)}>Analyze with AI</button>
+        <button type="button" className="primary-button" onClick={() => analyze(false)}>{tr('Analyze with AI')}</button>
       </div>
-      <button type="button" className="link-button" onClick={() => analyze(true)}>Basic scan (on-device)</button>
+      <button type="button" className="link-button" onClick={() => analyze(true)}>{tr('Basic scan (on-device)')}</button>
     </div>}
     {mode === 'camera' && <div className="scan-camera">
       <div className={`scan-view${live ? ' is-live' : ''}`}><video ref={video} autoPlay playsInline muted aria-label={tr('Camera preview')} onPlaying={() => setLive(true)} />
@@ -192,7 +192,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
     {mode === 'review' && active && <form className="sheet-form scan-review" onSubmit={e => { e.preventDefault(); log(); }}>
       {active.thumb && <img className="scan-thumb" src={active.thumb} alt={tr('Scanned receipt')} />}
       <div className="scan-ai-summary">
-        <span className="scan-ai-label">{active.source === 'ai' ? 'AI receipt scan' : 'Basic scan (on-device)'}</span>
+        <span className="scan-ai-label">{active.source === 'ai' ? tr('AI receipt scan') : tr('Basic scan (on-device)')}</span>
         <strong className="scan-ai-total">{active.currency || baseCurrency()} {Number(active.amount || 0).toFixed(2)}</strong>
         <strong className="scan-ai-merchant">{active.merchant || tr('Receipt')}</strong>
         <span className="scan-ai-meta">{[active.date, active.time, active.branch || active.address, active.paymentMethod].filter(Boolean).join(' · ')}</span>
@@ -206,7 +206,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
         onChange={setAccountId} showBalance={show} />
       {!accounts.some(a => !a.is_archived) && <p className="form-note">{tr('Add an account or card in Wallet first, then log this transaction.')}</p>}
       <details className="scan-review-details">
-        <summary>Review or correct extracted details</summary>
+        <summary>{tr('Review or correct extracted details')}</summary>
         <div className="seg-control two scan-type" role="group" aria-label={tr('Type')}>
           {[['expense', 'Expense'], ['income', 'Income']].map(([k, label]) =>
             <button type="button" key={k} className={(active.type || 'expense') === k ? 'selected' : ''}

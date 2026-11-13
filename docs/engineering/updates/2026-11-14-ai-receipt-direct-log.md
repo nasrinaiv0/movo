@@ -31,3 +31,6 @@
 
 ## Privacy and store metadata (precommit)
 - Added paragraph 19 on remote provider scan, retention caveat, separate explicit consent, alternatives, rights, security, and new acceptance effective date Nov 14. Generated public privacy HTML via the same canonical section renderer. This materially changes photo processing compared with offline scanner: verify Play Data Safety and Apple App Privacy declarations before release. No automatic policy assertion of vendor zero retention.
+
+## Phase 1 locale gate repair (precommit)
+- Initial PR CI encountered 11 missing interface strings. Added machine-assisted translations across 11 locales and wired explicit consent/review labels to i18n. External-provider legal disclosures remain in canonical English pending legal review. No finance behavior changed.

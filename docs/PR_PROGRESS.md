@@ -1056,3 +1056,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — Privacy disclosure update for consented remote receipt analysis (documented before commit)
 
 - Added an AI receipt privacy section to the in-app and public canonical English disclosures: explicit opt-in, OpenRouter/model-provider processing, cross-border/privacy caveats, no raw photo logs at MOVO proxy, logged-record retention rules, review responsibilities. Bumped Privacy effective date to Nov 14 and legal acceptance version. Kept Terms date unchanged. No production deploy or provider configuration changes.
+
+## 2026-11-14 — PR #301 Phase 1 locale gate repair (documented before commit)
+
+- Initial exact-head CI reached localization and failed on 11 new receipt UI labels. Added full 11-language dictionary plus localized consent/review controls. This change does not alter ledger, API request or auth behavior. Financial tenant-isolation already passed; rerun required.
