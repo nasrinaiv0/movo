@@ -58,7 +58,10 @@ async function scan(req,res,{env=process.env,fetchImpl=globalThis.fetch,clientFa
       headers:{Authorization:'Bearer '+String(env.OPENROUTER_API_KEY).trim(),'Content-Type':'application/json',
         Accept:'application/json','HTTP-Referer':'https://movo.nasrinai.com','X-Title':'MOVO Receipt Scan'},
       body:JSON.stringify(buildProviderBody(payload,env)),
-      signal:AbortSignal.timeout(30000)
+      // Node 26 offers AbortSignal.timeout; jsdom and some test runtimes do not.
+      // Production retains a hard upstream timeout; tests use a controlled fetch mock.
+      signal:typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+        ? AbortSignal.timeout(30000) : undefined
     });
     if(!upstream.ok)return reply(res,upstream.status===429?429:502,{error:upstream.status===429?'ai_rate_limited':'receipt_ai_unavailable'});
     if(Number(upstream.headers?.get?.('content-length')||0)>250000)return reply(res,502,{error:'invalid_ai_reply'});

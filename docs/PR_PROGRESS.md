@@ -1060,3 +1060,8 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — PR #301 Phase 1 locale gate repair (documented before commit)
 
 - Initial exact-head CI reached localization and failed on 11 new receipt UI labels. Added full 11-language dictionary plus localized consent/review controls. This change does not alter ledger, API request or auth behavior. Financial tenant-isolation already passed; rerun required.
+
+## 2026-11-14 — PR #301 full Jest verification repair (documented before commit)
+
+- Exact `306c4b1d190c` passed 227/229 suites (1,377/1,380 tests). Failures: a stale Privacy Policy date assertion (Nov 12 versus correctly updated Nov 14), and two mocked AI API tests returning HTTP 503 because the jsdom AbortSignal shim omits `AbortSignal.timeout`.
+- Fix assertion and use the native timeout when available (Node 26 production), with a test-runtime-compatible signal fallback; no server key, user data, or ledger logic changed. Rerun full CI, native and preview before merge.

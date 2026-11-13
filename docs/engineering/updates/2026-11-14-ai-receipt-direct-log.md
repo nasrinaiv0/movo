@@ -34,3 +34,6 @@
 
 ## Phase 1 locale gate repair (precommit)
 - Initial PR CI encountered 11 missing interface strings. Added machine-assisted translations across 11 locales and wired explicit consent/review labels to i18n. External-provider legal disclosures remain in canonical English pending legal review. No finance behavior changed.
+
+## Full Jest repair (precommit)
+- Phase 1 reached 227 passing suites, three failing assertions. Update stale App Privacy date assertion to Nov 14. Provide an AbortSignal.timeout feature-detection fallback for jsdom mocking while retaining Node 26's real provider timeout in production. This is a compatibility repair, not a relaxation of financial checks. Revalidate at new exact head.
