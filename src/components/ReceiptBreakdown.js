@@ -1,5 +1,6 @@
 import React from 'react';
 import { t as tr } from '../lib/i18n';
+import { PRIMARY, GROUPS } from '../lib/categories';
 import './ReceiptBreakdown.css';
 
 const asMoney = raw => {
@@ -50,6 +51,15 @@ export default function ReceiptBreakdown({ receipt, onChange }) {
             onChange={event => updateItem(index, { options: event.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder={tr('Optional')} />
         </label>
       </div>
+      <label className="scan-field"><span>{tr('Category')}</span>
+        <select value={item.category || ''} onChange={event => updateItem(index, { category: event.target.value })}>
+          <option value="">—</option>
+          {PRIMARY.map(p => <option key={p.id} value={p.id}>{tr(p.label)}</option>)}
+          {GROUPS.map(g => <optgroup key={g.id} label={tr(g.label)}>
+            {g.subs.map(([sid, name]) => <option value={g.id + ':' + sid} key={sid}>{tr(name)}</option>)}
+          </optgroup>)}
+        </select>
+      </label>
     </div>)}
     {!items.length && <p className="scan-hint-text">{tr('No items detected. Add or verify them manually.')}</p>}
     <button type="button" className="scan-add-item" onClick={() => set('items', [...items, { quantity: 1, name: '', unitPrice: null, total: 0, options: [] }])}>{tr('Add item')} +</button>
@@ -66,6 +76,7 @@ export default function ReceiptBreakdown({ receipt, onChange }) {
       <MoneyField label="VAT / tax" value={receipt.tax} onChange={value => set('tax', value)} />
       <MoneyField label="Taxable sales" value={receipt.taxableSales} onChange={value => set('taxableSales', value)} />
       <MoneyField label="VAT exempt sales" value={receipt.vatExemptSales} onChange={value => set('vatExemptSales', value)} />
+      <MoneyField label="Zero-rated sales" value={receipt.zeroRatedSales} onChange={value => set('zeroRatedSales', value)} />
       <MoneyField label="Subtotal" value={receipt.subtotal} onChange={value => set('subtotal', value)} />
       <MoneyField label="Discount" value={receipt.discount} onChange={value => set('discount', value)} />
       <MoneyField label="Service charge" value={receipt.serviceCharge} onChange={value => set('serviceCharge', value)} />
