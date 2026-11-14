@@ -15,3 +15,6 @@ print(a[:a.index('-- Triggers also cover')]); print('commit;')
 print((root/'supabase/migrations/20261108230330_owner_manual_plan_grants.sql').read_text())
 print((root/'supabase/migrations/20261109153000_verified_referral_points.sql').read_text())
 print((root/'supabase/migrations/20261109160000_iap_integrity.sql').read_text())
+
+# Include the isolated P0 test-purchase migration in disposable PostgreSQL tests.
+print((root/'supabase/migrations/20261113000000_google_play_test_purchase_isolation.sql').read_text())

@@ -38,8 +38,27 @@ begin
  if not exists(select 1 from public.movo_iap_revocations where identity_key=repeat('c',64)) then raise exception 'TEST: missing predecessor tombstone'; end if;
  -- Atomic rollback: a failure must not mark the event processed.
  f:=public.movo_iap_acquire('google',linked);
- begin perform public.movo_iap_commit(u,v||'{"environment":"sandbox"}',f,'bad-env'); raise exception 'TEST: sandbox accepted'; exception when others then if sqlerrm<>'invalid_store_state' then raise; end if; end;
+ begin perform public.movo_iap_commit(u,v||'{"environment":"sandbox"}',f,'bad-env'); raise exception 'TEST: sandbox accepted'; exception when others then if sqlerrm<>'test_account_not_enabled' then raise; end if; end;
  if exists(select 1 from public.movo_iap_events where event_id='bad-env') then raise exception 'TEST: event survived rollback'; end if;
+
+ -- Synthetic license-test account: service-role only; does not count as revenue.
+ insert into public.movo_store_test_users(user_id) values(u);
+ v:=jsonb_build_object('platform','google','storeSubscriptionKey',repeat('d',64),'purchaseTokenHash',repeat('d',64),
+ 'storeTransactionId','license-test-order','productId','com.nasrinai.movo.proplus.monthly','tier','pro_plus',
+ 'status','active','environment','sandbox','eventAt',now(),'expiresAt',now()+interval '1 hour',
+ 'paidVerified',true,'needsAcknowledgement',false);
+ f:=public.movo_iap_acquire('google',repeat('d',64)); r:=public.movo_iap_commit(u,v,f,'license-verified');
+ if r->>'environment'<>'sandbox' or r->>'status'<>'active' then raise exception 'TEST: sandbox receipt not stored'; end if;
+ if not exists(select 1 from public.movo_store_entitlements where store_subscription_key=repeat('d',64)
+    and environment='sandbox' and not paid_verified) then raise exception 'TEST: sandbox credited as revenue'; end if;
+ if public.movo_plan_status(u)->>'tier'<>'pro_plus' then raise exception 'TEST: allowlisted sandbox tier not recognized'; end if;
+ f:=public.movo_iap_acquire('google',repeat('a',64));
+ begin perform public.movo_iap_commit(u,v||jsonb_build_object('storeSubscriptionKey',repeat('a',64),
+   'purchaseTokenHash',repeat('a',64)),f,'cross-env'); raise exception 'TEST: production token downgraded';
+ exception when others then if sqlerrm<>'invalid_store_state' then raise; end if; end;
+ delete from public.movo_iap_leases;
+ delete from public.movo_store_test_users where user_id=u;
+ if public.movo_plan_status(u)->>'tier'<>'pro' then raise exception 'TEST: sandbox privilege survived allowlist removal'; end if;
 
  -- Apple revocation before registration survives replay; a genuinely later purchase can succeed.
  delete from public.movo_iap_leases;

@@ -41,6 +41,14 @@ android {
         }
     }
     buildTypes {
+        // Isolated debug-signed auth acceptance app. Never changes the Play
+        // applicationId or the release signing configuration.
+        authTest {
+            initWith debug
+            applicationIdSuffix ".authcheck"
+            versionNameSuffix "-authcheck"
+            matchingFallbacks = ['debug']
+        }
         release {
             // An unsigned release can still compile in ordinary CI; the signed
             // Play bundle workflow separately requires the signing secrets.

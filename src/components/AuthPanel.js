@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { sendEmailCode, verifyEmailCode, signInWithApple, signInWithGoogle } from '../lib/financeRepository';
 import { supabaseConfigured } from '../lib/supabaseClient';
-import { authErrorCategory } from '../lib/authErrorCategory';
+import { authErrorCategory, nativeAuthStorageFailureCode } from '../lib/authErrorCategory';
 import { nativePlatform } from '../lib/platform';
 import { MovoMark } from './MovoLogo';
 import './AuthPanel.css';
@@ -64,7 +64,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       if (kind === 'android-browser') {
         setError(tr('Android could not open secure sign-in. Enable Chrome or another supported browser and try again.'));
       } else if (kind === 'native-secure-storage') {
-        setError(tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.'));
+        setError(`${tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.')} (${nativeAuthStorageFailureCode(cause)})`);
       } else if (kind === 'oauth-not-configured' && nativePlatform() === 'android' && provider === 'google') {
         setError(tr('Google sign-in could not start in the Android app. Check the app return link and try again.'));
       } else if (kind === 'oauth-not-configured') {
@@ -100,7 +100,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     } catch (cause) {
       const kind = authErrorCategory(cause);
       if (kind === 'native-secure-storage') {
-        setError(tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.'));
+        setError(`${tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.')} (${nativeAuthStorageFailureCode(cause)})`);
       } else if (kind === 'email-delivery') {
         setError(tr('MOVO could not deliver email codes. The email provider or OTP template needs attention. Please try again later.'));
       } else if (kind === 'invalid-api-key') {
@@ -131,7 +131,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
     } catch (cause) {
       const kind = authErrorCategory(cause);
       if (kind === 'native-secure-storage') {
-        setError(tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.'));
+        setError(`${tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.')} (${nativeAuthStorageFailureCode(cause)})`);
       } else if (kind === 'invalid-api-key') {
         setError(tr('This MOVO app build has an invalid cloud configuration. Install an updated version or contact support.'));
       } else if (kind === 'network') {

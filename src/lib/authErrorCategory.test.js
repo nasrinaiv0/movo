@@ -1,4 +1,4 @@
-import { authErrorCategory } from './authErrorCategory';
+import { authErrorCategory, nativeAuthStorageFailureCode } from './authErrorCategory';
 
 describe('safe Supabase Auth error classification', () => {
   test.each([
@@ -21,9 +21,26 @@ describe('safe Supabase Auth error classification', () => {
     [{ code: 'secure_auth_write_failed' }, 'native-secure-storage'],
     [{ code: 'secure_auth_read_failed' }, 'native-secure-storage'],
     [{ message: 'secure_auth_legacy_cleanup_failed' }, 'native-secure-storage'],
+    [{ code: 'invalid_secure_auth_key' }, 'native-secure-storage'],
+    [{ code: 'invalid_secure_auth_value' }, 'native-secure-storage'],
+    [{ code: 'secure_auth_delete_failed' }, 'native-secure-storage'],
+    [{ message: 'MovoNative plugin is not implemented on android' }, 'native-secure-storage'],
     [{ message: 'Failed to fetch' }, 'network'],
     [null, 'unknown'],
   ])('maps %p to %s without echoing provider details', (error, kind) => {
     expect(authErrorCategory(error)).toBe(kind);
   });
+});
+
+
+test.each([
+  [{ message: 'MovoNative plugin not implemented on android' }, 'ST-BRIDGE'],
+  [{ code: 'secure_auth_legacy_cleanup_failed' }, 'ST-CLEAN'],
+  [{ code: 'secure_auth_read_failed' }, 'ST-READ'],
+  [{ code: 'secure_auth_write_failed' }, 'ST-WRITE'],
+  [{ code: 'secure_auth_delete_failed' }, 'ST-DELETE'],
+  [{ code: 'invalid_secure_auth_key' }, 'ST-KEY'],
+  [{ message: 'unclassified error with private data' }, 'ST-OTHER'],
+])('native auth diagnostics display only a fixed safe code for %p', (error, code) => {
+  expect(nativeAuthStorageFailureCode(error)).toBe(code);
 });

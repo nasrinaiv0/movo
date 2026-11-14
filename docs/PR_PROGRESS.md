@@ -1069,3 +1069,52 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — Scanner direct Log/Discard integration tests (documented before commit)
 
 - Added focused DOM tests: consented analyze, choose a registered e-wallet, Log once directly with VAT/change retained as details; Discard never writes; failed write keeps review open. Requires exact-head CI. No production or store change.
+
+## 2026-11-13 — P0 Google Play license-test isolation
+- Documented design first on isolated `fix/google-play-test-purchase-isolation-20261113` from `5b616ce` in `docs/engineering/updates/2026-11-13-google-play-test-purchase-p0.md`.
+- Google-verified `testPurchase` classification; server allowlist gates sandbox RPC and plan access, with no production paid referral credit. Unknown-owner test RTDN never mints an entitlement.
+- Includes synthetic Jest and disposable PostgreSQL billing tests. No production migration, deployment, main edit, store upload or merge.
+- Exact-head CI, Vercel preview, Android signed internal build, and purchase/acknowledgement/restore/cancellation/revocation on Play license-test accounts remain gates.
+
+## 2026-11-13 — Fix first disposable IAP assertion without weakening entitlement isolation
+- First PR #297 IAP CI run #43355492063 failed a test that mistakenly assumed no store source after sandbox allowlist removal; a distinct legitimate synthetic production receipt still existed.
+- Correct only the synthetic sandbox tier assertion: pro_plus while test allowlisted, production pro after allowlist removal. Security migration and runtime guards unchanged.
+- Progress and failure diagnosis were documented before this code commit in docs/engineering/updates/2026-11-13-google-play-sandbox-ci-diagnosis.md.
+
+## 2026-11-13 — Cross-PR integration test for MOVO P0 login and Play lifecycle
+- Planning document committed BEFORE code: `docs/engineering/updates/2026-11-13-movo-p0-integrated-gates.md`.
+- Integrated PR #295 Android Google PKCE callback and native-storage diagnostics, PR #296 cancellation-through-expiry and PR #297 allowlisted, server-verified Google Play sandbox test receipts into isolated branch `integration/movo-p0-android-play-20261113` on main `5b616ce`.
+- Shared Google verifier and tests reconciled to cover *both* testPurchase and CANCELED with future/past expiry. No provider, keys, production settings or migrations applied. Signed device and Google Play purchase evidence remains manual.
+- Exact-head Phase 1, Android, iOS, finance, IAP, referral, and Vercel preview all required. No merge, deploy or Play release.
+
+## 2026-11-13 — Combined MOVO P0 cross-PR follow-up: precise Play offer + iOS simulator recovery
+- Prior progress plan: `docs/engineering/updates/2026-11-13-movo-p0-followup-ios-offer.md` committed **before** this code change.
+- Integrated reviewed PR #299 exact displayed Google Play offer token selection and strict base-plan match, plus PR #295 screenshot-stall cold recovery without bypassing a real screenshot or native restart.
+- Preserve original P0 OAuth + cancellation + license-test sandbox scopes, tenant isolation, strict Google verification and encrypted acknowledgement.
+- Exact-head Phase 1, Android, iOS, finance, IAP, referral and Vercel preview must rerun. Do not merge, publish signed AAB, alter live env or apply migrations.
+
+## 2026-11-13 — PR #298 iOS CoreSimulator openurl timeout (exact-head failure)
+- At `4c7bb464`, iOS run #43359864159 compiled Debug/Release, installed and launched iPhone Simulator, but `simctl openurl movo://log` and subsequent simulator diagnostics timed out. The native smoke gate remained RED.
+- Isolated fix planned and committed first in `docs/engineering/updates/2026-11-13-p0-ios-openurl-timeout.md`; exact-head one-job rerun requested before remediation.
+- Add **timeout-only, one-time** disposable CoreSimulator cold restart, reinstall, re-launch and deep-link replay; any second timeout, non-timeout error or reboot/install failure remains RED. Screenshot remains mandatory. Unit tests verify all success/failure branches.
+- Vercel exact-head preview READY and served root HTTP 200; its billing config `enabled:false` is an intentionally fail-closed preview environment state, with sensitive provider secrets production-scoped. Do not expose secrets to preview.
+- No deployment, production mutation, merge, signed AAB, store upload or live Supabase migration.
+
+## 2026-11-14 — Android sign-in physical acceptance bridge (PR #298)
+- Report: Google and email sign-in still fail in the Android Play app. Previous OAuth repair is unmerged/unreleased; existing automated success does not prove installed-device success. MOVO active public key matches the build-time file; 24h Auth logs show PKCE callbacks but not email OTP requests. Full diagnosis documented **before code** in `docs/engineering/updates/2026-11-14-android-auth-device-test-bridge.md`.
+- Add a separate, debug-signed `com.nasrinai.movo.authcheck` artifact on PR Android CI so a tester can exercise the current OAuth/OTP code without overwriting the Play app or accessing protected signing secrets. No merge, Play upload, migration or production change. Device acceptance is outstanding.
+
+
+## 2026-11-14 — Reconcile latest main into isolated PR #298 (pre-commit review)
+- Main `86873236e62c` introduced receipt-scanning code and appended its progress log since base `5b616ce88e64`. Compared the complete path sets before integration: **only** `docs/PR_PROGRESS.md` overlaps; both sides append to the same common baseline without editing earlier lines.
+- Create a two-parent reconciliation commit on PR branch; use the exact **main tree** as base, replay only the 26 non-overlapping changed files from isolated PR #298 as their original Git blob hashes, and concatenate the branch progress suffix to the latest main progress. No application code from main is overwritten; no changes to main itself, production, store uploads or Supabase.
+- This unlocks the branch's PR CI and test-only Android APK artifact. Re-run all exact-head gates; remaining live device and Play license tests must not be waived.
+
+
+## 2026-11-14 — Android native login secure-store cleanup hardening
+- Owner received the generic Android `Secure sign-in storage is unavailable` error. Documented the reproducible redundant legacy-delete code path and remaining unknown root-cause possibilities in `docs/engineering/updates/2026-11-14-android-auth-storage-cleanup-p0.md` **before changing app code**.
+- Native auth adapter now avoids unnecessary `Preferences.remove` if a key is confirmed absent, while still deleting and verifying actual legacy plaintext, failing closed on unreadable/undeletable older copies, and keeping the encrypted Keystore session intact. Supabase PKCE, financial data and native plugin ownership unchanged.
+- Android user errors gain static `ST-*` reason codes without ever printing raw exceptions, keys, tokens or provider state. Added cleanup and diagnosis regressions.
+- New exact-head CI, Android test APK, iOS simulator, Vercel preview and physical Android acceptance are required. No merge, production deploy, store upload or migration.
+
+- Security hardening follow-up before acceptance: require Capacitor Preferences `{ value: null }` as explicit proof of absence and reject malformed/undefined read responses; never silently treat bridge failure as an empty legacy store. Two fail-closed tests added. The diagnostic and sign-in tests remain device-gated.
