@@ -30,3 +30,16 @@ export function authErrorCategory(cause) {
   }
   return 'unknown';
 }
+
+/** Stable, non-sensitive diagnostic code. Never show the raw native exception. */
+export function nativeAuthStorageFailureCode(cause) {
+  const detail = [cause?.code, cause?.message].filter(v => typeof v === 'string')
+    .join(' ').slice(0, 600).toLowerCase();
+  if (/movonative.{0,80}(not implemented|unavailable|not registered)|(?:not implemented|unavailable|not registered).{0,80}movonative/.test(detail)) return 'ST-BRIDGE';
+  if (/secure_auth_legacy_cleanup_failed/.test(detail)) return 'ST-CLEAN';
+  if (/secure_auth_read_failed/.test(detail)) return 'ST-READ';
+  if (/secure_auth_write_failed/.test(detail)) return 'ST-WRITE';
+  if (/secure_auth_delete_failed/.test(detail)) return 'ST-DELETE';
+  if (/invalid_(?:secure_auth|auth_storage)_(?:key|value)|secure_auth_storage_native_only/.test(detail)) return 'ST-KEY';
+  return 'ST-OTHER';
+}

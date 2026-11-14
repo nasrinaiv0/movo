@@ -24,13 +24,26 @@ const REVOKED = '__movo_auth_revoked_v1__';
 
 async function removeLegacy(key) {
   try {
-    if (typeof localStorage !== 'undefined') {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(key) !== null) {
       localStorage.removeItem(key);
       if (localStorage.getItem(key) !== null) throw new Error('web_copy_present');
     }
-    await Preferences.remove({ key });
-    const { value } = await Preferences.get({ key });
-    if (value !== null && value !== undefined) throw new Error('native_preferences_copy_present');
+    // A fresh secure-session write must not depend on an unnecessary remove
+    // bridge call. Confirm absence first; only delete an existing legacy copy.
+    // If the read is unavailable, fail closed rather than assuming it is empty.
+    const legacy = await Preferences.get({ key });
+    // Capacitor Preferences returns { value: null } for missing keys. A
+    // missing/malformed bridge response must never be mistaken for proof that
+    // old recoverable credentials are absent.
+    if (!legacy || !Object.prototype.hasOwnProperty.call(legacy, 'value')
+      || (legacy.value !== null && typeof legacy.value !== 'string')) {
+      throw new Error('native_preferences_read_unverified');
+    }
+    if (legacy.value !== null) {
+      await Preferences.remove({ key });
+      const cleared = await Preferences.get({ key });
+      if (!cleared || cleared.value !== null) throw new Error('native_preferences_copy_present');
+    }
   } catch {
     // Never return a token while its recoverable legacy copy may still exist.
     // The next native auth access will retry the cleanup.

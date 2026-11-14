@@ -1109,3 +1109,12 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Main `86873236e62c` introduced receipt-scanning code and appended its progress log since base `5b616ce88e64`. Compared the complete path sets before integration: **only** `docs/PR_PROGRESS.md` overlaps; both sides append to the same common baseline without editing earlier lines.
 - Create a two-parent reconciliation commit on PR branch; use the exact **main tree** as base, replay only the 26 non-overlapping changed files from isolated PR #298 as their original Git blob hashes, and concatenate the branch progress suffix to the latest main progress. No application code from main is overwritten; no changes to main itself, production, store uploads or Supabase.
 - This unlocks the branch's PR CI and test-only Android APK artifact. Re-run all exact-head gates; remaining live device and Play license tests must not be waived.
+
+
+## 2026-11-14 — Android native login secure-store cleanup hardening
+- Owner received the generic Android `Secure sign-in storage is unavailable` error. Documented the reproducible redundant legacy-delete code path and remaining unknown root-cause possibilities in `docs/engineering/updates/2026-11-14-android-auth-storage-cleanup-p0.md` **before changing app code**.
+- Native auth adapter now avoids unnecessary `Preferences.remove` if a key is confirmed absent, while still deleting and verifying actual legacy plaintext, failing closed on unreadable/undeletable older copies, and keeping the encrypted Keystore session intact. Supabase PKCE, financial data and native plugin ownership unchanged.
+- Android user errors gain static `ST-*` reason codes without ever printing raw exceptions, keys, tokens or provider state. Added cleanup and diagnosis regressions.
+- New exact-head CI, Android test APK, iOS simulator, Vercel preview and physical Android acceptance are required. No merge, production deploy, store upload or migration.
+
+- Security hardening follow-up before acceptance: require Capacitor Preferences `{ value: null }` as explicit proof of absence and reject malformed/undefined read responses; never silently treat bridge failure as an empty legacy store. Two fail-closed tests added. The diagnostic and sign-in tests remain device-gated.

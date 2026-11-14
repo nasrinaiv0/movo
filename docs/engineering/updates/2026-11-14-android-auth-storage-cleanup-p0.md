@@ -20,3 +20,11 @@
 ## Explicit restrictions
 
 No merge, production deploy, Google Play upload, database migration, secrets change, native Keystore reset, financial-data deletion, app-data clear, or weakening of the encrypted storage guard. The source fix is a safe targeted reduction in unnecessary storage bridge calls, **not a claim that the reported phone is fixed**.
+
+## Implementation record and CI correction (same code commit)
+
+- Implemented a verified-absence check before legacy localStorage/Capacitor Preferences credential deletion. No attempt to delete Preferences if the bridge explicitly returns `{value:null}`; only actual old copies are removed and verified. Malformed or inaccessible bridge replies still fail closed. Encrypted Keystore session and older financial records are not deleted or converted to plaintext.
+- Added fixed non-sensitive error codes for Android storage failures. Corrected AuthPanel's Google, email send and OTP verify paths to show the code without displaying raw errors.
+- Unit regressions: fresh encrypted session/PKCE writes, actual legacy cleanup, missing/malformed read results, unverifiable removal, existing logout tombstone, and 7 stable diagnostic-code cases.
+- Exact-head CI `a462d3b22bb5` initially failed **only** the per-commit documentation requirement: the two implementation commits separately changed code plus `docs/PR_PROGRESS.md` but did not each also modify this dated note. This final integration history consolidates those two code commits into a single fully documented commit immediately after the pre-code plan commit `61c52fbdc732`. Do not weaken the documentation gate. All other tests must rerun on the replacement exact SHA.
+- No merge, main, production or Play upload. Device acceptance still required.
