@@ -2,7 +2,7 @@ import { LEGAL_VERSION, TERMS_EFFECTIVE_DATE, PRIVACY_EFFECTIVE_DATE, hasAccepte
 
 test('the accepted version is the later of the two effective dates', () => {
   expect(LEGAL_VERSION).toBe([TERMS_EFFECTIVE_DATE, PRIVACY_EFFECTIVE_DATE].sort().pop().slice(0, 10));
-  expect(LEGAL_VERSION).toBe('2026-11-12');
+  expect(LEGAL_VERSION).toBe('2026-11-14');
 });
 
 test('only an acceptance of the current version (or later) counts', () => {

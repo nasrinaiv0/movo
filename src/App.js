@@ -1324,40 +1324,41 @@ function App() {
     setSheet({ name: 'transaction', id: t.id });
   };
 
-  const saveTransaction = async (e) => {
+  const saveTransaction = async (e, receiptDraft = null) => {
+    const draft = receiptDraft || form;
     e.preventDefault(); setError('');
-    if (cloudMode && !can('cloudWrite')) { setError('Cloud records are read-only. Use local mode or upgrade to Pro.'); return; }
-    const amount = Number(form.amount); const type = form.transaction_type;
-    if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return; }
+    if (cloudMode && !can('cloudWrite')) { setError('Cloud records are read-only. Use local mode or upgrade to Pro.'); return false; }
+    const amount = Number(draft.amount); const type = draft.transaction_type;
+    if (!draft.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return false; }
     // Every record belongs to an account: nothing is logged until an account or card exists.
-    if (!formAccounts.length) { setError(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
-    if (!form.account_id) { setError(tr('Choose an account before saving this transaction.')); return; }
-    if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return; }
-    const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
+    if (!formAccounts.length) { setError(tr('Add an account or card in Wallet first, then log this transaction.')); return false; }
+    if (!draft.account_id) { setError(tr('Choose an account before saving this transaction.')); return false; }
+    if (type === 'transfer' && (!draft.account_id || !draft.transfer_to_account_id || draft.transfer_to_account_id === draft.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return false; }
+    const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : draft.category;
     // Time is recorded automatically (hour, minute, second) at the moment of saving unless one was set.
-    const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(form.time || '') ? (form.time.length === 5 ? `${form.time}:00` : form.time) : new Date().toTimeString().slice(0, 8);
-    const stamp = new Date(`${form.occurred_at}T${clock}`);
-    if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return; }
+    const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(draft.time || '') ? (draft.time.length === 5 ? `${draft.time}:00` : draft.time) : new Date().toTimeString().slice(0, 8);
+    const stamp = new Date(`${draft.occurred_at}T${clock}`);
+    if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return false; }
     const occurred_at = stamp.toISOString();
-    const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
+    const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
-    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id, ref: form.ref || '' }, rawTxs);
-    const sig = `${type}|${amount}|${form.merchant.trim().toLowerCase()}|${form.occurred_at}|${form.account_id}`;
-    if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
+    const dup = editingId ? null : findDuplicate({ merchant: draft.merchant, amount, type, date: occurred_at, account_id: draft.account_id, ref: draft.ref || '' }, rawTxs);
+    const sig = `${type}|${amount}|${draft.merchant.trim().toLowerCase()}|${draft.occurred_at}|${draft.account_id}`;
+    if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return false; }
     dupAck.current = '';
     setBusy(true);
     let uploadedReceiptPath = '';
-    const oldReceiptPath = form.receipt_path_to_delete || (form.receipt_file ? form.receipt_path : '');
+    const oldReceiptPath = draft.receipt_path_to_delete || (draft.receipt_file ? draft.receipt_path : '');
     // Offline-first: `online` turns false when the cloud cannot be reached; the same change is then saved on this
     // account's device copy and uploads automatically on reconnect.
     let online = cloudMode;
     // A new record gets its UUID here, so the cloud save and any device fallback describe the same record.
     const newId = editingId ? null : newRecordId();
     try {
-      let receiptPath = form.receipt_path || null;
-      if (form.receipt_file) {
-        const file = form.receipt_file;
+      let receiptPath = draft.receipt_path || null;
+      if (draft.receipt_file) {
+        const file = draft.receipt_file;
         if (file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) throw new Error(tr('Use a JPG, PNG, WebP or PDF receipt smaller than 10 MB.'));
         if (online) {
           if (!can('cloudWrite')) throw new Error('Cloud records are read-only. Use local mode to attach a receipt.');
@@ -1368,8 +1369,8 @@ function App() {
         }
         if (!online) receiptPath = await putLocalAttachment(file);
       }
-      const paidSub = !editingId && type === 'expense' && form.subscriptionPaymentId
-        ? subscriptions.find(item => item.id === form.subscriptionPaymentId) : null;
+      const paidSub = !editingId && type === 'expense' && draft.subscriptionPaymentId
+        ? subscriptions.find(item => item.id === draft.subscriptionPaymentId) : null;
       let subscriptionNextDue = '';
       if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
         subscriptionNextDue = billingDate(paidSub.start, paidSub.cycle, 1);
@@ -1400,8 +1401,8 @@ function App() {
       // Resolves true once a local-first save is confirmed by the cloud (false when it stayed on this device).
       let backgroundUpload = null;
       if (online) {
-        const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
-        const payload = { id: newId || undefined, merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
+        const auto = !editingId && AUTOMATION_SOURCES.includes(draft.source) ? { source: draft.source, external_reference: draft.ref || undefined } : {};
+        const payload = { id: newId || undefined, merchant: draft.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id, transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note, payment_reference: draft.payment_reference, receipt_note: draft.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
         // Local first (owner, 2026-11-12): the change is committed on this device and shown at once; the cloud upload
         // finishes silently. A subscription payment also records the payment attempt, which needs the cloud row
         // first, so it keeps waiting for the cloud as before.
@@ -1448,8 +1449,8 @@ function App() {
         const ownerCopy = session?.user?.id ? loadOfflineWorkspace(session.user.id) : null;
         const existing = editingId ? (cloudMode ? ownerCopy?.working.transactions : rawTxs)?.find(x => x.id === editingId) : null;
         if (editingId && !existing) throw new Error(tr('This record is not on this device yet. Try again when you are back online.'));
-        const auto = !editingId && AUTOMATION_SOURCES.includes(form.source);
-        const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual', created_at: new Date().toISOString() }) };
+        const auto = !editingId && AUTOMATION_SOURCES.includes(draft.source);
+        const row = { ...(existing || {}), id: editingId || newId, merchant: draft.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id || 'local', transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note.trim().slice(0, 1000), payment_reference: String(draft.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(draft.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (draft.ref || undefined) : subscriptionReference, source: auto ? draft.source : 'Manual', created_at: new Date().toISOString() }) };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
         if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[transactionRow]);
         savedTransaction = transactionRow;
@@ -1465,7 +1466,7 @@ function App() {
             next_due_date: subscriptionNextDue, transaction_id: savedTransaction.id, status: 'paid',
             attempted_at: occurred_at, previous_state: subscriptionPaymentState?.previous,
             amount: Number(paidSub.amount) || amount, currency: paidSub.currency || txCurrency,
-            account_id: form.account_id, note: 'Subscription renewal recorded',
+            account_id: draft.account_id, note: 'Subscription renewal recorded',
           }).catch(() => null);
         }
         setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id
@@ -1484,10 +1485,11 @@ function App() {
         if (backgroundUpload) backgroundUpload.then(done => { if (done) removeOld(); });
         else await removeOld();
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null);
+      setForm({ ...draft, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null); return true;
     } catch (err) {
       if (uploadedReceiptPath && supabase) await supabase.storage.from('movo-receipts').remove([uploadedReceiptPath]).catch(() => {});
       setError(err?.message || (editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'));
+      return false;
     } finally { setBusy(false); }
   };
   const handleCsvFile = (file) => {
@@ -2765,16 +2767,25 @@ function App() {
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : c.openScanner} />}
-      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
-        const type = f.type === 'income' ? 'income' : 'expense';
-        // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
-        const live = accountsView.filter(a => !a.is_archived); const bank = String(f.bank || '').toLowerCase();
-        const acct = (f.last4 && live.find(a => a.mask === f.last4)) || (bank && live.find(a => [a.institution_name, a.name].some(n => String(n || '').toLowerCase() === bank)));
-        const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type, ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs);
-        setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : '');
-        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, ...(acct ? { account_id: acct.id } : {}) }));
-        setSheet({ name: 'transaction', type });
-      }} />}
+      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show}
+        accounts={formAccounts.filter(a => !a.is_archived)} busy={busy} saveError={error}
+        onClose={() => { setSheet(null); setError(''); }}
+        onLog={async (f) => {
+          // One deliberate Log click saves through the same validated, offline-first
+          // transaction writer as the manual sheet. No calculator or second screen.
+          const acct = formAccounts.find(a => a.id === f.account_id && !a.is_archived);
+          if (!acct) { setError(tr('Choose an account before saving this transaction.')); return false; }
+          const draft = {
+            ...form, merchant: String(f.merchant || '').slice(0,160),
+            amount: String(f.amount || ''), transaction_type: f.type,
+            category: f.category, account_id: acct.id, transfer_to_account_id: '',
+            occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note || '',
+            source: '', ref: f.ref || '', payment_reference: f.ref || '',
+            receipt_note: f.receipt_note || '', receipt_path: '',
+            receipt_path_to_delete: '', receipt_file: null, subscriptionPaymentId: ''
+          };
+          return saveTransaction({ preventDefault() {} }, draft);
+        }} />}
 
       {sheet?.name === 'loyalty' && <LoyaltySheet
         key={sheet.id || sheet.type}

@@ -1,0 +1,32 @@
+/* Receipt review: compact, adaptive and scroll-safe on small iPhone screens. */
+.scan-details { display:grid; gap:10px; min-width:0; padding-block:12px 4px; }
+.scan-section-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:2px; }
+.scan-section-head h3 { margin:0; font-size:14px; font-weight:700; color:var(--text); }
+.scan-section-head span { font-size:12px; color:var(--muted); }
+.scan-item { min-width:0; display:grid; gap:8px; padding:10px; border-radius:14px; background:var(--field); transition:background-color .2s ease, transform .22s ease; }
+.scan-item-row { display:flex; align-items:end; min-width:0; gap:8px; }
+.scan-item-row > label { min-width:0; display:grid; gap:5px; }
+.scan-item-name { flex:1 1 54%; }
+.scan-item-qty { flex:0 0 64px; }
+.scan-item-options { flex:1 1 55%; }
+.scan-item-row .scan-field { flex:0 0 112px; }
+.scan-item-row label span, .scan-field span { color:var(--muted); font-size:11px; font-weight:500; }
+.scan-item input, .scan-field input, .scan-field select { box-sizing:border-box; width:100%; min-width:0; min-height:40px; margin:0; padding:8px 10px; border:0; border-radius:10px; background:var(--card-solid); color:var(--text); font:inherit; font-size:13px; outline-offset:2px; }
+.scan-item-remove { flex:none; align-self:end; min-height:40px; min-width:40px; padding:0; border:0; border-radius:12px; background:rgba(140,140,140,.1); color:var(--text); font-size:21px; transition:transform .2s ease, background-color .2s ease; }
+.scan-item-remove:active, .scan-add-item:active { transform:scale(.97); }
+.scan-add-item { min-height:44px; justify-self:start; padding:8px 14px; border:0; border-radius:12px; background:rgba(var(--accent-rgb),.12); color:var(--accent-ink,var(--accent)); font-weight:650; transition:transform .2s ease, background-color .2s ease; }
+.scan-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; min-width:0; }
+.scan-field { display:grid; min-width:0; gap:5px; }
+.scan-hint-text, .scan-footnote { color:var(--muted); font-size:12px; line-height:1.5; margin:0; }
+.scan-alert { display:grid; gap:3px; padding:10px 12px; margin:0; border-radius:12px; background:var(--field); color:var(--text); font-size:12px; line-height:1.5; }
+.scan-alert strong { font-size:12px; font-weight:650; }
+.scan-alert p { margin:0; }
+@media (max-width:360px) {
+  .scan-item-row { gap:6px; }
+  .scan-item-qty { flex-basis:52px; }
+  .scan-item-row .scan-field { flex-basis:92px; }
+  .scan-item { padding:8px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .scan-item, .scan-item-remove, .scan-add-item { transition:none; }
+}

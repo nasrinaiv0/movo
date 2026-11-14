@@ -1023,6 +1023,53 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
 - No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
 
+## 2026-11-14 — PR #300 receipt scanning structured review (precommit record)
+
+- Isolated branch `feat/receipt-itemized-scan-20261114`, exact base `5b616ce88e640ee867418db66b4da90ac438f5a0`; no production/main, database, billing or release modification.
+- User's McDonald's receipt manually verified: purchase ₱159.00, cash tendered ₱500.00, change ₱341.00, VATable ₱141.96, VAT included ₱17.04, date 2026-11-14 02:41:33. Full image is not committed.
+- Added deterministic parsed amount/item components/discount/VAT/payment details with editable scanner review, automatic note prefill and safe missing-total fail-closed behavior; preserve local OCR and existing transaction validation.
+- Early CI on initial multi-commit prototype: financial tenant isolation PASSED; Phase 1 FAILED **only** on the preexisting per-commit documentation guard because individual implementation commits omitted these two progress files. Conserve the initial documented planning commit and consolidate prototype into one code commit that touches both required documents.
+- Required next checks: rerun GitHub Phase 1, finance isolation, iOS, Vercel preview, compare exact head and test real iPhone/Android receipt capture before merge. Leave PR open.
+
+## 2026-11-14 — PR #300 localization verification repair (documented before commit)
+
+- Exact head `7904a6bb773a` passed the per-commit documentation guard and financial isolation. Phase 1 failed on `src/lib/i18n.test.js`: ten new labels were missing from the 11-language catalogue (source review uncovered additional dynamic warning strings).
+- Add translations for all ten static labels plus three dynamic warning messages. No scanner amounts, accounting logic, data contracts, native permissions or production behavior changes beyond localized copy.
+- Pending: rerun Phase 1, typecheck/build, iOS, Vercel preview and hardware acceptance; keep this PR open.
+
+## 2026-11-14 — AI receipt vision backend PR (documented before commit)
+
+- Baseline main `c8bd8191475c280c9316fefb1ace9dc363c77eb1`. Add signed-in, Pro-gated AI receipt image/text parser using existing server-only OpenRouter production key with strict input size, origin and consent gates. No receipt contents/images retained at MOVO server; provider retention remains subject to its policy. New client and UI follow separately. PR not merged, no production change.
+
+## 2026-11-14 — AI receipt capture transport (before commit)
+
+- AI client converts permitted 15MB-or-smaller receipt photos to bounded JPEG, or reads PDF text locally. Sends only the selected receipt after explicit consent from scanner UI; bearer session required. API key remains server-only. No production configuration changes. Full UI/direct save still in progress.
+
+## 2026-11-14 — Direct receipt log UI (documented before commit)
+
+- Added AI consent and review UX, category and item summaries, account picker for registered bank/card/e-wallet/cash/other and direct Log/Discard. Reuses the existing validated financial writer (without opening the calculator). Added explicit response status and duplicate refusal handling; no auto persistence of AI scan photo/text. Preview and device acceptance pending.
+
+## 2026-11-14 — Receipt AI review UI and test coverage (before commit)
+
+- Responsive, no-gradient review and account picker UI, item-category editing, privacy-capped AI extraction security tests. No production/main/deployment modification.
+
+## 2026-11-14 — Privacy disclosure update for consented remote receipt analysis (documented before commit)
+
+- Added an AI receipt privacy section to the in-app and public canonical English disclosures: explicit opt-in, OpenRouter/model-provider processing, cross-border/privacy caveats, no raw photo logs at MOVO proxy, logged-record retention rules, review responsibilities. Bumped Privacy effective date to Nov 14 and legal acceptance version. Kept Terms date unchanged. No production deploy or provider configuration changes.
+
+## 2026-11-14 — PR #301 Phase 1 locale gate repair (documented before commit)
+
+- Initial exact-head CI reached localization and failed on 11 new receipt UI labels. Added full 11-language dictionary plus localized consent/review controls. This change does not alter ledger, API request or auth behavior. Financial tenant-isolation already passed; rerun required.
+
+## 2026-11-14 — PR #301 full Jest verification repair (documented before commit)
+
+- Exact `306c4b1d190c` passed 227/229 suites (1,377/1,380 tests). Failures: a stale Privacy Policy date assertion (Nov 12 versus correctly updated Nov 14), and two mocked AI API tests returning HTTP 503 because the jsdom AbortSignal shim omits `AbortSignal.timeout`.
+- Fix assertion and use the native timeout when available (Node 26 production), with a test-runtime-compatible signal fallback; no server key, user data, or ledger logic changed. Rerun full CI, native and preview before merge.
+
+## 2026-11-14 — Scanner direct Log/Discard integration tests (documented before commit)
+
+- Added focused DOM tests: consented analyze, choose a registered e-wallet, Log once directly with VAT/change retained as details; Discard never writes; failed write keeps review open. Requires exact-head CI. No production or store change.
+
 ## 2026-11-13 — P0 Google Play license-test isolation
 - Documented design first on isolated `fix/google-play-test-purchase-isolation-20261113` from `5b616ce` in `docs/engineering/updates/2026-11-13-google-play-test-purchase-p0.md`.
 - Google-verified `testPurchase` classification; server allowlist gates sandbox RPC and plan access, with no production paid referral credit. Unknown-owner test RTDN never mints an entitlement.
@@ -1056,3 +1103,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ## 2026-11-14 — Android sign-in physical acceptance bridge (PR #298)
 - Report: Google and email sign-in still fail in the Android Play app. Previous OAuth repair is unmerged/unreleased; existing automated success does not prove installed-device success. MOVO active public key matches the build-time file; 24h Auth logs show PKCE callbacks but not email OTP requests. Full diagnosis documented **before code** in `docs/engineering/updates/2026-11-14-android-auth-device-test-bridge.md`.
 - Add a separate, debug-signed `com.nasrinai.movo.authcheck` artifact on PR Android CI so a tester can exercise the current OAuth/OTP code without overwriting the Play app or accessing protected signing secrets. No merge, Play upload, migration or production change. Device acceptance is outstanding.
+
+
+## 2026-11-14 — Reconcile latest main into isolated PR #298 (pre-commit review)
+- Main `86873236e62c` introduced receipt-scanning code and appended its progress log since base `5b616ce88e64`. Compared the complete path sets before integration: **only** `docs/PR_PROGRESS.md` overlaps; both sides append to the same common baseline without editing earlier lines.
+- Create a two-parent reconciliation commit on PR branch; use the exact **main tree** as base, replay only the 26 non-overlapping changed files from isolated PR #298 as their original Git blob hashes, and concatenate the branch progress suffix to the latest main progress. No application code from main is overwritten; no changes to main itself, production, store uploads or Supabase.
+- This unlocks the branch's PR CI and test-only Android APK artifact. Re-run all exact-head gates; remaining live device and Play license tests must not be waived.
