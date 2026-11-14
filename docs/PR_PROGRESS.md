@@ -1052,3 +1052,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Add **timeout-only, one-time** disposable CoreSimulator cold restart, reinstall, re-launch and deep-link replay; any second timeout, non-timeout error or reboot/install failure remains RED. Screenshot remains mandatory. Unit tests verify all success/failure branches.
 - Vercel exact-head preview READY and served root HTTP 200; its billing config `enabled:false` is an intentionally fail-closed preview environment state, with sensitive provider secrets production-scoped. Do not expose secrets to preview.
 - No deployment, production mutation, merge, signed AAB, store upload or live Supabase migration.
+
+## 2026-11-14 — Android sign-in physical acceptance bridge (PR #298)
+- Report: Google and email sign-in still fail in the Android Play app. Previous OAuth repair is unmerged/unreleased; existing automated success does not prove installed-device success. MOVO active public key matches the build-time file; 24h Auth logs show PKCE callbacks but not email OTP requests. Full diagnosis documented **before code** in `docs/engineering/updates/2026-11-14-android-auth-device-test-bridge.md`.
+- Add a separate, debug-signed `com.nasrinai.movo.authcheck` artifact on PR Android CI so a tester can exercise the current OAuth/OTP code without overwriting the Play app or accessing protected signing secrets. No merge, Play upload, migration or production change. Device acceptance is outstanding.

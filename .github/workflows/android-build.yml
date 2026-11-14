@@ -48,7 +48,7 @@ jobs:
         run: node scripts/check-bundled-cloud-config.cjs build
       - name: Synchronize Capacitor Android project
         run: npx cap sync android
-      - name: Compile debug and R8 release variants (unsigned)
+      - name: Compile debug, isolated auth-test and R8 release variants (unsigned)
         working-directory: android
         shell: bash
         run: |
@@ -58,7 +58,7 @@ jobs:
           # never turn a real Java/Kotlin compile error into a passing build.
           for attempt in 1 2 3; do
             log="${RUNNER_TEMP}/movo-gradle-attempt-${attempt}.log"
-            if bash gradlew :app:assembleDebug :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee "$log"; then
+            if bash gradlew :app:assembleDebug :app:assembleAuthTest :app:assembleRelease --no-daemon --stacktrace 2>&1 | tee "$log"; then
               exit 0
             fi
             if (( attempt < 3 )) && grep -Eqi '(HTTP response code: (429|502|503|504)|status code (429|502|503|504)|Read timed out|Connection reset)' "$log"; then
@@ -69,3 +69,29 @@ jobs:
               exit 1
             fi
           done
+
+      # The debug-only .authcheck package installs alongside a Play build.
+      # No upload keystore, Google Play, service-role or production signing
+      # secrets are exposed. The only bundled Supabase values are public.
+      - name: Verify isolated Android auth-test APK
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/authTest/app-authTest.apk
+          test -s "$APK"
+          APKTOOL="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          test -x "$APKTOOL"
+          PACKAGE="$("$APKTOOL" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" | head -1)"
+          if [[ "$PACKAGE" != "com.nasrinai.movo.authcheck" ]]; then
+            echo "::error::Auth acceptance artifact has an unsafe application ID"
+            exit 1
+          fi
+      - name: Upload isolated auth-test APK (not a Play release)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: movo-android-authcheck-${{ github.event.pull_request.head.sha }}
+          path: android/app/build/outputs/apk/authTest/app-authTest.apk
+          if-no-files-found: error
+          retention-days: 7
