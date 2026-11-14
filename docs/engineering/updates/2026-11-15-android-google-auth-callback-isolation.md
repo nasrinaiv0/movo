@@ -29,3 +29,6 @@ Package-specific callback removes a concrete Android test-vs-Play routing collis
 ## CI follow-up before commit
 - Phase 1 correctly rejected the new Android error message because it was absent from MOVO's 11-language i18n catalogue.
 - Replace only the user-visible string with the existing translated Android Google return-link message. Do not change auth callback routing, PKCE, session storage or translations.
+
+## Manifest test adaptation before commit
+The repository's existing Android manifest unit test checked the source literal `android:scheme="movo"` twice. The secure build-variant implementation intentionally uses `${movoAuthScheme}` for OAuth and keeps the quick-log literal. Update tests to validate the placeholder, production/test variant Gradle values, strict intent-filter count and backup restrictions. Android native CI independently checks packaged APK schemes. Never relax the no-catch-all assertion.

@@ -1150,3 +1150,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ### 2026-11-15 — PR #304 CI translation fix (documented before commit)
 - Exact head `ad1bfcc16c4ff47e6e759419b183d895dc9208e9`: Phase 1 rejected a newly introduced untranslated Android-package identity error string. Preserve all 11 localization catalogues by using the already-translated existing Android Google return-link message; no auth/security logic changes.
 - New exact-head Phase 1, Android, iOS, hybrid, finance and Vercel gates remain required. `main`/production unchanged.
+
+### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
+- Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
+- Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.
