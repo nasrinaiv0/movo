@@ -25,3 +25,7 @@ Supabase docs: https://supabase.com/docs/guides/auth/redirect-urls
 
 ## Advantages and constraints
 Package-specific callback removes a concrete Android test-vs-Play routing collision, but it depends on a narrowly scoped new redirect allowlist entry and does not establish that other production-device routing issues are fixed until signed internal-testing acceptance.
+
+## CI follow-up before commit
+- Phase 1 correctly rejected the new Android error message because it was absent from MOVO's 11-language i18n catalogue.
+- Replace only the user-visible string with the existing translated Android Google return-link message. Do not change auth callback routing, PKCE, session storage or translations.

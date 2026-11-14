@@ -1146,3 +1146,7 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Isolated PR branch `fix/android-google-auth-callback-app-isolation-20261115` from main `c9165b51ad41c11b167e10d4d566852baa509d45`: preserve production and iOS `movo://auth-callback`; assign Auth Test `movo-authcheck://auth-callback` via Android manifest placeholder and exact Capacitor package-ID dispatch. Add OTP/OAuth and parser regression tests, Android artifact manifest checks, and fixed safe package-identity errors.
 - Live settings are NOT modified. One manual prerequisite for testing: add exact `movo-authcheck://auth-callback` to Supabase Auth Redirect URLs (no wildcards, do not remove `movo://auth-callback`). See `docs/engineering/updates/2026-11-15-android-google-auth-callback-isolation.md`.
 - Full CI, preview and physical Android acceptance required. This is NOT yet evidence of successful end-to-end Google sign-in; `main`, store uploads, user finances and production unchanged. **NO MERGE.**
+
+### 2026-11-15 — PR #304 CI translation fix (documented before commit)
+- Exact head `ad1bfcc16c4ff47e6e759419b183d895dc9208e9`: Phase 1 rejected a newly introduced untranslated Android-package identity error string. Preserve all 11 localization catalogues by using the already-translated existing Android Google return-link message; no auth/security logic changes.
+- New exact-head Phase 1, Android, iOS, hybrid, finance and Vercel gates remain required. `main`/production unchanged.

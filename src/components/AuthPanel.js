@@ -64,7 +64,7 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
       if (kind === 'android-browser') {
         setError(tr('Android could not open secure sign-in. Enable Chrome or another supported browser and try again.'));
       } else if (kind === 'android-package') {
-        setError(tr('This Android build could not verify its secure sign-in return route. Install the correct MOVO build and try again.'));
+        setError(tr('Google sign-in could not start in the Android app. Check the app return link and try again.'));
       } else if (kind === 'native-secure-storage') {
         setError(`${tr('Secure sign-in storage is unavailable on this device. Restart MOVO and try again.')} (${nativeAuthStorageFailureCode(cause)})`);
       } else if (kind === 'oauth-not-configured' && nativePlatform() === 'android' && provider === 'google') {
