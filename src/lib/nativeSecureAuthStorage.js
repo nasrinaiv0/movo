@@ -11,11 +11,15 @@ import { Preferences } from '@capacitor/preferences';
 import { MovoNative } from './native';
 import { isNativeApp } from './platform';
 
-const LEGACY_AUTH_KEY = /^sb-[A-Za-z0-9_-]+-auth-token(?:-code-verifier)?$/;
+// Supabase auth-js 2.119 supports concurrent PKCE flows: a fixed verifier,
+// a bounded per-flow verifier slot, and an index of pending flow ids.
+// Each remains inside the native Keychain/Keystore; never mirror into plaintext.
+const AUTH_VAULT_KEY = /^sb-[A-Za-z0-9_-]+-auth-token(?:-code-verifier|-flows-code-verifier|-flow-[A-Za-z0-9_-]{8,64}-code-verifier)?$/;
 const LEGACY_PREFIX = /^sb-/;
 
 function isAuthKey(key) {
-  return typeof key === 'string' && LEGACY_AUTH_KEY.test(key);
+  // Mirror the native plugins' 128-character bound, including flow slots.
+  return typeof key === 'string' && key.length < 128 && AUTH_VAULT_KEY.test(key);
 }
 // The tombstone prevents a failed sign-out scrub from re-importing a stale
 // plaintext session on the next launch. It stays in the encrypted native vault

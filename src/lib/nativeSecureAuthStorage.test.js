@@ -164,3 +164,40 @@ test('an unverified Preferences removal result remains blocked', async () => {
   await expect(nativeSecureAuthStorage.setItem(KEY, 'encrypted-only'))
     .rejects.toThrow('secure_auth_legacy_cleanup_failed');
 });
+
+test.each([
+  [KEY, 'legacy-session'],
+  [KEY + '-code-verifier', 'fixed-pkce-verifier'],
+  [KEY + '-flows-code-verifier', '["a-valid-flow-id"]'],
+  [KEY + '-flow-a_valid_flow_id_0123456789-code-verifier', 'per-flow-pkce-verifier'],
+])('keeps supported Supabase auth and PKCE keys encrypted on device: %s', async (key, value) => {
+  await expect(nativeSecureAuthStorage.setItem(key, value)).resolves.toBeUndefined();
+  expect(MovoNative.secureSet).toHaveBeenCalledWith({ key, value });
+  expect(Preferences.get).toHaveBeenCalledWith({ key });
+  expect(Preferences.remove).not.toHaveBeenCalled();
+  expect(localStorage.getItem(key)).toBeNull();
+});
+
+test('new per-flow verifier survives secure get and is scrubbed on logout without plaintext fallback', async () => {
+  const key = KEY + '-flow-a_valid_flow_id_0123456789-code-verifier';
+  MovoNative.secureGet.mockResolvedValue({ value: 'encrypted-verifier' });
+  await expect(nativeSecureAuthStorage.getItem(key)).resolves.toBe('encrypted-verifier');
+  await expect(nativeSecureAuthStorage.removeItem(key)).resolves.toBeUndefined();
+  expect(MovoNative.secureSet).toHaveBeenCalledWith({ key, value: '__movo_auth_revoked_v1__' });
+  expect(MovoNative.secureRemove).toHaveBeenCalledWith({ key });
+  expect(Preferences.remove).not.toHaveBeenCalled();
+});
+
+test.each([
+  KEY + '-flow-short-code-verifier',
+  KEY + '-flow-' + 'x'.repeat(65) + '-code-verifier',
+  KEY + '-user',
+  KEY + '-untrusted-key',
+  KEY + '-flow-' + 'x'.repeat(90) + '-code-verifier',
+  'movo-finance-cache-key-v1',
+])('blocks non-allowlisted auth keys without invoking native vault: %s', async key => {
+  await expect(nativeSecureAuthStorage.setItem(key, 'should-not-be-stored'))
+    .rejects.toThrow('invalid_auth_storage_value');
+  expect(MovoNative.secureSet).not.toHaveBeenCalled();
+  expect(Preferences.get).not.toHaveBeenCalled();
+});

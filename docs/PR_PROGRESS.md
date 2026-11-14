@@ -1118,3 +1118,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - New exact-head CI, Android test APK, iOS simulator, Vercel preview and physical Android acceptance are required. No merge, production deploy, store upload or migration.
 
 - Security hardening follow-up before acceptance: require Capacitor Preferences `{ value: null }` as explicit proof of absence and reject malformed/undefined read responses; never silently treat bridge failure as an empty legacy store. Two fail-closed tests added. The diagnostic and sign-in tests remain device-gated.
+
+
+## 2026-11-14 — Android ST-KEY Supabase PKCE per-flow vault compatibility (isolated PR)
+- **Pre-commit audit:** `@supabase/auth-js@2.119.0` adds pending-flow index and per-flow verifier keys beyond MOVO's older JavaScript secure-auth allowlist; existing native iOS/Android vaults already accept these under 128 characters. Old adapter rejects the newer names and raises `ST-KEY` before native encryption, a reproducible source-level defect; physical device cause not yet proven.
+- Narrow JavaScript allowlist and unit regressions only; no token/key logging, plaintext fallback, keystore reset, account-data deletion, native signing edits, or server configuration changes.
+- Local Python contract verification: 11 formats passed. Require exact-head CI, Android/iOS native builds, Vercel preview and physical Android Google/email login/session acceptance. **NO MERGE / NO STORE RELEASE until human device evidence.**
+- Full engineering record: `docs/engineering/updates/2026-11-14-supabase-pkce-st-key-allowlist.md`.
