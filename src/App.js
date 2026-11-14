@@ -57,6 +57,7 @@ import { summarize as summarizeSubscriptions, billingDate, subscriptionPaymentAc
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
+import { viewAfterAuthenticatedSession, safeNativeOAuthStage } from './lib/nativeAuthReturnState';
 import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
 import { supportsAccountQr } from './lib/accountQrEligibility';
 import LoyaltySheet from './components/LoyaltySheet';
@@ -929,8 +930,16 @@ function App() {
      movo://log links become the same #/log links the web app already handles. No-op on the web. */
   useEffect(() => listenForAppUrls({
     onAuth: ({ code, error: failure }) => {
-      if (failure || !code) { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); return; }
-      finishOAuth(code).catch(() => { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); });
+      if (failure || !code) {
+        setView('Sign in');
+        // Never echo OAuth callback parameters or error descriptions.
+        setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(failure ? 'provider' : 'no-code')})`);
+        return;
+      }
+      finishOAuth(code).catch(() => {
+        setView('Sign in');
+        setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage('exchange')})`);
+      });
     },
   }), []);
 
@@ -945,13 +954,16 @@ function App() {
       const nextUserId = nextSession?.user?.id || null;
       // Supabase can emit SIGNED_IN repeatedly (including on tab focus). Refresh
       // finance records only when the authenticated identity actually changes.
+      // A successful Google callback can restore the same Supabase identity as
+      // an earlier OTP session. Navigate off Sign in BEFORE the same-owner fast
+      // path skips expensive finance reloads; never reload or mix owner ledgers.
+      if (nextUserId) setView(current => viewAfterAuthenticatedSession(current, nextUserId));
       if (cloudAuthUserRef.current === nextUserId) {
         if (!nextUserId) setAuthReady(true);
         return;
       }
       cloudAuthUserRef.current = nextUserId;
       if(nextUserId){
-        setView(current => current === 'Sign in' ? 'Home' : current);
         setAuthReady(false);setCloudMode(false);setOfflineOwnerId(null);
         setCloudAccounts([]);setLocalAccounts([]);setRawTxs([]);
         setCloudPostings([]);setCloudActivities([]);
