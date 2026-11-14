@@ -87,6 +87,16 @@ jobs:
             echo "::error::Auth acceptance artifact has an unsafe application ID"
             exit 1
           fi
+          # The Play-compatible debug build must keep the existing OAuth URI,
+          # while isolated Auth Test must register its own distinct scheme.
+          "$APKTOOL" dump xmltree "$APK" AndroidManifest.xml | grep -F 'movo-authcheck' >/dev/null || {
+            echo "::error::Auth Test manifest missing isolated Google return scheme"
+            exit 1
+          }
+          "$APKTOOL" dump xmltree android/app/build/outputs/apk/debug/app-debug.apk AndroidManifest.xml | grep -F '"movo"' >/dev/null || {
+            echo "::error::Production-compatible Android manifest missing original MOVO scheme"
+            exit 1
+          }
       - name: Upload isolated auth-test APK (not a Play release)
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
