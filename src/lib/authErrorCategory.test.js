@@ -39,7 +39,12 @@ test.each([
   [{ code: 'secure_auth_read_failed' }, 'ST-READ'],
   [{ code: 'secure_auth_write_failed' }, 'ST-WRITE'],
   [{ code: 'secure_auth_delete_failed' }, 'ST-DELETE'],
-  [{ code: 'invalid_secure_auth_key' }, 'ST-KEY'],
+  [{ code: 'invalid_secure_auth_key' }, 'ST-KEY-NAME'],
+  [{ code: 'invalid_auth_storage_key' }, 'ST-KEY-NAME'],
+  [{ code: 'invalid_auth_storage_value' }, 'ST-KEY-VALUE'],
+  [{ code: 'invalid_secure_auth_value' }, 'ST-KEY-VALUE'],
+  [{ code: 'secure_auth_storage_native_only' }, 'ST-KEY-CONTEXT'],
+  [{ code: 'invalid_auth_storage_key', message: 'state=SECRET_TOKEN_NEVER_ECHO' }, 'ST-KEY-NAME'],
   [{ message: 'unclassified error with private data' }, 'ST-OTHER'],
 ])('native auth diagnostics display only a fixed safe code for %p', (error, code) => {
   expect(nativeAuthStorageFailureCode(error)).toBe(code);

@@ -1125,3 +1125,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Narrow JavaScript allowlist and unit regressions only; no token/key logging, plaintext fallback, keystore reset, account-data deletion, native signing edits, or server configuration changes.
 - Local Python contract verification: 11 formats passed. Require exact-head CI, Android/iOS native builds, Vercel preview and physical Android Google/email login/session acceptance. **NO MERGE / NO STORE RELEASE until human device evidence.**
 - Full engineering record: `docs/engineering/updates/2026-11-14-supabase-pkce-st-key-allowlist.md`.
+
+
+## 2026-11-14 — PR #302 ST-KEY recurrence: safe diagnostic split (pre-commit)
+- Owner continues to see `ST-KEY` on Android despite the first PR #302 APK. Inspected bundled `@supabase/auth-js@2.119.0` flow storage key factories; all five expected key formats match current adapter including 64-character flow ids. Widening the native allowlist is not justified.
+- Split **only** existing fixed storage diagnostic labels into `ST-KEY-NAME`, `ST-KEY-VALUE`, `ST-KEY-CONTEXT` and test no raw native messages or secrets reach the UI. No auth/session/storage changes; still fails closed. See `docs/engineering/updates/2026-11-14-android-st-key-recurrence.md`.
+- Prior exact head: Android, Phase 1 and tenant isolation passed, Vercel preview READY; iOS simulator smoke failed due to CoreSimulator screenshot/shutdown timeout after successful native builds. New exact-head CI and physical Android acceptance required. NO MERGE or store upload.
