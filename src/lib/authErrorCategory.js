@@ -40,6 +40,10 @@ export function nativeAuthStorageFailureCode(cause) {
   if (/secure_auth_read_failed/.test(detail)) return 'ST-READ';
   if (/secure_auth_write_failed/.test(detail)) return 'ST-WRITE';
   if (/secure_auth_delete_failed/.test(detail)) return 'ST-DELETE';
-  if (/invalid_(?:secure_auth|auth_storage)_(?:key|value)|secure_auth_storage_native_only/.test(detail)) return 'ST-KEY';
+  // ST-KEY previously grouped three unrelated causes. Return only fixed,
+  // non-sensitive subcodes; never render exception text, auth key names, or values.
+  if (/secure_auth_storage_native_only/.test(detail)) return 'ST-KEY-CONTEXT';
+  if (/invalid_(?:secure_auth|auth_storage)_key/.test(detail)) return 'ST-KEY-NAME';
+  if (/invalid_(?:secure_auth|auth_storage)_value/.test(detail)) return 'ST-KEY-VALUE';
   return 'ST-OTHER';
 }
