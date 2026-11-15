@@ -1154,3 +1154,8 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
 - Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
 - Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.
+ 
+### 2026-11-15 — browser → Auth Test no-code return diagnostic (documentation before commit)
+- At 2026-11-15 00:50 UTC, read-only Supabase gateway logs showed 2 Android Google authorize 302 and 2 callback 302 responses using requested `movo-authcheck://auth-callback`, but no corresponding token exchanges. The exact redirect actually emitted by Supabase and the final Android destination remain unverified.
+- PR #304 was externally merged without real-device sign-in acceptance. Create staging-only static `/android-oauth-handoff-test.html` with a no-code custom scheme link and explicit Chrome package intent. Expected `OA-NO-CODE` if Android launches the Auth Test package. No JavaScript, credentials, secrets, local storage or financial data.
+- Require preview and real Android Chrome click tests; do not merge, modify auth/server settings, or change production. See `docs/engineering/updates/2026-11-15-android-oauth-handoff-diagnostic.md`.

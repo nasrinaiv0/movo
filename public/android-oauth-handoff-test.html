@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer"><meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>MOVO — Android return-link diagnostic</title>
+<style>
+:root{color-scheme:light dark;--bg:#f5f7f3;--card:#fff;--ink:#17291e;--muted:#597060;--accent:#19573c;--alt:#e9eee9}
+@media(prefers-color-scheme:dark){:root{--bg:#101a14;--card:#202c22;--ink:#f4faf3;--muted:#b4caba;--accent:#b6f0c4;--alt:#314033}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);margin:0;font:16px/1.5 system-ui,-apple-system,sans-serif}
+main{max-width:550px;margin:0 auto;padding:28px 20px 55px}h1{font-size:30px;line-height:1.18;letter-spacing:-.04em;margin:10px 0 18px}
+h2{font-size:17px;margin:0 0 10px}p{color:var(--muted)}.eyebrow{font-size:12px;color:var(--accent);font-weight:750;letter-spacing:.1em;text-transform:uppercase}
+.card{padding:22px;background:var(--card);border-radius:20px;margin:16px 0}ol{padding-left:20px}li{margin:7px 0}
+a.action{display:block;background:#17553a;color:white;text-align:center;font-weight:700;text-decoration:none;padding:16px 12px;border-radius:14px;margin:18px 0 8px;transition:opacity .16s ease}
+a.action:hover{opacity:.85}a.secondary{background:var(--alt);color:var(--ink)}a:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+small{display:block;color:var(--muted);line-height:1.5}code{font-size:.91em;color:var(--accent)}
+@media(prefers-reduced-motion:reduce){a.action{transition:none}}
+</style></head><body><main>
+<div class="eyebrow">MOVO · Android secure sign-in</div>
+<h1>Test Google’s return to MOVO Auth Test</h1>
+<p>This checks only whether Chrome can open the installed MOVO Auth Test app. It does not contact Google or sign you in.</p>
+<section class="card"><h2>1. Check the normal return link</h2>
+<ol><li>Open <strong>this page in Chrome</strong> on your Android phone.</li><li>Make sure <strong>MOVO Auth Test</strong> is installed.</li><li>Tap the link below.</li></ol>
+<a class="action" href="movo-authcheck://auth-callback">Open MOVO Auth Test</a>
+<small>Expected: MOVO Auth Test opens. <code>OA-NO-CODE</code> is normal because this test intentionally carries no authorization code.</small></section>
+<section class="card"><h2>2. Only if the first link fails</h2>
+<p>Try an Android intent that names the Auth Test package explicitly.</p>
+<a class="action secondary" href="intent://auth-callback#Intent;scheme=movo-authcheck;package=com.nasrinai.movo.authcheck;end">Open Auth Test by package</a></section>
+<section class="card"><h2>Interpret the result</h2>
+<p><strong>First link opens MOVO:</strong> Chrome-to-Android handoff works. Check whether Supabase actually permits the exact test callback.</p>
+<p><strong>Only second link opens MOVO:</strong> Investigate Android custom-scheme intent resolution.</p>
+<p><strong>Neither opens MOVO:</strong> Inspect installation and device browser defaults before changing OAuth code.</p></section>
+<small>No one-time codes, passwords, tokens, identifiers, transaction data, scripts, analytics, or forms are used by this page. Never share an actual Google callback URL.</small>
+</main></body></html>
