@@ -18,3 +18,5 @@ print((root/'supabase/migrations/20261109160000_iap_integrity.sql').read_text())
 
 # Include the isolated P0 test-purchase migration in disposable PostgreSQL tests.
 print((root/'supabase/migrations/20261113000000_google_play_test_purchase_isolation.sql').read_text())
+
+print(next((root/'supabase/migrations').glob('*_movo_referral_plan_rewards.sql')).read_text())

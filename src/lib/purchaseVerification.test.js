@@ -139,6 +139,17 @@ describe('MOVO store purchase verification', () => {
     expect((await verify()).paidVerified).toBe(false);
   });
 
+  test('uses the selected Google line item’s successful order and excludes a free-trial phase', async () => {
+    const verify = () => verifyGoogle('token', 'com.nasrinai.movo.proplus.monthly', userId);
+    googleOverrides.latestOrderId = undefined;
+    const item = { productId: 'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() + 86400000).toISOString(), latestSuccessfulOrderId: 'GPA.line-order' };
+    googleOverrides.lineItems = [item];
+    expect(await verify()).toMatchObject({ storeTransactionId: item.latestSuccessfulOrderId, paidVerified: true });
+    item.offerPhase = { freeTrial: {} };
+    orderLookupFailure = true;
+    expect(await verify()).toMatchObject({ status: 'active', paidVerified: false });
+  });
+
   test('rejects unknown store products', async () => {
     await expect(verifyGoogle('private-google-token', 'com.unknown.product', userId)).rejects.toThrow('unknown_store_product');
   });

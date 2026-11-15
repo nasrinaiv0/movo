@@ -13,7 +13,7 @@ import { startEdgeSwipeBack } from './lib/edgeSwipeBack';
 import { appIconById, appIconUnlocked } from './lib/appIcons';
 import { setNativeAppIcon } from './lib/native';
 import PlanOffer from './components/PlanOffer';
-import { activateNativeReferral } from './lib/referrals';
+import { activateNativeReferral, claimReferralCode, clearPendingReferralCode, pendingReferralSubmission } from './lib/referrals';
 import { UsageSheet } from './screens/Settings';
 import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
@@ -474,12 +474,38 @@ function App() {
   const trialAutoRef = useRef('');
   useEffect(() => {
     const id = session?.user?.id;
-    if (!id || !session?.access_token || !prefs.planWelcomeSeen || !entitlement?.trialEligible || trialAutoRef.current === id) return;
+    if (!id || !session?.access_token || !prefs.planWelcomeSeen || !entitlement || trialAutoRef.current === id) return;
+    const code = pendingReferralSubmission();
+    if (!entitlement.trialEligible && !code) return;
     trialAutoRef.current = id;
-    fetch(apiUrl('/api/purchases/trial'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: '{}' })
-      .then(response => { if (response.ok) { refreshEntitlement(); notify(tr('Your free month of Pro has started.')); } })
-      .catch(() => { trialAutoRef.current = ''; });
-  }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement?.trialEligible, refreshEntitlement, notify]);
+    const token = session.access_token;
+    const account = { access_token: token };
+    if (!entitlement.trialEligible) {
+      claimReferralCode(account, code).then(() => {
+        if (pendingReferralSubmission() === code) clearPendingReferralCode();
+        activateNativeReferral(account).catch(() => false);
+      }).catch(() => { trialAutoRef.current = ''; });
+      return;
+    }
+    const startTrial = referralCode => fetch(apiUrl('/api/purchases/trial'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify(referralCode ? { referralCode } : {}),
+    });
+    startTrial(code).then(async response => {
+      if (code && response.ok) {
+        if (pendingReferralSubmission() === code) clearPendingReferralCode();
+        activateNativeReferral(account).catch(() => false);
+      } else if (code && (response.status === 400 || response.status === 429)) {
+        // An invalid or limited code must not block the new user's free month.
+        response = await startTrial('');
+      }
+      if (response.ok) {
+        refreshEntitlement();
+        notify(tr('Your free month of Pro has started.'));
+      }
+    }).catch(() => { trialAutoRef.current = ''; });
+  }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement, refreshEntitlement, notify]);
   useEffect(() => {
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);

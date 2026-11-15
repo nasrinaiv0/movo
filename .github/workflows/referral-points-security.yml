@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/*referral*'
-      - 'supabase/tests/referral_points.test.sql'
+      - 'supabase/tests/referral*.test.sql'
       - 'scripts/test-plan-migration.py'
       - 'api/referrals/**'
       - 'api/purchases/**'

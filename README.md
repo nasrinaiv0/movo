@@ -57,6 +57,7 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - NasrinAI daily briefing and money tips: rule-based summary (spending vs last month, top category, largest purchase, savings rate, renewals this week, budgets) and tips, computed on the device from the user's own records. Shown once a day on open (Settings toggle) and pinned at the top of Notifications to reopen anytime; nothing is sent to the AI unless the user opens the chat.
 - Separate, explicit consent for sharing a limited user-scoped financial snapshot with NasrinAI. Production chat authentication still requires verification.
 - Terms of Service, Privacy Policy, Help Center, onboarding acknowledgement, and privacy-request contact links.
+- Refer MOVO uses a personal QR and short code. New members earn 20 points after in-app verification and 100 after the first confirmed paid charge. When enabled, Android and web redeem 500 points for one month of Pro or 750 for one month of Pro+.
 - Light/dark/system appearance, accent colors, balance visibility, and browser preferences.
 - Accessible sheets with keyboard focus handling and Escape dismissal, plus automated UI tests and a production build gate.
 - Baseline HTTP security headers on Vercel.

@@ -8911,3 +8911,7 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .bottom-nav .nav-item .nav-glyph-on { display: none; }
 .movo-app .bottom-nav .nav-item.nav-active .nav-glyph-on { display: block; }
 .movo-app .bottom-nav .nav-item.nav-active .nav-glyph-off { display: none; }
+
+/* Referral rewards and verification labels can wrap at larger text sizes. */
+.referral-points-redeem small { white-space: normal; }
+.referral-points-redeem button { max-width: 50%; white-space: normal; overflow-wrap: anywhere; }

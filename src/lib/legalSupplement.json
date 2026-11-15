@@ -129,7 +129,8 @@
       "paragraphs": [
         "Each signed-in MOVO account has a short referral code, for example M78038. Your code is part of your Refer MOVO download links and QR codes. It identifies the account that shared the link and contains no name, email address or financial information.",
         "When someone opens your Android link, Google Play receives the code as part of the store address and keeps it as the app’s install referrer. On its first launch, the MOVO Android app asks Google Play for that referrer once, on the device, and keeps only a valid referral code, which is filled in so the person can add it after signing in. On iPhone, the download page shows the code and copies it to the clipboard only when its button is tapped.",
-        "A referral code counts only after the person signs in and the MOVO service accepts it. MOVO then records which account referred which, and any referral points, with both accounts. Referral codes are not used for advertising."
+        "A referral code counts only after the person signs in and the MOVO service accepts it. MOVO then records which account referred which, and any referral points, with both accounts. Referral codes are not used for advertising.",
+        "MOVO uses Apple App Attest or Google Play Integrity to confirm that the official app was used for the referral. MOVO records the linked accounts, verification result, confirmed store payment or refund status, and points earned or used. The referral process does not collect your payment card details."
       ]
     },
     {

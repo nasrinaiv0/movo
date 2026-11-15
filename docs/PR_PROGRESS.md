@@ -1,3 +1,10 @@
+## 2026-11-16 — QR referral and plan rewards
+
+- A referred new member receives 20 points after app verification and a further 100 after their first confirmed positive store charge. The reward selector offers one month of Pro for 500 points or Pro+ for 750.
+- Supabase preserves existing balances and entitlements through the migration. QR and code entry carry through sign-in and trial activation. The server deduplicates awards and debits, and validates the beneficiary and store evidence.
+- Local validation covers the full React suite, strict build, typecheck, disposable PostgreSQL and IAP lease tests. The PR records GitHub and preview results. Signed physical-device and deployment configuration checks remain launch gates.
+- Open PR scopes reviewed against main at `d511f268`: #274, #280, #290, #291, #294–#297, #299, #305, #306 and #308. Existing billing branches overlap the verifier, with this branch limited to verified referral payment evidence and rewards. See [implementation and rollout notes](engineering/updates/2026-11-16-qr-referral-plan-rewards.md).
+
 ## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
 
 Owner report: on the affected Android phone, Google sign-in ends back on Sign in after the account is chosen. Supabase logs show the pattern exactly: that phone gets `/authorize` 302 and `/callback` 302 (a code is issued) but never calls `/token`, while phones on Chrome 156/157 complete the exchange. The affected phone is a Huawei on Android 12 whose in-app WebView reports Chromium 114.
