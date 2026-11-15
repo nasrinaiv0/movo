@@ -1161,3 +1161,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - The installed PR #304 APK processed a replayed bare launch URL as a sign-in failure. The pinned Android Capacitor bridge dispatches the cold launch intent and warm intents via the same retained `appUrlOpen` event. Use that single Android delivery path, and clear the Android sign-in alert on a retry or valid callback.
 - Open-PR reconciliation found #305, #299, #297, #296, #295, #294, #291, #290, #280 and #274. This fix branches from main after #304; #305 remains the isolated diagnostic, and #295 is a separate earlier Android auth proposal.
 - Require exact-head CI, preview and physical Android acceptance. See [the Android callback update](engineering/updates/2026-11-15-android-oauth-callback-delivery.md).
+
+
+## 2026-11-16 — Android Google OAuth via browser Auth Tab
+- Owner retested after PR #306 and returned to Sign in. Supabase recorded two Android Auth Test sign-ins at 02:19–02:20 Manila time with two Google callbacks and two issued PKCE codes. Neither reached the token endpoint. Removing the stale launch-URL read did not resolve the reported symptom.
+- Keep PR #306's single callback listener. Use AndroidX Auth Tab for Android Google when the browser supports it, then pass the full validated result URI to the existing native OAuth handler. Keep ordinary Custom Tabs as a fallback for browsers that lack Auth Tab.
+- Keep production and release actions on hold. Verify exact-head Android build, preview, CI and real-device session persistence. See [the Android Auth Tab update](engineering/updates/2026-11-16-android-google-auth-tab.md).

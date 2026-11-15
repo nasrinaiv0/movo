@@ -68,7 +68,7 @@ async function signInWithProvider(provider, queryParams) {
     const redirectTo = await getNativeAuthCallback();
     const data = unwrap(await client.auth.signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true, ...(queryParams ? { queryParams } : {}) } }));
     if (!data?.url) throw new Error('oauth_url_missing');
-    await openAuthBrowser(data.url);
+    await openAuthBrowser(data.url, provider);
     return data;
   }
   const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;

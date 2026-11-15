@@ -2,6 +2,7 @@ package com.nasrinai.movo;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Build;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -41,6 +42,25 @@ public class MovoNativePlugin extends Plugin {
     private static final String STORE_NAME = "AndroidKeyStore";
     private static final int GCM_TAG_BITS = 128;
     private static final int IV_SIZE = 12;
+
+    @PluginMethod
+    public void openGoogleAuthTab(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || !(getActivity() instanceof MainActivity activity)) {
+            call.reject("android_auth_browser_unavailable");
+            return;
+        }
+
+        activity.runOnUiThread(() -> {
+            try {
+                JSObject result = new JSObject();
+                result.put("opened", activity.openGoogleAuthTab(Uri.parse(url)));
+                call.resolve(result);
+            } catch (RuntimeException ignored) {
+                call.reject("android_auth_browser_unavailable");
+            }
+        });
+    }
 
     private SharedPreferences prefs() {
         return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);

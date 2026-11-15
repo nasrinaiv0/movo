@@ -49,7 +49,7 @@ test('Android Google OAuth uses the native browser and same PKCE return as email
     options: { redirectTo: AUTH_CALLBACK, skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } },
   });
   expect(openAuthBrowser).toHaveBeenCalledTimes(1);
-  expect(openAuthBrowser).toHaveBeenCalledWith(expect.stringContaining('https://cjsjmorqvuvvwbfyztiz.supabase.co/'));
+  expect(openAuthBrowser).toHaveBeenCalledWith(expect.stringContaining('https://cjsjmorqvuvvwbfyztiz.supabase.co/'), 'google');
   const returned = readAppUrl('movo://auth-callback?code=android-return-code');
   expect(returned).toMatchObject({ kind: 'auth', code: 'android-return-code', error: '' });
   await finishOAuth(returned.code);

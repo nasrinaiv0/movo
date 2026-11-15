@@ -128,14 +128,17 @@ export function listenForAppUrls({ onAuth } = {}) {
   };
 }
 
-/** Open a sign-in page in the system browser sheet (Google refuses sign-in inside embedded web views). */
-export async function openAuthBrowser(url) {
+/** Open native sign-in in an external browser, preferring Android Auth Tab for Google. */
+export async function openAuthBrowser(url, provider) {
+  const android = nativePlatform() === 'android';
   try {
-    // On Android this uses Chrome Custom Tabs, not a Google-blocked embedded
-    // WebView. The Capacitor App plugin receives the exact return deep link.
+    if (android && provider === 'google') {
+      const { opened } = await MovoNative.openGoogleAuthTab({ url });
+      if (opened) return;
+    }
     await Browser.open({ url, presentationStyle: 'popover' });
   } catch (cause) {
-    if (nativePlatform() !== 'android') throw cause;
+    if (!android) throw cause;
     // Do not display or log the provider URL or plugin exception: it may
     // contain transient OAuth state. The UI shows a safe device-specific fix.
     const error = new Error('android_auth_browser_unavailable');
