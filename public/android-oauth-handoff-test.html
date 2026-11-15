@@ -22,11 +22,17 @@ small{display:block;color:var(--muted);line-height:1.5}code{font-size:.91em;colo
 <ol><li>Open <strong>this page in Chrome</strong> on your Android phone.</li><li>Make sure <strong>MOVO Auth Test</strong> is installed.</li><li>Tap the link below.</li></ol>
 <a class="action" href="movo-authcheck://auth-callback">Open MOVO Auth Test</a>
 <small>Expected: MOVO Auth Test opens. <code>OA-NO-CODE</code> is normal because this test intentionally carries no authorization code.</small></section>
-<section class="card"><h2>2. Only if the first link fails</h2>
+<section class="card"><h2>2. Test an HTTP 302 return</h2>
+<p>You already verified that tapping the direct link opens MOVO Auth Test. This link tests the <strong>server redirect</strong> route used after Google login, but carries no authorization code.</p>
+<a class="action secondary" href="/api/android-oauth-handoff-probe">Test server 302 callback</a>
+<small>Expected: MOVO Auth Test opens and may display <code>OA-NO-CODE</code>. If tapping the first link works but this one doesn't, Chrome may be blocking an external-app redirect from the browser.</small></section>
+<section class="card"><h2>3. Only if one of the links fails</h2>
 <p>Try an Android intent that names the Auth Test package explicitly.</p>
 <a class="action secondary" href="intent://auth-callback#Intent;scheme=movo-authcheck;package=com.nasrinai.movo.authcheck;end">Open Auth Test by package</a></section>
 <section class="card"><h2>Interpret the result</h2>
 <p><strong>First link opens MOVO:</strong> Chrome-to-Android handoff works. Check whether Supabase actually permits the exact test callback.</p>
+<p><strong>First works, 302 fails:</strong> Chrome may handle server-initiated external-app redirects differently; inspect the browser return behavior.</p>
+<p><strong>Both work, Google still fails:</strong> Confirm the exact Supabase redirect allowlist entry and actual provider callback destination.</p>
 <p><strong>Only second link opens MOVO:</strong> Investigate Android custom-scheme intent resolution.</p>
 <p><strong>Neither opens MOVO:</strong> Inspect installation and device browser defaults before changing OAuth code.</p></section>
 <small>No one-time codes, passwords, tokens, identifiers, transaction data, scripts, analytics, or forms are used by this page. Never share an actual Google callback URL.</small>

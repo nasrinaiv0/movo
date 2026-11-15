@@ -1159,3 +1159,8 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - At 2026-11-15 00:50 UTC, read-only Supabase gateway logs showed 2 Android Google authorize 302 and 2 callback 302 responses using requested `movo-authcheck://auth-callback`, but no corresponding token exchanges. The exact redirect actually emitted by Supabase and the final Android destination remain unverified.
 - PR #304 was externally merged without real-device sign-in acceptance. Create staging-only static `/android-oauth-handoff-test.html` with a no-code custom scheme link and explicit Chrome package intent. Expected `OA-NO-CODE` if Android launches the Auth Test package. No JavaScript, credentials, secrets, local storage or financial data.
 - Require preview and real Android Chrome click tests; do not merge, modify auth/server settings, or change production. See `docs/engineering/updates/2026-11-15-android-oauth-handoff-diagnostic.md`.
+
+### 2026-11-15 — follow-up to PR #305 handoff check (documented before commit)
+- Owner confirmed clicking the first no-code custom-scheme link opens MOVO Auth Test. This proves Chrome-to-Android manual intent dispatch, not a server 302 OAuth return.
+- Safe 302 preview-only endpoint will redirect to a **fixed** `movo-authcheck://auth-callback` without codes, cookies, tokens, PII or request-controlled parameters. Add node Jest regression coverage and link in static diagnostic page.
+- Latest Supabase Google callbacks remain HTTP 302 without any token exchange. The live Auth Redirect URLs allowlist remains inaccessible using connected read-only tools. No production modifications.
