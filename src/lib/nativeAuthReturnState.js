@@ -10,6 +10,9 @@ export function viewAfterAuthenticatedSession(currentView, userId) {
 export function safeNativeOAuthStage(stage) {
   if (stage === 'provider') return 'OA-PROVIDER';
   if (stage === 'no-code') return 'OA-NO-CODE';
+  if (stage === 'browser-closed') return 'OA-BROWSER-CLOSED';
+  if (stage === 'callback') return 'OA-CALLBACK';
+  if (stage === 'verifier') return 'OA-VERIFIER';
   if (stage === 'exchange') return 'OA-EXCHANGE';
   return 'OA-OTHER';
 }

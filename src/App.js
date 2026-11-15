@@ -930,17 +930,18 @@ function App() {
   /* Native auth callbacks finish sign-in and the auth listener picks up the session.
      movo://log links reuse the web app's quick-log handler. */
   useEffect(() => listenForAppUrls({
-    onAuth: ({ code, error: failure }) => {
-      if (failure || !code) {
+    onAuth: ({ code, error: failure, stage }) => {
+      if (stage || failure || !code) {
         setView('Sign in');
         // Never echo OAuth callback parameters or error descriptions.
-        setNativeOAuthError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(failure ? 'provider' : 'no-code')})`);
+        setNativeOAuthError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(stage || (failure ? 'provider' : 'no-code'))})`);
         return;
       }
       setNativeOAuthError('');
-      finishOAuth(code).catch(() => {
+      finishOAuth(code).catch(cause => {
         setView('Sign in');
-        setNativeOAuthError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage('exchange')})`);
+        const failedStage = cause?.code === 'pkce_code_verifier_not_found' ? 'verifier' : 'exchange';
+        setNativeOAuthError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(failedStage)})`);
       });
     },
   }), []);

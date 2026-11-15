@@ -1167,3 +1167,9 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Owner retested after PR #306 and returned to Sign in. Supabase recorded two Android Auth Test sign-ins at 02:19–02:20 Manila time with two Google callbacks and two issued PKCE codes. Neither reached the token endpoint. Removing the stale launch-URL read did not resolve the reported symptom.
 - Keep PR #306's single callback listener. Use AndroidX Auth Tab for Android Google when the browser supports it, then pass the full validated result URI to the existing native OAuth handler. Keep ordinary Custom Tabs as a fallback for browsers that lack Auth Tab.
 - Keep production and release actions on hold. Verify exact-head Android build, preview, CI and real-device session persistence. See [the Android Auth Tab update](engineering/updates/2026-11-16-android-google-auth-tab.md).
+
+
+## 2026-11-16 — Android Auth Tab result handling
+- The owner confirmed `1.0-authcheck-authtab` in Android App info. At 02:51 Manila, Supabase issued a further S256 PKCE code for Auth Test and received no token exchange. The installed version and provider-side evidence exclude the old-APK explanation for this retest.
+- Deliver Auth Tab results through the MOVO native plugin, without redispatching them as synthetic Android intents. Show fixed stages for cancellation, rejected callback shapes, and a missing PKCE verifier. Reuse the existing parser, exchange, and vault.
+- Keep the PR open for a real-device check. See [the Auth Tab result update](engineering/updates/2026-11-16-android-auth-tab-result.md).

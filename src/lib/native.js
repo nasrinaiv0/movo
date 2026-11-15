@@ -98,10 +98,8 @@ export function listenForAppUrls({ onAuth } = {}) {
   if (!isNativeApp()) return () => {};
   let active = true;
   let lastAuthCode = null;
-  const handle = ({ url }) => {
-    if (!active) return;
-    const link = readAppUrl(url);
-    if (!link) return;
+  const handle = link => {
+    if (!active || !link) return;
     if (link.kind === 'auth') {
       // Android singleTask already clears the Custom Tab during a deep-link return.
       // Browser.close() here can reopen the last OAuth page or strand the browser
@@ -115,16 +113,27 @@ export function listenForAppUrls({ onAuth } = {}) {
     }
     if (link.kind === 'log') window.location.hash = link.hash;
   };
-  const pending = CapApp.addListener('appUrlOpen', handle);
+  const pending = [CapApp.addListener('appUrlOpen', ({ url }) => handle(readAppUrl(url)))];
+  if (nativePlatform() === 'android') {
+    pending.push(MovoNative.addListener('googleAuthResult', ({ url, stage }) => {
+      if (!active) return;
+      const link = readAppUrl(url);
+      if (link?.kind === 'auth') {
+        handle(link);
+        return;
+      }
+      onAuth?.({ stage: stage === 'browser-closed' ? stage : 'callback' });
+    }));
+  }
   // Android's BridgeActivity dispatches its initial intent through onNewIntent,
   // and the App plugin retains it until appUrlOpen has a listener. Reading the
   // original launch URL as well can replay it after a newer browser return.
   if (nativePlatform() !== 'android') {
-    CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
+    CapApp.getLaunchUrl().then(launch => handle(readAppUrl(launch?.url))).catch(() => {});
   }
   return () => {
     active = false;
-    pending.then(h => h?.remove()).catch(() => {});
+    pending.forEach(listener => listener.then(h => h?.remove()).catch(() => {}));
   };
 }
 

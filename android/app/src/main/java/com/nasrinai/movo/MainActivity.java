@@ -10,6 +10,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.browser.auth.AuthTabIntent;
 import androidx.browser.customtabs.CustomTabsClient;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.PluginHandle;
 
 public class MainActivity extends BridgeActivity {
     private static final String AUTH_HOST = "auth-callback";
@@ -46,13 +47,20 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void handleGoogleAuthResult(AuthTabIntent.AuthResult result) {
-        Uri callback = result.resultUri;
-        if (result.resultCode != AuthTabIntent.RESULT_OK || callback == null
-                || !googleAuthScheme().equals(callback.getScheme())
-                || !AUTH_HOST.equals(callback.getEncodedAuthority())) return;
+        if (getBridge() == null) return;
+        PluginHandle handle = getBridge().getPlugin("MovoNative");
+        if (handle == null || !(handle.getInstance() instanceof MovoNativePlugin plugin)) return;
 
-        // Match the existing deep-link route and keep its stricter JS code parser.
-        onNewIntent(new Intent(Intent.ACTION_VIEW, callback));
+        Uri callback = result.resultUri;
+        if (result.resultCode == AuthTabIntent.RESULT_CANCELED) {
+            plugin.deliverGoogleAuthResult(null, "browser-closed");
+        } else if (result.resultCode != AuthTabIntent.RESULT_OK || callback == null
+                || !googleAuthScheme().equals(callback.getScheme())
+                || !AUTH_HOST.equals(callback.getEncodedAuthority())) {
+            plugin.deliverGoogleAuthResult(null, "callback");
+        } else {
+            plugin.deliverGoogleAuthResult(callback, null);
+        }
     }
 
     private String googleAuthScheme() {

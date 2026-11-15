@@ -62,6 +62,13 @@ public class MovoNativePlugin extends Plugin {
         });
     }
 
+    void deliverGoogleAuthResult(Uri callback, String stage) {
+        JSObject result = new JSObject();
+        if (callback != null) result.put("url", callback.toString());
+        if (stage != null) result.put("stage", stage);
+        notifyListeners("googleAuthResult", result, true);
+    }
+
     private SharedPreferences prefs() {
         return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }

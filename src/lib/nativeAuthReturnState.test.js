@@ -18,6 +18,9 @@ test.each([
   ['provider', 'OA-PROVIDER'],
   ['no-code', 'OA-NO-CODE'],
   ['exchange', 'OA-EXCHANGE'],
+  ['browser-closed', 'OA-BROWSER-CLOSED'],
+  ['callback', 'OA-CALLBACK'],
+  ['verifier', 'OA-VERIFIER'],
   ['private OAuth error access_token=never-print-me', 'OA-OTHER'],
 ])('native OAuth diagnostics return fixed non-secret label for %s', (stage, expected) => {
   expect(safeNativeOAuthStage(stage)).toBe(expected);
@@ -37,7 +40,7 @@ test('App routes valid same-user callbacks to Home before the owner-identity fas
 
 test('native callback failures show fixed stages without echoing provider details', () => {
   const app = fs.readFileSync(path.join(process.cwd(), 'src/App.js'), 'utf8');
-  expect(app).toContain("safeNativeOAuthStage(failure ? 'provider' : 'no-code')");
-  expect(app).toContain("safeNativeOAuthStage('exchange')");
+  expect(app).toContain("safeNativeOAuthStage(stage || (failure ? 'provider' : 'no-code'))");
+  expect(app).toContain("cause?.code === 'pkce_code_verifier_not_found' ? 'verifier' : 'exchange'");
   expect(app).not.toContain('setError(failure)');
 });

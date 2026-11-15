@@ -1,8 +1,12 @@
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
-import { listenForAppUrls } from './native';
+import { listenForAppUrls, MovoNative } from './native';
 
+jest.mock('@capacitor/core', () => ({
+  ...jest.requireActual('@capacitor/core'),
+  registerPlugin: jest.fn().mockReturnValue({ addListener: jest.fn() }),
+}));
 jest.mock('@capacitor/app', () => ({
   App: {
     addListener: jest.fn(),
@@ -14,14 +18,20 @@ jest.mock('@capacitor/browser', () => ({
 }));
 
 let activeHandler;
+let resultHandler;
 let removeListener;
 
 beforeEach(() => {
   activeHandler = null;
+  resultHandler = null;
   removeListener = jest.fn();
   CapApp.addListener.mockImplementation((_event, handler) => {
     activeHandler = handler;
     return Promise.resolve({ remove: removeListener });
+  });
+  MovoNative.addListener.mockImplementation((_event, handler) => {
+    resultHandler = handler;
+    return Promise.resolve({ remove: jest.fn() });
   });
   CapApp.getLaunchUrl.mockResolvedValue({ url: null });
   Browser.close.mockResolvedValue();
@@ -138,4 +148,30 @@ test('removed iOS listeners cannot exchange late launch URLs', async () => {
   deliverLaunch({ url: 'movo://auth-callback?code=late-code' });
   await Promise.resolve();
   expect(onAuth).not.toHaveBeenCalled();
+});
+
+
+test('Android exchanges a valid Auth Tab result once across both callback paths', () => {
+  const onAuth = jest.fn();
+  const stop = listenForAppUrls({ onAuth });
+  const url = 'movo-authcheck://auth-callback?code=synthetic-result';
+  resultHandler({ url });
+  activeHandler({ url });
+  expect(onAuth.mock.calls).toEqual([[{ kind: 'auth', code: 'synthetic-result', error: '' }]]);
+  stop();
+  resultHandler({ url: 'movo-authcheck://auth-callback?code=late' });
+  expect(onAuth).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  [{ stage: 'browser-closed' }, 'browser-closed'],
+  [{ url: 'movo-authcheck://auth-callback?code=one&code=two' }, 'callback'],
+  [{ url: 'movo://log?amount=2' }, 'callback'],
+  [{ stage: 'untrusted details' }, 'callback'],
+])('Android exposes only a fixed stage for an unusable Auth Tab result', (result, stage) => {
+  const onAuth = jest.fn();
+  const stop = listenForAppUrls({ onAuth });
+  resultHandler(result);
+  expect(onAuth.mock.calls).toEqual([[{ stage }]]);
+  stop();
 });

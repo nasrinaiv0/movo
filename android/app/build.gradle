@@ -49,7 +49,7 @@ android {
             applicationIdSuffix ".authcheck"
             // The test app must not receive or steal Play MOVO PKCE callbacks.
             manifestPlaceholders = [movoAuthScheme: "movo-authcheck"]
-            versionNameSuffix "-authcheck-authtab"
+            versionNameSuffix "-authcheck-authtab-result"
             matchingFallbacks = ['debug']
         }
         release {
