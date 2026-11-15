@@ -18,6 +18,7 @@ describe('safe Supabase Auth error classification', () => {
     [{ code: 'otp_expired' }, 'invalid-code'],
     [{ code: 'invalid_otp' }, 'invalid-code'],
     [{ code: 'android_auth_browser_unavailable' }, 'android-browser'],
+    [{ code: 'android_auth_app_identity_unavailable' }, 'android-package'],
     [{ code: 'secure_auth_write_failed' }, 'native-secure-storage'],
     [{ code: 'secure_auth_read_failed' }, 'native-secure-storage'],
     [{ message: 'secure_auth_legacy_cleanup_failed' }, 'native-secure-storage'],

@@ -11,6 +11,28 @@ import { isNativeApp, nativePlatform } from './platform';
  */
 export const MovoNative = registerPlugin('MovoNative');
 export const AUTH_CALLBACK = 'movo://auth-callback';
+export const AUTH_TEST_CALLBACK = 'movo-authcheck://auth-callback';
+
+/**
+ * Production and isolated Android Auth Test have different Keystore/PKCE
+ * scopes. Never let both app packages request the same browser return link.
+ * Capacitor App.getInfo() returns the installed package ID, not a JS build flag.
+ */
+export function callbackForAndroidPackage(packageId) {
+  if (packageId === 'com.nasrinai.movo') return AUTH_CALLBACK;
+  if (packageId === 'com.nasrinai.movo.authcheck') return AUTH_TEST_CALLBACK;
+  throw new Error('android_auth_app_identity_unavailable');
+}
+export async function getNativeAuthCallback() {
+  if (nativePlatform() !== 'android') return AUTH_CALLBACK;
+  try {
+    const { id } = await CapApp.getInfo();
+    return callbackForAndroidPackage(id);
+  } catch {
+    // Do not accidentally launch an Auth Test sign-in via the Play callback.
+    throw new Error('android_auth_app_identity_unavailable');
+  }
+}
 
 /* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
 // Financial read caches migrate from legacy Preferences to AES-GCM, never mirror back as plaintext.
@@ -54,7 +76,7 @@ export function readAppUrl(url) {
   if (typeof url !== 'string' || url.length > 4096) return null;
   let parsed;
   try { parsed = new URL(url); } catch { return null; }
-  if (parsed.protocol !== 'movo:' || parsed.username || parsed.password || parsed.port) return null;
+  if (!['movo:', 'movo-authcheck:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.port) return null;
   if (parsed.pathname && parsed.pathname !== '/') return null;
   const params = new URLSearchParams(parsed.search || '');
   const hash = new URLSearchParams((parsed.hash || '').replace(/^#/, ''));
@@ -65,7 +87,7 @@ export function readAppUrl(url) {
     const error = params.get('error_description') || params.get('error') || hash.get('error_description') || hash.get('error');
     return { kind: 'auth', code: error ? '' : (codes[0] || ''), error: error || '' };
   }
-  if (parsed.hostname === 'log' && !parsed.hash) {
+  if (parsed.hostname === 'log' && parsed.protocol === 'movo:' && !parsed.hash) {
     return { kind: 'log', hash: `#/log?${params.toString()}` };
   }
   return null;

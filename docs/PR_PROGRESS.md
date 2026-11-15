@@ -1138,3 +1138,19 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Live Supabase Android-browser authorization and callback redirects (HTTP 302), and one token HTTP 200 were observed, without proof of which installed package received the callback. The same-owner `applySession` early return reproducibly bypasses Sign In → Home navigation after successful session state. Repair navigation before identity fast path without changing owner finance reloads; add fixed `OA-*` callback error labels and tests.
 - The Play and test APKs still share the `movo://auth-callback` deep link, a separate real-device acceptance risk; no Supabase redirect or production changes authorized. Record: `docs/engineering/updates/2026-11-14-android-google-oauth-return-same-owner.md`.
 - Require exact-head mobile/CI/preview and physical Android Google callback, OTP/session and tenant isolation evidence. **NO MERGE, NO STORE UPLOAD, NO PRODUCTION CHANGE.**
+
+
+## 2026-11-15 — Android OAuth debug/Play callback collision (documented before implementation)
+- Read-only Supabase logs at 2026-11-14 22:50 UTC show Android authorization and provider callback 302, with no same-bucket token exchange; sanitized authorize redirect `movo://auth-callback`. The identity of the Android recipient cannot be determined from server logs.
+- Proven source ambiguity: Play `com.nasrinai.movo` and debug Auth Test `com.nasrinai.movo.authcheck` previously both handled `movo://auth-callback` despite separate Android Keystore PKCE verifiers.
+- Isolated PR branch `fix/android-google-auth-callback-app-isolation-20261115` from main `c9165b51ad41c11b167e10d4d566852baa509d45`: preserve production and iOS `movo://auth-callback`; assign Auth Test `movo-authcheck://auth-callback` via Android manifest placeholder and exact Capacitor package-ID dispatch. Add OTP/OAuth and parser regression tests, Android artifact manifest checks, and fixed safe package-identity errors.
+- Live settings are NOT modified. One manual prerequisite for testing: add exact `movo-authcheck://auth-callback` to Supabase Auth Redirect URLs (no wildcards, do not remove `movo://auth-callback`). See `docs/engineering/updates/2026-11-15-android-google-auth-callback-isolation.md`.
+- Full CI, preview and physical Android acceptance required. This is NOT yet evidence of successful end-to-end Google sign-in; `main`, store uploads, user finances and production unchanged. **NO MERGE.**
+
+### 2026-11-15 — PR #304 CI translation fix (documented before commit)
+- Exact head `ad1bfcc16c4ff47e6e759419b183d895dc9208e9`: Phase 1 rejected a newly introduced untranslated Android-package identity error string. Preserve all 11 localization catalogues by using the already-translated existing Android Google return-link message; no auth/security logic changes.
+- New exact-head Phase 1, Android, iOS, hybrid, finance and Vercel gates remain required. `main`/production unchanged.
+
+### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
+- Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
+- Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.

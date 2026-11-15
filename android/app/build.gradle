@@ -5,6 +5,7 @@ android {
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.nasrinai.movo"
+        manifestPlaceholders = [movoAuthScheme: "movo"]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play Console rejects duplicate or lower versionCode uploads.
@@ -46,6 +47,8 @@ android {
         authTest {
             initWith debug
             applicationIdSuffix ".authcheck"
+            // The test app must not receive or steal Play MOVO PKCE callbacks.
+            manifestPlaceholders = [movoAuthScheme: "movo-authcheck"]
             versionNameSuffix "-authcheck"
             matchingFallbacks = ['debug']
         }
