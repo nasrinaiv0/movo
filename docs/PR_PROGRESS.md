@@ -1,3 +1,12 @@
+## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
+
+Owner report: on the affected Android phone, Google sign-in ends back on Sign in after the account is chosen. Supabase logs show the pattern exactly: that phone gets `/authorize` 302 and `/callback` 302 (a code is issued) but never calls `/token`, while phones on Chrome 156/157 complete the exchange. The affected phone is a Huawei on Android 12 whose in-app WebView reports Chromium 114.
+- **Cause:** `readAppUrl` used `new URL()` on `movo://auth-callback?code=…`. Chromium only parses the host of a custom-scheme URL from version 130. Older WebViews report hostname `""` and pathname `"//auth-callback"`, so the link was judged invalid and dropped without a message. The same applied to `movo://log` payment links.
+- **Fix:** the two accepted link shapes are matched by hand (`scheme://route[/][?query][#fragment]`), with no dependence on the WebView. All existing rejections are kept (user info, port, other host, path, duplicate or oversized code, tokens in the link) and control characters are now refused too.
+- Independent of PR #306 (Auth Tab). On that build the same phone would show `OA-CALLBACK`, because the Auth Tab result goes through the same parser.
+
+Validation: new tests run the parser against a stand-in for the old WebView URL behaviour (they fail on the previous parser), Jest 233 suites / 1,449 tests, `tsc`, strict build. Not run: the affected phone, or a real Chromium 114 (running a downloaded one was not permitted in this session). Needs a new Android build to reach phones. See `docs/engineering/updates/2026-11-15-android-auth-return-link-old-webview.md`.
+
 ## 2026-11-12 — PR #289 review fix: reminder preferences stay available offline
 
 - Review found that the encrypted cache accepted only lists, so reminder preferences (one settings object) silently stopped being kept for offline use. The cache now accepts lists and settings objects; both are still AES-GCM encrypted, owner-bound and network-failure-only.
