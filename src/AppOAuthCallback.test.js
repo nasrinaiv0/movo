@@ -1,6 +1,8 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { finishOAuth } from './lib/financeRepository';
+import { listenForAppUrls } from './lib/native';
 
 jest.mock('./lib/supabaseClient', () => ({ supabase: null, supabaseConfigured: false }));
 jest.mock('./lib/financeRepository', () => ({
@@ -11,6 +13,12 @@ jest.mock('./lib/financeRepository', () => ({
   createTransaction: jest.fn(),
   deleteTransaction: jest.fn(),
   signOut: jest.fn(),
+  finishOAuth: jest.fn(),
+}));
+
+jest.mock('./lib/native', () => ({
+  ...jest.requireActual('./lib/native'),
+  listenForAppUrls: jest.fn(),
 }));
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -20,13 +28,13 @@ describe('MOVO Google OAuth callback', () => {
   let container;
   let root;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     window.localStorage.clear();
     window.history.replaceState({}, '', '/#error=access_denied&error_description=private-provider-details');
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
-    act(() => root.render(<App />));
+    await act(async () => { root.render(<App />); });
   });
 
   afterEach(() => {
@@ -42,4 +50,27 @@ describe('MOVO Google OAuth callback', () => {
     expect(window.location.hash).toBe('');
     expect(window.location.search).not.toContain('private-provider-details');
   });
+});
+
+
+test('a valid native callback clears a stale no-code alert and exchanges the code', async () => {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  finishOAuth.mockResolvedValue({ user: { id: 'test-user' } });
+  listenForAppUrls.mockClear();
+
+  try {
+    await act(async () => { root.render(<App />); });
+    const [{ onAuth }] = listenForAppUrls.mock.calls[0];
+    act(() => onAuth({ code: '', error: '' }));
+    expect(container.textContent).toContain('OA-NO-CODE');
+
+    await act(async () => onAuth({ code: 'fresh-test-code', error: '' }));
+    expect(finishOAuth).toHaveBeenCalledWith('fresh-test-code');
+    expect(container.textContent).not.toContain('OA-NO-CODE');
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
 });

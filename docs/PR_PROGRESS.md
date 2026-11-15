@@ -1154,3 +1154,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
 - Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
 - Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.
+
+
+## 2026-11-15 — Android Google sign-in callback delivery
+- PR #305's code-free 302 and the real Google flow both opened Auth Test. The reported `OA-NO-CODE` appears before token exchange. Supabase issued three Android Auth Test PKCE codes at 11:14–11:15 a.m. Manila time, with zero same-window token exchanges. Gateway logs do not expose the final Location.
+- The installed PR #304 APK processed a replayed bare launch URL as a sign-in failure. The pinned Android Capacitor bridge dispatches the cold launch intent and warm intents via the same retained `appUrlOpen` event. Use that single Android delivery path, and clear the Android sign-in alert on a retry or valid callback.
+- Open-PR reconciliation found #305, #299, #297, #296, #295, #294, #291, #290, #280 and #274. This fix branches from main after #304; #305 remains the isolated diagnostic, and #295 is a separate earlier Android auth proposal.
+- Require exact-head CI, preview and physical Android acceptance. See [the Android callback update](engineering/updates/2026-11-15-android-oauth-callback-delivery.md).

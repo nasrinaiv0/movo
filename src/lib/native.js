@@ -116,7 +116,12 @@ export function listenForAppUrls({ onAuth } = {}) {
     if (link.kind === 'log') window.location.hash = link.hash;
   };
   const pending = CapApp.addListener('appUrlOpen', handle);
-  CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
+  // Android's BridgeActivity dispatches its initial intent through onNewIntent,
+  // and the App plugin retains it until appUrlOpen has a listener. Reading the
+  // original launch URL as well can replay it after a newer browser return.
+  if (nativePlatform() !== 'android') {
+    CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
+  }
   return () => {
     active = false;
     pending.then(h => h?.remove()).catch(() => {});

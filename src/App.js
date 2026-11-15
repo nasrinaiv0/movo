@@ -369,6 +369,7 @@ function App() {
   const cloudAuthUserRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [nativeOAuthError, setNativeOAuthError] = useState('');
   const [accountForm, setAccountForm] = useState(BLANK_ACCOUNT);
   const [form, setForm] = useState({ merchant: '', amount: '', transaction_type: 'expense', category: 'food:groceries', account_id: '', transfer_to_account_id: '', occurred_at: today(), time: '', note: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null });
   const [csvRows, setCsvRows] = useState([]);
@@ -926,19 +927,20 @@ function App() {
   /* iOS app: the native Liquid Glass top bar and dock mirror the web header and dock (no-op on the web). */
   useEffect(() => startNativeChrome(), []);
 
-  /* iOS app: movo://auth-callback finishes Google/Apple sign-in (the auth listener below picks up the session);
-     movo://log links become the same #/log links the web app already handles. No-op on the web. */
+  /* Native auth callbacks finish sign-in and the auth listener picks up the session.
+     movo://log links reuse the web app's quick-log handler. */
   useEffect(() => listenForAppUrls({
     onAuth: ({ code, error: failure }) => {
       if (failure || !code) {
         setView('Sign in');
         // Never echo OAuth callback parameters or error descriptions.
-        setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(failure ? 'provider' : 'no-code')})`);
+        setNativeOAuthError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(failure ? 'provider' : 'no-code')})`);
         return;
       }
+      setNativeOAuthError('');
       finishOAuth(code).catch(() => {
         setView('Sign in');
-        setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage('exchange')})`);
+        setNativeOAuthError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage('exchange')})`);
       });
     },
   }), []);
@@ -1234,7 +1236,7 @@ function App() {
       backPaintRef.current = { scroll: scrollMemoRef.current.get(next) || 0 };
     } else backPaintRef.current = null;
     viewRef.current = next;
-    setSheet(null); setError(''); setView(next);
+    setSheet(null); setError(''); setNativeOAuthError(''); setView(next);
     if (next !== 'Settings') setQuery('');
     try { window.scrollTo?.(0, 0); } catch { /* jsdom */ }
   }, []);
@@ -2724,11 +2726,12 @@ function App() {
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
       case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode || deviceCopyAccess} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
-      case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={() => { go('Home'); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
+      case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onOAuthStart={() => setNativeOAuthError('')} onAuthenticated={() => { go('Home'); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
   })();
 
+  const screenError = error || (view === 'Sign in' ? nativeOAuthError : '');
   return <PlanProvider entitlement={entitlement} cloudMode={safeCloudAccess} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
@@ -2737,7 +2740,7 @@ function App() {
           <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
         </div>}
-        {error && !sheet && <div className="app-alert" role="alert">{error}<button type="button" aria-label={tr('Dismiss error')} onClick={() => setError('')}><Icon name="close" size={16} /></button></div>}
+        {screenError && !sheet && <div className="app-alert" role="alert">{screenError}<button type="button" aria-label={tr('Dismiss error')} onClick={() => error ? setError('') : setNativeOAuthError('')}><Icon name="close" size={16} /></button></div>}
         {screen}
         {can('automation') && setupDone && <ScheduledDuePrompt showBalance={show} session={session} accountsView={accountsView} subscriptions={subscriptions} cardStyles={prefs.accountStyles || {}} cardPayments={prefs.creditCardPayments || {}} onSubscriptionLog={logSubscription} onCreditCardLog={logCreditCardPayment} onLogged={() => session?.user ? refreshCloud(session.user) : Promise.resolve()} />}
       </main>
