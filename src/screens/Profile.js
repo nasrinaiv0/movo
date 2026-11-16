@@ -46,30 +46,36 @@ export default function Profile({ c }) {
       <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
         <span className="avatar big">{c.prefs?.profilePhoto ? <img className="avatar-photo" src={c.prefs.profilePhoto} alt="" /> : user.initial}<i><Icon name="camera" size={13} /></i></span>
         <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{(c.plan === 'pro' || c.plan === 'pro_plus') && <em className="plan-pill"><PlanBadge plan={c.plan} trial={c.entitlement?.source === 'trial'} size={18} label /></em>}</span>
-        <Icon name="chevron" size={18} />
+        <span className="profile-edit-icon" aria-hidden="true"><Icon name="edit" size={17} /></span>
       </button>
       {/* Only for someone not signed in: a signed-in person in local or offline mode is still signed in. */}
       {!session?.user && c.supabaseConfigured && <button type="button" className="primary-button profile-signin" onClick={() => go('Sign in')}><Icon name="user" size={18} /> {tr('Sign in')}</button>}
     </div>
-    <section className="card menu-card profile-refer-card">
-      <button type="button" className="menu-row" onClick={() => setReferralOpen(true)}>
-        <span className="menu-icon bare"><Icon name="gift" size={20} /></span>
-        <span className="menu-main"><strong>{tr('Refer MOVO')}</strong><small>{tr('Your code and download QR codes')}</small></span>
-        <Icon name="chevron" size={16} />
+    <div className="profile-social-actions" aria-label={tr('Friends and referrals')}>
+      <button type="button" className="card profile-social-action" onClick={c.openFriends}>
+        <span className="profile-social-icon"><Icon name="userPlus" size={20} /></span>
+        <strong>{tr('Friends')}</strong>
+        <small>{tr('Add a friend')}</small>
       </button>
-    </section>
-    <section className="stat-grid" aria-label={tr('Profile summary')}>
+      <button type="button" className="card profile-social-action" onClick={() => setReferralOpen(true)}>
+        <span className="profile-social-icon"><Icon name="gift" size={20} /></span>
+        <strong>{tr('Refer MOVO')}</strong>
+        <small>{tr('Code and QR')}</small>
+      </button>
+    </div>
+    <section className="stat-grid profile-finance-summary" aria-label={tr('Profile summary')}>
       {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance], ['Total Income', 'arrowDown', 'green', stats.income, deltas.income], ['Total Expense', 'arrowUp', 'red', stats.expenses, deltas.expenses]].map(([label, icon, tone, value, d]) =>
-        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, undefined, 0))}</strong><Trend value={d} size={11} /></article>)}
+        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, c.base))}</strong><Trend value={d} size={11} /></article>)}
     </section>
 
     <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
     <section className="card menu-card">
       {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list)))}</b><Icon name="chevron" size={16} />
+        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
       </button>)}
     </section>
-    <section className="card menu-card gap">
+    <SectionTitle>{tr('Settings')}</SectionTitle>
+    <section className="card menu-card">
       {menu.map(([icon, label, view]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong></span><Icon name="chevron" size={16} /></button>)}
     </section>
 
@@ -82,7 +88,6 @@ export default function Profile({ c }) {
         <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
       </button>
       <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Manually entered records persist across reloads in this browser; they are not synced to other devices or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
-      <div className="menu-row"><span className="menu-icon bare"><Icon name="refresh" size={20} /></span><span className="menu-main"><strong>{tr('Auto Categorization')}</strong><small>{tr('Automatic categorization is not implemented yet.')}</small></span><span className="pill tone-gray">{tr('Unavailable')}</span></div>
     </section>
 
     <SectionTitle>{tr('About')}</SectionTitle>
@@ -103,7 +108,7 @@ export default function Profile({ c }) {
         <Icon name="chevron" size={16} />
       </button>}
       {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
-        : c.supabaseConfigured && <button type="button" className="menu-row" onClick={() => go('Sign in')}><span className="menu-icon bare"><Icon name="user" size={20} /></span><span className="menu-main"><strong>{tr('Sign in / create account')}</strong></span><Icon name="chevron" size={16} /></button>}
+        : null}
     </section>
     {referralOpen && <ReferralSheet key={session?.user?.id || 'guest'} session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
     <p className="fineprint">{tr('MOVO does not connect to your bank or read private Apple Pay history automatically. Only add records you choose to provide.')}</p>
@@ -194,12 +199,6 @@ export function EditProfile({ c }) {
       </form>
       {error && <p className="form-error" role="alert">{error}</p>}
       <p className="ep-note">{tr('Name, phone number, and location are saved in this browser only. Your sign-in email is managed by your authentication provider.')}</p>
-
-      <SectionTitle>{tr('Plan & Usage')}</SectionTitle>
-      <section className="card ep-card">
-        <div className="ep-row"><span className="ep-icon"><Icon name="info" size={20} /></span><span className="ep-main"><strong>{tr('Plan management unavailable')}</strong><small>{tr('MOVO billing and token-usage data are not connected.')}</small></span></div>
-      </section>
-      <p className="ep-note">{tr('No active plan or usage amount is asserted by this screen. Plan details will appear here when a verified billing integration is available.')}</p>
 
       <SectionTitle>{tr('Connected Accounts')}</SectionTitle>
       <section className="card ep-card">
