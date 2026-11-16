@@ -1,7 +1,21 @@
+## 2026-11-16 — PR #312 integration with foreign-currency receipt review
+
+- Integrated main `da99f181` on the Friends branch. Combined the two progress entries and regenerated locales from both source catalogs. The receipt privacy disclosure and Friends disclosures remain synchronized.
+- Run the strict build, disposable PostgreSQL and the mobile fixture flow against this combined tree.
+
 ## 2026-11-16 — Friends discovery, private summaries and profile photos
 
 - Added private username discovery, reciprocal request approval, opt-in monthly snapshots, block/report controls, and shared profile avatars. Fixed native Friends transport and more specific error messages.
 - Disposable PostgreSQL migration history and social isolation passed, as did focused API, localization, support and avatar-upload tests. See [the implementation and rollout notes](engineering/updates/2026-11-16-friends-discovery.md).
+## 2026-11-16 — PR #311 conflict resolution
+
+- Integrated main `77bcacc`. Regenerated receipt and Friends locales from both source catalogs and retained both progress records.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-311-main-conflicts.md).
+
+## 2026-11-16 — Foreign-currency receipt review
+
+- Scanned receipts now convert into the selected account's currency using dated reference rates, with an optional statement amount and an audit note retaining the source total. Ambiguous source currency asks for confirmation.
+- The first strict Node 26 build and 1,460 tests passed, alongside Vercel Sandbox rate fixtures and two isolated Chromium widths. Verify GitHub checks and the protected preview at the PR head. [Engineering notes and acceptance steps](docs/engineering/updates/2026-11-16-foreign-currency-receipts.md).
 
 ## 2026-11-16 — Private friends and compact Profile
 
