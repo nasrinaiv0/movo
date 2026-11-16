@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<title>MOVO friend invite</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}
+body{min-height:100svh;margin:0;display:grid;place-items:center;padding:24px;background:Canvas;color:CanvasText}
+main{width:min(100%,360px);padding:28px;border:1px solid color-mix(in srgb,CanvasText 16%,transparent);border-radius:24px}
+h1{margin:0 0 10px;font-size:clamp(24px,7vw,32px);letter-spacing:-.04em}
+p{line-height:1.5;margin:0 0 20px;opacity:.8}
+nav{display:grid;gap:8px}
+a{min-height:48px;display:grid;place-items:center;text-align:center;padding:9px 12px;border-radius:14px;font-weight:600}
+#open-app{color:Canvas;background:CanvasText;text-decoration:none}
+#open-web{color:CanvasText}
+[hidden]{display:none!important}
+</style>
+<script src="/friend-invite.js" defer></script>
+</head>
+<body>
+<main>
+<h1>MOVO friend invite</h1>
+<p id="friend-message" role="status">Sign in and confirm the invite to connect.</p>
+<nav aria-label="Open MOVO" id="friend-options" hidden>
+<a id="open-app">Open in MOVO</a>
+<a id="open-web">Continue on web</a>
+</nav>
+<noscript><p>Enable JavaScript to continue.</p></noscript>
+</main>
+</body>
+</html>

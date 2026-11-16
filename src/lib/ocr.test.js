@@ -5,8 +5,9 @@ test('reads total, merchant and date from receipt text', () => {
   expect(parseReceipt(text)).toMatchObject({ amount: 1205.5, merchant: 'SM SUPERMARKET', date: '2026-10-27' });
 });
 
-test('falls back to the largest amount and ISO dates', () => {
-  expect(parseReceipt('Jollibee\n2026-01-05\n1 Chickenjoy 99.00\n2 Spaghetti 120.00')).toMatchObject({ amount: 120, merchant: 'Jollibee', date: '2026-01-05' });
+test('does not invent a total when an itemized receipt has no explicit final total', () => {
+  expect(parseReceipt('Jollibee\n2026-01-05\n1 Chickenjoy 99.00\n2 Spaghetti 120.00'))
+    .toMatchObject({ amount: 0, merchant: 'Jollibee', date: '2026-01-05' });
 });
 
 test('guesses categories from merchant names', () => {

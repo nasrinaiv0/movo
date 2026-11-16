@@ -110,6 +110,8 @@ def main():
             "five audited foreign-key covering index assertions")
         sql((ROOT / "supabase/tests/owner_account_deletion_fks.test.sql").read_text(),
             "owner audit immutability and account deletion without FK obstruction")
+        sql((ROOT / "supabase/tests/private_friends.test.sql").read_text(),
+            "private invite lifecycle, two-party visibility and account deletion")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_"):
