@@ -511,6 +511,13 @@ export function NotificationSettings({ c }) {
           {item('message', 'In-App Alerts', 'Show alerts inside the app', 'inapp')}
         </div>
       </section>
+      <section className="card menu-card settings-group" aria-label={tr('Quiet Hours')}>
+        {item('moon', 'Quiet Hours', prefs.quietOn ? tr('Alerts wait until {end}', { end: prefs.quietEnd }) : 'Hold device alerts overnight', 'quietOn')}
+        {prefs.quietOn && <div className="menu-row quiet-times">
+          <label>{tr('From')}<input type="time" value={prefs.quietStart} onChange={e => setPref('quietStart', e.target.value || '22:00')} /></label>
+          <label>{tr('To')}<input type="time" value={prefs.quietEnd} onChange={e => setPref('quietEnd', e.target.value || '07:00')} /></label>
+        </div>}
+      </section>
       <section className="settings-group">
         <h2 className="group-title">{tr('Notification Categories')}</h2>
         <div className="card menu-card">
@@ -520,13 +527,6 @@ export function NotificationSettings({ c }) {
           {item('tag', 'Money tips', 'One tip a week from your own numbers', 'catPromo', 'green')}
           {item('doc', 'Reports', 'Your monthly summary on the 1st', 'catReports', 'teal')}
         </div>
-      </section>
-      <section className="card menu-card settings-group" aria-label={tr('Quiet Hours')}>
-        {item('moon', 'Quiet Hours', prefs.quietOn ? tr('Alerts wait until {end}', { end: prefs.quietEnd }) : 'Hold device alerts overnight', 'quietOn')}
-        {prefs.quietOn && <div className="menu-row quiet-times">
-          <label>{tr('From')}<input type="time" value={prefs.quietStart} onChange={e => setPref('quietStart', e.target.value || '22:00')} /></label>
-          <label>{tr('To')}<input type="time" value={prefs.quietEnd} onChange={e => setPref('quietEnd', e.target.value || '07:00')} /></label>
-        </div>}
       </section>
     </div>
   </>;

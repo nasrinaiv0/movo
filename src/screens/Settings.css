@@ -55,7 +55,7 @@
 /* Keep each group intact and flow down each column in reading and tab order. */
 .movo-app .settings-groups { column-gap: var(--settings-gap); }
 .movo-app .settings-group { break-inside: avoid; min-width: 0; margin-block-end: var(--settings-gap); }
-.movo-app .settings-group > .group-title {
+.movo-app .screen .settings-group > .group-title {
   margin: 0 2px 5px;
   font-size: calc(14px * var(--font-scale, 1));
   font-weight: 700;
@@ -90,6 +90,8 @@
 .movo-app .appearance-groups .appearance-theme-section { gap: 5px; padding-block: 0; }
 .movo-app .appearance-groups .appearance-theme-section > .mini-title { margin: 3px 2px 0; }
 .movo-app .appearance-groups .appearance-theme-section .seg-art { height: 35px; border-radius: 10px; }
+.movo-app .appearance-groups .appearance-theme-section .theme-segments .seg-dark { color: #fff; }
+.movo-app .appearance-groups .appearance-theme-section .theme-segments .seg-custom { color: var(--on-accent); }
 .movo-app.movo-app .appearance-groups .appearance-theme-section .theme-segments button {
   gap: 4px;
   padding: 4px;

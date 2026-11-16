@@ -7,5 +7,5 @@
 
 ## Verification
 
-- Compare the prior PR head and this change using isolated browser sessions. Check phone, tablet and desktop widths, largest text, right-to-left layout, search and clear, preference switches, theme and text controls, and Quiet Hours time fields.
+- The Node 26 strict build passed 240 suites and 1,491 tests. The first responsive Chromium pass covered all three settings screens at 320, 390, 820, 1024 and 1440 px, including the largest text size and an Arabic right-to-left window. It exercised search and clear, preference switches, theme and text controls, and Quiet Hours. A final visual pass aligns column headings, restores theme icon contrast, and places Quiet Hours by the channel controls.
 - Before release, confirm touch targets and scrolling in iPhone and iPad Safari. For a separate review, check breakpoint fit and clipping, readable type, row padding and borders, dark mode, and keyboard focus without changing preference behavior.
