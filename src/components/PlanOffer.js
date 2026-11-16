@@ -116,7 +116,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     if (!session?.access_token) { onSignIn(); return; }
     if (!product) return;
     setBusy(true); setError('');
-    try { await purchaseStoreProduct(product.productIdentifier, session); await onRefresh(); onClose(); }
+    try { await purchaseStoreProduct(product, session); await onRefresh(); onClose(); }
     catch (cause) { setError(cause?.message || tr('Purchase could not be verified.')); } finally { setBusy(false); }
   };
   // Cloud Sync off (#245): paid features pause on this device; the subscription itself is untouched.

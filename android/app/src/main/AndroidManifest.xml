@@ -32,7 +32,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="movo" android:host="auth-callback" />
+                <data android:scheme="${movoAuthScheme}" android:host="auth-callback" />
             </intent-filter>
 
             <intent-filter>
@@ -40,6 +40,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="movo" android:host="log" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${movoAuthScheme}" android:host="friend" />
             </intent-filter>
 
         </activity>

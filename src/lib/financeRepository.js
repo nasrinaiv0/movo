@@ -4,7 +4,7 @@ import { removeAllAccountQr } from './accountQrStorage';
 import { fetchAllRows } from './supabasePagination';
 import { TRANSACTION_SOURCES } from './transactionSources';
 import { apiUrl, appOrigin, isNativeApp, nativePlatform } from './platform';
-import { AUTH_CALLBACK, openAuthBrowser } from './native';
+import { getNativeAuthCallback, openAuthBrowser } from './native';
 import { cachedList } from './offlineReadCache';
 
 const requireClient = () => {
@@ -28,7 +28,7 @@ export async function sendEmailCode(email) {
   // exchange the PKCE code rather than opening a separate website session.
   // Preserve the existing iOS and browser behavior.
   const emailRedirectTo = nativePlatform() === 'android'
-    ? AUTH_CALLBACK
+    ? await getNativeAuthCallback()
     : (typeof window !== 'undefined' ? appOrigin() : undefined);
   return unwrap(await requireClient().auth.signInWithOtp({ email: address, options: { shouldCreateUser: true, ...(emailRedirectTo ? { emailRedirectTo } : {}) } }));
 }
@@ -62,9 +62,11 @@ async function signInWithProvider(provider, queryParams) {
   const client = requireClient();
   if (!(await oauthProviderEnabled(provider))) throw Object.assign(new Error('provider_not_enabled'), { code: 'oauth_provider_not_supported' });
   if (isNativeApp()) {
-    // iOS and Android open the provider in the system browser; Supabase returns to movo://auth-callback with a
-    // PKCE code, which finishOAuth() exchanges for a session.
-    const data = unwrap(await client.auth.signInWithOAuth({ provider, options: { redirectTo: AUTH_CALLBACK, skipBrowserRedirect: true, ...(queryParams ? { queryParams } : {}) } }));
+    // iOS and Android open the provider in the system browser; the redirect is
+    // package-specific on Android so the PKCE verifier stays in the initiating
+    // app's own Keystore. finishOAuth() exchanges the one-time code.
+    const redirectTo = await getNativeAuthCallback();
+    const data = unwrap(await client.auth.signInWithOAuth({ provider, options: { redirectTo, skipBrowserRedirect: true, ...(queryParams ? { queryParams } : {}) } }));
     if (!data?.url) throw new Error('oauth_url_missing');
     await openAuthBrowser(data.url);
     return data;
