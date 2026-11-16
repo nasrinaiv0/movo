@@ -1,3 +1,8 @@
+## 2026-11-16 — Profile page: clearer overview and consistent rows
+
+- One Overview card names the month chosen on Home, shows the total balance large, then that month's income and expenses. Trends appear only when meaningful (no "999+%").
+- Every row has a tinted icon tile like Menu, Settings rows say what is inside, and the Local Storage note is one line. [Details](engineering/updates/2026-11-16-profile-page.md).
+
 ## 2026-11-16 — Theme picker: one clean look in Profile and Settings
 
 - Removed the square grey strip behind the Light / Dark / System / Custom tiles (Profile).

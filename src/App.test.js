@@ -567,8 +567,11 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     expect(container.querySelector('h1').textContent).toBe('Profile');
     expect(container.textContent).toContain('Data & Sync');
-    expect(container.textContent).toContain('Manually entered records persist across reloads in this browser');
-    expect(container.textContent).toContain('not synced to other devices or encrypted by MOVO');
+    // The local-storage disclosure stays explicit: browser only, not synced, not encrypted by MOVO.
+    expect(container.textContent).toContain('Kept in this browser. Not synced or encrypted by MOVO.');
+    // The overview names its month, and every Settings row says what is inside it.
+    expect(container.querySelector('.profile-overview .po-head small').textContent).toMatch(/\d{4}/);
+    expect(container.textContent).toContain('Alerts and reminders');
     clickButton(container, 'Settings');
     expect(container.querySelector('h1').textContent).toBe('Settings');
     clickButton(container, 'Back');

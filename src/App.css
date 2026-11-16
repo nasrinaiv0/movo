@@ -9134,3 +9134,33 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
 .movo-app.movo-app.movo-app .theme-segments .seg-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .movo-app.movo-app.movo-app .theme-segments > button:focus-visible { outline: none; }
 .movo-app.movo-app.movo-app .theme-segments > button:focus-visible .seg-art { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+
+/* ===== Profile page (owner, 2026-11-16: "more professional and user friendly") =====
+   - One Overview card for the month chosen on Home: the total balance large, then that month's income and expenses.
+     A trend chip appears only when it is meaningful (no "999+%" against an almost empty last month).
+   - Every row has a tinted icon tile in the Menu's colour language (pf-ic, same --mt colours), and the Settings rows
+     say what is inside them. */
+.movo-app .profile-overview { display: grid; gap: 14px; padding: 16px; }
+.movo-app .profile-overview .po-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.movo-app .profile-overview .po-head strong { font-size: 15px; font-weight: 650; }
+.movo-app .profile-overview .po-head small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .profile-overview .po-main { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.movo-app .profile-overview .po-main small { color: var(--muted); font-size: 12.5px; }
+.movo-app .profile-overview .po-main strong { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.movo-app .profile-overview .po-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.movo-app .profile-overview .po-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 4px;
+  min-width: 0; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--text) 4%, transparent); }
+.movo-app .profile-overview .po-stat .pf-ic { width: 34px; height: 34px; grid-row: 1 / span 2; }
+.movo-app .profile-overview .po-text { display: grid; gap: 2px; min-width: 0; }
+.movo-app .profile-overview .po-text small { color: var(--muted); font-size: 12px; }
+.movo-app .profile-overview .po-text strong { font-size: 15.5px; font-weight: 650; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .profile-overview .po-stat > .delta { grid-column: 2; justify-self: start; }
+:where(.movo-app .pf-ic) { --mt: #8e8e93; }
+.movo-app.movo-app.movo-app .menu-icon.pf-ic, .movo-app.movo-app.movo-app .pf-ic { width: 36px; height: 36px; border-radius: var(--r-tile, 30%);
+  background: color-mix(in srgb, var(--mt) 14%, transparent); color: color-mix(in srgb, var(--mt) 86%, #000); }
+.movo-app.movo-app.movo-app.theme-dark .pf-ic { background: color-mix(in srgb, var(--mt) 24%, transparent); color: color-mix(in srgb, var(--mt) 72%, #fff); }
+.movo-app .pf-ic.mt-blue { --mt: #2f7cf6; } .movo-app .pf-ic.mt-purple { --mt: #9b51e0; } .movo-app .pf-ic.mt-teal { --mt: #12a597; }
+.movo-app .pf-ic.mt-green { --mt: #1f9d55; } .movo-app .pf-ic.mt-red { --mt: #ef4b3f; } .movo-app .pf-ic.mt-orange { --mt: #f08a12; }
+.movo-app .pf-ic.mt-gray { --mt: #8e8e93; }
+.movo-app .menu-row.danger .menu-main strong { color: var(--danger, #e5484d); }
+@media (max-width: 360px) { .movo-app .profile-overview .po-split { grid-template-columns: minmax(0, 1fr); } }
