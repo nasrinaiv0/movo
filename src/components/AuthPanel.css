@@ -158,3 +158,13 @@
 .auth-card .auth-privacy { padding-top: 10px; font-size: 11px; }
 @media (max-width: 360px) { .auth-card { padding: 18px 16px 14px; } .auth-otp-box { height: 44px; font-size: 19px; } }
 .movo-app .auth-card .auth-legal, .auth-card .auth-legal { border: 0 !important; box-shadow: none !important; outline: 0; background: none !important; }
+
+/* Aries welcomes people without moving the form or replacing the MOVO mark. */
+.auth-card .auth-welcome-art { display: flex; align-items: center; justify-content: center; gap: 4px; width: min(100%, 196px); min-height: 96px; margin: -12px 0 -8px; }
+.auth-card .auth-welcome-art .auth-logo { flex: 0 0 44px; width: 44px; height: 44px; margin: 0; }
+.auth-card .auth-welcome-art .auth-aries { flex: 0 0 116px; max-width: 116px; }
+.auth-card .auth-welcome-art .aries { pointer-events: none; }
+@media (max-height: 720px) {
+  .auth-card .auth-welcome-art { min-height: 80px; margin-top: -14px; margin-bottom: -10px; }
+  .auth-card .auth-welcome-art .auth-aries { flex-basis: 100px; max-width: 100px; }
+}

@@ -828,6 +828,11 @@ describe('MOVO finance frontend', () => {
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('does not move money between banks');
+    // Aries, the welcoming mascot, heads the page; receipt scanning and automatic logging are explained.
+    expect(container.querySelector('.help-aries .aries-mascot')).not.toBeNull();
+    expect(container.textContent).toContain('Only after you agree for that receipt');
+    expect(container.textContent).toContain('it never opens your bank or wallet apps');
+    expect(Array.from(container.querySelectorAll('button')).some(b => b.textContent.trim() === 'Open the MOVO guide')).toBe(true);
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });

@@ -7684,55 +7684,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   outline-offset: 2px;
 }
 
-/* ===================================================================================================================
- * Video guide (components/TutorialVideo.js), 2026-11-09: a calm story-style player. Scenes fade and rise in
- * (ease-out only), the progress bar fills per scene; reduced motion shows still scenes.
- * =================================================================================================================== */
-.movo-app .tv-backdrop { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)); background: rgba(8, 10, 16, .62); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); }
-.movo-app .tv-player { position: relative; width: min(100%, 400px); height: min(720px, calc(100dvh - 24px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 28px; padding: 14px 16px 16px; color: #fff;
-  background: radial-gradient(120% 70% at 50% 0%, rgba(var(--accent-rgb, 47,127,240), .55), transparent 70%), linear-gradient(180deg, #151a24, #0c0f16); box-shadow: 0 30px 80px -30px rgba(0,0,0,.7); }
-.movo-app .tv-progress { display: flex; gap: 4px; }
-.movo-app .tv-progress span { flex: 1; height: 3px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; }
-.movo-app .tv-progress i { display: block; height: 100%; background: #fff; border-radius: inherit; }
-.movo-app .tv-top { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.movo-app .tv-count { flex: 1; font-size: 12px; font-weight: 600; opacity: .7; }
-.movo-app .tv-icon, .movo-app .tv-skip { min-height: 34px; border: 0; border-radius: 99px; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 13px; font-weight: 600; }
-.movo-app .tv-icon { width: 34px; display: grid; place-items: center; padding: 0; }
-.movo-app .tv-skip { padding: 0 14px; }
-.movo-app .tv-stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 8px 6px; animation: tv-in .5s ease-out both; }
-.movo-app .tv-stage h2 { margin: 18px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -.01em; }
-.movo-app .tv-stage p { margin: 0; max-width: 300px; font-size: 15px; line-height: 1.45; opacity: .78; }
-.movo-app .tv-tap { position: absolute; top: 64px; bottom: 84px; width: 34%; border: 0; background: transparent; z-index: 1; cursor: pointer; }
-.movo-app .tv-prev { left: 0; } .movo-app .tv-next { right: 0; }
-.movo-app .tv-tap:disabled { pointer-events: none; }
-.movo-app .tv-actions { position: relative; z-index: 2; display: grid; }
-.movo-app .tv-actions .secondary-button { background: rgba(255,255,255,.14); color: #fff; border: 0; }
-.movo-app .tv-art { position: relative; width: 210px; height: 170px; display: grid; place-items: center; }
-.movo-app .tv-logo { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 34%; background: rgba(255,255,255,.1); animation: tv-rise .7s ease-out both; }
-.movo-app .tv-ring { position: absolute; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); animation: tv-fade 1.2s ease-out both; }
-.movo-app .tv-card { position: absolute; width: 170px; height: 104px; border-radius: 16px; background: linear-gradient(135deg, var(--a, #3a7bfd), var(--b, #1b3fa8)); box-shadow: 0 14px 30px -12px rgba(0,0,0,.6); transform: translateY(calc(var(--i) * 22px - 22px)) scale(calc(1 - (2 - var(--i)) * .06)); animation: tv-rise .6s ease-out both; animation-delay: calc(var(--i) * .15s); }
-.movo-app .tv-card i { position: absolute; left: 14px; top: 16px; width: 26px; height: 20px; border-radius: 5px; background: rgba(255,255,255,.55); }
-.movo-app .tv-card b { position: absolute; left: 14px; bottom: 16px; width: 70px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.6); }
-.movo-app .tv-c1 { --a: #8b5cf6; --b: #4c1d95; } .movo-app .tv-c2 { --a: #10b981; --b: #065f46; } .movo-app .tv-c3 { --a: #3a7bfd; --b: #1b3fa8; }
-.movo-app .tv-chat { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: 230px; }
-.movo-app .tv-bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; font-weight: 600; animation: tv-rise .5s ease-out both; }
-.movo-app .tv-bubble.me { align-self: flex-end; background: var(--accent, #2f7ff0); border-bottom-right-radius: 6px; }
-.movo-app .tv-bubble.bot { align-self: flex-start; display: inline-flex; gap: 6px; align-items: center; background: rgba(255,255,255,.14); border-bottom-left-radius: 6px; animation-delay: .7s; }
-.movo-app .tv-bars { display: flex; align-items: flex-end; gap: 10px; height: 130px; }
-.movo-app .tv-bars span { width: 20px; height: var(--h); border-radius: 8px 8px 4px 4px; background: linear-gradient(180deg, #fff, rgba(255,255,255,.35)); transform-origin: bottom; animation: tv-grow .6s ease-out both; animation-delay: calc(var(--i) * .08s); }
-.movo-app .tv-plans { display: grid; gap: 10px; width: 220px; }
-.movo-app .tv-plan { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.1); animation: tv-rise .5s ease-out both; animation-delay: calc(var(--i) * .12s); }
-.movo-app .tv-plan i { flex: 1; height: 6px; border-radius: 99px; background: linear-gradient(90deg, #fff var(--p), rgba(255,255,255,.2) var(--p)); }
-.movo-app .tv-pro { display: grid; justify-items: center; gap: 14px; }
-.movo-app .tv-badge { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 30%; color: #1d1405; background: linear-gradient(140deg, #fde68a, #d4a017); box-shadow: 0 16px 40px -14px rgba(212,160,23,.8); animation: tv-rise .6s ease-out both; }
-.movo-app .tv-chip { padding: 6px 14px; border-radius: 99px; background: rgba(255,255,255,.16); font-size: 13px; font-weight: 700; animation: tv-fade .8s ease-out .3s both; }
-.movo-app .tv-stage.is-still, .movo-app .tv-stage.is-still * { animation: none !important; }
-@keyframes tv-in { from { opacity: 0; transform: translateY(10px); } }
-@keyframes tv-rise { from { opacity: 0; transform: translateY(14px); } }
-@keyframes tv-fade { from { opacity: 0; } }
-@keyframes tv-grow { from { transform: scaleY(.1); opacity: .2; } }
-@media (prefers-reduced-motion: reduce) { .movo-app .tv-stage, .movo-app .tv-stage * { animation: none !important; } }
-
 /* Plans sheet (components/PlanOffer.js), compact pass 2026-11-09. */
 .movo-app .plan-current { display: flex; justify-content: space-between; align-items: center; margin: 0 0 4px; font-size: 14px; }
 .movo-app .plan-detail-card { padding: 18px; border-radius: 22px; border: 0; background: rgba(128,128,128,.08); }
@@ -8068,10 +8019,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app :is(.balance-card, .stat-card, .spending-card, .total-card)::after { background: rgba(var(--accent-rgb), .5); }
 .movo-app.movo-app .plan-detail-card.plan-pro { background: color-mix(in srgb, var(--accent) 10%, var(--card-solid)); }
 .movo-app.movo-app .plan-detail-card.plan-plus { background: color-mix(in srgb, #d4a017 12%, var(--card-solid)); }
-.movo-app.movo-app .tv-card { background: var(--a, #3a7bfd); }
-.movo-app.movo-app .tv-bars span { background: rgba(255, 255, 255, .85); }
-.movo-app.movo-app .tv-badge { background: #f2c14e; }
-.movo-app.movo-app .tv-player { background: #121722; }
 
 /* ---------- Loading placeholders (2026-11-09, audit phase 6) ----------
    Shown only while cloud records load (Financial planning, Bills, crypto market). Static blocks that fade in once:
@@ -8288,33 +8235,8 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active { background: rgba(226,232,238,.12); }
 .movo-app.movo-app.nav-tier-gold .side-nav .side-item.active { background: rgba(227,176,74,.16); }
 
-/* ===== Tutorial film and setup agreement (owner, 2026-11-11) =====
-   The video guide is a real recording of MOVO, full-bleed like a story: controls float over a top shade and the
-   translated caption over a bottom shade. The setup agreement covers the dashboard until the Terms are accepted. */
-.movo-app.movo-app .tv-player.tv-film { width: min(100%, 430px); height: min(932px, calc(100dvh - 24px)); padding: 0; background: #07090d; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); isolation: isolate; }
-@media (max-width: 520px) {
-  .movo-app .tv-backdrop:has(.tv-film) { padding: 0; }
-  .movo-app.movo-app .tv-player.tv-film { width: 100%; height: 100dvh; border-radius: 0; }
-}
-.movo-app .tv-film .tv-video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; background: #07090d; }
-.movo-app .tv-film .tv-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(180deg, rgba(5,7,11,.9) 0, rgba(5,7,11,.55) 84px, rgba(5,7,11,0) 150px), linear-gradient(0deg, rgba(5,7,11,.94) 0, rgba(5,7,11,.82) 150px, rgba(5,7,11,0) 300px); }
-.movo-app .tv-film .tv-progress { position: relative; z-index: 3; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
-.movo-app .tv-film .tv-progress i { transition: width .25s linear; }
-.movo-app .tv-film .tv-top { z-index: 3; padding: 0 16px; }
-.movo-app .tv-film .tv-icon, .movo-app .tv-film .tv-skip { background: rgba(20,24,32,.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-.movo-app .tv-film .tv-sound.is-muted { opacity: .62; position: relative; }
-.movo-app .tv-film .tv-sound.is-muted::after { content: ''; position: absolute; width: 18px; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
-.movo-app .tv-film .tv-hold { position: absolute; inset: 0; z-index: 1; }
-.movo-app .tv-film .tv-tap { z-index: 2; top: 96px; bottom: 210px; width: 30%; }
-.movo-app .tv-film .tv-bigplay { position: absolute; z-index: 3; left: 50%; top: 42%; width: 72px; height: 72px; margin: -36px 0 0 -36px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: rgba(20,24,32,.55); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 12px 40px -12px rgba(0,0,0,.7); }
-.movo-app .tv-film .tv-caption { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 66px); text-align: center; pointer-events: none; animation: tv-caption .45s ease-out both; }
-.movo-app .tv-film .tv-caption h2 { margin: 0 0 6px; font-size: 22px; line-height: 1.18; letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
-.movo-app .tv-film .tv-caption p { margin: 0 auto; max-width: 340px; font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.84); text-shadow: 0 1px 12px rgba(0,0,0,.6); }
-.movo-app .tv-film .tv-actions { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
-.movo-app .tv-film .tv-actions .secondary-button { background: rgba(255,255,255,.14); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-@keyframes tv-caption { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .movo-app .tv-film .tv-caption { animation: none; } .movo-app .tv-film .tv-progress i { transition: none; } }
+/* ===== Setup agreement (owner, 2026-11-11) =====
+   The setup agreement covers the dashboard until the Terms are accepted. */
 
 /* Setup gate: the bottom nav stays visible but closed until setup is finished. */
 .movo-app .bottom-nav.is-locked, .movo-app .side-nav.is-locked { opacity: .45; filter: saturate(.4); pointer-events: none; }
@@ -8324,7 +8246,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .setup-agreement-card h2 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
 .movo-app .setup-agreement-card > p { margin: 0; font-size: 14px; color: var(--muted); }
 .movo-app .setup-agreement-points { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; display: grid; gap: 8px; text-align: start; }
-.movo-app .setup-agreement-points li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-card, 22px); background: var(--card); font-size: 13.5px; line-height: 1.45; animation: tv-caption .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+.movo-app .setup-agreement-points li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-card, 22px); background: var(--card); font-size: 13.5px; line-height: 1.45; animation: ft-rise .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
 .movo-app .setup-agreement-points li > span:last-child { min-width: 0; }
 .movo-app .setup-agreement-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-tile, 30%); background: rgba(127,127,127,.16); color: var(--text); }
 .movo-app .setup-agreement-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
@@ -8504,63 +8426,6 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header .header-actions { align-items: flex-start !important; }
 /* Premium headers (reference, 2026-11-12, kept subtle): a soft glow that follows the balance card's notched shape. */
 .movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block:is(.hero-zodiac, .hero-glow) .balance-card { box-shadow: none; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .28)) drop-shadow(0 10px 22px color-mix(in srgb, var(--hero-glow, #3fd27f) 32%, transparent)); }
-
-/* ===== Tutorial video in a phone frame (owner, 2026-11-12) =====
-   A soft light stage; the recording plays on a generic modern phone (slim dark bezel, dynamic-island cut-out, side
-   buttons, status bar, home indicator) drawn here. Sizes follow the stage height (container query units, no var()
-   inside those calc()s). Controls and the translated caption sit outside the phone. */
-.movo-app.movo-app.movo-app .tv-player.tv-film.tv-framed {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 0 0 max(16px, env(safe-area-inset-bottom));
-  background: radial-gradient(120% 70% at 50% 35%, #ffffff 0%, #f1f2f5 55%, #e6e8ee 100%);
-  color: #14161a;
-}
-.movo-app.movo-app.movo-app .tv-framed .tv-progress span { background: rgba(20, 22, 26, .12); }
-.movo-app.movo-app.movo-app .tv-framed .tv-progress i { background: #14161a; }
-.movo-app.movo-app.movo-app .tv-framed .tv-top { color: #14161a; }
-.movo-app.movo-app.movo-app .tv-framed .tv-count { color: rgba(20, 22, 26, .6); opacity: 1; }
-.movo-app.movo-app.movo-app .tv-framed :is(.tv-icon, .tv-skip) { background: rgba(20, 22, 26, .07); color: #14161a; -webkit-backdrop-filter: none; backdrop-filter: none; }
-.movo-app.movo-app.movo-app .tv-framed .tv-stage-frame { position: relative; flex: 1 1 auto; min-height: 0; display: grid; place-items: center; container-type: size; padding: 4px 0; }
-.movo-app.movo-app.movo-app .tv-framed .tv-device {
-  position: relative; box-sizing: border-box;
-  height: 60vh; height: min(100cqh, 700px);
-  aspect-ratio: 9 / 20; /* screen minus status bar matches the 720×1560 recording, so nothing is cropped */
-  padding: 9px; padding: calc(min(100cqh, 700px) * .016);
-  border-radius: 54px; border-radius: calc(min(100cqh, 700px) * .085);
-  background: linear-gradient(145deg, #4a4d53 0%, #1b1c1f 18%, #0c0d0f 50%, #1d1e22 82%, #45484e 100%);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .16), inset 0 0 0 3px #0a0a0c, 0 34px 70px -34px rgba(16, 20, 30, .55), 0 14px 26px -16px rgba(16, 20, 30, .35);
-}
-/* Side buttons: action and volume on the left, side button on the right. */
-.movo-app.movo-app.movo-app .tv-framed .tv-device::before,
-.movo-app.movo-app.movo-app .tv-framed .tv-device::after { content: ''; position: absolute; width: 3px; border-radius: 2px; background: linear-gradient(90deg, #2b2d31, #4a4d53); }
-.movo-app.movo-app.movo-app .tv-framed .tv-device::before { left: -3px; top: 19%; height: 4%; box-shadow: 0 9vh 0 0 #34363b, 0 15vh 0 0 #34363b; box-shadow: 0 calc(min(100cqh, 700px) * .085) 0 0 #34363b, 0 calc(min(100cqh, 700px) * .15) 0 0 #34363b; }
-.movo-app.movo-app.movo-app .tv-framed .tv-device::after { right: -3px; top: 27%; height: 10%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-screen {
-  position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden;
-  border-radius: 46px; border-radius: calc(min(100cqh, 700px) * .07);
-  background: #0f0f0f; isolation: isolate;
-}
-.movo-app.movo-app.movo-app .tv-framed .tv-statusbar {
-  position: relative; flex: none; display: flex; align-items: center; justify-content: space-between;
-  height: 38px; height: calc(min(100cqh, 700px) * .062);
-  padding: 0 9%; color: #fff; font-size: 13px; font-size: calc(min(100cqh, 700px) * .024); letter-spacing: -.01em;
-}
-.movo-app.movo-app.movo-app .tv-framed .tv-statusbar b { font-weight: 600; min-width: 22%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-island { position: absolute; left: 50%; top: 22%; width: 31%; height: 56%; transform: translateX(-50%); border-radius: 99px; background: #000; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); }
-.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5%; min-width: 22%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons svg { height: 0.82em; width: auto; fill: currentColor; }
-.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons svg:last-child { height: 0.9em; }
-.movo-app.movo-app.movo-app .tv-framed .tv-video { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; height: auto; object-fit: cover; object-position: top center; background: #0f0f0f; }
-.movo-app.movo-app.movo-app .tv-framed .tv-homebar { position: absolute; left: 50%; bottom: 1.1%; width: 34%; height: 4px; transform: translateX(-50%); border-radius: 99px; background: rgba(255, 255, 255, .78); pointer-events: none; }
-.movo-app.movo-app.movo-app .tv-framed .tv-bigplay { left: 50%; top: 46%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-hold { position: absolute; inset: 0; z-index: 1; }
-.movo-app.movo-app.movo-app .tv-framed .tv-tap { top: 0; bottom: 0; width: 30%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-caption { position: relative; left: auto; right: auto; bottom: auto; padding: 0 22px; text-align: center; animation: tv-caption .45s ease-out both; }
-.movo-app.movo-app.movo-app .tv-framed .tv-caption h2 { color: #14161a; text-shadow: none; font-size: 20px; margin: 0 0 4px; }
-.movo-app.movo-app.movo-app .tv-framed .tv-caption p { color: rgba(20, 22, 26, .66); text-shadow: none; font-size: 13.5px; }
-.movo-app.movo-app.movo-app .tv-framed .tv-actions { position: relative; left: auto; right: auto; bottom: auto; padding: 0 18px; }
-.movo-app.movo-app.movo-app .tv-framed .tv-actions .secondary-button { background: rgba(20, 22, 26, .08); color: #14161a; -webkit-backdrop-filter: none; backdrop-filter: none; }
-@media (min-width: 521px) { .movo-app.movo-app.movo-app .tv-player.tv-film.tv-framed { width: min(100%, 440px); height: min(940px, calc(100dvh - 24px)); } }
 
 /* ===== Responsiveness on phones (owner, 2026-11-12) =====
    Taps answer at once and pop-ups arrive quickly: press states are instant (no transition on the way in), sheets
@@ -8968,3 +8833,86 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .friends-breakdown { list-style: none; padding: 0; margin-block: 10px 0; display: grid; gap: 8px; }
 .friends-breakdown li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(28px, 1fr) auto; gap: 8px; align-items: center; overflow-wrap: anywhere; }
 .friends-breakdown meter { inline-size: 100%; accent-color: var(--accent); }
+/* ===== MOVO guide: the screenshot tour (owner, 2026-11-16; components/FeatureTour.js) =====
+   One real screenshot per step. The feature being explained stays sharp inside a ring while the rest of the picture
+   is blurred white (dark theme: blurred dark). The picture glides so the highlight is centred; motion is ease-out
+   only and stops with reduced motion. Caption and controls sit outside the picture. */
+@keyframes ft-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ft-fade { from { opacity: 0; } to { opacity: 1; } }
+.movo-app .ft-backdrop { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 12px 16px; background: rgba(8, 10, 16, .62); }
+.movo-app .ft-panel {
+  --ft-ink: #14161a; --ft-soft: rgba(20, 22, 26, .62); --ft-chip: rgba(20, 22, 26, .07); --ft-stage: #eceee9; --ft-veil: rgba(255, 255, 255, .62);
+  position: relative; display: flex; flex-direction: column; width: min(100%, 440px); height: min(900px, calc(100dvh - 24px));
+  overflow: hidden; border-radius: 28px; background: #fbfbf9; color: var(--ft-ink); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .6);
+}
+.movo-app .ft-panel.is-dark { --ft-ink: #f2f4f2; --ft-soft: rgba(242, 244, 242, .66); --ft-chip: rgba(242, 244, 242, .1); --ft-stage: #171a18; --ft-veil: rgba(9, 11, 10, .6); background: #0f1110; }
+@media (max-width: 520px) {
+  .movo-app .ft-backdrop { padding: 0; }
+  .movo-app .ft-panel { width: 100%; height: 100dvh; border-radius: 0; }
+}
+.movo-app .ft-progress { display: flex; gap: 3px; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
+.movo-app .ft-progress span { flex: 1; min-width: 0; height: 3px; border-radius: 99px; background: var(--ft-chip); overflow: hidden; }
+.movo-app .ft-progress i { display: block; height: 100%; border-radius: inherit; background: var(--ft-ink); }
+.movo-app .ft-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0 16px; }
+.movo-app .ft-count { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: var(--ft-soft); }
+.movo-app .ft-panel :is(.ft-icon, .ft-skip) { min-height: 44px; border: 0; border-radius: 99px; background: var(--ft-chip); color: var(--ft-ink); font: inherit; font-size: 13px; font-weight: 600; }
+.movo-app .ft-panel .ft-icon { width: 44px; display: grid; place-items: center; padding: 0; }
+.movo-app .ft-panel .ft-skip { padding: 0 16px; }
+.movo-app .ft-sound.is-muted { position: relative; color: var(--ft-soft); }
+.movo-app .ft-sound.is-muted::after { content: ''; position: absolute; width: 20px; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
+.movo-app .ft-stage { position: relative; flex: 1 1 auto; min-height: 150px; margin: 10px 14px 0; overflow: hidden; border-radius: 22px; background: var(--ft-stage); touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.movo-app .ft-sheet { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform .55s cubic-bezier(.22, .61, .36, 1); will-change: transform; }
+.movo-app .ft-shot { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+.movo-app .ft-soft { filter: blur(5px); transition: opacity .35s ease-out; }
+.movo-app .ft-veil { position: absolute; inset: 0; background: var(--ft-veil); transition: opacity .35s ease-out; }
+.movo-app .ft-sharp { transition: clip-path .55s cubic-bezier(.22, .61, .36, 1), -webkit-clip-path .55s cubic-bezier(.22, .61, .36, 1); animation: ft-fade .35s ease-out both; }
+.movo-app .ft-ring { position: absolute; box-sizing: border-box; border: 2px solid var(--accent, #0f9d6a); box-shadow: 0 12px 34px -14px rgba(0, 0, 0, .45); pointer-events: none;
+  transition: left .55s cubic-bezier(.22, .61, .36, 1), top .55s cubic-bezier(.22, .61, .36, 1), width .55s cubic-bezier(.22, .61, .36, 1), height .55s cubic-bezier(.22, .61, .36, 1), opacity .35s ease-out; }
+.movo-app .ft-sheet.is-whole :is(.ft-soft, .ft-veil, .ft-ring) { opacity: 0; }
+.movo-app .ft-missing { position: absolute; inset: 0; display: grid; place-items: center; opacity: .5; }
+.movo-app .ft-tap { position: absolute; top: 0; bottom: 0; width: 30%; border: 0; padding: 0; background: transparent; cursor: pointer; }
+.movo-app .ft-prev { left: 0; } .movo-app .ft-next { right: 0; }
+.movo-app .ft-tap:disabled { pointer-events: none; }
+.movo-app .ft-caption { padding: 14px 22px 2px; text-align: center; animation: ft-rise .4s ease-out both; }
+.movo-app .ft-caption h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; color: var(--ft-ink); }
+.movo-app .ft-caption p { margin: 0 auto; max-width: 360px; min-height: 59px; font-size: 14px; line-height: 1.42; color: var(--ft-soft); }
+.movo-app .ft-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; padding: 10px 16px max(16px, env(safe-area-inset-bottom)); }
+.movo-app .ft-panel .ft-actions .secondary-button { background: var(--ft-chip); color: var(--ft-ink); border: 0; }
+.movo-app .ft-panel .ft-actions .secondary-button:disabled { opacity: .4; }
+.movo-app .ft-panel.is-still :is(.ft-sheet, .ft-sharp, .ft-ring, .ft-soft, .ft-veil, .ft-caption) { transition: none; animation: none; }
+@media (prefers-reduced-motion: reduce) { .movo-app .ft-panel :is(.ft-sheet, .ft-sharp, .ft-ring, .ft-soft, .ft-veil, .ft-caption) { transition: none; animation: none; } }
+
+/* ===== MOVO Aries, the welcoming mascot (owner, 2026-11-16; components/AriesMascot.js, lib/ariesArt.js) =====
+   Aries stands beside each MOVO guide caption, greets people on the first-run welcome card and heads the Help Center.
+   It keeps its own colours in every theme. It arrives with the caption's calm rise and then stays still: no idle bob. */
+.aries-mascot { display: block; flex: none; overflow: visible; }
+.movo-app .ft-caption { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 18px 2px 12px; text-align: left; }
+.movo-app .ft-caption .ft-guide { margin: -6px -2px -4px 0; filter: drop-shadow(0 6px 10px rgba(20, 22, 26, .12)); }
+.movo-app .ft-caption .ft-words { min-width: 0; }
+.movo-app .ft-caption p { margin: 0; max-width: none; min-height: 60px; overflow-wrap: anywhere; }
+.movo-app .ft-panel.is-dark .ft-caption .ft-guide { filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .45)); }
+.tour-welcome .tour-aries { display: grid; place-items: center; margin: -8px auto 2px; }
+.tour-welcome .tour-aries .aries-mascot { filter: drop-shadow(0 8px 14px rgba(20, 22, 26, .14)); }
+.help-page .help-aries { display: flex; align-items: center; gap: 12px; }
+.help-page .help-aries .aries-mascot { margin: -6px 0 -8px -6px; }
+.help-page .help-aries > div { min-width: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .tour-welcome .tour-aries .aries-mascot { animation: ft-rise .5s ease-out both; }
+}
+.help-page .help-guide-button { margin-top: 10px; width: 100%; }
+
+/* 2026-11-16 — Aries is the default Home ram. Match the vector's foot line to the
+   balance card instead of the old 3D poster's bottom margin. Head and arms may move;
+   the grounded figure stays fixed. The art supplies its own contact shadow. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-aries .ram-stage {
+  bottom: calc(-12px - var(--ram-size) * .108);
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero > .ram-aries .ram-stage {
+  bottom: calc(-2px - var(--ram-size) * .108);
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen .ram-aries .ram-stage::before { display: none; }
+.ram-aries .aries-mascot { width: 100%; height: 100%; pointer-events: none; }
+.ram-aries .aries-shadow { opacity: .4; }
+/* The header remains visible after scrolling, so its tapped message must remain
+   usable too (including the link to the expression gallery). */
+.movo-app .ram-aries .ram-bubble.is-open { display: block; }
