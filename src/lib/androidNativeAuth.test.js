@@ -1,11 +1,13 @@
 import { Capacitor } from '@capacitor/core';
 import { sendEmailCode, verifyEmailCode, signInWithGoogle, finishOAuth } from './financeRepository';
-import { AUTH_CALLBACK, openAuthBrowser } from './native';
+import { AUTH_CALLBACK, AUTH_TEST_CALLBACK, getNativeAuthCallback, openAuthBrowser } from './native';
 import { readAppUrl } from './native';
 import { supabase } from './supabaseClient';
 
 jest.mock('./native', () => ({
   AUTH_CALLBACK: 'movo://auth-callback',
+  AUTH_TEST_CALLBACK: 'movo-authcheck://auth-callback',
+  getNativeAuthCallback: jest.fn().mockResolvedValue('movo://auth-callback'),
   openAuthBrowser: jest.fn().mockResolvedValue(),
   readAppUrl: jest.requireActual('./native').readAppUrl,
 }));
@@ -26,6 +28,7 @@ beforeEach(() => {
   supabase.auth.signInWithOAuth.mockResolvedValue({ data: { url: 'https://cjsjmorqvuvvwbfyztiz.supabase.co/auth/v1/authorize?provider=google' }, error: null });
   supabase.auth.exchangeCodeForSession.mockResolvedValue({ data: { session: { user: { id: 'owner' } } }, error: null });
   openAuthBrowser.mockResolvedValue();
+  getNativeAuthCallback.mockResolvedValue(AUTH_CALLBACK);
 });
 afterEach(() => { jest.restoreAllMocks(); jest.clearAllMocks(); });
 
@@ -51,6 +54,30 @@ test('Android Google OAuth uses the native browser and same PKCE return as email
   expect(returned).toMatchObject({ kind: 'auth', code: 'android-return-code', error: '' });
   await finishOAuth(returned.code);
   expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('android-return-code');
+});
+
+test('isolated Android Auth Test uses only its own PKCE browser return scheme', async () => {
+  getNativeAuthCallback.mockResolvedValue(AUTH_TEST_CALLBACK);
+  await signInWithGoogle();
+  expect(supabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+    provider: 'google',
+    options: { redirectTo: AUTH_TEST_CALLBACK, skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } },
+  });
+  const returned = readAppUrl(AUTH_TEST_CALLBACK + '?code=auth-test-code');
+  expect(returned).toMatchObject({ kind: 'auth', code: 'auth-test-code', error: '' });
+  await finishOAuth(returned.code);
+  expect(supabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('auth-test-code');
+});
+
+test('Android Auth Test email link preserves its isolated callback; typed OTP still succeeds', async () => {
+  getNativeAuthCallback.mockResolvedValue(AUTH_TEST_CALLBACK);
+  await sendEmailCode('test@example.com');
+  expect(supabase.auth.signInWithOtp).toHaveBeenCalledWith({
+    email: 'test@example.com',
+    options: { shouldCreateUser: true, emailRedirectTo: AUTH_TEST_CALLBACK },
+  });
+  await verifyEmailCode('test@example.com', '123456');
+  expect(supabase.auth.verifyOtp).toHaveBeenCalledWith({ email: 'test@example.com', token: '123456', type: 'email' });
 });
 
 test('Android native callback errors fail without exchanging a code or exposing tokens', async () => {

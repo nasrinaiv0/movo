@@ -140,7 +140,8 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   const publisher = google.androidpublisher({ version: 'v3', auth });
   const response = await publisher.purchases.subscriptionsv2.get({ packageName, token: purchaseToken }, { timeout: 15000 });
   const data = response?.data || {};
-  if (data.testPurchase) throw new Error('sandbox_purchase_rejected');
+  // Google, not the mobile client, classifies trusted license-test tokens.
+  const isLicenseTest = Boolean(data.testPurchase);
   const lineItem = (data.lineItems || []).filter(item => productId ? item.productId === productId : !!getProduct(item.productId))
     .sort((a,b) => Date.parse(b.expiryTime)-Date.parse(a.expiryTime))[0];
   if (!lineItem) throw new Error('google_product_mismatch');
@@ -155,7 +156,8 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   const statusMap = {
     SUBSCRIPTION_STATE_ACTIVE: 'active',
     SUBSCRIPTION_STATE_IN_GRACE_PERIOD: 'grace_period',
-    SUBSCRIPTION_STATE_CANCELED: 'expired',
+    // A normal cancellation ends renewal, not an already-paid verified term.
+    SUBSCRIPTION_STATE_CANCELED: expiresAt.getTime() > Date.now() ? 'active' : 'expired',
     SUBSCRIPTION_STATE_PAUSED: 'paused',
     SUBSCRIPTION_STATE_ON_HOLD: 'on_hold',
     SUBSCRIPTION_STATE_EXPIRED: 'expired',
@@ -165,7 +167,7 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   const status = statusMap[state] || 'pending';
   const purchaseTokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
   let paidVerified = false;
-  if (!skipPaymentCheck && ['active', 'grace_period'].includes(status) && data.latestOrderId && publisher.orders?.get) {
+  if (!isLicenseTest && !skipPaymentCheck && ['active', 'grace_period'].includes(status) && data.latestOrderId && publisher.orders?.get) {
     // Only an actual positive, processed order qualifies; free trials do not.
     const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }, { timeout: 15000 }))?.data;
     const purchasedLine = order?.lineItems?.find(item => item.productId === productId);
@@ -186,7 +188,7 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
     purchaseTokenHash,
     status,
     expiresAt: expiresAt.toISOString(),
-    environment: data.testPurchase ? 'sandbox' : 'production',
+    environment: isLicenseTest ? 'sandbox' : 'production',
     needsAcknowledgement: data.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_PENDING',
     purchaseToken,
   };

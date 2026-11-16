@@ -31,8 +31,13 @@ module.exports = async function handler(req, res) {
     if (error) throw error;
     const { error: grantError } = await admin.from('movo_plan_grants').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
     if (grantError) throw grantError;
+    // Only the service-role-managed database allowlist permits sandbox display.
+    const { data: testUser, error: testUserError } = await admin.from('movo_store_test_users')
+      .select('user_id').eq('user_id', userId).maybeSingle();
+    if (testUserError) throw testUserError;
     const plan = await getPlan(admin, userId);
-    const eligible = (data || []).filter(item => item.environment === 'production');
+    const eligible = (data || []).filter(item => item.environment === 'production'
+      || (item.environment === 'sandbox' && !!testUser));
     return json(res, 200, {
       ...plan,
       entitlements: eligible.map(({ platform, product_id, tier: itemTier, status, expires_at, environment, verified_at }) => ({
