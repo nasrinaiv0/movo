@@ -1,3 +1,5 @@
+import FriendsSheet from './components/FriendsSheet';
+import { captureFriendInvite, saveFriendInvite } from './lib/friends';
 import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
 import { listOwnerSyncOperations, acknowledgeReconciledWorkspace, approveHybridOperations } from './lib/hybridLocalStore';
 import FinanceBackupSheet from './components/FinanceBackupSheet';
@@ -358,6 +360,9 @@ function App() {
   const [nFilter, setNFilter] = useState('All');
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
+  const [friendInvite, setFriendInvite] = useState('');
+  useEffect(() => { setFriendInvite(captureFriendInvite()); }, []);
+  const openedFriendInvite = useRef('');
   const [inbox, setInbox] = useState([]); // phone automations that could not be logged (cloud only)
   const [pendingLog, setPendingLog] = useState(null);
   const [automationStatus, setAutomationStatus] = useState('idle');
@@ -929,6 +934,7 @@ function App() {
   /* iOS app: movo://auth-callback finishes Google/Apple sign-in (the auth listener below picks up the session);
      movo://log links become the same #/log links the web app already handles. No-op on the web. */
   useEffect(() => listenForAppUrls({
+    onFriend: token => setFriendInvite(saveFriendInvite(token)),
     onAuth: ({ code, error: failure }) => {
       if (failure || !code) {
         setView('Sign in');
@@ -2182,6 +2188,20 @@ function App() {
   /* ---------- app lock: on open, and again after MOVO has been in the background for a minute ---------- */
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
+  const friendIdentity = session?.user?.id || 'guest';
+  useEffect(() => {
+    if (!friendInvite || !authReady || !setupDone || locked || sheet || view === 'Sign in') return;
+    const visit = friendIdentity + ':' + friendInvite;
+    if (openedFriendInvite.current === visit) return;
+    openedFriendInvite.current = visit;
+    setSheet({ name: 'friends', invite: friendInvite });
+  }, [friendInvite, authReady, setupDone, locked, sheet, view, friendIdentity]);
+  const clearFriendInvite = () => {
+    saveFriendInvite('');
+    setFriendInvite('');
+    openedFriendInvite.current = '';
+  };
+
   useEffect(() => {
     let hiddenAt = 0;
     const onVis = () => {
@@ -2467,7 +2487,7 @@ function App() {
       pendingLocalDataRef.current = null;
     }
     const result = await signOut();
-    nativeReferralAttempt.current = ''; trialAutoRef.current = '';
+    nativeReferralAttempt.current = ''; trialAutoRef.current = ''; clearFriendInvite();
     setOfflineOwnerId(null);
     setSession(null);
     setCloudMode(false);
@@ -2609,6 +2629,7 @@ function App() {
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
   const c = {
+    openFriends: () => setSheet({ name: 'friends', invite: friendInvite }),
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
     entitlement, entitlementReady, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), startAccount, openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
@@ -2847,6 +2868,9 @@ function App() {
         </div>
       </Sheet>}
 
+      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
+        inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
+        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>
         <div className="sheet-list">{[{ code: '', name: tr('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>

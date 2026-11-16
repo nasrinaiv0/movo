@@ -76,7 +76,7 @@ export async function restoreNativeStorage(storage = typeof window !== 'undefine
  * or email-link return look invalid on those phones and sign-in silently stopped after the account was chosen.
  * The pattern leaves no room for user info, a port, another host or a path.
  */
-const APP_LINK = /^(movo|movo-authcheck):\/\/(auth-callback|log)\/?(?:\?([^#]*))?(?:#(.*))?$/;
+const APP_LINK = /^(movo|movo-authcheck):\/\/(auth-callback|log|friend)\/?(?:\?([^#]*))?(?:#(.*))?$/;
 
 /** Parse a movo:// URL into what the app should do with it. Pure, so it is unit-tested. */
 export function readAppUrl(url) {
@@ -96,6 +96,11 @@ export function readAppUrl(url) {
     const error = params.get('error_description') || params.get('error') || hash.get('error_description') || hash.get('error');
     return { kind: 'auth', code: error ? '' : (codes[0] || ''), error: error || '' };
   }
+  if (parsed.hostname === 'friend' && !parsed.hash) {
+    const [token] = params.getAll('invite');
+    if ([...params].length === 1 && /^[A-Za-z0-9_-]{43}$/.test(token || '')) return { kind: 'friend', token };
+    return null;
+  }
   if (parsed.hostname === 'log' && parsed.protocol === 'movo:' && !parsed.hash) {
     return { kind: 'log', hash: `#/log?${params.toString()}` };
   }
@@ -103,7 +108,7 @@ export function readAppUrl(url) {
 }
 
 /** Listen for movo:// links. `onAuth({ code, error })` finishes sign-in; log links reuse the web #/log handler. */
-export function listenForAppUrls({ onAuth } = {}) {
+export function listenForAppUrls({ onAuth, onFriend } = {}) {
   if (!isNativeApp()) return () => {};
   let active = true;
   let lastAuthCode = null;
@@ -123,6 +128,7 @@ export function listenForAppUrls({ onAuth } = {}) {
       onAuth?.(link);
     }
     if (link.kind === 'log') window.location.hash = link.hash;
+    if (link.kind === 'friend') onFriend?.(link.token);
   };
   const pending = CapApp.addListener('appUrlOpen', handle);
   CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
