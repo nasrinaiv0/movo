@@ -1,4 +1,6 @@
 import React, { useRef, useState } from 'react';
+import ProfileAvatar from '../components/ProfileAvatar';
+import { cropProfilePhoto } from '../lib/useProfilePhoto';
 import Icon from '../components/Icon';
 import { SubHeader, SectionTitle, Trend } from '../components/ui';
 import { money, shown } from '../lib/format';
@@ -44,7 +46,7 @@ export default function Profile({ c }) {
     <SubHeader title={tr('Profile')} onBack={() => (c.goBack || go)('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gearSolid" size={19} /></button>} />
     <div className="card profile-card-wrap">
       <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
-        <span className="avatar big">{c.prefs?.profilePhoto ? <img className="avatar-photo" src={c.prefs.profilePhoto} alt="" /> : user.initial}<i><Icon name="camera" size={13} /></i></span>
+        <ProfileAvatar user={user} size="big"><i><Icon name="camera" size={13} /></i></ProfileAvatar>
         <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{(c.plan === 'pro' || c.plan === 'pro_plus') && <em className="plan-pill"><PlanBadge plan={c.plan} trial={c.entitlement?.source === 'trial'} size={18} label /></em>}</span>
         <span className="profile-edit-icon" aria-hidden="true"><Icon name="edit" size={17} /></span>
       </button>
@@ -126,32 +128,31 @@ export function EditProfile({ c }) {
   const [photoError, setPhotoError] = useState('');
   const confirm = useConfirm();
   const photoInput = useRef(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const savePhoto = async (file) => {
+    if (photoBusy) return;
+    setPhotoBusy(true);
+    setPhotoError('');
+    try {
+      const photo = file ? await cropProfilePhoto(file) : '';
+      await c.saveProfilePhoto(photo);
+      c.notify(tr(photo ? 'Profile photo updated.' : 'Profile photo removed.'));
+    } catch (cause) {
+      setPhotoError(cause?.message === 'invalid_profile_photo'
+        ? tr('This image could not be opened. Try a JPG, PNG or WebP photo.')
+        : tr('Could not save your profile photo. Check your connection and try again.'));
+    } finally { setPhotoBusy(false); }
+  };
   const handlePhotoFile = (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!/^image\//i.test(file.type || '') || file.size > 8 * 1024 * 1024) { setPhotoError(tr('Choose an image under 8 MB.')); return; }
-    const reader = new FileReader();
-    reader.onerror = () => setPhotoError(tr('This image could not be read.'));
-    reader.onload = () => {
-      const image = new Image();
-      image.onerror = () => setPhotoError(tr('This image could not be opened.'));
-      image.onload = () => {
-        try {
-          const side = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
-          if (!side) throw new Error();
-          const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-          const sx = ((image.naturalWidth || image.width) - side) / 2;
-          const sy = ((image.naturalHeight || image.height) - side) / 2;
-          const ctx = canvas.getContext('2d'); if (!ctx) throw new Error();
-          ctx.drawImage(image, sx, sy, side, side, 0, 0, 512, 512);
-          setPref('profilePhoto', canvas.toDataURL('image/jpeg', 0.78));
-          setPhotoError(''); c.notify(tr('Profile photo updated on this device.'));
-        } catch { setPhotoError(tr('This image could not be cropped. Try another photo.')); }
-      };
-      image.src = String(reader.result || '');
-    };
-    reader.readAsDataURL(file);
+    if (file.size > 20 * 1024 * 1024 || !(/^(image\/(jpeg|png|webp|heic|heif))$/i.test(file.type) ||
+      (!file.type && /\.(jpe?g|png|webp|hei[cf])$/i.test(file.name)))) {
+      setPhotoError(tr('Choose a JPG, PNG, WebP or HEIC image under 20 MB.'));
+      return;
+    }
+    savePhoto(file);
   };
   const saveProfile = (event) => {
     event.preventDefault();
@@ -182,9 +183,14 @@ export function EditProfile({ c }) {
     <SubHeader title={tr('Profile')} onBack={() => go('Profile')} right={<button type="submit" form="movo-profile-form" className="link-button strong">{tr('Save')}</button>} />
     <div className="edit-profile">
       <header className="ep-head">
-        <span className="avatar huge">{prefs.profilePhoto ? <img className="avatar-photo" src={prefs.profilePhoto} alt="" /> : (draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span>
-        <div className="ep-photo-actions"><button type="button" className="link-button" onClick={() => photoInput.current?.click()}><Icon name="camera" size={16} /> {tr('Change photo')}</button>{prefs.profilePhoto && <button type="button" className="link-button" onClick={async () => { if (!(await confirm({ title: tr('Remove your photo?'), message: tr('Your profile photo is removed from MOVO. You can add a new one at any time.'), confirmLabel: tr('Remove'), danger: true, icon: 'user' }))) return; setPref('profilePhoto', ''); setPhotoError(''); }}>{tr('Remove photo')}</button>}</div>
-        <input ref={photoInput} type="file" accept="image/*" hidden onChange={handlePhotoFile} />
+        <ProfileAvatar user={{ ...user, initial: (draft.profileName.trim() || user.name).slice(0, 1).toUpperCase() }} size="huge" />
+        <div className="ep-photo-actions">
+          <button type="button" className="link-button" disabled={photoBusy} onClick={() => photoInput.current?.click()}><Icon name="camera" size={16} /> {tr(photoBusy ? 'Saving…' : 'Change photo')}</button>
+          {user.photo && <button type="button" className="link-button" disabled={photoBusy} onClick={async () => {
+            if (await confirm({ title: tr('Remove your photo?'), message: tr('You can add a new profile photo at any time.'), confirmLabel: tr('Remove'), danger: true, icon: 'user' })) savePhoto(null);
+          }}>{tr('Remove photo')}</button>}
+        </div>
+        <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden onChange={handlePhotoFile} />
         {photoError && <p className="form-error" role="alert">{photoError}</p>}
         <strong>{draft.profileName.trim() || user.name}</strong>
         <small>{maskEmail(user.email)}</small>

@@ -48,3 +48,34 @@ test('hashes the randomly issued code and never echoes guessed or caller-supplie
   expect(preview.json).toHaveBeenCalledWith({ error: 'invite_unavailable' });
   expect(response.setHeader).toHaveBeenCalledWith('Cache-Control', 'private, no-store');
 });
+
+test('accepts serialized native requests and separates an unavailable migration from authentication', async () => {
+  rpc.mockResolvedValueOnce({ error: { code: 'PGRST202' } });
+  const result = await call('POST', JSON.stringify({ action: 'directory', p_actor: 'forged' }));
+  expect(result.status).toHaveBeenCalledWith(503);
+  expect(result.json).toHaveBeenCalledWith({ error: 'friends_update_pending' });
+  expect(rpc).toHaveBeenCalledWith('movo_friend_social', { p_actor: id, p_action: 'directory', p_data: {} });
+});
+
+test('shares only the selected summary fields and ignores external account and contact data', async () => {
+  const result = await call('POST', { action: 'share_summary', connectionId: id, account: 'forged', summary: {
+    month: '2026-11', note: ' Track with a weekly review. ', accountNumber: 'hidden',
+    totals: { currency: 'PHP', income: 725.998, expenses: 300, email: 'hidden' },
+    categories: [{ key: 'Food', percent: 30, merchant: 'hidden' }],
+  } });
+  expect(result.status).toHaveBeenCalledWith(200);
+  expect(rpc).toHaveBeenCalledWith('movo_friend_social', { p_actor: id, p_action: 'share_summary', p_data: {
+    connectionId: id, summary: { month: '2026-11', note: 'Track with a weekly review.',
+      totals: { currency: 'PHP', income: 726, expenses: 300 }, categories: [{ key: 'Food', percent: 30 }] },
+  } });
+  expect((await call('POST', { action: 'share_summary', connectionId: id, summary: { month: '2026-11' } })).status).toHaveBeenCalledWith(400);
+});
+
+test('reads and changes only the signed-in owner photo and rejects an invalid image', async () => {
+  expect((await call('POST', { action: 'set_avatar', photo: 'data:image/jpeg;base64,/YXNk' })).status).toHaveBeenCalledWith(400);
+  await call('POST', { action: 'avatar', ownerId: 'someone else' });
+  expect(rpc).toHaveBeenCalledWith('movo_friend_social', { p_actor: id, p_action: 'avatar', p_data: {} });
+  const photo = 'data:image/jpeg;base64,/9j/4QAAAAAA/9k=';
+  await call('POST', { action: 'set_avatar', photo, ownerId: 'someone else' });
+  expect(rpc).toHaveBeenLastCalledWith('movo_friend_social', { p_actor: id, p_action: 'set_avatar', p_data: { photo } });
+});
