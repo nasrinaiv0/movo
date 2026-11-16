@@ -14,3 +14,12 @@
 - Node 26 strict production build, typecheck, localization build and all 1,491 tests passed. The existing device Back test also checks the sheet mount and returned focus.
 - Isolated Chromium checked 22 customer routes at 820 and 1440 px, with additional checks at 1024 × 600 dark, enlarged text, and the 390 px phone dock. It exercised transaction entry, wallet controls, account entry, search, Friends, budgets and plans, subscription catalog and plan comparison. Vercel Sandbox repeated the customer checks with fixture services. The Owner Command Center passed five fixture-backed module checks at both 820 and 1440 px.
 - Remaining manual checks before release: Safari on an iPad with real resize and keyboard behavior, paid receipt scanning and scheduling with a test entitlement, and store purchase acceptance when releasing a native build. The separate Friends Summary PR carries the in-app recipient experience.
+
+## Compact layout refinement
+
+- Leaner workspace padding and a more compact navigation rail give room back to tablet dashboards. Use a consistent spacing scale for headers, cards and lists while keeping the app's primary controls comfortable to tap.
+- Turn Menu tiles into compact, aligned action cards. Keep the summary, list and detail views easy to scan, with aligned ledger metadata on wide rows and adaptive text wrapping.
+- Move the transaction keypad alongside the entry fields on standard iPad widths and keep the save action reachable in short windows. Reduce surplus padding in general panels and avoid changing any form, purchase, permission or financial behavior.
+
+- Customer layout checks passed at 820 px and 1440 px across 22 routes each, with additional coverage at 1024 × 600 in dark mode with the largest text setting and a 390 px phone. Transaction entry was exercised across Expense, Income and Transfer. The compact account action stays within reach while the panel scrolls. Five Owner Command Center modules passed fixture checks at both wide widths.
+- Node 26 passed all 1,491 tests across 240 suites. Screenshots contain sample records. The customer layout adjustments live in `src/AdaptiveLayout.css` and the owner adjustments in `src/owner/OwnerConsole.css`.

@@ -13,6 +13,7 @@
 ## 2026-11-17 — Tablet and desktop layouts
 
 - Improved the desktop and tablet workspace, dashboard grids, reading widths and centered panels. Node 26 passes 1,491 tests and the strict build. Chromium verified 22 customer routes at two widths and the owner workspace in a fixture session. [Baseline, scope and verification](engineering/updates/2026-11-17-tablet-desktop-layouts.md).
+- Compact refinement covers shared spacing, Menu actions, ledger rows and transaction entry on standard tablets.
 
 ## 2026-11-16 — PR #312 integration with foreign-currency receipt review
 

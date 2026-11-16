@@ -1,13 +1,15 @@
 /* Tablet and desktop share the workspace scale. Horizontal foldables use the hinge layout. */
 .movo-app:is(.layout-tablet, .layout-desktop) {
-  --workspace-gutter: clamp(20px, 3vw, 44px);
-  --workspace-gap: clamp(14px, 1.6vw, 24px);
+  --workspace-gutter: clamp(18px, 2.35vw, 36px);
+  --workspace-gap: clamp(12px, 1.2vw, 18px);
+  --workspace-card-pad: 14px;
+  --workspace-row-pad: 7px;
   --workspace-width: 1360px;
-  --reading-width: 850px;
-  --dialog-gutter: clamp(16px, 3vw, 36px);
+  --reading-width: 800px;
+  --dialog-gutter: clamp(14px, 2.2vw, 28px);
 }
-.movo-app.layout-tablet { --side-w: 84px; }
-.movo-app.layout-desktop { --side-w: clamp(200px, 16vw, 240px); }
+.movo-app.layout-tablet { --side-w: 76px; }
+.movo-app.layout-desktop { --side-w: clamp(184px, 14.5vw, 218px); }
 .native-chrome .movo-app:is(.layout-tablet, .layout-desktop) { --workspace-top: calc(62px + env(safe-area-inset-top)); }
 
 .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen {
@@ -15,7 +17,7 @@
   display: block;
   max-width: var(--workspace-width);
   min-width: 0;
-  padding: var(--workspace-top, max(24px, env(safe-area-inset-top))) var(--workspace-gutter) max(48px, env(safe-area-inset-bottom));
+  padding: var(--workspace-top, max(16px, env(safe-area-inset-top))) var(--workspace-gutter) max(32px, env(safe-area-inset-bottom));
 }
 .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:is(
   [data-view="EditProfile"], [data-view="NotificationDetail"], [data-view="NotificationSettings"],
@@ -28,7 +30,13 @@
   overflow-y: auto;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
+  gap: 3px;
+  padding: max(12px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
 }
+.movo-app.layout-desktop .side-nav { padding-inline: 12px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .side-brand { min-height: 44px; margin-block-end: 8px; }
+.movo-app.layout-tablet .side-item { min-height: 51px; gap: 2px; padding-block: 4px; border-radius: 13px; }
+.movo-app.layout-desktop .side-item { min-height: 44px; gap: 9px; padding-block: 6px; border-radius: 12px; }
 .movo-app:is(.layout-tablet, .layout-desktop) .side-nav > * { flex-shrink: 0; }
 .movo-app:is(.layout-tablet, .layout-desktop) .side-icon { flex: none; }
 .movo-app:is(.layout-tablet, .layout-desktop) .side-label { min-width: 0; overflow-wrap: anywhere; }
@@ -47,7 +55,30 @@
 .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen > * { min-width: 0; grid-column: 1 / -1; }
 .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:is([data-view="Home"], [data-view="Wallet"]) > .box-slot:is(.size-S, .size-M) { grid-column: auto; }
 .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) [data-view="Home"] > .box-slot:has(> :is(.balance-card, .stat-grid)) { grid-column: 1 / -1; }
-.movo-app:is(.layout-tablet, .layout-desktop) .screen > .screen-header:not(.home-header) { margin-inline: 0; padding-inline: 0; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen > .screen-header:not(.home-header) {
+  margin-inline: 0;
+  padding: 4px 0;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .section-title { min-width: 0; gap: 8px; margin-block: 12px 6px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .section-title h2 { font-weight: 680; line-height: 1.25; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .section-title .link-button { flex: none; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .group-title { margin-block: 12px 6px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.menu-card, .list-card) { --row-x: 12px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.menu-row, .tx-row, .note-row, .sub-row, .fp-row, .account-row) {
+  min-height: 44px;
+  padding-block: var(--workspace-row-pad);
+  gap: 9px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.menu-row .menu-main, .tx-main, .tx-side) { gap: 3px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.menu-icon, .tx-logo > .tile, .note-icon > .tile) {
+  width: 36px;
+  height: 36px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .screen [data-chip] { min-height: 40px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.flow-card, .streak-card, .wallet-balance-spending-card) { padding: var(--workspace-card-pad); }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .flow-card { margin-block-start: 8px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .flow-plot { height: 96px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .tx-groups section + section { margin-block-start: 6px; }
 .movo-app:is(.layout-tablet, .layout-desktop) .screen-header h1 { min-width: 0; overflow-wrap: anywhere; }
 .movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.section-title, .menu-row, .group-head) > * { min-width: 0; }
 .movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.menu-main, .account-main, .tx-main, .fp-main) { overflow-wrap: anywhere; }
@@ -62,12 +93,27 @@
 .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-settings-grid .group-title { margin-block-start: 0; }
 .movo-app:is(.layout-tablet, .layout-desktop) [data-view="Settings"] > .search-field { width: min(100%, 530px); margin-block-end: var(--workspace-gap); }
 .movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 225px), 1fr));
+  grid-auto-rows: auto;
+  gap: 8px;
 }
-.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-tile { min-height: 100px; }
-.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .streak-card { margin-block-start: var(--workspace-gap); }
-.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Sign in"] .auth-card { width: min(100%, 480px); padding: clamp(20px, 3vw, 32px); }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-tile {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 3px;
+  min-height: 64px;
+  padding: 10px 11px;
+  border-radius: 15px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-tile-icon { grid-row: 1 / span 2; }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-tile strong { margin: 0; overflow-wrap: anywhere; }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-tile small { display: block; }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .streak-card { gap: 9px; margin-block-start: var(--workspace-gap); }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Sign in"] .auth-card { width: min(100%, 480px); padding: clamp(18px, 2.4vw, 26px); }
 
 .movo-app:is(.layout-tablet, .layout-desktop) :is(.wallet-card-grid, .crypto-holding-list) {
   display: grid;
@@ -82,7 +128,7 @@
 .movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.sub-cal-day, .schedule-calendar button) { min-height: 44px; }
 .movo-app:is(.layout-tablet, .layout-desktop) .screen .legal-page { max-width: 76ch; margin-inline: auto; }
 .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:has(> .legal-page) {
-  padding-block-end: max(48px, env(safe-area-inset-bottom));
+  padding-block-end: max(32px, env(safe-area-inset-bottom));
 }
 
 @media (min-width: 950px) {
@@ -113,60 +159,97 @@
   padding: max(var(--dialog-gutter), env(safe-area-inset-top)) var(--dialog-gutter) max(var(--dialog-gutter), env(safe-area-inset-bottom));
 }
 .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet {
-  --dialog-width: 520px;
+  --dialog-width: 480px;
   max-inline-size: var(--dialog-width);
   max-block-size: calc(100dvh - max(var(--dialog-gutter), env(safe-area-inset-top)) - max(var(--dialog-gutter), env(safe-area-inset-bottom)));
   overflow: auto;
   overscroll-behavior: contain;
-  scroll-padding: 4rem 0;
-  border-radius: 24px;
+  scroll-padding: 48px 0 64px;
+  border-radius: 20px;
   animation-name: dialog-in;
 }
-.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet.sheet-center { --dialog-width: 440px; }
-.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet[data-size="wide"] { --dialog-width: 740px; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet.sheet-center { --dialog-width: 416px; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet[data-size="wide"] { --dialog-width: 696px; }
 .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet.closing { animation-name: dialog-out; }
 .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet > .sheet-handle { display: none; }
 .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet > :nth-child(n+3) { animation-name: none; }
 .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet:not(.sheet-center, .tx-sheet, .acct-sheet) {
-  padding-block-start: 22px;
+  padding-block-start: 16px;
 }
 .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop .sheet-close {
-  inset-inline: auto 16px;
-  inset-block-start: 14px;
+  inset-inline: auto 12px;
+  inset-block-start: 10px;
 }
 .movo-app:is(.layout-tablet, .layout-desktop) .sheet :is(.sheet-title, .sheet-sub, .form-note, .form-error) { overflow-wrap: anywhere; }
-.movo-app:is(.layout-tablet, .layout-desktop) .sheet-actions { flex-wrap: wrap; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet .sheet-title { min-height: 34px; margin: 0; line-height: 1.3; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet .sheet-sub { margin-block: 0 10px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet .sheet-form { gap: 8px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet-actions { flex-wrap: wrap; gap: 8px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet :is(.sheet-actions, .sheet-menu) > button { min-height: 44px; }
 .movo-app:is(.layout-tablet, .layout-desktop) .sheet-actions > button { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .movo-app:is(.layout-tablet, .layout-desktop) .search-panel {
-  max-width: 680px;
+  max-width: 632px;
   max-height: calc(100dvh - 2 * var(--dialog-gutter));
-  border-radius: 24px;
+  border-radius: 20px;
   animation-name: dialog-in;
 }
 .movo-app:is(.layout-tablet, .layout-desktop) .search-overlay.closing .search-panel { animation-name: dialog-out; }
 .movo-app:is(.layout-tablet, .layout-desktop) .search-results { overscroll-behavior: contain; }
 
-@media (min-width: 800px) {
+@media (min-width: 768px) {
+  .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > :is(.tx-sheet, .acct-sheet) {
+    padding-block-end: 0;
+  }
   .movo-app:is(.layout-tablet, .layout-desktop) .sheet .acct-form {
     display: grid;
-    grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
-    gap: 16px;
+    grid-template-columns: minmax(0, .78fr) minmax(0, 1.22fr);
+    gap: 10px 14px;
     align-items: start;
-    padding: 10px 0 0;
+    padding: 4px 0 0;
   }
   .movo-app:is(.layout-tablet, .layout-desktop) .acct-form > * { grid-column: 1 / -1; min-width: 0; }
   .movo-app:is(.layout-tablet, .layout-desktop) .acct-form > .acct-preview,
   .movo-app:is(.layout-tablet, .layout-desktop) .acct-form > .acct-panel { grid-column: auto; }
-  .movo-app:is(.layout-tablet, .layout-desktop) .sheet.tx-sheet .tx-form { padding-block-start: 10px; }
-  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-pad, .tx-bottom) {
-    width: min(100%, 410px);
-    margin-inline: auto;
+  .movo-app:is(.layout-tablet, .layout-desktop) :is(.tx-form, .acct-form) > .tx-bottom {
+    inset-block-end: 0;
+    z-index: 2;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 7px 0 12px;
+    background: var(--bg);
   }
+  .movo-app:is(.layout-tablet, .layout-desktop) :is(.tx-form, .acct-form) > .tx-bottom::before { display: none; }
+  .movo-app:is(.layout-tablet, .layout-desktop) :is(.tx-form, .acct-form) > .tx-bottom > .primary-button {
+    display: flex;
+    width: min(100%, 248px);
+    min-height: 44px;
+    margin-inline-start: auto;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .acct-institution-options { max-height: min(23dvh, 155px); }
   .movo-app:is(.layout-tablet, .layout-desktop) .scan-start {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
   }
+  .movo-app:is(.layout-tablet, .layout-desktop) .sheet.tx-sheet .tx-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, .82fr);
+    gap: 6px 14px;
+    align-items: start;
+    padding-block-start: 3px;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-sheet .tx-pad .k { height: 44px; min-height: 44px; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-sheet .tx-amount { min-height: 48px; height: auto; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-sheet .tx-meta { flex-wrap: wrap; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > * { grid-column: 1 / -1; min-width: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-note, .tx-accounts, .tx-local, .tx-cats, .tx-meta) { grid-column: 1; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-pad, .tx-pad-show) {
+    grid-column: 2;
+    grid-row: 3 / span 4;
+    width: 100%;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form:not(:has(.tx-cats)) > :is(.tx-pad, .tx-pad-show) { grid-row-end: span 3; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > .tx-local { margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet,
@@ -190,20 +273,17 @@
   .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-crypto-market .crypto-watchlist-items { grid-template-columns: 1fr; }
 }
 
-@media (min-width: 960px) {
-  .movo-app:is(.layout-tablet, .layout-desktop) .sheet.tx-sheet .tx-form {
+/* Align the amount, optional balance and category across full-width ledger rows. */
+@media (min-width: 1100px) {
+  .movo-app.layout-desktop [data-view="Transactions"] .tx-side {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, .82fr);
-    column-gap: 18px;
-    align-items: start;
+    grid-template-columns: minmax(7rem, 1fr) minmax(7.5rem, 1.15fr) minmax(6.5rem, 1fr);
+    align-items: center;
+    justify-items: end;
+    column-gap: 12px;
+    flex-basis: min(53%, 420px);
   }
-  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > * { grid-column: 1 / -1; min-width: 0; }
-  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-note, .tx-accounts, .tx-local, .tx-cats, .tx-meta) { grid-column: 1; }
-  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-pad, .tx-pad-show) {
-    grid-column: 2;
-    grid-row: 3 / span 4;
-    width: 100%;
-  }
-  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form:not(:has(.tx-cats)) > :is(.tx-pad, .tx-pad-show) { grid-row-end: span 3; }
-  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > .tx-local { margin: 0; }
+  .movo-app.layout-desktop [data-view="Transactions"] .tx-side > b { grid-column: 1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .movo-app.layout-desktop [data-view="Transactions"] .tx-after-balances { grid-column: 2; }
+  .movo-app.layout-desktop [data-view="Transactions"] .tx-side > .pill { grid-column: 3; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 }

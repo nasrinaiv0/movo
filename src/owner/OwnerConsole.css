@@ -98,6 +98,14 @@
   .occ-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr)); }
   .occ-main :is(.occ-page-heading, .occ-heading, .occ-health-row) { flex-wrap: wrap; }
   .occ-main :is(.occ-page-heading, .occ-heading) > * { min-width: 0; overflow-wrap: anywhere; }
+  .occ-sidebar { gap: 12px; padding-block: 16px; }
+  .occ-brand { padding-block-end: 8px; }
+  .occ-header { height: 56px; }
+  .occ-content { gap: 14px; padding: clamp(16px, 2.2vw, 32px); }
+  .occ-card { padding: 16px; }
+  .occ-stat { min-height: 116px; gap: 7px; }
+  .occ-heading { margin-block-end: 12px; }
+  .occ-root :is(th, td) { padding-block: 9px; }
 }
 @container owner-workspace (min-width: 680px) {
   .occ-two-col { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
