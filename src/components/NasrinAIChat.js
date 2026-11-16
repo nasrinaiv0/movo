@@ -2,6 +2,7 @@ import { startDeviceSpeech, setAudioSessionType } from '../lib/deviceSpeech';
 import { usePlan } from '../lib/PlanContext';
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
+import ChatChart from './ChatChart';
 import { categoryOf } from '../lib/categories';
 import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
@@ -68,7 +69,7 @@ const blobBuffer = (blob) => (typeof blob.arrayBuffer === 'function' ? blob.arra
   reader.readAsArrayBuffer(blob);
 }));
 
-export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, shortcuts = [], show = true }) {
+export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, onLocalChart, shortcuts = [], show = true }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
   const requestEpochRef = useRef(0);
@@ -193,6 +194,15 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         const content = cause.message === 'account_required' ? tr('Add an account or card in Wallet first, then I can log this for you.') : tr('That could not be saved. Please try again.');
         setMessages((current) => [...current, { role: 'assistant', local: true, content }]); say(content);
       } finally { setBusy(false); if (!voiceRef.current) inputRef.current?.focus(); }
+      return;
+    }
+    // A request for a chart, graph, breakdown or trend is drawn at once from the records on this device, online or
+    // offline and on any plan (lib/chatCharts); nothing is sent to NasrinAI.
+    const drawn = onLocalChart ? onLocalChart(message) : null;
+    if (drawn?.chart) {
+      setError(''); setDraft('');
+      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', content: drawn.text, chart: drawn.chart, local: true }]);
+      say(drawn.text);
       return;
     }
     // Common questions are answered at once from the records on this device; nothing is sent to NasrinAI.
@@ -653,6 +663,11 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   // Shortcuts: log actions open MOVO's own forms; read actions answer here from this device's records (never sent to NasrinAI).
   const runShortcut = (item) => {
+    if (item.draw) {
+      const drawn = item.draw();
+      if (drawn?.chart) setMessages((current) => [...current, { role: 'user', content: tr(item.label), local: true }, { role: 'assistant', content: drawn.text, chart: drawn.chart, local: true }]);
+      return;
+    }
     if (item.say) { setMessages((current) => [...current, { role: 'user', content: tr(item.label), local: true }, { role: 'assistant', content: item.say(), local: true }]); return; }
     item.run?.();
   };
@@ -689,6 +704,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       </article> : <article key={index} className={'movo-ai-message ' + message.role}>
         <span className={'movo-ai-message-label' + (message.role === 'user' ? ' sr-only' : '')}>{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
+        {message.chart && <ChatChart chart={message.chart} fmt={(value) => shown(show, money(value))} />}
         {message.role === 'assistant' && typeof window !== 'undefined' && window.speechSynthesis && <button type="button" className={`movo-ai-listen${speaking === index ? ' is-speaking' : ''}`} onClick={() => speak(message.content, index)} aria-label={speaking === index ? tr('Stop reading aloud') : tr('Read aloud')}><Icon name={speaking === index ? 'stop' : 'speaker'} size={14} strokeWidth={2} />{speaking === index ? tr('Stop') : tr('Listen')}</button>}
       </article>)}
       {busy && <div className="movo-ai-thinking" role="status"><span className="movo-ai-thinking-orb" aria-hidden="true"><NasrinMark size={22} state={phase} /></span><span key={phase} className="movo-ai-thinking-label">{tr(PHASE_LABELS[phase])}</span></div>}

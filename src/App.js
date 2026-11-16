@@ -35,6 +35,7 @@ import Wallet from './screens/Wallet';
 import ScheduledDuePrompt from './components/ScheduledDuePrompt';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
+import FriendProfile from './screens/FriendProfile';
 import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
@@ -49,6 +50,7 @@ import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
 import { markFresh } from './lib/freshRecords';
 import { answerLocally } from './lib/localAnswer';
+import { buildChatChart, chartSummary, CHART_PROMPTS } from './lib/chatCharts';
 import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate, refOf } from './lib/duplicates';
@@ -175,13 +177,13 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, autoSyncOnReconnect: false, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'auto', cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'plain', homeHeroDefaultNone: true, cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
-const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', FriendProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
 const SETUP_SCREENS = new Set(['Home', 'Sign in', 'TermsOfService', 'PrivacyPolicy']);
 const SETUP_READING = new Set(['Sign in', 'TermsOfService', 'PrivacyPolicy']);
-const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, FriendProfile: 2, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', creditLimit: '', owedNow: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
@@ -191,6 +193,9 @@ function readPrefs() {
   try {
     const stored = JSON.parse(localStorage.getItem(PREF));
     if (stored) return { ...DEFAULTS, onboarded: true, ...stored,
+      // The Home header photo is off by default (owner, 2026-11-16): an earlier default ('auto') becomes None once;
+      // a photo, zodiac or glow someone chose is kept, and any of them can be turned on again in Appearance.
+      ...(stored.homeHeroDefaultNone ? {} : { homeHero: !stored.homeHero || stored.homeHero === 'auto' ? 'plain' : stored.homeHero, homeHeroDefaultNone: true }),
       ...(isNativeApp() ? { autoLogKey: nativeAutomationKey() } : {}),
     }; // people who already used MOVO skip the first-run tour
     const old = JSON.parse(localStorage.getItem(OLD_PREF)) || {};
@@ -2032,6 +2037,10 @@ function App() {
     if (top) lines.push(tr('Most went to {category} ({amount}).', { category: tr(top), amount: shown(show, money(topAmount)) }));
     return lines.join('\n\n');
   };
+  const localChart = (q) => {
+    const chart = buildChatChart(q, { txs, budgets: budgetList, locale: lang.locale });
+    return chart ? { chart, text: chartSummary(chart, (v) => shown(show, money(v)), tr) } : null;
+  };
   const localAnswer = (q) => answerLocally(q, { txs, accounts: accountsView.map(a => ({ ...a, baseBalance: toBase ? toBase(a.balance, a.currency) : a.balance })), budgets: budgetList, upcoming: subSummary.upcoming || [], fmt: (v) => shown(show, money(v)) });
   const chatShortcuts = [
     { id: 'expense', icon: 'minus', label: 'Expense', run: () => openForm('expense') },
@@ -2040,6 +2049,8 @@ function App() {
     { id: 'scan', icon: 'scan', label: 'Scan receipt', run: () => setSheet({ name: can('receiptScan') ? 'scanner' : 'planOffer', feature: 'receiptScan' }) },
     { id: 'today', icon: 'calendar', label: 'Today', say: () => chatSummary('today') },
     { id: 'month', icon: 'chart', label: 'This month', say: () => chatSummary('month') },
+    { id: 'spendChart', icon: 'planning', label: 'Spending chart', draw: () => localChart(CHART_PROMPTS.categories) },
+    { id: 'flowChart', icon: 'chart', label: 'Income vs expenses', draw: () => localChart(CHART_PROMPTS.flow) },
     { id: 'budgets', icon: 'target', label: 'Budgets', run: () => setSheet({ name: 'budgets', tab: 'budgets' }) },
     { id: 'renewals', icon: 'clock', label: 'Renewals', run: () => go('Subscriptions') },
     { id: 'activity', icon: 'list', label: 'Transactions', run: () => go('Transactions') },
@@ -2191,6 +2202,11 @@ function App() {
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   const friendIdentity = session?.user?.id || 'guest';
+  // A friend's own page (screens/FriendProfile): the friend tapped in the Friends list, for this account only.
+  const [friendPage, setFriendPage] = useState(null);
+  useEffect(() => { setFriendPage(null); }, [friendIdentity]);
+  const openFriendPage = useCallback((friend) => { setFriendPage({ id: friend.id, name: friend.name }); go('FriendProfile'); }, [go]);
+  const friendFinance = useMemo(() => ({ months, statsFor, breakdownFor, currency: base }), [months, statsFor, breakdownFor, base]);
   useEffect(() => {
     if (!friendInvite || !authReady || !setupDone || locked || sheet || view === 'Sign in') return;
     const visit = friendIdentity + ':' + friendInvite;
@@ -2632,6 +2648,7 @@ function App() {
 
   const c = {
     openFriends: () => setSheet({ name: 'friends', invite: friendInvite }),
+    friendPage, friendFinance,
     saveProfilePhoto: profilePhoto.savePhoto,
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
@@ -2739,6 +2756,7 @@ function App() {
       case 'Menu': return <Menu c={c} />;
       case 'Subscriptions': return <Subscriptions c={c} />;
       case 'EditProfile': return <EditProfile c={c} />;
+      case 'FriendProfile': return <FriendProfile c={c} />;
       case 'Settings': return <Settings c={c} />;
       case 'Appearance': return <Appearance c={c} />;
       case 'Notifications': return <Notifications c={c} />;
@@ -2747,7 +2765,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode || deviceCopyAccess} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode || deviceCopyAccess} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} onLocalChart={localChart} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={() => { go('Home'); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -2872,7 +2890,7 @@ function App() {
       </Sheet>}
 
       {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
-        inviteToken={sheet.invite} finance={{ months, statsFor, breakdownFor, currency: base }} onClose={() => { clearFriendInvite(); setSheet(null); }}
+        inviteToken={sheet.invite} finance={friendFinance} onOpenFriend={openFriendPage} onClose={() => { clearFriendInvite(); setSheet(null); }}
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>

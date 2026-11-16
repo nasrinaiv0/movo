@@ -420,3 +420,30 @@ describe('NasrinAI consent and legal links', () => {
     });
   });
 });
+describe('charts from on-device records', () => {
+  test('a chart request is drawn at once while offline and signed out, and never sent to NasrinAI', async () => {
+    const { buildChatChart, chartSummary } = jest.requireActual('../lib/chatCharts');
+    const now = new Date();
+    const txs = [{ amount: 300, type: 'expense', category: 'Food & drinks', date: now.toISOString() },
+      { amount: 100, type: 'expense', category: 'Transport', date: now.toISOString() }];
+    const onLocalChart = jest.fn((text) => { const chart = buildChatChart(text, { txs, now }); return chart ? { chart, text: chartSummary(chart) } : null; });
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => { root.render(<NasrinAIChat session={null} cloudMode={false} onLocalChart={onLocalChart} />); });
+    const box = container.querySelector('#movo-ai-prompt');
+    setTextareaValue(box, 'Show my spending chart');
+    await act(async () => { container.querySelector('button[aria-label="Send message"], .movo-ai-send')?.click(); await new Promise(resolve => setTimeout(resolve, 0)); });
+    const figure = container.querySelector('figure.cc-categories');
+    expect(figure).not.toBeNull();
+    expect(figure.textContent).toContain('Spending by category');
+    expect(figure.textContent).toContain('75%');
+    expect(container.textContent).toContain('Food & Dining is the largest at 75%');
+    expect(global.fetch).not.toHaveBeenCalled();
+    act(() => root.unmount());
+    container.remove();
+    global.fetch = originalFetch;
+  });
+});

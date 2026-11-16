@@ -9,7 +9,7 @@ import { t as tr } from '../lib/i18n';
 import { nativePlatform } from '../lib/platform';
 import { friendDisplayName, friendInviteToken, friendInviteUrl, copyFriendInvite, friendsRequest, shareFriendInvite } from '../lib/friends';
 
-function errorMessage(error) {
+export function errorMessage(error) {
   switch (error?.code) {
     case 'invite_unavailable': return tr('This invite is expired, used or replaced.');
     case 'own_invite': return tr('This is your own friend invite.');
@@ -31,7 +31,7 @@ function errorMessage(error) {
   }
 }
 
-export default function FriendsSheet({ session, inviteToken, finance, onClose, onSignIn, onInviteHandled }) {
+export default function FriendsSheet({ session, inviteToken, finance, onClose, onSignIn, onInviteHandled, onOpenFriend }) {
   const socialAvailable = Boolean(finance);
   const signedIn = Boolean(session?.user?.id && session.access_token);
   const [friends, setFriends] = useState(null);
@@ -235,9 +235,9 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
           {friends?.length > 0 && <ul className="friends-list">
             {friends.map(friend => <li key={friend.id}>
               <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
-              {finance ? <button type="button" className="friends-open" disabled={busy} onClick={() => setSummaryFriend(friend)}
-                aria-label={tr('Money summary with {name}', { name: friend.name })}>
-                <b dir="auto">{friend.name}</b><small>{tr('Money summary')}</small><Icon name="chevron" size={16} />
+              {finance ? <button type="button" className="friends-open" disabled={busy} onClick={() => (onOpenFriend ? onOpenFriend(friend) : setSummaryFriend(friend))}
+                aria-label={tr('Open {name}’s profile', { name: friend.name })}>
+                <b dir="auto">{friend.name}</b><small>{tr('Profile and shared summary')}</small><Icon name="chevron" size={16} />
               </button> : <b dir="auto">{friend.name}</b>}
               <button type="button" disabled={busy} onClick={() => removeFriend(friend)} aria-label={tr('Remove {name}', { name: friend.name })}><Icon name="close" size={18} /></button>
             </li>)}

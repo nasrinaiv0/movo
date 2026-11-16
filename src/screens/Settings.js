@@ -371,7 +371,7 @@ const HERO_TABS = [['scenery', 'Scenery'], ['zodiac', 'Zodiac'], ['glow', 'Glow'
 export function HomeHeroPicker({ c }) {
   const { can, requireFeature } = usePlan();
   const { prefs, setPref } = c;
-  const current = prefs.homeHero || 'auto';
+  const current = prefs.homeHero || 'plain';
   const [tab, setTab] = useState(() => (current.startsWith('zodiac:') ? 'zodiac' : current.startsWith('glow:') ? 'glow' : 'scenery'));
   const [all, setAll] = useState(false);
   const premium = can(HERO_FEATURE);

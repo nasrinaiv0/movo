@@ -60,11 +60,37 @@ export function buildFriendSummary({ month, note = '', include = {} }, finance) 
   return value.note || value.categories || value.totals || value.savingsRate !== undefined ? value : null;
 }
 
-/** One shared snapshot, as the friend sees it. */
-export function Snapshot({ value, label }) {
+/** A ring that fills to the savings rate (red when spending passed income). Decorative: the rate is also written out. */
+function SavingsRing({ rate }) {
+  const r = 22; const c = 2 * Math.PI * r; const share = Math.min(100, Math.abs(rate)) / 100;
+  return <svg className="fs-ring" viewBox="0 0 56 56" aria-hidden="true">
+    <circle cx="28" cy="28" r={r} className="fs-ring-track" />
+    <circle cx="28" cy="28" r={r} className="fs-ring-fill" strokeDasharray={`${share * c} ${c}`} transform="rotate(-90 28 28)" />
+    <text x="28" y="32" textAnchor="middle">{rate}%</text>
+  </svg>;
+}
+
+/** The shared category percentages as a donut. Decorative: each share is also listed with its percent. */
+function CategoryDonut({ categories }) {
+  const r = 40; const c = 2 * Math.PI * r;
+  let offset = 0;
+  return <svg className="fs-donut" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r={r} className="fs-ring-track" />
+    {categories.map(({ key, percent }) => {
+      const length = (percent / 100) * c;
+      const seg = <circle key={key} cx="50" cy="50" r={r} stroke={COLORS[key] || 'var(--accent)'} strokeDasharray={`${Math.max(0, length - 1.2)} ${c}`}
+        strokeDashoffset={-offset} transform="rotate(-90 50 50)" />;
+      offset += length;
+      return seg;
+    })}
+  </svg>;
+}
+
+/** One shared snapshot, as the friend sees it. `rich` adds a savings ring and a category donut (the friend's page). */
+export function Snapshot({ value, label, rich = false }) {
   const net = value.totals ? Math.round((value.totals.income - value.totals.expenses) * 100) / 100 : null;
   const when = sharedOn(value.sharedAt);
-  return <article className="fs-card" aria-label={label}>
+  return <article className={`fs-card${rich ? ' is-rich' : ''}`} aria-label={label}>
     <header className="fs-card-head">
       <strong>{monthLabel(value.month)}</strong>
       {when && <small>{tr('Shared {date}', { date: when })}</small>}
@@ -74,12 +100,16 @@ export function Snapshot({ value, label }) {
       <div><dt>{tr('Expenses')}</dt><dd>{money(value.totals.expenses, value.totals.currency)}</dd></div>
       <div><dt>{tr('Net')}</dt><dd className={net < 0 ? 'is-negative' : 'is-positive'}>{money(net, value.totals.currency)}</dd></div>
     </dl>}
-    {Number.isInteger(value.savingsRate) && <p className={`fs-rate${value.savingsRate < 0 ? ' is-negative' : ''}`}>
-      <Icon name={value.savingsRate < 0 ? 'arrowDown' : 'arrowUp'} size={15} />
-      {value.savingsRate >= 0 ? tr('Saved {n}% of income', { n: value.savingsRate }) : tr('Spent {n}% more than income', { n: -value.savingsRate })}
-    </p>}
-    {value.categories?.length > 0 && <div className="fs-cats">
+    {Number.isInteger(value.savingsRate) && <div className={`fs-rate-row${value.savingsRate < 0 ? ' is-negative' : ''}`}>
+      {rich && <SavingsRing rate={value.savingsRate} />}
+      <p className={`fs-rate${value.savingsRate < 0 ? ' is-negative' : ''}`}>
+        <Icon name={value.savingsRate < 0 ? 'arrowDown' : 'arrowUp'} size={15} />
+        {value.savingsRate >= 0 ? tr('Saved {n}% of income', { n: value.savingsRate }) : tr('Spent {n}% more than income', { n: -value.savingsRate })}
+      </p>
+    </div>}
+    {value.categories?.length > 0 && <div className={`fs-cats${rich ? ' is-rich' : ''}`}>
       <span className="fs-label">{tr('Spending by category')}</span>
+      {rich && <CategoryDonut categories={value.categories} />}
       <ul>{value.categories.map(({ key, percent }) => <li key={key}>
         <span className="fs-cat-name"><i aria-hidden="true" style={{ background: COLORS[key] || 'var(--muted)' }} />{tr(key)}</span>
         <span className="fs-bar" aria-hidden="true"><i style={{ width: `${percent}%`, background: COLORS[key] || 'var(--accent)' }} /></span>
@@ -90,7 +120,12 @@ export function Snapshot({ value, label }) {
   </article>;
 }
 
-export default function FriendFinanceSummary({ friend, session, finance, run, busy, onClose, onSafety, errorMessage }) {
+/*
+ * The friend's page (screens/FriendProfile, owner request 2026-11-16) shows this with `page`: a profile header with
+ * who shares what, everything the friend shared as a full card with charts, then what you share and the safety actions.
+ * In the Friends sheet (no `page`) it keeps its compact header with a back button.
+ */
+export default function FriendFinanceSummary({ friend, session, finance, run, busy, onClose, onSafety, onRemove, errorMessage, page = false }) {
   const confirm = useConfirm();
   const ids = useId();
   const [month, setMonth] = useState(finance.months[0]);
@@ -150,19 +185,29 @@ export default function FriendFinanceSummary({ friend, session, finance, run, bu
     { key: 'totals', title: tr('Income and expense totals'), sub: tr('Shows exact amounts'), off: false },
   ];
 
-  return <div className="friends-content fs">
-    <header className="fs-head">
+  const initial = Array.from(name)[0]?.toLocaleUpperCase();
+  const theyShare = Boolean(shared?.sharedWithYou);
+  return <div className={`friends-content fs${page ? ' fs-page' : ''}`}>
+    {page ? <header className="fp-hero">
+      <span aria-hidden="true" className="fp-avatar">{initial}</span>
+      <h2 dir="auto">{name}</h2>
+      <small>{tr('Friend on MOVO')}</small>
+      <ul className="fp-status" aria-label={tr('Sharing')}>
+        <li className={theyShare ? 'is-on' : ''}><Icon name={theyShare ? 'check' : 'eye'} size={14} />{shared === null ? tr('Loading…') : theyShare ? tr('Shares a summary with you') : tr('Not sharing with you yet')}</li>
+        <li className={yourShare ? 'is-on' : ''}><Icon name={yourShare ? 'check' : 'lock'} size={14} />{yourShare ? tr('You share a summary') : tr('You are not sharing')}</li>
+      </ul>
+    </header> : <header className="fs-head">
       <button type="button" className="fs-back" onClick={onClose} aria-label={tr('Back to friends')}><Icon name="back" size={18} /></button>
-      <span aria-hidden="true" className="friends-initial">{Array.from(name)[0]?.toLocaleUpperCase()}</span>
+      <span aria-hidden="true" className="friends-initial">{initial}</span>
       <div className="fs-head-text"><h3 dir="auto">{name}</h3><small>{tr('Money summary')}</small></div>
-    </header>
+    </header>}
 
     <section className="fs-section" aria-labelledby={`${ids}-in`}>
       <h4 id={`${ids}-in`}>{tr('Shared with you')}</h4>
       {readError ? <div className="fs-empty"><p role="alert">{readError}</p>
         <button type="button" className="friends-secondary" onClick={() => setRevision(value => value + 1)}>{tr('Try again')}</button></div>
         : shared === null ? <p className="friends-note" role="status">{tr('Loading…')}</p>
-        : shared.sharedWithYou ? <Snapshot value={shared.sharedWithYou} label={tr('Summary from {name}', { name })} />
+        : shared.sharedWithYou ? <Snapshot value={shared.sharedWithYou} rich={page} label={tr('Summary from {name}', { name })} />
         : <div className="fs-empty"><Icon name="doc" size={22} /><p>{tr('{name} hasn’t shared a summary with you yet.', { name })}</p></div>}
     </section>
 
@@ -203,6 +248,7 @@ export default function FriendFinanceSummary({ friend, session, finance, run, bu
     </section>
 
     <div className="fs-safety">
+      {onRemove && <button type="button" className="link-button" disabled={busy} onClick={onRemove}>{tr('Remove friend')}</button>}
       <button type="button" className="link-button" disabled={busy} onClick={() => onSafety('report', { connectionId })}>{tr('Report to MOVO')}</button>
       <button type="button" className="link-button is-danger" disabled={busy} onClick={() => onSafety('block', { connectionId })}>{tr('Block user')}</button>
     </div>

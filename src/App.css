@@ -9164,3 +9164,177 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
 .movo-app .pf-ic.mt-gray { --mt: #8e8e93; }
 .movo-app .menu-row.danger .menu-main strong { color: var(--danger, #e5484d); }
 @media (max-width: 360px) { .movo-app .profile-overview .po-split { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== Pop-up panels keep Liquid Glass (owner, 2026-11-16, follow-up) =====
+   With Liquid Glass on (the default), every sheet and dialog is frosted glass: the theme's glass tint at no less than
+   72% (more with the Clarity slider towards "Frosted"), a strong blur behind it, a hairline rim and a brighter top
+   edge like iOS. It is never see-through enough to hurt legibility. With glass off, panels stay solid (block above). */
+.movo-app.glass-on {
+  --pop-glass: rgba(var(--glass-tint, 255,255,255), clamp(.72, calc(var(--glass-fill, .6) + .2), .92));
+  --pop-glass-rim: rgba(255, 255, 255, .55);
+  --pop-glass-hi: rgba(255, 255, 255, .9);
+}
+.movo-app.glass-on.theme-dark {
+  --pop-glass: rgba(var(--glass-tint, 28,28,30), clamp(.72, calc(var(--glass-fill, .6) + .16), .9));
+  --pop-glass-rim: rgba(255, 255, 255, .1);
+  --pop-glass-hi: rgba(255, 255, 255, .16);
+}
+.movo-app.glass-on.movo-app.movo-app.movo-app .sheet.sheet.sheet.sheet {
+  background: var(--pop-glass) !important;
+  border: 1px solid var(--pop-glass-rim) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(180%) !important; backdrop-filter: blur(30px) saturate(180%) !important;
+  box-shadow: inset 0 1px 0 var(--pop-glass-hi), var(--pop-shadow) !important;
+}
+.movo-app.glass-on.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom {
+  background: transparent; -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%);
+}
+.movo-app.glass-on.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom::before { display: none; }
+.movo-app.glass-on.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) { --tx-field: color-mix(in srgb, var(--text) 7%, transparent); }
+@media (prefers-reduced-transparency: reduce) {
+  .movo-app.glass-on.movo-app.movo-app.movo-app .sheet.sheet.sheet.sheet { background: var(--pop-bg) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+
+/* ===== System theme swatch: a real day/night mix (owner, 2026-11-16) =====
+   Not a hard diagonal split: a smooth blend from night to day with a soft dawn glow, sweeping slowly back and forth
+   (calm, ease-in-out, no pulsing). The icon keeps a faint shadow so it reads on both ends. Still with reduced motion. */
+.movo-app.movo-app.movo-app .theme-segments .seg-system {
+  background: linear-gradient(115deg, #121318 0%, #262833 26%, #6f6a8f 44%, #c9b8d8 56%, #eceef4 74%, #fbfbfd 100%) !important;
+  background-size: 240% 240% !important; background-position: 0% 50%;
+  color: #ffffff !important; overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent), 0 0 18px -4px rgba(168, 150, 230, .55);
+}
+.movo-app.movo-app.movo-app .theme-segments .seg-system .movo-icon { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
+.movo-app.movo-app.movo-app .theme-segments .seg-system::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(60% 80% at 50% 50%, rgba(255, 236, 214, .32), transparent 70%);
+  mix-blend-mode: screen;
+}
+.movo-app.movo-app.movo-app .theme-segments > button.selected .seg-system {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent), 0 0 22px -2px rgba(168, 150, 230, .6);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app.movo-app.movo-app .theme-segments .seg-system { animation: seg-system-mix 9s ease-in-out infinite alternate; }
+}
+@keyframes seg-system-mix { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+.movo-app.movo-app.movo-app .theme-segments .seg-system > .movo-icon { position: relative; z-index: 1; }
+.movo-app.movo-app.movo-app .theme-segments .seg-system > .check-badge { z-index: 2; }
+
+/* ===== Aries casts a real shadow (owner, 2026-11-16) =====
+   A wide soft penumbra plus darker contact shadows under the hooves (lib/ariesArt.js), and the figure itself drops a
+   faint shadow onto the card, so Aries stands on the surface instead of floating. Light comes from above. */
+.movo-app .ram-aries .aries-shadow, .movo-app .aries .aries-shadow { opacity: 1; }
+.movo-app .aries-mascot .aries-figure { filter: drop-shadow(0 6px 6px rgba(20, 22, 16, .18)); }
+.movo-app.theme-dark .aries-mascot .aries-figure { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .38)); }
+.movo-app.theme-dark .aries-mascot .aries-shadow { opacity: 1; filter: brightness(.6); }
+
+/* ===== NasrinAI chat charts from on-device records (owner, 2026-11-16) =====
+   components/ChatChart: a donut for spending by category, bars for trends, paired bars for income vs expenses and
+   meters for monthly limits. Drawn offline from lib/chatCharts. Bars grow once with a calm ease-out. */
+.movo-app .cc { margin: 10px 0 2px; padding: 14px; border-radius: var(--r-card, 22px); background: var(--card, #fff);
+  border: 1px solid var(--line); display: grid; gap: 12px; min-width: 0; max-width: 100%; }
+.movo-app .cc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.movo-app .cc-head strong { font-size: 15px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-head small, .movo-app .cc-foot { font-size: 12px; color: var(--muted); }
+.movo-app .cc-foot { margin: 0; }
+.movo-app .cc-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.movo-app .cc-cat { display: grid; grid-template-columns: minmax(104px, 128px) minmax(0, 1fr); gap: 14px; align-items: center; }
+.movo-app .cc-donut { position: relative; aspect-ratio: 1; }
+.movo-app .cc-donut svg { width: 100%; height: 100%; display: block; }
+.movo-app .cc-donut circle { fill: none; stroke-width: 14; }
+.movo-app .cc-donut .cc-track { stroke: color-mix(in srgb, var(--muted) 14%, transparent); }
+.movo-app .cc-donut .cc-seg { stroke-linecap: butt; }
+.movo-app .cc-donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 22%; min-width: 0; }
+.movo-app .cc-donut-center small { font-size: 11px; color: var(--muted); }
+.movo-app .cc-donut-center b { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; min-width: 0; }
+.movo-app .cc-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; font-size: 13px; }
+.movo-app .cc-legend li i, .movo-app .cc-key i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.movo-app .cc-legend li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-legend li b { font-weight: 650; }
+.movo-app .cc-legend li small { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+.movo-app .cc-bars { display: flex; align-items: stretch; gap: 6px; height: 132px; min-width: 0; }
+.movo-app .cc-bars.is-dense { gap: 2px; }
+.movo-app .cc-bar-col { flex: 1 1 0; min-width: 0; display: grid; grid-template-rows: minmax(0, 1fr) 16px; gap: 4px; }
+.movo-app .cc-bar-track { display: flex; align-items: flex-end; justify-content: center; gap: 2px; border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 8%, transparent); overflow: hidden; }
+.movo-app .cc-bar-track i { display: block; width: 100%; max-width: 22px; border-radius: 6px 6px 3px 3px; background: var(--accent);
+  transform-origin: bottom; }
+.movo-app .cc-flow .cc-bar-track i { max-width: 11px; }
+.movo-app .cc-bar-col small { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; }
+.movo-app .cc-key { list-style: none; margin: -4px 0 0; padding: 0; display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+.movo-app .cc-key li { display: inline-flex; align-items: center; gap: 6px; }
+.movo-app .cc-stats { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.movo-app .cc-stats div { min-width: 0; padding: 8px 10px; border-radius: 14px; background: color-mix(in srgb, var(--muted) 8%, transparent); }
+.movo-app .cc-stats dt { font-size: 11px; color: var(--muted); }
+.movo-app .cc-stats dd { margin: 2px 0 0; font-size: 13px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc .is-negative { color: var(--red, #ff3b30); }
+.movo-app .cc .is-positive { color: var(--green, #34c759); }
+.movo-app .cc-limits { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.movo-app .cc-limits li { display: grid; gap: 5px; min-width: 0; }
+.movo-app .cc-limit-name { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; min-width: 0; }
+.movo-app .cc-limit-name span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-limit-bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 14%, transparent); overflow: hidden; }
+.movo-app .cc-limit-bar i { display: block; height: 100%; border-radius: inherit; transform-origin: left; }
+.movo-app .cc-limits small { font-size: 12px; color: var(--muted); }
+.movo-app .cc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app .cc-bar-track i { animation: cc-grow-y .5s cubic-bezier(.22, 1, .36, 1) both; }
+  .movo-app .cc-limit-bar i { animation: cc-grow-x .5s cubic-bezier(.22, 1, .36, 1) both; }
+  .movo-app .cc-donut svg { animation: cc-fade .4s ease-out both; }
+}
+@keyframes cc-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes cc-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes cc-fade { from { opacity: 0; transform: rotate(-12deg); } to { opacity: 1; transform: none; } }
+@media (max-width: 360px) { .movo-app .cc-cat { grid-template-columns: 1fr; } .movo-app .cc-donut { max-width: 140px; justify-self: center; } }
+
+/* ===== Friend's own page (owner, 2026-11-16) =====
+   screens/FriendProfile: a profile header with who shares what, the friend's shared summary as a full card with a
+   savings ring and category donut, then what you share and the connection actions. */
+.movo-app .friend-page { display: grid; gap: 14px; padding: 0 16px 24px; min-width: 0; }
+.movo-app .friend-page .friends-content { display: grid; gap: 14px; min-width: 0; }
+.movo-app .fp-hero { display: grid; justify-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; min-width: 0; }
+.movo-app .fp-avatar { display: grid; place-items: center; width: 84px; height: 84px; margin-bottom: 6px; border-radius: 50%;
+  font-size: 34px; font-weight: 650; color: #fff;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 78%, #fff), var(--accent));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.35); }
+.movo-app .fp-hero h2 { margin: 0; font-size: 22px; font-weight: 700; overflow-wrap: anywhere; max-width: 100%; }
+.movo-app .fp-hero > small { color: var(--muted); font-size: 13px; }
+.movo-app .fp-status { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; max-width: 100%; }
+.movo-app .fp-status li { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 12px; border-radius: 999px;
+  background: var(--field); color: var(--muted); font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.movo-app .fp-status li.is-on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-ink, var(--accent)); }
+.movo-app .fp-status svg { flex: none; }
+.movo-app .fs-page .fs-card.is-rich { padding: 16px; background: var(--field); }
+.movo-app .fs-rate-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.movo-app .fs-ring { width: 56px; height: 56px; flex: none; }
+.movo-app .fs-ring circle, .movo-app .fs-donut circle { fill: none; }
+.movo-app .fs-ring circle { stroke-width: 6; }
+.movo-app .fs-ring .fs-ring-track, .movo-app .fs-donut .fs-ring-track { stroke: color-mix(in srgb, var(--muted) 18%, transparent); }
+.movo-app .fs-ring .fs-ring-fill { stroke: var(--accent); stroke-linecap: round; }
+.movo-app .fs-rate-row.is-negative .fs-ring-fill { stroke: var(--danger, #c44949); }
+.movo-app .fs-ring text { font-size: 13px; font-weight: 700; fill: var(--text); }
+.movo-app .fs-cats.is-rich { grid-template-columns: 96px minmax(0, 1fr); column-gap: 14px; align-items: center; }
+.movo-app .fs-cats.is-rich .fs-label { grid-column: 1 / -1; }
+.movo-app .fs-donut { width: 96px; height: 96px; }
+.movo-app .fs-donut circle { stroke-width: 13; }
+.movo-app .fs-cats.is-rich li { grid-template-columns: minmax(0, 1fr) auto; }
+.movo-app .fs-cats.is-rich .fs-bar { display: none; }
+@media (max-width: 340px) { .movo-app .fs-cats.is-rich { grid-template-columns: 1fr; } .movo-app .fs-donut { justify-self: center; } }
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app .fs-ring .fs-ring-fill { transition: stroke-dasharray .5s cubic-bezier(.22, 1, .36, 1); }
+  .movo-app .fs-donut { animation: cc-fade .4s ease-out both; }
+}
+/* Friend page and chat charts at narrow widths: amounts and names stay whole (ellipsis), never split mid-word. */
+.movo-app .fp-status { background: none; border: 0; box-shadow: none; }
+.movo-app .fs-totals { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.movo-app .fs-totals dd { overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.movo-app .fs-cats.is-rich .fs-cat-name { overflow-wrap: normal; overflow: hidden; }
+.movo-app .fs-cats.is-rich .fs-cat-name { white-space: nowrap; text-overflow: ellipsis; display: block; }
+.movo-app .fs-cats.is-rich .fs-cat-name i { display: inline-block; margin-inline-end: 7px; vertical-align: middle; }
+@media (max-width: 400px) {
+  .movo-app .fs-cats.is-rich { grid-template-columns: 84px minmax(0, 1fr); }
+  .movo-app .fs-donut { width: 84px; height: 84px; }
+  .movo-app .cc-cat { grid-template-columns: 1fr; justify-items: center; }
+  .movo-app .cc-donut { width: 148px; }
+  .movo-app .cc-legend { width: 100%; }
+}

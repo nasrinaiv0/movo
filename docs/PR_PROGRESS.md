@@ -1,3 +1,8 @@
+## 2026-11-16 — Glass pop-ups, friend page, offline chat charts, Pro/Pro+ badges, no header by default, Aries shadow
+
+- Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
+- NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
+
 ## 2026-11-16 — Profile page: clearer overview and consistent rows
 
 - One Overview card names the month chosen on Home, shows the total balance large, then that month's income and expenses. Trends appear only when meaningful (no "999+%").
