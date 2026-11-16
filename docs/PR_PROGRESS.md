@@ -1,6 +1,7 @@
 ## 2026-11-16 — PR #280 conflict resolution
 
 - Integrated main `77bcacc`. Kept Wear quick-log and build targets alongside the isolated Android auth build, Friends, and legacy WebView URL parsing. Wear URLs still open only a blank phone form.
+- iOS CI exposed a phone-only distribution check. The corrected check verifies phone and Watch bundle identities, rejects mismatched companions, and preserves the existing iPhone release checks.
 - [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-280-main-conflicts.md).
 
 ## 2026-11-12 — Wear OS and Apple Watch compatibility companion branch
