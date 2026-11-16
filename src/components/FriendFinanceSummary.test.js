@@ -25,6 +25,29 @@ test('only selected sections render, zero is visible and old snapshots still ope
   legacy.close();
 });
 
+test('historical month and current-value dates are attached to the approved sections', () => {
+  const { container, close } = render({
+    month: '2026-02', asOf: '2026-11-17', currency: 'PHP', note: 'I check my budget weekly.',
+    sections: {
+      income: 12500, savings: 0, flow: [200, -100, 0, 50, 0],
+      planning: { bills: 450, debt: 0, owed: 0 },
+      budgets: { budgets: 4, onTrack: 3, plans: 2, progress: 65 },
+    },
+  });
+  expect(container.querySelector('time').getAttribute('datetime')).toBe('2026-02');
+  expect(container.querySelector('.friend-section-income').textContent).toContain('12,500.00');
+  expect(container.querySelector('.friend-section-income small')).toBeNull();
+  expect(container.querySelector('.friend-section-savings small').textContent).toContain('Nov 17, 2026');
+  expect(container.querySelector('.friend-section-planning small').textContent).toContain('Nov 17, 2026');
+  expect(container.querySelector('.friend-section-budgets small').textContent).toContain('Nov 17, 2026');
+  expect(container.querySelector('.friend-plan-progress').textContent).toContain('65%');
+  expect(container.querySelector('.friend-flow-summary').textContent).toContain('150.00');
+  expect(container.querySelectorAll('.friend-flow li')).toHaveLength(4);
+  expect(container.querySelector('.friend-flow .negative')).not.toBeNull();
+  expect(container.querySelector('.friend-note').nextElementSibling.className).toBe('friend-summary-grid');
+  close();
+});
+
 test('weekly flow and current figures exclude transfers and raw ledger fields', () => {
   const payment = { date: '2026-10-02T12:00:00Z', merchant: 'Private', type: 'expense', amount: 8 };
   const snapshot = buildFriendSummary({
