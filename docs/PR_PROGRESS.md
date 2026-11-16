@@ -1,3 +1,8 @@
+## 2026-11-16 — PR #308 conflict resolution
+
+- Integrated main `77bcacc`. Retained the Android release optimization and the main progress history.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-308-main-conflicts.md).
+
 ## 2026-11-16 — Android release optimization for Google Play bundle 11
 
 - Play Console reports 0% DEX optimization, 93% obfuscation, 92% code shrinking, R8 full mode, and 16 KB page-size support. The release configuration uses the legacy Android rules file with `-dontoptimize`. The screenshot cuts off the total uncompressed DEX size.
@@ -5,6 +10,14 @@
 - Precommit verification: a Python diff check verified optimization flags, preserved bridge rules, and isolated the app changes to its release build type. Verify the Android native and disposable-key AAB builds in PR CI. After review, generate a signed AAB from `main` with a version code greater than every code already uploaded. In Play Internal testing, compare the DEX size and all three DEX percentages, the R8 configuration flags, and 16 KB support against bundle 11. Run the Play-delivered build on Android and check Google and email sign-in, sign-in after restart, receipt scanning, notifications, and Play license-test purchase and restore before promotion.
 - Phase 1 CI on the initial head stopped at the per-commit documentation check. The revised commit includes this entry and the [dated engineering update](engineering/updates/2026-11-16-android-release-r8-optimization.md).
 - Open PRs reviewed during preparation: #274, #280, #290, #291, #294, #295, #296, #297, #299, #305, and #306. This change is scoped to optimization and release validation.
+
+## 2026-11-16 — Private friends and compact Profile
+
+- Added Profile → Friends with single-use QR/link invites, native AirDrop and Android Sharesheet, deliberate acceptance, and reciprocal removal.
+- Added service-only invite and connection storage with no access to financial data. Private invitation lifecycle and finance isolation passed in disposable PostgreSQL.
+- The implementation is based on main at `d511f268`. Open PRs #274, #280, #290, #291, #294–#297, #299, #305, #306, #308 and #309 were reviewed. Referral rewards #309 are independent, with possible Profile, privacy and generated locale conflicts at integration.
+- Mobile browser review at 375 px light and 320 px dark exercised Profile, QR generation and explicit acceptance. The Friends sheet now gives the selected tab the filled surface.
+- [Implementation, verification and rollback](engineering/updates/2026-11-16-private-friends-profile.md).
 
 ## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
 
@@ -816,7 +829,7 @@ These are not resolved by a green frontend CI run or a READY deployment:
 ## PR #225 — Consistent headers, legal spacing and Vercel-configured social profiles (2026-11-06)
 - Root and back-navigation headers use 10px upper/lower internal padding with 10px bottom separation. Home mascot/header row is more compact while retaining 45px actions and safe-area spacing.
 - Terms, Privacy and Help Center share 14px section gaps, including canonical supplemental policy sections; adjusted sticky fade and bottom scroll clearance for fixed navigation.
-- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through \`/api/social-links\`. No fake profiles or client-side embedded links.
+- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through `/api/social-links`. No fake profiles or client-side embedded links.
 - Changed files, new security/API and rendering tests, translations and documentation are committed together with a dated engineering update, as required by MOVO CI. No finance/ledger or policy wording changes.
 - Sandbox tests and GitHub exact-head CI required before merging. Vercel preview can be canceled by ignored-build setting and must not be assumed verified.
 
