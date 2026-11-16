@@ -27,6 +27,7 @@ import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
 import './AdaptiveLayout.css';
+import './screens/Settings.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
 import { Sheet } from './components/ui';
