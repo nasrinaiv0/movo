@@ -1,3 +1,8 @@
+## 2026-11-16 — Foreign-currency receipt review
+
+- Scanned receipts now convert into the selected account's currency using dated reference rates, with an optional statement amount and an audit note retaining the source total. Ambiguous source currency asks for confirmation.
+- The first strict Node 26 build and 1,460 tests passed, alongside Vercel Sandbox rate fixtures and two isolated Chromium widths. Verify GitHub checks and the protected preview at the PR head. [Engineering notes and acceptance steps](docs/engineering/updates/2026-11-16-foreign-currency-receipts.md).
+
 ## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
 
 Owner report: on the affected Android phone, Google sign-in ends back on Sign in after the account is chosen. Supabase logs show the pattern exactly: that phone gets `/authorize` 302 and `/callback` 302 (a code is issued) but never calls `/token`, while phones on Chrome 156/157 complete the exchange. The affected phone is a Huawei on Android 12 whose in-app WebView reports Chromium 114.

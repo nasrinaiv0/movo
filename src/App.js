@@ -2779,7 +2779,7 @@ function App() {
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : c.openScanner} />}
-      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show}
+      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show} fx={fx} refreshFx={refreshFx}
         accounts={formAccounts.filter(a => !a.is_archived)} busy={busy} saveError={error}
         onClose={() => { setSheet(null); setError(''); }}
         onLog={async (f) => {
