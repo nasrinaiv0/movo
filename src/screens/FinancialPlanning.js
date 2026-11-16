@@ -14,6 +14,8 @@ import { cardNetworkLogoUrl, institutionLogoCandidates } from '../lib/institutio
 import { convert } from '../lib/fx';
 import usePlanning from '../lib/usePlanning';
 import BillsPanel from '../components/BillsPanel';
+import AriesMascot from '../components/AriesMascot';
+import '../components/AriesPlanning.css';
 
 /*
  * Financial planning: bills, loans and debts, money owed to you, and savings goals, with the overall position
@@ -274,7 +276,7 @@ export default function FinancialPlanning({ c }) {
           const remaining = Math.max(0, target - saved);
           const activePlanAllocations = (p.planAllocations || []).filter(allocation => allocation.plan_id === String(plan.id) && allocation.status === 'allocated');
           return <article className="card fp-goal" key={`plan-${plan.id}`}>
-            <div className="fp-goal-head"><span className="stat-icon tone-blue"><Icon name="target" size={17} strokeWidth={2} /></span>
+            <div className="fp-goal-head"><AriesMascot state={target > 0 && saved >= target ? 'celebrate' : 'focused'} size={54} className="aries-goal-companion" />
               <span className="fp-main"><strong>{plan.name}</strong><small>{tr('Plan')}: {cash(target, plan.currency)}{plan.due ? ` · ${formatDate(plan.due)}` : ''}</small></span>
               <span className="fp-amount"><b>{cash(saved, plan.currency)}</b><small>{Math.round(progress)}%</small></span></div>
             <div className="progress-track"><span style={{ width: `${progress}%` }} /></div>
@@ -299,7 +301,7 @@ export default function FinancialPlanning({ c }) {
       {goals.length > 0 && <>
         <SectionTitle>{tr('Savings goals')}</SectionTitle>
         {goals.map(g => { const prog = goalProgress(g, live); const mine = live.filter(a => a.goal_id === g.id); return <article className="card fp-goal" key={g.id}>
-          <div className="fp-goal-head"><span className="stat-icon tone-blue"><Icon name="target" size={17} strokeWidth={2} /></span>
+          <div className="fp-goal-head"><AriesMascot state={prog.target > 0 && prog.saved >= prog.target ? 'celebrate' : 'focused'} size={54} className="aries-goal-companion" />
             <span className="fp-main"><strong>{g.name}</strong><small>{tr('Target')}: {cash(g.target_amount, g.currency)}{g.target_date ? ` · ${formatDate(g.target_date)}` : ''}</small></span>
             <span className="fp-amount"><b>{cash(prog.saved, g.currency)}</b><small>{Math.round(prog.percent)}%</small></span></div>
           <div className="progress-track"><span style={{ width: `${prog.percent}%` }} /></div>
@@ -308,7 +310,7 @@ export default function FinancialPlanning({ c }) {
           {g.status === 'active' && <button type="button" className="secondary-button" onClick={() => open('allocate', { goal_id: g.id, goal: g, account_id: inCurrency(g.currency)[0]?.id || '', amount: '', currency: g.currency, note: '' })}>{tr('Allocate funds')}</button>}
         </article>; })}
       </>}
-      {plans.length === 0 && goals.length === 0 && <button type="button" className="budget-empty" onClick={() => open('goal', blankGoal(base))}><Icon name="plus" size={20} /><span><strong>{tr('Create a savings goal')}</strong><small>{tr('Create a savings goal or add a plan to see everything together here.')}</small></span></button>}
+      {plans.length === 0 && goals.length === 0 && <button type="button" className="budget-empty aries-goals-empty" onClick={() => open('goal', blankGoal(base))}><AriesMascot state="welcome" size={76} /><span><strong>{tr('Create a savings goal')}</strong><small>{tr('Create a savings goal or add a plan to see everything together here.')}</small></span></button>}
       <button type="button" className="secondary-button wide-button" onClick={() => c.openBudgets?.('plans')}>{tr('Add plan')}</button>
     </>}
 
