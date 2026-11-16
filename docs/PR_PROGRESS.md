@@ -1,3 +1,7 @@
+## 2026-11-16 — Home header: less space under Total balance
+
+- The scenery under the Total balance card shrinks from 28 px to 10 px: the card's own bottom margin no longer stacks on the header padding inside the header. CSS only. [Details](engineering/updates/2026-11-16-home-header-bottom-gap.md).
+
 ## 2026-11-16 — Menu tool icons: one glyph and colour per tool
 
 - Menu tiles get new original glyphs: subscriptions, savings goal, cashback, calendar with clock, planning pie, exchange arrows, crypto block and stocks trend. Each tool has its own colour, tuned for light and dark, on larger 40 px squircles. Scheduled no longer falls back to a sparkle (missing `calendar-clock` icon), and Crypto and Stocks no longer share an icon. [Details](engineering/updates/2026-11-16-menu-tool-icons.md).

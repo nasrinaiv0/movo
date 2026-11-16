@@ -9046,3 +9046,11 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .menu-tile-icon.mt-gray { --mt: #8e8e93; }
 .movo-app .menu-tile-icon.mt-red { --mt: #ef4b3f; }
 .movo-app .menu-tile strong { margin-top: 8px; }
+
+/* ===== Home header: less space under Total balance (owner, 2026-11-16) =====
+   The scenery showed 28px under the balance card (14px header padding plus the card's own 14px bottom margin).
+   Inside the header the card's margin is dropped and the header keeps 10px, so the card sits close to the rounded
+   bottom edge (28px header corners around 22px card corners). */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block { padding-bottom: 10px !important; }
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot > .balance-card,
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot :is(.balance-card) { margin-bottom: 0 !important; }
