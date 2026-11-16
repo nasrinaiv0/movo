@@ -91,6 +91,41 @@ describe('native store purchase lifecycle', () => {
     });
   });
 
+  test('uses the same Android offer token as the displayed store price', async () => {
+    Capacitor.getPlatform.mockReturnValue('android');
+    Object.defineProperty(window, 'crypto', { configurable: true,
+      value: { subtle: { digest: async () => new Uint8Array(32).buffer } } });
+    NativePurchases.purchaseProduct.mockResolvedValue({
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
+      purchaseToken: 'verified-token',
+    });
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ enabled: true }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ verified: true, acknowledged: true, tier: 'pro_plus', status: 'active' }) });
+    await purchaseStoreProduct({
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
+      basePlanId: 'annual',
+      priceString: '₱1,788.00',
+      offerToken: 'exact-quoted-offer-token',
+    }, session);
+    expect(NativePurchases.purchaseProduct).toHaveBeenCalledWith(expect.objectContaining({
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
+      planIdentifier: 'annual',
+      offerToken: 'exact-quoted-offer-token',
+    }));
+    expect(global.fetch.mock.calls[0][0]).toBe('/api/purchases/config?platform=google');
+  });
+
+  test('refuses mismatched base plan on the displayed offer without opening checkout', async () => {
+    Capacitor.getPlatform.mockReturnValue('android');
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ enabled: true }) });
+    await expect(purchaseStoreProduct({
+      productIdentifier: 'com.nasrinai.movo.proplus.annual',
+      basePlanId: 'monthly',
+      offerToken: 'wrong-plan-offer',
+    }, session)).rejects.toThrow('selected Google Play offer changed');
+    expect(NativePurchases.purchaseProduct).not.toHaveBeenCalled();
+  });
+
   test('purchases Google subscription with the configured base plan and avoids duplicate acknowledgement', async () => {
     Capacitor.getPlatform.mockReturnValue('android');
     Object.defineProperty(window, 'crypto', {

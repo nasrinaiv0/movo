@@ -1,0 +1,26 @@
+/* AI receipt summary: compact adaptive surfaces; intentionally no gradients. */
+.scan-consent{display:grid;justify-items:center;gap:12px;padding:22px 16px;border-radius:20px;background:var(--field);color:var(--text);text-align:center}
+.scan-consent > svg{color:var(--accent)}
+.scan-consent strong{font-size:17px;font-weight:720;letter-spacing:-.02em}
+.scan-consent p{margin:0;color:var(--muted);font-size:13px;line-height:1.6;max-width:330px}
+.scan-consent .sheet-actions{display:flex;gap:8px;width:100%;margin:2px 0}
+.scan-consent .sheet-actions > button{min-height:46px;flex:1}
+.scan-consent .link-button{min-height:44px;padding:8px 14px}
+.scan-review{display:grid;gap:12px;min-width:0}
+.scan-ai-summary{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:18px 14px;border-radius:18px;background:var(--field);text-align:center;animation:scan-ai-in .3s cubic-bezier(.2,.8,.2,1) both}
+.scan-ai-label{color:var(--muted);font-size:11px;font-weight:650;letter-spacing:.05em}
+.scan-ai-total{font-size:clamp(26px,8vw,36px);font-weight:760;letter-spacing:-.045em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.scan-ai-merchant{font-size:15px;font-weight:690;line-height:1.3}
+.scan-ai-meta{color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.scan-ai-category{color:var(--accent-ink,var(--accent));padding:5px 10px;border-radius:12px;background:rgba(var(--accent-rgb),.1);font-size:11px;font-weight:660}
+.scan-review > .acct-pick{width:100%;min-width:0}
+.scan-review-details{min-width:0}
+.scan-review-details > summary{color:var(--muted);font-size:12px;font-weight:600;padding:12px 0;cursor:pointer;min-height:44px}
+.scan-review-details[open]{display:grid;gap:12px}
+.scan-review-details[open] > label,.scan-review-details[open] > .form-grid{margin-top:8px}
+.scan-review-details select{width:100%;max-width:100%}
+.scan-review .sheet-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:9px}
+.scan-review .sheet-actions button{min-height:46px}
+.scan-review .sheet-actions button:disabled{opacity:.55}
+@keyframes scan-ai-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.scan-ai-summary{animation:none}}

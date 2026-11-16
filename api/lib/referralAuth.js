@@ -28,7 +28,8 @@ async function clients(req) {
   const auth = createClient(url, anon, options), admin = createClient(url, service, options);
   const { data, error } = await auth.auth.getUser(token);
   if (error || !data?.user?.id) return { error: 'sign_in_required', status: 401 };
-  return { admin, userId: data.user.id };
+  const user = data.user;
+  return { admin, userId: user.id, verified: !user.is_anonymous && Boolean(user.email_confirmed_at || user.phone_confirmed_at) };
 }
 
 module.exports = { send, gate, clients, pointsEnabled };
