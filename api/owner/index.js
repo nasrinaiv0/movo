@@ -186,6 +186,11 @@ async function handler(req,res) {
         .select('id,area,title,notes,status,priority,created_at,updated_at,updated_by')
         .eq('area',view).order('updated_at',{ascending:false}).limit(100);
       if(itemError)throw Error('workspace_unavailable');
+      if(view==='support'){
+        const {data:reports,error}=await admin.from('movo_friend_reports').select('id,reason,reported,created_at')
+          .order('created_at',{ascending:false}).limit(100);
+        return reply(res,200,{items:items||[],reports:reports||[],reportsAvailable:!error,limitedTo:100,status:'ready',externalIntegration:'not_integrated'});
+      }
       if(view==='health'){
         const {error}=await admin.from('movo_plan_grants').select('user_id',{head:true,count:'exact'}).limit(1);
         return reply(res,200,{items:items||[],database:error?'degraded':'reachable',server:'reachable',

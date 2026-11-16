@@ -1,3 +1,4 @@
+import { CapacitorHttp } from '@capacitor/core';
 import { apiUrl, appOrigin, isNativeApp } from './platform';
 import { MovoNative } from './native';
 
@@ -59,12 +60,33 @@ export async function friendsRequest(session, action = 'list', payload = {}, sig
     headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify({ ...payload, action });
   }
-  const response = await fetch(apiUrl('/api/friends'), options);
-  const result = await response.json();
-  if (!response.ok) {
-    const error = new Error('Friends request failed');
-    error.code = result.error;
-    throw error;
+  let status;
+  let result;
+  try {
+    if (isNativeApp()) {
+      const reply = await CapacitorHttp.request({
+        url: apiUrl('/api/friends'), method: options.method || 'GET', headers,
+        ...(action === 'list' ? {} : { data: { ...payload, action } }),
+        connectTimeout: 10000, readTimeout: 15000,
+      });
+      if (signal?.aborted) throw Object.assign(new Error('Aborted'), { name: 'AbortError' });
+      status = reply.status;
+      result = reply.data;
+      if (typeof result === 'string') {
+        try { result = JSON.parse(result); } catch { result = null; }
+      }
+    } else {
+      const response = await fetch(apiUrl('/api/friends'), options);
+      status = response.status;
+      result = await response.json().catch(() => null);
+    }
+  } catch (cause) {
+    if (cause?.name === 'AbortError') throw cause;
+    throw Object.assign(new Error('Friends connection failed'), { code: 'friends_network' });
+  }
+  if (status < 200 || status >= 300 || !result || typeof result !== 'object' || Array.isArray(result)) {
+    const code = status === 401 ? 'sign_in_required' : result?.error;
+    throw Object.assign(new Error('Friends request failed'), { code });
   }
   return result;
 }

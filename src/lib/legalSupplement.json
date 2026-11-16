@@ -51,6 +51,12 @@
         "When you first set up MOVO, and again after these Terms or the Privacy Policy change, MOVO asks you to accept them before the app opens. The version you accepted and the time you accepted it are saved with your MOVO preferences on this device and, when you are signed in, with your account preferences.",
         "The video guide shown during setup uses invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
       ]
+    },
+    {
+      "heading": "18. Sharing with friends",
+      "paragraphs": [
+        "Only share content you have the right to share. MOVO prohibits harassment, threats, sexually exploitative material, impersonation, and disclosure of someone else’s private information through Friends. You can block a user or report a request or shared summary in the app. Contact support@nasrinai.com for help."
+      ]
     }
   ],
   "privacy": [
@@ -144,7 +150,10 @@
       "heading": "20. Private friend invites",
       "paragraphs": [
         "Friends is optional. To create or accept an invite, sign in and choose the display name you want to share. Anyone who has an active invite link and a verified MOVO account can see the name attached to that invite. Invite links carry a random code and expire after 24 hours or after one person accepts. Creating a replacement or revoking the active invite disables the previous link.",
-        "MOVO stores a hashed invite code, account identifiers, chosen display names and connection timestamps to manage Friends. Your friends can see the display name you shared. Friends does not upload contacts or share emails, profile photos or financial records. Either person can remove a connection, and account deletion removes the account’s friend connections."
+        "MOVO stores a hashed invite code, account identifiers, chosen display names, usernames, requests and connection timestamps to manage Friends. Verified members can search usernames that their owners choose to make discoverable. The search shows only usernames. Recipients choose whether to accept connection requests.",
+        "When you preview and approve a monthly tracking summary, MOVO stores the selected snapshot for the friend you chose. This can include the note you write, income and expense totals and spending category percentages. Friends cannot open your underlying transactions, receipts or accounts. You can revoke access, and removing a friend removes any shared snapshots for that connection.",
+        "MOVO saves your uploaded profile photo privately on the account when you are signed in and makes it available to you on your devices. Guests keep their photo on the current device. Search results and shared summaries do not include your photo, email or contacts. Account deletion removes the account’s photo and Friends records.",
+        "If you block or report someone, MOVO stores the accounts involved and the type of report for safety and support review. A report does not copy the contents of a financial summary into the report record."
       ]
     }
   ]

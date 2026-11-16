@@ -8952,3 +8952,19 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   .movo-app .profile-social-action, .friends-tabs button { transition: background-color 180ms ease-out, transform 180ms ease-out; }
   .movo-app .profile-social-action:active { transform: scale(.98); }
 }
+
+.friends-tabs-expanded { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.friends-directory-settings, .friends-snapshot { border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.friends-field :is(textarea, select) { min-width: 0; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--field); color: var(--text); font: inherit; }
+.friends-option { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.friends-option input { inline-size: 18px; block-size: 18px; accent-color: var(--accent); flex: none; }
+.friends-content h3 { margin: 0; font-size: 15px; }
+.friends-list.friends-directory-results li { flex-wrap: wrap; }
+.friends-list.friends-directory-results button { width: auto; }
+.friends-directory-results b { overflow-wrap: anywhere; }
+.friends-snapshot p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.friends-totals { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.friends-totals dd { margin: 3px 0; font-weight: 650; overflow-wrap: anywhere; }
+.friends-breakdown { list-style: none; padding: 0; margin-block: 10px 0; display: grid; gap: 8px; }
+.friends-breakdown li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(28px, 1fr) auto; gap: 8px; align-items: center; overflow-wrap: anywhere; }
+.friends-breakdown meter { inline-size: 100%; accent-color: var(--accent); }

@@ -1,3 +1,4 @@
+import { useProfilePhoto } from './lib/useProfilePhoto';
 import FriendsSheet from './components/FriendsSheet';
 import { captureFriendInvite, saveFriendInvite } from './lib/friends';
 import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
@@ -1186,7 +1187,8 @@ function App() {
   const email = session?.user?.email || tr('Local-only session');
   const defaultName = session?.user?.email ? session.user.email.split('@')[0] : tr('Friend');
   const name = prefs.profileName.trim() || metaName || defaultName;
-  const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase() };
+  const profilePhoto = useProfilePhoto(session, prefs.profilePhoto, setPref, authReady && process.env.NODE_ENV !== 'test');
+  const user = { name, email, firstName: name.split(' ')[0], initial: name.slice(0, 1).toUpperCase(), photo: profilePhoto.photo };
 
   /* ---------- actions ---------- */
   const [planTab, setPlanTab] = useState('overview');
@@ -2630,6 +2632,7 @@ function App() {
 
   const c = {
     openFriends: () => setSheet({ name: 'friends', invite: friendInvite }),
+    saveProfilePhoto: profilePhoto.savePhoto,
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
     entitlement, entitlementReady, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), startAccount, openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
@@ -2869,7 +2872,7 @@ function App() {
       </Sheet>}
 
       {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
-        inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
+        inviteToken={sheet.invite} finance={{ months, statsFor, breakdownFor, currency: base }} onClose={() => { clearFriendInvite(); setSheet(null); }}
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>
