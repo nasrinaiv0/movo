@@ -1,3 +1,11 @@
+## 2026-11-16 — Private friends and compact Profile
+
+- Added Profile → Friends with single-use QR/link invites, native AirDrop and Android Sharesheet, deliberate acceptance, and reciprocal removal.
+- Added service-only invite and connection storage with no access to financial data. Private invitation lifecycle and finance isolation passed in disposable PostgreSQL.
+- The implementation is based on main at `d511f268`. Open PRs #274, #280, #290, #291, #294–#297, #299, #305, #306, #308 and #309 were reviewed. Referral rewards #309 are independent, with possible Profile, privacy and generated locale conflicts at integration.
+- Mobile browser review at 375 px light and 320 px dark exercised Profile, QR generation and explicit acceptance. The Friends sheet now gives the selected tab the filled surface.
+- [Implementation, verification and rollback](engineering/updates/2026-11-16-private-friends-profile.md).
+
 ## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
 
 Owner report: on the affected Android phone, Google sign-in ends back on Sign in after the account is chosen. Supabase logs show the pattern exactly: that phone gets `/authorize` 302 and `/callback` 302 (a code is issued) but never calls `/token`, while phones on Chrome 156/157 complete the exchange. The affected phone is a Huawei on Android 12 whose in-app WebView reports Chromium 114.
@@ -808,7 +816,7 @@ These are not resolved by a green frontend CI run or a READY deployment:
 ## PR #225 — Consistent headers, legal spacing and Vercel-configured social profiles (2026-11-06)
 - Root and back-navigation headers use 10px upper/lower internal padding with 10px bottom separation. Home mascot/header row is more compact while retaining 45px actions and safe-area spacing.
 - Terms, Privacy and Help Center share 14px section gaps, including canonical supplemental policy sections; adjusted sticky fade and bottom scroll clearance for fixed navigation.
-- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through \`/api/social-links\`. No fake profiles or client-side embedded links.
+- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through `/api/social-links`. No fake profiles or client-side embedded links.
 - Changed files, new security/API and rendering tests, translations and documentation are committed together with a dated engineering update, as required by MOVO CI. No finance/ledger or policy wording changes.
 - Sandbox tests and GitHub exact-head CI required before merging. Vercel preview can be canceled by ignored-build setting and must not be assumed verified.
 

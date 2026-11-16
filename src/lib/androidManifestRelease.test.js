@@ -29,9 +29,18 @@ describe('Android release deep-link routing', () => {
     expect(logs[0]).toContain('android.intent.category.BROWSABLE');
   });
 
+  test('friend invitations use a strict build-specific host and scheme', () => {
+    const friends = filters.filter(filter => filter.includes('android:host="friend"'));
+    expect(friends).toHaveLength(1);
+    expect(friends[0]).toContain('android:scheme="${movoAuthScheme}"');
+    expect(friends[0]).toContain('android.intent.action.VIEW');
+    expect(friends[0]).toContain('android.intent.category.DEFAULT');
+    expect(friends[0]).toContain('android.intent.category.BROWSABLE');
+  });
+
   test('neither source manifest nor Gradle declares a permissive or credential-bearing callback', () => {
     expect(manifest).toContain('android:exported="true"');
-    expect(filters).toHaveLength(3); // launcher, OAuth, quick-log
+    expect(filters).toHaveLength(4); // launcher, OAuth, quick-log and friends
     expect(manifest).not.toMatch(/<data\s+android:scheme="movo"\s*\/>/);
     expect(manifest).not.toMatch(/access_token|refresh_token|client_secret/i);
     expect(gradle).not.toMatch(/movoAuthScheme:\s*".*\*/);
