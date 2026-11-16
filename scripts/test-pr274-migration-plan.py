@@ -47,13 +47,11 @@ class MigrationStagingContractTests(unittest.TestCase):
         self.assertNotIn("docker ps -q", self.workflow)
 
     def test_stages_are_explicit_and_are_applied_in_order(self):
-        self.assertIn('cutoff = "20261111133000"', self.harness)
         self.assertIn('"20261111133000", "20261111133100", "20261111133200"', self.harness)
-        all_versions = [
-            p.name[:14] for p in (ROOT / "supabase/migrations").glob("*.sql")
-            if p.name[:14] >= STAGES[0]
-        ]
-        self.assertEqual(list(STAGES), sorted(all_versions))
+        all_versions = sorted(p.name[:14] for p in (ROOT / "supabase/migrations").glob("*.sql"))
+        self.assertEqual(list(STAGES), [version for version in all_versions if version in STAGES])
+        self.assertTrue(any(version > STAGES[-1] for version in all_versions))
+        self.assertIn("if migration.name[:14] not in upgrade_versions", self.harness)
 
     def test_backup_restores_into_separate_disposable_database(self):
         self.assertIn('pg_dump', self.harness)

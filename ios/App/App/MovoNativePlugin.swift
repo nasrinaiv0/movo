@@ -3,6 +3,7 @@ import Capacitor
 import LocalAuthentication
 import Security
 import StoreKit
+import UniformTypeIdentifiers
 
 /// MOVO's native bridge (JS name "MovoNative").
 /// - Face ID / Touch ID for App Lock (LocalAuthentication; nothing leaves the device).
@@ -19,9 +20,53 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "secureGet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAppIcon", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "shareFriendInvite", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "copyFriendInvite", returnType: CAPPluginReturnPromise)
     ]
-    /// Alternate home-screen icons compiled from Assets.xcassets (ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES).
+    private func friendInviteURL(_ call: CAPPluginCall) -> URL? {
+        guard let value = call.getString("url"),
+              value.range(of: #"\Ahttps://movo\.nasrinai\.com/friend#invite=[A-Za-z0-9_-]{43}\z"#,
+                          options: .regularExpression) != nil,
+              let url = URL(string: value) else {
+            call.reject("invalid_friend_invite")
+            return nil
+        }
+        return url
+    }
+
+    @objc func shareFriendInvite(_ call: CAPPluginCall) {
+        guard let url = friendInviteURL(call) else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let presenter = self?.bridge?.viewController, presenter.presentedViewController == nil else {
+                call.reject("share_unavailable")
+                return
+            }
+            let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            share.popoverPresentationController?.sourceView = presenter.view
+            share.popoverPresentationController?.sourceRect = CGRect(
+                x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 1, height: 1
+            )
+            share.completionWithItemsHandler = { _, completed, _, error in
+                if error != nil { call.reject("share_unavailable") }
+                else { call.resolve(["completed": completed]) }
+            }
+            presenter.present(share, animated: !UIAccessibility.isReduceMotionEnabled)
+        }
+    }
+
+    @objc func copyFriendInvite(_ call: CAPPluginCall) {
+        guard let url = friendInviteURL(call) else { return }
+        DispatchQueue.main.async {
+            UIPasteboard.general.setItems([[UTType.url.identifier: url as NSURL]], options: [
+                .localOnly: true,
+                .expirationDate: Date().addingTimeInterval(3600)
+            ])
+            call.resolve()
+        }
+    }
+
+    /// Alternate home-screen icons compiled from Assets.xcassets.
     private static let alternateIcons: Set<String> = ["AppIcon-Bronze", "AppIcon-Silver", "AppIcon-Gold", "AppIcon-Platinum"]
 
 
@@ -39,7 +84,7 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
 
     private func authKey(_ call: CAPPluginCall) -> String? {
         guard let key = call.getString("key"),
-              (key == "movo-autolog-key" || key == "movo-finance-vault-key-v1" || (key.hasPrefix("sb-") && key.contains("-auth-token"))),
+              (key == "movo-autolog-key" || key == "movo-finance-cache-key-v1" || key == "movo-finance-vault-key-v1" || (key.hasPrefix("sb-") && key.contains("-auth-token"))),
               key.count < 128 else {
             call.reject("invalid_secure_auth_key")
             return nil

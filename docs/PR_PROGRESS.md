@@ -1,3 +1,192 @@
+## 2026-11-16 — PR #274 conflict resolution
+
+- Integrated main `77bcacc`. Preserved both finance vault keys and regressions, Friends isolation, current simulator recovery and billing behavior, and the PR’s erasure and retention coverage. Kept both privacy changes and regenerated static policies and locale output.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-274-main-conflicts.md).
+
+## 2026-11-12 — Blurred previous-page preview during swipe back
+
+Owner request: while swiping back on iPhone, the previous page now shows underneath, blurred, dimmed and parallaxed, clearing as the swipe completes; it is a static copy taken when the page was left. The returned page opens without an entrance animation at its previous scroll position, with no flash (per-frame browser check). Validation: Jest 203 suites / 1,237 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-swipe-back-preview.md`). Not run: a real iPhone.
+
+
+## 2026-11-12 — CI-only PR #279: isolate synthetic stage data from existing regression tests
+
+Disposable PostgreSQL CI **fully applied** all baseline migrations, PR274's three security/erasure/retention migrations, post-upgrade legacy-denial tests, and successfully restored a pre-upgrade snapshot into a separate database. The next pre-existing SQL suite failed because it assumed user_preferences contained exactly one row; our earlier synthetic stage fixture deliberately persisted a second unrelated user's row. Fix the **test harness**, not production SQL: take a clean schema snapshot before seeding staging users; after the staging and rollback assertions, recreate ONLY the randomly named disposable test database from its pristine snapshot, apply the same three PR migrations, then run the original seven SQL regressions against uncontaminated data. Keep the separate snapshot rollback database and owner-safe test coverage. Test contracts ensure the reset is bound to a generated database and an explicit GitHub Actions service container. No customer schema/data or real Supabase account changes.
+
+The prior disposable commit b40b18e8 lacks a per-commit dated engineering note, despite the latest commit having one. To pass the **existing** per-commit documentation gate without weakening it, replace only the disposable CI-only branch's history with one two-parent integration merge commit containing the final verified source tree and dated engineering notes. **Never** force-update `main` or canonical PR #274. Fresh exact-commit CI must pass before any release approval.
+
+
+## 2026-11-12 — CI-only PR279: payment-aware synthetic migration data
+
+The second exact integration CI finance run advanced through all baseline migrations but rejected the unprivileged synthetic account seeds with `sign_in_required` from `enforce_movo_cloud_plan()`. This is expected real authorization behavior, **not** a defect to bypass in production. Seed two synthetic owners as a service-role data fixture with Pro+ manual grant rows, then explicitly switch to the `authenticated` test role and owner JWT for the legacy direct-write compatibility test. Add an isolated test contract checking both grants precede protected rows. The last integration commit also failed documentation gates because it did not include a new dated engineering update; the new dated note and PR progress are included before this commit. No production, main, PR274, cloud entitlement, schema or store configuration changed.
+
+
+## 2026-11-12 — CI-only PR279: fix stale finance-service-ID assertion
+
+First exact integration CI run (commit fa05f490) ran finance safety contract tests: 8 of 9 passed. Failure was a stale test expectation `MOVO_TEST_PG_CONTAINER=$container` from PR274's old shell wrapper. The newer main's hardened PostgreSQL runner uses `MOVO_TEST_PG_CONTAINER: ${{ job.services.postgres.id }}` directly and avoids scanning Docker images. Replace the assertion with the real exact-service contract, assert the unsafe Docker scan is absent, and keep the rest of the finance harness unchanged. This is a CI **test-only** integration-branch fix. Production, main, PR274, remote staging and personal data remain untouched; full migration SQL regression still needs an exact-head run.
+
+## 2026-11-12 — Disposable PR #274 integration updated for latest main PR #278 (precommit)
+
+**Current latest main:** `2edcabdd2d5788d37c3fbf28028c23a350aab9db` (includes PR #276 and PR #278). **Security PR #274:** `8422adea30aaa64788e1abc2504ae36673141be6`. The disposable branch `ci-only/integrate-pr274-with-pr276-20261112` remains independent; `main`, PR #274 and production were not modified.
+
+**Three-way integration audit:** latest main advanced after the first staged tree, so remerged all newer additions without discarding earlier conflicts. Verified **69/69** prior integration-only files retained, **28/28** new-main-only files retained, and **20/20** newly overlapping files reconciled. PR #278's native back/swipe, setup agreement, narrated guide and Terms §17 remain; PR #274's erasure guards, DPO contact, legal correspondence and payment retention protections remain. Retained true device-mode account deletion with current launch timing.
+
+**Legal consistency:** reconciled native/app URLs and date imports; aligned new `legalVersion.js` Privacy Policy effective date with updated standalone Privacy Policy (November 11, 2026). Re-rendered public Terms page from merged `legalSupplement.json`; static generation is idempotent and the Privacy Policy is canonical. Both Terms §17 setup acceptance and DPO/address remain. 11 merged translation dictionaries contain **2,850** keys each and regenerated locale SHA-1 version `37a945a340d2` (test vectors verified).
+
+**Precommit checks:** 16/16 actual combined source-contract checks passed; 69/69 + 28/28 + 20/20 file provenance checks passed; isolated Python synthetic merge / security tests 4/4 passed. The integrated Jest, native, strict build and PostgreSQL tests are **NOT yet executed**, and a Vercel preview alone will not clear them. Never claim full merge or release readiness until exact commit checks pass.
+
+**Safety:** no paid Supabase staging branch, no production migrations, no customer records, no main commits, and no merge of PR #274. Migration-history drift, old signed app ledger write behavior, and real Auth/Storage plus rollback remain blockers for production release.
+
+
+## 2026-11-12 — Disposable PR #274 + #276 integration review (precommit)
+
+**Source:** `main` at 43efeee64fa058c214edd5b1cc7f6e208d26fbf6; PR #274 at 8422adea30aaa64788e1abc2504ae36673141be6; merge base `166dbd1271fc21bde29025be93f321c205c7566b`. Branch: `ci-only/integrate-pr274-with-pr276-20261112`. This is **NOT** a production release or merge of PR #274.
+
+**Precommit verification:** 67/67 PR-exclusive blobs copied intact; 39/39 `main`-exclusive blobs retained intact; 21/21 shared files manually/automatically reconciled; 11 translation dictionaries retain keys and order from both branches (2,832 keys each), version SHA-1 regenerated. Native Python isolated runner: 4 precommit synthetic merge/safety checks passed. Actual Jest/Android/iOS/PostgreSQL integration CI **not yet run** on this combined commit; cannot claim release approval.
+
+**Deliberate resolutions:** preserve new main launch sync, back navigation, transaction time and navigation pricing; preserve PR274 deletion/privacy/consent/RLS fixes and tests. Device-mode account deletion test simulates offline to respect new startup wait. MR DIY branding remains known by alias, remote favicon stays blocked without per-provider approval. Finance CI uses main's exact PostgreSQL service ID and PR's `pg_dump`/`pg_restore` rollback and retention tests. Combine both branches' per-locale catalog additions, with no translation collisions.
+
+**Release holds:** Android/iOS release versions not validated; Supabase production migration history does not match repository (40 local vs 35 remote, only 19 timestamp matches); PR274 ledger write revocation can reject old installed clients; user declined paid staging; keep main, PR274, production database and store territories unchanged. Branch CI and conflict checks must pass, and human signed-device/production-shaped validation remains necessary before merging the canonical PR.
+
+
+
+## 2026-11-12 — Fail-closed disposable PostgreSQL execution gate
+
+A second-stage CI safety audit found that the synthetic migration harness creates PostgreSQL cluster-global mock auth roles. Merely restricting `PGHOST` to loopback could still modify a developer's persistent local PostgreSQL cluster when copied outside CI. Restrict its entrypoint to **GitHub Actions with the disposable Postgres service container ID**, in addition to the existing loopback and generated-database restrictions. Add subprocess regression cases proving that an ordinary local run, a CI flag without a service, a whitespace-only service ID, and a remote database host all fail before any database command is executed. An isolated Python reproduction verified 5/5 access-gate cases before commit. This change applies only to the disposable test harness; no MOVO app or production database behavior changes.
+
+Canonical PR #274 is open and unmerged. GitHub API-created commits are not producing fresh Actions runs; a CI-only duplicate PR #277 was opened then closed without merge after it also failed to trigger checks. The Vercel preview is READY but cannot substitute for a real PostgreSQL integration run. Staging branch cost is declined; no paid branch should be created.
+
+
+## 2026-11-12 — PR #274 premerge staging and migration-history safety gate
+
+Live Supabase preflight (read-only) found zero cross-owner schedule links, zero invalid transaction amounts, 3 archive preference rows, zero currently overdue acknowledgement jobs, and existing direct UPDATE/DELETE grants and RLS policies. Repo has 40 migration files while production migration history has 35 entries; only 19 timestamps match. **DO NOT RUN `supabase db push` across the entire repo history against production, or merge on CI-green alone.** The oldest raw PostgREST transaction clients can write before the proposed revocation and fail after it; minimum supported signed mobile versions/rollout remains unverified.
+
+The disposable PostgreSQL CI harness now splits the exact three PR migrations from its baseline, seeds two fake users and finance/schedule/archive/billing rows, confirms old raw UPDATE/DELETE before migration and their denial afterward, tests owner-safe cloud clearing and bounded retention, and creates a private pg_dump/pg_restore snapshot restore in a second disposable database to verify the legacy baseline is recoverable. No credentials, production user records, Supabase API endpoints, or real customer billing traffic are used. This synthetic snapshot exercise does **not** validate production PITR or Storage/Auth rollback.
+
+Critical billing hardening: the 7-day retention job now deletes only *completed* acknowledgement jobs older than 7 days, never pending Google Play acknowledgement work regardless of age. Extended SQL assertions cover overdue pending, overdue completed, and recently completed jobs. Require actual Supabase production-schema staging branch + Auth/Storage/API flows and version-distribution evidence before merging. Supabase quoted staging branch cost $0.01344/hour; creation requires owner cost approval, so no paid branch was started.
+
+
+## 2026-11-12 — iOS smoke-test path trigger correction
+
+The existing iOS workflow PR/push path filters did not include the smoke driver or its host tests, so a standalone simulator recovery patch would not automatically rerun iOS. Added both script paths to both trigger lists. The actual macOS simulator launch/deep-link/screenshot remains mandatory, with no soft-fail. The host-side selection/recovery tests were run before commit; verify new exact-head CI following push.
+
+
+## 2026-11-12 — PR #274 iOS simulator launch recovery and runtime matching
+
+The exact-head iOS CI compiled and installed the signed-off debug simulator build, but `simctl launch` hung twice for 180 seconds after a slow (>8-minute) first boot; a subsequent retry was started on the unchanged head to distinguish a runner flake. This patch changes **only macOS CI smoke-test tooling**: select the newest available iOS Simulator runtime (avoid Xcode/older runtime mismatch), and restart only the selected simulator after a genuine launch timeout before the single bounded retry. No erase, no skipping launch/deep-link/screenshot, no soft-failing app crash, no native/app/security/finance code changes. Added selection and fail-closed restart tests; a standalone local Python test harness passed 9 tests before commit. The macOS-host tests and actual launch must still pass after the PR push.
+
+
+## 2026-11-12 — Repair native finance encrypted vault test fixture
+
+Jest jsdom omits structuredClone needed by fake-indexeddb for JSON-only encrypted envelopes. The new test fixture adds a narrowly scoped structuredClone polyfill without modifying production code or cipher behavior. Exact-head CI must pass; this does not activate the native encrypted vault as the authoritative finance store.
+
+
+## 2026-11-12 — Country-specific Play compliance worksheet and port-free finance CI
+
+Google Play jurisdiction-specific release matrix added for 25 initial jurisdictions, explicitly BLOCKED pending console territory eligibility, local legal review, merchant verification and consumer/security evidence; this is not 176-country legal clearance. Added structured Play Financial features and Data safety declaration worksheet, using MOVO features and avoiding unsupported claims. Finance test CI uses docker exec into its disposable PostgreSQL service; removed unneeded host port 55432 mapping after a concurrent CI runner job failed binding an already-in-use port. Test logic and database data unchanged.
+
+
+## 2026-11-12 — Native vault Jest environment compatibility
+
+Initial vault test suite failed to initialize in jsdom because browser TextEncoder was instantiated at module import time. Resolve WebCrypto text codecs lazily on encryption/decryption and inject Node's standard TextEncoder/TextDecoder into the isolated jsdom test environment. No runtime data path or cryptography semantics changed; complete tests must pass on exact head before release.
+
+
+## 2026-11-12 — Staged native encrypted finance snapshots (not yet primary ledger)
+
+Introduced an additive, native-only, non-destructive finance snapshot store using AES-256-GCM with owner/group authenticated data and device-only Keychain/Keystore key wrapping. No automatic import or deletion of existing browser/Preferences/IndexedDB records. Added cryptographic tamper, key-failure, IV-randomness, web isolation and round-trip migration-stage tests plus native allowlist contracts. This is a migration prerequisite, **NOT** proof that MOVO's production local finance records are encrypted; authoritative localStorage and IndexedDB journals remain plaintext until a subsequent rigorously tested switchover. Full privacy disclosure and NO-GO stay in force.
+
+
+## 2026-11-12 — PR 274: finance card name fallback and legacy logo test coverage
+
+Exact-head CI exposed six test suites still asserting remote unreviewed favicons and a functional regression: the MOVO-face fallback masked bank names in Wallet filters. Keep the local MOVO artwork while showing the underlying account/institution label in the fallback subtitle, without changing card balances, visibility settings, or color themes. Update UI and logo tests to assert offline icons, no unreviewed network fetch, visible institution labels, and unchanged finance metrics. Re-run the complete CI suite on this new commit before merge.
+
+
+## 2026-11-12 — PR #274: verified mailing address, Google Play declarations and fail-closed logos
+
+Published developer-supplied privacy correspondence address in web/in-app legal pages and external deletion page; explicitly did not invent the legal controller's business registration. Blocked all unreviewed Google favicon, direct site favicon and payment network external requests with generic local fallback; added tests that default and legacy owner approval do not authorize artwork. Added Google Play financial features, Data Safety and regional merchant/availability review checklists. Complete native finance encryption/migration, legal counsel approvals and Google Play Console submissions remain pending. No production data, store settings, billing or migrations modified.
+
+
+## 2026-11-11 — PR #274: DPO disclosure and 176-market compliance gate
+
+Designated DPO Nasrin Abubakar, dpo@nasrinai.com, in public and in-app legal pages and the external account-deletion instructions; retain general support email. Legal controller identity, physical address and local representative details remain unverified, and no legal clearance is asserted. Added regression coverage and a global market-specific release evidence register. Apple currently advertises 175 App Store countries or regions, not the requested 176; Google Play market list and individual requirements need separate confirmation. Do not merge, publish, activate billing, or apply production migrations without independent validation. Vercel Sandbox still returns HTTP 402 payment_required.
+
+## 2026-11-11 — PR #274: Security, privacy and billing remediation (review — NO-GO)
+
+- The existing Clear All Data action previously ignored private-file cleanup failures, did not await removal of the native Preferences mirror, and could report both a false success and a misleading 'nothing removed' error. It now awaits QR, receipt, hybrid journal and native mirror cleanup, retains the retry sheet on failure and reports a retry-required failure without falsely claiming no data changed. Native/browser acceptance is still required.
+
+Audited the ledger bypass, cross-owner schedule references, Google cancellation handling, account deletion, archive/acknowledgement retention, native backup rules, age and AI consent, and legal disclosures. PR #274 includes transactional account erasure, private Storage cleanup, tenant-scoped SQL enforcement, and Play subscription expiry protection. This follow-up also prevents deleted-account JWTs from reopening private uploads, makes attachment cleanup independent of IndexedDB availability, and avoids network-dependent apt installation in the isolated finance CI by using the disposable PostgreSQL service client. No production database, billing setting, deployment, or store release was changed.
+
+Validation: original branch source reported 1,190 Jest tests across 194 suites, TypeScript/production build and isolated SQL fixture passing. The initial PR CI had a missing per-commit documentation entry and a runner DNS failure during PostgreSQL client installation. A repaired one-commit PR requires fresh exact-head CI. MOVO Vercel Sandbox creation was attempted and rejected with HTTP 402 payment_required; browser and signed-device verification are still open. Release decision remains NO-GO; details: `docs/engineering/updates/2026-11-11-security-compliance-remediation.md`.
+
+## 2026-11-12 — PR #275: Bank and linked-card transactions; e-wallet cards
+- Bank Accounts → Account details now displays a read-only combined transaction history for the bank and all active explicitly linked debit and issuing-bank credit cards, with Bank-only and individual-card filters. A transaction involving both sides of the group appears once; each card's standalone history stays isolated. Transactions tab pages through full history at 50 rows per page.
+- Wallet → Cards includes e-wallets in the existing carousel and My Cards pile while keeping their independent E-Wallets filter, type, balances, QR codes, and sync state. No database, accounting, or RLS migrations.
+- Added source-isolation, transfer dedupe, per-card history, 65-row pagination, and filter tests. Added seven new UI labels translated in all 11 supported non-English languages.
+- Initial GitHub suite: 195/196 suites passed; i18n key coverage was the one failure and has since been fixed; await exact-head verification. Vercel Sandbox returned HTTP 402 payment_required for create/resume: UI test blocked. Release stays unmerged. Details: docs/engineering/updates/2026-11-12-bank-card-activity-ewallet-cards.md.
+
+- **2026-11-12 PR #275 CI infrastructure hardening:** GitHub's two-user PostgreSQL tenant-isolation workflow failed *before executing any SQL* because Ubuntu's apt mirror DNS failed during `postgresql-client` installation. Replaced network-dependent apt installs with short-lived, stdin-safe `psql`, `createdb`, and `dropdb` wrappers that execute the official PostgreSQL 18 client binaries inside the same disposable GitHub Actions service container (no host-mapped database port). The Python tenant-isolation tests remain unchanged and must still complete successfully. Source, shell invocation/STDIN forwarding validated before commit; rerun all required checks on the new exact head, verify preview and preserve NO-MERGE gate until all checks are green.
+
+- UI regression for Clear All Data now awaits its verified asynchronous QR, attachment, hybrid-store and native-storage cleanup before asserting that records disappeared; this preserves the stricter completion contract rather than relying on an unsafe synchronous assumption.
+
+- The privacy cleanup regression exposed an IndexedDB-absent runtime: account QR removal already treats unavailable IndexedDB as an empty store, but receipt attachment removal threw before the local ledger could be cleared. Both now skip only absent IndexedDB, while actual database write/clear errors remain blocking. The local-finance-key removal result is also checked before claiming success.
+## 2026-11-16 — Private friends and compact Profile
+
+- Added Profile → Friends with single-use QR/link invites, native AirDrop and Android Sharesheet, deliberate acceptance, and reciprocal removal.
+- Added service-only invite and connection storage with no access to financial data. Private invitation lifecycle and finance isolation passed in disposable PostgreSQL.
+- The implementation is based on main at `d511f268`. Open PRs #274, #280, #290, #291, #294–#297, #299, #305, #306, #308 and #309 were reviewed. Referral rewards #309 are independent, with possible Profile, privacy and generated locale conflicts at integration.
+- Mobile browser review at 375 px light and 320 px dark exercised Profile, QR generation and explicit acceptance. The Friends sheet now gives the selected tab the filled surface.
+- [Implementation, verification and rollback](engineering/updates/2026-11-16-private-friends-profile.md).
+
+## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
+
+Owner report: on the affected Android phone, Google sign-in ends back on Sign in after the account is chosen. Supabase logs show the pattern exactly: that phone gets `/authorize` 302 and `/callback` 302 (a code is issued) but never calls `/token`, while phones on Chrome 156/157 complete the exchange. The affected phone is a Huawei on Android 12 whose in-app WebView reports Chromium 114.
+- **Cause:** `readAppUrl` used `new URL()` on `movo://auth-callback?code=…`. Chromium only parses the host of a custom-scheme URL from version 130. Older WebViews report hostname `""` and pathname `"//auth-callback"`, so the link was judged invalid and dropped without a message. The same applied to `movo://log` payment links.
+- **Fix:** the two accepted link shapes are matched by hand (`scheme://route[/][?query][#fragment]`), with no dependence on the WebView. All existing rejections are kept (user info, port, other host, path, duplicate or oversized code, tokens in the link) and control characters are now refused too.
+- Independent of PR #306 (Auth Tab). On that build the same phone would show `OA-CALLBACK`, because the Auth Tab result goes through the same parser.
+
+Validation: new tests run the parser against a stand-in for the old WebView URL behaviour (they fail on the previous parser), Jest 233 suites / 1,449 tests, `tsc`, strict build. Not run: the affected phone, or a real Chromium 114 (running a downloaded one was not permitted in this session). Needs a new Android build to reach phones. See `docs/engineering/updates/2026-11-15-android-auth-return-link-old-webview.md`.
+
+## 2026-11-12 — PR #289 review fix: reminder preferences stay available offline
+
+- Review found that the encrypted cache accepted only lists, so reminder preferences (one settings object) silently stopped being kept for offline use. The cache now accepts lists and settings objects; both are still AES-GCM encrypted, owner-bound and network-failure-only.
+- Main merged in (PR_PROGRESS conflict only). New test covers the settings object. See `docs/engineering/updates/2026-11-12-offline-cache-settings-object.md`.
+
+## 2026-11-12 — PR #289 native test mock lifecycle repair (documented before commit)
+
+- The second CI rerun reached 224/225 passing Jest suites; Vercel preview build failed only for `financeCacheNative.test.js` (4 checks), while Web AES-GCM tests now passed.
+- Cause: React-scripts/Jest resets mock implementations between tests; the native test attached `MovoNative.secureGet`, `secureSet` and Preferences methods in `beforeAll`. Their implementation was gone when called, so test-only wrapped-key verification failed.
+- Fix mocks in `beforeEach`; retain sealed test key for the test module to validate persistence. No production, native encryption implementation or accounting data changed. Recheck exact new SHA; keep PR unmerged.
+
+## 2026-11-12 — PR #289 CI repair (documented before commit)
+
+- Initial exact-head Phase 1 CI on `73db23e` **failed**; 220/225 suites passed. Root evidence: new encryption tests could not persist a non-extractable CryptoKey under jsdom's fake IndexedDB; the Jest-only TextEncoder polyfill was read-only and broke existing suites assigning it.
+- Fix **test harness only**: writable TextEncoder/TextDecoder and Node's native structuredClone for CryptoKey preservation in jsdom. Do not weaken AES-GCM or tampering tests. Add direct cryptographic assertions so a future failure surfaces its original exception instead of a masked cache miss.
+- Additional independent hardening: serialize the browser key's final check-and-put in one IndexedDB read/write transaction to prevent two tabs creating different keys. No signed-in data, backend schema or live systems changed.
+- Validate with exact-head CI, native Android/iOS builds and preview; PR remains open and unmerged.
+
+## 2026-11-12 — Offline financial read-cache encryption (PR staging, production unchanged)
+
+- Owner asked to harden financial data stored in plaintext by PR #287's new `offlineReadCache.js`.
+- Prepared AES-256-GCM authenticated encryption per owner/list; native random key wrapped by existing Keychain/Keystore plugin; browser non-extractable WebCrypto key stored in IndexedDB; new ciphertext is never mirrored to Capacitor Preferences.
+- Legacy list-cache JSON is migrated write-verify-then-delete, retried safely after incomplete migration; finance list retrieval remains cloud-first with offline fallback, owner isolation, and no auth-denial downgrade.
+- Expanded tests for encryption, manipulation/cross-account, migration, quota failure, native vault allowlists, Preferences cleanup. New native plugin key allowlist requires separately signed mobile releases.
+- **Scope limitation:** other plaintext accounting stores (`offlineWorkspaceStore`, `localFinanceStore`, and IndexedDB `hybridLocalStore` ledger/outbox) are not changed: rewriting their synchronous/atomic persistence without a proven compatibility plan risks destroying unsynced transactions. This remains a high-priority unresolved whole-app storage issue.
+- Precommit evidence: exact main SHA `2b9a1cf` and a standalone Python AES-GCM/AAD test. **GitHub full suite, native compiles and physical devices still pending.** No Supabase/production modification, no merge/redeploy.
+- Detailed record: `docs/engineering/updates/2026-11-12-financial-offline-cache-encryption.md`.
+
+## 2026-11-12 — PR #293 follow-up: App Store id read like the billing settings
+
+The preview sent iPhone links to the web app, so the stored `APPLE_APP_ID` did not match the strict digits-only format (its value was not inspected). It is now read with the same tolerance as the billing check: surrounding spaces, quotes and an `id` prefix are accepted. Anything that is not a plausible App Store id still falls back to the web app with the code. New test. See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
+## 2026-11-12 — Referral QR codes open the App Store and Google Play with each person's own code
+
+Owner request: the referral QR code should link to the App Store and Google Play, with a unique referral id per user. Before this, `/api/download` only sent people to a store when `MOVO_IOS_APP_STORE_URL` / `MOVO_ANDROID_STORE_URL` were set. Neither is set in production, so every QR code opened the web app.
+- **Android:** always Google Play (`com.nasrinai.movo`). The person's code travels in Google Play's install referrer (`utm_source=movo_referral&utm_medium=qr&movo_ref=M78038`). On first launch the Android app reads it once (new `MovoNative.installReferrer`, Play Install Referrer library 2.2) and fills in the friend's code in the plans panel and Refer MOVO.
+- **iPhone:** the App Store page from the existing `APPLE_APP_ID` server setting (or `MOVO_IOS_APP_STORE_URL`). Apple passes nothing from a link to the installed app, so a link that carries a code first shows a short page with the code and a "Copy code and open the App Store" button. Without a code it goes straight to the store.
+- Only exact store addresses are produced, the referral code is the only value carried, and the code counts only after sign-in when the server accepts it.
+- Privacy Policy section 18 (referral codes and download links) added; Privacy effective date is now November 12, 2026, so everyone accepts the updated version once.
+
+Validation: Jest 225 suites / 1,357 tests, `tsc`, strict build, and a browser check of the iPhone page under the site CSP in light and dark: the code was copied and the App Store opened, with no console errors. Not run: an Android build (CI compiles it), a real Play install. The Android part needs a new Play release (version code above 7). See `docs/engineering/updates/2026-11-12-referral-store-links.md`.
+
 ## 2026-11-12 — Android bottom navigation: instant response, lighter animation
 
 Owner report: bottom nav icon animations in the Android app are not optimized or responsive. Measured on a 4x-throttled mobile Chromium, the bar showed the tapped tab only after the new screen had rendered (90–221 ms after touch-down), under a heavy 24 px saturated blur.
@@ -238,36 +427,6 @@ Owner request: screenshots (and screen recording) now work in the Android app; `
 
 Owner request: while swiping back on iPhone, the previous page now shows underneath, blurred, dimmed and parallaxed, clearing as the swipe completes; it is a static copy taken when the page was left. The returned page opens without an entrance animation at its previous scroll position, with no flash (per-frame browser check). Validation: Jest 203 suites / 1,237 tests, tsc, strict build (see `docs/engineering/updates/2026-11-12-swipe-back-preview.md`). Not run: a real iPhone.
 
-
-## 2026-11-12 — CI-only PR #279: isolate synthetic stage data from existing regression tests
-
-Disposable PostgreSQL CI **fully applied** all baseline migrations, PR274's three security/erasure/retention migrations, post-upgrade legacy-denial tests, and successfully restored a pre-upgrade snapshot into a separate database. The next pre-existing SQL suite failed because it assumed user_preferences contained exactly one row; our earlier synthetic stage fixture deliberately persisted a second unrelated user's row. Fix the **test harness**, not production SQL: take a clean schema snapshot before seeding staging users; after the staging and rollback assertions, recreate ONLY the randomly named disposable test database from its pristine snapshot, apply the same three PR migrations, then run the original seven SQL regressions against uncontaminated data. Keep the separate snapshot rollback database and owner-safe test coverage. Test contracts ensure the reset is bound to a generated database and an explicit GitHub Actions service container. No customer schema/data or real Supabase account changes.
-
-The prior disposable commit b40b18e8 lacks a per-commit dated engineering note, despite the latest commit having one. To pass the **existing** per-commit documentation gate without weakening it, replace only the disposable CI-only branch's history with one two-parent integration merge commit containing the final verified source tree and dated engineering notes. **Never** force-update `main` or canonical PR #274. Fresh exact-commit CI must pass before any release approval.
-
-
-## 2026-11-12 — CI-only PR279: payment-aware synthetic migration data
-
-The second exact integration CI finance run advanced through all baseline migrations but rejected the unprivileged synthetic account seeds with `sign_in_required` from `enforce_movo_cloud_plan()`. This is expected real authorization behavior, **not** a defect to bypass in production. Seed two synthetic owners as a service-role data fixture with Pro+ manual grant rows, then explicitly switch to the `authenticated` test role and owner JWT for the legacy direct-write compatibility test. Add an isolated test contract checking both grants precede protected rows. The last integration commit also failed documentation gates because it did not include a new dated engineering update; the new dated note and PR progress are included before this commit. No production, main, PR274, cloud entitlement, schema or store configuration changed.
-
-
-## 2026-11-12 — CI-only PR279: fix stale finance-service-ID assertion
-
-First exact integration CI run (commit fa05f490) ran finance safety contract tests: 8 of 9 passed. Failure was a stale test expectation `MOVO_TEST_PG_CONTAINER=$container` from PR274's old shell wrapper. The newer main's hardened PostgreSQL runner uses `MOVO_TEST_PG_CONTAINER: ${{ job.services.postgres.id }}` directly and avoids scanning Docker images. Replace the assertion with the real exact-service contract, assert the unsafe Docker scan is absent, and keep the rest of the finance harness unchanged. This is a CI **test-only** integration-branch fix. Production, main, PR274, remote staging and personal data remain untouched; full migration SQL regression still needs an exact-head run.
-
-## 2026-11-12 — Disposable PR #274 integration updated for latest main PR #278 (precommit)
-
-**Current latest main:** `2edcabdd2d5788d37c3fbf28028c23a350aab9db` (includes PR #276 and PR #278). **Security PR #274:** `8422adea30aaa64788e1abc2504ae36673141be6`. The disposable branch `ci-only/integrate-pr274-with-pr276-20261112` remains independent; `main`, PR #274 and production were not modified.
-
-**Three-way integration audit:** latest main advanced after the first staged tree, so remerged all newer additions without discarding earlier conflicts. Verified **69/69** prior integration-only files retained, **28/28** new-main-only files retained, and **20/20** newly overlapping files reconciled. PR #278's native back/swipe, setup agreement, narrated guide and Terms §17 remain; PR #274's erasure guards, DPO contact, legal correspondence and payment retention protections remain. Retained true device-mode account deletion with current launch timing.
-
-**Legal consistency:** reconciled native/app URLs and date imports; aligned new `legalVersion.js` Privacy Policy effective date with updated standalone Privacy Policy (November 11, 2026). Re-rendered public Terms page from merged `legalSupplement.json`; static generation is idempotent and the Privacy Policy is canonical. Both Terms §17 setup acceptance and DPO/address remain. 11 merged translation dictionaries contain **2,850** keys each and regenerated locale SHA-1 version `37a945a340d2` (test vectors verified).
-
-**Precommit checks:** 16/16 actual combined source-contract checks passed; 69/69 + 28/28 + 20/20 file provenance checks passed; isolated Python synthetic merge / security tests 4/4 passed. The integrated Jest, native, strict build and PostgreSQL tests are **NOT yet executed**, and a Vercel preview alone will not clear them. Never claim full merge or release readiness until exact commit checks pass.
-
-**Safety:** no paid Supabase staging branch, no production migrations, no customer records, no main commits, and no merge of PR #274. Migration-history drift, old signed app ledger write behavior, and real Auth/Storage plus rollback remain blockers for production release.
-
-
 ## 2026-11-12 — Swipe back on iPhone and Android
 
 Owner request: swipe from the edge to go back. The iPhone app gets an edge swipe (left edge → right, or right edge → left) that follows the finger and closes the open sheet or returns to the previous screen. Android's back button and system gesture now call MOVO's Back directly, and at Home the app moves to the background. Browsers keep their own swipe. Validation: Jest 203 suites / 1,234 tests, tsc, strict build, browser touch check (see `docs/engineering/updates/2026-11-12-swipe-back.md`). Not run: real devices.
@@ -275,86 +434,6 @@ Owner request: swipe from the edge to go back. The iPhone app gets an edge swipe
 ## 2026-11-11 — Narrated video guide of the real app and setup gate
 
 Owner request: the video guide now shows the real MOVO interface with invented sample records, narrated in the owner's "MOVO" ElevenLabs voice (62 s, 3.8 MB H.264/AAC in `public/tutorial/`), with translated captions, chapter skipping, a sound button and the animated scenes as fallback. It flashes account deletion, the no-bank-connection and logo/favicon disclosures and the Terms. New setup gate: dashboard and navigation stay locked until video, walkthrough, sign-in choice, free-month panel and the new Terms/Privacy agreement are done; accepting opens the dashboard. Terms §17 added (effective November 11, 2026); acceptance syncs (newest wins). Validation: Jest 201 suites, tsc, strict build, local browser flow (see `docs/engineering/updates/2026-11-11-video-guide-setup-gate.md`). Not run: iOS/Android devices.
-
-## 2026-11-12 — Disposable PR #274 + #276 integration review (precommit)
- 
-**Source:** `main` at 43efeee64fa058c214edd5b1cc7f6e208d26fbf6; PR #274 at 8422adea30aaa64788e1abc2504ae36673141be6; merge base `166dbd1271fc21bde29025be93f321c205c7566b`. Branch: `ci-only/integrate-pr274-with-pr276-20261112`. This is **NOT** a production release or merge of PR #274.
- 
-**Precommit verification:** 67/67 PR-exclusive blobs copied intact; 39/39 `main`-exclusive blobs retained intact; 21/21 shared files manually/automatically reconciled; 11 translation dictionaries retain keys and order from both branches (2,832 keys each), version SHA-1 regenerated. Native Python isolated runner: 4 precommit synthetic merge/safety checks passed. Actual Jest/Android/iOS/PostgreSQL integration CI **not yet run** on this combined commit; cannot claim release approval.
- 
-**Deliberate resolutions:** preserve new main launch sync, back navigation, transaction time and navigation pricing; preserve PR274 deletion/privacy/consent/RLS fixes and tests. Device-mode account deletion test simulates offline to respect new startup wait. MR DIY branding remains known by alias, remote favicon stays blocked without per-provider approval. Finance CI uses main's exact PostgreSQL service ID and PR's `pg_dump`/`pg_restore` rollback and retention tests. Combine both branches' per-locale catalog additions, with no translation collisions.
- 
-**Release holds:** Android/iOS release versions not validated; Supabase production migration history does not match repository (40 local vs 35 remote, only 19 timestamp matches); PR274 ledger write revocation can reject old installed clients; user declined paid staging; keep main, PR274, production database and store territories unchanged. Branch CI and conflict checks must pass, and human signed-device/production-shaped validation remains necessary before merging the canonical PR.
- 
-
-
-## 2026-11-12 — Fail-closed disposable PostgreSQL execution gate
-
-A second-stage CI safety audit found that the synthetic migration harness creates PostgreSQL cluster-global mock auth roles. Merely restricting `PGHOST` to loopback could still modify a developer's persistent local PostgreSQL cluster when copied outside CI. Restrict its entrypoint to **GitHub Actions with the disposable Postgres service container ID**, in addition to the existing loopback and generated-database restrictions. Add subprocess regression cases proving that an ordinary local run, a CI flag without a service, a whitespace-only service ID, and a remote database host all fail before any database command is executed. An isolated Python reproduction verified 5/5 access-gate cases before commit. This change applies only to the disposable test harness; no MOVO app or production database behavior changes.
-
-Canonical PR #274 is open and unmerged. GitHub API-created commits are not producing fresh Actions runs; a CI-only duplicate PR #277 was opened then closed without merge after it also failed to trigger checks. The Vercel preview is READY but cannot substitute for a real PostgreSQL integration run. Staging branch cost is declined; no paid branch should be created.
-
-
-## 2026-11-12 — PR #274 premerge staging and migration-history safety gate
-
-Live Supabase preflight (read-only) found zero cross-owner schedule links, zero invalid transaction amounts, 3 archive preference rows, zero currently overdue acknowledgement jobs, and existing direct UPDATE/DELETE grants and RLS policies. Repo has 40 migration files while production migration history has 35 entries; only 19 timestamps match. **DO NOT RUN `supabase db push` across the entire repo history against production, or merge on CI-green alone.** The oldest raw PostgREST transaction clients can write before the proposed revocation and fail after it; minimum supported signed mobile versions/rollout remains unverified.
-
-The disposable PostgreSQL CI harness now splits the exact three PR migrations from its baseline, seeds two fake users and finance/schedule/archive/billing rows, confirms old raw UPDATE/DELETE before migration and their denial afterward, tests owner-safe cloud clearing and bounded retention, and creates a private pg_dump/pg_restore snapshot restore in a second disposable database to verify the legacy baseline is recoverable. No credentials, production user records, Supabase API endpoints, or real customer billing traffic are used. This synthetic snapshot exercise does **not** validate production PITR or Storage/Auth rollback.
-
-Critical billing hardening: the 7-day retention job now deletes only *completed* acknowledgement jobs older than 7 days, never pending Google Play acknowledgement work regardless of age. Extended SQL assertions cover overdue pending, overdue completed, and recently completed jobs. Require actual Supabase production-schema staging branch + Auth/Storage/API flows and version-distribution evidence before merging. Supabase quoted staging branch cost $0.01344/hour; creation requires owner cost approval, so no paid branch was started.
-
-
-## 2026-11-12 — iOS smoke-test path trigger correction
-
-The existing iOS workflow PR/push path filters did not include the smoke driver or its host tests, so a standalone simulator recovery patch would not automatically rerun iOS. Added both script paths to both trigger lists. The actual macOS simulator launch/deep-link/screenshot remains mandatory, with no soft-fail. The host-side selection/recovery tests were run before commit; verify new exact-head CI following push.
-
-
-## 2026-11-12 — PR #274 iOS simulator launch recovery and runtime matching
-
-The exact-head iOS CI compiled and installed the signed-off debug simulator build, but `simctl launch` hung twice for 180 seconds after a slow (>8-minute) first boot; a subsequent retry was started on the unchanged head to distinguish a runner flake. This patch changes **only macOS CI smoke-test tooling**: select the newest available iOS Simulator runtime (avoid Xcode/older runtime mismatch), and restart only the selected simulator after a genuine launch timeout before the single bounded retry. No erase, no skipping launch/deep-link/screenshot, no soft-failing app crash, no native/app/security/finance code changes. Added selection and fail-closed restart tests; a standalone local Python test harness passed 9 tests before commit. The macOS-host tests and actual launch must still pass after the PR push.
-
-
-## 2026-11-12 — Repair native finance encrypted vault test fixture
-
-Jest jsdom omits structuredClone needed by fake-indexeddb for JSON-only encrypted envelopes. The new test fixture adds a narrowly scoped structuredClone polyfill without modifying production code or cipher behavior. Exact-head CI must pass; this does not activate the native encrypted vault as the authoritative finance store.
-
-
-## 2026-11-12 — Country-specific Play compliance worksheet and port-free finance CI
-
-Google Play jurisdiction-specific release matrix added for 25 initial jurisdictions, explicitly BLOCKED pending console territory eligibility, local legal review, merchant verification and consumer/security evidence; this is not 176-country legal clearance. Added structured Play Financial features and Data safety declaration worksheet, using MOVO features and avoiding unsupported claims. Finance test CI uses docker exec into its disposable PostgreSQL service; removed unneeded host port 55432 mapping after a concurrent CI runner job failed binding an already-in-use port. Test logic and database data unchanged.
-
-
-## 2026-11-12 — Native vault Jest environment compatibility
-
-Initial vault test suite failed to initialize in jsdom because browser TextEncoder was instantiated at module import time. Resolve WebCrypto text codecs lazily on encryption/decryption and inject Node's standard TextEncoder/TextDecoder into the isolated jsdom test environment. No runtime data path or cryptography semantics changed; complete tests must pass on exact head before release.
-
-
-## 2026-11-12 — Staged native encrypted finance snapshots (not yet primary ledger)
-
-Introduced an additive, native-only, non-destructive finance snapshot store using AES-256-GCM with owner/group authenticated data and device-only Keychain/Keystore key wrapping. No automatic import or deletion of existing browser/Preferences/IndexedDB records. Added cryptographic tamper, key-failure, IV-randomness, web isolation and round-trip migration-stage tests plus native allowlist contracts. This is a migration prerequisite, **NOT** proof that MOVO's production local finance records are encrypted; authoritative localStorage and IndexedDB journals remain plaintext until a subsequent rigorously tested switchover. Full privacy disclosure and NO-GO stay in force.
-
-
-## 2026-11-12 — PR 274: finance card name fallback and legacy logo test coverage
-
-Exact-head CI exposed six test suites still asserting remote unreviewed favicons and a functional regression: the MOVO-face fallback masked bank names in Wallet filters. Keep the local MOVO artwork while showing the underlying account/institution label in the fallback subtitle, without changing card balances, visibility settings, or color themes. Update UI and logo tests to assert offline icons, no unreviewed network fetch, visible institution labels, and unchanged finance metrics. Re-run the complete CI suite on this new commit before merge.
-
-
-## 2026-11-12 — PR #274: verified mailing address, Google Play declarations and fail-closed logos
-
-Published developer-supplied privacy correspondence address in web/in-app legal pages and external deletion page; explicitly did not invent the legal controller's business registration. Blocked all unreviewed Google favicon, direct site favicon and payment network external requests with generic local fallback; added tests that default and legacy owner approval do not authorize artwork. Added Google Play financial features, Data Safety and regional merchant/availability review checklists. Complete native finance encryption/migration, legal counsel approvals and Google Play Console submissions remain pending. No production data, store settings, billing or migrations modified.
-
-
-## 2026-11-11 — PR #274: DPO disclosure and 176-market compliance gate
-
-Designated DPO Nasrin Abubakar, dpo@nasrinai.com, in public and in-app legal pages and the external account-deletion instructions; retain general support email. Legal controller identity, physical address and local representative details remain unverified, and no legal clearance is asserted. Added regression coverage and a global market-specific release evidence register. Apple currently advertises 175 App Store countries or regions, not the requested 176; Google Play market list and individual requirements need separate confirmation. Do not merge, publish, activate billing, or apply production migrations without independent validation. Vercel Sandbox still returns HTTP 402 payment_required.
-
-## 2026-11-11 — PR #274: Security, privacy and billing remediation (review — NO-GO)
-
-- The existing Clear All Data action previously ignored private-file cleanup failures, did not await removal of the native Preferences mirror, and could report both a false success and a misleading 'nothing removed' error. It now awaits QR, receipt, hybrid journal and native mirror cleanup, retains the retry sheet on failure and reports a retry-required failure without falsely claiming no data changed. Native/browser acceptance is still required.
-
-Audited the ledger bypass, cross-owner schedule references, Google cancellation handling, account deletion, archive/acknowledgement retention, native backup rules, age and AI consent, and legal disclosures. PR #274 includes transactional account erasure, private Storage cleanup, tenant-scoped SQL enforcement, and Play subscription expiry protection. This follow-up also prevents deleted-account JWTs from reopening private uploads, makes attachment cleanup independent of IndexedDB availability, and avoids network-dependent apt installation in the isolated finance CI by using the disposable PostgreSQL service client. No production database, billing setting, deployment, or store release was changed.
-
-Validation: original branch source reported 1,190 Jest tests across 194 suites, TypeScript/production build and isolated SQL fixture passing. The initial PR CI had a missing per-commit documentation entry and a runner DNS failure during PostgreSQL client installation. A repaired one-commit PR requires fresh exact-head CI. MOVO Vercel Sandbox creation was attempted and rejected with HTTP 402 payment_required; browser and signed-device verification are still open. Release decision remains NO-GO; details: `docs/engineering/updates/2026-11-11-security-compliance-remediation.md`.
 
 ## 2026-11-11 — PR #273: Repair Android auth build and native navigation
 
@@ -867,7 +946,7 @@ These are not resolved by a green frontend CI run or a READY deployment:
 ## PR #225 — Consistent headers, legal spacing and Vercel-configured social profiles (2026-11-06)
 - Root and back-navigation headers use 10px upper/lower internal padding with 10px bottom separation. Home mascot/header row is more compact while retaining 45px actions and safe-area spacing.
 - Terms, Privacy and Help Center share 14px section gaps, including canonical supplemental policy sections; adjusted sticky fade and bottom scroll clearance for fixed navigation.
-- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through \`/api/social-links\`. No fake profiles or client-side embedded links.
+- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through `/api/social-links`. No fake profiles or client-side embedded links.
 - Changed files, new security/API and rendering tests, translations and documentation are committed together with a dated engineering update, as required by MOVO CI. No finance/ledger or policy wording changes.
 - Sandbox tests and GitHub exact-head CI required before merging. Vercel preview can be canceled by ignored-build setting and must not be assumed verified.
 
@@ -1059,6 +1138,18 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - PR #264 signed AAB pipeline remains separately reviewed; cannot publish without signing secrets/real device testing. PR #261 hybrid sync remains draft. Production unchanged.
 
 
+## 2026-11-11 — PR #272 iOS release pipeline hardening (not yet App Store certified)
+- Keep the existing React/Capacitor/Swift architecture, product screens, financial calculations, sync/RLS and StoreKit production entitlement verification unchanged.
+- Expand GitHub macOS iOS CI trigger coverage to all app/auth/billing/backend changes; compile the unsigned Release iPhone target alongside simulator Debug and deep-link smoke.
+- Add source packaging assertions with five negative-regression tests for the canonical bundle ID, strict local bundled web assets, positive build versions, native privacy permissions, secure post-verification StoreKit finishing, actual opaque 1024px RGB App Store icon, and deterministic signed TestFlight CI configuration.
+- Codemagic TestFlight uses npm lockfile verification and Xcode 26+ preflight, with existing App Store signing integration unchanged.
+- No owner Apple credentials or signed distribution IPA are verified here; production DB still rejects sandbox entitlements, Vercel Sandbox access returns 402, and real-device TestFlight purchase/login/privacy acceptance is a NO-GO gate.
+- Detailed source and release evidence: `docs/engineering/updates/2026-11-11-ios-release-safety-gates.md`.
+
+- PR #272 macOS CI first attempt caught a release-contract matcher that recognized unpinned `npm ci` but not the explicitly pinned `npx npm@11.19.1 ci`; corrected the check and its negative test without weakening the lockfile requirement. Codemagic avoids re-running the same tests in the web build stage. Exact-head native and full CI rerun required.
+
+- Follow-up iOS guard source check: ensured the pinned `npm@11.19.1 ci` regular expression uses actual JavaScript regex word boundaries rather than escaped literals. Verify via the next exact-head macOS build; no release approved before successful CI.
+
 ## 2026-11-12 — PR #275: Bank and linked-card transactions; e-wallet cards
 - Bank Accounts → Account details now displays a read-only combined transaction history for the bank and all active explicitly linked debit and issuing-bank credit cards, with Bank-only and individual-card filters. A transaction involving both sides of the group appears once; each card's standalone history stays isolated. Transactions tab pages through full history at 50 rows per page.
 - Wallet → Cards includes e-wallets in the existing carousel and My Cards pile while keeping their independent E-Wallets filter, type, balances, QR codes, and sync state. No database, accounting, or RLS migrations.
@@ -1067,6 +1158,146 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 
 - **2026-11-12 PR #275 CI infrastructure hardening:** GitHub's two-user PostgreSQL tenant-isolation workflow failed *before executing any SQL* because Ubuntu's apt mirror DNS failed during `postgresql-client` installation. Replaced network-dependent apt installs with short-lived, stdin-safe `psql`, `createdb`, and `dropdb` wrappers that execute the official PostgreSQL 18 client binaries inside the same disposable GitHub Actions service container (no host-mapped database port). The Python tenant-isolation tests remain unchanged and must still complete successfully. Source, shell invocation/STDIN forwarding validated before commit; rerun all required checks on the new exact head, verify preview and preserve NO-MERGE gate until all checks are green.
 
-- UI regression for Clear All Data now awaits its verified asynchronous QR, attachment, hybrid-store and native-storage cleanup before asserting that records disappeared; this preserves the stricter completion contract rather than relying on an unsafe synchronous assumption.
+## 2026-11-12 — Node.js 26 LTS runtime alignment (new PR)
+- Baseline `2b9a1cf7720043c48c20d37d6f64e45e9f5e272a` (main and live production); Vercel already uses Node 26.x, while six Node-based GitHub workflows had seven Node 22 setup steps.
+- Feature branch: `chore/node26-lts-ci-20261112`. Root `.nvmrc` and package engine pin Node 26, and every Node setup step now sources `.nvmrc`; Phase 1 validates the major. Dependencies, DB, mobile signing and production remain unchanged.
+- Exact-head Phase 1, Android native/R8, disposable Play AAB, iOS simulator, IAP and hybrid-sync security, PostgreSQL finance isolation, and Vercel preview are required before merge. No release or merge authorized.
+- Dated plan/evidence: `docs/engineering/updates/2026-11-12-node26-runtime-ci.md`. Vercel Sandbox returned HTTP 402; test through available CI and preview.
 
-- The privacy cleanup regression exposed an IndexedDB-absent runtime: account QR removal already treats unavailable IndexedDB as an empty store, but receipt attachment removal threw before the local ledger could be cleared. Both now skip only absent IndexedDB, while actual database write/clear errors remain blocking. The local-finance-key removal result is also checked before claiming success.
+## 2026-11-13 — iOS simulator timeout mitigation for Node 26 PR #288
+- Both iOS runner attempts at `7af5cb32641c096d00fe6240b779b983821df7dd` passed compilation, install, app launch and deep-link delivery but timed out capturing a CoreSimulator screenshot; the CoreSimulator diagnostic command also timed out.
+- Improve the CI harness by choosing the newest available iOS runtime and adding a bounded, timeout-only screenshot retry. Persistent and non-timeout failures still fail CI.
+- Five new host-independent test cases; detailed evidence, scope, and NO-MERGE gates in `docs/engineering/updates/2026-11-13-ios-runner-smoke-hardening.md`.
+- No changes to production, main, application logic, database, billing or signing. All new-head CI and Vercel preview checks required.
+
+## 2026-11-14 — PR #300 receipt scanning structured review (precommit record)
+
+- Isolated branch `feat/receipt-itemized-scan-20261114`, exact base `5b616ce88e640ee867418db66b4da90ac438f5a0`; no production/main, database, billing or release modification.
+- User's McDonald's receipt manually verified: purchase ₱159.00, cash tendered ₱500.00, change ₱341.00, VATable ₱141.96, VAT included ₱17.04, date 2026-11-14 02:41:33. Full image is not committed.
+- Added deterministic parsed amount/item components/discount/VAT/payment details with editable scanner review, automatic note prefill and safe missing-total fail-closed behavior; preserve local OCR and existing transaction validation.
+- Early CI on initial multi-commit prototype: financial tenant isolation PASSED; Phase 1 FAILED **only** on the preexisting per-commit documentation guard because individual implementation commits omitted these two progress files. Conserve the initial documented planning commit and consolidate prototype into one code commit that touches both required documents.
+- Required next checks: rerun GitHub Phase 1, finance isolation, iOS, Vercel preview, compare exact head and test real iPhone/Android receipt capture before merge. Leave PR open.
+
+## 2026-11-14 — PR #300 localization verification repair (documented before commit)
+
+- Exact head `7904a6bb773a` passed the per-commit documentation guard and financial isolation. Phase 1 failed on `src/lib/i18n.test.js`: ten new labels were missing from the 11-language catalogue (source review uncovered additional dynamic warning strings).
+- Add translations for all ten static labels plus three dynamic warning messages. No scanner amounts, accounting logic, data contracts, native permissions or production behavior changes beyond localized copy.
+- Pending: rerun Phase 1, typecheck/build, iOS, Vercel preview and hardware acceptance; keep this PR open.
+
+## 2026-11-14 — AI receipt vision backend PR (documented before commit)
+
+- Baseline main `c8bd8191475c280c9316fefb1ace9dc363c77eb1`. Add signed-in, Pro-gated AI receipt image/text parser using existing server-only OpenRouter production key with strict input size, origin and consent gates. No receipt contents/images retained at MOVO server; provider retention remains subject to its policy. New client and UI follow separately. PR not merged, no production change.
+
+## 2026-11-14 — AI receipt capture transport (before commit)
+
+- AI client converts permitted 15MB-or-smaller receipt photos to bounded JPEG, or reads PDF text locally. Sends only the selected receipt after explicit consent from scanner UI; bearer session required. API key remains server-only. No production configuration changes. Full UI/direct save still in progress.
+
+## 2026-11-14 — Direct receipt log UI (documented before commit)
+
+- Added AI consent and review UX, category and item summaries, account picker for registered bank/card/e-wallet/cash/other and direct Log/Discard. Reuses the existing validated financial writer (without opening the calculator). Added explicit response status and duplicate refusal handling; no auto persistence of AI scan photo/text. Preview and device acceptance pending.
+
+## 2026-11-14 — Receipt AI review UI and test coverage (before commit)
+
+- Responsive, no-gradient review and account picker UI, item-category editing, privacy-capped AI extraction security tests. No production/main/deployment modification.
+
+## 2026-11-14 — Privacy disclosure update for consented remote receipt analysis (documented before commit)
+
+- Added an AI receipt privacy section to the in-app and public canonical English disclosures: explicit opt-in, OpenRouter/model-provider processing, cross-border/privacy caveats, no raw photo logs at MOVO proxy, logged-record retention rules, review responsibilities. Bumped Privacy effective date to Nov 14 and legal acceptance version. Kept Terms date unchanged. No production deploy or provider configuration changes.
+
+## 2026-11-14 — PR #301 Phase 1 locale gate repair (documented before commit)
+
+- Initial exact-head CI reached localization and failed on 11 new receipt UI labels. Added full 11-language dictionary plus localized consent/review controls. This change does not alter ledger, API request or auth behavior. Financial tenant-isolation already passed; rerun required.
+
+## 2026-11-14 — PR #301 full Jest verification repair (documented before commit)
+
+- Exact `306c4b1d190c` passed 227/229 suites (1,377/1,380 tests). Failures: a stale Privacy Policy date assertion (Nov 12 versus correctly updated Nov 14), and two mocked AI API tests returning HTTP 503 because the jsdom AbortSignal shim omits `AbortSignal.timeout`.
+- Fix assertion and use the native timeout when available (Node 26 production), with a test-runtime-compatible signal fallback; no server key, user data, or ledger logic changed. Rerun full CI, native and preview before merge.
+
+## 2026-11-14 — Scanner direct Log/Discard integration tests (documented before commit)
+
+- Added focused DOM tests: consented analyze, choose a registered e-wallet, Log once directly with VAT/change retained as details; Discard never writes; failed write keeps review open. Requires exact-head CI. No production or store change.
+
+## 2026-11-13 — P0 Google Play license-test isolation
+- Documented design first on isolated `fix/google-play-test-purchase-isolation-20261113` from `5b616ce` in `docs/engineering/updates/2026-11-13-google-play-test-purchase-p0.md`.
+- Google-verified `testPurchase` classification; server allowlist gates sandbox RPC and plan access, with no production paid referral credit. Unknown-owner test RTDN never mints an entitlement.
+- Includes synthetic Jest and disposable PostgreSQL billing tests. No production migration, deployment, main edit, store upload or merge.
+- Exact-head CI, Vercel preview, Android signed internal build, and purchase/acknowledgement/restore/cancellation/revocation on Play license-test accounts remain gates.
+
+## 2026-11-13 — Fix first disposable IAP assertion without weakening entitlement isolation
+- First PR #297 IAP CI run #43355492063 failed a test that mistakenly assumed no store source after sandbox allowlist removal; a distinct legitimate synthetic production receipt still existed.
+- Correct only the synthetic sandbox tier assertion: pro_plus while test allowlisted, production pro after allowlist removal. Security migration and runtime guards unchanged.
+- Progress and failure diagnosis were documented before this code commit in docs/engineering/updates/2026-11-13-google-play-sandbox-ci-diagnosis.md.
+
+## 2026-11-13 — Cross-PR integration test for MOVO P0 login and Play lifecycle
+- Planning document committed BEFORE code: `docs/engineering/updates/2026-11-13-movo-p0-integrated-gates.md`.
+- Integrated PR #295 Android Google PKCE callback and native-storage diagnostics, PR #296 cancellation-through-expiry and PR #297 allowlisted, server-verified Google Play sandbox test receipts into isolated branch `integration/movo-p0-android-play-20261113` on main `5b616ce`.
+- Shared Google verifier and tests reconciled to cover *both* testPurchase and CANCELED with future/past expiry. No provider, keys, production settings or migrations applied. Signed device and Google Play purchase evidence remains manual.
+- Exact-head Phase 1, Android, iOS, finance, IAP, referral, and Vercel preview all required. No merge, deploy or Play release.
+
+## 2026-11-13 — Combined MOVO P0 cross-PR follow-up: precise Play offer + iOS simulator recovery
+- Prior progress plan: `docs/engineering/updates/2026-11-13-movo-p0-followup-ios-offer.md` committed **before** this code change.
+- Integrated reviewed PR #299 exact displayed Google Play offer token selection and strict base-plan match, plus PR #295 screenshot-stall cold recovery without bypassing a real screenshot or native restart.
+- Preserve original P0 OAuth + cancellation + license-test sandbox scopes, tenant isolation, strict Google verification and encrypted acknowledgement.
+- Exact-head Phase 1, Android, iOS, finance, IAP, referral and Vercel preview must rerun. Do not merge, publish signed AAB, alter live env or apply migrations.
+
+## 2026-11-13 — PR #298 iOS CoreSimulator openurl timeout (exact-head failure)
+- At `4c7bb464`, iOS run #43359864159 compiled Debug/Release, installed and launched iPhone Simulator, but `simctl openurl movo://log` and subsequent simulator diagnostics timed out. The native smoke gate remained RED.
+- Isolated fix planned and committed first in `docs/engineering/updates/2026-11-13-p0-ios-openurl-timeout.md`; exact-head one-job rerun requested before remediation.
+- Add **timeout-only, one-time** disposable CoreSimulator cold restart, reinstall, re-launch and deep-link replay; any second timeout, non-timeout error or reboot/install failure remains RED. Screenshot remains mandatory. Unit tests verify all success/failure branches.
+- Vercel exact-head preview READY and served root HTTP 200; its billing config `enabled:false` is an intentionally fail-closed preview environment state, with sensitive provider secrets production-scoped. Do not expose secrets to preview.
+- No deployment, production mutation, merge, signed AAB, store upload or live Supabase migration.
+
+## 2026-11-14 — Android sign-in physical acceptance bridge (PR #298)
+- Report: Google and email sign-in still fail in the Android Play app. Previous OAuth repair is unmerged/unreleased; existing automated success does not prove installed-device success. MOVO active public key matches the build-time file; 24h Auth logs show PKCE callbacks but not email OTP requests. Full diagnosis documented **before code** in `docs/engineering/updates/2026-11-14-android-auth-device-test-bridge.md`.
+- Add a separate, debug-signed `com.nasrinai.movo.authcheck` artifact on PR Android CI so a tester can exercise the current OAuth/OTP code without overwriting the Play app or accessing protected signing secrets. No merge, Play upload, migration or production change. Device acceptance is outstanding.
+
+
+## 2026-11-14 — Reconcile latest main into isolated PR #298 (pre-commit review)
+- Main `86873236e62c` introduced receipt-scanning code and appended its progress log since base `5b616ce88e64`. Compared the complete path sets before integration: **only** `docs/PR_PROGRESS.md` overlaps; both sides append to the same common baseline without editing earlier lines.
+- Create a two-parent reconciliation commit on PR branch; use the exact **main tree** as base, replay only the 26 non-overlapping changed files from isolated PR #298 as their original Git blob hashes, and concatenate the branch progress suffix to the latest main progress. No application code from main is overwritten; no changes to main itself, production, store uploads or Supabase.
+- This unlocks the branch's PR CI and test-only Android APK artifact. Re-run all exact-head gates; remaining live device and Play license tests must not be waived.
+
+
+## 2026-11-14 — Android native login secure-store cleanup hardening
+- Owner received the generic Android `Secure sign-in storage is unavailable` error. Documented the reproducible redundant legacy-delete code path and remaining unknown root-cause possibilities in `docs/engineering/updates/2026-11-14-android-auth-storage-cleanup-p0.md` **before changing app code**.
+- Native auth adapter now avoids unnecessary `Preferences.remove` if a key is confirmed absent, while still deleting and verifying actual legacy plaintext, failing closed on unreadable/undeletable older copies, and keeping the encrypted Keystore session intact. Supabase PKCE, financial data and native plugin ownership unchanged.
+- Android user errors gain static `ST-*` reason codes without ever printing raw exceptions, keys, tokens or provider state. Added cleanup and diagnosis regressions.
+- New exact-head CI, Android test APK, iOS simulator, Vercel preview and physical Android acceptance are required. No merge, production deploy, store upload or migration.
+
+- Security hardening follow-up before acceptance: require Capacitor Preferences `{ value: null }` as explicit proof of absence and reject malformed/undefined read responses; never silently treat bridge failure as an empty legacy store. Two fail-closed tests added. The diagnostic and sign-in tests remain device-gated.
+
+
+## 2026-11-14 — Android ST-KEY Supabase PKCE per-flow vault compatibility (isolated PR)
+- **Pre-commit audit:** `@supabase/auth-js@2.119.0` adds pending-flow index and per-flow verifier keys beyond MOVO's older JavaScript secure-auth allowlist; existing native iOS/Android vaults already accept these under 128 characters. Old adapter rejects the newer names and raises `ST-KEY` before native encryption, a reproducible source-level defect; physical device cause not yet proven.
+- Narrow JavaScript allowlist and unit regressions only; no token/key logging, plaintext fallback, keystore reset, account-data deletion, native signing edits, or server configuration changes.
+- Local Python contract verification: 11 formats passed. Require exact-head CI, Android/iOS native builds, Vercel preview and physical Android Google/email login/session acceptance. **NO MERGE / NO STORE RELEASE until human device evidence.**
+- Full engineering record: `docs/engineering/updates/2026-11-14-supabase-pkce-st-key-allowlist.md`.
+
+
+## 2026-11-14 — PR #302 ST-KEY recurrence: safe diagnostic split (pre-commit)
+- Owner continues to see `ST-KEY` on Android despite the first PR #302 APK. Inspected bundled `@supabase/auth-js@2.119.0` flow storage key factories; all five expected key formats match current adapter including 64-character flow ids. Widening the native allowlist is not justified.
+- Split **only** existing fixed storage diagnostic labels into `ST-KEY-NAME`, `ST-KEY-VALUE`, `ST-KEY-CONTEXT` and test no raw native messages or secrets reach the UI. No auth/session/storage changes; still fails closed. See `docs/engineering/updates/2026-11-14-android-st-key-recurrence.md`.
+- Prior exact head: Android, Phase 1 and tenant isolation passed, Vercel preview READY; iOS simulator smoke failed due to CoreSimulator screenshot/shutdown timeout after successful native builds. New exact-head CI and physical Android acceptance required. NO MERGE or store upload.
+
+
+## 2026-11-14 — Android Google OAuth return: same-owner navigation and safe callback diagnostics (isolated PR)
+- Owner reports OTP working but Google account selection not completing visible login in `com.nasrinai.movo.authcheck`. PR #302 was already merged into main at the read-only audit; new work isolated from main at `775b69378e4941a51a7bf134a491d45652c2565a`.
+- Live Supabase Android-browser authorization and callback redirects (HTTP 302), and one token HTTP 200 were observed, without proof of which installed package received the callback. The same-owner `applySession` early return reproducibly bypasses Sign In → Home navigation after successful session state. Repair navigation before identity fast path without changing owner finance reloads; add fixed `OA-*` callback error labels and tests.
+- The Play and test APKs still share the `movo://auth-callback` deep link, a separate real-device acceptance risk; no Supabase redirect or production changes authorized. Record: `docs/engineering/updates/2026-11-14-android-google-oauth-return-same-owner.md`.
+- Require exact-head mobile/CI/preview and physical Android Google callback, OTP/session and tenant isolation evidence. **NO MERGE, NO STORE UPLOAD, NO PRODUCTION CHANGE.**
+
+
+## 2026-11-15 — Android OAuth debug/Play callback collision (documented before implementation)
+- Read-only Supabase logs at 2026-11-14 22:50 UTC show Android authorization and provider callback 302, with no same-bucket token exchange; sanitized authorize redirect `movo://auth-callback`. The identity of the Android recipient cannot be determined from server logs.
+- Proven source ambiguity: Play `com.nasrinai.movo` and debug Auth Test `com.nasrinai.movo.authcheck` previously both handled `movo://auth-callback` despite separate Android Keystore PKCE verifiers.
+- Isolated PR branch `fix/android-google-auth-callback-app-isolation-20261115` from main `c9165b51ad41c11b167e10d4d566852baa509d45`: preserve production and iOS `movo://auth-callback`; assign Auth Test `movo-authcheck://auth-callback` via Android manifest placeholder and exact Capacitor package-ID dispatch. Add OTP/OAuth and parser regression tests, Android artifact manifest checks, and fixed safe package-identity errors.
+- Live settings are NOT modified. One manual prerequisite for testing: add exact `movo-authcheck://auth-callback` to Supabase Auth Redirect URLs (no wildcards, do not remove `movo://auth-callback`). See `docs/engineering/updates/2026-11-15-android-google-auth-callback-isolation.md`.
+- Full CI, preview and physical Android acceptance required. This is NOT yet evidence of successful end-to-end Google sign-in; `main`, store uploads, user finances and production unchanged. **NO MERGE.**
+
+### 2026-11-15 — PR #304 CI translation fix (documented before commit)
+- Exact head `ad1bfcc16c4ff47e6e759419b183d895dc9208e9`: Phase 1 rejected a newly introduced untranslated Android-package identity error string. Preserve all 11 localization catalogues by using the already-translated existing Android Google return-link message; no auth/security logic changes.
+- New exact-head Phase 1, Android, iOS, hybrid, finance and Vercel gates remain required. `main`/production unchanged.
+
+### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
+- Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
+- Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.

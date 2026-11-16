@@ -71,7 +71,9 @@ module.exports = async function handler(req, res) {
             { packageName: S.BUNDLE_ID, token },
             { timeout: 15000 },
           );
-        if (current.testPurchase) throw new Error("sandbox_purchase_rejected");
+        // An unknown-owner test token has no account to award. Wait for
+        // authenticated client verification; never invent a paid owner.
+        if (current.testPurchase) return { ignoredUnclaimedTest: true };
         if (current.linkedPurchaseToken) {
           existing = await S.owner(
             db,

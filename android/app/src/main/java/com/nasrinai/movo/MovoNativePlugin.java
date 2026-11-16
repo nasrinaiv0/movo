@@ -1,8 +1,13 @@
 package com.nasrinai.movo;
 
+import android.content.ClipData;
+import android.content.ClipDescription;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.PersistableBundle;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
@@ -12,6 +17,8 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.PluginMethod;
+import com.android.installreferrer.api.InstallReferrerClient;
+import com.android.installreferrer.api.InstallReferrerStateListener;
 import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
 import com.google.android.play.core.review.ReviewManagerFactory;
@@ -19,6 +26,7 @@ import com.google.android.play.core.review.ReviewManagerFactory;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -39,13 +47,58 @@ public class MovoNativePlugin extends Plugin {
     private static final int GCM_TAG_BITS = 128;
     private static final int IV_SIZE = 12;
 
+    private String friendInviteUrl(PluginCall call) {
+        String url = call.getString("url");
+        if (url == null || !url.matches("https://movo\\.nasrinai\\.com/friend#invite=[A-Za-z0-9_-]{43}")) {
+            call.reject("invalid_friend_invite");
+            return null;
+        }
+        return url;
+    }
+
+    @PluginMethod
+    public void shareFriendInvite(PluginCall call) {
+        String url = friendInviteUrl(call);
+        if (url == null) return;
+        getActivity().runOnUiThread(() -> {
+            Intent share = new Intent(Intent.ACTION_SEND);
+            share.setType("text/plain");
+            share.putExtra(Intent.EXTRA_TEXT, url);
+            try {
+                getActivity().startActivity(Intent.createChooser(share, null));
+                call.resolve();
+            } catch (android.content.ActivityNotFoundException e) {
+                call.reject("share_unavailable");
+            }
+        });
+    }
+
+    @PluginMethod
+    public void copyFriendInvite(PluginCall call) {
+        String url = friendInviteUrl(call);
+        if (url == null) return;
+        getActivity().runOnUiThread(() -> {
+            ClipboardManager clipboard = getContext().getSystemService(ClipboardManager.class);
+            if (clipboard == null) {
+                call.reject("clipboard_unavailable");
+                return;
+            }
+            ClipData clip = ClipData.newPlainText("MOVO", url);
+            PersistableBundle extras = new PersistableBundle();
+            extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+            clip.getDescription().setExtras(extras);
+            clipboard.setPrimaryClip(clip);
+            call.resolve();
+        });
+    }
+
     private SharedPreferences prefs() {
         return getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
     private String validateKey(PluginCall call) {
         final String key = call.getString("key");
-        if (key == null || !(key.equals("movo-autolog-key") || key.equals("movo-finance-vault-key-v1") || (key.startsWith("sb-") && key.contains("-auth-token"))) || key.length() >= 128) {
+        if (key == null || !(key.equals("movo-autolog-key") || key.equals("movo-finance-cache-key-v1") || key.equals("movo-finance-vault-key-v1") || (key.startsWith("sb-") && key.contains("-auth-token"))) || key.length() >= 128) {
             call.reject("invalid_secure_auth_key");
             return null;
         }
@@ -70,6 +123,56 @@ public class MovoNativePlugin extends Plugin {
                 .build();
         generator.init(spec);
         return generator.generateKey();
+    }
+
+    /**
+     * Referral download links (api/download.js): Google Play keeps the "referrer" value of the store link that led to
+     * this install, e.g. "utm_source=movo_referral&utm_medium=qr&movo_ref=M78038". Returns that text (or "" when there
+     * is none, Play is unavailable, or the app was not installed from Play). Read once by src/lib/installReferral.js;
+     * the app only keeps a valid referral code from it, and the server decides whether the code counts.
+     */
+    @PluginMethod
+    public void installReferrer(PluginCall call) {
+        final AtomicBoolean answered = new AtomicBoolean(false);
+        final InstallReferrerClient client;
+        try {
+            client = InstallReferrerClient.newBuilder(getContext()).build();
+        } catch (Exception e) {
+            resolveReferrer(call, answered, "");
+            return;
+        }
+        try {
+            client.startConnection(new InstallReferrerStateListener() {
+                @Override
+                public void onInstallReferrerSetupFinished(int responseCode) {
+                    String referrer = "";
+                    if (responseCode == InstallReferrerClient.InstallReferrerResponse.OK) {
+                        try {
+                            final String value = client.getInstallReferrer().getInstallReferrer();
+                            if (value != null && value.length() <= 1024) referrer = value;
+                        } catch (Exception ignored) {
+                            referrer = "";
+                        }
+                    }
+                    try { client.endConnection(); } catch (Exception ignored) { }
+                    resolveReferrer(call, answered, referrer);
+                }
+
+                @Override
+                public void onInstallReferrerServiceDisconnected() {
+                    resolveReferrer(call, answered, "");
+                }
+            });
+        } catch (Exception e) {
+            resolveReferrer(call, answered, "");
+        }
+    }
+
+    private void resolveReferrer(PluginCall call, AtomicBoolean answered, String referrer) {
+        if (!answered.compareAndSet(false, true)) return;
+        final JSObject result = new JSObject();
+        result.put("referrer", referrer);
+        call.resolve(result);
     }
 
     /**

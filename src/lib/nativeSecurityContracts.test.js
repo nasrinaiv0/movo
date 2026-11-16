@@ -62,3 +62,14 @@ test('native finance snapshots use a device-only Keychain/Keystore wrapped key',
   expect(vault).not.toContain('localStorage.setItem');
   expect(vault).not.toContain('Preferences.set');
 });
+
+test('financial list cache ciphertext is never restored into native Preferences and keys have narrow vault allowlists', () => {
+  const native = fromRoot('src/lib/native.js');
+  expect(native).toContain('readCache\\.v1:');
+  const java = fromRoot('android/app/src/main/java/com/nasrinai/movo/MovoNativePlugin.java');
+  const swift = fromRoot('ios/App/App/MovoNativePlugin.swift');
+  expect(java).toContain('key.equals("movo-finance-cache-key-v1")');
+  expect(swift).toContain('key == "movo-finance-cache-key-v1"');
+  expect(fromRoot('src/lib/offlineReadCache.js')).toContain('encryptFinancialCache');
+  expect(fromRoot('src/lib/financeCacheCrypto.js')).toContain("name: 'AES-GCM'");
+});

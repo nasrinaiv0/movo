@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
+import { migrateLegacyOfflineReadCache } from './lib/offlineReadCache';
 import { captureReferralFromUrl } from './lib/referrals';
+import { captureInstallReferral } from './lib/installReferral';
 import { installInteractionTracking } from './lib/interaction';
 
 // The owner console (/owner) loads separately; customers never download it.
@@ -20,7 +22,10 @@ if (!container) {
 const ownerRoute = window.location.pathname === '/owner' || window.location.pathname.startsWith('/owner/');
 if (ownerRoute) document.getElementById('movo-splash')?.remove();
 // A friend's download link (?ref=M78038) keeps the code on this device for the free month or Refer MOVO.
-else captureReferralFromUrl();
+else {
+  captureReferralFromUrl();
+  captureInstallReferral().catch(() => null);
+}
 
 // Passive touch tracking: decorative animation steps aside while the person interacts, and iOS shows :active at once.
 installInteractionTracking();
@@ -39,4 +44,9 @@ const render = () => root.render(
 Promise.all([restoreNativeStorage(), refreshNativeNotifyPermission()])
   .then(() => restoreNativeAutomationKey())
   .catch(() => { /* Native vault failure disables use of the cached automation secret. */ })
-  .finally(render);
+  .finally(() => {
+    render();
+    // Migrate existing plaintext lists after first paint; failed items remain for safe retry.
+    // Owner portal is isolated from customer financial storage.
+    if (!ownerRoute) migrateLegacyOfflineReadCache().catch(() => {});
+  });

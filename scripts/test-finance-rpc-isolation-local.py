@@ -140,12 +140,12 @@ def main():
         migrations = sorted((ROOT / "supabase" / "migrations").glob("*.sql"))
         if len(migrations) < 28:
             raise RuntimeError("Expected complete MOVO migration history (at least 28)")
-        cutoff = "20261111133000"
-        baseline = [migration for migration in migrations if migration.name[:14] < cutoff]
-        upgrade = [migration for migration in migrations if migration.name[:14] >= cutoff]
-        if [migration.name[:14] for migration in upgrade] != [
-            "20261111133000", "20261111133100", "20261111133200"
-        ]:
+        # Main already contains migrations newer than the staged PR. Rehearse
+        # the upgrade from that deployed schema with only the three PR stages pending.
+        upgrade_versions = ("20261111133000", "20261111133100", "20261111133200")
+        baseline = [migration for migration in migrations if migration.name[:14] not in upgrade_versions]
+        upgrade = [migration for migration in migrations if migration.name[:14] in upgrade_versions]
+        if tuple(migration.name[:14] for migration in upgrade) != upgrade_versions:
             raise RuntimeError("Unexpected PR274 migration sequence or missing upgrade step")
         for migration in baseline:
             sql(migration.read_text(), "baseline: " + migration.name)
@@ -187,6 +187,8 @@ def main():
             "bill payments, ledger amounts and cross-tenant denial")
         sql((ROOT / "supabase/tests/obligation_account_postings.test.sql").read_text(),
             "obligation cash-posting and authorization contracts")
+        sql((ROOT / "supabase/tests/private_friends.test.sql").read_text(),
+            "private invite lifecycle, two-party visibility and account deletion")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

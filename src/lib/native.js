@@ -11,9 +11,32 @@ import { isNativeApp, nativePlatform } from './platform';
  */
 export const MovoNative = registerPlugin('MovoNative');
 export const AUTH_CALLBACK = 'movo://auth-callback';
+export const AUTH_TEST_CALLBACK = 'movo-authcheck://auth-callback';
+
+/**
+ * Production and isolated Android Auth Test have different Keystore/PKCE
+ * scopes. Never let both app packages request the same browser return link.
+ * Capacitor App.getInfo() returns the installed package ID, not a JS build flag.
+ */
+export function callbackForAndroidPackage(packageId) {
+  if (packageId === 'com.nasrinai.movo') return AUTH_CALLBACK;
+  if (packageId === 'com.nasrinai.movo.authcheck') return AUTH_TEST_CALLBACK;
+  throw new Error('android_auth_app_identity_unavailable');
+}
+export async function getNativeAuthCallback() {
+  if (nativePlatform() !== 'android') return AUTH_CALLBACK;
+  try {
+    const { id } = await CapApp.getInfo();
+    return callbackForAndroidPackage(id);
+  } catch {
+    // Do not accidentally launch an Auth Test sign-in via the Play callback.
+    throw new Error('android_auth_app_identity_unavailable');
+  }
+}
 
 /* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
-const KEEP = /^movo\.(?!lock\.)/;
+// Financial read caches migrate from legacy Preferences to AES-GCM, never mirror back as plaintext.
+const KEEP = /^movo\.(?!lock\.|readCache\.v1:)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */
@@ -53,17 +76,26 @@ export async function clearNativeMovoPreferences() {
 
 /* ---------- Links: movo://auth-callback (sign-in return) and movo://log?… (payment links) ---------- */
 
+/*
+ * The only links MOVO accepts: scheme://route, an optional "/", then an optional ?query and #fragment.
+ * Matched by hand, never with `new URL()`: Android WebViews older than Chromium 130 do not read the host of a
+ * custom-scheme URL (they report hostname "" and pathname "//auth-callback"), so the URL parser made every Google
+ * or email-link return look invalid on those phones and sign-in silently stopped after the account was chosen.
+ * The pattern leaves no room for user info, a port, another host or a path.
+ */
+const APP_LINK = /^(movo|movo-authcheck):\/\/(auth-callback|log|friend)\/?(?:\?([^#]*))?(?:#(.*))?$/;
+
 /** Parse a movo:// URL into what the app should do with it. Pure, so it is unit-tested. */
 export function readAppUrl(url) {
   // Custom-scheme links may be sent by other installed apps. Only process the
   // exact callbacks we register, with no userinfo/port/path or ambiguous codes.
-  if (typeof url !== 'string' || url.length > 4096) return null;
-  let parsed;
-  try { parsed = new URL(url); } catch { return null; }
-  if (parsed.protocol !== 'movo:' || parsed.username || parsed.password || parsed.port) return null;
-  if (parsed.pathname && parsed.pathname !== '/') return null;
-  const params = new URLSearchParams(parsed.search || '');
-  const hash = new URLSearchParams((parsed.hash || '').replace(/^#/, ''));
+  if (typeof url !== 'string' || url.length > 4096 || /[\x00-\x1F\x7F]/.test(url)) return null;
+  // Schemes are case-insensitive (iOS opens MOVO://… too); routes are not.
+  const match = APP_LINK.exec(url.replace(/^[A-Za-z-]+(?=:\/\/)/, scheme => scheme.toLowerCase()));
+  if (!match) return null;
+  const parsed = { protocol: `${match[1]}:`, hostname: match[2], hash: match[4] || '' };
+  const params = new URLSearchParams(match[3] || '');
+  const hash = new URLSearchParams(parsed.hash);
   if (parsed.hostname === 'auth-callback') {
     const codes = params.getAll('code');
     if (codes.length > 1 || hash.has('code') || params.has('access_token') || params.has('refresh_token')
@@ -71,24 +103,46 @@ export function readAppUrl(url) {
     const error = params.get('error_description') || params.get('error') || hash.get('error_description') || hash.get('error');
     return { kind: 'auth', code: error ? '' : (codes[0] || ''), error: error || '' };
   }
-  if (parsed.hostname === 'log' && !parsed.hash) {
+  if (parsed.hostname === 'friend' && !parsed.hash) {
+    const [token] = params.getAll('invite');
+    if ([...params].length === 1 && /^[A-Za-z0-9_-]{43}$/.test(token || '')) return { kind: 'friend', token };
+    return null;
+  }
+  if (parsed.hostname === 'log' && parsed.protocol === 'movo:' && !parsed.hash) {
     return { kind: 'log', hash: `#/log?${params.toString()}` };
   }
   return null;
 }
 
 /** Listen for movo:// links. `onAuth({ code, error })` finishes sign-in; log links reuse the web #/log handler. */
-export function listenForAppUrls({ onAuth } = {}) {
+export function listenForAppUrls({ onAuth, onFriend } = {}) {
   if (!isNativeApp()) return () => {};
+  let active = true;
+  let lastAuthCode = null;
   const handle = ({ url }) => {
+    if (!active) return;
     const link = readAppUrl(url);
     if (!link) return;
-    if (link.kind === 'auth') { Browser.close().catch(() => {}); onAuth?.(link); }
+    if (link.kind === 'auth') {
+      // Android singleTask already clears the Custom Tab during a deep-link return.
+      // Browser.close() here can reopen the last OAuth page or strand the browser
+      // controller in @capacitor/browser 8.0.5. iOS still needs an explicit close.
+      // A callback can arrive through both appUrlOpen and getLaunchUrl; exchange
+      // each one-time PKCE code at most once without persisting or logging it.
+      if (link.code && link.code === lastAuthCode) return;
+      if (link.code) lastAuthCode = link.code;
+      if (nativePlatform() !== 'android') Browser.close().catch(() => {});
+      onAuth?.(link);
+    }
     if (link.kind === 'log') window.location.hash = link.hash;
+    if (link.kind === 'friend') onFriend?.(link.token);
   };
   const pending = CapApp.addListener('appUrlOpen', handle);
   CapApp.getLaunchUrl().then(launch => { if (launch?.url) handle(launch); }).catch(() => {});
-  return () => { pending.then(h => h.remove()).catch(() => {}); };
+  return () => {
+    active = false;
+    pending.then(h => h?.remove()).catch(() => {});
+  };
 }
 
 /** Open a sign-in page in the system browser sheet (Google refuses sign-in inside embedded web views). */
