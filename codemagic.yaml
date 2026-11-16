@@ -33,15 +33,29 @@ workflows:
         - pattern: 'ios-v*'
           include: true
     scripts:
-      - name: Install dependencies
-        script: npm install
+      - name: Install locked dependencies
+        script: npx --yes npm@11.19.1 ci
+      - name: Verify Xcode and iOS SDK toolchain
+        script: |
+          set -eu
+          xcodebuild -version
+          major="$(xcodebuild -version | awk '/^Xcode / {split($2,a,"."); print a[1]}')"
+          if [ -z "$major" ] || [ "$major" -lt 26 ]; then
+            echo "The iOS release requires Xcode 26 or newer." >&2
+            exit 1
+          fi
+      - name: Validate iOS source release gates
+        script: |
+          node --test scripts/check-ios-release-readiness.test.cjs
+          node scripts/check-ios-release-readiness.cjs
       - name: Tests and typecheck
         script: |
-          npx tsc --noEmit
-          CI=true npx react-scripts test --runInBand --watchAll=false
+          npm run typecheck
+          CI=true npm test -- --runInBand --watchAll=false
       - name: Build the web app
         script: |
           # The public cloud connection comes from .env.production (the movo_web group, when set, takes precedence).
+          # Tests already passed above; avoid a second prebuild test suite on signed CI.
           CI=true npx react-scripts build
           node scripts/check-bundled-cloud-config.cjs build
       - name: Copy the web app into the iOS project

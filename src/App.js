@@ -1,3 +1,5 @@
+import FriendsSheet from './components/FriendsSheet';
+import { captureFriendInvite, saveFriendInvite } from './lib/friends';
 import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
 import { listOwnerSyncOperations, acknowledgeReconciledWorkspace, approveHybridOperations } from './lib/hybridLocalStore';
 import FinanceBackupSheet from './components/FinanceBackupSheet';
@@ -57,6 +59,7 @@ import { summarize as summarizeSubscriptions, billingDate, subscriptionPaymentAc
 import Settings, { Appearance, NotificationSettings, ThemeSheet } from './screens/Settings';
 import Notifications, { NotificationDetail, buildNotifications } from './screens/Notifications';
 import { supabase, supabaseConfigured } from './lib/supabaseClient';
+import { viewAfterAuthenticatedSession, safeNativeOAuthStage } from './lib/nativeAuthReturnState';
 import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAccountQr, isAccountQrDataUrl } from './lib/accountQrStorage';
 import { supportsAccountQr } from './lib/accountQrEligibility';
 import LoyaltySheet from './components/LoyaltySheet';
@@ -299,6 +302,16 @@ function App() {
   const syncActiveRef = useRef(false);
   const lastSyncRetryRef = useRef(false); // the last failed sync only needs the connection back
   const [view, setView] = useState('Home');
+  // After each screen change, or a cancelled touch, the bottom bar's touch-down marking (pressNav) is put back in step
+  // with the real screen: the active tab and the highlight position.
+  const syncNavToView = useCallback(() => {
+    const root = ROOT_FOR[viewRef.current];
+    const label = NAV.find(n => n[2] === root)?.[0];
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.toggle('nav-active', item.getAttribute('aria-label') === label));
+    const pill = document.querySelector('.bottom-nav .nav-pill');
+    if (pill) { pill.style.setProperty('--idx', String(lastTab.current)); pill.classList.toggle('hidden', root === 'NasrinAI'); }
+  }, []);
+  useLayoutEffect(() => { syncNavToView(); }, [view, syncNavToView]);
   const viewRef = useRef('Home');
   const [motion, setMotion] = useState('fade');
   const [scrolled, setScrolled] = useState(false);
@@ -347,6 +360,9 @@ function App() {
   const [nFilter, setNFilter] = useState('All');
   const [activeNotificationId, setActiveNotificationId] = useState('');
   const [sheet, setSheet] = useState(null);
+  const [friendInvite, setFriendInvite] = useState('');
+  useEffect(() => { setFriendInvite(captureFriendInvite()); }, []);
+  const openedFriendInvite = useRef('');
   const [inbox, setInbox] = useState([]); // phone automations that could not be logged (cloud only)
   const [pendingLog, setPendingLog] = useState(null);
   const [automationStatus, setAutomationStatus] = useState('idle');
@@ -918,9 +934,18 @@ function App() {
   /* iOS app: movo://auth-callback finishes Google/Apple sign-in (the auth listener below picks up the session);
      movo://log links become the same #/log links the web app already handles. No-op on the web. */
   useEffect(() => listenForAppUrls({
+    onFriend: token => setFriendInvite(saveFriendInvite(token)),
     onAuth: ({ code, error: failure }) => {
-      if (failure || !code) { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); return; }
-      finishOAuth(code).catch(() => { setView('Sign in'); setError(tr('Sign-in could not be completed. Please try again.')); });
+      if (failure || !code) {
+        setView('Sign in');
+        // Never echo OAuth callback parameters or error descriptions.
+        setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage(failure ? 'provider' : 'no-code')})`);
+        return;
+      }
+      finishOAuth(code).catch(() => {
+        setView('Sign in');
+        setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage('exchange')})`);
+      });
     },
   }), []);
 
@@ -935,13 +960,16 @@ function App() {
       const nextUserId = nextSession?.user?.id || null;
       // Supabase can emit SIGNED_IN repeatedly (including on tab focus). Refresh
       // finance records only when the authenticated identity actually changes.
+      // A successful Google callback can restore the same Supabase identity as
+      // an earlier OTP session. Navigate off Sign in BEFORE the same-owner fast
+      // path skips expensive finance reloads; never reload or mix owner ledgers.
+      if (nextUserId) setView(current => viewAfterAuthenticatedSession(current, nextUserId));
       if (cloudAuthUserRef.current === nextUserId) {
         if (!nextUserId) setAuthReady(true);
         return;
       }
       cloudAuthUserRef.current = nextUserId;
       if(nextUserId){
-        setView(current => current === 'Sign in' ? 'Home' : current);
         setAuthReady(false);setCloudMode(false);setOfflineOwnerId(null);
         setCloudAccounts([]);setLocalAccounts([]);setRawTxs([]);
         setCloudPostings([]);setCloudActivities([]);
@@ -1314,40 +1342,41 @@ function App() {
     setSheet({ name: 'transaction', id: t.id });
   };
 
-  const saveTransaction = async (e) => {
+  const saveTransaction = async (e, receiptDraft = null) => {
+    const draft = receiptDraft || form;
     e.preventDefault(); setError('');
-    if (cloudMode && !can('cloudWrite')) { setError('Cloud records are read-only. Use local mode or upgrade to Pro.'); return; }
-    const amount = Number(form.amount); const type = form.transaction_type;
-    if (!form.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return; }
+    if (cloudMode && !can('cloudWrite')) { setError('Cloud records are read-only. Use local mode or upgrade to Pro.'); return false; }
+    const amount = Number(draft.amount); const type = draft.transaction_type;
+    if (!draft.merchant.trim() || !Number.isFinite(amount) || amount <= 0 || amount >= 1e17) { setError(tr('Enter a description and a valid positive amount.')); return false; }
     // Every record belongs to an account: nothing is logged until an account or card exists.
-    if (!formAccounts.length) { setError(tr('Add an account or card in Wallet first, then log this transaction.')); return; }
-    if (!form.account_id) { setError(tr('Choose an account before saving this transaction.')); return; }
-    if (type === 'transfer' && (!form.account_id || !form.transfer_to_account_id || form.transfer_to_account_id === form.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return; }
-    const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : form.category;
+    if (!formAccounts.length) { setError(tr('Add an account or card in Wallet first, then log this transaction.')); return false; }
+    if (!draft.account_id) { setError(tr('Choose an account before saving this transaction.')); return false; }
+    if (type === 'transfer' && (!draft.account_id || !draft.transfer_to_account_id || draft.transfer_to_account_id === draft.account_id)) { setError(tr('Choose two different accounts for a transfer.')); return false; }
+    const category = type === 'income' ? 'Income' : type === 'transfer' ? 'Transfer' : draft.category;
     // Time is recorded automatically (hour, minute, second) at the moment of saving unless one was set.
-    const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(form.time || '') ? (form.time.length === 5 ? `${form.time}:00` : form.time) : new Date().toTimeString().slice(0, 8);
-    const stamp = new Date(`${form.occurred_at}T${clock}`);
-    if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return; }
+    const clock = /^\d{2}:\d{2}(:\d{2})?$/.test(draft.time || '') ? (draft.time.length === 5 ? `${draft.time}:00` : draft.time) : new Date().toTimeString().slice(0, 8);
+    const stamp = new Date(`${draft.occurred_at}T${clock}`);
+    if (Number.isNaN(stamp.getTime())) { setError(tr('Enter a valid date and time.')); return false; }
     const occurred_at = stamp.toISOString();
-    const txCurrency = formAccounts.find(a => a.id === form.account_id)?.currency || base;
+    const txCurrency = formAccounts.find(a => a.id === draft.account_id)?.currency || base;
     const editingId = sheet?.name === 'transaction' ? sheet.id : null;
     // Duplicate guard (receipts, notifications, chat and manual entries): warn once, a second Save logs it anyway.
-    const dup = editingId ? null : findDuplicate({ merchant: form.merchant, amount, type, date: occurred_at, account_id: form.account_id, ref: form.ref || '' }, rawTxs);
-    const sig = `${type}|${amount}|${form.merchant.trim().toLowerCase()}|${form.occurred_at}|${form.account_id}`;
-    if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return; }
+    const dup = editingId ? null : findDuplicate({ merchant: draft.merchant, amount, type, date: occurred_at, account_id: draft.account_id, ref: draft.ref || '' }, rawTxs);
+    const sig = `${type}|${amount}|${draft.merchant.trim().toLowerCase()}|${draft.occurred_at}|${draft.account_id}`;
+    if (dup && dupAck.current !== sig) { dupAck.current = sig; setError(`${dupText(dup)} ${tr('Save again to log it anyway.')}`); return false; }
     dupAck.current = '';
     setBusy(true);
     let uploadedReceiptPath = '';
-    const oldReceiptPath = form.receipt_path_to_delete || (form.receipt_file ? form.receipt_path : '');
+    const oldReceiptPath = draft.receipt_path_to_delete || (draft.receipt_file ? draft.receipt_path : '');
     // Offline-first: `online` turns false when the cloud cannot be reached; the same change is then saved on this
     // account's device copy and uploads automatically on reconnect.
     let online = cloudMode;
     // A new record gets its UUID here, so the cloud save and any device fallback describe the same record.
     const newId = editingId ? null : newRecordId();
     try {
-      let receiptPath = form.receipt_path || null;
-      if (form.receipt_file) {
-        const file = form.receipt_file;
+      let receiptPath = draft.receipt_path || null;
+      if (draft.receipt_file) {
+        const file = draft.receipt_file;
         if (file.size > 10 * 1024 * 1024 || !['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) throw new Error(tr('Use a JPG, PNG, WebP or PDF receipt smaller than 10 MB.'));
         if (online) {
           if (!can('cloudWrite')) throw new Error('Cloud records are read-only. Use local mode to attach a receipt.');
@@ -1358,8 +1387,8 @@ function App() {
         }
         if (!online) receiptPath = await putLocalAttachment(file);
       }
-      const paidSub = !editingId && type === 'expense' && form.subscriptionPaymentId
-        ? subscriptions.find(item => item.id === form.subscriptionPaymentId) : null;
+      const paidSub = !editingId && type === 'expense' && draft.subscriptionPaymentId
+        ? subscriptions.find(item => item.id === draft.subscriptionPaymentId) : null;
       let subscriptionNextDue = '';
       if (paidSub && paidSub.status !== 'cancelled' && paidSub.status !== 'paused') {
         subscriptionNextDue = billingDate(paidSub.start, paidSub.cycle, 1);
@@ -1390,8 +1419,8 @@ function App() {
       // Resolves true once a local-first save is confirmed by the cloud (false when it stayed on this device).
       let backgroundUpload = null;
       if (online) {
-        const auto = !editingId && AUTOMATION_SOURCES.includes(form.source) ? { source: form.source, external_reference: form.ref || undefined } : {};
-        const payload = { id: newId || undefined, merchant: form.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: form.account_id, transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note, payment_reference: form.payment_reference, receipt_note: form.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
+        const auto = !editingId && AUTOMATION_SOURCES.includes(draft.source) ? { source: draft.source, external_reference: draft.ref || undefined } : {};
+        const payload = { id: newId || undefined, merchant: draft.merchant.trim(), amount, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id, transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note, payment_reference: draft.payment_reference, receipt_note: draft.receipt_note, receipt_path: receiptPath, external_reference: subscriptionReference };
         // Local first (owner, 2026-11-12): the change is committed on this device and shown at once; the cloud upload
         // finishes silently. A subscription payment also records the payment attempt, which needs the cloud row
         // first, so it keeps waiting for the cloud as before.
@@ -1438,8 +1467,8 @@ function App() {
         const ownerCopy = session?.user?.id ? loadOfflineWorkspace(session.user.id) : null;
         const existing = editingId ? (cloudMode ? ownerCopy?.working.transactions : rawTxs)?.find(x => x.id === editingId) : null;
         if (editingId && !existing) throw new Error(tr('This record is not on this device yet. Try again when you are back online.'));
-        const auto = !editingId && AUTOMATION_SOURCES.includes(form.source);
-        const row = { ...(existing || {}), id: editingId || newId, merchant: form.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: form.account_id || 'local', transfer_to_account_id: type === 'transfer' ? form.transfer_to_account_id : undefined, occurred_at, note: form.note.trim().slice(0, 1000), payment_reference: String(form.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(form.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (form.ref || undefined) : subscriptionReference, source: auto ? form.source : 'Manual', created_at: new Date().toISOString() }) };
+        const auto = !editingId && AUTOMATION_SOURCES.includes(draft.source);
+        const row = { ...(existing || {}), id: editingId || newId, merchant: draft.merchant.trim().slice(0, 160), amount: Math.round(amount * 100) / 100, currency: txCurrency, transaction_type: type, category, account_id: draft.account_id || 'local', transfer_to_account_id: type === 'transfer' ? draft.transfer_to_account_id : undefined, occurred_at, note: draft.note.trim().slice(0, 1000), payment_reference: String(draft.payment_reference||'').trim().slice(0,120)||null, receipt_note: String(draft.receipt_note||'').trim().slice(0,500)||null, receipt_path: receiptPath, ...(existing ? {} : { external_reference: auto ? (draft.ref || undefined) : subscriptionReference, source: auto ? draft.source : 'Manual', created_at: new Date().toISOString() }) };
         const transactionRow = subscriptionPaymentState ? { ...row, subscription_payment_state: subscriptionPaymentState } : row;
         if(session?.user?.id) await persistHybridLocalRows(session.user.id,'transactions',[transactionRow]);
         savedTransaction = transactionRow;
@@ -1455,7 +1484,7 @@ function App() {
             next_due_date: subscriptionNextDue, transaction_id: savedTransaction.id, status: 'paid',
             attempted_at: occurred_at, previous_state: subscriptionPaymentState?.previous,
             amount: Number(paidSub.amount) || amount, currency: paidSub.currency || txCurrency,
-            account_id: form.account_id, note: 'Subscription renewal recorded',
+            account_id: draft.account_id, note: 'Subscription renewal recorded',
           }).catch(() => null);
         }
         setPref('subscriptions', subscriptions.map(item => item.id === paidSub.id
@@ -1474,10 +1503,11 @@ function App() {
         if (backgroundUpload) backgroundUpload.then(done => { if (done) removeOld(); });
         else await removeOld();
       }
-      setForm({ ...form, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null);
+      setForm({ ...draft, merchant: '', amount: '', note: '', time: '', occurred_at: today(), source: '', ref: '', subscriptionPaymentId: '', payment_reference: '', receipt_note: '', receipt_path: '', receipt_path_to_delete: '', receipt_file: null }); setSheet(null); return true;
     } catch (err) {
       if (uploadedReceiptPath && supabase) await supabase.storage.from('movo-receipts').remove([uploadedReceiptPath]).catch(() => {});
       setError(err?.message || (editingId ? 'Could not update this transaction. Check the details and try again.' : 'Could not save this transaction. Check the selected account and try again.'));
+      return false;
     } finally { setBusy(false); }
   };
   const handleCsvFile = (file) => {
@@ -2158,6 +2188,20 @@ function App() {
   /* ---------- app lock: on open, and again after MOVO has been in the background for a minute ---------- */
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
+  const friendIdentity = session?.user?.id || 'guest';
+  useEffect(() => {
+    if (!friendInvite || !authReady || !setupDone || locked || sheet || view === 'Sign in') return;
+    const visit = friendIdentity + ':' + friendInvite;
+    if (openedFriendInvite.current === visit) return;
+    openedFriendInvite.current = visit;
+    setSheet({ name: 'friends', invite: friendInvite });
+  }, [friendInvite, authReady, setupDone, locked, sheet, view, friendIdentity]);
+  const clearFriendInvite = () => {
+    saveFriendInvite('');
+    setFriendInvite('');
+    openedFriendInvite.current = '';
+  };
+
   useEffect(() => {
     let hiddenAt = 0;
     const onVis = () => {
@@ -2443,7 +2487,7 @@ function App() {
       pendingLocalDataRef.current = null;
     }
     const result = await signOut();
-    nativeReferralAttempt.current = ''; trialAutoRef.current = '';
+    nativeReferralAttempt.current = ''; trialAutoRef.current = ''; clearFriendInvite();
     setOfflineOwnerId(null);
     setSession(null);
     setCloudMode(false);
@@ -2585,6 +2629,7 @@ function App() {
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
   const c = {
+    openFriends: () => setSheet({ name: 'friends', invite: friendInvite }),
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
     entitlement, entitlementReady, refreshEntitlement, can, plan, openPlans: () => setSheet({ name: 'planOffer' }), startAccount, openGuide: () => setGuideOpen(true), openBackup: () => setSheet({ name: 'financeBackup' }),
@@ -2643,11 +2688,20 @@ function App() {
     root.setProperty('--font-scale', String(fontScale));
     root.setProperty('--app-font', fontStack);
   }, [fontScale, fontStack, prefs.fontStyle]);
+  // Bottom navigation (owner, 2026-11-12): the tapped tab is marked active on touch-down without a React render (see
+  // pressNav) and painted before the new screen renders, so a heavy screen (Home, Wallet) never freezes the bar on
+  // slower phones. Measured on a 4x-throttled mobile Chromium: the bar answered in 90-220 ms, now 11-23 ms, and the
+  // screen still appears about as fast. Tests and reduced motion switch at once.
+  const goTab = (target) => {
+    if (!setupDoneRef.current || ROOT_FOR[viewRef.current] === target || !canAnimate()) { go(target); return; }
+    // Let the touch-down marking paint first, then render the screen in one go (no slower concurrent render).
+    requestAnimationFrame(() => setTimeout(() => go(target), 0));
+  };
   const rootStyle = { ...glassVars, colorScheme: resolved, '--accent-ink': readableAccent(accentHex, resolved === 'dark'), '--on-accent': contrastTextForAccent(accentHex), ...(scenery ? { '--scenery-veil': veilFor(prefs.sceneryVisibility) } : {}), ...(accentName === 'custom' ? { '--accent': prefs.customColor, '--accent-rgb': hexToRgb(prefs.customColor) } : {}) };
   // Bottom navigation accent (owner, 2026-11-11): Pro+ shows platinum and Pro gold by default; Settings → Appearance
   // can switch it back to the app accent. Only a server-verified paid plan counts; the free month keeps the app accent.
   const navTier = prefs.navAccent !== 'app' && entitlement?.source !== 'trial' ? ({ pro_plus: 'platinum', pro: 'gold' }[subscriptionPlan] || '') : '';
-  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}`;
+  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -2722,9 +2776,11 @@ function App() {
         {NAV.map(([label, icon, target]) => {
           const active = activeTab === target; const center = target === 'NasrinAI';
           // Instant feedback on touch-down (owner, 2026-11-12): the highlight starts sliding before the screen renders.
-          const pressNav = (e) => { if (center || e.button > 0) return; const pill = e.currentTarget.parentElement?.querySelector('.nav-pill'); const idx = NAV.findIndex(n => n[2] === target); if (pill && idx >= 0) { pill.style.setProperty('--idx', String(idx)); pill.classList.remove('hidden'); } };
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onPointerDown={pressNav} onClick={() => go(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
-            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={27} /></span> : <Icon name={icon} size={29} strokeWidth={1.8} filled={active} />}</span>
+          // Touch-down: the highlight slides and the tapped tab turns active at once, before any React render; the
+          // effect on `view` below puts the bar back in step if the screen does not change.
+          const pressNav = (e) => { if (center || e.button > 0) return; const bar = e.currentTarget.parentElement; const pill = bar?.querySelector('.nav-pill'); const idx = NAV.findIndex(n => n[2] === target); if (pill && idx >= 0) { pill.style.setProperty('--idx', String(idx)); pill.classList.remove('hidden'); } bar?.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('nav-active', item === e.currentTarget)); };
+          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onPointerDown={pressNav} onPointerCancel={syncNavToView} onClick={() => goTab(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
+            <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={27} /></span> : <><Icon name={icon} size={29} strokeWidth={1.8} className="nav-glyph-off" /><Icon name={icon} size={29} strokeWidth={1.8} filled className="nav-glyph-on" /></>}</span>
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;
         })}
@@ -2744,16 +2800,25 @@ function App() {
 
       {sheet?.name === 'grocery' && <GrocerySheet currency={base} accounts={accountsView} showBalance={show} draft={prefs.groceryDraft} onSaveDraft={saveGroceryDraft} onLogExpense={logGroceryExpense} onClose={() => setSheet(null)} />}
       {sheet?.name === 'transaction' && <TransactionSheet autoCategory={prefs.autocat !== false} currency={formAccounts.find(a => a.id === form.account_id)?.currency || base} form={form} setForm={setForm} editing={!!sheet.id} showBalance={show} accounts={formAccounts} cloudMode={cloudMode} busy={busy} error={error} onSave={saveTransaction} onClose={() => { setSheet(null); setError(''); }} onScan={sheet.id ? undefined : c.openScanner} />}
-      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show} onClose={() => setSheet(null)} onLog={(f) => {
-        const type = f.type === 'income' ? 'income' : 'expense';
-        // Pick the account the slip names: same last 4 digits first, then the same bank or wallet.
-        const live = accountsView.filter(a => !a.is_archived); const bank = String(f.bank || '').toLowerCase();
-        const acct = (f.last4 && live.find(a => a.mask === f.last4)) || (bank && live.find(a => [a.institution_name, a.name].some(n => String(n || '').toLowerCase() === bank)));
-        const dup = findDuplicate({ merchant: f.merchant, amount: f.amount, type, ref: f.ref, date: f.occurred_at ? `${f.occurred_at}T${f.time || '12:00:00'}` : new Date() }, rawTxs);
-        setError(dup ? `${dupText(dup)} ${tr('Save again to log it anyway.')}` : '');
-        setForm(cur => ({ ...cur, transaction_type: type, merchant: f.merchant, amount: f.amount, category: f.category, occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note, source: '', ref: f.ref || '', payment_reference:'', receipt_note:'', receipt_path:'', receipt_path_to_delete:'', receipt_file:null, ...(acct ? { account_id: acct.id } : {}) }));
-        setSheet({ name: 'transaction', type });
-      }} />}
+      {sheet?.name === 'scanner' && can('receiptScan') && <ScannerSheet show={show}
+        accounts={formAccounts.filter(a => !a.is_archived)} busy={busy} saveError={error}
+        onClose={() => { setSheet(null); setError(''); }}
+        onLog={async (f) => {
+          // One deliberate Log click saves through the same validated, offline-first
+          // transaction writer as the manual sheet. No calculator or second screen.
+          const acct = formAccounts.find(a => a.id === f.account_id && !a.is_archived);
+          if (!acct) { setError(tr('Choose an account before saving this transaction.')); return false; }
+          const draft = {
+            ...form, merchant: String(f.merchant || '').slice(0,160),
+            amount: String(f.amount || ''), transaction_type: f.type,
+            category: f.category, account_id: acct.id, transfer_to_account_id: '',
+            occurred_at: f.occurred_at || today(), time: f.time || '', note: f.note || '',
+            source: '', ref: f.ref || '', payment_reference: f.ref || '',
+            receipt_note: f.receipt_note || '', receipt_path: '',
+            receipt_path_to_delete: '', receipt_file: null, subscriptionPaymentId: ''
+          };
+          return saveTransaction({ preventDefault() {} }, draft);
+        }} />}
 
       {sheet?.name === 'loyalty' && <LoyaltySheet
         key={sheet.id || sheet.type}
@@ -2803,6 +2868,9 @@ function App() {
         </div>
       </Sheet>}
 
+      {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
+        inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
+        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>
         <div className="sheet-list">{[{ code: '', name: tr('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>

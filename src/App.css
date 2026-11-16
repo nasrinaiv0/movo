@@ -8894,3 +8894,61 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app .reconnect-actions > .secondary-button { background: var(--field) !important; color: var(--text) !important; box-shadow: none !important; border: 0 !important; }
 .movo-app.movo-app.movo-app.movo-app.movo-app .sheet.reconnect-sheet .reconnect-actions > .secondary-button,
 .movo-app.movo-app.movo-app.movo-app.movo-app .sheet.reconnect-sheet .reconnect-actions > .secondary-button :is(span, svg) { color: var(--text) !important; }
+/* Bottom navigation, Android (owner, 2026-11-12: "icon animations are not optimized and responding properly").
+   Measured on a 4×-throttled mobile Chromium: each tab tap blocked the main thread 0.2–1.3 s while the new screen
+   rendered, and the bar re-blurred a 24 px saturated backdrop under the moving highlight. Now the tapped tab updates
+   first (App.js goTab + startTransition), and here:
+   - the bar keeps its glass look with a lighter blur in the Android app (WebView is slow at large backdrop blurs);
+   - the bar has no transform transition of its own and the highlight never animates its width (layout);
+   - the highlight and icons are their own compositor layers, so they keep moving while the screen renders. */
+.movo-app.movo-app .bottom-nav { transition: background-color .4s ease, border-color .4s ease, box-shadow .4s ease; contain: layout style; }
+.movo-app.movo-app .bottom-nav .nav-pill { transition: transform var(--dur-page, 260ms) cubic-bezier(.22,.61,.36,1), opacity .2s ease-out; will-change: transform; }
+.movo-app.movo-app .bottom-nav .nav-item .nav-icon { will-change: transform; backface-visibility: hidden; }
+.movo-app.movo-app.platform-android.glass-on .bottom-nav { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.movo-app.movo-app.platform-android.glass-on:not(.theme-dark) .bottom-nav { background-color: rgba(255, 255, 255, min(1, calc(var(--glass-fill, .6) + .18))); }
+/* Each tab carries its outline and filled icon; the active state (set on touch-down, then by React) picks one, so the
+   tapped icon fills immediately instead of after the new screen has rendered. */
+.movo-app .bottom-nav .nav-item .nav-glyph-on { display: none; }
+.movo-app .bottom-nav .nav-item.nav-active .nav-glyph-on { display: block; }
+.movo-app .bottom-nav .nav-item.nav-active .nav-glyph-off { display: none; }
+
+/* Profile actions and private friend invites */
+.movo-app .profile-card-wrap > .profile-card { gap: 12px; min-height: 84px; padding: 12px 14px; }
+.profile-card .avatar.big { width: 50px; height: 50px; flex: 0 0 50px; }
+.profile-text strong, .profile-text small { overflow-wrap: anywhere; }
+.profile-edit-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 11px; flex: none; background: var(--field); color: var(--text); }
+.profile-social-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+.movo-app .profile-social-actions .profile-social-action { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; column-gap: 9px; row-gap: 3px; padding: 10px 9px; min-height: 66px; text-align: start; color: var(--text); }
+.profile-social-icon { grid-row: span 2; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 11px; background: var(--field); }
+.profile-social-action strong, .profile-social-action small { overflow-wrap: anywhere; line-height: 1.25; }
+.profile-social-action strong { align-self: end; font-size: 14px; }
+.profile-social-action small { align-self: start; font-size: 11px; color: var(--muted); }
+.profile-finance-summary .stat-card { min-width: 0; }
+.profile-finance-summary .stat-card > strong { overflow-wrap: anywhere; }
+.friends-content, .friends-form, .friends-invite, .friends-empty { display: grid; gap: 12px; min-width: 0; }
+.friends-tabs, .friends-actions { display: grid; gap: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.friends-tabs { padding: 4px; background: var(--field); border-radius: 16px; }
+.friends-tabs button, .friends-secondary, .friends-list button { min-width: 0; min-height: 44px; border: 0; border-radius: 12px; font: inherit; color: var(--text); padding: 8px; overflow-wrap: anywhere; }
+.friends-content .friends-tabs > button { background: transparent; color: var(--muted); }
+.friends-content .friends-tabs > button[aria-pressed="true"] { background: var(--surface-solid); color: var(--text); font-weight: 650; }
+.friends-secondary { background: var(--field); }
+.friends-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.friends-actions > button { display: flex; justify-content: center; align-items: center; gap: 7px; min-height: 48px; white-space: normal; }
+.friends-actions svg { flex: none; }
+.friends-field { display: grid; gap: 6px; min-width: 0; font-size: 13px; font-weight: 600; }
+.friends-field input { min-width: 0; width: 100%; min-height: 48px; padding: 0 13px; border: 0; border-radius: 14px; background: var(--field); color: var(--text); font: inherit; font-size: 16px; }
+.friends-note { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.friends-note.friends-success { color: var(--text); }
+.friends-note.friends-error { color: var(--danger, #c44949); }
+.friends-empty { justify-items: center; padding: 18px 8px; text-align: center; }
+.friends-empty p { margin: 0; color: var(--muted); }
+.friends-qr { display: block; margin-inline: auto; width: min(164px, 100%); height: auto; border-radius: 9px; }
+.friends-recipient, .friends-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--field); border-radius: 14px; min-width: 0; }
+.friends-recipient strong, .friends-list b { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.friends-list { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; }
+.friends-list button { display: grid; place-items: center; width: 44px; flex: none; }
+.friends-initial { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface); flex: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app .profile-social-action, .friends-tabs button { transition: background-color 180ms ease-out, transform 180ms ease-out; }
+  .movo-app .profile-social-action:active { transform: scale(.98); }
+}

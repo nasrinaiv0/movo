@@ -27,6 +27,14 @@ test('cloud lists are encrypted with AES-256-GCM and available offline after res
   await expect(cachedList('loans', offline)).resolves.toEqual(rows);
 });
 
+test('a settings object (reminder preferences) is encrypted and available offline too', async () => {
+  const prefs = { enabled: true, reminder_days: [1, 3], quiet_start: '22:00', quiet_end: '07:00', timezone: 'Asia/Manila' };
+  await expect(cachedList('reminderPreferences', async () => prefs, OWNER)).resolves.toEqual(prefs);
+  const raw = localStorage.getItem(CACHE_PREFIX + OWNER + ':reminderPreferences|' + OWNER);
+  expect(raw).not.toContain('Asia/Manila');
+  await expect(cachedList('reminderPreferences', offline, OWNER)).resolves.toEqual(prefs);
+});
+
 test('owner/name authenticated encryption prevents swapping, tampering and cross-account reads', async () => {
   const rows = [{ id: 'private-row', name: 'Sensitive information' }];
   await writeCachedList(OWNER, 'loans', rows);

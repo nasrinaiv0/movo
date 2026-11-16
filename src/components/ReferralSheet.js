@@ -7,7 +7,7 @@ import { isNativeApp } from '../lib/platform';
 import { formatDate } from '../lib/format';
 import { useConfirm } from './ConfirmDialog';
 import {
-  POINTS_PER_MONTH, activateNativeReferral, claimReferralCode, clearPendingReferralCode, downloadUrl, getReferralStatus,
+  PENDING_REFERRAL_EVENT, POINTS_PER_MONTH, activateNativeReferral, claimReferralCode, clearPendingReferralCode, downloadUrl, getReferralStatus,
   normalizeReferralCode, pendingReferralCode, redeemReferralPoints,
 } from '../lib/referrals';
 
@@ -37,6 +37,11 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
   const signedIn = Boolean(session?.user?.id && session?.access_token);
   const [status, setStatus] = useState(null);
   const [claim, setClaim] = useState(() => pendingReferralCode());
+  useEffect(() => {
+    const fill = (event) => setClaim(current => current || event.detail || '');
+    window.addEventListener(PENDING_REFERRAL_EVENT, fill);
+    return () => window.removeEventListener(PENDING_REFERRAL_EVENT, fill);
+  }, []);
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
@@ -151,7 +156,7 @@ export default function ReferralSheet({ session, entitlement, onClose, onSignIn,
             <figcaption><strong>{p.label}</strong><small>{p.store}</small></figcaption>
           </figure>)}
         </div>
-        <p className="referral-note">{tr('Scan with the phone’s camera to get MOVO.')}</p>
+        <p className="referral-note">{code ? tr('Scan with the phone’s camera to get MOVO. Your code is included, so friends who join are linked to you.') : tr('Scan with the phone’s camera to get MOVO.')}</p>
       </section>
 
       {signedIn && status?.canClaim && <section className="referral-claim">

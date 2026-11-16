@@ -29,6 +29,49 @@ test('rejects spoofed, ambiguous or oversized native deep links', () => {
   });
 });
 
+test('links are read the same on an Android WebView that cannot parse custom-scheme hosts (Chromium < 130)', () => {
+  // Older WebViews report hostname "" and pathname "//auth-callback" for movo://auth-callback?code=…, which made
+  // every Google sign-in return look invalid. The parser must not depend on the WebView's URL implementation.
+  const RealURL = global.URL;
+  class LegacyWebViewURL {
+    constructor(value) {
+      const match = /^([a-z-]+:)([^?#]*)(\?[^#]*)?(#.*)?$/i.exec(String(value));
+      if (!match) throw new TypeError('Invalid URL');
+      Object.assign(this, { protocol: match[1].toLowerCase(), hostname: '', host: '', username: '', password: '', port: '',
+        pathname: match[2], search: match[3] || '', hash: match[4] || '' });
+    }
+  }
+  global.URL = LegacyWebViewURL;
+  try {
+    expect(new URL('movo://auth-callback?code=abc123').hostname).toBe(''); // the stub behaves like the old WebView
+    expect(readAppUrl('movo://auth-callback?code=abc123')).toEqual({ kind: 'auth', code: 'abc123', error: '' });
+    expect(readAppUrl('movo-authcheck://auth-callback?code=abc123')).toEqual({ kind: 'auth', code: 'abc123', error: '' });
+    expect(readAppUrl('movo://auth-callback/?code=abc123')).toEqual({ kind: 'auth', code: 'abc123', error: '' });
+    expect(readAppUrl('movo://auth-callback?error=access_denied')).toEqual({ kind: 'auth', code: '', error: 'access_denied' });
+    expect(readAppUrl('movo://log?amount=250&merchant=Grab&src=googlepay')).toEqual({ kind: 'log', hash: '#/log?amount=250&merchant=Grab&src=googlepay' });
+    expect(readAppUrl('movo://attacker@auth-callback?code=abc')).toBeNull();
+    expect(readAppUrl('movo://auth-callback:444?code=abc')).toBeNull();
+    expect(readAppUrl('movo://auth-callback/evil?code=abc')).toBeNull();
+    expect(readAppUrl('movo://evil/auth-callback?code=abc')).toBeNull();
+  } finally { global.URL = RealURL; }
+});
+
+test('link shapes outside scheme://route[/][?query][#fragment] are refused', () => {
+  expect(readAppUrl('MOVO://auth-callback?code=abc')).toEqual({ kind: 'auth', code: 'abc', error: '' });
+  expect(readAppUrl('movo://Auth-Callback?code=abc')).toBeNull();
+  expect(readAppUrl('movo:auth-callback?code=abc')).toBeNull();
+  expect(readAppUrl('movo:///auth-callback?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback.evil.example?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback//?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=abc\n')).toBeNull();
+  expect(readAppUrl(' movo://auth-callback?code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback#code=abc')).toBeNull();
+  expect(readAppUrl('movo://auth-callback?code=abc&refresh_token=x')).toBeNull();
+  expect(readAppUrl('movo://log?merchant=Jollibee%20Makati&amount=199')).toEqual({ kind: 'log', hash: '#/log?merchant=Jollibee+Makati&amount=199' });
+  expect(readAppUrl('movo://log')).toEqual({ kind: 'log', hash: '#/log?' });
+  expect(readAppUrl(null)).toBeNull();
+});
+
 test('notification ids are stable, positive and differ by tag', () => {
   expect(notificationId('renewal:netflix')).toBe(notificationId('renewal:netflix'));
   expect(notificationId('renewal:netflix')).not.toBe(notificationId('limit:food'));
