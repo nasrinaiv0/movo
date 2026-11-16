@@ -1,3 +1,7 @@
+## 2026-11-16 — Menu tool icons: one glyph and colour per tool
+
+- Menu tiles get new original glyphs: subscriptions, savings goal, cashback, calendar with clock, planning pie, exchange arrows, crypto block and stocks trend. Each tool has its own colour, tuned for light and dark, on larger 40 px squircles. Scheduled no longer falls back to a sparkle (missing `calendar-clock` icon), and Crypto and Stocks no longer share an icon. [Details](engineering/updates/2026-11-16-menu-tool-icons.md).
+
 ## 2026-11-16 — One pop-up surface with an iOS-style edge (light and dark)
 
 - Every pop-up now uses the transaction-details look: a solid surface (white / `#1c1c1e`), a gradient hairline edge that catches light at the top-left like iOS, and a soft shadow, adapted for light and dark. Budgets & Plans and Limits lose their translucent glass panel with its bright outline.

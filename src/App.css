@@ -9025,3 +9025,24 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app .sheet-backdrop { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .movo-app.platform-android .sheet-backdrop { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 @media (prefers-reduced-transparency: reduce) { .movo-app .sheet-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* ===== Menu tool icons (owner, 2026-11-16) =====
+   One distinct glyph and colour per tool (Icon.js: renew, goal, cashback, calendarClock, planning, exchange, crypto,
+   stocks; archive and the owner's Limits gauge are kept). Larger 40px squircle tiles with 22px glyphs. Each tile is
+   a solid tint of its colour: in light the glyph is a deeper shade for contrast, in dark a lighter one on a stronger
+   tint, so every tool stays recognisable in both appearances. */
+.movo-app .menu-tile-icon { --mt: #8e8e93; width: 40px; height: 40px; border-radius: var(--r-tile, 30%);
+  background: color-mix(in srgb, var(--mt) 14%, transparent); color: color-mix(in srgb, var(--mt) 86%, #000); }
+.movo-app.theme-dark .menu-tile-icon { background: color-mix(in srgb, var(--mt) 24%, transparent); color: color-mix(in srgb, var(--mt) 72%, #fff); }
+.movo-app .menu-tile-icon .movo-icon { flex: none; }
+.movo-app .menu-tile-icon.mt-purple { --mt: #9b51e0; }
+.movo-app .menu-tile-icon.mt-green { --mt: #1f9d55; }
+.movo-app .menu-tile-icon.mt-pink { --mt: #e8457a; }
+.movo-app .menu-tile-icon.mt-orange { --mt: #f08a12; }
+.movo-app .menu-tile-icon.mt-blue { --mt: #2f7cf6; }
+.movo-app .menu-tile-icon.mt-teal { --mt: #12a597; }
+.movo-app .menu-tile-icon.mt-amber { --mt: #d99a06; }
+.movo-app .menu-tile-icon.mt-indigo { --mt: #5b5bd6; }
+.movo-app .menu-tile-icon.mt-gray { --mt: #8e8e93; }
+.movo-app .menu-tile-icon.mt-red { --mt: #ef4b3f; }
+.movo-app .menu-tile strong { margin-top: 8px; }
