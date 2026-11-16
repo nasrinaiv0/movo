@@ -1,7 +1,3 @@
-## 2026-11-17 — Tablet and desktop layouts
-
-- Improved the desktop and tablet workspace, dashboard grids, reading widths and centered panels. Node 26 passes 1,491 tests and the strict build. Chromium verified 22 customer routes at two widths and the owner workspace in a fixture session. [Baseline, scope and verification](engineering/updates/2026-11-17-tablet-desktop-layouts.md).
-
 ## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
 
 - The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.
@@ -13,6 +9,10 @@
 - Extended the existing [Aries and MOVO guide PR #313](https://github.com/nasrinaiv0/movo/pull/313) after reviewing all 12 open PRs; no other open branch overlaps this mascot scope. The new shared fluffy vector ram is the default Home mascot, appears in sign-in and plan selection, and responds to real bills and savings progress.
 - Added 14 expressions, gentle motion/walking, viewport/background and live reduced-motion handling, and a local expression preview in the Home mascot sheet. Preserved spending thresholds, photo mascots, guide pose APIs, passwordless auth and store purchase checks.
 - Validation: Node 26.13.1 full Jest 240 suites / 1,491 tests, typecheck, i18n and strict production build. Chromium passes 32 mobile light/dark/text-size screen checks, all 14 expressions, live reduced motion and consent; Home feet stay fixed. Final CSS fixes also pass the strict build and 3 affected suites / 9 tests. [Evidence and remaining gates](engineering/updates/2026-11-16-aries-expressions.md). Real devices and the exact-head hosted preview are not yet checked; merge remains owner-controlled.
+
+## 2026-11-17 — Tablet and desktop layouts
+
+- Improved the desktop and tablet workspace, dashboard grids, reading widths and centered panels. Node 26 passes 1,491 tests and the strict build. Chromium verified 22 customer routes at two widths and the owner workspace in a fixture session. [Baseline, scope and verification](engineering/updates/2026-11-17-tablet-desktop-layouts.md).
 
 ## 2026-11-16 — PR #312 integration with foreign-currency receipt review
 
