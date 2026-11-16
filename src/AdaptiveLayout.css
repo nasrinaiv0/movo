@@ -1,0 +1,209 @@
+/* Tablet and desktop share the workspace scale. Horizontal foldables use the hinge layout. */
+.movo-app:is(.layout-tablet, .layout-desktop) {
+  --workspace-gutter: clamp(20px, 3vw, 44px);
+  --workspace-gap: clamp(14px, 1.6vw, 24px);
+  --workspace-width: 1360px;
+  --reading-width: 850px;
+  --dialog-gutter: clamp(16px, 3vw, 36px);
+}
+.movo-app.layout-tablet { --side-w: 84px; }
+.movo-app.layout-desktop { --side-w: clamp(200px, 16vw, 240px); }
+.native-chrome .movo-app:is(.layout-tablet, .layout-desktop) { --workspace-top: calc(62px + env(safe-area-inset-top)); }
+
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen {
+  --hero-bleed: var(--workspace-gutter);
+  display: block;
+  max-width: var(--workspace-width);
+  min-width: 0;
+  padding: var(--workspace-top, max(24px, env(safe-area-inset-top))) var(--workspace-gutter) max(48px, env(safe-area-inset-bottom));
+}
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:is(
+  [data-view="EditProfile"], [data-view="NotificationDetail"], [data-view="NotificationSettings"],
+  [data-view="Notifications"], [data-view="Archive"], [data-view="Friends"],
+  [data-view="HelpCenter"], [data-view="PrivacyPolicy"], [data-view="TermsOfService"],
+  [data-view="Sign in"], [data-view="NasrinAI"]
+) { max-width: var(--reading-width); }
+
+.movo-app:is(.layout-tablet, .layout-desktop) .side-nav {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .side-nav > * { flex-shrink: 0; }
+.movo-app:is(.layout-tablet, .layout-desktop) .side-icon { flex: none; }
+.movo-app:is(.layout-tablet, .layout-desktop) .side-label { min-width: 0; overflow-wrap: anywhere; }
+.movo-app:is(.layout-tablet, .layout-desktop) .side-item:focus-visible { outline-offset: -3px; }
+
+/* Dashboard, market and settings panes share gaps and readable minimum column widths. */
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:is(
+  [data-view="Home"], [data-view="Wallet"], [data-view="ExchangeRates"], [data-view="StocksMarket"]
+) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--workspace-gap);
+  align-items: start;
+  align-content: start;
+}
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen > * { min-width: 0; grid-column: 1 / -1; }
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:is([data-view="Home"], [data-view="Wallet"]) > .box-slot:is(.size-S, .size-M) { grid-column: auto; }
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) [data-view="Home"] > .box-slot:has(> :is(.balance-card, .stat-grid)) { grid-column: 1 / -1; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen > .screen-header:not(.home-header) { margin-inline: 0; padding-inline: 0; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen-header h1 { min-width: 0; overflow-wrap: anywhere; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.section-title, .menu-row, .group-head) > * { min-width: 0; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.menu-main, .account-main, .tx-main, .fp-main) { overflow-wrap: anywhere; }
+
+.movo-app:is(.layout-tablet, .layout-desktop) .adaptive-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr));
+  gap: var(--workspace-gap);
+  align-items: start;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .adaptive-settings-grid > * { min-width: 0; }
+.movo-app:is(.layout-tablet, .layout-desktop) .adaptive-settings-grid .group-title { margin-block-start: 0; }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Settings"] > .search-field { width: min(100%, 530px); margin-block-end: var(--workspace-gap); }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 12px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .menu-tile { min-height: 100px; }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Menu"] .streak-card { margin-block-start: var(--workspace-gap); }
+.movo-app:is(.layout-tablet, .layout-desktop) [data-view="Sign in"] .auth-card { width: min(100%, 480px); padding: clamp(20px, 3vw, 32px); }
+
+.movo-app:is(.layout-tablet, .layout-desktop) :is(.wallet-card-grid, .crypto-holding-list) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 245px), 1fr));
+  gap: 12px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .wallet-card-grid { justify-items: center; }
+.movo-app:is(.layout-tablet, .layout-desktop) .wallet-card-item { width: 100%; min-width: 0; max-width: 380px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen > :is(.crypto-detail, .stock-detail) { max-width: 1040px; margin-inline: auto; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.crypto-chart, .stock-chart, .fx-history-chart) { max-height: 310px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.sub-calendar, :has(> .schedule-calendar).card) { max-width: 760px; margin-inline: auto; width: 100%; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen :is(.sub-cal-day, .schedule-calendar button) { min-height: 44px; }
+.movo-app:is(.layout-tablet, .layout-desktop) .screen .legal-page { max-width: 76ch; margin-inline: auto; }
+.movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) .screen:has(> .legal-page) {
+  padding-block-end: max(48px, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 950px) {
+  .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) [data-view="ExchangeRates"] > :is(.fx-converter, .fx-market-section),
+  .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) [data-view="StocksMarket"] > .stock-section { grid-column: auto; }
+  .movo-app:is(.layout-tablet, .layout-desktop) [data-view="ExchangeRates"] > .fx-market-section { margin-block-start: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-transaction-summary:has(.billing-cycle-summary) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--workspace-gap);
+    margin-block-end: 12px;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-transaction-summary > :is(.billing-cycle-summary, .stat-grid) { min-width: 0; margin: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-transaction-summary > .stat-grid { align-content: stretch; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-transaction-summary .stat-card strong { overflow-wrap: anywhere; }
+}
+@media (min-width: 1200px) {
+  .movo-app.layout-desktop .crypto-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .movo-app.layout-desktop .crypto-detail > :is(.crypto-back, .crypto-chart-card) { grid-column: 1 / -1; }
+  .movo-app.layout-desktop .crypto-watchlist-items { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+
+/* Center dialogs in the visible viewport, above the rail and sticky headers. */
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop,
+.movo-app:is(.layout-tablet, .layout-desktop) .search-overlay {
+  align-items: center;
+  padding: max(var(--dialog-gutter), env(safe-area-inset-top)) var(--dialog-gutter) max(var(--dialog-gutter), env(safe-area-inset-bottom));
+}
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet {
+  --dialog-width: 520px;
+  max-inline-size: var(--dialog-width);
+  max-block-size: calc(100dvh - max(var(--dialog-gutter), env(safe-area-inset-top)) - max(var(--dialog-gutter), env(safe-area-inset-bottom)));
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding: 4rem 0;
+  border-radius: 24px;
+  animation-name: dialog-in;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet.sheet-center { --dialog-width: 440px; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet[data-size="wide"] { --dialog-width: 740px; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet.closing { animation-name: dialog-out; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet > .sheet-handle { display: none; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet > :nth-child(n+3) { animation-name: none; }
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet:not(.sheet-center, .tx-sheet, .acct-sheet) {
+  padding-block-start: 22px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop .sheet-close {
+  inset-inline: auto 16px;
+  inset-block-start: 14px;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet :is(.sheet-title, .sheet-sub, .form-note, .form-error) { overflow-wrap: anywhere; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet-actions { flex-wrap: wrap; }
+.movo-app:is(.layout-tablet, .layout-desktop) .sheet-actions > button { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.movo-app:is(.layout-tablet, .layout-desktop) .search-panel {
+  max-width: 680px;
+  max-height: calc(100dvh - 2 * var(--dialog-gutter));
+  border-radius: 24px;
+  animation-name: dialog-in;
+}
+.movo-app:is(.layout-tablet, .layout-desktop) .search-overlay.closing .search-panel { animation-name: dialog-out; }
+.movo-app:is(.layout-tablet, .layout-desktop) .search-results { overscroll-behavior: contain; }
+
+@media (min-width: 800px) {
+  .movo-app:is(.layout-tablet, .layout-desktop) .sheet .acct-form {
+    display: grid;
+    grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
+    gap: 16px;
+    align-items: start;
+    padding: 10px 0 0;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .acct-form > * { grid-column: 1 / -1; min-width: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .acct-form > .acct-preview,
+  .movo-app:is(.layout-tablet, .layout-desktop) .acct-form > .acct-panel { grid-column: auto; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .sheet.tx-sheet .tx-form { padding-block-start: 10px; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-pad, .tx-bottom) {
+    width: min(100%, 410px);
+    margin-inline: auto;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .scan-start {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .movo-app:is(.layout-tablet, .layout-desktop) > .sheet-backdrop > .sheet,
+  .movo-app:is(.layout-tablet, .layout-desktop) .search-overlay .search-panel { animation-name: none; }
+}
+
+@media (min-width: 1000px) {
+  .movo-app:is(.layout-tablet, .layout-desktop):not(.layout-dual) :is(
+    .adaptive-wallet-cards, .adaptive-subscription-calendar, .adaptive-crypto-market
+  ) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: var(--workspace-gap);
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) :is(
+    .adaptive-wallet-cards, .adaptive-subscription-calendar, .adaptive-crypto-market
+  ) > * { min-width: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-subscription-calendar .sub-list-head { margin-block-start: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-crypto-market { grid-template-columns: minmax(260px, .75fr) minmax(0, 1.25fr); }
+  .movo-app:is(.layout-tablet, .layout-desktop) .adaptive-crypto-market .crypto-watchlist-items { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 960px) {
+  .movo-app:is(.layout-tablet, .layout-desktop) .sheet.tx-sheet .tx-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, .82fr);
+    column-gap: 18px;
+    align-items: start;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > * { grid-column: 1 / -1; min-width: 0; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-note, .tx-accounts, .tx-local, .tx-cats, .tx-meta) { grid-column: 1; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > :is(.tx-pad, .tx-pad-show) {
+    grid-column: 2;
+    grid-row: 3 / span 4;
+    width: 100%;
+  }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form:not(:has(.tx-cats)) > :is(.tx-pad, .tx-pad-show) { grid-row-end: span 3; }
+  .movo-app:is(.layout-tablet, .layout-desktop) .tx-form > .tx-local { margin: 0; }
+}

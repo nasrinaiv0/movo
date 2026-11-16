@@ -81,3 +81,24 @@
 }
 /* Chart text scales with the SVG; keep axis labels readable (about 10px) on phones. */
 @media(max-width:760px){.occ-trend-tick{font-size:19px}.occ-activity .occ-heading{flex-direction:row;align-items:flex-start}}
+
+/* Keep owner modules reachable in short windows and size cards to the available workspace. */
+@media (min-width: 761px) {
+  .occ-sidebar {
+    position: sticky;
+    align-self: flex-start;
+    inset-block-start: 0;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+  .occ-sidebar > * { flex-shrink: 0; }
+  .occ-content { container: owner-workspace / inline-size; }
+  .occ-stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr)); }
+  .occ-main :is(.occ-page-heading, .occ-heading, .occ-health-row) { flex-wrap: wrap; }
+  .occ-main :is(.occ-page-heading, .occ-heading) > * { min-width: 0; overflow-wrap: anywhere; }
+}
+@container owner-workspace (min-width: 680px) {
+  .occ-two-col { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+}

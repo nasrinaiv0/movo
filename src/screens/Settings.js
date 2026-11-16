@@ -308,8 +308,8 @@ export default function Settings({ c }) {
   return <>
     <SubHeader title={tr('Settings')} onBack={() => go('Menu')} />
     <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search settings')} placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} /></label>
-    {shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
-      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
+    {shown.length > 0 && <div className="adaptive-settings-grid">{shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
+      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div></section>)}</div>}
     {!shown.length && <p className="empty">{tr('No settings match “{query}”.', { query })}</p>}
     {panel === 'lock' && <LockSheet c={c} onClose={() => { setPanel(''); rerender(n => n + 1); }} />}
     {panel === 'usage' && <UsageSheet c={c} onClose={() => setPanel('')} />}
@@ -433,37 +433,55 @@ export function Appearance({ c }) {
   const { prefs, setPref, go } = c;
   return <>
     <SubHeader title={tr('Appearance')} onBack={() => go('Settings')} />
-    <h2 className="group-title">{tr('Theme')}</h2>
-    <section className="appearance-theme-section"><ThemePicker c={c} />
-      <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></section>
-    <h2 className="group-title">{tr('App icon')}</h2>
-    <AppIconPicker c={c} />
-    <h2 className="group-title">{tr('Liquid Glass')}</h2>
-    <section className="card pad glass-settings">
-      <div className="glass-head"><span className="menu-main"><strong>{tr('Liquid Glass')}</strong><small>{tr('Translucent, light-bending surfaces')}</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label={tr('Liquid Glass')} /></div>
-      <div className={`glass-preview${prefs.glass ? '' : ' off'}`} aria-hidden="true"><i /><i /><span className="glass-chip"><Icon name="wallet" size={18} /> ₱128,450.00</span></div>
-      <label className="clarity"><span className="clarity-top"><b>{tr('Glass clarity')}</b><em>{prefs.clarity <= 33 ? tr('Frosted') : prefs.clarity >= 67 ? tr('Clear') : tr('Balanced')} · {prefs.clarity}%</em></span>
-        <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
-        <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
-    </section>
-    <h2 className="group-title">{tr('Home header')}</h2>
-    <HomeHeroPicker c={c} />
-    <h2 className="group-title">{tr('Background')}</h2>
-    <SceneryPicker c={c} />
-    <h2 className="group-title">{tr('Preview')}</h2>
-    <div className="card pad"><NavPreview accentName={prefs.accent} /></div>
-    <h2 className="group-title">{tr('Text')}</h2>
-    <TextSettings c={c} />
-    <h2 className="group-title">{tr('Display & Layout')}</h2>
-    <section className="card menu-card">
-      <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
-      <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
-      <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
-      <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
-      <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />
-      <Row icon="calendar" title={tr('Date Format')} sub={tr('{date} · follows your language', { date: longDate(new Date()) })} />
-      <Row icon="coin" title={tr('Home Currency')} sub={`${c.base || 'PHP'} · ${money(1234.5)}`} onClick={() => c.openCurrency?.()} />
-    </section>
+    <div className="adaptive-settings-grid">
+      <div>
+        <h2 className="group-title">{tr('Theme')}</h2>
+        <section className="appearance-theme-section"><ThemePicker c={c} />
+          <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></section>
+      </div>
+      <div>
+        <h2 className="group-title">{tr('App icon')}</h2>
+        <AppIconPicker c={c} />
+      </div>
+      <div>
+        <h2 className="group-title">{tr('Liquid Glass')}</h2>
+        <section className="card pad glass-settings">
+          <div className="glass-head"><span className="menu-main"><strong>{tr('Liquid Glass')}</strong><small>{tr('Translucent, light-bending surfaces')}</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label={tr('Liquid Glass')} /></div>
+          <div className={`glass-preview${prefs.glass ? '' : ' off'}`} aria-hidden="true"><i /><i /><span className="glass-chip"><Icon name="wallet" size={18} /> ₱128,450.00</span></div>
+          <label className="clarity"><span className="clarity-top"><b>{tr('Glass clarity')}</b><em>{prefs.clarity <= 33 ? tr('Frosted') : prefs.clarity >= 67 ? tr('Clear') : tr('Balanced')} · {prefs.clarity}%</em></span>
+            <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
+            <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
+        </section>
+      </div>
+      <div>
+        <h2 className="group-title">{tr('Home header')}</h2>
+        <HomeHeroPicker c={c} />
+      </div>
+      <div>
+        <h2 className="group-title">{tr('Background')}</h2>
+        <SceneryPicker c={c} />
+      </div>
+      <div>
+        <h2 className="group-title">{tr('Preview')}</h2>
+        <div className="card pad"><NavPreview accentName={prefs.accent} /></div>
+      </div>
+      <div>
+        <h2 className="group-title">{tr('Text')}</h2>
+        <TextSettings c={c} />
+      </div>
+      <div>
+        <h2 className="group-title">{tr('Display & Layout')}</h2>
+        <section className="card menu-card">
+          <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
+          <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
+          <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
+          <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
+          <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />
+          <Row icon="calendar" title={tr('Date Format')} sub={tr('{date} · follows your language', { date: longDate(new Date()) })} />
+          <Row icon="coin" title={tr('Home Currency')} sub={`${c.base || 'PHP'} · ${money(1234.5)}`} onClick={() => c.openCurrency?.()} />
+        </section>
+      </div>
+    </div>
   </>;
 }
 

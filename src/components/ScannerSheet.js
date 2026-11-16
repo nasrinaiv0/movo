@@ -203,7 +203,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], fx, 
 
   return <Sheet title={mode === 'review' ? tr('Review scan') : tr('Scan receipt')}
     subtitle={mode === 'review' ? tr('Check the details before logging.') : tr('AI extracts receipt details and suggests categories. You choose the payment account before logging.')}
-    onClose={() => { stopCamera(); setPendingFile(null); onClose(); }} label={tr('Scan receipt')}>
+    onClose={() => { stopCamera(); setPendingFile(null); onClose(); }} label={tr('Scan receipt')} size="wide">
     <input ref={photoRef} type="file" accept="image/*" hidden onChange={choose} aria-label={tr('Upload a photo or screenshot')} />
     <input ref={docRef} type="file" accept="image/*,application/pdf,.pdf" hidden onChange={choose} aria-label={tr('Upload a receipt or invoice')} />
     {mode === 'home' && <div className="scan-start">
