@@ -22,6 +22,11 @@ function summaryPayload(input) {
       ![income, expenses].every(value => Number.isFinite(value) && value >= 0 && value <= 1e12)) return null;
     summary.totals = { currency, income: Math.round(income * 100) / 100, expenses: Math.round(expenses * 100) / 100 };
   }
+  if (input.savingsRate !== undefined) {
+    // Share of income kept that month, as a whole percent; negative when spending passed income.
+    if (!Number.isInteger(input.savingsRate) || input.savingsRate < -100 || input.savingsRate > 100) return null;
+    summary.savingsRate = input.savingsRate;
+  }
   if (input.categories !== undefined) {
     if (!Array.isArray(input.categories) || input.categories.length > BUCKETS.length) return null;
     const seen = new Set();
@@ -33,7 +38,7 @@ function summaryPayload(input) {
     }
     if (!summary.categories.length) delete summary.categories;
   }
-  return summary.note || summary.totals || summary.categories ? summary : null;
+  return summary.note || summary.totals || summary.categories || summary.savingsRate !== undefined ? summary : null;
 }
 
 function socialPayload(action, body) {

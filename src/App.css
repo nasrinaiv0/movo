@@ -8916,3 +8916,65 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 /* The header remains visible after scrolling, so its tapped message must remain
    usable too (including the link to the expression gallery). */
 .movo-app .ram-aries .ram-bubble.is-open { display: block; }
+
+/* ===== Friend money summary sharing (owner, 2026-11-16; components/FriendFinanceSummary.js) =====
+   A header with the friend's initial, "Shared with you" as a readable card, then the person's own summary: switches
+   for what to include, a live preview of exactly what the friend will see, and one share button naming the friend. */
+.friends-list .friends-open { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center;
+  flex: 1; width: auto; min-width: 0; min-height: 44px; padding: 2px 4px; background: transparent; text-align: start; place-items: initial; }
+.friends-list .friends-open b { grid-column: 1; overflow-wrap: anywhere; }
+.friends-list .friends-open small { grid-column: 1; color: var(--muted); font-size: 12px; }
+.friends-list .friends-open svg { grid-column: 2; grid-row: 1 / span 2; color: var(--muted); }
+[dir="rtl"] .friends-list .friends-open svg, [dir="rtl"] .fs-back svg { transform: scaleX(-1); }
+.fs { gap: 14px; }
+.fs-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.fs-back { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: var(--field); color: var(--text); }
+.fs-head-text { display: grid; min-width: 0; }
+.fs-head-text h3 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+.fs-head-text small { color: var(--muted); font-size: 12px; }
+.fs-section { display: grid; gap: 12px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-card, 22px); background: var(--card, var(--surface)); }
+.fs-section h4 { margin: 0; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+.fs-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.fs-chip { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--field); color: var(--muted); font-size: 12px; font-weight: 600; }
+.fs-chip.is-on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-ink, var(--accent)); }
+.fs-empty { display: grid; justify-items: center; gap: 8px; padding: 10px 6px; text-align: center; color: var(--muted); }
+.fs-empty p { margin: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.fs-options { display: grid; border-radius: 16px; background: var(--field); overflow: hidden; }
+.fs-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 8px 12px; min-width: 0; }
+.fs-option + .fs-option { border-top: 1px solid var(--line); }
+.fs-option > span { display: grid; gap: 2px; min-width: 0; }
+.fs-option strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.fs-option small { color: var(--muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
+.fs-option.is-off strong { color: var(--muted); }
+.fs-option .toggle { flex: none; }
+.fs-count { color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4; }
+.fs-preview { display: grid; gap: 8px; min-width: 0; }
+.fs-label { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+.fs-card { display: grid; gap: 12px; min-width: 0; padding: 14px; border-radius: 18px; background: var(--field); }
+.fs-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.fs-card-head strong { font-size: 16px; }
+.fs-card-head small { color: var(--muted); font-size: 12px; }
+.fs-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.fs-totals div { min-width: 0; }
+.fs-totals dt { color: var(--muted); font-size: 12px; }
+.fs-totals dd { margin: 2px 0 0; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
+.fs-totals dd.is-negative { color: var(--danger, #c44949); }
+.fs-rate { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; font-weight: 600; color: var(--accent-ink, var(--accent)); }
+.fs-rate.is-negative { color: var(--danger, #c44949); }
+.fs-rate svg { flex: none; }
+.fs-cats { display: grid; gap: 8px; min-width: 0; }
+.fs-cats ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.fs-cats li { display: grid; grid-template-columns: minmax(84px, 38%) minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; font-size: 13px; }
+.fs-cat-name { display: flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
+.fs-cat-name i { width: 8px; height: 8px; flex: none; border-radius: 50%; }
+.fs-bar { display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
+.fs-bar i { display: block; height: 100%; border-radius: inherit; }
+.fs-cats b { min-width: 3ch; text-align: end; font-variant-numeric: tabular-nums; }
+.fs-note { margin: 0; padding: 0 0 0 12px; border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fs-safety { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+.fs-safety .link-button { min-height: 44px; color: var(--muted); }
+.fs-safety .link-button.is-danger { color: var(--danger, #c44949); }
+@media (max-width: 360px) { .fs-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: no-preference) { .fs-card, .fs-chip { transition: background-color 180ms ease-out; } }
+/* Four Friends tabs fit one line on small phones; long translations still wrap rather than widen the sheet. */
+.friends-content .friends-tabs-expanded > button { padding-inline: 4px; font-size: 13px; line-height: 1.2; }

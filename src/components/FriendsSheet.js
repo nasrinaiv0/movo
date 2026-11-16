@@ -235,8 +235,10 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
           {friends?.length > 0 && <ul className="friends-list">
             {friends.map(friend => <li key={friend.id}>
               <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
-              <b dir="auto">{friend.name}</b>
-              {finance && <button type="button" className="friends-summary-action" disabled={busy} onClick={() => setSummaryFriend(friend)} aria-label={tr('Summary for {name}', { name: friend.name })}><Icon name="doc" size={18} /></button>}
+              {finance ? <button type="button" className="friends-open" disabled={busy} onClick={() => setSummaryFriend(friend)}
+                aria-label={tr('Money summary with {name}', { name: friend.name })}>
+                <b dir="auto">{friend.name}</b><small>{tr('Money summary')}</small><Icon name="chevron" size={16} />
+              </button> : <b dir="auto">{friend.name}</b>}
               <button type="button" disabled={busy} onClick={() => removeFriend(friend)} aria-label={tr('Remove {name}', { name: friend.name })}><Icon name="close" size={18} /></button>
             </li>)}
           </ul>}

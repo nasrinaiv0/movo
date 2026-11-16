@@ -1,3 +1,9 @@
+## 2026-11-16 — Friend money summary sharing: clearer screen, live preview, savings rate
+
+- Friend rows open "Money summary" directly. The received summary is a readable card: month in words, shared date, totals with net, savings rate, colour category bars and the note.
+- Sharing uses switches with a live preview of exactly what the friend will see, and one share button that names the friend. Stop sharing asks first. A new savings-rate option (whole percent, validated server-side) shares less than exact totals. No schema change.
+- Needs Friends migration `20261116070316` on production to work there. [Details](engineering/updates/2026-11-16-friend-summary-sharing.md).
+
 ## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
 
 - The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.

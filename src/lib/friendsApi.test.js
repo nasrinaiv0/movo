@@ -71,6 +71,16 @@ test('shares only the selected summary fields and ignores external account and c
   expect((await call('POST', { action: 'share_summary', connectionId: id, summary: { month: '2026-11' } })).status).toHaveBeenCalledWith(400);
 });
 
+test('a savings rate alone can be shared, as a whole percent from -100 to 100 only', async () => {
+  const result = await call('POST', { action: 'share_summary', connectionId: id, summary: { month: '2026-11', savingsRate: -12 } });
+  expect(result.status).toHaveBeenCalledWith(200);
+  expect(rpc).toHaveBeenLastCalledWith('movo_friend_social', { p_actor: id, p_action: 'share_summary', p_data: {
+    connectionId: id, summary: { month: '2026-11', savingsRate: -12 } } });
+  for (const savingsRate of [12.5, 101, -101, '20', null]) {
+    expect((await call('POST', { action: 'share_summary', connectionId: id, summary: { month: '2026-11', savingsRate } })).status).toHaveBeenCalledWith(400);
+  }
+});
+
 test('reads and changes only the signed-in owner photo and rejects an invalid image', async () => {
   expect((await call('POST', { action: 'set_avatar', photo: 'data:image/jpeg;base64,/YXNk' })).status).toHaveBeenCalledWith(400);
   await call('POST', { action: 'avatar', ownerId: 'someone else' });
