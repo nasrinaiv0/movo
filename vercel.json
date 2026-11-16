@@ -54,6 +54,10 @@
   ],
   "rewrites": [
     {
+      "source": "/friend",
+      "destination": "/friend.html"
+    },
+    {
       "source": "/owner",
       "destination": "/index.html"
     },

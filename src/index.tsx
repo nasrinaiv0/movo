@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
+import { migrateLegacyOfflineReadCache } from './lib/offlineReadCache';
 import { captureReferralFromUrl } from './lib/referrals';
 import { captureInstallReferral } from './lib/installReferral';
 import { installInteractionTracking } from './lib/interaction';
@@ -43,4 +44,9 @@ const render = () => root.render(
 Promise.all([restoreNativeStorage(), refreshNativeNotifyPermission()])
   .then(() => restoreNativeAutomationKey())
   .catch(() => { /* Native vault failure disables use of the cached automation secret. */ })
-  .finally(render);
+  .finally(() => {
+    render();
+    // Migrate existing plaintext lists after first paint; failed items remain for safe retry.
+    // Owner portal is isolated from customer financial storage.
+    if (!ownerRoute) migrateLegacyOfflineReadCache().catch(() => {});
+  });
