@@ -1,3 +1,9 @@
+## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
+
+- The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.
+- Aries, an original vector mascot drawn from the owner's design, guides every step, greets people on the first-run welcome card and heads the Help Center. The Help Center has new sections on the guide, AI receipt scanning and automatic logging.
+- Terms §17 now describes the guide as screenshots. The change is published under main's 2026-11-17 Terms date, so people accept once. [Details, validation and rollback](engineering/updates/2026-11-16-movo-guide-aries.md).
+
 ## 2026-11-16 — PR #312 integration with foreign-currency receipt review
 
 - Integrated main `da99f181` on the Friends branch. Combined the two progress entries and regenerated locales from both source catalogs. The receipt privacy disclosure and Friends disclosures remain synchronized.

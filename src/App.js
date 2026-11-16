@@ -133,7 +133,7 @@ const NasrinAIChat = lazyScreen(() => import('./components/NasrinAIChat'));
 const TermsOfService = lazyScreen(() => import('./screens/Legal'), { pick: 'TermsOfService' });
 const PrivacyPolicy = lazyScreen(() => import('./screens/Legal'), { pick: 'PrivacyPolicy' });
 const HelpCenter = lazyScreen(() => import('./screens/HelpCenter'));
-const TutorialVideo = lazyScreen(() => import('./components/TutorialVideo'), { placeholder: null });
+const FeatureTour = lazyScreen(() => import('./components/FeatureTour'), { placeholder: null });
 const GrocerySheet = lazyScreen(() => import('./components/GrocerySheet'), { placeholder: null });
 const ScannerSheet = lazyScreen(() => import('./components/ScannerSheet'), { placeholder: null });
 const AutoLogSheet = lazyScreen(() => import('./components/AutoLogSheet'), { placeholder: null });
@@ -1204,7 +1204,7 @@ function App() {
   const scrollMemoRef = useRef(new Map());
   const backPaintRef = useRef(null);
   /*
-   * Setup gate (owner, 2026-11-11): until the video guide, the walkthrough, signing in (or choosing this device only)
+   * Setup gate (owner, 2026-11-11): until the MOVO guide, the walkthrough, signing in (or choosing this device only)
    * and accepting the Terms and Privacy Policy are done, only those steps show. The dashboard stays hidden and the
    * navigation is locked. Tests skip it like the first-run tour unless they set window.__MOVO_SETUP_GATE__.
    */
@@ -2354,7 +2354,7 @@ function App() {
   }, [todayKey]);
   /* Welcome choices: sign in or sign up skips the tour and opens the account page in that mode. */
   const [authMode, setAuthMode] = useState('signin');
-  const [guideOpen, setGuideOpen] = useState(false); // replay of the video guide from Settings
+  const [guideOpen, setGuideOpen] = useState(false); // replay of the MOVO guide from Settings
   const startAccount = useCallback((mode) => {
     setPrefs(cur => ({ ...cur, onboarded: true, briefingDay: todayKey }));
     setAuthMode(mode); go('Sign in');
@@ -2883,10 +2883,10 @@ function App() {
       {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !locked && !SETUP_READING.has(view) && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} currency={base} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
       {sheet?.name === 'financeBackup' && <FinanceBackupSheet c={c} onClose={() => setSheet(null)} />}
       {sheet?.name === 'planUsage' && <UsageSheet c={c} onClose={() => setSheet(null)} />}
-      {/* First run: the video guide, then (skipped or finished) the spotlight walkthrough, then the free month of Pro. */}
-      {showTour && !locked && !prefs.tutorialSeen && <TutorialVideo onDone={() => setPref('tutorialSeen', true)} />}
+      {/* First run: the MOVO guide (screenshot tour), then (skipped or finished) the spotlight walkthrough, then the free month of Pro. */}
+      {showTour && !locked && !prefs.tutorialSeen && <FeatureTour dark={dark} onDone={() => setPref('tutorialSeen', true)} />}
       {showTour && !locked && prefs.tutorialSeen && <Walkthrough onDone={finishTour} onAccount={startAccount} onImport={importDataFile} />}
-      {guideOpen && !locked && <TutorialVideo onDone={() => setGuideOpen(false)} />}
+      {guideOpen && !locked && <FeatureTour dark={dark} onDone={() => setGuideOpen(false)} />}
       {cloudPlanNotice && setupDone && !locked && !sheet && prefs.cloudPlanNoticeDay !== todayKey && <CloudPlanNotice
         onPlans={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); setSheet({ name: 'planOffer', feature: 'cloudWrite' }); }}
         onClose={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); }} />}
