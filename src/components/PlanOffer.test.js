@@ -117,7 +117,7 @@ test('in the app, the store price drives the panel and Continue buys the selecte
   expect(el.querySelector('.plan-price strong').textContent).toBe('₱3,490.00');
   expect(el.querySelectorAll('.plan-tile-price')[2].textContent).toBe('₱3,490.00/yr');
   await act(async () => el.querySelector('.plan-cta').click());
-  expect(purchaseStoreProduct).toHaveBeenCalledWith('com.nasrinai.movo.proplus.annual', session);
+  expect(purchaseStoreProduct).toHaveBeenCalledWith(expect.objectContaining({ productIdentifier: 'com.nasrinai.movo.proplus.annual', priceString: '₱3,490.00' }), session);
   expect(handlers.onRefresh).toHaveBeenCalled();
   cleanup();
 });

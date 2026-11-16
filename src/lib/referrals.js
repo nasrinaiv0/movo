@@ -9,6 +9,8 @@ import { apiUrl, appOrigin, isNativeApp } from './platform';
 export const REFERRAL_CODE = /^M[0-9A-HJ-NP-Z]{5}$/;
 const LEGACY_CODE = /^[a-f0-9]{24}$/;
 const PENDING_KEY = 'movo.pendingReferral.v1';
+/** Fired when a friend's code arrives after the app opened (the Google Play install referrer); detail is the code. */
+export const PENDING_REFERRAL_EVENT = 'movo:pending-referral';
 
 /** "m78 038" → "M78038"; null when it is not a referral code. */
 export function normalizeReferralCode(value) {

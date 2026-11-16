@@ -5,6 +5,7 @@ android {
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.nasrinai.movo"
+        manifestPlaceholders = [movoAuthScheme: "movo"]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play Console rejects duplicate or lower versionCode uploads.
@@ -41,6 +42,16 @@ android {
         }
     }
     buildTypes {
+        // Isolated debug-signed auth acceptance app. Never changes the Play
+        // applicationId or the release signing configuration.
+        authTest {
+            initWith debug
+            applicationIdSuffix ".authcheck"
+            // The test app must not receive or steal Play MOVO PKCE callbacks.
+            manifestPlaceholders = [movoAuthScheme: "movo-authcheck"]
+            versionNameSuffix "-authcheck"
+            matchingFallbacks = ['debug']
+        }
         release {
             // An unsigned release can still compile in ordinary CI; the signed
             // Play bundle workflow separately requires the signing secrets.
@@ -66,6 +77,8 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     // Rate MOVO: Google Play In-App Review (src/lib/reviewPrompt.js, MovoNativePlugin.requestReview).
     implementation "com.google.android.play:review:2.0.2"
+    // Referral download links: reads the Google Play install referrer once (MovoNativePlugin.installReferrer).
+    implementation "com.android.installreferrer:installreferrer:2.2"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
