@@ -16,6 +16,7 @@
 ## Verification
 
 - Disposable PostgreSQL migration history and existing finance authorization suite, with friend-specific assertions for cross-account access, expiry, revocation, reuse, reciprocal deduplication and deletion.
+- Mobile Chromium with isolated fixture accounts exercised Profile, QR generation, the landing page and deliberate acceptance in light and dark at 375 px and 320 px. The Friends tab selector uses a distinct filled surface for the active tab.
 - React and API regressions cover intentional acceptance, QR creation and revocation, web/native link validation, system share payloads and verified-account authorization.
 - Signed-device checks require two MOVO test accounts and current builds. Verify AirDrop on two iPhones, Android Quick Share where offered, a cross-platform QR, accepted and reused links, and removal from both accounts. On an older app the landing page can continue on web.
 - Apply the migration in the preview database and run two-account acceptance before enabling the feature in production. For rollback, revert the app and endpoint while retaining the additive database tables and stored connections.

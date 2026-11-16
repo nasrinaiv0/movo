@@ -8929,8 +8929,9 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .friends-tabs, .friends-actions { display: grid; gap: 6px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .friends-tabs { padding: 4px; background: var(--field); border-radius: 16px; }
 .friends-tabs button, .friends-secondary, .friends-list button { min-width: 0; min-height: 44px; border: 0; border-radius: 12px; font: inherit; color: var(--text); padding: 8px; overflow-wrap: anywhere; }
-.friends-tabs button[aria-pressed="true"], .friends-secondary { background: var(--field); }
-.friends-tabs button[aria-pressed="true"] { background: var(--surface); font-weight: 650; }
+.friends-content .friends-tabs > button { background: transparent; color: var(--muted); }
+.friends-content .friends-tabs > button[aria-pressed="true"] { background: var(--surface-solid); color: var(--text); font-weight: 650; }
+.friends-secondary { background: var(--field); }
 .friends-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .friends-actions > button { display: flex; justify-content: center; align-items: center; gap: 7px; min-height: 48px; white-space: normal; }
 .friends-actions svg { flex: none; }
