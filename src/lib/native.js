@@ -69,23 +69,37 @@ export async function restoreNativeStorage(storage = typeof window !== 'undefine
 
 /* ---------- Links: movo://auth-callback (sign-in return) and movo://log?… (payment links) ---------- */
 
+/*
+ * The only links MOVO accepts: scheme://route, an optional "/", then an optional ?query and #fragment.
+ * Matched by hand, never with `new URL()`: Android WebViews older than Chromium 130 do not read the host of a
+ * custom-scheme URL (they report hostname "" and pathname "//auth-callback"), so the URL parser made every Google
+ * or email-link return look invalid on those phones and sign-in silently stopped after the account was chosen.
+ * The pattern leaves no room for user info, a port, another host or a path.
+ */
+const APP_LINK = /^(movo|movo-authcheck):\/\/(auth-callback|log|friend)\/?(?:\?([^#]*))?(?:#(.*))?$/;
+
 /** Parse a movo:// URL into what the app should do with it. Pure, so it is unit-tested. */
 export function readAppUrl(url) {
   // Custom-scheme links may be sent by other installed apps. Only process the
   // exact callbacks we register, with no userinfo/port/path or ambiguous codes.
-  if (typeof url !== 'string' || url.length > 4096) return null;
-  let parsed;
-  try { parsed = new URL(url); } catch { return null; }
-  if (!['movo:', 'movo-authcheck:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.port) return null;
-  if (parsed.pathname && parsed.pathname !== '/') return null;
-  const params = new URLSearchParams(parsed.search || '');
-  const hash = new URLSearchParams((parsed.hash || '').replace(/^#/, ''));
+  if (typeof url !== 'string' || url.length > 4096 || /[\x00-\x1F\x7F]/.test(url)) return null;
+  // Schemes are case-insensitive (iOS opens MOVO://… too); routes are not.
+  const match = APP_LINK.exec(url.replace(/^[A-Za-z-]+(?=:\/\/)/, scheme => scheme.toLowerCase()));
+  if (!match) return null;
+  const parsed = { protocol: `${match[1]}:`, hostname: match[2], hash: match[4] || '' };
+  const params = new URLSearchParams(match[3] || '');
+  const hash = new URLSearchParams(parsed.hash);
   if (parsed.hostname === 'auth-callback') {
     const codes = params.getAll('code');
     if (codes.length > 1 || hash.has('code') || params.has('access_token') || params.has('refresh_token')
       || codes.some(code => !code || code.length > 2048 || /[\x00-\x1F\x7F]/.test(code))) return null;
     const error = params.get('error_description') || params.get('error') || hash.get('error_description') || hash.get('error');
     return { kind: 'auth', code: error ? '' : (codes[0] || ''), error: error || '' };
+  }
+  if (parsed.hostname === 'friend' && !parsed.hash) {
+    const [token] = params.getAll('invite');
+    if ([...params].length === 1 && /^[A-Za-z0-9_-]{43}$/.test(token || '')) return { kind: 'friend', token };
+    return null;
   }
   if (parsed.hostname === 'log' && parsed.protocol === 'movo:' && !parsed.hash) {
     return { kind: 'log', hash: `#/log?${params.toString()}` };
@@ -94,7 +108,7 @@ export function readAppUrl(url) {
 }
 
 /** Listen for movo:// links. `onAuth({ code, error })` finishes sign-in; log links reuse the web #/log handler. */
-export function listenForAppUrls({ onAuth } = {}) {
+export function listenForAppUrls({ onAuth, onFriend } = {}) {
   if (!isNativeApp()) return () => {};
   let active = true;
   let lastAuthCode = null;
@@ -112,6 +126,7 @@ export function listenForAppUrls({ onAuth } = {}) {
       onAuth?.(link);
     }
     if (link.kind === 'log') window.location.hash = link.hash;
+    if (link.kind === 'friend') onFriend?.(link.token);
   };
   const pending = [CapApp.addListener('appUrlOpen', ({ url }) => handle(readAppUrl(url)))];
   if (nativePlatform() === 'android') {

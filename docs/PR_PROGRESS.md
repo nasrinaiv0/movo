@@ -1,3 +1,25 @@
+## 2026-11-16 — PR #306 conflict resolution
+
+- Integrated main `77bcacc`. Preserved Android Auth Tab result delivery and the merged Friends invite handler and native share methods.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-306-main-conflicts.md).
+
+## 2026-11-16 — Private friends and compact Profile
+
+- Added Profile → Friends with single-use QR/link invites, native AirDrop and Android Sharesheet, deliberate acceptance, and reciprocal removal.
+- Added service-only invite and connection storage with no access to financial data. Private invitation lifecycle and finance isolation passed in disposable PostgreSQL.
+- The implementation is based on main at `d511f268`. Open PRs #274, #280, #290, #291, #294–#297, #299, #305, #306, #308 and #309 were reviewed. Referral rewards #309 are independent, with possible Profile, privacy and generated locale conflicts at integration.
+- Mobile browser review at 375 px light and 320 px dark exercised Profile, QR generation and explicit acceptance. The Friends sheet now gives the selected tab the filled surface.
+- [Implementation, verification and rollback](engineering/updates/2026-11-16-private-friends-profile.md).
+
+## 2026-11-15 — Android Google sign-in: the return link is read on older WebViews
+
+Owner report: on the affected Android phone, Google sign-in ends back on Sign in after the account is chosen. Supabase logs show the pattern exactly: that phone gets `/authorize` 302 and `/callback` 302 (a code is issued) but never calls `/token`, while phones on Chrome 156/157 complete the exchange. The affected phone is a Huawei on Android 12 whose in-app WebView reports Chromium 114.
+- **Cause:** `readAppUrl` used `new URL()` on `movo://auth-callback?code=…`. Chromium only parses the host of a custom-scheme URL from version 130. Older WebViews report hostname `""` and pathname `"//auth-callback"`, so the link was judged invalid and dropped without a message. The same applied to `movo://log` payment links.
+- **Fix:** the two accepted link shapes are matched by hand (`scheme://route[/][?query][#fragment]`), with no dependence on the WebView. All existing rejections are kept (user info, port, other host, path, duplicate or oversized code, tokens in the link) and control characters are now refused too.
+- Independent of PR #306 (Auth Tab). On that build the same phone would show `OA-CALLBACK`, because the Auth Tab result goes through the same parser.
+
+Validation: new tests run the parser against a stand-in for the old WebView URL behaviour (they fail on the previous parser), Jest 233 suites / 1,449 tests, `tsc`, strict build. Not run: the affected phone, or a real Chromium 114 (running a downloaded one was not permitted in this session). Needs a new Android build to reach phones. See `docs/engineering/updates/2026-11-15-android-auth-return-link-old-webview.md`.
+
 ## 2026-11-12 — PR #289 review fix: reminder preferences stay available offline
 
 - Review found that the encrypted cache accepted only lists, so reminder preferences (one settings object) silently stopped being kept for offline use. The cache now accepts lists and settings objects; both are still AES-GCM encrypted, owner-bound and network-failure-only.
@@ -799,7 +821,7 @@ These are not resolved by a green frontend CI run or a READY deployment:
 ## PR #225 — Consistent headers, legal spacing and Vercel-configured social profiles (2026-11-06)
 - Root and back-navigation headers use 10px upper/lower internal padding with 10px bottom separation. Home mascot/header row is more compact while retaining 45px actions and safe-area spacing.
 - Terms, Privacy and Help Center share 14px section gaps, including canonical supplemental policy sections; adjusted sticky fade and bottom scroll clearance for fixed navigation.
-- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through \`/api/social-links\`. No fake profiles or client-side embedded links.
+- Added a compact social logo row after each of those pages, shown only for valid links from Vercel server environment variables through `/api/social-links`. No fake profiles or client-side embedded links.
 - Changed files, new security/API and rendering tests, translations and documentation are committed together with a dated engineering update, as required by MOVO CI. No finance/ledger or policy wording changes.
 - Sandbox tests and GitHub exact-head CI required before merging. Vercel preview can be canceled by ignored-build setting and must not be assumed verified.
 
