@@ -14,3 +14,9 @@
 - Updates replace the previous snapshot and only the verified owner can retrieve their saved sharing selections. Revoking deletes the share using the existing database routine. Existing snapshots remain readable. No schema migration is needed for the existing JSONB snapshot field.
 - The privacy notice includes the expanded sharing options. An app rollback can leave the database schema in place. Older app builds can still read legacy snapshots and handle their invites. An older build displays the note and month of a newer-format snapshot, when present, until it is updated.
 - The focused regression suite covers routes, privacy projection and snapshots, and the full suite and mobile widths are rechecked before rollout. The SQL replacement regression runs through the existing finance tenant-isolation workflow.
+
+## Summary visual refinement
+
+- Use a single overview card for the financial totals, a clear month and update date, and consistent detail cards for cash flow, planning, budgets and spending. Preserve independently approved figures, real zero values and legacy snapshots.
+- Give sharing its own readable selection and preview steps with a matching renderer. Keep the exact recipient and approval action visible on the preview.
+- Verify the existing privacy and approval flow, keyboard controls, and mobile layout in light and dark mode. Record evidence before pushing the change to PR #314.

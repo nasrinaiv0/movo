@@ -1,4 +1,5 @@
 export default [
+  ['Edit selections', 'Baguhin ang napili', 'تعديل الاختيارات', '编辑选择', 'Editar selección', 'Modifica selezione', 'Auswahl bearbeiten', 'Modifier la sélection', 'Editar seleção', '選択内容を編集', '선택 수정', 'चयन बदलें'],
   ['Active plans', 'Mga aktibong plano', 'الخطط النشطة', '进行中的计划', 'Planes activos', 'Piani attivi', 'Aktive Pläne', 'Plans actifs', 'Planos ativos', '進行中の計画', '진행 중인 계획', 'सक्रिय योजनाएँ'],
   ['As of {date}', 'Hanggang {date}', 'حتى {date}', '截至 {date}', 'Al {date}', 'Al {date}', 'Stand {date}', 'Au {date}', 'Em {date}', '{date} 時点', '{date} 기준', '{date} तक'],
   ['Budgets on track', 'Mga badyet na pasok sa limitasyon', 'الميزانيات ضمن الحد', '符合预算的项目', 'Presupuestos dentro del límite', 'Budget entro il limite', 'Budgets im Rahmen', 'Budgets respectés', 'Orçamentos dentro do limite', '上限内の予算', '한도 내 예산', 'सीमा के भीतर बजट'],

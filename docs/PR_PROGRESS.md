@@ -1,3 +1,7 @@
+## 2026-11-17 — Friends Summary visual refinement
+
+- Grouped approved totals into one overview card, reordered the detail cards, and made sharing a two-step flow with a matching recipient preview. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
 ## 2026-11-17 — Dedicated Friends and Summary screens
 
 - [Implementation plan, privacy and verification](engineering/updates/2026-11-17-friends-summary-pages.md).
