@@ -1,3 +1,8 @@
+## 2026-11-16 — One pop-up surface with an iOS-style edge (light and dark)
+
+- Every pop-up now uses the transaction-details look: a solid surface (white / `#1c1c1e`), a gradient hairline edge that catches light at the top-left like iOS, and a soft shadow, adapted for light and dark. Budgets & Plans and Limits lose their translucent glass panel with its bright outline.
+- On phones, bottom sheets float 8 px from the screen edges with rounded corners all round, and the page behind blurs. CSS only. [Details](engineering/updates/2026-11-16-popup-panel-surface.md).
+
 ## 2026-11-16 — Friend money summary sharing: clearer screen, live preview, savings rate
 
 - Friend rows open "Money summary" directly. The received summary is a readable card: month in words, shared date, totals with net, savings rate, colour category bars and the note.

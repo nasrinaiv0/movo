@@ -8978,3 +8978,50 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 @media (prefers-reduced-motion: no-preference) { .fs-card, .fs-chip { transition: background-color 180ms ease-out; } }
 /* Four Friends tabs fit one line on small phones; long translations still wrap rather than widen the sheet. */
 .friends-content .friends-tabs-expanded > button { padding-inline: 4px; font-size: 13px; line-height: 1.2; }
+
+/* ===== Pop-up panels: one surface for every sheet and dialog (owner, 2026-11-16) =====
+   Every pop-up uses the transaction-details look: an opaque surface (white in light, #1c1c1e in dark), a soft shadow,
+   and an iOS-style hairline edge drawn as a gradient so it catches light at the top-left like iOS glass. This replaces
+   the 2026-11-12 "no outline" choice for the details pop-up, and the translucent glass panel for Budgets & Plans.
+   The edge is painted with the two-layer background trick (padding-box fill + border-box gradient), which stays put
+   while a long sheet scrolls. On phones, bottom sheets float 8px from the screen edges with rounded corners all round;
+   the safe area sits outside the panel, so the panel's own bottom padding no longer includes it. */
+.movo-app {
+  --pop-bg: #ffffff;
+  --pop-rim: linear-gradient(160deg, rgba(16, 24, 40, .05) 0%, rgba(16, 24, 40, .09) 45%, rgba(16, 24, 40, .14) 100%);
+  --pop-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 22px 54px -14px rgba(16, 24, 40, .32);
+  --pop-radius: 32px;
+}
+.movo-app.theme-dark {
+  --pop-bg: #1c1c1e;
+  --pop-rim: linear-gradient(160deg, rgba(255, 255, 255, .26) 0%, rgba(255, 255, 255, .08) 26%, rgba(255, 255, 255, .045) 62%, rgba(255, 255, 255, .13) 100%);
+  --pop-shadow: 0 26px 64px -10px rgba(0, 0, 0, .72);
+}
+/* Repeated classes outrank the earlier per-panel "no border" and shadow rules (details, plans, reconnect). */
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet.sheet.sheet {
+  border: 1px solid transparent !important;
+  background: linear-gradient(var(--pop-bg), var(--pop-bg)) padding-box, var(--pop-rim) border-box !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: var(--pop-shadow) !important;
+  border-radius: var(--pop-radius);
+}
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet-center { border-radius: var(--pop-radius); }
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet-center.plan-panel .plan-panel-foot { border-radius: 0 0 calc(var(--pop-radius) - 1px) calc(var(--pop-radius) - 1px); }
+/* Phones: bottom sheets float above the home indicator instead of touching the screen edges. */
+.movo-app:not(.layout-tablet):not(.layout-desktop) .sheet-backdrop:not(.center) { padding: 0 8px calc(8px + env(safe-area-inset-bottom)); }
+.movo-app.movo-app.movo-app.movo-app:not(.layout-tablet):not(.layout-desktop) .sheet:not(.sheet-center) {
+  max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  padding-bottom: 24px;
+}
+/* The sticky Save bar of the composer sheets follows the new bottom padding and keeps the rounded corners. */
+.movo-app.movo-app.movo-app:not(.layout-tablet):not(.layout-desktop) .sheet:not(.sheet-center) .tx-bottom {
+  bottom: -24px; margin-bottom: -24px; padding-bottom: 14px; border-radius: 0 0 calc(var(--pop-radius) - 1px) calc(var(--pop-radius) - 1px);
+}
+/* Composer sheets (Add transaction, Add account) share the pop-up surface; their fields stay one step off it. */
+.movo-app.movo-app.movo-app .tx-sheet, .movo-app.movo-app.movo-app .acct-sheet { --bg: var(--pop-bg); --tx-field: color-mix(in srgb, var(--text) 6%, var(--pop-bg)); }
+.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom { background: var(--pop-bg); }
+.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom::before { background: linear-gradient(to bottom, transparent, var(--pop-bg)); }
+/* Behind every pop-up: the page dims and softens, as in the transaction-details reference. */
+.movo-app .sheet-backdrop { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.movo-app.platform-android .sheet-backdrop { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+@media (prefers-reduced-transparency: reduce) { .movo-app .sheet-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; } }
