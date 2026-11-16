@@ -102,7 +102,10 @@ export async function getStoreEntitlements(session) {
   return result;
 }
 
-export async function purchaseStoreProduct(productIdentifier, session) {
+export async function purchaseStoreProduct(selection, session) {
+  // PlanOffer forwards the exact store quote it displayed, including its
+  // ephemeral Play offerToken. Legacy callers may still pass a product ID.
+  const productIdentifier = typeof selection === 'string' ? selection : selection?.productIdentifier;
   if (!isNativeApp()) throw new Error('Please use the MOVO iOS or Android app to subscribe.');
   const platform = Capacitor.getPlatform();
   if (platform !== 'ios' && platform !== 'android') throw new Error('Official native app required for checkout.');
@@ -114,10 +117,18 @@ export async function purchaseStoreProduct(productIdentifier, session) {
   const active = await sessionDetails(session);
   const product = STORE_PRODUCTS.find((item) => item.productIdentifier === productIdentifier);
   if (!product) throw new Error('This subscription is not configured.');
+  const selected = selection && typeof selection === 'object' ? selection : null;
+  if (platform === 'android' && selected?.basePlanId && selected.basePlanId !== product.basePlanId) {
+    throw new Error('The selected Google Play offer changed. Refresh prices and try again.');
+  }
+  // The offer token is tied to one specific product query. A rejected/stale
+  // token must fail closed in the native plugin, never fall back to another price.
+  const offerToken = platform === 'android' && selected && typeof selected.offerToken === 'string'
+    && selected.offerToken.trim() ? selected.offerToken : null;
   const transaction = await NativePurchases.purchaseProduct({
     productIdentifier,
     productType: PURCHASE_TYPE.SUBS,
-    ...(platform === 'android' ? { planIdentifier: product.basePlanId } : {}),
+    ...(platform === 'android' ? { planIdentifier: product.basePlanId, ...(offerToken ? { offerToken } : {}) } : {}),
     appAccountToken: await accountToken(active.user.id),
     autoAcknowledgePurchases: false,
   });

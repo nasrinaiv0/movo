@@ -1,4 +1,4 @@
-import { authErrorCategory } from './authErrorCategory';
+import { authErrorCategory, nativeAuthStorageFailureCode } from './authErrorCategory';
 
 describe('safe Supabase Auth error classification', () => {
   test.each([
@@ -18,6 +18,7 @@ describe('safe Supabase Auth error classification', () => {
     [{ code: 'otp_expired' }, 'invalid-code'],
     [{ code: 'invalid_otp' }, 'invalid-code'],
     [{ code: 'android_auth_browser_unavailable' }, 'android-browser'],
+    [{ code: 'android_auth_app_identity_unavailable' }, 'android-package'],
     [{ code: 'secure_auth_write_failed' }, 'native-secure-storage'],
     [{ code: 'secure_auth_read_failed' }, 'native-secure-storage'],
     [{ message: 'secure_auth_legacy_cleanup_failed' }, 'native-secure-storage'],
@@ -30,4 +31,22 @@ describe('safe Supabase Auth error classification', () => {
   ])('maps %p to %s without echoing provider details', (error, kind) => {
     expect(authErrorCategory(error)).toBe(kind);
   });
+});
+
+
+test.each([
+  [{ message: 'MovoNative plugin not implemented on android' }, 'ST-BRIDGE'],
+  [{ code: 'secure_auth_legacy_cleanup_failed' }, 'ST-CLEAN'],
+  [{ code: 'secure_auth_read_failed' }, 'ST-READ'],
+  [{ code: 'secure_auth_write_failed' }, 'ST-WRITE'],
+  [{ code: 'secure_auth_delete_failed' }, 'ST-DELETE'],
+  [{ code: 'invalid_secure_auth_key' }, 'ST-KEY-NAME'],
+  [{ code: 'invalid_auth_storage_key' }, 'ST-KEY-NAME'],
+  [{ code: 'invalid_auth_storage_value' }, 'ST-KEY-VALUE'],
+  [{ code: 'invalid_secure_auth_value' }, 'ST-KEY-VALUE'],
+  [{ code: 'secure_auth_storage_native_only' }, 'ST-KEY-CONTEXT'],
+  [{ code: 'invalid_auth_storage_key', message: 'state=SECRET_TOKEN_NEVER_ECHO' }, 'ST-KEY-NAME'],
+  [{ message: 'unclassified error with private data' }, 'ST-OTHER'],
+])('native auth diagnostics display only a fixed safe code for %p', (error, code) => {
+  expect(nativeAuthStorageFailureCode(error)).toBe(code);
 });

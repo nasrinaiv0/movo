@@ -1,4 +1,5 @@
 import { INSTITUTIONS } from './institutions';
+import { parseReceiptDetails } from './receiptDetails';
 /*
  * On-device text recognition. Images never leave the browser: the OCR engine, its WebAssembly core and the
  * English model are self-hosted under /public/ocr and loaded only the first time someone scans or attaches a photo.
@@ -125,7 +126,7 @@ export const readDocumentText = (file) => ((file?.type === 'application/pdf' || 
 
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 const num = (s) => Number(String(s).replace(/[,\s]/g, ''));
-const AMOUNT = /(?:₱|php|p)?\s*(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})|\d+\.\d{2})\b/gi;
+
 
 function findDate(text) {
   let m = text.match(/\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
@@ -185,24 +186,21 @@ const field = (text, labels) => {
  * money came in or went out. Everything runs on the device; people always review before saving.
  */
 export function parseReceipt(text = '') {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  let amount = 0;
-  const totalLine = lines.find(l => /\b(grand\s*total|total\s*(amount|due|paid)?|amount\s*(due|paid|sent|received|transferred)?|you\s*(paid|sent|received))\b/i.test(l) && !/sub\s*-?\s*total|fee/i.test(l));
-  if (totalLine) {
-    const hits = [...totalLine.matchAll(AMOUNT)];
-    if (hits.length) amount = num(hits[hits.length - 1][1]);
-    else { const m = totalLine.match(/(?:₱|php|p)\s*(\d[\d,]*)/i); if (m) amount = num(m[1]); }
-  }
-  if (!amount) { const all = [...text.matchAll(AMOUNT)].map(h => num(h[1])).filter(n => n > 0 && n < 1e9); if (all.length) amount = Math.max(...all); }
+  const lines = String(text).split('\n').map(l => l.trim()).filter(Boolean);
+  const details = parseReceiptDetails(text);
+  // No largest-value fallback: cash tendered is not an expense total.
+  const amount = details.total ?? 0;
   const feeM = text.match(/(?:transaction\s*fee|service\s*(?:fee|charge)|convenience\s*fee|\bfee)\s*[:\-]?\s*(?:₱|php|p)?\s*(\d[\d,]*(?:\.\d{2})?)/i);
   const recipient = field(text, 'sent\\s*to|paid\\s*to|transfer(?:red)?\\s*to|recipient(?:\\s*name)?|receiver|merchant(?:\\s*name)?|biller|payee|to');
   const sender = field(text, 'received\\s*from|sender(?:\\s*name)?|from');
   const income = /\b(you\s*received|received\s*from|cash\s*in|incoming|credited|deposit(?:ed)?|refund(?:ed)?)\b/i.test(text);
   const storeLine = (lines.find(l => /[a-z]{3}/i.test(l) && !/\d{4,}|receipt|invoice|official|tin\b|vat|date|time|cashier|successful|confirmation|transaction|reference|amount|total/i.test(l)) || '').replace(/[^\w&'.\- ]/g, '').trim();
-  const merchant = ((income ? sender : recipient) || storeLine).replace(/[^\w&'.,\- ]/g, '').trim().slice(0, 60);
-  const reason = field(text, 'purpose|reason|note|notes|message|remarks?|description|details|for').slice(0, 120);
+  const merchant = ((income ? sender : recipient) || details.merchantHint || storeLine).replace(/[^\w&'.,\- ]/g, '').trim().slice(0, 60);
+  const reason = (field(text, 'purpose|reason|note|notes|message|remarks?|description|details')
+    || (details.items.length ? details.items.slice(0, 3).map(item => item.name).join(', ') : '')).slice(0, 120);
   const last4 = (text.match(/(?:\*{2,}|x{2,}|•{2,}|ending\s*(?:in)?|acct\.?\s*no\.?\s*[\dx*]*?)\s*(\d{4})\b/i) || [])[1] || '';
   return {
+    ...details,
     amount: Math.round(amount * 100) / 100, fee: feeM ? Math.round(num(feeM[1]) * 100) / 100 : 0,
     merchant, date: findDate(text), time: findTime(text), ref: findReference(text),
     reason, bank: findBank(text), last4, type: income ? 'income' : 'expense',
