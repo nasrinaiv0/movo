@@ -9054,3 +9054,14 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block { padding-bottom: 10px !important; }
 .movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot > .balance-card,
 .movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot :is(.balance-card) { margin-bottom: 0 !important; }
+
+/* ===== Less space at the top of every page (owner, 2026-11-16) =====
+   On phones in the browser and the home-screen web app, pages started 18px below the status bar, and Home's header
+   photo added 10px more before the greeting. The shared base is now 8px, so every page's header (and Home's greeting
+   and buttons) moves up 10px and they stay aligned with each other. Devices with a top safe area still keep at least
+   that inset. The iPhone app (native-chrome), which reserves room for its own glass top bar, and tablet/desktop
+   layouts are unchanged. */
+html:not(.native-chrome) .movo-app:not(.layout-tablet):not(.layout-desktop) .screen { padding-top: max(8px, env(safe-area-inset-top)); }
+html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet):not(.layout-desktop) .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) {
+  --hero-pull: max(8px, env(safe-area-inset-top));
+}

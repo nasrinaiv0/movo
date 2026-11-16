@@ -1,3 +1,7 @@
+## 2026-11-16 — Less space at the top of every page
+
+- On phones in the browser and home-screen web app, every page and Home's header photo start 10 px higher (base 18 px to 8 px). Headers stay aligned across pages. The iPhone app's native top bar and tablet/desktop layouts are unchanged. CSS only. [Details](engineering/updates/2026-11-16-page-top-spacing.md).
+
 ## 2026-11-16 — Home header: less space under Total balance
 
 - The scenery under the Total balance card shrinks from 28 px to 10 px: the card's own bottom margin no longer stacks on the header padding inside the header. CSS only. [Details](engineering/updates/2026-11-16-home-header-bottom-gap.md).
