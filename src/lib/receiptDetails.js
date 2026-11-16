@@ -1,15 +1,23 @@
+import { KNOWN_CURRENCIES } from './fx';
+
 /**
  * Structured, deterministic, on-device receipt extraction. Never infer a purchase
  * from cash tendered, change or tax lines. All values are suggestions for review.
  * Keep this independent of OCR so payments and receipts can share the engine.
  */
-const AMOUNT_AT_END = /(?:₱|PHP\s*)?(-?(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2})\s*$/i;
+const CURRENCY_MARKER = /(?:^|[^A-Z])([A-Z]{3}|US\$|CA\$|AU\$|NZ\$|SG\$|HK\$|NT\$|₱|€|£|₹|₩|฿|₫|₽)\s*$/i;
+const SYMBOL_CURRENCY = { 'US$': 'USD', 'CA$': 'CAD', 'AU$': 'AUD', 'NZ$': 'NZD', 'SG$': 'SGD', 'HK$': 'HKD', 'NT$': 'TWD', '₱': 'PHP', '€': 'EUR', '£': 'GBP', '₹': 'INR', '₩': 'KRW', '฿': 'THB', '₫': 'VND', '₽': 'RUB' };
+const AMOUNT_AT_END = /(-?(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2})(?:\s*([A-Z]{3}))?\s*$/i;
+const currencyCodes = new Set(KNOWN_CURRENCIES);
 const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
 const money = line => {
-  const m = String(line).match(AMOUNT_AT_END);
+  const m = line.match(AMOUNT_AT_END);
   if (!m) return null;
-  const n = Number(m[1].replace(/,/g, ''));
-  return Number.isFinite(n) && Math.abs(n) < 1e12 ? round(n) : null;
+  const value = Number(m[1].replace(/,/g, ''));
+  if (!Number.isFinite(value) || Math.abs(value) >= 1e12) return null;
+  const marker = (m[2] || line.slice(0, m.index).match(CURRENCY_MARKER)?.[1] || '').toUpperCase();
+  const currency = SYMBOL_CURRENCY[marker] || (currencyCodes.has(marker) ? marker : '');
+  return { value: round(value), currency };
 };
 const LABELS = {
   total: /^(?:grand\s*total|(?:eat[\s-]*in|take[\s-]*out|dine[\s-]*in)\s*total|net\s*total|total(?:\s*(?:amount|due|paid|sales))?|amount(?:\s*(?:due|paid|sent|received|transferred))?|you\s*(?:paid|sent|received))\b/i,
@@ -60,23 +68,26 @@ export function parseReceiptDetails(text = '') {
   const values = Object.fromEntries(Object.keys(LABELS).map(key => [key, null]));
   const totalCandidates = [];
   for (const line of lines) {
-    const value = money(line);
-    if (value === null) continue;
+    const parsed = money(line);
+    if (!parsed) continue;
     for (const [key, pattern] of Object.entries(LABELS)) {
       if (!pattern.test(line)) continue;
       // 'Amount tendered' and tax summaries cannot be treated as a purchase total.
       if (key === 'total' && /^(?:amount\s*(?:tendered|given)|total\s*(?:tax|vat|discount))/i.test(line)) continue;
-      if (key === 'total') totalCandidates.push(value);
-      else if (values[key] === null) values[key] = value;
+      if (key === 'total') totalCandidates.push(parsed);
+      else if (values[key] === null) values[key] = parsed.value;
       break;
     }
   }
   // Last printed total is normally the grand total; never substitute tender/change.
-  values.total = totalCandidates.length ? totalCandidates[totalCandidates.length - 1] : null;
+  const printedTotal = totalCandidates[totalCandidates.length - 1];
+  values.total = printedTotal?.value ?? null;
+  const detectedCurrencies = new Set(totalCandidates.map(item => item.currency).filter(Boolean));
+  const currency = detectedCurrencies.size === 1 ? printedTotal.currency : '';
   const items = extractItems(lines);
   const warnings = [];
   if (values.total === null || values.total <= 0) warnings.push('Total not found. Enter the actual amount before logging.');
-  if (totalCandidates.length > 1 && totalCandidates.some(n => Math.abs(n - values.total) > 0.02)) warnings.push('Multiple different totals found. Check the amount.');
+  if (totalCandidates.length > 1 && totalCandidates.some(item => Math.abs(item.value - values.total) > 0.02)) warnings.push('Multiple different totals found. Check the amount.');
   if (values.cashTendered !== null && values.change !== null && values.total !== null
       && Math.abs(round(values.cashTendered - values.change) - values.total) > 0.02)
     warnings.push('Cash, change and total do not match. Check the receipt.');
@@ -94,7 +105,7 @@ export function parseReceiptDetails(text = '') {
   const branch = lines.find(s => /\b(?:restaurant|supermarket|pharmacy|grocery|cafe|coffee\s*shop)\b/i.test(s)
     && !/\b(?:corporation|company|taxpayer|customer|address|branch)\b/i.test(s) && !/\d{4,}/.test(s));
   return {
-    ...values, items, warnings, taxIncluded, paymentMethod,
+    ...values, currency, items, warnings, taxIncluded, paymentMethod,
     merchantHint: branch ? branch.replace(/\s{2,}/g, ' ').slice(0, 80) : '',
   };
 }

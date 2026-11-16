@@ -20,6 +20,8 @@ const accounts=[
   {id:'cash01',name:'Cash pocket',account_type:'cash',currency:'PHP'},
   {id:'card02',name:'BPI credit',account_type:'card',currency:'PHP'},
   {id:'ewallet03',name:'GCash',account_type:'e_wallet',currency:'PHP'},
+  {id:'euro04',name:'EUR wallet',account_type:'e_wallet',currency:'EUR'},
+  {id:'dollar05',name:'USD card',account_type:'card',currency:'USD'},
 ];
 const response={
   merchant:"McDonald's",date:'2026-11-14',time:'02:41:33',currency:'PHP',
@@ -94,4 +96,83 @@ test('a failed log leaves review open for correction and does not claim success'
  expect(onLog).toHaveBeenCalledTimes(1);
  expect(host.textContent).toContain('Log transaction');
  expect(host.textContent).toContain("McDonald's");
+});
+
+
+const changeInput = (node, value) => {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(node, value);
+  node.dispatchEvent(new Event('input', { bubbles: true }));
+};
+const pick = async (label, value) => {
+  const select = [...host.querySelectorAll('select')].find(node =>
+    node.getAttribute('aria-label') === label || node.labels?.[0]?.textContent.startsWith(label));
+  expect(select).toBeTruthy();
+  await act(async () => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); });
+};
+const reviewForeign = async props => {
+  scanReceiptWithAI.mockResolvedValue({ ...response, amount: 12.34, total: 12.34, currency: 'USD', tax: 1.23 });
+  await act(async () => root.render(<ScannerSheet show accounts={accounts} {...props} />));
+  await selectReceipt();
+  await click('Analyze with AI');
+};
+const currentRates = () => ({ live: true, at: Date.now() - 1000, rates: { USD: 1, PHP: 58.6, EUR: 0.93 } });
+const logButton = () => [...host.querySelectorAll('button')].find(button => button.textContent === 'Log transaction');
+
+test('foreign receipts follow the selected account and log the reviewed estimate and original currency once', async () => {
+  const onLog = jest.fn(async () => true);
+  const refreshFx = jest.fn();
+  await reviewForeign({ onLog, fx: currentRates(), refreshFx });
+  await pick('Select payment account', 'ewallet03');
+  expect(host.textContent).toContain('USD 12.34');
+  expect(host.textContent).toContain('PHP 723.12');
+  await pick('Select payment account', 'dollar05');
+  expect(host.textContent).not.toContain('Estimated account amount');
+  await pick('Select payment account', 'euro04');
+  expect(host.textContent).toContain('EUR 11.48');
+  await click('Log transaction');
+  expect(refreshFx).not.toHaveBeenCalled();
+  expect(onLog).toHaveBeenCalledTimes(1);
+  expect(onLog).toHaveBeenCalledWith(expect.objectContaining({ account_id: 'euro04', amount: '11.48' }));
+  expect(onLog.mock.calls[0][0].receipt_note).toMatch(/USD 12.34 → EUR 11.48 · ExchangeRate-API · \d{4}-\d{2}-\d{2} · 0.93 EUR\/USD/);
+  expect(onLog.mock.calls[0][0].note).toContain('VAT/tax 1.23');
+});
+
+test('stale provider rates cannot log; an entered statement amount takes priority and resets with account changes', async () => {
+  const onLog = jest.fn(async () => true);
+  const refreshFx = jest.fn(async () => { throw new Error('offline'); });
+  await reviewForeign({ onLog, fx: { ...currentRates(), at: Date.now() - 172800000 }, refreshFx });
+  await pick('Select payment account', 'card02');
+  expect(refreshFx).toHaveBeenCalledTimes(1);
+  expect(host.textContent).toContain('Rate unavailable');
+  expect(logButton().disabled).toBe(true);
+  const setStatement = async (value) => {
+    await click('Use statement amount');
+    const manual = host.querySelector('.scan-exchange input');
+    await act(async () => changeInput(manual, value));
+  };
+  await setStatement('733.142');
+  expect(logButton().disabled).toBe(true);
+  await act(async () => changeInput(host.querySelector('.scan-exchange input'), '733,14'));
+  expect(logButton().disabled).toBe(false);
+  await pick('Select payment account', 'ewallet03');
+  expect(logButton().disabled).toBe(true);
+  await setStatement('732.25');
+  await click('Log transaction');
+  expect(onLog).toHaveBeenCalledWith(expect.objectContaining({
+    account_id: 'ewallet03', amount: '732.25', receipt_note: expect.stringContaining('USD 12.34 → PHP 732.25 · Statement amount'),
+  }));
+});
+
+test('an unidentified receipt currency must be confirmed before saving', async () => {
+  const onLog = jest.fn(async () => true);
+  scanReceiptWithAI.mockResolvedValue({ ...response, currency: '' });
+  await act(async () => root.render(<ScannerSheet show accounts={accounts} onLog={onLog} />));
+  await selectReceipt();
+  await click('Analyze with AI');
+  await pick('Select payment account', 'cash01');
+  expect(host.textContent).toContain('Choose the currency printed on the receipt.');
+  expect(logButton().disabled).toBe(true);
+  await pick('Receipt currency', 'PHP');
+  await click('Log transaction');
+  expect(onLog).toHaveBeenCalledWith(expect.objectContaining({ account_id: 'cash01', amount: '159' }));
 });
