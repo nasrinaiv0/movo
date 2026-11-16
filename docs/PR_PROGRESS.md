@@ -1,3 +1,9 @@
+## 2026-11-16 — Theme picker: one clean look in Profile and Settings
+
+- Removed the square grey strip behind the Light / Dark / System / Custom tiles (Profile).
+- Each swatch now previews its theme in both modes, and its icon is always visible.
+- The selection is an accent ring with the tick inside the swatch, the same on Profile and Settings → Appearance. [Details](engineering/updates/2026-11-16-theme-picker.md).
+
 ## 2026-11-16 — NasrinAI: Listen and voice input on iPhone, cleaner chat screen
 
 - Listen now:

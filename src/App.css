@@ -9097,3 +9097,40 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
 .movo-app .movo-ai-listen.is-speaking { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-ink, var(--accent)); }
 .movo-app .movo-ai-composer .movo-ai-shortcuts { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 [dir="rtl"] .movo-app .movo-ai-composer .movo-ai-shortcuts { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+
+/* ===== Theme picker in Settings and Profile (owner, 2026-11-16) =====
+   One look wherever the picker appears (Profile → App Appearance, Settings → Appearance). The group has no background
+   (a shared segmented-control rule painted a square grey strip behind the rounded tiles on Profile). Each swatch is a
+   true preview in both themes: Light is light, Dark is near-black, System is split, Custom is the accent. The choice is
+   shown by an accent ring on the swatch with the tick inside its corner, not by a grey tile behind it. The swatch colours
+   are fixed previews, so they are marked important over the shared rule that makes control text inherit its colour. */
+.movo-app.movo-app.movo-app .theme-segments {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(8px, 2.4vw, 12px);
+  padding: 0; margin: 0; border: 0; border-radius: 0; background: transparent !important; box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app.movo-app .theme-segments > button {
+  min-width: 0; gap: 7px; padding: 0 0 2px; border: 0 !important; border-radius: 0; background: transparent !important;
+  box-shadow: none !important; color: var(--muted); font-size: 12.5px; font-weight: 500;
+}
+.movo-app.movo-app.movo-app.movo-app .theme-segments > button::after { display: none; }
+.movo-app.movo-app.movo-app.movo-app .theme-segments > button.selected { color: var(--text); font-weight: 650; }
+.movo-app.movo-app.movo-app .theme-segments .seg-art {
+  position: relative; width: 100%; height: clamp(50px, 14vw, 60px); border-radius: 16px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent);
+  transition: box-shadow 180ms ease-out;
+}
+.movo-app.movo-app.movo-app .theme-segments .seg-light { background: #f4f4f7; color: #1c1c1e !important; }
+.movo-app.movo-app.movo-app .theme-segments .seg-dark { background: #1c1c1e; color: #ffffff !important; }
+.movo-app.movo-app.movo-app .theme-segments .seg-system { background: linear-gradient(135deg, #1c1c1e 50%, #f4f4f7 50%); color: #8e8e93 !important; }
+.movo-app.movo-app.movo-app .theme-segments .seg-custom { background: var(--accent); color: var(--on-accent, #fff) !important; }
+.movo-app.movo-app.movo-app .theme-segments > button.selected .seg-art {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+.movo-app.movo-app.movo-app .theme-segments .check-badge {
+  top: 5px; right: 5px; left: auto; width: 18px; height: 18px; background: var(--accent); color: var(--on-accent, #fff);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, #fff 70%, transparent);
+}
+[dir="rtl"] .movo-app.movo-app.movo-app .theme-segments .check-badge { right: auto; left: 5px; }
+.movo-app.movo-app.movo-app .theme-segments .seg-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app.movo-app.movo-app .theme-segments > button:focus-visible { outline: none; }
+.movo-app.movo-app.movo-app .theme-segments > button:focus-visible .seg-art { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }

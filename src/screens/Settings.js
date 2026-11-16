@@ -41,7 +41,7 @@ export function ThemePicker({ c, compact }) {
     <section className="theme-segments" role="radiogroup" aria-label={tr('App appearance')}>
       {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} role="radio" aria-checked={current === key} className={current === key ? 'selected' : ''}
         onClick={() => (key === 'custom' ? c.setSheet({ name: 'themes' }) : applyTheme(c, key))}>
-        <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} /></span>{tr(label)}{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}
+        <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} />{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}</span><span className="seg-label">{tr(label)}</span>
       </button>)}
     </section>
     <h3 className="mini-title">{compact ? tr('App Theme Color') : tr('Accent Color')}</h3>
