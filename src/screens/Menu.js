@@ -16,6 +16,7 @@ export default function Menu({ c }) {
   const over = budgetList.filter(b => b.level === 'over').length;
   const items = [
 
+    { icon: 'userPlus', tone: 'green', title: 'Friends', sub: tr('Friend requests'), onClick: c.openFriends },
     { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
     { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals'), onClick: () => c.openBudgets('plans') },
     { icon: 'gift', tone: 'green', title: 'Cashback', sub: tr('Rewards and cashback'), onClick: () => go('Cashback') },

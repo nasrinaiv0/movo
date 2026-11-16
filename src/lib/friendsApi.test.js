@@ -79,3 +79,34 @@ test('reads and changes only the signed-in owner photo and rejects an invalid im
   await call('POST', { action: 'set_avatar', photo, ownerId: 'someone else' });
   expect(rpc).toHaveBeenLastCalledWith('movo_friend_social', { p_actor: id, p_action: 'set_avatar', p_data: { photo } });
 });
+
+test('saves only selected dashboard sections and projects nested aggregates', async () => {
+  const result = await call('POST', { action: 'share_summary', connectionId: id, summary: {
+    month: '2026-11', asOf: '2026-11-17', currency: 'PHP', owner: 'forged',
+    sections: { income: 0, flow: [12.126, -50, 100, 0, 0], books: ['private'],
+      planning: { bills: 10, debt: 20, owed: 5, accountId: 'secret' }, budgets: { budgets: 2, onTrack: 1, plans: 1, progress: 60 } },
+  } });
+  expect(result.status).toHaveBeenCalledWith(200);
+  expect(rpc).toHaveBeenLastCalledWith('movo_friend_social', { p_actor: id, p_action: 'share_summary', p_data: {
+    connectionId: id, summary: { month: '2026-11', asOf: '2026-11-17', currency: 'PHP', sections: {
+      income: 0, flow: [12.13, -50, 100, 0, 0], planning: { bills: 10, debt: 20, owed: 5 },
+      budgets: { budgets: 2, onTrack: 1, plans: 1, progress: 60 },
+    } },
+  } });
+  expect((await call('POST', { action: 'share_summary', connectionId: id, summary: {
+    month: '2026-11', asOf: '2026-11-32', currency: 'PHP', sections: { savings: 70 },
+  } })).status).toHaveBeenCalledWith(400);
+});
+
+test('editing a share receives only the authenticated owner’s saved snapshot', async () => {
+  const select = jest.fn().mockReturnThis();
+  const eq = jest.fn().mockReturnThis();
+  const own = { month: '2026-11', currency: 'PHP', sections: { income: 0 } };
+  const from = jest.fn().mockReturnValue({ select, eq, maybeSingle: async () => ({ data: { snapshot: own } }) });
+  createClient.mockImplementation(() => ({ rpc, auth: { getUser }, from }));
+  rpc.mockResolvedValueOnce({ data: { sharedWithYou: null, yourShare: true } });
+  const result = await call('POST', { action: 'summary', connectionId: id, ownerId: 'forged' });
+  expect(from).toHaveBeenCalledWith('movo_friend_summaries');
+  expect(eq.mock.calls).toEqual([['connection_id', id], ['owner_id', id]]);
+  expect(result.json).toHaveBeenCalledWith({ sharedWithYou: null, yourShare: true, yourSummary: own });
+});
