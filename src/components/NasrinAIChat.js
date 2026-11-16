@@ -1,4 +1,4 @@
-import { startDeviceSpeech } from '../lib/deviceSpeech';
+import { startDeviceSpeech, setAudioSessionType } from '../lib/deviceSpeech';
 import { usePlan } from '../lib/PlanContext';
 import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
@@ -89,6 +89,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [listening, setListening] = useState(false);
   const [attaching, setAttaching] = useState(false);
   const [speaking, setSpeaking] = useState(-1);
+  // The iPhone's level meter can read pure silence after the mic starts; then voice falls back to tap-to-finish.
+  const [voiceManual, setVoiceManual] = useState(false);
   const recognition = useRef(null);
   const fileRef = useRef(null);
   const [newConversationPending, setNewConversationPending] = useState(() => {
@@ -374,7 +376,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const controller = startDeviceSpeech(plain(text).slice(0, 1800), {
       language: getLanguage().code || navigator.language || 'en-US',
       onEnd: end,
-      onError: () => { end(); setError(tr('Speech playback was blocked. Tap Listen to try again.')); }
+      onError: () => { end(); setError(tr('Couldn’t play the reply. Turn off silent mode or raise the volume, then try again.')); }
     });
     if (!controller) { end(); setError(tr('Speech playback is not available on this device.')); return; }
     deviceSpeechRef.current = controller;
@@ -403,9 +405,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const stopVoice = () => {
     // Keep the final clip eligible for STT even after the user taps Stop.
     finalSegmentRef.current = recorderRef.current?.state === 'recording';
-    voiceRef.current = false; setListening(false);
+    voiceRef.current = false; setListening(false); setVoiceManual(false);
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
+    setAudioSessionType('auto');
     try { recorderRef.current?.stop?.(); } catch { /* already stopped */ }
     recorderRef.current = null;
     streamRef.current?.getTracks?.().forEach((track) => track.stop());
@@ -471,7 +474,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       streamRef.current = stream;
       const context = audioContextRef.current;
       if (!context || typeof MediaRecorder === 'undefined') throw new Error('voice_not_supported');
-      if (context.state === 'suspended') await context.resume().catch(() => {});
+      // iOS can leave the context 'interrupted' (not just 'suspended') once the microphone starts.
+      if (context.state !== 'running') await context.resume().catch(() => {});
       const source = context.createMediaStreamSource(stream);
       const analyser = context.createAnalyser();
       analyser.fftSize = 1024; source.connect(analyser);
@@ -480,6 +484,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       let chunks = [];
       let segmentStart = 0;
       let peakRms = 0;
+      let deadFrames = 0;
+      let manual = false;
       const beginSegment = () => {
         if (!voiceRef.current || recorder?.state === 'recording') return;
         const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
@@ -510,8 +516,18 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         if (!voiceRef.current) return;
         analyser.getByteTimeDomainData(samples);
         let sum = 0;
-        for (let i = 0; i < samples.length; i += 1) { const v = (samples[i] - 128) / 128; sum += v * v; }
+        let flat = true;
+        for (let i = 0; i < samples.length; i += 1) { if (samples[i] !== 128) flat = false; const v = (samples[i] - 128) / 128; sum += v * v; }
         const rms = Math.sqrt(sum / samples.length);
+        // A real microphone is never perfectly flat. About 1.5 s of exact zeros means the meter is not receiving the
+        // mic (seen on iPhone): keep recording and let the person tap the mic when they are done.
+        if (!manual) {
+          deadFrames = flat ? deadFrames + 1 : 0;
+          if (deadFrames > 90 && !heardSpeechRef.current) {
+            manual = true; setVoiceManual(true);
+            if (context.state !== 'running') context.resume().catch(() => {});
+          }
+        }
         peakRms = Math.max(peakRms, rms);
         const now = Date.now();
         // A short burst during TTS may be speaker echo. Require sustained, louder
@@ -528,7 +544,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
           if (!heardSpeechRef.current) speechStartRef.current = now;
           heardSpeechRef.current = true; lastVoiceAtRef.current = now;
         }
-        if (recorder?.state === 'recording') {
+        if (recorder?.state === 'recording' && manual) {
+          // Tap-to-finish: one clip until the mic is tapped, sent every 55 s so long dictation is not lost.
+          if (now - segmentStart > 55000) { heardSpeechRef.current = true; recorder.stop(); }
+        } else if (recorder?.state === 'recording') {
           // Speech ends after a short pause (or 12 s of talking); silent stretches are discarded every 8 s so the
           // next sentence is not cut short or sent with a minute of silence in front of it.
           if (heardSpeechRef.current ? (now - lastVoiceAtRef.current > 950 || now - speechStartRef.current > 12000) : now - segmentStart > 8000) recorder.stop();
@@ -558,6 +577,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     // device voice, before the first await.
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) { setError(tr('Model-backed voice input is not supported in this browser.')); return; }
+    // A call-style audio session records and speaks even with the iPhone silent switch on (Safari/iOS 16.4+).
+    setAudioSessionType('play-and-record');
     try {
       const context = new AudioContextClass();
       context.resume?.().catch?.(() => {});
@@ -584,24 +605,28 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   }, []);
 
   const speak = (text, index) => {
+    const release = () => { if (!voiceRef.current) setAudioSessionType('auto'); };
     if (speaking === index) {
       listenSpeechRef.current?.cancel?.();
       listenSpeechRef.current = null;
       setSpeaking(-1);
+      release();
       return;
     }
     listenSpeechRef.current?.cancel?.();
     setError('');
+    // Media playback, not ambient sound: the iPhone silent switch would otherwise mute the reply.
+    if (!voiceRef.current) setAudioSessionType('playback');
     const controller = startDeviceSpeech(text, {
       language: getLanguage().code || navigator.language || 'en-US',
-      onEnd: () => { listenSpeechRef.current = null; setSpeaking(-1); },
+      onEnd: () => { listenSpeechRef.current = null; setSpeaking(-1); release(); },
       onError: () => {
-        listenSpeechRef.current = null; setSpeaking(-1);
-        setError(tr('Speech playback was blocked. Check your device volume and tap Listen again.'));
+        listenSpeechRef.current = null; setSpeaking(-1); release();
+        setError(tr('Couldn’t play the reply. Turn off silent mode or raise the volume, then try again.'));
       }
     });
     if (!controller) {
-      setSpeaking(-1);
+      setSpeaking(-1); release();
       setError(tr('Speech playback is not available on this device.'));
       return;
     }
@@ -662,9 +687,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         <span className="movo-ai-message-label">{tr('NasrinAI')}</span>
         <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} onLogAnyway={(row) => logAnyway(index, row)} onView={onViewLog} />
       </article> : <article key={index} className={'movo-ai-message ' + message.role}>
-        <span className="movo-ai-message-label">{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
+        <span className={'movo-ai-message-label' + (message.role === 'user' ? ' sr-only' : '')}>{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
-        {message.role === 'assistant' && typeof window !== 'undefined' && window.speechSynthesis && <button type="button" className="movo-ai-listen" onClick={() => speak(message.content, index)} aria-label={speaking === index ? tr('Stop reading aloud') : tr('Read aloud')}><Icon name={speaking === index ? 'stop' : 'speaker'} size={14} strokeWidth={2} />{speaking === index ? tr('Stop') : tr('Listen')}</button>}
+        {message.role === 'assistant' && typeof window !== 'undefined' && window.speechSynthesis && <button type="button" className={`movo-ai-listen${speaking === index ? ' is-speaking' : ''}`} onClick={() => speak(message.content, index)} aria-label={speaking === index ? tr('Stop reading aloud') : tr('Read aloud')}><Icon name={speaking === index ? 'stop' : 'speaker'} size={14} strokeWidth={2} />{speaking === index ? tr('Stop') : tr('Listen')}</button>}
       </article>)}
       {busy && <div className="movo-ai-thinking" role="status"><span className="movo-ai-thinking-orb" aria-hidden="true"><NasrinMark size={22} state={phase} /></span><span key={phase} className="movo-ai-thinking-label">{tr(PHASE_LABELS[phase])}</span></div>}
       <div ref={endRef} />
@@ -680,7 +705,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         </div>}
         <label className="sr-only" htmlFor="movo-ai-prompt">{tr('Message NasrinAI')}</label>
         {/* Enter starts a new line; only the send button sends. */}
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? tr('Listening — pause briefly to transcribe') : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? (voiceManual ? tr('Listening — tap the mic when you’re done') : tr('Listening — pause briefly to transcribe')) : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
         <div className="movo-ai-composer-bar">
           <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
           <span className="movo-ai-composer-gap" />

@@ -1,3 +1,13 @@
+## 2026-11-16 — NasrinAI: Listen and voice input on iPhone, cleaner chat screen
+
+- Listen now:
+  - no longer cancels and speaks in the same moment (WebKit dropped it);
+  - asks for a playback audio session so the silent switch does not mute it;
+  - falls back to an English voice when the app language has none;
+  - retries once, then explains, instead of staying silent.
+- Voice input resumes an "interrupted" audio context, and switches to tap-to-finish when the iPhone level meter reads only silence.
+- Chat UI: a backdrop behind the composer and tab bar, a fade under the status bar, filled reply cards, no visible "You" label, a lighter Listen chip, and fading shortcut chips. [Details](engineering/updates/2026-11-16-nasrinai-voice-and-chat-ui.md).
+
 ## 2026-11-16 — Less space at the top of every page
 
 - On phones in the browser and home-screen web app, every page and Home's header photo start 10 px higher (base 18 px to 8 px). Headers stay aligned across pages. The iPhone app's native top bar and tablet/desktop layouts are unchanged. CSS only. [Details](engineering/updates/2026-11-16-page-top-spacing.md).
