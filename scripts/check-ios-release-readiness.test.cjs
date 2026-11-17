@@ -54,3 +54,14 @@ test('requires a reproducible signed TestFlight pipeline', () => {
   changed.codemagic = changed.codemagic.replace('npm@11.19.1 ci', 'npm install');
   assert.throws(() => checkReleaseContract(changed), /Signed TestFlight pipeline/);
 });
+
+test('rejects an unrelated Watch bundle or iPhone companion', () => {
+  const wrongWatch = fixture();
+  wrongWatch.project = wrongWatch.project.replace('PRODUCT_BUNDLE_IDENTIFIER = com.nasrinai.movo.watchkitapp;',
+    'PRODUCT_BUNDLE_IDENTIFIER = com.example.watchkitapp;');
+  assert.throws(() => checkReleaseContract(wrongWatch), /Watch bundle IDs/);
+  const wrongCompanion = fixture();
+  wrongCompanion.project = wrongCompanion.project.replace('INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasrinai.movo;',
+    'INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.example.movo;');
+  assert.throws(() => checkReleaseContract(wrongCompanion), /iPhone companion/);
+});

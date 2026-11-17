@@ -28,6 +28,22 @@
 - Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
 - NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
 
+## 2026-11-16 — PR #280 conflict resolution
+
+- Integrated main `77bcacc`. Kept Wear quick-log and build targets alongside the isolated Android auth build, Friends, and legacy WebView URL parsing. Wear URLs still open only a blank phone form.
+- iOS CI exposed a phone-only distribution check. The corrected check verifies phone and Watch bundle identities, rejects mismatched companions, and preserves the existing iPhone release checks.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-280-main-conflicts.md).
+
+## 2026-11-12 — Wear OS and Apple Watch compatibility companion branch
+
+- Scope: separate Android Wear OS :wear AAB, embedded SwiftUI watchOS companion target, and privacy-first Quick Log handoff to the existing phone form. No raw watch finance API, payment, auth token, account, bank logo/favicons or transaction content.
+- Phone-side implementation: strict Android movo://wear-log deep link allowlist, iOS WatchConnectivity fixed-action receiver and one-shot native bridge; requests wait for setup, auth readiness, phone unlock and absence of another sheet. All writes remain manual and phone-side.
+- New test gates: watch manifest/security contract, Jest deep-link abuse tests, unsigned Android Wear debug/release bundle compile, unsigned watchOS Simulator compile. Manual paired watches and store packaging/signing remain release blockers.
+- Documentation: docs/engineering/updates/2026-11-12-wearable-companions.md and docs/wearable-compatibility-2026-11-12.md.
+- No production changes or migration. PR is review-only and must not auto-merge until all native builds and physical device tests pass.
+
+- **2026-11-12 PR #280 CI fix (pre-merge):** Android and hybrid regression checks executed 203 suites / 1,235 tests. 1,234 passed; the only failing check was the prior Android manifest contract asserting exactly two allowable `movo://` hosts. Updated this test to explicitly enumerate exactly `auth-callback`, `log`, and `wear-log`, including VIEW/DEFAULT/BROWSABLE safety requirements. This is a test correction; no production code change. iOS/native and preview still require exact-head verification.
+
 ## 2026-11-16 — Profile page: clearer overview and consistent rows
 
 - One Overview card names the month chosen on Home, shows the total balance large, then that month's income and expenses. Trends appear only when meaningful (no "999+%").
