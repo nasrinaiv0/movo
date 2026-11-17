@@ -23,15 +23,17 @@ test('Pro wears the gold MOVO logo, Pro+ the platinum one, the free month the wh
 test('renders the toned MOVO mark with an accessible name', () => {
   const pro = render(<PlanBadge plan="pro" />);
   const mark = pro.node.querySelector('.plan-badge-mark.tone-gold');
-  expect(mark.getAttribute('aria-label')).toBe('Gold · Pro');
+  // The badge says the plan only (owner, 2026-11-16); the gold tile colour stays.
+  expect(mark.getAttribute('aria-label')).toBe('Pro');
   expect(fills(pro.node)).toContain('#e3b04a');
   pro.cleanup();
   const plus = render(<PlanBadge plan="pro_plus" label />);
   expect(plus.node.querySelector('.tone-platinum')).not.toBeNull();
-  expect(plus.node.textContent).toContain('Platinum');
+  expect(plus.node.textContent).toBe('Pro+');
   plus.cleanup();
-  const trial = render(<PlanBadge plan="pro" trial />);
+  const trial = render(<PlanBadge plan="pro" trial label />);
   expect(trial.node.querySelector('.tone-white')).not.toBeNull();
+  expect(trial.node.textContent).toBe('ProFree month');
   trial.cleanup();
   const free = render(<PlanBadge plan="free" label />);
   expect(free.node.innerHTML).toBe('');

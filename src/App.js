@@ -1,5 +1,7 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
-import FriendsSheet from './components/FriendsSheet';
+import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
+import FriendFinanceSummary from './components/FriendFinanceSummary';
+import NavTierDefs from './components/NavTierDefs';
 import { captureFriendInvite, saveFriendInvite } from './lib/friends';
 import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
 import { listOwnerSyncOperations, acknowledgeReconciledWorkspace, approveHybridOperations } from './lib/hybridLocalStore';
@@ -28,7 +30,7 @@ import { flushSync } from 'react-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
-import { Sheet } from './components/ui';
+import { Sheet, SubHeader } from './components/ui';
 import ReconnectSyncPrompt from './components/ReconnectSyncPrompt';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
@@ -49,6 +51,7 @@ import LoggedBurst from './components/LoggedBurst';
 import { useLayout } from './lib/layout';
 import { markFresh } from './lib/freshRecords';
 import { answerLocally } from './lib/localAnswer';
+import { buildChatChart, chartSummary, CHART_PROMPTS } from './lib/chatCharts';
 import { updateStreak, newlyEarned } from './lib/streak';
 import { MovoMark } from './components/MovoLogo';
 import { findDuplicate, refOf } from './lib/duplicates';
@@ -173,16 +176,16 @@ export function contrastTextForAccent(hex) {
 const logStamp = (t) => Date.parse(t.created_at || t.occurred_at || t.date || '') || 0;
 const dupText = (d) => tr('Already logged: {merchant} · {amount} on {date}.', { merchant: d.merchant, amount: money(d.amount, d.currency), date: formatDate(d.occurred_at, { month: 'short', day: 'numeric' }, 'md') });
 const DEFAULTS = {
-  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true,
+  theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true, iconColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, autoSyncOnReconnect: false, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'auto', cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'plain', homeHeroDefaultNone: true, cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
-const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Friends: 'Menu', FriendSummary: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
 const SETUP_SCREENS = new Set(['Home', 'Sign in', 'TermsOfService', 'PrivacyPolicy']);
 const SETUP_READING = new Set(['Sign in', 'TermsOfService', 'PrivacyPolicy']);
-const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Friends: 2, FriendSummary: 3, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', creditLimit: '', owedNow: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
@@ -192,6 +195,9 @@ function readPrefs() {
   try {
     const stored = JSON.parse(localStorage.getItem(PREF));
     if (stored) return { ...DEFAULTS, onboarded: true, ...stored,
+      // The Home header photo is off by default (owner, 2026-11-16): an earlier default ('auto') becomes None once;
+      // a photo, zodiac or glow someone chose is kept, and any of them can be turned on again in Appearance.
+      ...(stored.homeHeroDefaultNone ? {} : { homeHero: !stored.homeHero || stored.homeHero === 'auto' ? 'plain' : stored.homeHero, homeHeroDefaultNone: true }),
       ...(isNativeApp() ? { autoLogKey: nativeAutomationKey() } : {}),
     }; // people who already used MOVO skip the first-run tour
     const old = JSON.parse(localStorage.getItem(OLD_PREF)) || {};
@@ -1216,9 +1222,11 @@ function App() {
   // Counts the days MOVO is used (device only) for the Rate MOVO timing.
   useEffect(() => { if (setupDone) writeReviewState(noteActiveDay(readReviewState(), todayKey)); }, [setupDone, todayKey]);
   setupDoneRef.current = setupDone;
+  const [selectedFriend, setSelectedFriend] = useState(null);
   const go = useCallback((next, params = {}) => {
     if (!setupDoneRef.current && !SETUP_SCREENS.has(next)) return;
     if (params.filter) setTxFilter(params.filter);
+    if (next === 'FriendSummary' && params.friend) setSelectedFriend(params.friend);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
     // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
@@ -1229,7 +1237,7 @@ function App() {
     }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
-    if (edgeSwipeOnRef.current && prev !== next && typeof document !== 'undefined') {
+    if (edgeSwipeOnRef.current && prev !== next && prev !== 'FriendSummary' && prev !== 'Friends' && typeof document !== 'undefined') {
       const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
       if (main) {
         snaps.delete(prev);
@@ -2033,6 +2041,10 @@ function App() {
     if (top) lines.push(tr('Most went to {category} ({amount}).', { category: tr(top), amount: shown(show, money(topAmount)) }));
     return lines.join('\n\n');
   };
+  const localChart = (q) => {
+    const chart = buildChatChart(q, { txs, budgets: budgetList, locale: lang.locale });
+    return chart ? { chart, text: chartSummary(chart, (v) => shown(show, money(v)), tr) } : null;
+  };
   const localAnswer = (q) => answerLocally(q, { txs, accounts: accountsView.map(a => ({ ...a, baseBalance: toBase ? toBase(a.balance, a.currency) : a.balance })), budgets: budgetList, upcoming: subSummary.upcoming || [], fmt: (v) => shown(show, money(v)) });
   const chatShortcuts = [
     { id: 'expense', icon: 'minus', label: 'Expense', run: () => openForm('expense') },
@@ -2041,6 +2053,8 @@ function App() {
     { id: 'scan', icon: 'scan', label: 'Scan receipt', run: () => setSheet({ name: can('receiptScan') ? 'scanner' : 'planOffer', feature: 'receiptScan' }) },
     { id: 'today', icon: 'calendar', label: 'Today', say: () => chatSummary('today') },
     { id: 'month', icon: 'chart', label: 'This month', say: () => chatSummary('month') },
+    { id: 'spendChart', icon: 'planning', label: 'Spending chart', draw: () => localChart(CHART_PROMPTS.categories) },
+    { id: 'flowChart', icon: 'chart', label: 'Income vs expenses', draw: () => localChart(CHART_PROMPTS.flow) },
     { id: 'budgets', icon: 'target', label: 'Budgets', run: () => setSheet({ name: 'budgets', tab: 'budgets' }) },
     { id: 'renewals', icon: 'clock', label: 'Renewals', run: () => go('Subscriptions') },
     { id: 'activity', icon: 'list', label: 'Transactions', run: () => go('Transactions') },
@@ -2631,8 +2645,9 @@ function App() {
 
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
+  const openFriendSummary = friend => go('FriendSummary', { friend: { ...friend, owner: friendIdentity } });
   const c = {
-    openFriends: () => setSheet({ name: 'friends', invite: friendInvite }),
+    openFriends: () => go('Friends'),
     saveProfilePhoto: profilePhoto.savePhoto,
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
@@ -2705,7 +2720,7 @@ function App() {
   // Bottom navigation accent (owner, 2026-11-11): Pro+ shows platinum and Pro gold by default; Settings → Appearance
   // can switch it back to the app accent. Only a server-verified paid plan counts; the free month keeps the app accent.
   const navTier = prefs.navAccent !== 'app' && entitlement?.source !== 'trial' ? ({ pro_plus: 'platinum', pro: 'gold' }[subscriptionPlan] || '') : '';
-  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
+  const rootClass = `movo-app plan-${plan}${navTier ? ` nav-tier-${navTier}` : ''} theme-${resolved}${tint ? ` tint-${tint}` : ''} accent-${accentName}${prefs.glass ? ' glass-on' : ''}${prefs.compact ? ' compact' : ''}${prefs.categoryColors ? '' : ' no-category-colors'}${prefs.iconColors === false ? ' no-icon-colors' : ''}${scenery ? ' has-scenery' : ''} layout-${layout.mode}${layout.dual ? ' layout-dual' : ''}${nativePlatform() === 'android' ? ' platform-android' : ''}`;
   const activeTab = ROOT_FOR[view];
   const navIdx = NAV.findIndex(n => n[2] === activeTab);
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
@@ -2737,6 +2752,15 @@ function App() {
       case 'Archive': return <Archive c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
+      case 'Friends': return <>
+        <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
+        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} onSignIn={() => go('Sign in')}
+          onOpenSummary={openFriendSummary} /></div>
+      </>;
+      case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
+        ? <FriendFinanceSummary key={`${friendIdentity}:${selectedFriend.id}`} friend={selectedFriend} session={session}
+          c={c} finance={{ months, statsFor, breakdownFor, budgets, currency: base }} onClose={() => goBack('Friends')} />
+        : <SubHeader title={tr('Summary')} onBack={() => goBack('Friends')} />;
       case 'Menu': return <Menu c={c} />;
       case 'Subscriptions': return <Subscriptions c={c} />;
       case 'EditProfile': return <EditProfile c={c} />;
@@ -2748,7 +2772,7 @@ function App() {
       case 'TermsOfService': return <TermsOfService c={c} />;
       case 'PrivacyPolicy': return <PrivacyPolicy c={c} />;
       case 'HelpCenter': return <HelpCenter c={c} />;
-      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode || deviceCopyAccess} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} shortcuts={chatShortcuts} show={show} />;
+      case 'NasrinAI': return <NasrinAIChat session={session} cloudMode={cloudMode || deviceCopyAccess} onOpenLegal={openLegal} onSignIn={() => go('Sign in')} onLog={can('fullAI') ? logFromChat : undefined} onUndoLog={undoChatLog} onViewLog={openTx} onLocalAnswer={localAnswer} onLocalChart={localChart} shortcuts={chatShortcuts} show={show} />;
       case 'Sign in': return <AuthPanel key={authMode} initialMode={authMode} onOpenLegal={openLegal} onAuthenticated={() => { go('Home'); }} onContinueLocally={() => { go('Home'); notify(tr('Continuing in local-only mode.')); }} />;
       default: return <Home c={c} />;
     }
@@ -2768,13 +2792,7 @@ function App() {
       </main>
 
       <div className={`bottom-fade${view === 'NasrinAI' ? ' chat' : ''}`} aria-hidden="true" />
-      {navTier && <svg className="nav-tier-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>
-          {/* Fills for the active bottom-nav icon in the plan colour (owner, 2026-11-11): the icon itself turns
-              platinum or gold; the sliding highlight keeps its usual look. One set per theme for contrast. */}
-          {[['plat-dark', ['#f6f7f9', '#f1d3e2', '#cdeef2', '#f3e7c8', '#ddd6f1', '#eceff2']], ['plat-light', ['#5f6c79', '#9a6f8a', '#3f8a98', '#8e7b4c', '#6f6a97', '#4c5a68']],
-            ['gold-dark', ['#fbe39a', '#f0c766', '#d39b2e', '#f6d47e']], ['gold-light', ['#c99a35', '#a87618', '#8a5f10', '#b98a2a']]].map(([id, stops]) =>
-            <linearGradient key={id} id={`movo-nav-${id}`} x1="0" y1="0" x2="1" y2="1">{stops.map((c, i) => <stop key={i} offset={`${(i / (stops.length - 1)) * 100}%`} stopColor={c} />)}</linearGradient>)}
-        </defs></svg>}
+      {navTier && <NavTierDefs />}
       {layout.mode === 'phone' ? <nav className={`bottom-nav${setupDone ? '' : ' is-locked'}`} aria-label={tr('Main navigation')} aria-disabled={setupDone ? undefined : 'true'}>
         <span className={`nav-pill${activeTab === 'NasrinAI' ? ' hidden' : ''}`} aria-hidden="true" style={{ '--idx': pillIdx }} />
         {NAV.map(([label, icon, target]) => {
@@ -2873,8 +2891,9 @@ function App() {
       </Sheet>}
 
       {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
-        inviteToken={sheet.invite} finance={{ months, statsFor, breakdownFor, currency: base }} onClose={() => { clearFriendInvite(); setSheet(null); }}
-        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite} />}
+        inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
+        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
+        onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <LanguageSheet value={prefs.language || ''} onClose={() => setSheet(null)}
         onPick={code => { setPref('language', code); setSheet(null); }} />}
