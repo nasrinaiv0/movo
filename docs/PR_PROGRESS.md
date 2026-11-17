@@ -1,3 +1,14 @@
+## 2026-11-17 — Smoother on budget Android phones and iPhones; camera and voice on every Android device
+
+- Scrolling no longer hitches.
+  - Every App render rewrote `<html lang/dir>`, which restyled the whole page.
+  - Cards and chips no longer blur the plain page colour. The pixels are identical, and there are 11–15 fewer GPU layers per screen.
+  - Date keys are about 15× faster.
+- Budget Android profile, worst scroll frame: 283 → 83 ms on Home and 233 → 50 ms on Wallet. iPhone-size profile: all three screens about 60 fps.
+- iOS allows 120 Hz on ProMotion iPhones.
+- Android now declares camera and microphone (asked only on use; optional hardware), so receipt scanning and voice work there as on iOS.
+- Play re-scores DEX optimisation (#308) after a new bundle is uploaded. [Details](engineering/updates/2026-11-17-smoothness-all-devices.md).
+
 ## 2026-11-17 — PR #309 brought up to date with main
 
 - Production already has this PR's referral migration, so no new database change is needed. Profile keeps `main`'s layout. Terms keep the referral-points section. Terms and Privacy are effective November 19, 2026. [Details](engineering/updates/2026-11-17-pr-309-main-integration.md).

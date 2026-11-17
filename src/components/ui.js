@@ -90,7 +90,11 @@ export function Chips({ items, value, onChange, trailing, label }) {
     const rowEl = row.current;
     const measure = () => {
       const el = rowEl?.querySelector('button[data-chip][aria-pressed="true"]');
-      if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+      if (!el) return;
+      const next = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
+      // Keep the same state when nothing moved (the first ResizeObserver call always repeats the measurement), so
+      // opening a screen does not render and lay out the row twice.
+      setInd(cur => (cur && cur.left === next.left && cur.top === next.top && cur.width === next.width && cur.height === next.height ? cur : next));
     };
     measure();
     if (!rowEl || typeof ResizeObserver === 'undefined') return undefined;

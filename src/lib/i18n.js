@@ -50,8 +50,11 @@ export function setLanguage(code) {
   if (next.code !== current.code) dict = next.code === 'en' || next.preview ? null : readCache(next.code);
   current = next;
   if (typeof document !== 'undefined') {
-    document.documentElement.lang = current.code;
-    document.documentElement.dir = current.dir;
+    // Called on every App render: write only real changes. Any write to <html lang/dir>, even of the same value,
+    // makes the browser restyle the whole page (about 30 ms on a budget Android phone, so scrolling hitched).
+    const html = document.documentElement;
+    if (html.lang !== current.code) html.lang = current.code;
+    if (html.dir !== current.dir) html.dir = current.dir;
   }
   return current;
 }

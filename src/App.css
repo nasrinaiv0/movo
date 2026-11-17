@@ -9406,3 +9406,12 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
    Settings → Appearance → Display & Layout → "Colour-coded icons" (pref iconColors). Off: the Menu tool tiles and the
    Profile row tiles turn a neutral grey; their shape stays. */
 .movo-app.no-icon-colors :is(.menu-tile-icon, .pf-ic) { --mt: #8e8e93 !important; }
+
+/* ===== Smoothness on every phone: no backdrop blur where nothing shows through (2026-11-17) =====
+   Cards and chips sit on the plain page colour unless a scenery photo or a Home header banner is behind them. Blurring
+   a flat colour looks the same as not blurring it (measured: the same pixels in light, dark and every tint), but each
+   blurred card is a separate GPU layer redrawn while scrolling, 10-15 per screen. The floating dock, the scrolled header,
+   sheets and anything over a scenery or banner keep their real glass. */
+.movo-app:not(.has-scenery) :is(.card, .chip-row > button):not(.home-hero-block *) {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}

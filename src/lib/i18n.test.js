@@ -23,6 +23,23 @@ test('loads a language, translates with placeholders, falls back to English and 
   expect(document.documentElement.dir).toBe('ltr');
 });
 
+test('re-applying the same language leaves <html lang> and <html dir> untouched (no full-page restyle)', async () => {
+  setLanguage('ar');
+  const records = [];
+  const observer = new MutationObserver(list => records.push(...list));
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'dir'] });
+  setLanguage('ar');
+  setLanguage('ar');
+  await Promise.resolve();
+  expect(records).toHaveLength(0);
+  setLanguage('en');
+  await Promise.resolve();
+  expect(records.map(r => r.attributeName).sort()).toEqual(['dir', 'lang']);
+  expect(document.documentElement.lang).toBe('en');
+  expect(document.documentElement.dir).toBe('ltr');
+  observer.disconnect();
+});
+
 test('every added language has offline preview text, a safe locale and an English fallback', async () => {
   expect(LANGUAGES).toHaveLength(97);
   const added = LANGUAGES.filter(language => language.preview);
