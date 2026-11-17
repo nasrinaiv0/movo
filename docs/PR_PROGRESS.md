@@ -1,3 +1,29 @@
+## 2026-11-16 — PR #308 conflict resolution
+
+- Integrated main `77bcacc`. Retained the Android release optimization and the main progress history.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-308-main-conflicts.md).
+
+## 2026-11-16 — Android release optimization for Google Play bundle 11
+
+- Play Console reports 0% DEX optimization, 93% obfuscation, 92% code shrinking, R8 full mode, and 16 KB page-size support. The release configuration uses the legacy Android rules file with `-dontoptimize`. The screenshot cuts off the total uncompressed DEX size.
+- Use the optimized R8 rules, enable resource shrinking and the optimized resource shrinking pipeline, and explicitly enable class repackaging with AGP 8.13.0. Keep the Capacitor and MOVO native bridge rules for reflected classes and methods. Leave native packaging and signing settings in place. AGP 9 is a separate toolchain migration.
+- Precommit verification: a Python diff check verified optimization flags, preserved bridge rules, and isolated the app changes to its release build type. Verify the Android native and disposable-key AAB builds in PR CI. After review, generate a signed AAB from `main` with a version code greater than every code already uploaded. In Play Internal testing, compare the DEX size and all three DEX percentages, the R8 configuration flags, and 16 KB support against bundle 11. Run the Play-delivered build on Android and check Google and email sign-in, sign-in after restart, receipt scanning, notifications, and Play license-test purchase and restore before promotion.
+- Phase 1 CI on the initial head stopped at the per-commit documentation check. The revised commit includes this entry and the [dated engineering update](engineering/updates/2026-11-16-android-release-r8-optimization.md).
+- Open PRs reviewed during preparation: #274, #280, #290, #291, #294, #295, #296, #297, #299, #305, and #306. This change is scoped to optimization and release validation.
+## 2026-11-17 — PR #315 brought up to date with main after #314
+
+- #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
+
+## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
+
+- The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
+- Settings → Appearance → "Colour-coded icons" turns the Menu and Profile icon colours on or off. The friend page drops the sharing-status chips under the name. [Details](engineering/updates/2026-11-17-nav-foil-icon-colours-friend-header.md).
+
+## 2026-11-16 — Glass pop-ups, friend page, offline chat charts, Pro/Pro+ badges, no header by default, Aries shadow
+
+- Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
+- NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
+
 ## 2026-11-16 — PR #280 conflict resolution
 
 - Integrated main `77bcacc`. Kept Wear quick-log and build targets alongside the isolated Android auth build, Friends, and legacy WebView URL parsing. Wear URLs still open only a blank phone form.
@@ -13,19 +39,6 @@
 - No production changes or migration. PR is review-only and must not auto-merge until all native builds and physical device tests pass.
 
 - **2026-11-12 PR #280 CI fix (pre-merge):** Android and hybrid regression checks executed 203 suites / 1,235 tests. 1,234 passed; the only failing check was the prior Android manifest contract asserting exactly two allowable `movo://` hosts. Updated this test to explicitly enumerate exactly `auth-callback`, `log`, and `wear-log`, including VIEW/DEFAULT/BROWSABLE safety requirements. This is a test correction; no production code change. iOS/native and preview still require exact-head verification.
-## 2026-11-17 — PR #315 brought up to date with main after #314
-
-- #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
-
-## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
-
-- The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
-- Settings → Appearance → "Colour-coded icons" turns the Menu and Profile icon colours on or off. The friend page drops the sharing-status chips under the name. [Details](engineering/updates/2026-11-17-nav-foil-icon-colours-friend-header.md).
-
-## 2026-11-16 — Glass pop-ups, friend page, offline chat charts, Pro/Pro+ badges, no header by default, Aries shadow
-
-- Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
-- NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
 
 ## 2026-11-16 — Profile page: clearer overview and consistent rows
 
