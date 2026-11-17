@@ -1,5 +1,6 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
-import FriendsSheet from './components/FriendsSheet';
+import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
+import FriendFinanceSummary from './components/FriendFinanceSummary';
 import NavTierDefs from './components/NavTierDefs';
 import { captureFriendInvite, saveFriendInvite } from './lib/friends';
 import { recoverHybridWorkspace, persistHybridLocalRows, persistHybridLocalImport } from './lib/hybridWorkspaceRecovery';
@@ -29,14 +30,13 @@ import { flushSync } from 'react-dom';
 import './App.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
-import { Sheet } from './components/ui';
+import { Sheet, SubHeader } from './components/ui';
 import ReconnectSyncPrompt from './components/ReconnectSyncPrompt';
 import Home from './screens/Home';
 import Wallet from './screens/Wallet';
 import ScheduledDuePrompt from './components/ScheduledDuePrompt';
 import Transactions from './screens/Transactions';
 import Profile, { EditProfile } from './screens/Profile';
-import FriendProfile from './screens/FriendProfile';
 import Menu from './screens/Menu';
 import Subscriptions from './screens/Subscriptions';
 import { BriefingSheet } from './components/Briefing';
@@ -180,11 +180,11 @@ const DEFAULTS = {
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
   accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'plain', homeHeroDefaultNone: true, cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
-const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', FriendProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
+const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Friends: 'Menu', FriendSummary: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
 const SETUP_SCREENS = new Set(['Home', 'Sign in', 'TermsOfService', 'PrivacyPolicy']);
 const SETUP_READING = new Set(['Sign in', 'TermsOfService', 'PrivacyPolicy']);
-const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, FriendProfile: 2, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
+const DEPTH = { ScheduledTransactions: 1, Archive: 1, FinancialPlanning: 1, Cashback: 1, ExchangeRates: 1, CryptoMarket: 1, StocksMarket: 1, Home: 0, Wallet: 0, NasrinAI: 0, Transactions: 0, Menu: 0, Profile: 1, Friends: 2, FriendSummary: 3, Subscriptions: 1, Notifications: 1, Settings: 1, EditProfile: 1, 'Sign in': 1, Appearance: 2, NotificationDetail: 2, NotificationSettings: 2 };
 const ORDER = { Home: 0, Wallet: 1, NasrinAI: 2, Transactions: 3, Menu: 4 };
 const NAV = [['Home', 'home', 'Home'], ['Wallet', 'wallet', 'Wallet'], ['NasrinAI', 'spark', 'NasrinAI'], ['Transactions', 'list', 'Transactions'], ['Menu', 'grid', 'Menu']];
 const BLANK_ACCOUNT = { name: '', account_type: 'bank', institution_name: '', opening_balance: '', creditLimit: '', owedNow: '', currency: '', mask: '', color: '', icon: '', chip: 'gold', contactless: true, cardKind: 'debit', linkedBankId: '' };
@@ -1221,9 +1221,11 @@ function App() {
   // Counts the days MOVO is used (device only) for the Rate MOVO timing.
   useEffect(() => { if (setupDone) writeReviewState(noteActiveDay(readReviewState(), todayKey)); }, [setupDone, todayKey]);
   setupDoneRef.current = setupDone;
+  const [selectedFriend, setSelectedFriend] = useState(null);
   const go = useCallback((next, params = {}) => {
     if (!setupDoneRef.current && !SETUP_SCREENS.has(next)) return;
     if (params.filter) setTxFilter(params.filter);
+    if (next === 'FriendSummary' && params.friend) setSelectedFriend(params.friend);
     if (next === 'FinancialPlanning') setPlanTab(params.tab || 'overview');
     const prev = viewRef.current; const dPrev = DEPTH[prev] ?? 0; const dNext = DEPTH[next] ?? 0;
     // A return to the page below (device Back, swipe, or an on-screen back arrow to the previous page).
@@ -1234,7 +1236,7 @@ function App() {
     }
     setMotion(dNext > dPrev ? 'push' : dNext < dPrev ? 'pop' : (ORDER[next] ?? 0) > (ORDER[prev] ?? 0) ? 'tab-right' : (ORDER[next] ?? 0) < (ORDER[prev] ?? 0) ? 'tab-left' : 'fade');
     if (!backMoveRef.current) screenTrailRef.current.visit(prev, next);
-    if (edgeSwipeOnRef.current && prev !== next && typeof document !== 'undefined') {
+    if (edgeSwipeOnRef.current && prev !== next && prev !== 'FriendSummary' && prev !== 'Friends' && typeof document !== 'undefined') {
       const snaps = pageSnapsRef.current; const main = document.querySelector('main.screen');
       if (main) {
         snaps.delete(prev);
@@ -2203,11 +2205,6 @@ function App() {
   const [locked, setLocked] = useState(() => lockState().enabled && process.env.NODE_ENV !== 'test');
   reviewGateRef.current = { ready: setupDone && !locked, sheet: !!sheet };
   const friendIdentity = session?.user?.id || 'guest';
-  // A friend's own page (screens/FriendProfile): the friend tapped in the Friends list, for this account only.
-  const [friendPage, setFriendPage] = useState(null);
-  useEffect(() => { setFriendPage(null); }, [friendIdentity]);
-  const openFriendPage = useCallback((friend) => { setFriendPage({ id: friend.id, name: friend.name }); go('FriendProfile'); }, [go]);
-  const friendFinance = useMemo(() => ({ months, statsFor, breakdownFor, currency: base }), [months, statsFor, breakdownFor, base]);
   useEffect(() => {
     if (!friendInvite || !authReady || !setupDone || locked || sheet || view === 'Sign in') return;
     const visit = friendIdentity + ':' + friendInvite;
@@ -2647,9 +2644,9 @@ function App() {
 
   const refreshFx = useCallback(async (force = false) => { const next = await refreshRates(fx, force); if (next) setFx(next); return next || fx; }, [fx]);
 
+  const openFriendSummary = friend => go('FriendSummary', { friend: { ...friend, owner: friendIdentity } });
   const c = {
-    openFriends: () => setSheet({ name: 'friends', invite: friendInvite }),
-    friendPage, friendFinance,
+    openFriends: () => go('Friends'),
     saveProfilePhoto: profilePhoto.savePhoto,
     refreshFinance: () => (session?.user && prefs.cloudSyncEnabled !== false ? refreshCloud(session.user) : Promise.resolve()),
     recordCardPayment, rawTxs, subscriptionPlan,
@@ -2754,10 +2751,18 @@ function App() {
       case 'Archive': return <Archive c={c} />;
       case 'Transactions': return <Transactions c={txScreen} />;
       case 'Profile': return <Profile c={c} />;
+      case 'Friends': return <>
+        <SubHeader title={tr('Friends')} onBack={() => goBack('Profile')} />
+        <div className="friends-page"><FriendsContent key={friendIdentity} session={session} onSignIn={() => go('Sign in')}
+          onOpenSummary={openFriendSummary} /></div>
+      </>;
+      case 'FriendSummary': return !locked && selectedFriend?.owner === friendIdentity && session?.access_token
+        ? <FriendFinanceSummary key={`${friendIdentity}:${selectedFriend.id}`} friend={selectedFriend} session={session}
+          c={c} finance={{ months, statsFor, breakdownFor, budgets, currency: base }} onClose={() => goBack('Friends')} />
+        : <SubHeader title={tr('Summary')} onBack={() => goBack('Friends')} />;
       case 'Menu': return <Menu c={c} />;
       case 'Subscriptions': return <Subscriptions c={c} />;
       case 'EditProfile': return <EditProfile c={c} />;
-      case 'FriendProfile': return <FriendProfile c={c} />;
       case 'Settings': return <Settings c={c} />;
       case 'Appearance': return <Appearance c={c} />;
       case 'Notifications': return <Notifications c={c} />;
@@ -2885,8 +2890,9 @@ function App() {
       </Sheet>}
 
       {sheet?.name === 'friends' && !locked && <FriendsSheet key={friendIdentity + ':' + (sheet.invite || '')} session={session}
-        inviteToken={sheet.invite} finance={friendFinance} onOpenFriend={openFriendPage} onClose={() => { clearFriendInvite(); setSheet(null); }}
-        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite} />}
+        inviteToken={sheet.invite} onClose={() => { clearFriendInvite(); setSheet(null); }}
+        onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
+        onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
       {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>
         <div className="sheet-list">{[{ code: '', name: tr('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>

@@ -1,3 +1,7 @@
+## 2026-11-17 — PR #315 brought up to date with main after #314
+
+- #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
+
 ## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
 
 - The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
@@ -51,6 +55,17 @@
 - Friend rows open "Money summary" directly. The received summary is a readable card: month in words, shared date, totals with net, savings rate, colour category bars and the note.
 - Sharing uses switches with a live preview of exactly what the friend will see, and one share button that names the friend. Stop sharing asks first. A new savings-rate option (whole percent, validated server-side) shares less than exact totals. No schema change.
 - Needs Friends migration `20261116070316` on production to work there. [Details](engineering/updates/2026-11-16-friend-summary-sharing.md).
+## 2026-11-17 — Refine the shared Friends Summary
+
+- Refined the mobile overview, tracking note, chart labels, snapshot dates and sharing preview. Moved the preview above app navigation and aligned the cash-flow zero baseline. Chromium passed six fixture scenarios and Jest passed 1,496 tests. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Friends Summary visual refinement
+
+- Grouped approved totals into one overview card, reordered the detail cards, and made sharing a two-step flow with a matching recipient preview. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Dedicated Friends and Summary screens
+
+- [Implementation plan, privacy and verification](engineering/updates/2026-11-17-friends-summary-pages.md).
 
 ## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
 

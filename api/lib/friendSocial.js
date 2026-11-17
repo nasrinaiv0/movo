@@ -9,6 +9,56 @@ const BUCKETS = ['Food', 'Shopping', 'Bills', 'Transportation', 'Others'];
 const HIGH_RISK_TEXT = /(?:\b(?:kill yourself|kys|child porn|send nudes|rape you)\b)/i;
 const UNSAFE_TEXT = /[\p{Cc}\u202A-\u202E\u2066-\u2069]/u;
 
+function amount(value, signed = false) {
+  return Number.isFinite(value) && Math.abs(value) <= 1e12 && (signed || value >= 0)
+    ? Math.round(value * 100) / 100 : undefined;
+}
+
+function spendingRows(rows) {
+  if (!Array.isArray(rows) || rows.length > BUCKETS.length) return null;
+  const seen = new Set();
+  const result = [];
+  for (const row of rows) {
+    if (!BUCKETS.includes(row?.key) || seen.has(row.key) || !Number.isInteger(row.percent) || row.percent < 0 || row.percent > 100) return null;
+    seen.add(row.key);
+    result.push({ key: row.key, percent: row.percent });
+  }
+  return result;
+}
+
+function selectedSections(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const sections = {};
+  for (const key of ['income', 'expenses', 'savings']) {
+    if (!(key in input)) continue;
+    const value = amount(input[key], key === 'savings');
+    if (value === undefined) return null;
+    sections[key] = value;
+  }
+  if ('flow' in input) {
+    if (!Array.isArray(input.flow) || input.flow.length !== 5) return null;
+    sections.flow = input.flow.map(value => amount(value, true));
+    if (sections.flow.includes(undefined)) return null;
+  }
+  if ('planning' in input) {
+    const { bills, debt, owed } = input.planning || {};
+    const fields = { bills: amount(bills), debt: amount(debt), owed: amount(owed) };
+    if (Object.values(fields).includes(undefined)) return null;
+    sections.planning = fields;
+  }
+  if ('budgets' in input) {
+    const { budgets, onTrack, plans, progress } = input.budgets || {};
+    if (![budgets, onTrack, plans, progress].every(value => Number.isInteger(value) && value >= 0 && value <= 100000)
+      || onTrack > budgets || progress > 100 || (!plans && progress)) return null;
+    sections.budgets = { budgets, onTrack, plans, progress };
+  }
+  if ('spending' in input) {
+    sections.spending = spendingRows(input.spending);
+    if (!sections.spending) return null;
+  }
+  return sections;
+}
+
 function summaryPayload(input) {
   if (!input || typeof input.month !== 'string' || !/^20\d{2}-(0[1-9]|1[0-2])$/.test(input.month)) return null;
   const summary = { month: input.month };
@@ -22,23 +72,23 @@ function summaryPayload(input) {
       ![income, expenses].every(value => Number.isFinite(value) && value >= 0 && value <= 1e12)) return null;
     summary.totals = { currency, income: Math.round(income * 100) / 100, expenses: Math.round(expenses * 100) / 100 };
   }
-  if (input.savingsRate !== undefined) {
-    // Share of income kept that month, as a whole percent; negative when spending passed income.
-    if (!Number.isInteger(input.savingsRate) || input.savingsRate < -100 || input.savingsRate > 100) return null;
-    summary.savingsRate = input.savingsRate;
+  if (input.categories !== undefined && (!Array.isArray(input.categories) || input.categories.length)) {
+    summary.categories = spendingRows(input.categories);
+    if (!summary.categories) return null;
   }
-  if (input.categories !== undefined) {
-    if (!Array.isArray(input.categories) || input.categories.length > BUCKETS.length) return null;
-    const seen = new Set();
-    summary.categories = [];
-    for (const row of input.categories) {
-      if (!BUCKETS.includes(row?.key) || seen.has(row.key) || !Number.isInteger(row.percent) || row.percent < 0 || row.percent > 100) return null;
-      seen.add(row.key);
-      summary.categories.push({ key: row.key, percent: row.percent });
+  if (input.sections !== undefined) {
+    const sections = selectedSections(input.sections);
+    if (!sections || summary.totals || summary.categories || typeof input.currency !== 'string' || !/^[A-Z]{3}$/.test(input.currency)) return null;
+    summary.currency = input.currency;
+    summary.sections = sections;
+    if (['savings', 'planning', 'budgets'].some(key => key in sections)) {
+      if (typeof input.asOf !== 'string' || !/^20\d{2}-\d{2}-\d{2}$/.test(input.asOf)) return null;
+      const date = new Date(input.asOf);
+      if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 10) !== input.asOf) return null;
+      summary.asOf = input.asOf;
     }
-    if (!summary.categories.length) delete summary.categories;
   }
-  return summary.note || summary.totals || summary.categories || summary.savingsRate !== undefined ? summary : null;
+  return summary.note || summary.totals || summary.categories || Object.keys(summary.sections || {}).length ? summary : null;
 }
 
 function socialPayload(action, body) {

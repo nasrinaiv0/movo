@@ -8917,67 +8917,155 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
    usable too (including the link to the expression gallery). */
 .movo-app .ram-aries .ram-bubble.is-open { display: block; }
 
-/* ===== Friend money summary sharing (owner, 2026-11-16; components/FriendFinanceSummary.js) =====
-   A header with the friend's initial, "Shared with you" as a readable card, then the person's own summary: switches
-   for what to include, a live preview of exactly what the friend will see, and one share button naming the friend. */
-.friends-list .friends-open { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center;
-  flex: 1; width: auto; min-width: 0; min-height: 44px; padding: 2px 4px; background: transparent; text-align: start; place-items: initial; }
-.friends-list .friends-open b { grid-column: 1; overflow-wrap: anywhere; }
-.friends-list .friends-open small { grid-column: 1; color: var(--muted); font-size: 12px; }
-.friends-list .friends-open svg { grid-column: 2; grid-row: 1 / span 2; color: var(--muted); }
-[dir="rtl"] .friends-list .friends-open svg, [dir="rtl"] .fs-back svg { transform: scaleX(-1); }
-.fs { gap: 14px; }
-.fs-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.fs-back { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; background: var(--field); color: var(--text); }
-.fs-head-text { display: grid; min-width: 0; }
-.fs-head-text h3 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
-.fs-head-text small { color: var(--muted); font-size: 12px; }
-.fs-section { display: grid; gap: 12px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-card, 22px); background: var(--card, var(--surface)); }
-.fs-section h4 { margin: 0; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
-.fs-section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-.fs-chip { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--field); color: var(--muted); font-size: 12px; font-weight: 600; }
-.fs-chip.is-on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-ink, var(--accent)); }
-.fs-empty { display: grid; justify-items: center; gap: 8px; padding: 10px 6px; text-align: center; color: var(--muted); }
-.fs-empty p { margin: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
-.fs-options { display: grid; border-radius: 16px; background: var(--field); overflow: hidden; }
-.fs-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 8px 12px; min-width: 0; }
-.fs-option + .fs-option { border-top: 1px solid var(--line); }
-.fs-option > span { display: grid; gap: 2px; min-width: 0; }
-.fs-option strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
-.fs-option small { color: var(--muted); font-size: 12px; line-height: 1.35; overflow-wrap: anywhere; }
-.fs-option.is-off strong { color: var(--muted); }
-.fs-option .toggle { flex: none; }
-.fs-count { color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4; }
-.fs-preview { display: grid; gap: 8px; min-width: 0; }
-.fs-label { color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
-.fs-card { display: grid; gap: 12px; min-width: 0; padding: 14px; border-radius: 18px; background: var(--field); }
-.fs-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.fs-card-head strong { font-size: 16px; }
-.fs-card-head small { color: var(--muted); font-size: 12px; }
-.fs-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; }
-.fs-totals div { min-width: 0; }
-.fs-totals dt { color: var(--muted); font-size: 12px; }
-.fs-totals dd { margin: 2px 0 0; font-size: 14px; font-weight: 650; overflow-wrap: anywhere; }
-.fs-totals dd.is-negative { color: var(--danger, #c44949); }
-.fs-rate { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; font-weight: 600; color: var(--accent-ink, var(--accent)); }
-.fs-rate.is-negative { color: var(--danger, #c44949); }
-.fs-rate svg { flex: none; }
-.fs-cats { display: grid; gap: 8px; min-width: 0; }
-.fs-cats ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.fs-cats li { display: grid; grid-template-columns: minmax(84px, 38%) minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; font-size: 13px; }
-.fs-cat-name { display: flex; align-items: center; gap: 7px; min-width: 0; overflow-wrap: anywhere; }
-.fs-cat-name i { width: 8px; height: 8px; flex: none; border-radius: 50%; }
-.fs-bar { display: block; height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
-.fs-bar i { display: block; height: 100%; border-radius: inherit; }
-.fs-cats b { min-width: 3ch; text-align: end; font-variant-numeric: tabular-nums; }
-.fs-note { margin: 0; padding: 0 0 0 12px; border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
-.fs-safety { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
-.fs-safety .link-button { min-height: 44px; color: var(--muted); }
-.fs-safety .link-button.is-danger { color: var(--danger, #c44949); }
-@media (max-width: 360px) { .fs-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (prefers-reduced-motion: no-preference) { .fs-card, .fs-chip { transition: background-color 180ms ease-out; } }
-/* Four Friends tabs fit one line on small phones; long translations still wrap rather than widen the sheet. */
-.friends-content .friends-tabs-expanded > button { padding-inline: 4px; font-size: 13px; line-height: 1.2; }
+/* Friends uses the usual screen stack, with private snapshots rendered as read-only cards. */
+.friends-page { display: grid; gap: 12px; min-width: 0; }
+.friends-page .friends-tabs { margin-block: 2px; }
+.friends-page .friends-list .friends-open-summary {
+  display: flex; align-items: center; flex: 1; gap: 10px; width: auto; min-width: 0; min-height: 48px;
+  padding: 0; background: transparent; text-align: start;
+}
+/* Shared Summary and its in-app recipient preview. */
+.friend-summary-page, .friend-share-sheet {
+  --friend-ink: color-mix(in srgb, var(--text) 68%, var(--muted));
+  --friend-tint: color-mix(in srgb, var(--accent) 10%, var(--card-solid));
+}
+.friend-summary-page { gap: 14px; }
+.friend-summary-profile { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 3px 0; }
+.friend-summary-profile .friends-initial {
+  width: 48px; height: 48px; flex: none; border-radius: 16px; font-size: 20px; font-weight: 720;
+  background: var(--friend-tint); color: var(--friend-ink); overflow: hidden;
+}
+.friend-summary-person { min-width: 0; flex: 1; }
+.friend-summary-profile h2 { margin: 0; font-size: clamp(20px, 5vw, 28px); font-weight: 730; line-height: 1.15; overflow-wrap: anywhere; }
+.friend-summary-page .friend-share-trigger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px;
+  max-width: 42%; padding-inline: 12px; color: var(--text); background: var(--friend-tint); font-weight: 650;
+}
+.friend-share-trigger svg, .friend-summary-period svg { flex: none; }
+.friend-summary-status:empty { display: none; }
+.friend-summary-status { color: var(--friend-ink); font-size: .875rem; line-height: 1.4; }
+.friend-summary-state { display: grid; justify-items: start; gap: 10px; padding: 16px; }
+.friend-summary-state p { margin: 0; color: var(--friend-ink); line-height: 1.5; overflow-wrap: anywhere; }
+
+.friend-dashboard { display: grid; gap: 12px; min-width: 0; container: friend-summary / inline-size; }
+.friend-summary-overview {
+  display: grid; gap: 14px; min-width: 0; padding: 12px 0;
+  color: var(--text);
+}
+.friend-summary-overview.has-metrics {
+  padding: 16px; border-radius: 24px;
+  background: color-mix(in srgb, var(--accent) 28%, #17251e); color: #fff;
+}
+.friend-summary-period { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: .875rem; font-weight: 670; }
+.friend-summary-period .friend-card-icon { width: 30px; height: 30px; background: var(--field); }
+.has-metrics .friend-summary-period .friend-card-icon { background: rgba(255,255,255,.12); color: inherit; }
+.friend-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.friend-metrics[data-count='1'] { grid-template-columns: minmax(0, 1fr); }
+.friend-metric { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.09); }
+.friend-metric dt { display: flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600; overflow-wrap: anywhere; }
+.friend-metric dt svg { flex: none; }
+.friend-metric dd { min-width: 0; margin: 0; }
+.friend-metric .friend-amount { font-size: 1.375rem; }
+.friend-metric small { display: block; margin-block-start: 3px; color: rgba(255,255,255,.82); font-size: .75rem; overflow-wrap: anywhere; }
+.friend-metrics[data-count='3'] .friend-section-savings {
+  grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) fit-content(68%); align-items: center;
+}
+.friend-metrics[data-count='3'] .friend-section-savings dd { text-align: end; }
+.friend-summary-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.movo-app .friend-dashboard :is(.friend-section, .friend-note) {
+  min-width: 0; margin: 0; padding: 14px; border-radius: 20px;
+  background: var(--card-solid); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.friend-section-heading { display: flex; gap: 9px; align-items: center; margin-block-end: 10px; }
+.friend-section-heading > div { min-width: 0; }
+.friend-section-heading h3 { margin: 0; font-size: .9375rem; font-weight: 720; line-height: 1.25; overflow-wrap: anywhere; }
+.friend-section-heading small { display: block; margin-block-start: 2px; color: var(--friend-ink); font-size: .75rem; line-height: 1.35; }
+.friend-card-icon {
+  display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px;
+  border-radius: 10px; background: var(--friend-tint, var(--field)); color: var(--friend-ink, var(--text));
+}
+.friend-amount { display: block; font-size: 1.5rem; font-weight: 740; letter-spacing: -.035em; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.friend-note p { margin: 0; color: var(--friend-ink); font-size: .875rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.friend-summary-rows { display: grid; gap: 9px; margin: 0; }
+.friend-summary-rows div { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(57%); align-items: baseline; gap: 8px; }
+.friend-summary-rows dt, .friend-plan-progress span { color: var(--friend-ink); font-size: .8125rem; overflow-wrap: anywhere; }
+.friend-summary-rows dd { margin: 0; font-weight: 650; text-align: end; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.friend-flow-summary { display: grid; gap: 4px; padding: 9px 11px; border-radius: 12px; background: var(--field); }
+.friend-flow-summary span { color: var(--friend-ink); font-size: .8125rem; }
+.friend-flow, .friend-spending { display: grid; gap: 9px; padding: 0; margin: 11px 0 0; list-style: none; }
+.friend-flow li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.4fr); align-items: center; gap: 8px; font-size: .8125rem; }
+.friend-flow li > span:first-child { color: var(--friend-ink); overflow-wrap: anywhere; }
+.friend-flow b { justify-self: end; text-align: end; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.friend-flow-track, .friend-spending-track { display: block; position: relative; height: 8px; background: var(--field); border-radius: 6px; }
+.friend-flow-track { direction: ltr; }
+.friend-flow-track::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid var(--muted); }
+.friend-flow-track i, .friend-spending-track i { position: absolute; height: 100%; width: var(--flow-length); border-radius: 5px; }
+.friend-flow-track .positive { left: 50%; background: var(--green); }
+.friend-flow-track .negative { right: 50%; background: var(--red); }
+.friend-spending { margin: 0; }
+.friend-spending li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: .8125rem; overflow-wrap: anywhere; }
+.friend-spending-track { grid-column: 1 / -1; height: 5px; }
+.friend-spending-track i { inset-inline-start: 0; background: var(--accent-ink, var(--accent)); }
+.friend-spending b, .friend-plan-progress b { font-variant-numeric: tabular-nums; }
+.friend-plan-progress { display: grid; gap: 6px; margin-block-start: 12px; }
+.friend-plan-progress > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+.friend-summary-actions { display: grid; gap: 4px; }
+.friend-summary-actions .friend-revoke { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.friend-summary-page .friends-safety { gap: 0 8px; }
+.friend-summary-page .friends-safety[data-count='1'] { grid-template-columns: 1fr; }
+.friend-summary-page .friends-safety button { background: transparent; color: var(--friend-ink); font-size: .875rem; }
+.movo-app.movo-app .sheet.friend-share-sheet {
+  max-height: 86dvh; background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none;
+  overscroll-behavior: contain; scroll-padding-block: 12px 68px;
+}
+.movo-app .sheet-backdrop:has(> .friend-share-sheet) { background: var(--overlay); }
+.movo-app.movo-app .friend-share-sheet:has(.friend-preview) { padding-block-end: 0; }
+.friend-share-recipient {
+  display: flex; align-items: center; gap: 8px; padding: 10px 11px; border-radius: 12px;
+  color: var(--friend-ink); background: var(--friend-tint); margin: 8px 0 12px; font-size: .8125rem; line-height: 1.4;
+}
+.friend-share-recipient p { margin: 0; overflow-wrap: anywhere; }
+.friend-share-recipient svg { flex: none; }
+.friend-sharing fieldset { min-inline-size: 0; border: 0; padding: 0; margin: 0; }
+.friend-sharing legend { font-weight: 650; margin-bottom: 6px; }
+.friend-share-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 6px; }
+.friend-sharing .friends-option {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 7px 9px; border-radius: 12px; background: var(--card-solid); cursor: pointer; font-size: .875rem;
+}
+.friend-sharing .friends-option:has(input:checked) { background: var(--friend-tint); }
+.friend-sharing .friends-option:has(input:disabled) { cursor: default; }
+.friend-sharing .friends-option > span { min-width: 0; overflow-wrap: anywhere; }
+.friend-sharing .friends-option .friend-card-icon { width: 25px; height: 25px; }
+.friend-sharing .friends-option input { margin: 0; }
+.friend-sharing .friends-option small { display: block; color: var(--friend-ink); font-size: .75rem; }
+.friend-sharing select { min-height: 44px; }
+.friend-share-footer {
+  position: sticky; z-index: 2; bottom: -1px; display: flex; gap: 8px; padding-block: 8px 3px; background: var(--bg);
+}
+.friend-share-footer > button { flex: 1; min-width: 0; padding-inline: 8px; white-space: normal; overflow-wrap: anywhere; }
+.friend-preview { display: grid; gap: 8px; min-width: 0; }
+.friend-preview .friend-share-footer { bottom: 0; padding-block-end: max(12px, env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: no-preference) {
+  .friend-sharing .friends-option, .friend-share-trigger { transition: background-color 160ms ease-out; }
+  .friend-dashboard.is-preview { animation: friend-preview-in 180ms ease-out; }
+}
+@keyframes friend-preview-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 390px) {
+  .friend-metric dt { flex-wrap: wrap; gap: 4px; }
+  .friend-metric .friend-amount { font-size: 1.1875rem; }
+}
+@container friend-summary (max-width: 17.5rem) {
+  .friend-metrics { grid-template-columns: minmax(0, 1fr); }
+}
+@container friend-summary (min-width: 34rem) {
+  .friend-metrics[data-count='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .friend-metrics[data-count='3'] .friend-section-savings { grid-column: auto; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .friend-metrics[data-count='3'] .friend-section-savings dd { text-align: start; }
+  .friend-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .friend-summary-grid > :only-child { grid-column: 1 / -1; }
+}
 
 /* ===== Pop-up panels: one surface for every sheet and dialog (owner, 2026-11-16) =====
    Every pop-up uses the transaction-details look: an opaque surface (white in light, #1c1c1e in dark), a soft shadow,
@@ -9287,47 +9375,8 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
 @keyframes cc-fade { from { opacity: 0; transform: rotate(-12deg); } to { opacity: 1; transform: none; } }
 @media (max-width: 360px) { .movo-app .cc-cat { grid-template-columns: 1fr; } .movo-app .cc-donut { max-width: 140px; justify-self: center; } }
 
-/* ===== Friend's own page (owner, 2026-11-16) =====
-   screens/FriendProfile: a profile header with who shares what, the friend's shared summary as a full card with a
-   savings ring and category donut, then what you share and the connection actions. */
-.movo-app .friend-page { display: grid; gap: 14px; padding: 0 16px 24px; min-width: 0; }
-.movo-app .friend-page .friends-content { display: grid; gap: 14px; min-width: 0; }
-.movo-app .fp-hero { display: grid; justify-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; min-width: 0; }
-.movo-app .fp-avatar { display: grid; place-items: center; width: 84px; height: 84px; margin-bottom: 6px; border-radius: 50%;
-  font-size: 34px; font-weight: 650; color: #fff;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 78%, #fff), var(--accent));
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.35); }
-.movo-app .fp-hero h2 { margin: 0; font-size: 22px; font-weight: 700; overflow-wrap: anywhere; max-width: 100%; }
-.movo-app .fp-hero > small { color: var(--muted); font-size: 13px; }
-.movo-app .fs-page .fs-card.is-rich { padding: 16px; background: var(--field); }
-.movo-app .fs-rate-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.movo-app .fs-ring { width: 56px; height: 56px; flex: none; }
-.movo-app .fs-ring circle, .movo-app .fs-donut circle { fill: none; }
-.movo-app .fs-ring circle { stroke-width: 6; }
-.movo-app .fs-ring .fs-ring-track, .movo-app .fs-donut .fs-ring-track { stroke: color-mix(in srgb, var(--muted) 18%, transparent); }
-.movo-app .fs-ring .fs-ring-fill { stroke: var(--accent); stroke-linecap: round; }
-.movo-app .fs-rate-row.is-negative .fs-ring-fill { stroke: var(--danger, #c44949); }
-.movo-app .fs-ring text { font-size: 13px; font-weight: 700; fill: var(--text); }
-.movo-app .fs-cats.is-rich { grid-template-columns: 96px minmax(0, 1fr); column-gap: 14px; align-items: center; }
-.movo-app .fs-cats.is-rich .fs-label { grid-column: 1 / -1; }
-.movo-app .fs-donut { width: 96px; height: 96px; }
-.movo-app .fs-donut circle { stroke-width: 13; }
-.movo-app .fs-cats.is-rich li { grid-template-columns: minmax(0, 1fr) auto; }
-.movo-app .fs-cats.is-rich .fs-bar { display: none; }
-@media (max-width: 340px) { .movo-app .fs-cats.is-rich { grid-template-columns: 1fr; } .movo-app .fs-donut { justify-self: center; } }
-@media (prefers-reduced-motion: no-preference) {
-  .movo-app .fs-ring .fs-ring-fill { transition: stroke-dasharray .5s cubic-bezier(.22, 1, .36, 1); }
-  .movo-app .fs-donut { animation: cc-fade .4s ease-out both; }
-}
-/* Friend page and chat charts at narrow widths: amounts and names stay whole (ellipsis), never split mid-word. */
-.movo-app .fs-totals { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
-.movo-app .fs-totals dd { overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.movo-app .fs-cats.is-rich .fs-cat-name { overflow-wrap: normal; overflow: hidden; }
-.movo-app .fs-cats.is-rich .fs-cat-name { white-space: nowrap; text-overflow: ellipsis; display: block; }
-.movo-app .fs-cats.is-rich .fs-cat-name i { display: inline-block; margin-inline-end: 7px; vertical-align: middle; }
+/* Chat charts on narrow phones: the donut sits above its legend so names stay whole. */
 @media (max-width: 400px) {
-  .movo-app .fs-cats.is-rich { grid-template-columns: 84px minmax(0, 1fr); }
-  .movo-app .fs-donut { width: 84px; height: 84px; }
   .movo-app .cc-cat { grid-template-columns: 1fr; justify-items: center; }
   .movo-app .cc-donut { width: 148px; }
   .movo-app .cc-legend { width: 100%; }
