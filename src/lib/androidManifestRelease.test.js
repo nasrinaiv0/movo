@@ -38,9 +38,20 @@ describe('Android release deep-link routing', () => {
     expect(friends[0]).toContain('android.intent.category.BROWSABLE');
   });
 
+  test('Wear links use only the MOVO scheme and open the phone form', () => {
+    const wear = filters.filter(filter => filter.includes('android:host="wear-log"'));
+    expect(wear).toHaveLength(1);
+    expect(wear[0]).toContain('android:scheme="movo"');
+    expect(wear[0]).toContain('android.intent.action.VIEW');
+    expect(wear[0]).toContain('android.intent.category.DEFAULT');
+    expect(wear[0]).toContain('android.intent.category.BROWSABLE');
+  });
+
   test('neither source manifest nor Gradle declares a permissive or credential-bearing callback', () => {
     expect(manifest).toContain('android:exported="true"');
-    expect(filters).toHaveLength(4); // launcher, OAuth, quick-log and friends
+    expect(filters).toHaveLength(5); // launcher, OAuth, quick-log, friends and Wear
+    expect(filters.flatMap(filter => [...filter.matchAll(/android:host="([^"]+)"/g)].map(match => match[1])).sort())
+      .toEqual(['auth-callback', 'friend', 'log', 'wear-log']);
     expect(manifest).not.toMatch(/<data\s+android:scheme="movo"\s*\/>/);
     expect(manifest).not.toMatch(/access_token|refresh_token|client_secret/i);
     expect(gradle).not.toMatch(/movoAuthScheme:\s*".*\*/);

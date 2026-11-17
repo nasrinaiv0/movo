@@ -1,0 +1,143 @@
+.movo-app .screen:has(> .settings-toolbar) {
+  --settings-gap: 12px;
+}
+
+.movo-app .screen > .settings-toolbar {
+  column-gap: 9px;
+  row-gap: 4px;
+  margin-block-end: 10px;
+}
+.movo-app .settings-toolbar .header-actions:empty { display: none; }
+.movo-app .settings-toolbar .back-button {
+  width: 45px;
+  min-width: 45px;
+  height: 45px;
+  background: none;
+  box-shadow: none;
+}
+.movo-app .settings-toolbar .settings-search {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding-inline: 11px 0;
+  gap: 8px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.movo-app .settings-search:focus-within { outline: 2px solid var(--accent); outline-offset: -2px; }
+.movo-app .settings-search > .movo-icon { flex: none; }
+.movo-app .settings-search input {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1;
+  margin: 0;
+  padding: 8px 8px 8px 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  outline: none;
+}
+.movo-app .settings-search input::-webkit-search-cancel-button { display: none; }
+.movo-app .settings-search-clear {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+}
+.movo-app .settings-search-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+
+/* Keep each group intact and flow down each column in reading and tab order. */
+.movo-app .settings-groups { column-gap: var(--settings-gap); }
+.movo-app .settings-group { break-inside: avoid; min-width: 0; margin-block-end: var(--settings-gap); }
+.movo-app .screen .settings-group > .group-title {
+  margin: 0 2px 5px;
+  font-size: calc(14px * var(--font-scale, 1));
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.movo-app .screen .menu-card:is(.settings-group, .settings-master),
+.movo-app .screen .settings-group > .menu-card {
+  --row-x: 11px;
+  padding: 0;
+  border-radius: 14px;
+}
+.movo-app .screen .settings-group > .card.pad { padding: 10px; border-radius: 14px; }
+.movo-app .screen :is(.settings-group, .settings-master) .menu-row {
+  min-height: 44px;
+  gap: 7px;
+  padding-block: 5px;
+}
+.movo-app .screen :is(.settings-group, .settings-master) .menu-main { gap: 2px; overflow-wrap: anywhere; }
+.movo-app .screen :is(.settings-group, .settings-master) .menu-main > :is(strong, small) { line-height: 1.3; }
+.movo-app .screen :is(.settings-group, .settings-master) :is(button.menu-row, .toggle):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.movo-app .screen :is(.settings-group, .settings-master) .menu-icon { width: 26px; height: 26px; }
+.movo-app :is(.settings-group, .settings-master) .menu-icon > svg { width: 17px; height: 17px; }
+.movo-app .settings-group .menu-row > svg { flex: none; }
+.movo-app .settings-master { margin-block-end: var(--settings-gap); }
+.movo-app .settings-group .quiet-times label { min-width: 0; }
+.movo-app .settings-group .quiet-times input { width: 100%; min-width: 0; padding-inline: 6px; }
+
+.movo-app .appearance-groups .appearance-theme-section { gap: 5px; padding-block: 0; }
+.movo-app .appearance-groups .appearance-theme-section > .mini-title { margin: 3px 2px 0; }
+.movo-app .appearance-groups .appearance-theme-section .seg-art { height: 35px; border-radius: 10px; }
+.movo-app .appearance-groups .appearance-theme-section .theme-segments .seg-dark { color: #fff; }
+.movo-app .appearance-groups .appearance-theme-section .theme-segments .seg-custom { color: var(--on-accent); }
+.movo-app.movo-app .appearance-groups .appearance-theme-section .theme-segments button {
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.movo-app .appearance-groups .appearance-theme-section .check-badge { top: 1px; right: 1px; width: 16px; height: 16px; }
+.movo-app .appearance-groups .accent-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); justify-items: center; padding: 3px 0; }
+.movo-app .appearance-groups .accent-row button { width: min(100%, 44px); height: auto; min-height: 44px; aspect-ratio: 1; }
+.movo-app .appearance-groups .nav-preview { padding: 5px 10px; border-radius: 13px; }
+.movo-app .appearance-groups .nav-preview .orb.small { width: 36px; height: 36px; margin-top: 0; }
+.movo-app .appearance-groups .appearance-theme-section > .link-button { min-height: 44px; margin: -3px 0 0; }
+.movo-app .appearance-groups .app-icon-grid { gap: 4px; }
+.movo-app .appearance-groups .app-icon-option { padding: 6px 2px; gap: 3px; }
+.movo-app .appearance-groups .app-icon-option :is(strong, small) { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.movo-app .appearance-groups .app-icon-preview { width: clamp(28px, 9vw, 40px); }
+.movo-app .appearance-groups .glass-preview { height: 58px; margin-block-start: 5px; border-radius: 12px; }
+.movo-app .appearance-groups .glass-chip { padding: 6px 10px; }
+.movo-app .appearance-groups .clarity { margin-block-start: 7px; gap: 1px; }
+.movo-app .appearance-groups .clarity-top { flex-wrap: wrap; gap: 2px 8px; }
+.movo-app .appearance-groups .clarity input[type='range'] { min-height: 34px; }
+.movo-app .appearance-groups .hero-settings { gap: 6px; }
+.movo-app .appearance-groups .hero-row { gap: 7px; }
+.movo-app .appearance-groups .hero-row .hero-tile { width: 103px; }
+.movo-app .appearance-groups .scenery-row { gap: 7px; }
+.movo-app .appearance-groups .scenery-row .scenery-tile { width: 61px; height: 64px; }
+.movo-app .appearance-groups :is(.hero-settings, .scenery-settings) > .form-note { margin-block: 4px 0; }
+.movo-app .appearance-groups .font-styles { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.movo-app .appearance-groups .font-style { min-height: 44px; gap: 2px; padding: 4px 2px; align-content: center; }
+.movo-app .appearance-groups .font-style small { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+.movo-app .appearance-groups .text-preview { margin-block-start: 2px; padding: 6px 8px; }
+.movo-app .appearance-groups .text-settings > .link-button { min-height: 44px; margin-block-start: 0; }
+
+.movo-app:not(.layout-phone):not(.layout-dual) .settings-toolbar .header-actions { width: min(44%, 410px); }
+.movo-app.layout-tablet:not(.layout-dual) .settings-groups { columns: 2 272px; }
+.movo-app.layout-desktop:not(.layout-dual) .settings-groups { columns: 3 272px; }
+.movo-app.layout-desktop:not(.layout-dual) .appearance-groups { columns: 3 300px; }
+.movo-app:not(.layout-phone):not(.layout-dual) .notification-groups { columns: 2 280px; }
+.movo-app:not(.layout-phone):not(.layout-dual) .settings-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 272px), 1fr));
+  gap: var(--settings-gap);
+  align-items: start;
+}
+.movo-app:not(.layout-phone):not(.layout-dual) .settings-results .settings-group { margin: 0; }
+.movo-app:not(.layout-phone):not(.layout-dual) .settings-results .settings-group:only-child { max-width: 640px; width: 100%; }
+
+.movo-app:is(.layout-phone, .layout-dual) .settings-toolbar:has(.settings-search) { flex-wrap: wrap; }
+.movo-app:is(.layout-phone, .layout-dual) .settings-toolbar:has(.settings-search) .header-actions { flex: 0 0 100%; }

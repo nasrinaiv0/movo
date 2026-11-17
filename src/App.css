@@ -7684,55 +7684,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
   outline-offset: 2px;
 }
 
-/* ===================================================================================================================
- * Video guide (components/TutorialVideo.js), 2026-11-09: a calm story-style player. Scenes fade and rise in
- * (ease-out only), the progress bar fills per scene; reduced motion shows still scenes.
- * =================================================================================================================== */
-.movo-app .tv-backdrop { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)); background: rgba(8, 10, 16, .62); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); }
-.movo-app .tv-player { position: relative; width: min(100%, 400px); height: min(720px, calc(100dvh - 24px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 28px; padding: 14px 16px 16px; color: #fff;
-  background: radial-gradient(120% 70% at 50% 0%, rgba(var(--accent-rgb, 47,127,240), .55), transparent 70%), linear-gradient(180deg, #151a24, #0c0f16); box-shadow: 0 30px 80px -30px rgba(0,0,0,.7); }
-.movo-app .tv-progress { display: flex; gap: 4px; }
-.movo-app .tv-progress span { flex: 1; height: 3px; border-radius: 99px; background: rgba(255,255,255,.22); overflow: hidden; }
-.movo-app .tv-progress i { display: block; height: 100%; background: #fff; border-radius: inherit; }
-.movo-app .tv-top { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; margin-top: 10px; }
-.movo-app .tv-count { flex: 1; font-size: 12px; font-weight: 600; opacity: .7; }
-.movo-app .tv-icon, .movo-app .tv-skip { min-height: 34px; border: 0; border-radius: 99px; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 13px; font-weight: 600; }
-.movo-app .tv-icon { width: 34px; display: grid; place-items: center; padding: 0; }
-.movo-app .tv-skip { padding: 0 14px; }
-.movo-app .tv-stage { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 8px 6px; animation: tv-in .5s ease-out both; }
-.movo-app .tv-stage h2 { margin: 18px 0 0; font-size: 26px; line-height: 1.15; letter-spacing: -.01em; }
-.movo-app .tv-stage p { margin: 0; max-width: 300px; font-size: 15px; line-height: 1.45; opacity: .78; }
-.movo-app .tv-tap { position: absolute; top: 64px; bottom: 84px; width: 34%; border: 0; background: transparent; z-index: 1; cursor: pointer; }
-.movo-app .tv-prev { left: 0; } .movo-app .tv-next { right: 0; }
-.movo-app .tv-tap:disabled { pointer-events: none; }
-.movo-app .tv-actions { position: relative; z-index: 2; display: grid; }
-.movo-app .tv-actions .secondary-button { background: rgba(255,255,255,.14); color: #fff; border: 0; }
-.movo-app .tv-art { position: relative; width: 210px; height: 170px; display: grid; place-items: center; }
-.movo-app .tv-logo { display: grid; place-items: center; width: 112px; height: 112px; border-radius: 34%; background: rgba(255,255,255,.1); animation: tv-rise .7s ease-out both; }
-.movo-app .tv-ring { position: absolute; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); animation: tv-fade 1.2s ease-out both; }
-.movo-app .tv-card { position: absolute; width: 170px; height: 104px; border-radius: 16px; background: linear-gradient(135deg, var(--a, #3a7bfd), var(--b, #1b3fa8)); box-shadow: 0 14px 30px -12px rgba(0,0,0,.6); transform: translateY(calc(var(--i) * 22px - 22px)) scale(calc(1 - (2 - var(--i)) * .06)); animation: tv-rise .6s ease-out both; animation-delay: calc(var(--i) * .15s); }
-.movo-app .tv-card i { position: absolute; left: 14px; top: 16px; width: 26px; height: 20px; border-radius: 5px; background: rgba(255,255,255,.55); }
-.movo-app .tv-card b { position: absolute; left: 14px; bottom: 16px; width: 70px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.6); }
-.movo-app .tv-c1 { --a: #8b5cf6; --b: #4c1d95; } .movo-app .tv-c2 { --a: #10b981; --b: #065f46; } .movo-app .tv-c3 { --a: #3a7bfd; --b: #1b3fa8; }
-.movo-app .tv-chat { display: flex; flex-direction: column; gap: 10px; align-items: stretch; width: 230px; }
-.movo-app .tv-bubble { padding: 10px 14px; border-radius: 18px; font-size: 14px; font-weight: 600; animation: tv-rise .5s ease-out both; }
-.movo-app .tv-bubble.me { align-self: flex-end; background: var(--accent, #2f7ff0); border-bottom-right-radius: 6px; }
-.movo-app .tv-bubble.bot { align-self: flex-start; display: inline-flex; gap: 6px; align-items: center; background: rgba(255,255,255,.14); border-bottom-left-radius: 6px; animation-delay: .7s; }
-.movo-app .tv-bars { display: flex; align-items: flex-end; gap: 10px; height: 130px; }
-.movo-app .tv-bars span { width: 20px; height: var(--h); border-radius: 8px 8px 4px 4px; background: linear-gradient(180deg, #fff, rgba(255,255,255,.35)); transform-origin: bottom; animation: tv-grow .6s ease-out both; animation-delay: calc(var(--i) * .08s); }
-.movo-app .tv-plans { display: grid; gap: 10px; width: 220px; }
-.movo-app .tv-plan { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,.1); animation: tv-rise .5s ease-out both; animation-delay: calc(var(--i) * .12s); }
-.movo-app .tv-plan i { flex: 1; height: 6px; border-radius: 99px; background: linear-gradient(90deg, #fff var(--p), rgba(255,255,255,.2) var(--p)); }
-.movo-app .tv-pro { display: grid; justify-items: center; gap: 14px; }
-.movo-app .tv-badge { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 30%; color: #1d1405; background: linear-gradient(140deg, #fde68a, #d4a017); box-shadow: 0 16px 40px -14px rgba(212,160,23,.8); animation: tv-rise .6s ease-out both; }
-.movo-app .tv-chip { padding: 6px 14px; border-radius: 99px; background: rgba(255,255,255,.16); font-size: 13px; font-weight: 700; animation: tv-fade .8s ease-out .3s both; }
-.movo-app .tv-stage.is-still, .movo-app .tv-stage.is-still * { animation: none !important; }
-@keyframes tv-in { from { opacity: 0; transform: translateY(10px); } }
-@keyframes tv-rise { from { opacity: 0; transform: translateY(14px); } }
-@keyframes tv-fade { from { opacity: 0; } }
-@keyframes tv-grow { from { transform: scaleY(.1); opacity: .2; } }
-@media (prefers-reduced-motion: reduce) { .movo-app .tv-stage, .movo-app .tv-stage * { animation: none !important; } }
-
 /* Plans sheet (components/PlanOffer.js), compact pass 2026-11-09. */
 .movo-app .plan-current { display: flex; justify-content: space-between; align-items: center; margin: 0 0 4px; font-size: 14px; }
 .movo-app .plan-detail-card { padding: 18px; border-radius: 22px; border: 0; background: rgba(128,128,128,.08); }
@@ -8068,10 +8019,6 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app :is(.balance-card, .stat-card, .spending-card, .total-card)::after { background: rgba(var(--accent-rgb), .5); }
 .movo-app.movo-app .plan-detail-card.plan-pro { background: color-mix(in srgb, var(--accent) 10%, var(--card-solid)); }
 .movo-app.movo-app .plan-detail-card.plan-plus { background: color-mix(in srgb, #d4a017 12%, var(--card-solid)); }
-.movo-app.movo-app .tv-card { background: var(--a, #3a7bfd); }
-.movo-app.movo-app .tv-bars span { background: rgba(255, 255, 255, .85); }
-.movo-app.movo-app .tv-badge { background: #f2c14e; }
-.movo-app.movo-app .tv-player { background: #121722; }
 
 /* ---------- Loading placeholders (2026-11-09, audit phase 6) ----------
    Shown only while cloud records load (Financial planning, Bills, crypto market). Static blocks that fade in once:
@@ -8288,33 +8235,8 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active { background: rgba(226,232,238,.12); }
 .movo-app.movo-app.nav-tier-gold .side-nav .side-item.active { background: rgba(227,176,74,.16); }
 
-/* ===== Tutorial film and setup agreement (owner, 2026-11-11) =====
-   The video guide is a real recording of MOVO, full-bleed like a story: controls float over a top shade and the
-   translated caption over a bottom shade. The setup agreement covers the dashboard until the Terms are accepted. */
-.movo-app.movo-app .tv-player.tv-film { width: min(100%, 430px); height: min(932px, calc(100dvh - 24px)); padding: 0; background: #07090d; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); isolation: isolate; }
-@media (max-width: 520px) {
-  .movo-app .tv-backdrop:has(.tv-film) { padding: 0; }
-  .movo-app.movo-app .tv-player.tv-film { width: 100%; height: 100dvh; border-radius: 0; }
-}
-.movo-app .tv-film .tv-video { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; background: #07090d; }
-.movo-app .tv-film .tv-shade { position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: linear-gradient(180deg, rgba(5,7,11,.9) 0, rgba(5,7,11,.55) 84px, rgba(5,7,11,0) 150px), linear-gradient(0deg, rgba(5,7,11,.94) 0, rgba(5,7,11,.82) 150px, rgba(5,7,11,0) 300px); }
-.movo-app .tv-film .tv-progress { position: relative; z-index: 3; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
-.movo-app .tv-film .tv-progress i { transition: width .25s linear; }
-.movo-app .tv-film .tv-top { z-index: 3; padding: 0 16px; }
-.movo-app .tv-film .tv-icon, .movo-app .tv-film .tv-skip { background: rgba(20,24,32,.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-.movo-app .tv-film .tv-sound.is-muted { opacity: .62; position: relative; }
-.movo-app .tv-film .tv-sound.is-muted::after { content: ''; position: absolute; width: 18px; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
-.movo-app .tv-film .tv-hold { position: absolute; inset: 0; z-index: 1; }
-.movo-app .tv-film .tv-tap { z-index: 2; top: 96px; bottom: 210px; width: 30%; }
-.movo-app .tv-film .tv-bigplay { position: absolute; z-index: 3; left: 50%; top: 42%; width: 72px; height: 72px; margin: -36px 0 0 -36px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff; background: rgba(20,24,32,.55); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 12px 40px -12px rgba(0,0,0,.7); }
-.movo-app .tv-film .tv-caption { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 66px); text-align: center; pointer-events: none; animation: tv-caption .45s ease-out both; }
-.movo-app .tv-film .tv-caption h2 { margin: 0 0 6px; font-size: 22px; line-height: 1.18; letter-spacing: -.01em; text-shadow: 0 2px 18px rgba(0,0,0,.5); }
-.movo-app .tv-film .tv-caption p { margin: 0 auto; max-width: 340px; font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.84); text-shadow: 0 1px 12px rgba(0,0,0,.6); }
-.movo-app .tv-film .tv-actions { position: absolute; z-index: 3; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
-.movo-app .tv-film .tv-actions .secondary-button { background: rgba(255,255,255,.14); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-@keyframes tv-caption { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .movo-app .tv-film .tv-caption { animation: none; } .movo-app .tv-film .tv-progress i { transition: none; } }
+/* ===== Setup agreement (owner, 2026-11-11) =====
+   The setup agreement covers the dashboard until the Terms are accepted. */
 
 /* Setup gate: the bottom nav stays visible but closed until setup is finished. */
 .movo-app .bottom-nav.is-locked, .movo-app .side-nav.is-locked { opacity: .45; filter: saturate(.4); pointer-events: none; }
@@ -8324,7 +8246,7 @@ body:has(.movo-app.theme-light) { background: #e9eaf0; color-scheme: light; }
 .movo-app .setup-agreement-card h2 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
 .movo-app .setup-agreement-card > p { margin: 0; font-size: 14px; color: var(--muted); }
 .movo-app .setup-agreement-points { list-style: none; margin: 6px 0 0; padding: 0; width: 100%; display: grid; gap: 8px; text-align: start; }
-.movo-app .setup-agreement-points li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-card, 22px); background: var(--card); font-size: 13.5px; line-height: 1.45; animation: tv-caption .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
+.movo-app .setup-agreement-points li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-card, 22px); background: var(--card); font-size: 13.5px; line-height: 1.45; animation: ft-rise .45s ease-out both; animation-delay: calc(var(--i) * 70ms); }
 .movo-app .setup-agreement-points li > span:last-child { min-width: 0; }
 .movo-app .setup-agreement-icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-tile, 30%); background: rgba(127,127,127,.16); color: var(--text); }
 .movo-app .setup-agreement-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
@@ -8504,63 +8426,6 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header .header-actions { align-items: flex-start !important; }
 /* Premium headers (reference, 2026-11-12, kept subtle): a soft glow that follows the balance card's notched shape. */
 .movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block:is(.hero-zodiac, .hero-glow) .balance-card { box-shadow: none; filter: drop-shadow(0 0 1px rgba(255, 255, 255, .28)) drop-shadow(0 10px 22px color-mix(in srgb, var(--hero-glow, #3fd27f) 32%, transparent)); }
-
-/* ===== Tutorial video in a phone frame (owner, 2026-11-12) =====
-   A soft light stage; the recording plays on a generic modern phone (slim dark bezel, dynamic-island cut-out, side
-   buttons, status bar, home indicator) drawn here. Sizes follow the stage height (container query units, no var()
-   inside those calc()s). Controls and the translated caption sit outside the phone. */
-.movo-app.movo-app.movo-app .tv-player.tv-film.tv-framed {
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 0 0 max(16px, env(safe-area-inset-bottom));
-  background: radial-gradient(120% 70% at 50% 35%, #ffffff 0%, #f1f2f5 55%, #e6e8ee 100%);
-  color: #14161a;
-}
-.movo-app.movo-app.movo-app .tv-framed .tv-progress span { background: rgba(20, 22, 26, .12); }
-.movo-app.movo-app.movo-app .tv-framed .tv-progress i { background: #14161a; }
-.movo-app.movo-app.movo-app .tv-framed .tv-top { color: #14161a; }
-.movo-app.movo-app.movo-app .tv-framed .tv-count { color: rgba(20, 22, 26, .6); opacity: 1; }
-.movo-app.movo-app.movo-app .tv-framed :is(.tv-icon, .tv-skip) { background: rgba(20, 22, 26, .07); color: #14161a; -webkit-backdrop-filter: none; backdrop-filter: none; }
-.movo-app.movo-app.movo-app .tv-framed .tv-stage-frame { position: relative; flex: 1 1 auto; min-height: 0; display: grid; place-items: center; container-type: size; padding: 4px 0; }
-.movo-app.movo-app.movo-app .tv-framed .tv-device {
-  position: relative; box-sizing: border-box;
-  height: 60vh; height: min(100cqh, 700px);
-  aspect-ratio: 9 / 20; /* screen minus status bar matches the 720×1560 recording, so nothing is cropped */
-  padding: 9px; padding: calc(min(100cqh, 700px) * .016);
-  border-radius: 54px; border-radius: calc(min(100cqh, 700px) * .085);
-  background: linear-gradient(145deg, #4a4d53 0%, #1b1c1f 18%, #0c0d0f 50%, #1d1e22 82%, #45484e 100%);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .16), inset 0 0 0 3px #0a0a0c, 0 34px 70px -34px rgba(16, 20, 30, .55), 0 14px 26px -16px rgba(16, 20, 30, .35);
-}
-/* Side buttons: action and volume on the left, side button on the right. */
-.movo-app.movo-app.movo-app .tv-framed .tv-device::before,
-.movo-app.movo-app.movo-app .tv-framed .tv-device::after { content: ''; position: absolute; width: 3px; border-radius: 2px; background: linear-gradient(90deg, #2b2d31, #4a4d53); }
-.movo-app.movo-app.movo-app .tv-framed .tv-device::before { left: -3px; top: 19%; height: 4%; box-shadow: 0 9vh 0 0 #34363b, 0 15vh 0 0 #34363b; box-shadow: 0 calc(min(100cqh, 700px) * .085) 0 0 #34363b, 0 calc(min(100cqh, 700px) * .15) 0 0 #34363b; }
-.movo-app.movo-app.movo-app .tv-framed .tv-device::after { right: -3px; top: 27%; height: 10%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-screen {
-  position: relative; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden;
-  border-radius: 46px; border-radius: calc(min(100cqh, 700px) * .07);
-  background: #0f0f0f; isolation: isolate;
-}
-.movo-app.movo-app.movo-app .tv-framed .tv-statusbar {
-  position: relative; flex: none; display: flex; align-items: center; justify-content: space-between;
-  height: 38px; height: calc(min(100cqh, 700px) * .062);
-  padding: 0 9%; color: #fff; font-size: 13px; font-size: calc(min(100cqh, 700px) * .024); letter-spacing: -.01em;
-}
-.movo-app.movo-app.movo-app .tv-framed .tv-statusbar b { font-weight: 600; min-width: 22%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-island { position: absolute; left: 50%; top: 22%; width: 31%; height: 56%; transform: translateX(-50%); border-radius: 99px; background: #000; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); }
-.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5%; min-width: 22%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons svg { height: 0.82em; width: auto; fill: currentColor; }
-.movo-app.movo-app.movo-app .tv-framed .tv-sb-icons svg:last-child { height: 0.9em; }
-.movo-app.movo-app.movo-app .tv-framed .tv-video { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; width: 100%; height: auto; object-fit: cover; object-position: top center; background: #0f0f0f; }
-.movo-app.movo-app.movo-app .tv-framed .tv-homebar { position: absolute; left: 50%; bottom: 1.1%; width: 34%; height: 4px; transform: translateX(-50%); border-radius: 99px; background: rgba(255, 255, 255, .78); pointer-events: none; }
-.movo-app.movo-app.movo-app .tv-framed .tv-bigplay { left: 50%; top: 46%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-hold { position: absolute; inset: 0; z-index: 1; }
-.movo-app.movo-app.movo-app .tv-framed .tv-tap { top: 0; bottom: 0; width: 30%; }
-.movo-app.movo-app.movo-app .tv-framed .tv-caption { position: relative; left: auto; right: auto; bottom: auto; padding: 0 22px; text-align: center; animation: tv-caption .45s ease-out both; }
-.movo-app.movo-app.movo-app .tv-framed .tv-caption h2 { color: #14161a; text-shadow: none; font-size: 20px; margin: 0 0 4px; }
-.movo-app.movo-app.movo-app .tv-framed .tv-caption p { color: rgba(20, 22, 26, .66); text-shadow: none; font-size: 13.5px; }
-.movo-app.movo-app.movo-app .tv-framed .tv-actions { position: relative; left: auto; right: auto; bottom: auto; padding: 0 18px; }
-.movo-app.movo-app.movo-app .tv-framed .tv-actions .secondary-button { background: rgba(20, 22, 26, .08); color: #14161a; -webkit-backdrop-filter: none; backdrop-filter: none; }
-@media (min-width: 521px) { .movo-app.movo-app.movo-app .tv-player.tv-film.tv-framed { width: min(100%, 440px); height: min(940px, calc(100dvh - 24px)); } }
 
 /* ===== Responsiveness on phones (owner, 2026-11-12) =====
    Taps answer at once and pop-ups arrive quickly: press states are instant (no transition on the way in), sheets
@@ -8956,3 +8821,588 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
   .movo-app .profile-social-action, .friends-tabs button { transition: background-color 180ms ease-out, transform 180ms ease-out; }
   .movo-app .profile-social-action:active { transform: scale(.98); }
 }
+
+.friends-tabs-expanded { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.friends-directory-settings, .friends-snapshot { border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
+.friends-field :is(textarea, select) { min-width: 0; width: 100%; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--field); color: var(--text); font: inherit; }
+.friends-option { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.friends-option input { inline-size: 18px; block-size: 18px; accent-color: var(--accent); flex: none; }
+.friends-content h3 { margin: 0; font-size: 15px; }
+.friends-list.friends-directory-results li { flex-wrap: wrap; }
+.friends-list.friends-directory-results button { width: auto; }
+.friends-directory-results b { overflow-wrap: anywhere; }
+.friends-snapshot p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.friends-totals { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.friends-totals dd { margin: 3px 0; font-weight: 650; overflow-wrap: anywhere; }
+.friends-breakdown { list-style: none; padding: 0; margin-block: 10px 0; display: grid; gap: 8px; }
+.friends-breakdown li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(28px, 1fr) auto; gap: 8px; align-items: center; overflow-wrap: anywhere; }
+.friends-breakdown meter { inline-size: 100%; accent-color: var(--accent); }
+/* ===== MOVO guide: the screenshot tour (owner, 2026-11-16; components/FeatureTour.js) =====
+   One real screenshot per step. The feature being explained stays sharp inside a ring while the rest of the picture
+   is blurred white (dark theme: blurred dark). The picture glides so the highlight is centred; motion is ease-out
+   only and stops with reduced motion. Caption and controls sit outside the picture. */
+@keyframes ft-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ft-fade { from { opacity: 0; } to { opacity: 1; } }
+.movo-app .ft-backdrop { position: fixed; inset: 0; z-index: 400; display: grid; place-items: center; padding: 12px 16px; background: rgba(8, 10, 16, .62); }
+.movo-app .ft-panel {
+  --ft-ink: #14161a; --ft-soft: rgba(20, 22, 26, .62); --ft-chip: rgba(20, 22, 26, .07); --ft-stage: #eceee9; --ft-veil: rgba(255, 255, 255, .62);
+  position: relative; display: flex; flex-direction: column; width: min(100%, 440px); height: min(900px, calc(100dvh - 24px));
+  overflow: hidden; border-radius: 28px; background: #fbfbf9; color: var(--ft-ink); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .6);
+}
+.movo-app .ft-panel.is-dark { --ft-ink: #f2f4f2; --ft-soft: rgba(242, 244, 242, .66); --ft-chip: rgba(242, 244, 242, .1); --ft-stage: #171a18; --ft-veil: rgba(9, 11, 10, .6); background: #0f1110; }
+@media (max-width: 520px) {
+  .movo-app .ft-backdrop { padding: 0; }
+  .movo-app .ft-panel { width: 100%; height: 100dvh; border-radius: 0; }
+}
+.movo-app .ft-progress { display: flex; gap: 3px; padding: max(12px, env(safe-area-inset-top)) 16px 0; }
+.movo-app .ft-progress span { flex: 1; min-width: 0; height: 3px; border-radius: 99px; background: var(--ft-chip); overflow: hidden; }
+.movo-app .ft-progress i { display: block; height: 100%; border-radius: inherit; background: var(--ft-ink); }
+.movo-app .ft-top { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0 16px; }
+.movo-app .ft-count { flex: 1; min-width: 0; font-size: 12px; font-weight: 600; color: var(--ft-soft); }
+.movo-app .ft-panel :is(.ft-icon, .ft-skip) { min-height: 44px; border: 0; border-radius: 99px; background: var(--ft-chip); color: var(--ft-ink); font: inherit; font-size: 13px; font-weight: 600; }
+.movo-app .ft-panel .ft-icon { width: 44px; display: grid; place-items: center; padding: 0; }
+.movo-app .ft-panel .ft-skip { padding: 0 16px; }
+.movo-app .ft-sound.is-muted { position: relative; color: var(--ft-soft); }
+.movo-app .ft-sound.is-muted::after { content: ''; position: absolute; width: 20px; height: 2px; border-radius: 2px; background: currentColor; transform: rotate(-45deg); }
+.movo-app .ft-stage { position: relative; flex: 1 1 auto; min-height: 150px; margin: 10px 14px 0; overflow: hidden; border-radius: 22px; background: var(--ft-stage); touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.movo-app .ft-sheet { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform .55s cubic-bezier(.22, .61, .36, 1); will-change: transform; }
+.movo-app .ft-shot { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+.movo-app .ft-soft { filter: blur(5px); transition: opacity .35s ease-out; }
+.movo-app .ft-veil { position: absolute; inset: 0; background: var(--ft-veil); transition: opacity .35s ease-out; }
+.movo-app .ft-sharp { transition: clip-path .55s cubic-bezier(.22, .61, .36, 1), -webkit-clip-path .55s cubic-bezier(.22, .61, .36, 1); animation: ft-fade .35s ease-out both; }
+.movo-app .ft-ring { position: absolute; box-sizing: border-box; border: 2px solid var(--accent, #0f9d6a); box-shadow: 0 12px 34px -14px rgba(0, 0, 0, .45); pointer-events: none;
+  transition: left .55s cubic-bezier(.22, .61, .36, 1), top .55s cubic-bezier(.22, .61, .36, 1), width .55s cubic-bezier(.22, .61, .36, 1), height .55s cubic-bezier(.22, .61, .36, 1), opacity .35s ease-out; }
+.movo-app .ft-sheet.is-whole :is(.ft-soft, .ft-veil, .ft-ring) { opacity: 0; }
+.movo-app .ft-missing { position: absolute; inset: 0; display: grid; place-items: center; opacity: .5; }
+.movo-app .ft-tap { position: absolute; top: 0; bottom: 0; width: 30%; border: 0; padding: 0; background: transparent; cursor: pointer; }
+.movo-app .ft-prev { left: 0; } .movo-app .ft-next { right: 0; }
+.movo-app .ft-tap:disabled { pointer-events: none; }
+.movo-app .ft-caption { padding: 14px 22px 2px; text-align: center; animation: ft-rise .4s ease-out both; }
+.movo-app .ft-caption h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; color: var(--ft-ink); }
+.movo-app .ft-caption p { margin: 0 auto; max-width: 360px; min-height: 59px; font-size: 14px; line-height: 1.42; color: var(--ft-soft); }
+.movo-app .ft-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px; padding: 10px 16px max(16px, env(safe-area-inset-bottom)); }
+.movo-app .ft-panel .ft-actions .secondary-button { background: var(--ft-chip); color: var(--ft-ink); border: 0; }
+.movo-app .ft-panel .ft-actions .secondary-button:disabled { opacity: .4; }
+.movo-app .ft-panel.is-still :is(.ft-sheet, .ft-sharp, .ft-ring, .ft-soft, .ft-veil, .ft-caption) { transition: none; animation: none; }
+@media (prefers-reduced-motion: reduce) { .movo-app .ft-panel :is(.ft-sheet, .ft-sharp, .ft-ring, .ft-soft, .ft-veil, .ft-caption) { transition: none; animation: none; } }
+
+/* ===== MOVO Aries, the welcoming mascot (owner, 2026-11-16; components/AriesMascot.js, lib/ariesArt.js) =====
+   Aries stands beside each MOVO guide caption, greets people on the first-run welcome card and heads the Help Center.
+   It keeps its own colours in every theme. It arrives with the caption's calm rise and then stays still: no idle bob. */
+.aries-mascot { display: block; flex: none; overflow: visible; }
+.movo-app .ft-caption { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 18px 2px 12px; text-align: left; }
+.movo-app .ft-caption .ft-guide { margin: -6px -2px -4px 0; filter: drop-shadow(0 6px 10px rgba(20, 22, 26, .12)); }
+.movo-app .ft-caption .ft-words { min-width: 0; }
+.movo-app .ft-caption p { margin: 0; max-width: none; min-height: 60px; overflow-wrap: anywhere; }
+.movo-app .ft-panel.is-dark .ft-caption .ft-guide { filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .45)); }
+.tour-welcome .tour-aries { display: grid; place-items: center; margin: -8px auto 2px; }
+.tour-welcome .tour-aries .aries-mascot { filter: drop-shadow(0 8px 14px rgba(20, 22, 26, .14)); }
+.help-page .help-aries { display: flex; align-items: center; gap: 12px; }
+.help-page .help-aries .aries-mascot { margin: -6px 0 -8px -6px; }
+.help-page .help-aries > div { min-width: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .tour-welcome .tour-aries .aries-mascot { animation: ft-rise .5s ease-out both; }
+}
+.help-page .help-guide-button { margin-top: 10px; width: 100%; }
+
+/* 2026-11-16 — Aries is the default Home ram. Match the vector's foot line to the
+   balance card instead of the old 3D poster's bottom margin. Head and arms may move;
+   the grounded figure stays fixed. The art supplies its own contact shadow. */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen :is(.home-hero-block > .screen-header.home-header, .screen-header.home-header.home-hero) > .ram-aries .ram-stage {
+  bottom: calc(-12px - var(--ram-size) * .108);
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .screen-header.home-header.home-hero > .ram-aries .ram-stage {
+  bottom: calc(-2px - var(--ram-size) * .108);
+}
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen .ram-aries .ram-stage::before { display: none; }
+.ram-aries .aries-mascot { width: 100%; height: 100%; pointer-events: none; }
+.ram-aries .aries-shadow { opacity: .4; }
+/* The header remains visible after scrolling, so its tapped message must remain
+   usable too (including the link to the expression gallery). */
+.movo-app .ram-aries .ram-bubble.is-open { display: block; }
+
+/* Friends uses the usual screen stack, with private snapshots rendered as read-only cards. */
+.friends-page { display: grid; gap: 12px; min-width: 0; }
+.friends-page .friends-tabs { margin-block: 2px; }
+.friends-page .friends-list .friends-open-summary {
+  display: flex; align-items: center; flex: 1; gap: 10px; width: auto; min-width: 0; min-height: 48px;
+  padding: 0; background: transparent; text-align: start;
+}
+/* Shared Summary and its in-app recipient preview. */
+.friend-summary-page, .friend-share-sheet {
+  --friend-ink: color-mix(in srgb, var(--text) 68%, var(--muted));
+  --friend-tint: color-mix(in srgb, var(--accent) 10%, var(--card-solid));
+}
+.friend-summary-page { gap: 14px; }
+.friend-summary-profile { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 3px 0; }
+.friend-summary-profile .friends-initial {
+  width: 48px; height: 48px; flex: none; border-radius: 16px; font-size: 20px; font-weight: 720;
+  background: var(--friend-tint); color: var(--friend-ink); overflow: hidden;
+}
+.friend-summary-person { min-width: 0; flex: 1; }
+.friend-summary-profile h2 { margin: 0; font-size: clamp(20px, 5vw, 28px); font-weight: 730; line-height: 1.15; overflow-wrap: anywhere; }
+.friend-summary-page .friend-share-trigger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px;
+  max-width: 42%; padding-inline: 12px; color: var(--text); background: var(--friend-tint); font-weight: 650;
+}
+.friend-share-trigger svg, .friend-summary-period svg { flex: none; }
+.friend-summary-status:empty { display: none; }
+.friend-summary-status { color: var(--friend-ink); font-size: .875rem; line-height: 1.4; }
+.friend-summary-state { display: grid; justify-items: start; gap: 10px; padding: 16px; }
+.friend-summary-state p { margin: 0; color: var(--friend-ink); line-height: 1.5; overflow-wrap: anywhere; }
+
+.friend-dashboard { display: grid; gap: 12px; min-width: 0; container: friend-summary / inline-size; }
+.friend-summary-overview {
+  display: grid; gap: 14px; min-width: 0; padding: 12px 0;
+  color: var(--text);
+}
+.friend-summary-overview.has-metrics {
+  padding: 16px; border-radius: 24px;
+  background: color-mix(in srgb, var(--accent) 28%, #17251e); color: #fff;
+}
+.friend-summary-period { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: .875rem; font-weight: 670; }
+.friend-summary-period .friend-card-icon { width: 30px; height: 30px; background: var(--field); }
+.has-metrics .friend-summary-period .friend-card-icon { background: rgba(255,255,255,.12); color: inherit; }
+.friend-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.friend-metrics[data-count='1'] { grid-template-columns: minmax(0, 1fr); }
+.friend-metric { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 10px; border-radius: 14px; background: rgba(255,255,255,.09); }
+.friend-metric dt { display: flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600; overflow-wrap: anywhere; }
+.friend-metric dt svg { flex: none; }
+.friend-metric dd { min-width: 0; margin: 0; }
+.friend-metric .friend-amount { font-size: 1.375rem; }
+.friend-metric small { display: block; margin-block-start: 3px; color: rgba(255,255,255,.82); font-size: .75rem; overflow-wrap: anywhere; }
+.friend-metrics[data-count='3'] .friend-section-savings {
+  grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) fit-content(68%); align-items: center;
+}
+.friend-metrics[data-count='3'] .friend-section-savings dd { text-align: end; }
+.friend-summary-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.movo-app .friend-dashboard :is(.friend-section, .friend-note) {
+  min-width: 0; margin: 0; padding: 14px; border-radius: 20px;
+  background: var(--card-solid); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.friend-section-heading { display: flex; gap: 9px; align-items: center; margin-block-end: 10px; }
+.friend-section-heading > div { min-width: 0; }
+.friend-section-heading h3 { margin: 0; font-size: .9375rem; font-weight: 720; line-height: 1.25; overflow-wrap: anywhere; }
+.friend-section-heading small { display: block; margin-block-start: 2px; color: var(--friend-ink); font-size: .75rem; line-height: 1.35; }
+.friend-card-icon {
+  display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px;
+  border-radius: 10px; background: var(--friend-tint, var(--field)); color: var(--friend-ink, var(--text));
+}
+.friend-amount { display: block; font-size: 1.5rem; font-weight: 740; letter-spacing: -.035em; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.friend-note p { margin: 0; color: var(--friend-ink); font-size: .875rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.friend-summary-rows { display: grid; gap: 9px; margin: 0; }
+.friend-summary-rows div { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(57%); align-items: baseline; gap: 8px; }
+.friend-summary-rows dt, .friend-plan-progress span { color: var(--friend-ink); font-size: .8125rem; overflow-wrap: anywhere; }
+.friend-summary-rows dd { margin: 0; font-weight: 650; text-align: end; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.friend-flow-summary { display: grid; gap: 4px; padding: 9px 11px; border-radius: 12px; background: var(--field); }
+.friend-flow-summary span { color: var(--friend-ink); font-size: .8125rem; }
+.friend-flow, .friend-spending { display: grid; gap: 9px; padding: 0; margin: 11px 0 0; list-style: none; }
+.friend-flow li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1.4fr); align-items: center; gap: 8px; font-size: .8125rem; }
+.friend-flow li > span:first-child { color: var(--friend-ink); overflow-wrap: anywhere; }
+.friend-flow b { justify-self: end; text-align: end; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.friend-flow-track, .friend-spending-track { display: block; position: relative; height: 8px; background: var(--field); border-radius: 6px; }
+.friend-flow-track { direction: ltr; }
+.friend-flow-track::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px solid var(--muted); }
+.friend-flow-track i, .friend-spending-track i { position: absolute; height: 100%; width: var(--flow-length); border-radius: 5px; }
+.friend-flow-track .positive { left: 50%; background: var(--green); }
+.friend-flow-track .negative { right: 50%; background: var(--red); }
+.friend-spending { margin: 0; }
+.friend-spending li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: .8125rem; overflow-wrap: anywhere; }
+.friend-spending-track { grid-column: 1 / -1; height: 5px; }
+.friend-spending-track i { inset-inline-start: 0; background: var(--accent-ink, var(--accent)); }
+.friend-spending b, .friend-plan-progress b { font-variant-numeric: tabular-nums; }
+.friend-plan-progress { display: grid; gap: 6px; margin-block-start: 12px; }
+.friend-plan-progress > div { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+.friend-summary-actions { display: grid; gap: 4px; }
+.friend-summary-actions .friend-revoke { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.friend-summary-page .friends-safety { gap: 0 8px; }
+.friend-summary-page .friends-safety[data-count='1'] { grid-template-columns: 1fr; }
+.friend-summary-page .friends-safety button { background: transparent; color: var(--friend-ink); font-size: .875rem; }
+.movo-app.movo-app .sheet.friend-share-sheet {
+  max-height: 86dvh; background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none;
+  overscroll-behavior: contain; scroll-padding-block: 12px 68px;
+}
+.movo-app .sheet-backdrop:has(> .friend-share-sheet) { background: var(--overlay); }
+.movo-app.movo-app .friend-share-sheet:has(.friend-preview) { padding-block-end: 0; }
+.friend-share-recipient {
+  display: flex; align-items: center; gap: 8px; padding: 10px 11px; border-radius: 12px;
+  color: var(--friend-ink); background: var(--friend-tint); margin: 8px 0 12px; font-size: .8125rem; line-height: 1.4;
+}
+.friend-share-recipient p { margin: 0; overflow-wrap: anywhere; }
+.friend-share-recipient svg { flex: none; }
+.friend-sharing fieldset { min-inline-size: 0; border: 0; padding: 0; margin: 0; }
+.friend-sharing legend { font-weight: 650; margin-bottom: 6px; }
+.friend-share-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 6px; }
+.friend-sharing .friends-option {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 7px 9px; border-radius: 12px; background: var(--card-solid); cursor: pointer; font-size: .875rem;
+}
+.friend-sharing .friends-option:has(input:checked) { background: var(--friend-tint); }
+.friend-sharing .friends-option:has(input:disabled) { cursor: default; }
+.friend-sharing .friends-option > span { min-width: 0; overflow-wrap: anywhere; }
+.friend-sharing .friends-option .friend-card-icon { width: 25px; height: 25px; }
+.friend-sharing .friends-option input { margin: 0; }
+.friend-sharing .friends-option small { display: block; color: var(--friend-ink); font-size: .75rem; }
+.friend-sharing select { min-height: 44px; }
+.friend-share-footer {
+  position: sticky; z-index: 2; bottom: -1px; display: flex; gap: 8px; padding-block: 8px 3px; background: var(--bg);
+}
+.friend-share-footer > button { flex: 1; min-width: 0; padding-inline: 8px; white-space: normal; overflow-wrap: anywhere; }
+.friend-preview { display: grid; gap: 8px; min-width: 0; }
+.friend-preview .friend-share-footer { bottom: 0; padding-block-end: max(12px, env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: no-preference) {
+  .friend-sharing .friends-option, .friend-share-trigger { transition: background-color 160ms ease-out; }
+  .friend-dashboard.is-preview { animation: friend-preview-in 180ms ease-out; }
+}
+@keyframes friend-preview-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 390px) {
+  .friend-metric dt { flex-wrap: wrap; gap: 4px; }
+  .friend-metric .friend-amount { font-size: 1.1875rem; }
+}
+@container friend-summary (max-width: 17.5rem) {
+  .friend-metrics { grid-template-columns: minmax(0, 1fr); }
+}
+@container friend-summary (min-width: 34rem) {
+  .friend-metrics[data-count='3'] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .friend-metrics[data-count='3'] .friend-section-savings { grid-column: auto; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .friend-metrics[data-count='3'] .friend-section-savings dd { text-align: start; }
+  .friend-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .friend-summary-grid > :only-child { grid-column: 1 / -1; }
+}
+
+/* ===== Pop-up panels: one surface for every sheet and dialog (owner, 2026-11-16) =====
+   Every pop-up uses the transaction-details look: an opaque surface (white in light, #1c1c1e in dark), a soft shadow,
+   and an iOS-style hairline edge drawn as a gradient so it catches light at the top-left like iOS glass. This replaces
+   the 2026-11-12 "no outline" choice for the details pop-up, and the translucent glass panel for Budgets & Plans.
+   The edge is painted with the two-layer background trick (padding-box fill + border-box gradient), which stays put
+   while a long sheet scrolls. On phones, bottom sheets float 8px from the screen edges with rounded corners all round;
+   the safe area sits outside the panel, so the panel's own bottom padding no longer includes it. */
+.movo-app {
+  --pop-bg: #ffffff;
+  --pop-rim: linear-gradient(160deg, rgba(16, 24, 40, .05) 0%, rgba(16, 24, 40, .09) 45%, rgba(16, 24, 40, .14) 100%);
+  --pop-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 22px 54px -14px rgba(16, 24, 40, .32);
+  --pop-radius: 32px;
+}
+.movo-app.theme-dark {
+  --pop-bg: #1c1c1e;
+  --pop-rim: linear-gradient(160deg, rgba(255, 255, 255, .26) 0%, rgba(255, 255, 255, .08) 26%, rgba(255, 255, 255, .045) 62%, rgba(255, 255, 255, .13) 100%);
+  --pop-shadow: 0 26px 64px -10px rgba(0, 0, 0, .72);
+}
+/* Repeated classes outrank the earlier per-panel "no border" and shadow rules (details, plans, reconnect). */
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet.sheet.sheet {
+  border: 1px solid transparent !important;
+  background: linear-gradient(var(--pop-bg), var(--pop-bg)) padding-box, var(--pop-rim) border-box !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: var(--pop-shadow) !important;
+  border-radius: var(--pop-radius);
+}
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet-center { border-radius: var(--pop-radius); }
+.movo-app.movo-app.movo-app.movo-app .sheet.sheet-center.plan-panel .plan-panel-foot { border-radius: 0 0 calc(var(--pop-radius) - 1px) calc(var(--pop-radius) - 1px); }
+/* Phones: bottom sheets float above the home indicator instead of touching the screen edges. */
+.movo-app:not(.layout-tablet):not(.layout-desktop) .sheet-backdrop:not(.center) { padding: 0 8px calc(8px + env(safe-area-inset-bottom)); }
+.movo-app.movo-app.movo-app.movo-app:not(.layout-tablet):not(.layout-desktop) .sheet:not(.sheet-center) {
+  max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  padding-bottom: 24px;
+}
+/* The sticky Save bar of the composer sheets follows the new bottom padding and keeps the rounded corners. */
+.movo-app.movo-app.movo-app:not(.layout-tablet):not(.layout-desktop) .sheet:not(.sheet-center) .tx-bottom {
+  bottom: -24px; margin-bottom: -24px; padding-bottom: 14px; border-radius: 0 0 calc(var(--pop-radius) - 1px) calc(var(--pop-radius) - 1px);
+}
+/* Composer sheets (Add transaction, Add account) share the pop-up surface; their fields stay one step off it. */
+.movo-app.movo-app.movo-app .tx-sheet, .movo-app.movo-app.movo-app .acct-sheet { --bg: var(--pop-bg); --tx-field: color-mix(in srgb, var(--text) 6%, var(--pop-bg)); }
+.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom { background: var(--pop-bg); }
+.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom::before { background: linear-gradient(to bottom, transparent, var(--pop-bg)); }
+/* Behind every pop-up: the page dims and softens, as in the transaction-details reference. */
+.movo-app .sheet-backdrop { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.movo-app.platform-android .sheet-backdrop { -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+@media (prefers-reduced-transparency: reduce) { .movo-app .sheet-backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* ===== Menu tool icons (owner, 2026-11-16) =====
+   One distinct glyph and colour per tool (Icon.js: renew, goal, cashback, calendarClock, planning, exchange, crypto,
+   stocks; archive and the owner's Limits gauge are kept). Larger 40px squircle tiles with 22px glyphs. Each tile is
+   a solid tint of its colour: in light the glyph is a deeper shade for contrast, in dark a lighter one on a stronger
+   tint, so every tool stays recognisable in both appearances. */
+.movo-app .menu-tile-icon { --mt: #8e8e93; width: 40px; height: 40px; border-radius: var(--r-tile, 30%);
+  background: color-mix(in srgb, var(--mt) 14%, transparent); color: color-mix(in srgb, var(--mt) 86%, #000); }
+.movo-app.theme-dark .menu-tile-icon { background: color-mix(in srgb, var(--mt) 24%, transparent); color: color-mix(in srgb, var(--mt) 72%, #fff); }
+.movo-app .menu-tile-icon .movo-icon { flex: none; }
+.movo-app .menu-tile-icon.mt-purple { --mt: #9b51e0; }
+.movo-app .menu-tile-icon.mt-green { --mt: #1f9d55; }
+.movo-app .menu-tile-icon.mt-pink { --mt: #e8457a; }
+.movo-app .menu-tile-icon.mt-orange { --mt: #f08a12; }
+.movo-app .menu-tile-icon.mt-blue { --mt: #2f7cf6; }
+.movo-app .menu-tile-icon.mt-teal { --mt: #12a597; }
+.movo-app .menu-tile-icon.mt-amber { --mt: #d99a06; }
+.movo-app .menu-tile-icon.mt-indigo { --mt: #5b5bd6; }
+.movo-app .menu-tile-icon.mt-gray { --mt: #8e8e93; }
+.movo-app .menu-tile-icon.mt-red { --mt: #ef4b3f; }
+.movo-app .menu-tile strong { margin-top: 8px; }
+
+/* ===== Home header: less space under Total balance (owner, 2026-11-16) =====
+   The scenery showed 28px under the balance card (14px header padding plus the card's own 14px bottom margin).
+   Inside the header the card's margin is dropped and the header keeps 10px, so the card sits close to the rounded
+   bottom edge (28px header corners around 22px card corners). */
+.movo-app.movo-app.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block { padding-bottom: 10px !important; }
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot > .balance-card,
+.movo-app.movo-app.movo-app.movo-app .screen > .home-hero-block > .box-slot :is(.balance-card) { margin-bottom: 0 !important; }
+
+/* ===== Less space at the top of every page (owner, 2026-11-16) =====
+   On phones in the browser and the home-screen web app, pages started 18px below the status bar, and Home's header
+   photo added 10px more before the greeting. The shared base is now 8px, so every page's header (and Home's greeting
+   and buttons) moves up 10px and they stay aligned with each other. Devices with a top safe area still keep at least
+   that inset. The iPhone app (native-chrome), which reserves room for its own glass top bar, and tablet/desktop
+   layouts are unchanged. */
+html:not(.native-chrome) .movo-app:not(.layout-tablet):not(.layout-desktop) .screen { padding-top: max(8px, env(safe-area-inset-top)); }
+html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet):not(.layout-desktop) .screen > :is(.screen-header.home-header.home-hero, .home-hero-block) {
+  --hero-pull: max(8px, env(safe-area-inset-top));
+}
+
+/* ===== NasrinAI chat polish (owner, 2026-11-16) =====
+   - Replies no longer show through the gap between the composer and the tab bar, or under the status bar: a solid
+     backdrop (fading in over 24px) sits behind the composer and tab bar, and a short fade sits under the status bar.
+   - Assistant replies are a soft filled card without the bright outline; your messages drop the visible "You" label
+     (screen readers still hear it). Listen is a light chip that turns accent-coloured with Stop while speaking.
+   - The shortcut chips fade at the right edge, so a chip running off the end reads as "scroll for more". */
+.movo-app .movo-ai-chat::after {
+  content: ''; position: fixed; z-index: 34; left: 0; right: 0; bottom: 0; pointer-events: none;
+  height: calc(var(--composer-h, 108px) + 76px + 24px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--bg) 24px);
+}
+.movo-app .movo-ai-chat::before {
+  content: ''; position: fixed; z-index: 34; left: 0; right: 0; top: 0; pointer-events: none;
+  height: calc(env(safe-area-inset-top) + 14px);
+  background: linear-gradient(to bottom, var(--bg) calc(100% - 14px), transparent);
+}
+.native-chrome .movo-app .movo-ai-chat::before { display: none; }
+.movo-app.has-scenery .movo-ai-chat::after { background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--bg) 92%, transparent) 24px); }
+.movo-app.movo-app.movo-app .movo-ai-message.assistant {
+  border: 0 !important; box-shadow: none !important; padding: 12px 14px 10px;
+  background: color-mix(in srgb, var(--text) 5%, var(--bg)) !important;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.movo-app.movo-app.movo-app .movo-ai-message.assistant::after { display: none; }
+.movo-app.theme-dark .movo-ai-message.assistant .movo-ai-message-label { color: var(--muted); opacity: 1; }
+.movo-app .movo-ai-message.user { padding: 10px 14px; }
+.movo-app .movo-ai-message .movo-ai-message-label.sr-only { position: absolute; margin: 0; }
+.movo-app .movo-ai-listen { min-height: 32px; margin-top: 6px; padding: 0 11px 0 9px; background: color-mix(in srgb, var(--text) 7%, transparent); color: var(--muted); font-size: 12px; font-weight: 600; }
+.movo-app .movo-ai-listen.is-speaking { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-ink, var(--accent)); }
+.movo-app .movo-ai-composer .movo-ai-shortcuts { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+[dir="rtl"] .movo-app .movo-ai-composer .movo-ai-shortcuts { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+
+/* ===== Theme picker in Settings and Profile (owner, 2026-11-16) =====
+   One look wherever the picker appears (Profile → App Appearance, Settings → Appearance). The group has no background
+   (a shared segmented-control rule painted a square grey strip behind the rounded tiles on Profile). Each swatch is a
+   true preview in both themes: Light is light, Dark is near-black, System is split, Custom is the accent. The choice is
+   shown by an accent ring on the swatch with the tick inside its corner, not by a grey tile behind it. The swatch colours
+   are fixed previews, so they are marked important over the shared rule that makes control text inherit its colour. */
+.movo-app.movo-app.movo-app .theme-segments {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(8px, 2.4vw, 12px);
+  padding: 0; margin: 0; border: 0; border-radius: 0; background: transparent !important; box-shadow: none !important;
+}
+.movo-app.movo-app.movo-app.movo-app .theme-segments > button {
+  min-width: 0; gap: 7px; padding: 0 0 2px; border: 0 !important; border-radius: 0; background: transparent !important;
+  box-shadow: none !important; color: var(--muted); font-size: 12.5px; font-weight: 500;
+}
+.movo-app.movo-app.movo-app.movo-app .theme-segments > button::after { display: none; }
+.movo-app.movo-app.movo-app.movo-app .theme-segments > button.selected { color: var(--text); font-weight: 650; }
+.movo-app.movo-app.movo-app .theme-segments .seg-art {
+  position: relative; width: 100%; height: clamp(50px, 14vw, 60px); border-radius: 16px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent);
+  transition: box-shadow 180ms ease-out;
+}
+.movo-app.movo-app.movo-app .theme-segments .seg-light { background: #f4f4f7; color: #1c1c1e !important; }
+.movo-app.movo-app.movo-app .theme-segments .seg-dark { background: #1c1c1e; color: #ffffff !important; }
+.movo-app.movo-app.movo-app .theme-segments .seg-system { background: linear-gradient(135deg, #1c1c1e 50%, #f4f4f7 50%); color: #8e8e93 !important; }
+.movo-app.movo-app.movo-app .theme-segments .seg-custom { background: var(--accent); color: var(--on-accent, #fff) !important; }
+.movo-app.movo-app.movo-app .theme-segments > button.selected .seg-art {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+}
+.movo-app.movo-app.movo-app .theme-segments .check-badge {
+  top: 5px; right: 5px; left: auto; width: 18px; height: 18px; background: var(--accent); color: var(--on-accent, #fff);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, #fff 70%, transparent);
+}
+[dir="rtl"] .movo-app.movo-app.movo-app .theme-segments .check-badge { right: auto; left: 5px; }
+.movo-app.movo-app.movo-app .theme-segments .seg-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app.movo-app.movo-app .theme-segments > button:focus-visible { outline: none; }
+.movo-app.movo-app.movo-app .theme-segments > button:focus-visible .seg-art { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+
+/* ===== Profile page (owner, 2026-11-16: "more professional and user friendly") =====
+   - One Overview card for the month chosen on Home: the total balance large, then that month's income and expenses.
+     A trend chip appears only when it is meaningful (no "999+%" against an almost empty last month).
+   - Every row has a tinted icon tile in the Menu's colour language (pf-ic, same --mt colours), and the Settings rows
+     say what is inside them. */
+.movo-app .profile-overview { display: grid; gap: 14px; padding: 16px; }
+.movo-app .profile-overview .po-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.movo-app .profile-overview .po-head strong { font-size: 15px; font-weight: 650; }
+.movo-app .profile-overview .po-head small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .profile-overview .po-main { display: grid; gap: 4px; justify-items: start; min-width: 0; }
+.movo-app .profile-overview .po-main small { color: var(--muted); font-size: 12.5px; }
+.movo-app .profile-overview .po-main strong { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.movo-app .profile-overview .po-split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.movo-app .profile-overview .po-stat { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; column-gap: 10px; row-gap: 4px;
+  min-width: 0; padding: 12px; border-radius: 16px; background: color-mix(in srgb, var(--text) 4%, transparent); }
+.movo-app .profile-overview .po-stat .pf-ic { width: 34px; height: 34px; grid-row: 1 / span 2; }
+.movo-app .profile-overview .po-text { display: grid; gap: 2px; min-width: 0; }
+.movo-app .profile-overview .po-text small { color: var(--muted); font-size: 12px; }
+.movo-app .profile-overview .po-text strong { font-size: 15.5px; font-weight: 650; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .profile-overview .po-stat > .delta { grid-column: 2; justify-self: start; }
+:where(.movo-app .pf-ic) { --mt: #8e8e93; }
+.movo-app.movo-app.movo-app .menu-icon.pf-ic, .movo-app.movo-app.movo-app .pf-ic { width: 36px; height: 36px; border-radius: var(--r-tile, 30%);
+  background: color-mix(in srgb, var(--mt) 14%, transparent); color: color-mix(in srgb, var(--mt) 86%, #000); }
+.movo-app.movo-app.movo-app.theme-dark .pf-ic { background: color-mix(in srgb, var(--mt) 24%, transparent); color: color-mix(in srgb, var(--mt) 72%, #fff); }
+.movo-app .pf-ic.mt-blue { --mt: #2f7cf6; } .movo-app .pf-ic.mt-purple { --mt: #9b51e0; } .movo-app .pf-ic.mt-teal { --mt: #12a597; }
+.movo-app .pf-ic.mt-green { --mt: #1f9d55; } .movo-app .pf-ic.mt-red { --mt: #ef4b3f; } .movo-app .pf-ic.mt-orange { --mt: #f08a12; }
+.movo-app .pf-ic.mt-gray { --mt: #8e8e93; }
+.movo-app .menu-row.danger .menu-main strong { color: var(--danger, #e5484d); }
+@media (max-width: 360px) { .movo-app .profile-overview .po-split { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== Pop-up panels keep Liquid Glass (owner, 2026-11-16, follow-up) =====
+   With Liquid Glass on (the default), every sheet and dialog is frosted glass: the theme's glass tint at no less than
+   72% (more with the Clarity slider towards "Frosted"), a strong blur behind it, a hairline rim and a brighter top
+   edge like iOS. It is never see-through enough to hurt legibility. With glass off, panels stay solid (block above). */
+.movo-app.glass-on {
+  --pop-glass: rgba(var(--glass-tint, 255,255,255), clamp(.72, calc(var(--glass-fill, .6) + .2), .92));
+  --pop-glass-rim: rgba(255, 255, 255, .55);
+  --pop-glass-hi: rgba(255, 255, 255, .9);
+}
+.movo-app.glass-on.theme-dark {
+  --pop-glass: rgba(var(--glass-tint, 28,28,30), clamp(.72, calc(var(--glass-fill, .6) + .16), .9));
+  --pop-glass-rim: rgba(255, 255, 255, .1);
+  --pop-glass-hi: rgba(255, 255, 255, .16);
+}
+.movo-app.glass-on.movo-app.movo-app.movo-app .sheet.sheet.sheet.sheet {
+  background: var(--pop-glass) !important;
+  border: 1px solid var(--pop-glass-rim) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(180%) !important; backdrop-filter: blur(30px) saturate(180%) !important;
+  box-shadow: inset 0 1px 0 var(--pop-glass-hi), var(--pop-shadow) !important;
+}
+.movo-app.glass-on.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom {
+  background: transparent; -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%);
+}
+.movo-app.glass-on.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) .tx-bottom::before { display: none; }
+.movo-app.glass-on.movo-app.movo-app.movo-app :is(.tx-sheet, .acct-sheet) { --tx-field: color-mix(in srgb, var(--text) 7%, transparent); }
+@media (prefers-reduced-transparency: reduce) {
+  .movo-app.glass-on.movo-app.movo-app.movo-app .sheet.sheet.sheet.sheet { background: var(--pop-bg) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+
+/* ===== System theme swatch: a real day/night mix (owner, 2026-11-16) =====
+   Not a hard diagonal split: a smooth blend from night to day with a soft dawn glow, sweeping slowly back and forth
+   (calm, ease-in-out, no pulsing). The icon keeps a faint shadow so it reads on both ends. Still with reduced motion. */
+.movo-app.movo-app.movo-app .theme-segments .seg-system {
+  background: linear-gradient(115deg, #121318 0%, #262833 26%, #6f6a8f 44%, #c9b8d8 56%, #eceef4 74%, #fbfbfd 100%) !important;
+  background-size: 240% 240% !important; background-position: 0% 50%;
+  color: #ffffff !important; overflow: hidden;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent), 0 0 18px -4px rgba(168, 150, 230, .55);
+}
+.movo-app.movo-app.movo-app .theme-segments .seg-system .movo-icon { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
+.movo-app.movo-app.movo-app .theme-segments .seg-system::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(60% 80% at 50% 50%, rgba(255, 236, 214, .32), transparent 70%);
+  mix-blend-mode: screen;
+}
+.movo-app.movo-app.movo-app .theme-segments > button.selected .seg-system {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent), 0 0 22px -2px rgba(168, 150, 230, .6);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app.movo-app.movo-app .theme-segments .seg-system { animation: seg-system-mix 9s ease-in-out infinite alternate; }
+}
+@keyframes seg-system-mix { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+.movo-app.movo-app.movo-app .theme-segments .seg-system > .movo-icon { position: relative; z-index: 1; }
+.movo-app.movo-app.movo-app .theme-segments .seg-system > .check-badge { z-index: 2; }
+
+/* ===== Aries casts a real shadow (owner, 2026-11-16) =====
+   A wide soft penumbra plus darker contact shadows under the hooves (lib/ariesArt.js), and the figure itself drops a
+   faint shadow onto the card, so Aries stands on the surface instead of floating. Light comes from above. */
+.movo-app .ram-aries .aries-shadow, .movo-app .aries .aries-shadow { opacity: 1; }
+.movo-app .aries-mascot .aries-figure { filter: drop-shadow(0 6px 6px rgba(20, 22, 16, .18)); }
+.movo-app.theme-dark .aries-mascot .aries-figure { filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .38)); }
+.movo-app.theme-dark .aries-mascot .aries-shadow { opacity: 1; filter: brightness(.6); }
+
+/* ===== NasrinAI chat charts from on-device records (owner, 2026-11-16) =====
+   components/ChatChart: a donut for spending by category, bars for trends, paired bars for income vs expenses and
+   meters for monthly limits. Drawn offline from lib/chatCharts. Bars grow once with a calm ease-out. */
+.movo-app .cc { margin: 10px 0 2px; padding: 14px; border-radius: var(--r-card, 22px); background: var(--card, #fff);
+  border: 1px solid var(--line); display: grid; gap: 12px; min-width: 0; max-width: 100%; }
+.movo-app .cc-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
+.movo-app .cc-head strong { font-size: 15px; font-weight: 650; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-head small, .movo-app .cc-foot { font-size: 12px; color: var(--muted); }
+.movo-app .cc-foot { margin: 0; }
+.movo-app .cc-empty { margin: 0; color: var(--muted); font-size: 14px; }
+.movo-app .cc-cat { display: grid; grid-template-columns: minmax(104px, 128px) minmax(0, 1fr); gap: 14px; align-items: center; }
+.movo-app .cc-donut { position: relative; aspect-ratio: 1; }
+.movo-app .cc-donut svg { width: 100%; height: 100%; display: block; }
+.movo-app .cc-donut circle { fill: none; stroke-width: 14; }
+.movo-app .cc-donut .cc-track { stroke: color-mix(in srgb, var(--muted) 14%, transparent); }
+.movo-app .cc-donut .cc-seg { stroke-linecap: butt; }
+.movo-app .cc-donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 22%; min-width: 0; }
+.movo-app .cc-donut-center small { font-size: 11px; color: var(--muted); }
+.movo-app .cc-donut-center b { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; min-width: 0; }
+.movo-app .cc-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; font-size: 13px; }
+.movo-app .cc-legend li i, .movo-app .cc-key i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.movo-app .cc-legend li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-legend li b { font-weight: 650; }
+.movo-app .cc-legend li small { grid-column: 2 / -1; color: var(--muted); font-size: 12px; }
+.movo-app .cc-bars { display: flex; align-items: stretch; gap: 6px; height: 132px; min-width: 0; }
+.movo-app .cc-bars.is-dense { gap: 2px; }
+.movo-app .cc-bar-col { flex: 1 1 0; min-width: 0; display: grid; grid-template-rows: minmax(0, 1fr) 16px; gap: 4px; }
+.movo-app .cc-bar-track { display: flex; align-items: flex-end; justify-content: center; gap: 2px; border-radius: 8px;
+  background: color-mix(in srgb, var(--muted) 8%, transparent); overflow: hidden; }
+.movo-app .cc-bar-track i { display: block; width: 100%; max-width: 22px; border-radius: 6px 6px 3px 3px; background: var(--accent);
+  transform-origin: bottom; }
+.movo-app .cc-flow .cc-bar-track i { max-width: 11px; }
+.movo-app .cc-bar-col small { font-size: 10px; color: var(--muted); text-align: center; white-space: nowrap; overflow: hidden; }
+.movo-app .cc-key { list-style: none; margin: -4px 0 0; padding: 0; display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+.movo-app .cc-key li { display: inline-flex; align-items: center; gap: 6px; }
+.movo-app .cc-stats { margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.movo-app .cc-stats div { min-width: 0; padding: 8px 10px; border-radius: 14px; background: color-mix(in srgb, var(--muted) 8%, transparent); }
+.movo-app .cc-stats dt { font-size: 11px; color: var(--muted); }
+.movo-app .cc-stats dd { margin: 2px 0 0; font-size: 13px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc .is-negative { color: var(--red, #ff3b30); }
+.movo-app .cc .is-positive { color: var(--green, #34c759); }
+.movo-app .cc-limits { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.movo-app .cc-limits li { display: grid; gap: 5px; min-width: 0; }
+.movo-app .cc-limit-name { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; min-width: 0; }
+.movo-app .cc-limit-name span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.movo-app .cc-limit-bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 14%, transparent); overflow: hidden; }
+.movo-app .cc-limit-bar i { display: block; height: 100%; border-radius: inherit; transform-origin: left; }
+.movo-app .cc-limits small { font-size: 12px; color: var(--muted); }
+.movo-app .cc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app .cc-bar-track i { animation: cc-grow-y .5s cubic-bezier(.22, 1, .36, 1) both; }
+  .movo-app .cc-limit-bar i { animation: cc-grow-x .5s cubic-bezier(.22, 1, .36, 1) both; }
+  .movo-app .cc-donut svg { animation: cc-fade .4s ease-out both; }
+}
+@keyframes cc-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes cc-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes cc-fade { from { opacity: 0; transform: rotate(-12deg); } to { opacity: 1; transform: none; } }
+@media (max-width: 360px) { .movo-app .cc-cat { grid-template-columns: 1fr; } .movo-app .cc-donut { max-width: 140px; justify-self: center; } }
+
+/* Chat charts on narrow phones: the donut sits above its legend so names stay whole. */
+@media (max-width: 400px) {
+  .movo-app .cc-cat { grid-template-columns: 1fr; justify-items: center; }
+  .movo-app .cc-donut { width: 148px; }
+  .movo-app .cc-legend { width: 100%; }
+}
+
+/* ===== Plan-coloured nav icon: a blended foil that glows (owner, 2026-11-16) =====
+   components/NavTierDefs paints the active icon with blended colour clouds that turn slowly (no stripes); here it
+   gets a soft two-colour glow. The glow is steady (no pulsing). */
+.movo-app.movo-app.nav-tier-platinum.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 3px rgba(205, 238, 242, .55)) drop-shadow(0 0 9px rgba(241, 200, 222, .35)); }
+.movo-app.movo-app.nav-tier-platinum:not(.theme-dark) .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-platinum:not(.theme-dark) .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 4px rgba(90, 170, 190, .35)) drop-shadow(0 0 8px rgba(160, 112, 143, .2)); }
+.movo-app.movo-app.nav-tier-gold.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-gold.theme-dark .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 3px rgba(255, 224, 143, .55)) drop-shadow(0 0 9px rgba(217, 154, 43, .35)); }
+.movo-app.movo-app.nav-tier-gold:not(.theme-dark) .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-gold:not(.theme-dark) .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 4px rgba(217, 154, 43, .35)); }
+
+/* ===== Colour-coded icons can be turned off (owner, 2026-11-17) =====
+   Settings → Appearance → Display & Layout → "Colour-coded icons" (pref iconColors). Off: the Menu tool tiles and the
+   Profile row tiles turn a neutral grey; their shape stays. */
+.movo-app.no-icon-colors :is(.menu-tile-icon, .pf-ic) { --mt: #8e8e93 !important; }

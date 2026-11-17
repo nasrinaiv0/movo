@@ -5,6 +5,7 @@ import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
 import { apiUrl } from '../lib/platform';
 import { MovoMark } from './MovoLogo';
+import AriesMascot from './AriesMascot';
 import { getStoreProducts, isNativePurchasePlatform, purchaseStoreProduct } from '../lib/nativePurchases';
 import { STORE_PRODUCT_BY_ID, annualSavingPercent } from '../lib/storeProducts';
 import { effectivePlan } from '../lib/planAccess';
@@ -22,12 +23,15 @@ const PLAN_CARDS = [
   { name: 'Pro', tagline: 'Sync and insights', features: ['Cloud Sync', 'Insights & briefings', 'Full NasrinAI', 'Receipt scanner', 'Portrait cards & animations', 'Custom Money Flow', 'Premium card styles & uploads', 'Gold badges'] },
   { name: 'Pro+', tagline: 'Everything, automated', features: ['Everything in Pro', 'Automatic logging', 'Glow and motion finish', 'Platinum badges'], future: 'Premium mascots and advanced widgets arrive in a future release. The current ram stays the same.' },
 ];
+// Aries is included on every plan; the pose celebrates the selection, never an unverified purchase.
+const PLAN_ARIES = ['welcome', 'cheering', 'celebrate'];
 
 export function PlanComparison() {
   const rail = useRef(null);
   const [active, setActive] = useState(0);
   const select = index => { setActive(index); rail.current?.children[index]?.scrollIntoView?.({ behavior: canAnimate() ? 'smooth' : 'auto', block: 'nearest', inline: 'center' }); };
   return <div className="plan-selector">
+    <div className="plan-comparison-companion" aria-hidden="true"><AriesMascot state={PLAN_ARIES[active]} size={88} /></div>
     <div className="plan-tabs" role="group" aria-label={tr('Compare plans')}>{PLAN_CARDS.map((plan, index) => <button type="button" key={plan.name} aria-pressed={active === index} onClick={() => select(index)}>{tr(plan.name)}</button>)}</div>
     <div className="plan-comparison" ref={rail} onScroll={event => { const node = event.currentTarget; const index = Math.round(node.scrollLeft / (node.firstElementChild?.getBoundingClientRect().width + 12 || 1)); setActive(Math.max(0, Math.min(2, index))); }} aria-label={tr('MOVO plans')}>
       {PLAN_CARDS.map(plan => <section className={`plan-detail-card plan-${plan.name === 'Pro+' ? 'plus' : plan.name.toLowerCase()}`} key={plan.name} aria-label={tr('{plan} plan', { plan: tr(plan.name) })}>
@@ -143,10 +147,13 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   else action = { label: tr('Continue with {plan}', { plan: selected.name }), disabled: true, note: native ? tr('Store subscription products are not available yet.') : tr('Subscribe in the MOVO iOS or Android app.') };
   const markTone = trialOffer || (selected.tier === 'pro' && onTrial) ? 'white' : selected.tone;
 
-  return <Sheet center label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
-    <div className="plan-panel-head">
-      <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
-      <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
+  return <Sheet center label={tr('MOVO plans')} size="wide" className="plan-offer-sheet plan-panel" onClose={onClose}>
+    <div className="plan-panel-welcome">
+      <div className="plan-panel-head">
+        <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>
+        <h2>{feature ? tr('Unlock with Pro') : tr('Upgrade MOVO')}</h2>
+      </div>
+      <AriesMascot className="plan-aries" state={busy ? 'thinking' : error ? 'reminder' : PLAN_ARIES[index]} size={100} />
     </div>
     <div className="plan-period" role="group" aria-label={tr('Billing period')}>
       {[['monthly', 'Monthly'], ['annual', 'Annual']].map(([id, label]) => <button type="button" key={id} aria-pressed={period === id} className={period === id ? 'selected' : ''} onClick={() => setPeriod(id)}>{tr(label)}</button>)}

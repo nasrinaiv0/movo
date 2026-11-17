@@ -29,6 +29,16 @@ test('rejects spoofed, ambiguous or oversized native deep links', () => {
   });
 });
 
+test('wearable links request a blank phone form and reject injected parameters', () => {
+  expect(readAppUrl('movo://wear-log')).toEqual({ kind: 'wear' });
+  expect(readAppUrl('movo://wear-log?amount=12')).toBeNull();
+  expect(readAppUrl('movo://wear-log#secret')).toBeNull();
+  expect(readAppUrl('movo://wear-log/?x=1')).toBeNull();
+  expect(readAppUrl('movo://wear-log/unsafe')).toBeNull();
+  expect(readAppUrl('movo://evil@wear-log')).toBeNull();
+  expect(readAppUrl('movo://wear-log:443')).toBeNull();
+});
+
 test('links are read the same on an Android WebView that cannot parse custom-scheme hosts (Chromium < 130)', () => {
   // Older WebViews report hostname "" and pathname "//auth-callback" for movo://auth-callback?code=…, which made
   // every Google sign-in return look invalid. The parser must not depend on the WebView's URL implementation.

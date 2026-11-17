@@ -71,7 +71,7 @@ test('Home, Profile, shared headers and sidebar consistently request solid setti
     expect(src).toContain('gearSolid');
   });
   const profile = fs.readFileSync(path.join(root, 'screens/Profile.js'), 'utf8');
-  expect(profile).toContain("['gearSolid', 'Financial Settings', 'Settings']");
+  expect(profile).toContain("['gearSolid', 'gray', 'Financial Settings', 'Settings'");
   expect(profile).toContain('<Icon name="gearSolid" size={19} />');
   const app = fs.readFileSync(path.join(root, 'App.js'), 'utf8');
   expect(app).toContain('<Icon name="gearSolid" size={22} />');

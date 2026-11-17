@@ -42,3 +42,10 @@ test('entitlement and malformed provider response fail closed',async()=>{
  expect(()=>readProviderResponse({choices:[{message:{content:'invalid'}}]})).toThrow();
  expect(buildProviderBody({imageDataUrl:photo},env).model).toBe('openai/gpt-4.1-mini');
 });
+
+
+test('receipt currency has to be a complete ISO-shaped code and the AI must retain printed money values', () => {
+  expect(normalizeReceipt({total:12.34,currency:' usd '})).toMatchObject({total:12.34,currency:'USD'});
+  expect(normalizeReceipt({total:12.34,currency:'USD or CAD'}).currency).toBe('');
+  expect(buildProviderBody({text:'Receipt'},env).messages[0].content).toContain('Never convert currencies.');
+});

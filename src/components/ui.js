@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed, HIDDEN } from '../lib/format';
 import { canAnimate, useCountUp } from '../lib/motion';
@@ -111,13 +112,17 @@ export function SectionTitle({ children, action, onAction }) {
   return <div className="section-title"><h2>{children}</h2>{action && <button type="button" className="link-button" onClick={onAction}>{action}{' '}<Icon name="chevron" size={14} /></button>}</div>;
 }
 
-export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false, center = false }) {
+export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false, center = false, size = 'regular' }) {
   const [closing, setClosing] = useState(false);
   const [dy, setDy] = useState(0);
   const drag = useRef(null);
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
   const closeRef = useRef(null);
+  // Screen entrances create stacking contexts. Mount over the app shell so every
+  // sheet can cover navigation while still inheriting MOVO's theme and direction.
+  const [host] = useState(() => typeof document === 'undefined' ? null : document.querySelector('.movo-app'));
+
   const close = () => {
     if (closing) return;
     if (!canAnimate()) { onClose(); return; }
@@ -134,9 +139,8 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )).filter(element => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
     if (!dialog.contains(document.activeElement)) {
-      const first = getFocusable()[0];
-      if (first) first.focus();
-      else dialog.focus();
+      const first = getFocusable()[0] || dialog;
+      first.focus({ preventScroll: true });
     }
     const handleTab = event => {
       if (event.key !== 'Tab') return;
@@ -156,15 +160,15 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       leaveBackLayer();
       document.removeEventListener('keydown', handleTab);
       const previous = previousFocusRef.current;
-      if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus();
+      if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus({ preventScroll: true });
     };
   }, []);
   closeRef.current = close;
   const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
   const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
   const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };
-  return <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-    <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
+  const sheet = <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} data-size={size} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
       {!center && <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>}
       {!hideClose && <button type="button" className="sheet-close" aria-label={tr('Close {name}', { name: label || title })} onClick={close}><Icon name="close" size={18} /></button>}
       {title && <h2 className="sheet-title">{title}</h2>}
@@ -172,6 +176,7 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       {typeof children === 'function' ? children(close) : children}
     </section>
   </div>;
+  return host ? createPortal(sheet, host) : sheet;
 }
 
 export function Sparkline({ values, width = 170, height = 70 }) {

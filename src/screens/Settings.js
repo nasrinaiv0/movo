@@ -3,6 +3,7 @@ import { MovoMark } from '../components/MovoLogo';
 import AppIconPicker from '../components/AppIconPicker';
 import { PLAN_LABELS } from '../lib/planAccess';
 import React, { useEffect, useRef, useState } from 'react';
+import { Browser } from '@capacitor/browser';
 import Icon, { NasrinMark } from '../components/Icon';
 import { SubHeader, Toggle, Sheet } from '../components/ui';
 import { t as tr } from '../lib/i18n';
@@ -41,7 +42,7 @@ export function ThemePicker({ c, compact }) {
     <section className="theme-segments" role="radiogroup" aria-label={tr('App appearance')}>
       {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} role="radio" aria-checked={current === key} className={current === key ? 'selected' : ''}
         onClick={() => (key === 'custom' ? c.setSheet({ name: 'themes' }) : applyTheme(c, key))}>
-        <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} /></span>{tr(label)}{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}
+        <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} />{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}</span><span className="seg-label">{tr(label)}</span>
       </button>)}
     </section>
     <h3 className="mini-title">{compact ? tr('App Theme Color') : tr('Accent Color')}</h3>
@@ -232,6 +233,7 @@ export default function Settings({ c }) {
   const [panel, setPanel] = useState('');
   const [bio, setBio] = useState(false);
   const [, rerender] = useState(0);
+  const searchInput = useRef(null);
   useEffect(() => { biometricAvailable().then(setBio); }, []);
   const lock = lockState();
   const pushOn = !!prefs.push && pushGranted();
@@ -272,6 +274,7 @@ export default function Settings({ c }) {
       { icon: 'lock', title: tr('App Lock'), sub: lock.enabled ? tr('On · passcode required to open Movo') : tr('Off · require a passcode to open Movo'), onClick: () => setPanel('lock') },
       { icon: 'face', title: tr('Face ID / Touch ID'), sub: !bio ? tr('This device or browser does not offer Face ID / Touch ID.') : lock.enabled ? tr('Unlock Movo with your face or fingerprint.') : tr('Turn on App Lock first.'), toggle: 'biometrics' },
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
+      { icon: 'shield', title: tr('Security & Privacy'), sub: tr('Read how MOVO handles your information'), onClick: () => Browser.open({ url: 'https://movo.nasrinai.com/security' }).catch(() => {}) },
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
       ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },
@@ -295,7 +298,7 @@ export default function Settings({ c }) {
       { icon: 'scan', title: tr('Receipt Scanner'), sub: tr('Scan receipts and payment screenshots; see your scan log'), onClick: () => c.openScanner?.() },
     ] },
     { title: tr('Help & Support'), rows: [
-      { icon: 'play', title: tr('Video guide'), sub: tr('A one-minute tour of MOVO'), onClick: () => c.openGuide?.() },
+      { icon: 'play', title: tr('MOVO guide'), sub: tr('A two-minute tour of every feature'), onClick: () => c.openGuide?.() },
       { icon: 'help', title: tr('Help Center'), sub: tr('Answers about transactions, storage, privacy, and NasrinAI.'), onClick: () => go('HelpCenter') },
     ] },
     { title: tr('Legal'), rows: [
@@ -304,13 +307,24 @@ export default function Settings({ c }) {
     ] },
   ];
   const q = query.trim().toLowerCase();
-  const shown = sections.map(s => ({ ...s, rows: s.rows.filter(r => !q || `${r.title} ${r.sub}`.toLowerCase().includes(q)) })).filter(s => s.rows.length);
+  const shown = sections.map(s => ({
+    ...s,
+    rows: s.title.toLowerCase().includes(q) ? s.rows : s.rows.filter(r => `${r.title} ${r.sub}`.toLowerCase().includes(q)),
+  })).filter(s => s.rows.length);
+  const search = <div className="search-field settings-search" role="search">
+    <Icon name="search" size={18} />
+    <input ref={searchInput} type="search" aria-label={tr('Search settings')} placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} />
+    {query && <button type="button" className="settings-search-clear" aria-label={tr('Clear search')} onClick={() => { setQuery(''); searchInput.current?.focus(); }}><Icon name="close" size={16} /></button>}
+  </div>;
   return <>
-    <SubHeader title={tr('Settings')} onBack={() => go('Menu')} />
-    <label className="search-field"><Icon name="search" size={18} /><input aria-label={tr('Search settings')} placeholder={tr('Search settings')} value={query} onChange={e => setQuery(e.target.value)} /></label>
-    {shown.map(s => <section key={s.title}><h2 className="group-title">{tr(s.title)}</h2>
-      <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div></section>)}
-    {!shown.length && <p className="empty">{tr('No settings match “{query}”.', { query })}</p>}
+    <SubHeader title={tr('Settings')} onBack={() => go('Menu')} className="settings-toolbar" right={search} />
+    {shown.length > 0 && <div className={`settings-groups${q ? ' settings-results' : ''}`}>
+      {shown.map(s => <section className="settings-group" key={s.title}>
+        <h2 className="group-title">{s.title}</h2>
+        <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div>
+      </section>)}
+    </div>}
+    {!shown.length && <p className="empty" role="status">{tr('No settings match “{query}”.', { query })}</p>}
     {panel === 'lock' && <LockSheet c={c} onClose={() => { setPanel(''); rerender(n => n + 1); }} />}
     {panel === 'usage' && <UsageSheet c={c} onClose={() => setPanel('')} />}
   </>;
@@ -371,7 +385,7 @@ const HERO_TABS = [['scenery', 'Scenery'], ['zodiac', 'Zodiac'], ['glow', 'Glow'
 export function HomeHeroPicker({ c }) {
   const { can, requireFeature } = usePlan();
   const { prefs, setPref } = c;
-  const current = prefs.homeHero || 'auto';
+  const current = prefs.homeHero || 'plain';
   const [tab, setTab] = useState(() => (current.startsWith('zodiac:') ? 'zodiac' : current.startsWith('glow:') ? 'glow' : 'scenery'));
   const [all, setAll] = useState(false);
   const premium = can(HERO_FEATURE);
@@ -432,38 +446,54 @@ export function TextSettings({ c }) {
 export function Appearance({ c }) {
   const { prefs, setPref, go } = c;
   return <>
-    <SubHeader title={tr('Appearance')} onBack={() => go('Settings')} />
-    <h2 className="group-title">{tr('Theme')}</h2>
-    <section className="appearance-theme-section"><ThemePicker c={c} />
-      <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></section>
-    <h2 className="group-title">{tr('App icon')}</h2>
-    <AppIconPicker c={c} />
-    <h2 className="group-title">{tr('Liquid Glass')}</h2>
-    <section className="card pad glass-settings">
-      <div className="glass-head"><span className="menu-main"><strong>{tr('Liquid Glass')}</strong><small>{tr('Translucent, light-bending surfaces')}</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label={tr('Liquid Glass')} /></div>
-      <div className={`glass-preview${prefs.glass ? '' : ' off'}`} aria-hidden="true"><i /><i /><span className="glass-chip"><Icon name="wallet" size={18} /> ₱128,450.00</span></div>
-      <label className="clarity"><span className="clarity-top"><b>{tr('Glass clarity')}</b><em>{prefs.clarity <= 33 ? tr('Frosted') : prefs.clarity >= 67 ? tr('Clear') : tr('Balanced')} · {prefs.clarity}%</em></span>
-        <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
-        <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
-    </section>
-    <h2 className="group-title">{tr('Home header')}</h2>
-    <HomeHeroPicker c={c} />
-    <h2 className="group-title">{tr('Background')}</h2>
-    <SceneryPicker c={c} />
-    <h2 className="group-title">{tr('Preview')}</h2>
-    <div className="card pad"><NavPreview accentName={prefs.accent} /></div>
-    <h2 className="group-title">{tr('Text')}</h2>
-    <TextSettings c={c} />
-    <h2 className="group-title">{tr('Display & Layout')}</h2>
-    <section className="card menu-card">
-      <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
-      <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
-      <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
-      <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
-      <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />
-      <Row icon="calendar" title={tr('Date Format')} sub={tr('{date} · follows your language', { date: longDate(new Date()) })} />
-      <Row icon="coin" title={tr('Home Currency')} sub={`${c.base || 'PHP'} · ${money(1234.5)}`} onClick={() => c.openCurrency?.()} />
-    </section>
+    <SubHeader title={tr('Appearance')} className="settings-toolbar" onBack={() => go('Settings')} />
+    <div className="settings-groups appearance-groups">
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Theme')}</h2>
+        <div className="appearance-theme-section"><ThemePicker c={c} />
+          <NavPreview accentName={prefs.accent} />
+          <button type="button" className="link-button strong" onClick={() => c.setSheet({ name: 'themes' })}>{tr('All themes')} <Icon name="chevron" size={14} /></button></div>
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('App icon')}</h2>
+        <AppIconPicker c={c} />
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Liquid Glass')}</h2>
+        <section className="card pad glass-settings">
+          <div className="glass-head"><span className="menu-main"><strong>{tr('Liquid Glass')}</strong><small>{tr('Translucent, light-bending surfaces')}</small></span><Toggle checked={prefs.glass} onChange={v => setPref('glass', v)} label={tr('Liquid Glass')} /></div>
+          <div className={`glass-preview${prefs.glass ? '' : ' off'}`} aria-hidden="true"><i /><i /><span className="glass-chip"><Icon name="wallet" size={18} /> ₱128,450.00</span></div>
+          <label className="clarity"><span className="clarity-top"><b>{tr('Glass clarity')}</b><em>{prefs.clarity <= 33 ? tr('Frosted') : prefs.clarity >= 67 ? tr('Clear') : tr('Balanced')} · {prefs.clarity}%</em></span>
+            <input type="range" min="0" max="100" step="1" value={prefs.clarity} disabled={!prefs.glass} aria-label={tr('Glass clarity')} onChange={e => setPref('clarity', Number(e.target.value))} style={{ '--fill': `${prefs.clarity}%` }} />
+            <span className="clarity-ends"><small>{tr('Frosted')}</small><small>{tr('Clear')}</small></span></label>
+        </section>
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Home header')}</h2>
+        <HomeHeroPicker c={c} />
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Background')}</h2>
+        <SceneryPicker c={c} />
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Text')}</h2>
+        <TextSettings c={c} />
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Display & Layout')}</h2>
+        <section className="card menu-card">
+          <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
+          <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
+          <Row icon="grid" title={tr('Colour-coded icons')} sub={tr('A colour for each tool in Menu and Profile')} chevron={false} right={<Toggle checked={prefs.iconColors !== false} onChange={v => setPref('iconColors', v)} label={tr('Colour-coded icons')} />} />
+          <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
+          <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
+          <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />
+          <Row icon="calendar" title={tr('Date Format')} sub={tr('{date} · follows your language', { date: longDate(new Date()) })} />
+          <Row icon="coin" title={tr('Home Currency')} sub={`${c.base || 'PHP'} · ${money(1234.5)}`} onClick={() => c.openCurrency?.()} />
+        </section>
+      </section>
+    </div>
   </>;
 }
 
@@ -473,28 +503,34 @@ export function NotificationSettings({ c }) {
   const T = (key, label, { checked = prefs[key] !== false && !!prefs[key], onChange = v => setPref(key, v), disabled = false, reason } = {}) => <Toggle checked={!disabled && checked} onChange={onChange} label={tr(label)} describedBy={`notification-setting-${key}-description`} disabled={disabled} reason={reason ? tr(reason) : undefined} />;
   const item = (icon, title, sub, key, tone, opts) => <div className="menu-row" key={key}><span className={`menu-icon ${tone ? `tone-${tone}` : 'bare'}`}><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong><small id={`notification-setting-${key}-description`}>{tr(sub)}</small></span>{T(key, title, opts)}</div>;
   return <>
-    <SubHeader title={tr('Notifications')} onBack={() => go('Notifications')} />
-    <section className="card menu-card">{item('bell', 'Notifications', 'Manage how you receive notifications', 'notifications')}</section>
-    <h2 className="group-title">{tr('Notification Channels')}</h2>
-    <section className="card menu-card">
-      {item('phone', 'Push Notifications', pushSupported() ? 'Alerts on this device for renewals, limits and monthly reports.' : 'This browser cannot show alerts. On iPhone, add Movo to your Home Screen first.', 'push', undefined, { checked: pushOn, onChange: v => togglePush(c, v), disabled: !pushSupported(), reason: 'This browser cannot show alerts.' })}
-      {item('mail', 'Email Notifications', 'Movo does not send email yet.', 'email', undefined, { disabled: true, reason: 'Movo does not send email yet.' })}
-      {item('message', 'In-App Alerts', 'Show alerts inside the app', 'inapp')}
-    </section>
-    <h2 className="group-title">{tr('Notification Categories')}</h2>
-    <section className="card menu-card">
-      {item('card', 'Transactions', 'Payments, transfers, renewals and limits', 'catTransactions', 'blue')}
-      {item('shield', 'Account & Security', 'Sign-ins to your account on a new device', 'catAccount', 'orange')}
-      {item('spark', 'NasrinAI Updates', 'New features in Movo and NasrinAI', 'catAi', 'violet')}
-      {item('tag', 'Money tips', 'One tip a week from your own numbers', 'catPromo', 'green')}
-      {item('doc', 'Reports', 'Your monthly summary on the 1st', 'catReports', 'teal')}
-    </section>
-    <section className="card menu-card gap">
-      {item('moon', 'Quiet Hours', prefs.quietOn ? tr('Alerts wait until {end}', { end: prefs.quietEnd }) : 'Hold device alerts overnight', 'quietOn')}
-      {prefs.quietOn && <div className="menu-row quiet-times">
-        <label>{tr('From')}<input type="time" value={prefs.quietStart} onChange={e => setPref('quietStart', e.target.value || '22:00')} /></label>
-        <label>{tr('To')}<input type="time" value={prefs.quietEnd} onChange={e => setPref('quietEnd', e.target.value || '07:00')} /></label>
-      </div>}
-    </section>
+    <SubHeader title={tr('Notifications')} className="settings-toolbar" onBack={() => go('Notifications')} />
+    <section className="card menu-card settings-master">{item('bell', 'Notifications', 'Manage how you receive notifications', 'notifications')}</section>
+    <div className="settings-groups notification-groups">
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Notification Channels')}</h2>
+        <div className="card menu-card">
+          {item('phone', 'Push Notifications', pushSupported() ? 'Alerts on this device for renewals, limits and monthly reports.' : 'This browser cannot show alerts. On iPhone, add Movo to your Home Screen first.', 'push', undefined, { checked: pushOn, onChange: v => togglePush(c, v), disabled: !pushSupported(), reason: 'This browser cannot show alerts.' })}
+          {item('mail', 'Email Notifications', 'Movo does not send email yet.', 'email', undefined, { disabled: true, reason: 'Movo does not send email yet.' })}
+          {item('message', 'In-App Alerts', 'Show alerts inside the app', 'inapp')}
+        </div>
+      </section>
+      <section className="card menu-card settings-group" aria-label={tr('Quiet Hours')}>
+        {item('moon', 'Quiet Hours', prefs.quietOn ? tr('Alerts wait until {end}', { end: prefs.quietEnd }) : 'Hold device alerts overnight', 'quietOn')}
+        {prefs.quietOn && <div className="menu-row quiet-times">
+          <label>{tr('From')}<input type="time" value={prefs.quietStart} onChange={e => setPref('quietStart', e.target.value || '22:00')} /></label>
+          <label>{tr('To')}<input type="time" value={prefs.quietEnd} onChange={e => setPref('quietEnd', e.target.value || '07:00')} /></label>
+        </div>}
+      </section>
+      <section className="settings-group">
+        <h2 className="group-title">{tr('Notification Categories')}</h2>
+        <div className="card menu-card">
+          {item('card', 'Transactions', 'Payments, transfers, renewals and limits', 'catTransactions', 'blue')}
+          {item('shield', 'Account & Security', 'Sign-ins to your account on a new device', 'catAccount', 'orange')}
+          {item('spark', 'NasrinAI Updates', 'New features in Movo and NasrinAI', 'catAi', 'violet')}
+          {item('tag', 'Money tips', 'One tip a week from your own numbers', 'catPromo', 'green')}
+          {item('doc', 'Reports', 'Your monthly summary on the 1st', 'catReports', 'teal')}
+        </div>
+      </section>
+    </div>
   </>;
 }

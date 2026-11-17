@@ -4,7 +4,7 @@ import { MovoMark } from './MovoLogo';
 import { t as tr } from '../lib/i18n';
 
 /*
- * The last setup step (owner, 2026-11-11): after the video guide, the walkthrough and signing in (or choosing this
+ * The last setup step (owner, 2026-11-11): after the MOVO guide, the walkthrough and signing in (or choosing this
  * device only), the person reads these points and accepts the Terms of Service and Privacy Policy. Until then the
  * dashboard and the bottom navigation stay closed; reading either document returns here.
  */

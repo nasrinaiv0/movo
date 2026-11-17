@@ -1,0 +1,16 @@
+/* Aries' expression chooser stays local to the mascot sheet and keeps thumbnails still. */
+.aries-expressions { min-width: 0; margin: 16px 0 0; color: var(--text); }
+.aries-expressions-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; }
+.aries-expressions-heading h3 { margin: 0; font-size: 17px; line-height: 1.3; }
+.movo-app .aries-animation-toggle { min-height: 44px; padding: 8px 0; border: 0; background: transparent; color: var(--accent-ink, var(--accent)); font-size: 12px; font-weight: 600; }
+.aries-expression-preview { display: grid; justify-items: center; margin: 0 0 12px; padding: 0 8px 12px; border-radius: var(--r-card, 22px); background: var(--field); }
+.aries-expression-preview .aries-mascot { max-width: 100%; }
+.aries-expression-preview figcaption { margin-top: -8px; padding: 0 8px; font-size: 14px; font-weight: 650; text-align: center; overflow-wrap: anywhere; }
+.aries-expression-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.movo-app .aries-expression-option { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 0; min-width: 0; min-height: 88px; padding: 5px 4px 9px; border: 0; border-radius: 16px; background: var(--field); color: var(--text); }
+.movo-app .aries-expression-option.selected { background: color-mix(in srgb, var(--accent) 15%, var(--field)); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.aries-expression-option .aries-mascot { flex: none; }
+.aries-expression-option span { width: 100%; font-size: 11px; line-height: 1.25; font-weight: 600; text-align: center; overflow-wrap: anywhere; }
+.movo-app .aries-expression-option:focus-visible, .movo-app .aries-animation-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.aries-expression-note { margin: 12px 0 2px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+@media (max-width: 359px) { .aries-expression-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

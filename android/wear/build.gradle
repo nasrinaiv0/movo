@@ -1,0 +1,36 @@
+// Separate Wear OS distribution artifact; never bundled into the phone AAB.
+// Use the SAME Play signing identity and package as the phone app at release.
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.nasrinai.movo.wear'
+    compileSdk rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId 'com.nasrinai.movo'
+        minSdk 28
+        targetSdk rootProject.ext.targetSdkVersion
+        // Wear and phone artifacts must have distinct Play version codes.
+        // This default is for unsigned CI only; release staff override it.
+        def value = System.getenv('MOVO_WEAR_VERSION_CODE') ?: '1000001'
+        versionCode Integer.parseInt(value)
+        versionName '1.0'
+        if (versionCode < 1 || versionCode > 2100000000) {
+            throw new GradleException('Invalid MOVO_WEAR_VERSION_CODE')
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // Stable Wear OS remote-interaction library; no financial records or tokens leave the phone.
+    implementation 'androidx.wear:wear-remote-interactions:1.2.0'
+}

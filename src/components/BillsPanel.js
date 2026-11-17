@@ -8,6 +8,8 @@ import { t as tr } from '../lib/i18n';
 import { BILL_CATEGORIES, BILL_FREQUENCIES, amountDue, amountRemaining, billsSummary, occurrenceState, paymentKey, validateBillSplits } from '../lib/bills';
 import { createBill, listBillPayments, listBills, listOccurrences, recordBillPayment, setBillStatus, updateOccurrence } from '../lib/billsRepository';
 import { subscriptionBillData } from '../lib/financialPlanningIntegrations';
+import AriesMascot from './AriesMascot';
+import './AriesPlanning.css';
 
 const todayKey = () => new Date().toLocaleDateString('en-CA');
 const shift = (day, n) => { const d = new Date(`${day}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
@@ -92,7 +94,10 @@ export default function BillsPanel({ c, accounts, subscriptions = [], onLogSubsc
       <article className={`card stat-card${summary.overdueCount ? ' tint-red' : ''}`}><span>{tr('Overdue')}</span><strong>{money(summary.overdue, base)}</strong><small>{tr('{n} bills', { n: summary.overdueCount })}</small></article>
     </section>
 
-    <SectionTitle action={tr('Add')} onAction={() => onAdding(true)}>{tr('Upcoming and overdue')}</SectionTitle>
+    <div className="aries-planning-heading">
+      <AriesMascot state={busy || error ? 'thinking' : shown.length ? 'reminder' : 'happy'} size={68} className="aries-bills-companion" />
+      <SectionTitle action={tr('Add')} onAction={() => onAdding(true)}>{tr('Upcoming and overdue')}</SectionTitle>
+    </div>
     <section className="card pad bills-list" aria-label={tr('Upcoming and overdue bills')}>
       
       {!shown.length && <p className="empty">{tr('Nothing overdue or due in the current billing cycle.')}</p>}

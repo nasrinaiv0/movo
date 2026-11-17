@@ -86,7 +86,7 @@ function Calendar({ subs, show, onOpen }) {
   const move = (n) => { setPick(''); setCursor(({ y, m }) => { const d = new Date(y, m - 1 + n, 1); return { y: d.getFullYear(), m: d.getMonth() + 1 }; }); };
   const monthList = Object.entries(byDay).sort(([a], [b]) => (a < b ? -1 : 1)).flatMap(([d, list]) => list.map(s => ({ ...s, next: d })));
   const shownList = pick ? monthList.filter(s => s.next === pick) : monthList;
-  return <>
+  return <div className="adaptive-subscription-calendar">
     <section className="card sub-calendar" aria-label={tr('Renewal calendar')}>
       <div className="sub-cal-head">
         <button type="button" className="plain-icon" aria-label={tr('Previous month')} onClick={() => move(-1)}><Icon name="back" size={18} /></button>
@@ -101,9 +101,11 @@ function Calendar({ subs, show, onOpen }) {
         </button> : <span key={`e${i}`} />)}
       </div>
     </section>
-    <div className="sub-list-head"><h2>{pick ? formatDate(`${pick}T12:00:00`, { month: 'long', day: 'numeric' }, 'md') : tr('This month')}</h2><span className="count-pill">{shownList.length}</span></div>
-    {shownList.length ? <UpcomingList upcoming={shownList} show={show} today={today} onOpen={onOpen} /> : <p className="empty">{tr('No renewals on this day.')}</p>}
-  </>;
+    <div>
+      <div className="sub-list-head"><h2>{pick ? formatDate(`${pick}T12:00:00`, { month: 'long', day: 'numeric' }, 'md') : tr('This month')}</h2><span className="count-pill">{shownList.length}</span></div>
+      {shownList.length ? <UpcomingList upcoming={shownList} show={show} today={today} onOpen={onOpen} /> : <p className="empty">{tr('No renewals on this day.')}</p>}
+    </div>
+  </div>;
 }
 
 function Insights({ summary, show, income }) {

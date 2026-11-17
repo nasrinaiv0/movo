@@ -4,6 +4,7 @@ import { supabaseConfigured } from '../lib/supabaseClient';
 import { authErrorCategory, nativeAuthStorageFailureCode } from '../lib/authErrorCategory';
 import { nativePlatform } from '../lib/platform';
 import { MovoMark } from './MovoLogo';
+import AriesMascot from './AriesMascot';
 import './AuthPanel.css';
 import { t as tr, rich } from '../lib/i18n';
 
@@ -148,10 +149,14 @@ export default function AuthPanel({ onAuthenticated, onContinueLocally, onOpenLe
 
   const unavailable = !supabaseConfigured;
   const disabledProps = unavailable ? { 'aria-describedby': 'auth-config-note', title: tr('Cloud sign-in is unavailable until deployment configuration is completed.') } : {};
+  const ariesState = busy ? 'thinking' : error ? 'reminder' : step === 'code' ? 'focused' : 'welcome';
 
   return <section className="auth-card" aria-labelledby="auth-title">
     <header className="auth-head">
-      <span className="auth-logo" aria-hidden="true"><MovoMark size={44} /></span>
+      <div className="auth-welcome-art" aria-hidden="true">
+        <span className="auth-logo"><MovoMark size={44} /></span>
+        <AriesMascot className="auth-aries" state={ariesState} size={116} walking={ariesState === 'welcome'} />
+      </div>
       <h2 id="auth-title">{tr('Sign in to MOVO')}</h2>
       <p className="auth-description">{tr('Keep your records synced securely across your devices.')}</p>
     </header>

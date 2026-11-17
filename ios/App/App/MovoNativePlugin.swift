@@ -20,6 +20,7 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "secureGet", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "secureRemove", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setAppIcon", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "consumeWearRequest", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "requestReview", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "shareFriendInvite", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "copyFriendInvite", returnType: CAPPluginReturnPromise)
@@ -168,6 +169,14 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, _ in
             call.resolve(["success": success])
         }
+    }
+
+    /// One-shot Apple Watch prompt: no auth token or financial data in UserDefaults.
+    @objc func consumeWearRequest(_ call: CAPPluginCall) {
+        let defaults = UserDefaults.standard
+        let requested = defaults.bool(forKey: "movo.wear.quickLog.v1")
+        defaults.removeObject(forKey: "movo.wear.quickLog.v1")
+        call.resolve(["action": requested ? "quickLog" : NSNull()])
     }
 
     /// Badge app icons: only the compiled alternate icons are accepted; nil/empty restores the standard icon.

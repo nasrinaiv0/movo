@@ -49,7 +49,13 @@
       "heading": "17. Accepting these terms during setup",
       "paragraphs": [
         "When you first set up MOVO, and again after these Terms or the Privacy Policy change, MOVO asks you to accept them before the app opens. The version you accepted and the time you accepted it are saved with your MOVO preferences on this device and, when you are signed in, with your account preferences.",
-        "The video guide shown during setup uses invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
+        "The guide shown during setup uses screenshots with invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
+      ]
+    },
+    {
+      "heading": "18. Sharing with friends",
+      "paragraphs": [
+        "Only share content you have the right to share. MOVO prohibits harassment, threats, sexually exploitative material, impersonation, and disclosure of someone else’s private information through Friends. You can block a user or report a request or shared summary in the app. Contact support@nasrinai.com for help."
       ]
     }
   ],
@@ -138,6 +144,7 @@
       "paragraphs": [
         "When you choose Analyze with AI on a receipt photo, MOVO sends that selected photo, or extracted text from a PDF receipt, to the MOVO server and its configured AI provider (OpenRouter and the underlying model provider) to read merchant, date, item, amount, tax and payment fields and suggest categories. MOVO requests that its AI provider not collect prompts for training, but provider handling, cross-border processing and retention remain subject to applicable service terms and laws. Do not include passwords, PINs, card verification codes, one-time passcodes or unrelated people's information in receipts.",
         "AI receipt scanning requires sign-in, qualifying access and a separate in-app confirmation for each receipt. You can decline and instead use basic on-device text recognition, or discard the scan without creating a financial transaction. MOVO does not store the scanned photo or full source text in its AI proxy or provider request logs. When you select Log, the details you approve become a MOVO transaction under your selected account, which may sync to your cloud account under your chosen storage settings. The provider may process the submitted receipt as needed to return the result; cancelling or deleting the MOVO review does not guarantee removal from third-party systems.",
+        "If the receipt and selected payment account use different currencies, MOVO downloads general exchange rates from ExchangeRate-API and calculates an estimate on your device. The rate request carries no receipt, amount, account, or sign-in data. A bank or card statement may show a different amount. If you log the transaction, MOVO saves the original receipt total and the conversion or statement amount with the transaction.",
         "AI-extracted fields and categories can be wrong. MOVO shows a summary for review, allows correction, and does not choose your bank, card, e-wallet or cash account on your behalf. VAT included in a total, cash tendered and change are not separate transactions. You remain responsible for checking the logged amount, currency, date, merchant, categories, payment account and any duplicates before relying on reports."
       ]
     },
@@ -145,7 +152,10 @@
       "heading": "20. Private friend invites",
       "paragraphs": [
         "Friends is optional. To create or accept an invite, sign in and choose the display name you want to share. Anyone who has an active invite link and a verified MOVO account can see the name attached to that invite. Invite links carry a random code and expire after 24 hours or after one person accepts. Creating a replacement or revoking the active invite disables the previous link.",
-        "MOVO stores a hashed invite code, account identifiers, chosen display names and connection timestamps to manage Friends. Your friends can see the display name you shared. Friends does not upload contacts or share emails, profile photos or financial records. Either person can remove a connection, and account deletion removes the account’s friend connections."
+        "MOVO stores a hashed invite code, account identifiers, chosen display names, usernames, requests and connection timestamps to manage Friends. Verified members can search usernames that their owners choose to make discoverable. The search shows only usernames. Recipients choose whether to accept connection requests.",
+        "When you preview and approve a monthly tracking summary, MOVO stores the selected snapshot for the friend you chose. The sections you select may include your note, income, expenses, savings balance, weekly net cash flow, financial planning totals, budget and plan progress, and spending category percentages. Friends cannot open your underlying transactions, receipts or accounts. You can revoke access, and removing a friend removes any shared snapshots for that connection.",
+        "MOVO saves your uploaded profile photo privately on the account when you are signed in and makes it available to you on your devices. Guests keep their photo on the current device. Search results and shared summaries do not include your photo, email or contacts. Account deletion removes the account’s photo and Friends records.",
+        "If you block or report someone, MOVO stores the accounts involved and the type of report for safety and support review. A report does not copy the contents of a financial summary into the report record."
       ]
     }
   ]
