@@ -22,6 +22,16 @@ test('security guide exists, is navigable and does not require third-party scrip
   expect(page).toContain('href="/terms"');
   expect(page).not.toMatch(/<script\b/i);
   expect(page).not.toMatch(/(?:linear|radial)-gradient\(/i);
+
+  const document = new DOMParser().parseFromString(page, 'text/html');
+  const home = document.querySelector('header a.home-link');
+  expect(home?.getAttribute('href')).toBe('/');
+  expect(home?.textContent).toContain('Back to Home');
+  const sectionLinks = document.querySelectorAll('nav[aria-label="On this page"] a[href^="#"]');
+  expect(sectionLinks).toHaveLength(5);
+  for (const link of sectionLinks) {
+    expect(document.querySelector(link.getAttribute('href'))).not.toBeNull();
+  }
 });
 
 test('production encryption copy is honest and distinguishes pending PRs', () => {
