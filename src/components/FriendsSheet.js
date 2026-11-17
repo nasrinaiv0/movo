@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import FriendsDiscovery from './FriendsDiscovery';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { useConfirm } from './ConfirmDialog';
@@ -7,19 +8,39 @@ import { t as tr } from '../lib/i18n';
 import { nativePlatform } from '../lib/platform';
 import { friendDisplayName, friendInviteToken, friendInviteUrl, copyFriendInvite, friendsRequest, shareFriendInvite } from '../lib/friends';
 
-function errorMessage(error) {
+export function friendErrorMessage(error) {
   switch (error?.code) {
     case 'invite_unavailable': return tr('This invite is expired, used or replaced.');
     case 'own_invite': return tr('This is your own friend invite.');
     case 'friend_limit': return tr('One of these accounts has reached the friends limit.');
+    case 'sign_in_required': return tr('Your session expired. Sign in again to use Friends.');
+    case 'friends_network': return tr('Could not connect to Friends. Check your connection and try again.');
+    case 'friends_update_pending': return tr('Friends is being updated. Try again shortly.');
+    case 'invalid_friend_handle': return tr('Use 3–24 letters, numbers or underscores.');
+    case 'friend_handle_taken': return tr('That MOVO username is already taken.');
+    case 'friend_handle_required': return tr('Set a MOVO username before you send a request.');
+    case 'friend_request_received': return tr('This person has already sent you a request. Check your Friends list.');
+    case 'already_friends': return tr('You are already friends.');
+    case 'friend_rate_limit': return tr('Too many requests. Try again later.');
+    case 'friend_request_unavailable': return tr('This friend request is unavailable or expired.');
+    case 'friend_connection_required': return tr('This friend connection is no longer available.');
+    case 'invalid_friend_summary': return tr('Check the summary details and try again.');
     case 'verified_account_required': return tr('Verify your account to use Friends.');
     default: return tr('Friends are unavailable right now. Try again.');
   }
 }
 
-export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, onInviteHandled }) {
+export default function FriendsSheet({ onClose, ...props }) {
+  return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}><FriendsContent {...props} /></Sheet>;
+}
+
+export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary }) {
+  const socialAvailable = Boolean(onOpenSummary);
   const signedIn = Boolean(session?.user?.id && session.access_token);
   const [friends, setFriends] = useState(null);
+  const [directory, setDirectory] = useState(null);
+  const [directoryError, setDirectoryError] = useState('');
+  const reload = () => setRefresh(value => value + 1);
   const [error, setError] = useState('');
   const [listError, setListError] = useState('');
   const [notice, setNotice] = useState('');
@@ -49,9 +70,12 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
         setListError('');
         setFriends(result.friends);
         setActiveUntil(result.activeInviteUntil);
-        setInvite(current => Date.parse(current?.expiresAt) === Date.parse(result.activeInviteUntil) ? current : null);
+        setInvite(current => current && result.activeInviteUntil && Date.parse(current.expiresAt) === Date.parse(result.activeInviteUntil) ? current : null);
       })
-      .catch(cause => { if (!controller.signal.aborted) setListError(errorMessage(cause)); });
+      .catch(cause => { if (!controller.signal.aborted) setListError(friendErrorMessage(cause)); });
+    if (socialAvailable) friendsRequest({ access_token: session.access_token }, 'directory', {}, controller.signal)
+      .then(result => { if (!controller.signal.aborted) { setDirectory(result); setDirectoryError(''); } })
+      .catch(cause => { if (!controller.signal.aborted) setDirectoryError(friendErrorMessage(cause)); });
     function refreshOnReturn() {
       if (!document.hidden) setRefresh(value => value + 1);
     }
@@ -60,7 +84,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
       controller.abort();
       document.removeEventListener('visibilitychange', refreshOnReturn);
     };
-  }, [signedIn, session?.access_token, refresh]);
+  }, [signedIn, session?.access_token, refresh, socialAvailable]);
 
   useEffect(() => {
     if (!signedIn || !lookup || mode !== 'join') return undefined;
@@ -69,7 +93,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     setError('');
     friendsRequest({ access_token: session.access_token }, 'preview', { token: lookup }, controller.signal)
       .then(result => { if (!controller.signal.aborted) setPreview(result); })
-      .catch(cause => { if (!controller.signal.aborted) { setError(errorMessage(cause)); setLookup(''); } });
+      .catch(cause => { if (!controller.signal.aborted) { setError(friendErrorMessage(cause)); setLookup(''); } });
     return () => controller.abort();
   }, [signedIn, session?.access_token, lookup, mode]);
 
@@ -95,7 +119,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     try {
       onSuccess(await friendsRequest(session, action, payload));
     } catch (cause) {
-      setError(errorMessage(cause));
+      setError(friendErrorMessage(cause));
     } finally {
       setBusy(false);
       lock.current = false;
@@ -151,8 +175,19 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
       confirmLabel: tr('Remove'), icon: 'user', danger: true,
     }))) return;
     run('remove', { connectionId: friend.id }, () => {
-      setFriends(current => current.filter(item => item.id !== friend.id));
+      setFriends(current => current?.filter(item => item.id !== friend.id) ?? null);
       setNotice(tr('Friend removed.'));
+    });
+  }
+
+  async function safetyAction(action, payload) {
+    const blocking = action === 'block';
+    const title = blocking ? tr('Block user') : tr('Report to MOVO');
+    if (!(await confirm({ title, message: blocking ? tr('Blocking removes the connection and stops future friend requests.')
+      : tr('MOVO support will review your report.'), confirmLabel: title, danger: blocking, icon: 'shield' }))) return;
+    run(action, payload, () => {
+      if (blocking) reload();
+      setNotice(blocking ? tr('User blocked.') : tr('Report sent.'));
     });
   }
 
@@ -160,29 +195,49 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     <input value={name} onChange={event => setName(event.target.value)} autoComplete="off" maxLength={80} required />
   </label>;
 
-  return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}>
-    <div className="friends-content">
+  return <div className="friends-content">
       {!signedIn ? <div className="friends-empty">
         <Icon name="userPlus" size={26} />
         <p>{tr('Sign in to send or accept a friend invite.')}</p>
         <button type="button" className="primary-button" onClick={onSignIn}>{tr('Sign in')}</button>
       </div> : <>
-        <nav className="friends-tabs" aria-label={tr('Friends')}>
+        <nav className={`friends-tabs${socialAvailable ? ' friends-tabs-expanded' : ''}`} aria-label={tr('Friends')}>
           <button type="button" disabled={busy} aria-pressed={mode === 'list'} onClick={() => showMode('list')}>{tr('Friends')}</button>
+          {socialAvailable && <button type="button" disabled={busy} aria-pressed={mode === 'search'} onClick={() => showMode('search')}>{tr('Add friend')}</button>}
           <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Invite')}</button>
           <button type="button" disabled={busy} aria-pressed={mode === 'join'} onClick={() => showMode('join')}>{tr('Join')}</button>
         </nav>
+        {mode === 'search' && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
+          <><p className="friends-note" role={directoryError ? 'alert' : 'status'}>{directoryError || tr('Loading…')}</p>
+            {directoryError && <button type="button" className="friends-secondary" onClick={reload}>{tr('Try again')}</button>}</>)}
         {mode === 'list' && <>
+          {directory?.requests?.length > 0 && <div className="friends-content"><h3>{tr('Friend requests')}</h3>
+            <ul className="friends-list friends-directory-results">{directory.requests.map(request => <li key={request.id}>
+              <b dir="ltr">@{request.handle}</b><div className="friends-actions">
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => run('accept_request', { requestId: request.id }, reload)}>{tr('Accept')}</button>
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => run('decline_request', { requestId: request.id }, reload)}>{tr('Decline')}</button>
+              </div>
+              <div className="friends-actions friends-safety">
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => safetyAction('report', { requestId: request.id })}>{tr('Report to MOVO')}</button>
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => safetyAction('block', { requestId: request.id })}>{tr('Block user')}</button>
+              </div>
+            </li>)}</ul>
+          </div>}
+
           {friends === null && !listError && <p className="friends-note" role="status">{tr('Loading…')}</p>}
           {friends?.length === 0 && <div className="friends-empty">
             <Icon name="userPlus" size={26} />
             <p>{tr('Your friends will appear here after they accept an invite.')}</p>
-            <button type="button" className="primary-button" onClick={() => showMode('invite')}>{tr('Add a friend')}</button>
+            <button type="button" className="primary-button" onClick={() => showMode(socialAvailable ? 'search' : 'invite')}>{tr('Add a friend')}</button>
           </div>}
           {friends?.length > 0 && <ul className="friends-list">
             {friends.map(friend => <li key={friend.id}>
-              <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
-              <b dir="auto">{friend.name}</b>
+              {onOpenSummary ? <button type="button" className="friends-open-summary" disabled={busy} onClick={() => onOpenSummary(friend)}
+                aria-label={tr('Summary for {name}', { name: friend.name })}>
+                <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
+                <b dir="auto">{friend.name}</b><Icon name="chevron" size={16} />
+              </button> : <><span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
+                <b dir="auto">{friend.name}</b></>}
               <button type="button" disabled={busy} onClick={() => removeFriend(friend)} aria-label={tr('Remove {name}', { name: friend.name })}><Icon name="close" size={18} /></button>
             </li>)}
           </ul>}
@@ -224,6 +279,5 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
         {notice && <p className="friends-note friends-success" role="status">{notice}</p>}
         {error && <p className="friends-note friends-error" role="alert">{error}</p>}
       </>}
-    </div>
-  </Sheet>;
+    </div>;
 }

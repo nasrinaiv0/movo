@@ -1,13 +1,50 @@
-## 2026-11-16 — PR #296 conflict resolution
+## 2026-11-17 — Google Play and Android sign-in fix records consolidated (#295, #296, #297, #299)
 
-- Integrated main `77bcacc`. Kept verified cancellation expiry and sandbox isolation from main, plus the regression for expired, paused, and on-hold subscriptions.
-- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-296-main-conflicts.md).
+- The fixes were already in `main`. This PR adds their engineering records and #296's regression test: expired, paused or on-hold Play subscriptions never regain access. #295, #297 and #299 are closed in favour of it. [Details](engineering/updates/2026-11-17-play-oauth-records-consolidated.md).
 
-## 2026-11-13 — Isolated P0 Google Play cancellation-through-expiry
-- Base `5b616ce`; planning document committed first in `docs/engineering/updates/2026-11-13-google-play-cancel-expiry-p0.md`.
-- Map server-verified `SUBSCRIPTION_STATE_CANCELED` to active while expiry is future; to expired at or after expiry. Explicit expired, paused, on-hold remain denied.
-- Add synthetic purchase verification regression tests for both cancellation timing cases and denied states. No database migration, production change, release, signed AAB, or merge.
-- Pending exact-head CI, preview, manual Google Play license-tester cancellation and expiry proof.
+## 2026-11-17 — Refine the shared Friends Summary
+
+- Refined the mobile overview, tracking note, chart labels, snapshot dates and sharing preview. Moved the preview above app navigation and aligned the cash-flow zero baseline. Chromium passed six fixture scenarios and Jest passed 1,496 tests. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Friends Summary visual refinement
+
+- Grouped approved totals into one overview card, reordered the detail cards, and made sharing a two-step flow with a matching recipient preview. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Dedicated Friends and Summary screens
+
+- [Implementation plan, privacy and verification](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
+
+- The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.
+- Aries, an original vector mascot drawn from the owner's design, guides every step, greets people on the first-run welcome card and heads the Help Center. The Help Center has new sections on the guide, AI receipt scanning and automatic logging.
+- Terms §17 now describes the guide as screenshots. The change is published under main's 2026-11-17 Terms date, so people accept once. [Details, validation and rollback](engineering/updates/2026-11-16-movo-guide-aries.md).
+
+## 2026-11-16 — PR #313: softer Aries across MOVO
+
+- Extended the existing [Aries and MOVO guide PR #313](https://github.com/nasrinaiv0/movo/pull/313) after reviewing all 12 open PRs; no other open branch overlaps this mascot scope. The new shared fluffy vector ram is the default Home mascot, appears in sign-in and plan selection, and responds to real bills and savings progress.
+- Added 14 expressions, gentle motion/walking, viewport/background and live reduced-motion handling, and a local expression preview in the Home mascot sheet. Preserved spending thresholds, photo mascots, guide pose APIs, passwordless auth and store purchase checks.
+- Validation: Node 26.13.1 full Jest 240 suites / 1,491 tests, typecheck, i18n and strict production build. Chromium passes 32 mobile light/dark/text-size screen checks, all 14 expressions, live reduced motion and consent; Home feet stay fixed. Final CSS fixes also pass the strict build and 3 affected suites / 9 tests. [Evidence and remaining gates](engineering/updates/2026-11-16-aries-expressions.md). Real devices and the exact-head hosted preview are not yet checked; merge remains owner-controlled.
+
+## 2026-11-16 — PR #312 integration with foreign-currency receipt review
+
+- Integrated main `da99f181` on the Friends branch. Combined the two progress entries and regenerated locales from both source catalogs. The receipt privacy disclosure and Friends disclosures remain synchronized.
+- Run the strict build, disposable PostgreSQL and the mobile fixture flow against this combined tree.
+
+## 2026-11-16 — Friends discovery, private summaries and profile photos
+
+- Added private username discovery, reciprocal request approval, opt-in monthly snapshots, block/report controls, and shared profile avatars. Fixed native Friends transport and more specific error messages.
+- Disposable PostgreSQL migration history and social isolation passed, as did focused API, localization, support and avatar-upload tests. See [the implementation and rollout notes](engineering/updates/2026-11-16-friends-discovery.md).
+## 2026-11-16 — PR #311 conflict resolution
+
+- Integrated main `77bcacc`. Regenerated receipt and Friends locales from both source catalogs and retained both progress records.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-311-main-conflicts.md).
+
+## 2026-11-16 — Foreign-currency receipt review
+
+- Scanned receipts now convert into the selected account's currency using dated reference rates, with an optional statement amount and an audit note retaining the source total. Ambiguous source currency asks for confirmation.
+- The first strict Node 26 build and 1,460 tests passed, alongside Vercel Sandbox rate fixtures and two isolated Chromium widths. Verify GitHub checks and the protected preview at the PR head. [Engineering notes and acceptance steps](docs/engineering/updates/2026-11-16-foreign-currency-receipts.md).
+
 ## 2026-11-16 — Private friends and compact Profile
 
 - Added Profile → Friends with single-use QR/link invites, native AirDrop and Android Sharesheet, deliberate acceptance, and reciprocal removal.

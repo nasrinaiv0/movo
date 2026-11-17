@@ -591,11 +591,11 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: November 11, 2026');
+    expect(container.textContent).toContain('Effective date: November 17, 2026');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: November 16, 2026');
+    expect(container.textContent).toContain('Effective date: November 18, 2026');
     expect(container.textContent).not.toContain('not yet been published');
     expect(container.textContent).toContain('Things you delete in MOVO stay in the Archive for 90 days');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
@@ -828,6 +828,11 @@ describe('MOVO finance frontend', () => {
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('does not move money between banks');
+    // Aries, the welcoming mascot, heads the page; receipt scanning and automatic logging are explained.
+    expect(container.querySelector('.help-aries .aries-mascot')).not.toBeNull();
+    expect(container.textContent).toContain('Only after you agree for that receipt');
+    expect(container.textContent).toContain('it never opens your bank or wallet apps');
+    expect(Array.from(container.querySelectorAll('button')).some(b => b.textContent.trim() === 'Open the MOVO guide')).toBe(true);
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });
@@ -963,8 +968,13 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
+    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
     expect(tiles).not.toContain('Profile');
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Friends').click());
+    expect(container.querySelector('h1').textContent).toBe('Friends');
+    expect(container.querySelector('.friends-page')).not.toBeNull();
+    clickButton(container, 'Back');
+    expect(container.querySelector('h1').textContent).toBe('Menu');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Subscriptions')).click());
     expect(container.querySelector('h1').textContent).toBe('Subscriptions');
     clickButton(container, 'Add subscription');

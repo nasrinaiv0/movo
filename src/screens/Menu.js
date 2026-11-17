@@ -5,6 +5,7 @@ import { money, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
 import { BADGES, TIER_LABEL, nextBadge, badgeEarned, badgeByPlan } from '../lib/streak';
 import { MovoMark } from '../components/MovoLogo';
+import ProfileAvatar from '../components/ProfileAvatar';
 import PlanBadge from '../components/PlanBadge';
 
 /** The fifth tab: profile, subscriptions, savings plans and spending limits in one place. */
@@ -15,6 +16,7 @@ export default function Menu({ c }) {
   const over = budgetList.filter(b => b.level === 'over').length;
   const items = [
 
+    { icon: 'userPlus', tone: 'green', title: 'Friends', sub: tr('Friend requests'), onClick: c.openFriends },
     { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
     { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals'), onClick: () => c.openBudgets('plans') },
     { icon: 'gift', tone: 'green', title: 'Cashback', sub: tr('Rewards and cashback'), onClick: () => go('Cashback') },
@@ -29,7 +31,7 @@ export default function Menu({ c }) {
   return <>
     <RootHeader title={tr('Menu')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
     <button type="button" className="card menu-hero" onClick={() => go('Profile')}>
-      <span className="avatar">{user.initial}</span>
+      <ProfileAvatar user={user} />
       <span className="menu-main"><strong>{user.name}</strong><small>{tr('View profile')}</small></span>
       <PlanBadge plan={c.plan} trial={c.entitlement?.source === 'trial'} size={30} />
       {streak.count > 1 && <span className="streak-chip" aria-label={tr('{n}-day streak', { n: streak.count })}><Icon name="spark" size={13} strokeWidth={2.2} />{streak.count}</span>}

@@ -295,7 +295,7 @@ export default function Settings({ c }) {
       { icon: 'scan', title: tr('Receipt Scanner'), sub: tr('Scan receipts and payment screenshots; see your scan log'), onClick: () => c.openScanner?.() },
     ] },
     { title: tr('Help & Support'), rows: [
-      { icon: 'play', title: tr('Video guide'), sub: tr('A one-minute tour of MOVO'), onClick: () => c.openGuide?.() },
+      { icon: 'play', title: tr('MOVO guide'), sub: tr('A two-minute tour of every feature'), onClick: () => c.openGuide?.() },
       { icon: 'help', title: tr('Help Center'), sub: tr('Answers about transactions, storage, privacy, and NasrinAI.'), onClick: () => go('HelpCenter') },
     ] },
     { title: tr('Legal'), rows: [

@@ -10,9 +10,9 @@ function send(res, status, payload) {
 }
 
 /** Method and size checks. Native attestation routes (points: true) stay closed until points are enabled. */
-function gate(req, res, method, { points = false } = {}) {
+function gate(req, res, method, { points = false, maxBytes = 32768 } = {}) {
   if (req.method !== method) { res.setHeader('Allow', method); send(res, 405, { error: 'method_not_allowed' }); return false; }
-  if (Number(req.headers['content-length'] || 0) > 32768) { send(res, 413, { error: 'payload_too_large' }); return false; }
+  if (Number(req.headers['content-length'] || 0) > maxBytes) { send(res, 413, { error: 'payload_too_large' }); return false; }
   if (points && !pointsEnabled()) { send(res, 503, { error: 'referrals_not_configured' }); return false; }
   return true;
 }
