@@ -25,7 +25,7 @@
   --notice-bg: #fff6e1;
   --notice-line: #b77b22;
   --notice-text: #603b07;
-  --header-offset: 72px;
+  --header-offset: max(72px, 5rem);
 }
 * { box-sizing: border-box; }
 html { scroll-padding-top: var(--header-offset); }
@@ -53,7 +53,7 @@ a:focus-visible, summary:focus-visible {
 }
 .skip-link:focus { transform: none; }
 .site-header { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); }
-.site-bar { min-height: 60px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 7px; }
+.site-bar { min-height: 60px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; padding-block: 7px; }
 .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-weight: 750; letter-spacing: .055em; text-decoration: none; }
 .brand img { display: block; width: 27px; height: 27px; }
 .home-link {

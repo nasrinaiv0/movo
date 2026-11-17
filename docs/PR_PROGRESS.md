@@ -2,6 +2,7 @@
 
 - The guide linked from Settings has a persistent Back to Home button, quick section links, compact light and dark layouts, and expandable FAQs. It retains the current storage and encryption disclosures.
 - Typecheck, strict production build and all 1,543 local tests passed. [Scope and verification](engineering/updates/2026-11-18-compact-security-privacy.md).
+- The header can wrap at larger browser text sizes. Chromium verified that anchored sections clear the sticky header at 150% and 200% text sizes from 320 to 1440 px.
 
 ## 2026-11-17 — Settings rows show feature names
 
