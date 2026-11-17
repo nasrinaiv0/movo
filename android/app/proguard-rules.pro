@@ -20,6 +20,10 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Compact DEX class names on AGP 8.13. Android's default and the bridge
+# keep rules below preserve names required for dynamic lookup.
+-repackageclasses
+
 # Preserve Capacitor plugin classes and reflected JS bridge method names.
 # Native security vault cannot be removed or renamed by the release shrinker.
 -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
