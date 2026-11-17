@@ -1,38 +1,15 @@
-## 2026-11-16 — PR #294 conflict resolution
+## 2026-11-16 — PR #308 conflict resolution
 
-- Integrated main `77bcacc`. Preserved the Security & Data Guide navigation and the current Friends and receipt privacy disclosures.
-- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-294-main-conflicts.md).
+- Integrated main `77bcacc`. Retained the Android release optimization and the main progress history.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-308-main-conflicts.md).
 
-## 2026-11-13 — PR #294 safe conflict integration, precommit record
+## 2026-11-16 — Android release optimization for Google Play bundle 11
 
-- Compared PR #294 exact head a05152d, latest main 2922eef, and their common doc baseline before building this integration.
-- Keep PR #294's documented guide and CI repairs; retain ALL newer main progress, including referral and iOS release-harness entries.
-- Retain main's full legal policy and recent referral disclosures; add only the reviewed Security & Data Guide navigation link. Do not alter legal clauses, policy dates, or data retention.
-- The remaining eight PR file objects are reused verbatim. No production, schema, native code, cloud account, or billing changes.
-- Post-integration requirements: exact-head CI, Vercel preview and legal review; physical screen reader and phone-device tests remain unverified and are not claimed complete.
-
-## 2026-11-13 — PR #294 CI 2nd regression: Jest resets module mock implementations
-
-- Exact commit `1396197` GitHub Phase 1 and Vercel preview each failed on **one** Settings guide click test, while 224 of 225 test suites and 1,354 of 1,355 tests passed. Read-only finance tenant isolation passed.
-- Unlike the previous Capacitor proxy spy failure, `Browser.open` is now a Jest mock function. However, MOVO Jest setup resets mock implementations between tests, causing a bare `Browser.open()` to return undefined; the actual Settings handler expects a Promise and calls `.catch()`.
-- Fix in test setup: explicitly `Browser.open.mockReset()` and `Browser.open.mockImplementation(() => Promise.resolve())` immediately before the click. **Do not change the production async Browser.open handler or suppress rejection handling.**
-- Precommit documentation recorded before the fix. Exact-head full regression + preview must be rerun. Keep PR open and production untouched.
-
-## 2026-11-13 — PR #294 preview CI repair (documented before commit)
-
-- First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.
-- Result in the Vercel runner: 224/225 suites passed and 1,354/1,355 tests passed, then the build script exited nonzero. Correct the **test double**, not the product plugin or security gate.
-- Add a `jest.mock('@capacitor/browser')` module mock with a real `jest.fn()` and assert the Settings row invokes `Browser.open` with the canonical security URL.
-- Customer clarity: remove internal PR numbers from the public HTML and say the enhanced offline encryption is in testing and **not part of the current production release**. Retain exact PR references in internal engineering notes and the source docs.
-- No production release, merge, database mutation, security control relaxation, or third-party API change. Rerun exact-head GitHub CI and Vercel preview after the fix.
-
-## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
-
-- Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.
-- Drafted standalone `/security` guide, companion editorial markdown, legal-policy navigation links, and Settings entry point via Capacitor Browser; no existing legal clauses or policy dates changed.
-- Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
-- Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
-- Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
+- Play Console reports 0% DEX optimization, 93% obfuscation, 92% code shrinking, R8 full mode, and 16 KB page-size support. The release configuration uses the legacy Android rules file with `-dontoptimize`. The screenshot cuts off the total uncompressed DEX size.
+- Use the optimized R8 rules, enable resource shrinking and the optimized resource shrinking pipeline, and explicitly enable class repackaging with AGP 8.13.0. Keep the Capacitor and MOVO native bridge rules for reflected classes and methods. Leave native packaging and signing settings in place. AGP 9 is a separate toolchain migration.
+- Precommit verification: a Python diff check verified optimization flags, preserved bridge rules, and isolated the app changes to its release build type. Verify the Android native and disposable-key AAB builds in PR CI. After review, generate a signed AAB from `main` with a version code greater than every code already uploaded. In Play Internal testing, compare the DEX size and all three DEX percentages, the R8 configuration flags, and 16 KB support against bundle 11. Run the Play-delivered build on Android and check Google and email sign-in, sign-in after restart, receipt scanning, notifications, and Play license-test purchase and restore before promotion.
+- Phase 1 CI on the initial head stopped at the per-commit documentation check. The revised commit includes this entry and the [dated engineering update](engineering/updates/2026-11-16-android-release-r8-optimization.md).
+- Open PRs reviewed during preparation: #274, #280, #290, #291, #294, #295, #296, #297, #299, #305, and #306. This change is scoped to optimization and release validation.
 ## 2026-11-17 — PR #315 brought up to date with main after #314
 
 - #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
@@ -71,6 +48,42 @@
 ## 2026-11-16 — Less space at the top of every page
 
 - On phones in the browser and home-screen web app, every page and Home's header photo start 10 px higher (base 18 px to 8 px). Headers stay aligned across pages. The iPhone app's native top bar and tablet/desktop layouts are unchanged. CSS only. [Details](engineering/updates/2026-11-16-page-top-spacing.md).
+
+## 2026-11-16 — PR #294 conflict resolution
+
+- Integrated main `77bcacc`. Preserved the Security & Data Guide navigation and the current Friends and receipt privacy disclosures.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-294-main-conflicts.md).
+
+## 2026-11-13 — PR #294 safe conflict integration, precommit record
+
+- Compared PR #294 exact head a05152d, latest main 2922eef, and their common doc baseline before building this integration.
+- Keep PR #294's documented guide and CI repairs; retain ALL newer main progress, including referral and iOS release-harness entries.
+- Retain main's full legal policy and recent referral disclosures; add only the reviewed Security & Data Guide navigation link. Do not alter legal clauses, policy dates, or data retention.
+- The remaining eight PR file objects are reused verbatim. No production, schema, native code, cloud account, or billing changes.
+- Post-integration requirements: exact-head CI, Vercel preview and legal review; physical screen reader and phone-device tests remain unverified and are not claimed complete.
+
+## 2026-11-13 — PR #294 CI 2nd regression: Jest resets module mock implementations
+
+- Exact commit `1396197` GitHub Phase 1 and Vercel preview each failed on **one** Settings guide click test, while 224 of 225 test suites and 1,354 of 1,355 tests passed. Read-only finance tenant isolation passed.
+- Unlike the previous Capacitor proxy spy failure, `Browser.open` is now a Jest mock function. However, MOVO Jest setup resets mock implementations between tests, causing a bare `Browser.open()` to return undefined; the actual Settings handler expects a Promise and calls `.catch()`.
+- Fix in test setup: explicitly `Browser.open.mockReset()` and `Browser.open.mockImplementation(() => Promise.resolve())` immediately before the click. **Do not change the production async Browser.open handler or suppress rejection handling.**
+- Precommit documentation recorded before the fix. Exact-head full regression + preview must be rerun. Keep PR open and production untouched.
+
+## 2026-11-13 — PR #294 preview CI repair (documented before commit)
+
+- First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.
+- Result in the Vercel runner: 224/225 suites passed and 1,354/1,355 tests passed, then the build script exited nonzero. Correct the **test double**, not the product plugin or security gate.
+- Add a `jest.mock('@capacitor/browser')` module mock with a real `jest.fn()` and assert the Settings row invokes `Browser.open` with the canonical security URL.
+- Customer clarity: remove internal PR numbers from the public HTML and say the enhanced offline encryption is in testing and **not part of the current production release**. Retain exact PR references in internal engineering notes and the source docs.
+- No production release, merge, database mutation, security control relaxation, or third-party API change. Rerun exact-head GitHub CI and Vercel preview after the fix.
+
+## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
+
+- Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.
+- Drafted standalone `/security` guide, companion editorial markdown, legal-policy navigation links, and Settings entry point via Capacitor Browser; no existing legal clauses or policy dates changed.
+- Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
+- Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
+- Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
 
 ## 2026-11-16 — Home header: less space under Total balance
 
