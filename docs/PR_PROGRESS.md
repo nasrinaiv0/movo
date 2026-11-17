@@ -1,3 +1,8 @@
+## 2026-11-17 — Settings rows show feature names
+
+- The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.
+- Local Node 26 typecheck, strict build and regression tests passed (244 suites, 1,541 tests). The Vercel sandbox passed 12 focused tests. Open PR scopes #274, #290 and #291 were reviewed. [Implementation and rollback notes](engineering/updates/2026-11-17-settings-feature-names.md).
+
 ## 2026-11-17 — PR #309 brought up to date with main
 
 - Production already has this PR's referral migration, so no new database change is needed. Profile keeps `main`'s layout. Terms keep the referral-points section. Terms and Privacy are effective November 19, 2026. [Details](engineering/updates/2026-11-17-pr-309-main-integration.md).
