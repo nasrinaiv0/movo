@@ -1,3 +1,8 @@
+## 2026-11-18 — Compact Security & Privacy guide
+
+- The guide linked from Settings has a persistent Back to Home button, quick section links, compact light and dark layouts, and expandable FAQs. It retains the current storage and encryption disclosures.
+- Typecheck, strict production build and all 1,543 local tests passed. [Scope and verification](engineering/updates/2026-11-18-compact-security-privacy.md).
+
 ## 2026-11-17 — Settings rows show feature names
 
 - The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.
