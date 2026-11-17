@@ -1,31 +1,36 @@
 import { createElement, Fragment } from 'react';
 import { VERSION } from '../i18n/locales/version';
+import records from '../i18n/languages.json';
+import preview from '../i18n/preview/core.json';
 
 /*
  * Lightweight translation layer. English text is the key, so anything untranslated falls back to English.
- * Each language's dictionary is a separate chunk loaded on demand (and cached on the device for an instant
- * start next time). `locale` drives number, currency and date formatting; `dir` flips right-to-left scripts.
+ * Full dictionaries load on demand and are cached on the device. Small preview dictionaries are bundled
+ * so their core labels work immediately, including offline.
  */
-export const LANGUAGES = [
-  { code: 'en', name: 'English', locale: 'en-PH', dir: 'ltr' },
-  { code: 'fil', name: 'Filipino', locale: 'fil-PH', dir: 'ltr' },
-  { code: 'ar', name: 'العربية', locale: 'ar-u-nu-latn', dir: 'rtl' },
-  { code: 'zh', name: '中文（简体）', locale: 'zh-CN', dir: 'ltr' },
-  { code: 'es', name: 'Español', locale: 'es-ES', dir: 'ltr' },
-  { code: 'it', name: 'Italiano', locale: 'it-IT', dir: 'ltr' },
-  { code: 'de', name: 'Deutsch', locale: 'de-DE', dir: 'ltr' },
-  { code: 'fr', name: 'Français', locale: 'fr-FR', dir: 'ltr' },
-  { code: 'pt', name: 'Português', locale: 'pt-BR', dir: 'ltr' },
-  { code: 'ja', name: '日本語', locale: 'ja-JP', dir: 'ltr' },
-  { code: 'ko', name: '한국어', locale: 'ko-KR', dir: 'ltr' },
-  { code: 'hi', name: 'हिन्दी', locale: 'hi-IN', dir: 'ltr' },
-];
+export const LANGUAGES = records.map(([code, name, englishName, locale, dir = 'ltr']) => ({
+  code, name, englishName, locale, dir, preview: Object.hasOwn(preview.translations, code),
+}));
+const byCode = new Map(LANGUAGES.map(language => [language.code, language]));
+const previewKeyIndex = new Map(preview.keys.map((key, index) => [key, index]));
+
+function matchLanguage(tag) {
+  const [base, ...subtags] = String(tag).toLowerCase().split('-');
+  if (base === 'tl') return byCode.get('fil');
+  if (base === 'cmn') return byCode.get('zh');
+  if (base === 'arb') return byCode.get('ar');
+  if (base === 'ar' && subtags.includes('eg')) return byCode.get('arz');
+  if (base === 'pa' && (subtags.includes('arab') || subtags.includes('pk'))) return byCode.get('pnb');
+  if (base === 'ku') return byCode.get(subtags.includes('arab') || subtags.includes('iq') ? 'ckb' : 'kmr');
+  if (base === 'fa' && subtags.includes('af')) return byCode.get('prs');
+  return byCode.get(base);
+}
 
 export function detectLanguage() {
   try {
-    const wanted = (navigator.languages || [navigator.language]).map(l => String(l).toLowerCase());
+    const wanted = navigator.languages?.length ? navigator.languages : [navigator.language];
     for (const w of wanted) {
-      const hit = LANGUAGES.find(l => w === l.code || w.startsWith(`${l.code}-`) || (l.code === 'fil' && w.startsWith('tl')));
+      const hit = matchLanguage(w);
       if (hit) return hit.code;
     }
   } catch { /* no navigator */ }
@@ -37,12 +42,12 @@ let dict = null;
 const CACHE = 'movo.i18n.cache';
 const readCache = (code) => { try { const c = JSON.parse(localStorage.getItem(CACHE)); return c && c.code === code && c.version === VERSION ? c.dict : null; } catch { return null; } };
 export const getLanguage = () => current;
-export const langInfo = (code) => LANGUAGES.find(l => l.code === code) || LANGUAGES[0];
+export const langInfo = (code) => byCode.get(code) || LANGUAGES[0];
 
 /** Switches the active language; returns the language record. Uses the cached dictionary when available. */
 export function setLanguage(code) {
   const next = langInfo(code);
-  if (next.code !== current.code || (!dict && next.code !== 'en')) dict = next.code === 'en' ? null : readCache(next.code);
+  if (next.code !== current.code) dict = next.code === 'en' || next.preview ? null : readCache(next.code);
   current = next;
   if (typeof document !== 'undefined') {
     document.documentElement.lang = current.code;
@@ -53,11 +58,11 @@ export function setLanguage(code) {
 
 /** Loads (or refreshes) the active language's dictionary. Resolves true when new text became available. */
 export async function loadLanguage(code = current.code) {
-  if (code === 'en') return false;
+  if (current.code !== code || code === 'en' || current.preview) return false;
   const mod = await import(`../i18n/locales/${code}.json`);
   const loaded = mod.default || mod;
   if (current.code !== code) return false;
-  const changed = dict !== loaded && JSON.stringify(dict || {}).length !== JSON.stringify(loaded).length;
+  const changed = dict !== loaded && JSON.stringify(dict) !== JSON.stringify(loaded);
   dict = loaded;
   try { localStorage.setItem(CACHE, JSON.stringify({ code, version: VERSION, dict: loaded })); } catch { /* storage full or blocked */ }
   return changed;
@@ -65,7 +70,8 @@ export async function loadLanguage(code = current.code) {
 
 /** Translates `text`, replacing {placeholders} with values from `vars`. */
 export function t(text, vars) {
-  let out = (dict && dict[text]) || text;
+  const previewText = current.preview ? preview.translations[current.code][previewKeyIndex.get(text)] : undefined;
+  let out = previewText || (dict && Object.hasOwn(dict, text) ? dict[text] : text);
   if (vars) Object.keys(vars).forEach(k => { out = out.split(`{${k}}`).join(vars[k]); });
   return out;
 }

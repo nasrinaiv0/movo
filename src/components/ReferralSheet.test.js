@@ -1,9 +1,10 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import ReferralSheet from './ReferralSheet';
+import { nativePlatform } from '../lib/platform';
 
 jest.mock('../lib/platform', () => ({
-  apiUrl: path => path, appOrigin: () => 'https://movo.nasrinai.com', isNativeApp: () => false,
+  apiUrl: path => path, appOrigin: () => 'https://movo.nasrinai.com', isNativeApp: () => false, nativePlatform: jest.fn(() => 'web'),
 }));
 jest.mock('@capgo/capacitor-app-attest', () => ({ AppAttest: {} }));
 
@@ -32,7 +33,7 @@ const typeInto = (input, value) => act(() => {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, value);
   input.dispatchEvent(new Event('input', { bubbles: true }));
 });
-afterEach(() => { delete global.fetch; window.localStorage.clear(); });
+afterEach(() => { delete global.fetch; window.localStorage.clear(); nativePlatform.mockReturnValue('web'); });
 
 test('shows the short code, the 10-friend progress and one download QR code per platform', async () => {
   serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: false, canClaim: false } });
@@ -127,41 +128,53 @@ test('signed out: download QR codes still show, with a sign-in prompt instead of
   cleanup();
 });
 
-test('every 500 points become a month of Pro: confirmed, spent by the server, then the plan refreshes', async () => {
-  let points = 620;
+test.each([
+  ['Pro', 'pro', 500], ['Pro+', 'pro_plus', 750],
+])('%s: confirms the one-month cost, then refreshes access', async (label, tier, cost) => {
   serve({
-    '/api/referrals/status': () => reply({ referralCode: 'M78038', pointsEnabled: true, points, canClaim: false, pointsProUntil: points < 500 ? '2026-12-09T00:00:00Z' : null }),
-    '/api/referrals/redeem': init => { expect(JSON.parse(init.body)).toEqual({ months: 1 }); points -= 500; return reply({ redeemedMonths: 1, expiresAt: '2026-12-09T00:00:00Z', points }); },
+    '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: true, points: 800, canClaim: false },
+    '/api/referrals/redeem': init => {
+      expect(JSON.parse(init.body)).toMatchObject({ months: 1, tier, requestId: expect.any(String) });
+      return reply({ redeemedMonths: 1, tier, startsAt: '2026-11-16T00:00:00Z', expiresAt: '2026-12-16T00:00:00Z', points: 800 - cost });
+    },
   });
   const confirm = jest.spyOn(window, 'confirm').mockImplementation(() => true);
   const onPlanChanged = jest.fn();
-  const { el, cleanup } = await render({ session, entitlement: { referralCode: 'M78038' }, onPlanChanged });
-  expect(el.querySelector('.referral-points-redeem').textContent).toContain('500 points = 1 month of Pro');
-  expect(el.querySelector('.referral-points-redeem').textContent).toContain('1 month ready to use');
-  await act(async () => { button(el, 'Use 500 points').click(); });
-  await flush();
+  const { el, cleanup } = await render({ session, onPlanChanged });
+  expect(el.textContent).toContain(`${cost} points = 1 month of ${label}`);
+  await act(async () => { button(el, `Use ${cost} points`).click(); });
   expect(confirm).toHaveBeenCalled();
   expect(onPlanChanged).toHaveBeenCalled();
-  expect(el.textContent).toContain('1 month of Pro added. It runs until');
-  // 120 points left: the button waits for the next 500, and the Pro date shows.
-  expect(button(el, 'Use 500 points').disabled).toBe(true);
-  expect(el.querySelector('.referral-points-redeem').textContent).toContain('Pro from points until');
+  expect(el.textContent).toContain(`1 month of ${label} added. It runs from`);
+  expect(button(el, `Use ${cost} points`).disabled).toBe(true);
   confirm.mockRestore();
   cleanup();
 });
 
-test('below 500 points nothing can be redeemed, and a cancelled confirmation spends nothing', async () => {
-  serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: true, points: 499 } });
-  const { el, cleanup } = await render({ session, entitlement: {} });
-  expect(button(el, 'Use 500 points').disabled).toBe(true);
-  expect(el.textContent).toContain('499 of 500 points for your next month');
-  cleanup();
-  serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: true, points: 1000 } });
+test('cost thresholds, cancellation, and active store access prevent incorrect spending', async () => {
+  serve({ '/api/referrals/status': { referralCode: 'M78038', pointsEnabled: true, points: 749 } });
+  const { el, cleanup } = await render({ session });
+  expect(button(el, 'Use 500 points').disabled).toBe(false);
+  expect(button(el, 'Use 750 points').disabled).toBe(true);
   const confirm = jest.spyOn(window, 'confirm').mockImplementation(() => false);
-  const second = await render({ session, entitlement: {} });
-  expect(second.el.textContent).toContain('2 months ready to use');
-  await act(async () => { button(second.el, 'Use 500 points').click(); });
+  await act(async () => { button(el, 'Use 500 points').click(); });
   expect(calls.some(([url]) => url === '/api/referrals/redeem')).toBe(false);
   confirm.mockRestore();
-  second.cleanup();
+  cleanup();
+
+  serve({ '/api/referrals/status': { pointsEnabled: true, points: 1000, storePlanActive: true } });
+  const active = await render({ session });
+  expect(button(active.el, 'Use 500 points').disabled).toBe(true);
+  expect(active.el.textContent).toContain('You can use points after your current store subscription ends.');
+  active.cleanup();
+});
+
+test('the iOS app displays points without a direct reward unlock', async () => {
+  nativePlatform.mockReturnValue('ios');
+  serve({ '/api/referrals/status': { pointsEnabled: true, points: 1000 } });
+  const { el, cleanup } = await render({ session });
+  expect(el.querySelector('.referral-stats').textContent).toContain('1,000');
+  expect(button(el, 'Use 500 points')).toBeUndefined();
+  expect(button(el, 'Use 750 points')).toBeUndefined();
+  cleanup();
 });

@@ -53,9 +53,51 @@
 - Tested: standalone Python AEAD round-trip/tamper-property check. Vercel temporary sandbox **unavailable due 402 payment_required**; no billing action taken. Use GitHub's disposable CI. Native hardware acceptance and rollback/downgrade safety are release blockers.
 - This is a **stacked PR based on #289, not a production change**. Do not merge or redeploy. Exact-head tests pending.
 - Detailed precommit record: `docs/engineering/updates/2026-11-13-encrypted-finance-ledger-nondestructive.md`.
+## 2026-11-17 — PR #309 brought up to date with main
+
+- Production already has this PR's referral migration, so no new database change is needed. Profile keeps `main`'s layout. Terms keep the referral-points section. Terms and Privacy are effective November 19, 2026. [Details](engineering/updates/2026-11-17-pr-309-main-integration.md).
+
+## 2026-11-16 — PR #309 conflict resolution
+
+- Integrated main `77bcacc`. Kept Friends and referral layouts, both legal disclosures, and the referral Terms date. Regenerated the combined translations and public legal pages.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-309-main-conflicts.md).
+
+## 2026-11-16 — QR referral and plan rewards
+
+- A referred new member receives 20 points after app verification and a further 100 after their first confirmed positive store charge. The reward selector offers one month of Pro for 500 points or Pro+ for 750.
+- Supabase preserves existing balances and entitlements through the migration. QR and code entry carry through sign-in and trial activation. The server deduplicates awards and debits, and validates the beneficiary and store evidence.
+- Local validation covers the full React suite, strict build, typecheck, disposable PostgreSQL and IAP lease tests. The PR records GitHub and preview results. Signed physical-device and deployment configuration checks remain launch gates.
+- Open PR scopes reviewed against main at `d511f268`: #274, #280, #290, #291, #294–#297, #299, #305, #306 and #308. Existing billing branches overlap the verifier, with this branch limited to verified referral payment evidence and rewards. See [implementation and rollout notes](engineering/updates/2026-11-16-qr-referral-plan-rewards.md).
+## 2026-11-16 — PR #308 conflict resolution
+
+- Integrated main `77bcacc`. Retained the Android release optimization and the main progress history.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-308-main-conflicts.md).
+
+## 2026-11-17 — PR #316 brought up to date with main
+
+- Profile keeps this PR's tablet and desktop grid, with #315's tinted rows inside. Appearance keeps this PR's grouped sections and adds the Colour-coded icons switch. [Details](engineering/updates/2026-11-17-pr-316-main-integration.md).
+
+## 2026-11-17 — Tablet and desktop layouts
+
+- Improved the desktop and tablet workspace, dashboard grids, reading widths and centered panels. Node 26 passes 1,491 tests and the strict build. Chromium verified 22 customer routes at two widths and the owner workspace in a fixture session. [Baseline, scope and verification](engineering/updates/2026-11-17-tablet-desktop-layouts.md).
+- Compact refinement covers shared spacing, Menu actions, ledger rows and transaction entry on standard tablets.
+- Settings follow-up makes the header, preference groups, Appearance controls and Notification Settings more compact. Search also matches group names and can be cleared without leaving the keyboard. [Settings notes and verification](engineering/updates/2026-11-17-compact-settings.md).
+- Final Settings review aligns column headers, improves theme icon contrast, and puts Quiet Hours beside the notification channel controls.
+
+## 2026-11-16 — Android release optimization for Google Play bundle 11
+
+- Play Console reports 0% DEX optimization, 93% obfuscation, 92% code shrinking, R8 full mode, and 16 KB page-size support. The release configuration uses the legacy Android rules file with `-dontoptimize`. The screenshot cuts off the total uncompressed DEX size.
+- Use the optimized R8 rules, enable resource shrinking and the optimized resource shrinking pipeline, and explicitly enable class repackaging with AGP 8.13.0. Keep the Capacitor and MOVO native bridge rules for reflected classes and methods. Leave native packaging and signing settings in place. AGP 9 is a separate toolchain migration.
+- Precommit verification: a Python diff check verified optimization flags, preserved bridge rules, and isolated the app changes to its release build type. Verify the Android native and disposable-key AAB builds in PR CI. After review, generate a signed AAB from `main` with a version code greater than every code already uploaded. In Play Internal testing, compare the DEX size and all three DEX percentages, the R8 configuration flags, and 16 KB support against bundle 11. Run the Play-delivered build on Android and check Google and email sign-in, sign-in after restart, receipt scanning, notifications, and Play license-test purchase and restore before promotion.
+- Phase 1 CI on the initial head stopped at the per-commit documentation check. The revised commit includes this entry and the [dated engineering update](engineering/updates/2026-11-16-android-release-r8-optimization.md).
+- Open PRs reviewed during preparation: #274, #280, #290, #291, #294, #295, #296, #297, #299, #305, and #306. This change is scoped to optimization and release validation.
 ## 2026-11-17 — PR #315 brought up to date with main after #314
 
 - #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
+
+## 2026-11-17 — Expanded language selection
+
+- Added the requested 95 language groups to Settings → Language, with separate Punjabi and Kurdish choices for 97 entries. The 85 additions have offline preview labels and an English fallback. The 12 existing language choices retain their current catalog behavior. [Coverage, validation and review](engineering/updates/2026-11-17-expanded-language-selection.md).
 
 ## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
 
@@ -67,6 +109,22 @@
 - Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
 - NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
 
+## 2026-11-16 — PR #280 conflict resolution
+
+- Integrated main `77bcacc`. Kept Wear quick-log and build targets alongside the isolated Android auth build, Friends, and legacy WebView URL parsing. Wear URLs still open only a blank phone form.
+- iOS CI exposed a phone-only distribution check. The corrected check verifies phone and Watch bundle identities, rejects mismatched companions, and preserves the existing iPhone release checks.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-280-main-conflicts.md).
+
+## 2026-11-12 — Wear OS and Apple Watch compatibility companion branch
+
+- Scope: separate Android Wear OS :wear AAB, embedded SwiftUI watchOS companion target, and privacy-first Quick Log handoff to the existing phone form. No raw watch finance API, payment, auth token, account, bank logo/favicons or transaction content.
+- Phone-side implementation: strict Android movo://wear-log deep link allowlist, iOS WatchConnectivity fixed-action receiver and one-shot native bridge; requests wait for setup, auth readiness, phone unlock and absence of another sheet. All writes remain manual and phone-side.
+- New test gates: watch manifest/security contract, Jest deep-link abuse tests, unsigned Android Wear debug/release bundle compile, unsigned watchOS Simulator compile. Manual paired watches and store packaging/signing remain release blockers.
+- Documentation: docs/engineering/updates/2026-11-12-wearable-companions.md and docs/wearable-compatibility-2026-11-12.md.
+- No production changes or migration. PR is review-only and must not auto-merge until all native builds and physical device tests pass.
+
+- **2026-11-12 PR #280 CI fix (pre-merge):** Android and hybrid regression checks executed 203 suites / 1,235 tests. 1,234 passed; the only failing check was the prior Android manifest contract asserting exactly two allowable `movo://` hosts. Updated this test to explicitly enumerate exactly `auth-callback`, `log`, and `wear-log`, including VIEW/DEFAULT/BROWSABLE safety requirements. This is a test correction; no production code change. iOS/native and preview still require exact-head verification.
+
 ## 2026-11-16 — Profile page: clearer overview and consistent rows
 
 - One Overview card names the month chosen on Home, shows the total balance large, then that month's income and expenses. Trends appear only when meaningful (no "999+%").
@@ -77,6 +135,10 @@
 - Removed the square grey strip behind the Light / Dark / System / Custom tiles (Profile).
 - Each swatch now previews its theme in both modes, and its icon is always visible.
 - The selection is an accent ring with the tick inside the swatch, the same on Profile and Settings → Appearance. [Details](engineering/updates/2026-11-16-theme-picker.md).
+
+## 2026-11-17 — Google Play and Android sign-in fix records consolidated (#295, #296, #297, #299)
+
+- The fixes were already in `main`. This PR adds their engineering records and #296's regression test: expired, paused or on-hold Play subscriptions never regain access. #295, #297 and #299 are closed in favour of it. [Details](engineering/updates/2026-11-17-play-oauth-records-consolidated.md).
 
 ## 2026-11-16 — NasrinAI: Listen and voice input on iPhone, cleaner chat screen
 
@@ -91,6 +153,42 @@
 ## 2026-11-16 — Less space at the top of every page
 
 - On phones in the browser and home-screen web app, every page and Home's header photo start 10 px higher (base 18 px to 8 px). Headers stay aligned across pages. The iPhone app's native top bar and tablet/desktop layouts are unchanged. CSS only. [Details](engineering/updates/2026-11-16-page-top-spacing.md).
+
+## 2026-11-16 — PR #294 conflict resolution
+
+- Integrated main `77bcacc`. Preserved the Security & Data Guide navigation and the current Friends and receipt privacy disclosures.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-294-main-conflicts.md).
+
+## 2026-11-13 — PR #294 safe conflict integration, precommit record
+
+- Compared PR #294 exact head a05152d, latest main 2922eef, and their common doc baseline before building this integration.
+- Keep PR #294's documented guide and CI repairs; retain ALL newer main progress, including referral and iOS release-harness entries.
+- Retain main's full legal policy and recent referral disclosures; add only the reviewed Security & Data Guide navigation link. Do not alter legal clauses, policy dates, or data retention.
+- The remaining eight PR file objects are reused verbatim. No production, schema, native code, cloud account, or billing changes.
+- Post-integration requirements: exact-head CI, Vercel preview and legal review; physical screen reader and phone-device tests remain unverified and are not claimed complete.
+
+## 2026-11-13 — PR #294 CI 2nd regression: Jest resets module mock implementations
+
+- Exact commit `1396197` GitHub Phase 1 and Vercel preview each failed on **one** Settings guide click test, while 224 of 225 test suites and 1,354 of 1,355 tests passed. Read-only finance tenant isolation passed.
+- Unlike the previous Capacitor proxy spy failure, `Browser.open` is now a Jest mock function. However, MOVO Jest setup resets mock implementations between tests, causing a bare `Browser.open()` to return undefined; the actual Settings handler expects a Promise and calls `.catch()`.
+- Fix in test setup: explicitly `Browser.open.mockReset()` and `Browser.open.mockImplementation(() => Promise.resolve())` immediately before the click. **Do not change the production async Browser.open handler or suppress rejection handling.**
+- Precommit documentation recorded before the fix. Exact-head full regression + preview must be rerun. Keep PR open and production untouched.
+
+## 2026-11-13 — PR #294 preview CI repair (documented before commit)
+
+- First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.
+- Result in the Vercel runner: 224/225 suites passed and 1,354/1,355 tests passed, then the build script exited nonzero. Correct the **test double**, not the product plugin or security gate.
+- Add a `jest.mock('@capacitor/browser')` module mock with a real `jest.fn()` and assert the Settings row invokes `Browser.open` with the canonical security URL.
+- Customer clarity: remove internal PR numbers from the public HTML and say the enhanced offline encryption is in testing and **not part of the current production release**. Retain exact PR references in internal engineering notes and the source docs.
+- No production release, merge, database mutation, security control relaxation, or third-party API change. Rerun exact-head GitHub CI and Vercel preview after the fix.
+
+## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
+
+- Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.
+- Drafted standalone `/security` guide, companion editorial markdown, legal-policy navigation links, and Settings entry point via Capacitor Browser; no existing legal clauses or policy dates changed.
+- Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
+- Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
+- Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
 
 ## 2026-11-16 — Home header: less space under Total balance
 

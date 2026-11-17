@@ -79,7 +79,7 @@ export async function restoreNativeStorage(storage = typeof window !== 'undefine
  * or email-link return look invalid on those phones and sign-in silently stopped after the account was chosen.
  * The pattern leaves no room for user info, a port, another host or a path.
  */
-const APP_LINK = /^(movo|movo-authcheck):\/\/(auth-callback|log|friend)\/?(?:\?([^#]*))?(?:#(.*))?$/;
+const APP_LINK = /^(movo|movo-authcheck):\/\/(auth-callback|log|friend|wear-log)\/?(?:\?([^#]*))?(?:#(.*))?$/;
 
 /** Parse a movo:// URL into what the app should do with it. Pure, so it is unit-tested. */
 export function readAppUrl(url) {
@@ -107,11 +107,15 @@ export function readAppUrl(url) {
   if (parsed.hostname === 'log' && parsed.protocol === 'movo:' && !parsed.hash) {
     return { kind: 'log', hash: `#/log?${params.toString()}` };
   }
+  // Public deep links can only request a blank phone form. Never auto-write.
+  if (parsed.hostname === 'wear-log' && parsed.protocol === 'movo:' && !match[3] && !parsed.hash) {
+    return { kind: 'wear' };
+  }
   return null;
 }
 
 /** Listen for movo:// links. `onAuth({ code, error })` finishes sign-in; log links reuse the web #/log handler. */
-export function listenForAppUrls({ onAuth, onFriend } = {}) {
+export function listenForAppUrls({ onAuth, onFriend, onWear } = {}) {
   if (!isNativeApp()) return () => {};
   let active = true;
   let lastAuthCode = null;
@@ -131,6 +135,7 @@ export function listenForAppUrls({ onAuth, onFriend } = {}) {
       onAuth?.(link);
     }
     if (link.kind === 'log') window.location.hash = link.hash;
+    if (link.kind === 'wear') onWear?.();
     if (link.kind === 'friend') onFriend?.(link.token);
   };
   const pending = CapApp.addListener('appUrlOpen', handle);
@@ -138,6 +143,26 @@ export function listenForAppUrls({ onAuth, onFriend } = {}) {
   return () => {
     active = false;
     pending.then(h => h?.remove()).catch(() => {});
+  };
+}
+
+/**
+ * Apple Watch sends only a one-shot boolean through WatchConnectivity.
+ * Foreground / resume consumption never transfers financial data to the watch.
+ */
+export function listenForWearActions(onWear) {
+  if (nativePlatform() !== 'ios') return () => {};
+  let stopped = false;
+  const consume = () => {
+    MovoNative.consumeWearRequest().then(({ action }) => {
+      if (!stopped && action === 'quickLog') onWear?.();
+    }).catch(() => {});
+  };
+  const listener = CapApp.addListener('resume', consume);
+  consume();
+  return () => {
+    stopped = true;
+    listener.then(handle => handle.remove()).catch(() => {});
   };
 }
 

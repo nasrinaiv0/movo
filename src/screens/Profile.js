@@ -96,49 +96,60 @@ export default function Profile({ c }) {
       </div>
     </section>
 
-    <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
-    <section className="card menu-card">
-      {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        {ic(icon, { bank: 'blue', card: 'purple', wallet: 'teal' }[icon])}<span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
-      </button>)}
-    </section>
-    <SectionTitle>{tr('Settings')}</SectionTitle>
-    <section className="card menu-card">
-      {menu.map(([icon, tone, label, view, sub]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}>{ic(icon, tone)}<span className="menu-main"><strong>{tr(label)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}
-    </section>
+    <div className="adaptive-settings-grid">
+      <div>
+        <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
+        <section className="card menu-card">
+          {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
+            {ic(icon, { bank: 'blue', card: 'purple', wallet: 'teal' }[icon])}<span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
+          </button>)}
+        </section>
+      </div>
+      <div>
+        <SectionTitle>{tr('Settings')}</SectionTitle>
+        <section className="card menu-card">
+          {menu.map(([icon, tone, label, view, sub]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}>{ic(icon, tone)}<span className="menu-main"><strong>{tr(label)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}
+        </section>
 
-    <SectionTitle action={tr('See All')} onAction={() => go('Appearance')}>{tr('App Appearance')}</SectionTitle>
-    <ThemePicker c={c} compact />
+      </div>
+      <div>
+        <SectionTitle action={tr('See All')} onAction={() => go('Appearance')}>{tr('App Appearance')}</SectionTitle>
+        <ThemePicker c={c} compact />
 
-    <SectionTitle>{tr('Data & Sync')}</SectionTitle>
-    <section className="card menu-card">
-      <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
-        {ic('cloud', 'blue')}<span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
-      </button>
-      <div className="menu-row">{ic('database', 'gray')}<span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Kept in this browser. Not synced or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
-    </section>
-
-    <SectionTitle>{tr('About')}</SectionTitle>
-    <section className="card menu-card">
-      {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => {
-        const action = title === 'Terms of Service' ? () => c.openLegal?.('TermsOfService') : title === 'Privacy Policy' ? () => c.openLegal?.('PrivacyPolicy') : null;
-        const Tag = action ? 'button' : 'div';
-        return <Tag key={title} type={action ? 'button' : undefined} className="menu-row" onClick={action}>
-          {ic(icon, 'gray')}<span className="menu-main"><strong>{tr(title)}</strong>{sub && <small>{tr(sub)}</small>}</span>{action && <Icon name="chevron" size={16} />}
-        </Tag>;
-      })}
-    </section>
-    <section className="card menu-card gap">
-      <button type="button" className="menu-row" onClick={exportCsv}>{ic('download', 'green')}<span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
-      {session && <button type="button" className="menu-row" onClick={revokeOtherDevices} disabled={revokingOtherSessions} aria-busy={revokingOtherSessions}>
-        {ic('shield', 'orange')}
-        <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
-        <Icon name="chevron" size={16} />
-      </button>}
-      {session ? <button type="button" className="menu-row danger" onClick={signOutNow}>{ic('logout', 'red')}<span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
-        : null}
-    </section>
-    {referralOpen && <ReferralSheet session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
+      </div>
+      <div>
+        <SectionTitle>{tr('Data & Sync')}</SectionTitle>
+        <section className="card menu-card">
+          <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
+            {ic('cloud', 'blue')}<span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
+          </button>
+          <div className="menu-row">{ic('database', 'gray')}<span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Kept in this browser. Not synced or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
+        </section>
+      </div>
+      <div>
+        <SectionTitle>{tr('About')}</SectionTitle>
+        <section className="card menu-card">
+          {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => {
+            const action = title === 'Terms of Service' ? () => c.openLegal?.('TermsOfService') : title === 'Privacy Policy' ? () => c.openLegal?.('PrivacyPolicy') : null;
+            const Tag = action ? 'button' : 'div';
+            return <Tag key={title} type={action ? 'button' : undefined} className="menu-row" onClick={action}>
+              {ic(icon, 'gray')}<span className="menu-main"><strong>{tr(title)}</strong>{sub && <small>{tr(sub)}</small>}</span>{action && <Icon name="chevron" size={16} />}
+            </Tag>;
+          })}
+        </section>
+        <section className="card menu-card gap">
+          <button type="button" className="menu-row" onClick={exportCsv}>{ic('download', 'green')}<span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
+          {session && <button type="button" className="menu-row" onClick={revokeOtherDevices} disabled={revokingOtherSessions} aria-busy={revokingOtherSessions}>
+            {ic('shield', 'orange')}
+            <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
+            <Icon name="chevron" size={16} />
+          </button>}
+          {session ? <button type="button" className="menu-row danger" onClick={signOutNow}>{ic('logout', 'red')}<span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
+            : null}
+        </section>
+      </div>
+    </div>
+    {referralOpen && <ReferralSheet key={session?.user?.id || 'guest'} session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
     <p className="fineprint">{tr('MOVO does not connect to your bank or read private Apple Pay history automatically. Only add records you choose to provide.')}</p>
   </>;
 }

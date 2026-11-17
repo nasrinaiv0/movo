@@ -18,7 +18,7 @@ import { startEdgeSwipeBack } from './lib/edgeSwipeBack';
 import { appIconById, appIconUnlocked } from './lib/appIcons';
 import { setNativeAppIcon } from './lib/native';
 import PlanOffer from './components/PlanOffer';
-import { activateNativeReferral } from './lib/referrals';
+import { activateNativeReferral, claimReferralCode, clearPendingReferralCode, pendingReferralSubmission } from './lib/referrals';
 import { UsageSheet } from './screens/Settings';
 import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
@@ -28,6 +28,8 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { AccountOptions } from './components/AccountPicker';
 import { flushSync } from 'react-dom';
 import './App.css';
+import './AdaptiveLayout.css';
+import './screens/Settings.css';
 import AuthPanel from './components/AuthPanel';
 import Icon, { NasrinMark } from './components/Icon';
 import { Sheet, SubHeader } from './components/ui';
@@ -72,6 +74,7 @@ import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocal
 import { canAnimate, revealChange, showInstantly } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
+import LanguageSheet from './components/LanguageSheet';
 import { COUNTRIES, countryName, regionalLocale } from './lib/regions';
 import SearchOverlay from './components/SearchOverlay';
 import TransactionSheet from './components/TransactionSheet';
@@ -88,7 +91,7 @@ import { buildTransactionRunningBalances } from './lib/transactionRunningBalance
 import { listAccountingPostings, listAccountingActivities, reverseAllocationEvent, listLoans, listReceivables, createLoan, createReceivable } from './lib/obligationsRepository';
 import { getCurrentSession, listAccounts, listTransactions, createAccount, updateAccount, createTransaction, updateTransaction, deleteTransaction, restoreTransactionLinks, signOut, listBudgets, createBudget, updateBudget, removeBudget, deleteAllCloudData, deleteMyAccount, loadPreferences, savePreferences, listAutomationInbox, resolveAutomationInboxItem, listArchivedAutomations, deleteAutomationInboxItem, purgeArchivedAutomations, finishOAuth } from './lib/financeRepository';
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
-import { listenForAndroidBack, listenForAppUrls } from './lib/native';
+import { listenForAndroidBack, listenForAppUrls, listenForWearActions } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
@@ -372,6 +375,7 @@ function App() {
   const openedFriendInvite = useRef('');
   const [inbox, setInbox] = useState([]); // phone automations that could not be logged (cloud only)
   const [pendingLog, setPendingLog] = useState(null);
+  const [wearLogRequested, setWearLogRequested] = useState(false); // no watch financial data
   const [automationStatus, setAutomationStatus] = useState('idle');
   const [toast, setToast] = useState('');
   const [localPersistenceWarning, setLocalPersistenceWarning] = useState(false);
@@ -486,12 +490,38 @@ function App() {
   const trialAutoRef = useRef('');
   useEffect(() => {
     const id = session?.user?.id;
-    if (!id || !session?.access_token || !prefs.planWelcomeSeen || !entitlement?.trialEligible || trialAutoRef.current === id) return;
+    if (!id || !session?.access_token || !prefs.planWelcomeSeen || !entitlement || trialAutoRef.current === id) return;
+    const code = pendingReferralSubmission();
+    if (!entitlement.trialEligible && !code) return;
     trialAutoRef.current = id;
-    fetch(apiUrl('/api/purchases/trial'), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: '{}' })
-      .then(response => { if (response.ok) { refreshEntitlement(); notify(tr('Your free month of Pro has started.')); } })
-      .catch(() => { trialAutoRef.current = ''; });
-  }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement?.trialEligible, refreshEntitlement, notify]);
+    const token = session.access_token;
+    const account = { access_token: token };
+    if (!entitlement.trialEligible) {
+      claimReferralCode(account, code).then(() => {
+        if (pendingReferralSubmission() === code) clearPendingReferralCode();
+        activateNativeReferral(account).catch(() => false);
+      }).catch(() => { trialAutoRef.current = ''; });
+      return;
+    }
+    const startTrial = referralCode => fetch(apiUrl('/api/purchases/trial'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify(referralCode ? { referralCode } : {}),
+    });
+    startTrial(code).then(async response => {
+      if (code && response.ok) {
+        if (pendingReferralSubmission() === code) clearPendingReferralCode();
+        activateNativeReferral(account).catch(() => false);
+      } else if (code && (response.status === 400 || response.status === 429)) {
+        // An invalid or limited code must not block the new user's free month.
+        response = await startTrial('');
+      }
+      if (response.ok) {
+        refreshEntitlement();
+        notify(tr('Your free month of Pro has started.'));
+      }
+    }).catch(() => { trialAutoRef.current = ''; });
+  }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement, refreshEntitlement, notify]);
   useEffect(() => {
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
@@ -954,7 +984,11 @@ function App() {
         setError(`${tr('Sign-in could not be completed. Please try again.')} (${safeNativeOAuthStage('exchange')})`);
       });
     },
+    onWear: () => setWearLogRequested(true),
   }), []);
+
+  /* One-shot Apple Watch requests arrive only through the native iPhone bridge. */
+  useEffect(() => listenForWearActions(() => setWearLogRequested(true)), []);
 
   useEffect(() => {
     let mounted = true;
@@ -2228,6 +2262,13 @@ function App() {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, []);
   const unlock = useCallback(() => setLocked(false), []);
+  // Watch handoffs cannot bypass setup, sign-in or local App Lock. They wait
+  // until the phone is ready and the person explicitly saves a manual entry.
+  useEffect(() => {
+    if (!wearLogRequested || !authReady || locked || !setupDone || sheet || view === 'Sign in') return;
+    setWearLogRequested(false);
+    setSheet({ name: 'transaction', type: 'expense' });
+  }, [wearLogRequested, authReady, locked, setupDone, sheet, view]);
 
   /* ---------- "While you were away": what was logged since MOVO was last open, and automations that failed ---------- */
   // Checked once the app is ready, and again when MOVO comes back after 2+ minutes in the background (cloud records
@@ -2780,7 +2821,7 @@ function App() {
   return <PlanProvider entitlement={entitlement} cloudMode={safeCloudAccess} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
-      <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} key={view}>
+      <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} data-view={view} key={view}>
         {localPersistenceWarning && <div className="app-alert storage-warning" role="alert">
           <span><strong>{cloudMode && pendingLocalDataRef.current ? tr('Local-only records were not saved before cloud sign-in.') : tr('Local changes may not be saved.')}</strong> {cloudMode && pendingLocalDataRef.current ? tr('These records are separate from your cloud account. Retry to preserve a local copy on this device; this does not sync them to the cloud.') : tr('Browser storage is unavailable or full. Important records may not survive a reload. Export a copy if possible, free browser storage, then retry. Local records stay on this device and are not cloud-synced.')}</span>
           <button type="button" className="retry-save" onClick={retryLocalPersistence}>{tr('Retry save')}</button>
@@ -2894,9 +2935,8 @@ function App() {
         onSignIn={() => go('Sign in')} onInviteHandled={clearFriendInvite}
         onOpenSummary={friend => { clearFriendInvite(); openFriendSummary(friend); }} />}
       {sheet?.name === 'themes' && <ThemeSheet c={c} />}
-      {sheet?.name === 'language' && <Sheet title={tr('Language')} subtitle={tr('Choose the language for MOVO on this device.')} onClose={() => setSheet(null)} label={tr('Language')}>
-        <div className="sheet-list">{[{ code: '', name: tr('Automatic (device language)') }, ...LANGUAGES].map(l => <button type="button" key={l.code || 'auto'} lang={l.code || undefined} className={`sheet-card${(prefs.language || '') === l.code ? ' selected' : ''}`} aria-pressed={(prefs.language || '') === l.code} onClick={() => { setPref('language', l.code); setSheet(null); }}><span className="account-main"><strong>{l.name}</strong></span>{(prefs.language || '') === l.code && <Icon name="check" size={18} />}</button>)}</div>
-      </Sheet>}
+      {sheet?.name === 'language' && <LanguageSheet value={prefs.language || ''} onClose={() => setSheet(null)}
+        onPick={code => { setPref('language', code); setSheet(null); }} />}
       {sheet?.name === 'country' && <CountrySheet value={prefs.country} locale={lang.locale} onPick={([code, language, currency]) => { setPrefs(cur => ({ ...cur, country: code, language, currency })); setSheet(null); }} onClose={() => setSheet(null)} />}
       {sheet?.name === 'currency' && <CurrencySheet value={base} fx={fx} locale={lang.locale} onPick={(code) => { setPref('currency', code); setSheet(null); }} onClose={() => setSheet(null)} />}
       {(sheet?.name === 'planOffer' || (authReady && prefs.onboarded && !prefs.planWelcomeSeen && !sheet && !locked && !SETUP_READING.has(view) && !guideOpen)) && <PlanOffer session={session} entitlement={entitlement} currency={base} cloudMode={safeCloudAccess} onOpenCloudSettings={() => { setPref('planWelcomeSeen', true); setSheet(null); go('Settings'); }} feature={sheet?.feature} onRefresh={refreshEntitlement} onOpenTerms={() => { setPref('planWelcomeSeen', true); setSheet(null); openLegal('TermsOfService'); }} onClose={() => { setPref('planWelcomeSeen', true); setSheet(null); }} onSignIn={() => { setPref('planWelcomeSeen', true); setSheet(null); startAccount('signin'); }} onPlans={() => { setPref('planWelcomeSeen', true); setSheet({ name: 'planUsage' }); }} />}
@@ -2929,7 +2969,7 @@ function App() {
       {sheet?.name === 'spendingLimits' && <SpendingLimitsSheet limits={spendingLimitList} accounts={accountsView} show={show} onSave={saveSpendingLimit} onDelete={deleteSpendingLimit} onClose={() => setSheet({ name: 'budgets', tab: 'budgets' })} />}
 
 
-      {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is previewed here. Nothing changes until you confirm a local-only save.')} onClose={() => setSheet(null)} label={tr('Import transactions')}>
+      {sheet?.name === 'importCsv' && <Sheet title={tr('Import transactions')} subtitle={tr('CSV is previewed here. Nothing changes until you confirm a local-only save.')} onClose={() => setSheet(null)} label={tr('Import transactions')} size="wide">
         <div className="sheet-form">
           <div className="movo-import-file-row">
             <label htmlFor="movo-csv-file" className="movo-file-upload-button"><Icon name="upload" size={17} /> {tr('Upload file')}</label>

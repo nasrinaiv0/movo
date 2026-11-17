@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon';
-import { PENDING_REFERRAL_EVENT, clearPendingReferralCode, pendingReferralCode, savePendingReferralCode, trialReferralCode } from '../lib/referrals';
+import { PENDING_REFERRAL_EVENT, activateNativeReferral, clearPendingReferralCode, pendingReferralCode, savePendingReferralCode, trialReferralCode } from '../lib/referrals';
 import { canAnimate } from '../lib/motion';
 import { Sheet } from './ui';
 import { apiUrl } from '../lib/platform';
@@ -100,7 +100,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
     : annualSavingPercent([{ monthly: productFor(tier, 'monthly'), annual: productFor(tier, 'annual') }]);
   const claim = async () => {
     // Signed out: keep the typed code on this device, so it is filled in again after signing in.
-    if (!session?.access_token) { savePendingReferralCode(code); onSignIn(); return; }
+    if (!session?.access_token) { savePendingReferralCode(code, { submitAfterSignIn: true }); onSignIn(); return; }
     setBusy(true); setError('');
     try {
       // Short codes such as M78038 (any case, spaces ignored); older 24-character codes still work.
@@ -112,7 +112,10 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
       });
       if (response.status === 429) throw new Error(tr('Too many tries. Try the code again in an hour.'));
       if (!response.ok) throw new Error(tr('Could not start the free month. Check the referral code, then try again.'));
-      if (entered) clearPendingReferralCode();
+      if (entered) {
+        if (pendingReferralCode() === entered) clearPendingReferralCode();
+        activateNativeReferral(session).catch(() => false);
+      }
       await onRefresh(); onClose();
     } catch (cause) { setError(cause.message); } finally { setBusy(false); }
   };
@@ -144,7 +147,7 @@ export default function PlanOffer({ session, entitlement, onRefresh, onClose, on
   else action = { label: tr('Continue with {plan}', { plan: selected.name }), disabled: true, note: native ? tr('Store subscription products are not available yet.') : tr('Subscribe in the MOVO iOS or Android app.') };
   const markTone = trialOffer || (selected.tier === 'pro' && onTrial) ? 'white' : selected.tone;
 
-  return <Sheet center label={tr('MOVO plans')} className="plan-offer-sheet plan-panel" onClose={onClose}>
+  return <Sheet center label={tr('MOVO plans')} size="wide" className="plan-offer-sheet plan-panel" onClose={onClose}>
     <div className="plan-panel-welcome">
       <div className="plan-panel-head">
         <span className="plan-panel-brand"><MovoMark size={30} tone={markTone} /><b>MOVO</b></span>

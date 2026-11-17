@@ -52,4 +52,14 @@ sql((root/'supabase/tests/manual_plan_grants.test.sql').read_text())
 sql("alter table auth.users add column created_at timestamptz not null default now();")
 sql((root/'supabase/migrations/20261109153000_verified_referral_points.sql').read_text())
 sql((root/'supabase/tests/referral_points.test.sql').read_text())
+# Older fixtures predate the IAP identities. Normalize these synthetic rows before validating the real migration.
+sql("""
+update public.movo_store_entitlements set original_transaction_id=store_subscription_key where platform='apple';
+update public.movo_store_entitlements set purchase_token_hash=encode(sha256(convert_to(store_subscription_key,'UTF8')),'hex'),
+  store_subscription_key=encode(sha256(convert_to(store_subscription_key,'UTF8')),'hex') where platform='google';
+""")
+sql((root/'supabase/migrations/20261109160000_iap_integrity.sql').read_text())
+sql((root/'supabase/migrations/20261113000000_google_play_test_purchase_isolation.sql').read_text())
+sql(next((root/'supabase/migrations').glob('*_movo_referral_plan_rewards.sql')).read_text())
+sql((root/'supabase/tests/referral_plan_rewards.test.sql').read_text())
 print('PASS: plan migrations, referral points and adversarial SQL checks in isolated PostgreSQL')

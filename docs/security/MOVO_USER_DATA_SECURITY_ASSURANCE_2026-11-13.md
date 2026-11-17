@@ -1,5 +1,7 @@
 # MOVO — User Data Security & Privacy Assurance
 
+> **Status update, 17 November 2026:** the encryption described below as staged in PRs #289, #290 and #291 was merged with #291. The rest of this document is the 13 November 2026 point-in-time review, kept as it was. See the public [Security & Data Guide](https://movo.nasrinai.com/security) for the current wording.
+
 **Status:** Evidence-based technical and user-facing disclosure; **not a security certification**  
 **Review date:** 13 November 2026 (Philippine Time)  
 **Product:** MOVO — Money Organizer & Visual Outflow  

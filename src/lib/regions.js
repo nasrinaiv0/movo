@@ -15,8 +15,14 @@ export const COUNTRIES = [
 export const countryName = (code, locale = 'en') => { try { return new Intl.DisplayNames([locale], { type: 'region' }).of(code) || code; } catch { return code; } };
 
 /** Regional formatting locale for a language and country, e.g. es + MX → es-MX. */
+let lastLocale;
 export function regionalLocale(lang, country) {
-  if (!country) return lang.locale;
-  const base = lang.code === 'fil' ? 'fil' : lang.code;
-  return `${base}-${country}${lang.code === 'ar' ? '-u-nu-latn' : ''}`;
+  const region = /^[A-Z]{2}$/.test(country || '') ? country : undefined;
+  if (lastLocale?.locale === lang.locale && lastLocale.region === region) return lastLocale.resolved;
+  const locale = region ? new Intl.Locale(lang.locale, { region }).toString() : lang.locale;
+  const fallback = region ? `en-${region}` : 'en-PH';
+  const candidates = [locale, lang.locale, fallback, 'en-PH'];
+  const resolved = candidates.find(value => Intl.NumberFormat.supportedLocalesOf(value).length && Intl.DateTimeFormat.supportedLocalesOf(value).length) || 'en-PH';
+  lastLocale = { locale: lang.locale, region, resolved };
+  return resolved;
 }

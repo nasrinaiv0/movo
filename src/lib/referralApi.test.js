@@ -36,7 +36,7 @@ beforeEach(() => {
 afterAll(() => {
   ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'MOVO_REFERRAL_POINTS_ENABLED', 'MOVO_IOS_APP_STORE_URL', 'MOVO_ANDROID_STORE_URL', 'APPLE_APP_ID'].forEach(k => delete process.env[k]);
 });
-const post = (body, auth = 'Bearer signed-in') => ({ method: 'POST', headers: { authorization: auth }, body });
+const post = (body, auth = 'Bearer signed-in') => ({ method: 'POST', headers: { authorization: auth, 'x-movo-referral-rewards': '2' }, body });
 
 test('server and app agree on the code format', () => {
   expect(normalizeReferralCode(' m78038 ')).toBe('M78038');
@@ -81,15 +81,17 @@ test('claim: database reasons map to statuses, unknown reasons are not echoed', 
 
 test('status reports whether points are switched on; native proof routes stay closed until then', async () => {
   rpc.mockResolvedValueOnce({ data: { referralCode: 'M78038', points: 0, canClaim: true }, error: null });
-  let r = res(); await status({ method: 'GET', headers: { authorization: 'Bearer x' } }, r);
+  let r = res(); await status({ method: 'GET', headers: { authorization: 'Bearer x', 'x-movo-referral-rewards': '2' } }, r);
   expect(r.body).toEqual({ referralCode: 'M78038', points: 0, canClaim: true, pointsEnabled: false });
   r = res(); await challenge(post({}), r);
   expect(r.statusCode).toBe(503);
   expect(r.body).toEqual({ error: 'referrals_not_configured' });
   process.env.MOVO_REFERRAL_POINTS_ENABLED = 'true';
   rpc.mockResolvedValueOnce({ data: { points: 5 }, error: null });
-  r = res(); await status({ method: 'GET', headers: { authorization: 'Bearer x' } }, r);
+  r = res(); await status({ method: 'GET', headers: { authorization: 'Bearer x', 'x-movo-referral-rewards': '2' } }, r);
   expect(r.body.pointsEnabled).toBe(true);
+  r = res(); await status({ method: 'GET', headers: { authorization: 'Bearer x' } }, r);
+  expect(r.body.pointsEnabled).toBe(false);
 });
 
 test('free month: short and older codes are sent, wrong ones refused, returned errors are reported', async () => {
@@ -189,25 +191,32 @@ test('download: never redirects to an unexpected address and ignores bad input',
   expect(r.statusCode).toBe(405);
 });
 
-test('redeem: closed until points are on, months must be 1-12, only the verified user and the server decide', async () => {
-  let r = res(); await redeem(post({ months: 1 }), r);
+test('redeem: closed until points are on and validates the tier and request id', async () => {
+  const requestId = 'd8cdd087-7d5d-4a20-bad7-b5db04acb2cf';
+  const body = { months: 1, tier: 'pro_plus', requestId };
+  let r = res(); await redeem(post(body), r);
   expect(r.statusCode).toBe(503);
   process.env.MOVO_REFERRAL_POINTS_ENABLED = 'true';
-  for (const months of [0, 13, 1.5, '1', null]) {
-    r = res(); await redeem(post({ months }), r);
+  for (const extra of [{ months: 0 }, { months: 13 }, { months: 1.5 }, { months: '1' }, { tier: 'free' }, { requestId: 'forged' }]) {
+    r = res(); await redeem(post({ ...body, ...extra }), r);
     expect(r.statusCode).toBe(400);
   }
-  expect(rpc).not.toHaveBeenCalled();
-  rpc.mockResolvedValueOnce({ data: { redeemedMonths: 2, points: 40 }, error: null });
-  r = res(); await redeem(post({ months: 2, userId: 'someone-else', points: 99999 }), r);
-  expect(rpc).toHaveBeenCalledWith('movo_redeem_referral_points', { p_user_id: USER, p_months: 2 });
-  expect(r.body).toEqual({ redeemedMonths: 2, points: 40 });
-  rpc.mockResolvedValueOnce({ data: null, error: { message: 'not_enough_points' } });
-  r = res(); await redeem(post({ months: 1 }), r);
+  r = res(); await redeem({ ...post(body), headers: { authorization: 'Bearer signed-in' } }, r);
   expect(r.statusCode).toBe(409);
-  expect(r.body).toEqual({ error: 'not_enough_points' });
+  expect(rpc).not.toHaveBeenCalled();
+  const result = { redeemedMonths: 1, tier: 'pro_plus', points: 40 };
+  rpc.mockResolvedValueOnce({ data: result, error: null });
+  r = res(); await redeem(post({ ...body, userId: 'someone-else', points: 99999 }), r);
+  expect(rpc).toHaveBeenCalledWith('movo_redeem_referral_points', { p_user_id: USER, p_months: 1, p_tier: 'pro_plus', p_request_id: requestId });
+  expect(r.body).toEqual(result);
+  for (const reason of ['not_enough_points', 'store_plan_active', 'redemption_request_conflict']) {
+    rpc.mockResolvedValueOnce({ data: null, error: { message: reason } });
+    r = res(); await redeem(post(body), r);
+    expect(r.statusCode).toBe(409);
+    expect(r.body).toEqual({ error: reason });
+  }
   rpc.mockResolvedValueOnce({ data: null, error: { message: 'connection reset' } });
-  r = res(); await redeem(post({ months: 1 }), r);
+  r = res(); await redeem(post(body), r);
   expect(r.statusCode).toBe(503);
   expect(r.body).toEqual({ error: 'redeem_unavailable' });
 });
