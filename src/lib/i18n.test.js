@@ -1,6 +1,6 @@
 import { t, setLanguage, loadLanguage, LANGUAGES, detectLanguage, langInfo } from './i18n';
 import { regionalLocale } from './regions';
-const { build } = require('../../scripts/i18n-build');
+const { build, validateExtraLocale } = require('../../scripts/i18n-build');
 const { extract } = require('../../scripts/i18n-extract');
 
 test('every interface string has all 11 translations with matching placeholders', () => {
@@ -23,15 +23,17 @@ test('loads a language, translates with placeholders, falls back to English and 
   expect(document.documentElement.dir).toBe('ltr');
 });
 
-test('every added language has offline preview text, a safe locale and an English fallback', async () => {
+test('every limited language has offline preview text, a safe locale and an English fallback', () => {
+  const { coverage, count } = build({ write: false });
   expect(LANGUAGES).toHaveLength(97);
   const added = LANGUAGES.filter(language => language.preview);
-  expect(added).toHaveLength(85);
+  expect(added.map(language => language.code)).toEqual(
+    LANGUAGES.filter(({ code }) => coverage[code] < count).map(language => language.code),
+  );
   const core = ['Home', 'Wallet', 'Transactions', 'Menu', 'Settings', 'Language', 'Search', 'Save', 'Cancel', 'Back', 'Income', 'Expense'];
   for (const { code, dir } of added) {
     const lang = setLanguage(code);
     expect(core.some(key => t(key) !== key)).toBe(true);
-    expect(await loadLanguage(code)).toBe(false);
     expect(document.documentElement.lang).toBe(code);
     expect(document.documentElement.dir).toBe(dir);
     expect(t('Untranslated text')).toBe('Untranslated text');
@@ -50,6 +52,31 @@ test.each([
 ])('maps device language %s to %s', (device, expected) => {
   const languages = jest.spyOn(window.navigator, 'languages', 'get').mockReturnValue([device]);
   try { expect(detectLanguage()).toBe(expected); } finally { languages.mockRestore(); }
+});
+
+test('loads expanded Cebuano on demand, preserves placeholders and supports offline reuse', async () => {
+  localStorage.removeItem('movo.i18n.cache');
+  setLanguage('ceb');
+  expect(t('Wallet')).toBe('Pitaka');
+  expect(t('Total Spent')).toBe('Total Spent');
+  expect(await loadLanguage('ceb')).toBe(true);
+  expect(t('Total Spent')).toBe('Kinatibuk-ang gasto');
+  expect(t("You've spent {amount} today.", { amount: '₱5' })).toBe('Nakagasto ka og ₱5 karon.');
+  setLanguage('en');
+  expect(t('Total Spent')).toBe('Total Spent');
+  setLanguage('ceb');
+  expect(t('Total Spent')).toBe('Kinatibuk-ang gasto');
+  setLanguage('en');
+});
+
+test('rejects unknown, blank, copied source and placeholder-breaking supplemental translations', () => {
+  const keys = new Set(['Save', 'MOVO', 'Paid {amount}', 'Home', 'Wallet']);
+  const { problems, covered } = validateExtraLocale('ceb', {
+    messages: { Save: 'Save', MOVO: 'MOVO', 'Paid {amount}': 'Gibayad {total}', Home: '', Wallet: 'Pitaka', Banned: 'Gidili' },
+    unchanged: ['MOVO'],
+  }, keys);
+  expect(problems).toHaveLength(4);
+  expect([...covered]).toEqual(['MOVO', 'Wallet']);
 });
 
 test('preview switching does not leak the previous language and keeps the full locale cache', async () => {

@@ -49,6 +49,11 @@
 
 - Added the requested 95 language groups to Settings → Language, with separate Punjabi and Kurdish choices for 97 entries. The 85 additions have offline preview labels and an English fallback. The 12 existing language choices retain their current catalog behavior. [Coverage, validation and review](engineering/updates/2026-11-17-expanded-language-selection.md).
 
+## 2026-11-17 — Expand Cebuano and validate language catalogs
+
+- Cebuano coverage increased to 146 of 3,221 catalog messages. The 97 registered options include 12 complete catalogs and 85 limited catalogs.
+- The app loads supplemental dictionaries on demand and retains their existing offline preview labels. Build validation checks message keys, placeholders and intentionally unchanged text. [Translation workflow and remaining coverage](engineering/updates/2026-11-17-language-catalog-coverage.md).
+
 ## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
 
 - The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
