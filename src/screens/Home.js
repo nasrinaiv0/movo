@@ -9,6 +9,7 @@ import MoneyFlow from '../components/MoneyFlow';
 import { BudgetsCard } from '../components/Budgets';
 import PlanningCard from '../components/PlanningCard';
 import RamMascot from '../components/RamMascot';
+import AriesExpressions from '../components/AriesExpressions';
 import { mascotMood, moodMessage } from '../lib/mascotMood';
 import { dayKey, money, monthLabel, shown } from '../lib/format';
 import { t as tr } from '../lib/i18n';
@@ -199,7 +200,8 @@ export default function Home({ c }) {
       </div>
     </Sheet>}
     {mascotSheet && <Sheet title={tr('Your mascot')} subtitle={ramOn ? tr('The MOVO ram watches your spending limits: it smiles when you are well under, looks disappointed near a limit and gets angry past one.') : tr('Use your own photo as the Home mascot. It greets you and stays on this device.')} onClose={() => setMascotSheet(false)} label={tr('Mascot photo')}>
-      <Chips label={tr('Home mascot')} items={[{ key: 'ram', label: tr('3D ram') }, { key: 'photo', label: tr('Photo') }]} value={ramOn ? 'ram' : 'photo'} onChange={(v) => setPref('mascotStyle', v)} />
+      <Chips label={tr('Home mascot')} items={[{ key: 'ram', label: 'Aries' }, { key: 'photo', label: tr('Photo') }]} value={ramOn ? 'ram' : 'photo'} onChange={(v) => setPref('mascotStyle', v)} />
+      {ramOn && <AriesExpressions />}
       {!ramOn && <div className="mascot-preview"><span className="mascot big">{prefs.mascot ? <img src={prefs.mascot} alt={tr('Current mascot')} /> : <span>{user.initial}</span>}</span><div className="hello bubble"><small>{tr(timeGreeting())},</small><h1>{user.firstName}</h1></div></div>}
       {mascotError && <p className="form-error" role="alert">{mascotError}</p>}
       <input ref={file} type="file" accept="image/*" hidden onChange={pickMascot} aria-label={tr('Choose a mascot photo')} />

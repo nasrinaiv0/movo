@@ -9,8 +9,15 @@ import { Sheet } from './ui';
 import { readDocumentText, parseReceipt } from '../lib/ocr';
 import { money, shown, getFormatLocale, baseCurrency } from '../lib/format';
 import { t as tr } from '../lib/i18n';
+import { KNOWN_CURRENCIES, convert, isRateStale, rateBetween } from '../lib/fx';
 
 const KEY = 'movo.scans.v1';
+const MAX_AMOUNT = 1e11;
+const currencyCode = value => /^[A-Z]{3}$/.test(value || '') ? value : '';
+const validAmount = value => Number.isFinite(value) && value > 0 && value < MAX_AMOUNT;
+const decimalAmount = value => /^\d+(?:[.,]\d{1,2})?$/.test(value.trim()) ? Number(value.replace(',', '.')) : NaN;
+const totalLabel = (amount, currency) => [currency, amount.toFixed(2)].filter(Boolean).join(' ');
+
 export const loadScans = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
 export const saveScans = (list) => { try { localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30))); } catch { /* storage full or blocked */ } };
 export const clearScans = () => { try { localStorage.removeItem(KEY); } catch { /* ignore */ } };
@@ -26,10 +33,9 @@ async function thumb(blob) {
 }
 
 /**
- * Receipt and payment-screenshot scanner. Photos are read on this device (no upload); the result is reviewed,
- * then opens the add-transaction sheet pre-filled. Every scan is kept in a tappable log.
+ * Review a receipt or payment screenshot and log it directly to a selected account.
  */
-export default function ScannerSheet({ show, onLog, onClose, accounts = [], saveError = '', busy = false }) {
+export default function ScannerSheet({ show, onLog, onClose, accounts = [], fx, refreshFx, saveError = '', busy = false }) {
   const [scans, setScans] = useState(loadScans);
   const [mode, setMode] = useState('home');
   const [status, setStatus] = useState('');
@@ -37,6 +43,8 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
   const [active, setActive] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
   const [accountId, setAccountId] = useState('');
+  const [statement, setStatement] = useState(null);
+  const [lookup, setLookup] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [live, setLive] = useState(false);
@@ -55,6 +63,35 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
   }, [mode]);
   const update = (list) => { setScans(list); saveScans(list); };
 
+  const selected = accounts.find(a => String(a.id) === String(accountId) && !a.is_archived);
+  const receiptCurrency = currencyCode(active?.currency);
+  const accountCurrency = selected ? currencyCode(selected.currency || baseCurrency()) : '';
+  const amount = decimalAmount(String(active?.amount ?? ''));
+  const foreign = Boolean(receiptCurrency && accountCurrency && receiptCurrency !== accountCurrency);
+  const pair = foreign ? `${receiptCurrency}/${accountCurrency}` : '';
+  const providerTime = Number(fx?.at);
+  const providerRate = foreign && providerTime > 0 && providerTime <= Date.now() && !isRateStale(fx)
+    ? rateBetween(receiptCurrency, accountCurrency, fx.rates) : null;
+  const referenceAmount = providerRate > 0 ? convert(amount, receiptCurrency, accountCurrency, fx.rates) : NaN;
+  const hasEstimate = validAmount(referenceAmount);
+  const statementKey = foreign ? JSON.stringify([active.id, selected.id, pair, amount]) : '';
+  const statementValue = statement?.key === statementKey ? statement.value : null;
+  const logAmount = !foreign ? amount
+    : statementValue === null ? referenceAmount : decimalAmount(statementValue);
+  const canLog = selected && accountCurrency && receiptCurrency && validAmount(amount)
+    && validAmount(logAmount) && active?.merchant?.trim();
+  const needsRate = Boolean(pair && !providerRate && refreshFx);
+  const loadingRate = needsRate && lookup?.pair !== pair;
+
+  useEffect(() => {
+    if (!needsRate) return;
+    let current = true;
+    Promise.resolve().then(() => refreshFx()).catch(() => {}).finally(() => {
+      if (current) setLookup({ pair });
+    });
+    return () => { current = false; };
+  }, [needsRate, pair, refreshFx]);
+
   const startCamera = async () => {
     setError('');
     if (!navigator.mediaDevices?.getUserMedia) { photoRef.current?.click(); return; }
@@ -66,7 +103,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
 
   // Request explicit consent per receipt before any image/text goes to the AI API.
   const process = (blob) => {
-    stopCamera(); setError(''); setAccountId(''); setPendingFile(blob); setActive(null); setMode('consent');
+    stopCamera(); setError(''); setAccountId(''); setStatement(null); setLookup(null); setPendingFile(blob); setActive(null); setMode('consent');
   };
   const analyze = async (basic = false) => {
     if (!pendingFile) return;
@@ -110,14 +147,11 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
   const choose = (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) process(f); };
   const log = async () => {
     if (submittingRef.current) return;
-    const selected = (accounts || []).find(a => String(a.id) === String(accountId) && !a.is_archived);
     if (!selected) { setError(tr('Choose a registered bank, card, e-wallet or other account.')); return; }
-    if (!active?.merchant?.trim() || !(Number(active.amount) > 0) || Number(active.amount) >= 1e11) {
+    if (!active?.merchant?.trim() || !validAmount(amount)) {
       setError(tr('No total was found. Enter the amount before logging.')); return;
     }
-    if (active.currency && selected.currency && active.currency !== selected.currency) {
-      setError(tr('Receipt currency differs from the selected account. Choose an account with matching currency.')); return;
-    }
+    if (!canLog) return;
     submittingRef.current = true; setSubmitting(true); setError('');
     const items = (active.items || []).slice(0, 60).filter(item => item.name?.trim());
     const itemNote = items.map(item => [
@@ -139,15 +173,22 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
       active.orderNo ? 'Order ' + active.orderNo : '',
       active.ref ? 'Ref ' + active.ref : ''
     ].filter(Boolean).join(' · ').slice(0, 950);
+    const rate = foreign && statementValue === null ? providerRate : null;
+    const conversionNote = foreign && [
+      totalLabel(amount, receiptCurrency) + ' → ' + totalLabel(logAmount, accountCurrency),
+      rate ? `ExchangeRate-API · ${new Date(providerTime).toISOString().slice(0, 10)} · ${Number(rate.toPrecision(10))} ${accountCurrency}/${receiptCurrency}`
+        : 'Statement amount',
+    ].join(' · ');
     try {
       const ok = await onLog({
         account_id: selected.id,
         type: active.type === 'income' ? 'income' : 'expense',
-        merchant: active.merchant.trim(), amount: String(active.amount),
+        merchant: active.merchant.trim(), amount: String(logAmount),
         category: active.type === 'income' ? 'Income' : active.category,
         occurred_at: active.date || '', time: active.time || '',
         ref: active.ref || active.invoiceNo || '', note,
         receipt_note: [
+          conversionNote,
           active.invoiceNo ? 'Invoice ' + active.invoiceNo : '',
           active.orderNo ? 'Order ' + active.orderNo : '',
           active.paymentMethod ? 'Method ' + active.paymentMethod : '',
@@ -193,7 +234,7 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
       {active.thumb && <img className="scan-thumb" src={active.thumb} alt={tr('Scanned receipt')} />}
       <div className="scan-ai-summary">
         <span className="scan-ai-label">{active.source === 'ai' ? tr('AI receipt scan') : tr('Basic scan (on-device)')}</span>
-        <strong className="scan-ai-total">{active.currency || baseCurrency()} {Number(active.amount || 0).toFixed(2)}</strong>
+        <strong className="scan-ai-total">{totalLabel(amount || 0, receiptCurrency)}</strong>
         <strong className="scan-ai-merchant">{active.merchant || tr('Receipt')}</strong>
         <span className="scan-ai-meta">{[active.date, active.time, active.branch || active.address, active.paymentMethod].filter(Boolean).join(' · ')}</span>
         <span className="scan-ai-category">{categoryFullLabel(active.category)}</span>
@@ -201,9 +242,32 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
       {active.warnings?.length > 0 && <div className="scan-alert" role="status">
         {active.warnings.map((warning, index) => <p key={index}>{tr(warning)}</p>)}
       </div>}
+      <label>{tr('Receipt currency')}<select value={receiptCurrency}
+        onChange={e => { setStatement(null); setActive({ ...active, currency: e.target.value }); }}>
+        <option value="">{tr('Select currency')}</option>
+        {receiptCurrency && !KNOWN_CURRENCIES.includes(receiptCurrency) && <option>{receiptCurrency}</option>}
+        {KNOWN_CURRENCIES.map(code => <option key={code}>{code}</option>)}
+      </select></label>
+      {!receiptCurrency && <p className="form-note">{tr('Choose the currency printed on the receipt.')}</p>}
       <AccountPicker id="scan-account" label={tr('Paid with')} ariaLabel={tr('Choose account')}
         accounts={accounts.filter(a => !a.is_archived)} value={accountId} required
-        onChange={setAccountId} showBalance={show} />
+        onChange={id => { setAccountId(id); setStatement(null); }} showBalance={show} />
+      {foreign && <div className="scan-exchange">
+        <div className="scan-exchange-total" aria-live="polite">
+          <span>{statementValue === null ? tr('Estimated account amount') : tr('Statement amount')}</span>
+          <strong>{validAmount(logAmount) ? totalLabel(logAmount, accountCurrency) : accountCurrency}</strong>
+        </div>
+        {statementValue === null && (hasEstimate
+          ? <small>{tr('Reference rate')} · {totalLabel(1, receiptCurrency)} = {accountCurrency} {Number(providerRate.toPrecision(6))} · {new Date(providerTime).toISOString().slice(0, 10)} · <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer">Rates by Exchange Rate API</a></small>
+          : <small role="status">{loadingRate ? tr('Getting exchange rate…') : tr('Rate unavailable')}</small>)}
+        {statementValue !== null && <label>{tr('Amount ({code})', { code: accountCurrency })}<input
+          inputMode="decimal" maxLength={15} value={statementValue}
+          onChange={e => setStatement({ key: statementKey, value: e.target.value })} /></label>}
+        {(statementValue === null || hasEstimate) && <button type="button" className="link-button"
+          onClick={() => setStatement(statementValue === null ? { key: statementKey, value: '' } : null)}>
+          {statementValue === null ? tr('Use statement amount') : tr('Use estimated amount')}
+        </button>}
+      </div>}
       {!accounts.some(a => !a.is_archived) && <p className="form-note">{tr('Add an account or card in Wallet first, then log this transaction.')}</p>}
       <details className="scan-review-details">
         <summary>{tr('Review or correct extracted details')}</summary>
@@ -214,8 +278,8 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
         </div>
         <label>{tr('Merchant or recipient')}<input maxLength={160} value={active.merchant || ''} onChange={e => setActive({ ...active, merchant: e.target.value })} /></label>
         <div className="form-grid">
-          <label>{tr('Amount ({code})', { code: active.currency || baseCurrency() })}<input inputMode="decimal"
-            value={active.amount || ''} onChange={e => setActive({ ...active, amount: Number(e.target.value.replace(/[^\d.]/g, '')) || 0 })} /></label>
+          <label>{receiptCurrency ? tr('Amount ({code})', { code: receiptCurrency }) : tr('Amount')}<input inputMode="decimal"
+            maxLength={15} value={active.amount || ''} onChange={e => { setStatement(null); setActive({ ...active, amount: e.target.value }); }} /></label>
           <label>{tr('Date')}<input type="date" value={active.date || ''} onChange={e => setActive({ ...active, date: e.target.value })} /></label>
         </div>
         <div className="form-grid">
@@ -232,12 +296,12 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
         <ReceiptBreakdown receipt={active} onChange={setActive} />
         {!!active.text && <details className="scan-text"><summary>{tr('Text found')}</summary><pre>{active.text}</pre></details>}
       </details>
-      {(!active.amount || !active.merchant) && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}
+      {(!validAmount(amount) || !active.merchant) && <p className="form-note">{tr('No total was found. Enter the amount before logging.')}</p>}
       {(error || saveError) && <p className="form-error" role="alert">{error || saveError}</p>}
       <div className="sheet-actions">
         <button type="button" className="secondary-button" disabled={submitting || busy}
           onClick={() => { update(scans.filter(s => s.id !== active.id)); setActive(null); setPendingFile(null); setMode('home'); }}>{tr('Discard')}</button>
-        <button type="submit" className="primary-button" disabled={submitting || busy || !accountId || !(Number(active.amount) > 0) || !active.merchant?.trim()}>
+        <button type="submit" className="primary-button" disabled={submitting || busy || !canLog}>
           {submitting ? tr('Saving…') : tr('Log transaction')}
         </button>
       </div>
@@ -245,10 +309,10 @@ export default function ScannerSheet({ show, onLog, onClose, accounts = [], save
     {error && mode !== 'review' && <p className="form-error" role="alert">{error}</p>}
     {mode === 'home' && scans.length > 0 && <section className="scan-log" aria-label={tr('Scan log')}>
       <div className="scan-log-head"><h3>{tr('Scan log')}</h3><button type="button" className="link-button" onClick={() => update([])}>{tr('Clear')}</button></div>
-      {scans.map(s => <button type="button" key={s.id} className="scan-row" onClick={() => { setActive(s); setMode('review'); }}>
+      {scans.map(s => <button type="button" key={s.id} className="scan-row" onClick={() => { setAccountId(''); setStatement(null); setLookup(null); setActive(s); setMode('review'); }}>
         {s.thumb ? <img src={s.thumb} alt="" /> : <span className="scan-row-icon"><Icon name={s.kind === 'pdf' ? 'doc' : 'receipt'} size={18} /></span>}
         <span className="menu-main"><strong>{s.merchant || tr('Receipt')}</strong><small>{new Date(s.at).toLocaleString(getFormatLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {s.status === 'logged' ? tr('Logged') : tr('Needs review')}</small></span>
-        <b>{s.amount ? shown(show, money(s.amount)) : '—'}</b>
+        <b>{s.amount ? shown(show, currencyCode(s.currency) ? money(s.amount, s.currency) : totalLabel(Number(s.amount), '')) : '—'}</b>
       </button>)}
     </section>}
   </Sheet>;

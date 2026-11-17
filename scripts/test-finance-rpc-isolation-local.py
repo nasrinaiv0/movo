@@ -112,6 +112,8 @@ def main():
             "owner audit immutability and account deletion without FK obstruction")
         sql((ROOT / "supabase/tests/private_friends.test.sql").read_text(),
             "private invite lifecycle, two-party visibility and account deletion")
+        sql((ROOT / "supabase/tests/friend_social.test.sql").read_text(),
+            "discoverable usernames, recipient approval, snapshot revocation and avatar isolation")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_"):

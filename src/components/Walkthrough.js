@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './Icon';
-import { MovoMark } from './MovoLogo';
+import AriesMascot from './AriesMascot';
 import { t as tr } from '../lib/i18n';
 import { parseImportFile, IMPORT_MAX_BYTES } from '../lib/dataImport';
 
-/* First-run welcome: sign in, sign up, or continue on this device (optionally importing a CSV or
+/* First-run welcome (Aries, the MOVO mascot, greets the person): sign in, sign up, or continue on this device (optionally importing a CSV or
  * JSON file), then a few tour steps that each spotlight one part of the app. */
 export const TOUR_STEPS = [
   { target: '.balance-card', icon: 'chart', title: 'Your money at a glance', text: 'Your total balance and this month’s income and spending appear here as you add records.' },
@@ -111,7 +111,7 @@ export default function Walkthrough({ steps = TOUR_STEPS, onDone, onAccount, onI
   if (!step) {
     return <div className="tour-backdrop" role="presentation">
       <div className="tour-welcome" role="dialog" aria-modal="true" aria-labelledby="tour-title">
-        <span className="tour-logo" aria-hidden="true"><MovoMark size={64} /></span>
+        <span className="tour-aries"><AriesMascot pose="hello" size={112} label="Aries, the MOVO mascot, waving hello" /></span>
         <h2 id="tour-title">{tr('Welcome to MOVO')}</h2>
         <p>{tr('A private place to track your money. Your records stay on this device unless you sign in.')}</p>
         <div className="welcome-choices">

@@ -1,4 +1,4 @@
-import { speechChunks, startDeviceSpeech } from './deviceSpeech';
+import { speechChunks, startDeviceSpeech, pickVoice, setAudioSessionType } from './deviceSpeech';
 
 describe('device speech fallback', () => {
   let originalSynth;
@@ -29,7 +29,8 @@ describe('device speech fallback', () => {
     const onEnd = jest.fn();
     const controller = startDeviceSpeech('Hello there. ' + 'word '.repeat(55), { language: 'en-US', onEnd });
     expect(controller).toBeTruthy();
-    expect(synth.cancel).toHaveBeenCalledTimes(1);
+    // Nothing was playing, so nothing is cancelled: WebKit drops an utterance spoken right after a cancel.
+    expect(synth.cancel).not.toHaveBeenCalled();
     expect(synth.resume).toHaveBeenCalled();
     let iterations = 0;
     while (!onEnd.mock.calls.length && iterations++ < 20) {
@@ -57,5 +58,85 @@ describe('device speech fallback', () => {
     startDeviceSpeech('Test sentence', { onError });
     synth.speak.mock.calls[0][0].onerror({ error: 'not-allowed' });
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  test('when something is already speaking, it is cancelled first and the new reply starts a moment later', () => {
+    jest.useFakeTimers();
+    try {
+      synth.speaking = true;
+      startDeviceSpeech('Second reply', {});
+      expect(synth.cancel).toHaveBeenCalledTimes(1);
+      expect(synth.speak).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(100);
+      expect(synth.speak).toHaveBeenCalledTimes(1);
+    } finally { jest.useRealTimers(); }
+  });
+
+  test('if the engine never starts, it retries once and then reports it instead of staying silent', () => {
+    jest.useFakeTimers();
+    try {
+      const onError = jest.fn();
+      startDeviceSpeech('Hello', { onError });
+      expect(synth.speak).toHaveBeenCalledTimes(1);
+      jest.advanceTimersByTime(3600);
+      expect(synth.speak).toHaveBeenCalledTimes(2);
+      expect(synth.speak.mock.calls[1][0].text).toBe('Hello');
+      expect(onError).not.toHaveBeenCalled();
+      jest.advanceTimersByTime(3600);
+      expect(onError).toHaveBeenCalledWith({ error: 'not-started' });
+    } finally { jest.useRealTimers(); }
+  });
+
+  test('a started reply is never retried', () => {
+    jest.useFakeTimers();
+    try {
+      const onStart = jest.fn(); const onError = jest.fn();
+      startDeviceSpeech('Hello', { onStart, onError });
+      synth.speak.mock.calls[0][0].onstart();
+      expect(onStart).toHaveBeenCalledTimes(1);
+      jest.advanceTimersByTime(10000);
+      expect(synth.speak).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
+    } finally { jest.useRealTimers(); }
+  });
+});
+
+describe('voice choice and audio session', () => {
+  const voices = [{ lang: 'en-GB', name: 'Daniel' }, { lang: 'en-US', name: 'Samantha', localService: true }, { lang: 'es-ES', name: 'Monica' }];
+  test('uses the app language, then the device language, then English', () => {
+    expect(pickVoice(voices, 'es-MX').name).toBe('Monica');
+    expect(pickVoice(voices, 'en-US').name).toBe('Samantha');
+    // No Filipino voice on the phone: read in English rather than say nothing.
+    expect(pickVoice(voices, 'fil', 'fil-PH').lang).toBe('en-US');
+    expect(pickVoice(voices, 'fil', 'en-GB').name).toBe('Daniel');
+    expect(pickVoice([], 'en-US')).toBeNull();
+  });
+
+  test('the reply is spoken with the chosen voice and its language', () => {
+    const original = window.speechSynthesis; const OriginalU = window.SpeechSynthesisUtterance;
+    const synth = { cancel: jest.fn(), speak: jest.fn(), getVoices: () => voices };
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: synth });
+    window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+    try {
+      startDeviceSpeech('Kumusta', { language: 'fil' });
+      const u = synth.speak.mock.calls[0][0];
+      expect(u.voice.lang).toMatch(/^en/);
+      expect(u.lang).toBe(u.voice.lang);
+    } finally {
+      Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: original });
+      window.SpeechSynthesisUtterance = OriginalU;
+    }
+  });
+
+  test('sets the browser audio session type where supported, and does nothing elsewhere', () => {
+    expect(setAudioSessionType('playback')).toBe(false);
+    const session = { type: 'auto' };
+    Object.defineProperty(navigator, 'audioSession', { configurable: true, value: session });
+    try {
+      expect(setAudioSessionType('playback')).toBe(true);
+      expect(session.type).toBe('playback');
+      expect(setAudioSessionType('loud')).toBe(false);
+      expect(session.type).toBe('playback');
+    } finally { delete navigator.audioSession; }
   });
 });
