@@ -19,13 +19,13 @@ const mount = async (extra = {}) => {
 const button = name => [...el.querySelectorAll('button')].find(b => b.textContent.trim() === name || b.getAttribute('aria-label') === name);
 afterEach(() => { act(() => root.unmount()); el.remove(); jest.restoreAllMocks(); friendsRequest.mockReset(); });
 
-test('a friend’s page shows who shares what and everything they shared, with charts', async () => {
+test('a friend’s page shows their name and everything they shared, with charts, without status chips', async () => {
   friendsRequest.mockResolvedValue({ yourShare: true, sharedWithYou: { month: '2026-11', sharedAt: '2026-11-16T09:00:00Z', savingsRate: 18,
     totals: { income: 1000, expenses: 820, currency: 'PHP' }, categories: [{ key: 'Food', percent: 60 }, { key: 'Bills', percent: 40 }], note: 'Cook at home.' } });
   await mount();
   expect(el.querySelector('.fp-hero h2').textContent).toBe('Mika');
-  expect(el.textContent).toContain('Shares a summary with you');
-  expect(el.textContent).toContain('You share a summary');
+  expect(el.querySelector('.fp-hero ul, .fp-status')).toBeNull(); // no sharing-status chips under the name (owner, 2026-11-17)
+  expect(el.textContent).toContain('Sharing'); // what you share is still shown, on its own section
   const card = el.querySelector('[aria-label="Summary from Mika"]');
   expect(card.querySelector('.fs-donut')).not.toBeNull();
   expect(card.querySelector('.fs-ring')).not.toBeNull();
@@ -37,7 +37,7 @@ test('a friend’s page shows who shares what and everything they shared, with c
 test('back returns to the Friends list; removing the friend confirms first, then leaves the page', async () => {
   friendsRequest.mockResolvedValueOnce({ yourShare: false, sharedWithYou: null }).mockResolvedValueOnce({ ok: true });
   const c = await mount();
-  expect(el.textContent).toContain('Not sharing with you yet');
+  expect(el.textContent).toContain('Mika hasn’t shared a summary with you yet.');
   await act(async () => { button('Back').click(); });
   expect(c.goBack).toHaveBeenCalledWith('Menu');
   expect(c.openFriends).toHaveBeenCalled();

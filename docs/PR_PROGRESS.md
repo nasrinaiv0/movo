@@ -1,3 +1,8 @@
+## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
+
+- The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
+- Settings → Appearance → "Colour-coded icons" turns the Menu and Profile icon colours on or off. The friend page drops the sharing-status chips under the name. [Details](engineering/updates/2026-11-17-nav-foil-icon-colours-friend-header.md).
+
 ## 2026-11-16 — Glass pop-ups, friend page, offline chat charts, Pro/Pro+ badges, no header by default, Aries shadow
 
 - Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.

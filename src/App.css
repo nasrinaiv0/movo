@@ -9299,11 +9299,6 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
   box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.35); }
 .movo-app .fp-hero h2 { margin: 0; font-size: 22px; font-weight: 700; overflow-wrap: anywhere; max-width: 100%; }
 .movo-app .fp-hero > small { color: var(--muted); font-size: 13px; }
-.movo-app .fp-status { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 10px 0 0; padding: 0; list-style: none; max-width: 100%; }
-.movo-app .fp-status li { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 12px; border-radius: 999px;
-  background: var(--field); color: var(--muted); font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.movo-app .fp-status li.is-on { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent-ink, var(--accent)); }
-.movo-app .fp-status svg { flex: none; }
 .movo-app .fs-page .fs-card.is-rich { padding: 16px; background: var(--field); }
 .movo-app .fs-rate-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .movo-app .fs-ring { width: 56px; height: 56px; flex: none; }
@@ -9325,7 +9320,6 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
   .movo-app .fs-donut { animation: cc-fade .4s ease-out both; }
 }
 /* Friend page and chat charts at narrow widths: amounts and names stay whole (ellipsis), never split mid-word. */
-.movo-app .fp-status { background: none; border: 0; box-shadow: none; }
 .movo-app .fs-totals { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
 .movo-app .fs-totals dd { overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .movo-app .fs-cats.is-rich .fs-cat-name { overflow-wrap: normal; overflow: hidden; }
@@ -9338,3 +9332,24 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
   .movo-app .cc-donut { width: 148px; }
   .movo-app .cc-legend { width: 100%; }
 }
+
+/* ===== Plan-coloured nav icon: a blended foil that glows (owner, 2026-11-16) =====
+   components/NavTierDefs paints the active icon with blended colour clouds that turn slowly (no stripes); here it
+   gets a soft two-colour glow. The glow is steady (no pulsing). */
+.movo-app.movo-app.nav-tier-platinum.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-platinum.theme-dark .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 3px rgba(205, 238, 242, .55)) drop-shadow(0 0 9px rgba(241, 200, 222, .35)); }
+.movo-app.movo-app.nav-tier-platinum:not(.theme-dark) .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-platinum:not(.theme-dark) .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 4px rgba(90, 170, 190, .35)) drop-shadow(0 0 8px rgba(160, 112, 143, .2)); }
+.movo-app.movo-app.nav-tier-gold.theme-dark .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-gold.theme-dark .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 3px rgba(255, 224, 143, .55)) drop-shadow(0 0 9px rgba(217, 154, 43, .35)); }
+.movo-app.movo-app.nav-tier-gold:not(.theme-dark) .bottom-nav .nav-item.nav-active:not(.nav-center) .nav-icon svg,
+.movo-app.movo-app.nav-tier-gold:not(.theme-dark) .side-nav .side-item.active .side-icon svg {
+  filter: drop-shadow(0 0 4px rgba(217, 154, 43, .35)); }
+
+/* ===== Colour-coded icons can be turned off (owner, 2026-11-17) =====
+   Settings → Appearance → Display & Layout → "Colour-coded icons" (pref iconColors). Off: the Menu tool tiles and the
+   Profile row tiles turn a neutral grey; their shape stays. */
+.movo-app.no-icon-colors :is(.menu-tile-icon, .pf-ic) { --mt: #8e8e93 !important; }

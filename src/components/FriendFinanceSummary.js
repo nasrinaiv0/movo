@@ -121,8 +121,8 @@ export function Snapshot({ value, label, rich = false }) {
 }
 
 /*
- * The friend's page (screens/FriendProfile, owner request 2026-11-16) shows this with `page`: a profile header with
- * who shares what, everything the friend shared as a full card with charts, then what you share and the safety actions.
+ * The friend's page (screens/FriendProfile, owner request 2026-11-16) shows this with `page`: a profile header (name
+ * only; the sharing status chips were removed on request), everything the friend shared as a full card with charts, then what you share and the safety actions.
  * In the Friends sheet (no `page`) it keeps its compact header with a back button.
  */
 export default function FriendFinanceSummary({ friend, session, finance, run, busy, onClose, onSafety, onRemove, errorMessage, page = false }) {
@@ -186,16 +186,11 @@ export default function FriendFinanceSummary({ friend, session, finance, run, bu
   ];
 
   const initial = Array.from(name)[0]?.toLocaleUpperCase();
-  const theyShare = Boolean(shared?.sharedWithYou);
   return <div className={`friends-content fs${page ? ' fs-page' : ''}`}>
     {page ? <header className="fp-hero">
       <span aria-hidden="true" className="fp-avatar">{initial}</span>
       <h2 dir="auto">{name}</h2>
       <small>{tr('Friend on MOVO')}</small>
-      <ul className="fp-status" aria-label={tr('Sharing')}>
-        <li className={theyShare ? 'is-on' : ''}><Icon name={theyShare ? 'check' : 'eye'} size={14} />{shared === null ? tr('Loading…') : theyShare ? tr('Shares a summary with you') : tr('Not sharing with you yet')}</li>
-        <li className={yourShare ? 'is-on' : ''}><Icon name={yourShare ? 'check' : 'lock'} size={14} />{yourShare ? tr('You share a summary') : tr('You are not sharing')}</li>
-      </ul>
     </header> : <header className="fs-head">
       <button type="button" className="fs-back" onClick={onClose} aria-label={tr('Back to friends')}><Icon name="back" size={18} /></button>
       <span aria-hidden="true" className="friends-initial">{initial}</span>

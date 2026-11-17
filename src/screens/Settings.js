@@ -458,6 +458,7 @@ export function Appearance({ c }) {
     <section className="card menu-card">
       <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
       <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
+      <Row icon="grid" title={tr('Colour-coded icons')} sub={tr('A colour for each tool in Menu and Profile')} chevron={false} right={<Toggle checked={prefs.iconColors !== false} onChange={v => setPref('iconColors', v)} label={tr('Colour-coded icons')} />} />
       <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
       <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
       <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />
