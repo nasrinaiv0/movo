@@ -1,3 +1,7 @@
+## 2026-11-17 — PR #291 brought up to date with #309; sync race fixed
+- Merges #309's branch, which carries `main` and #294's Security & Data Guide. Terms and Privacy keep #309's referral section and this PR's encryption wording, and are effective November 20, 2026. The guide's encryption claims now match what ships: selected local records, dependent on app version, never "everything".
+- Fixes a race on `main`. After a sync saved a clean device copy, an effect from an earlier render could write the old rows back as unsynced. This PR's encrypted storage made it happen more often. [Details](engineering/updates/2026-11-17-pr-291-referral-integration.md).
+
 ## 2026-11-17 — PR #291 brought up to date with main
 
 - The encryption wording and #314's friend-sharing wording are both kept. Terms and Privacy are effective November 19, 2026. The legal page generator now takes its dates from `legalVersion.js`. #290 is contained in this PR. [Details](engineering/updates/2026-11-17-pr-291-main-integration.md).

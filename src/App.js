@@ -310,6 +310,9 @@ function App() {
   const autoSyncTriedRef = useRef(false);
   const [autoSyncFailed, setAutoSyncFailed] = useState(false);
   const syncActiveRef = useRef(false);
+  // The clean device copy a sync has just saved, until the screen shows it. Until then an effect from an earlier render
+  // still holds the rows from before the sync and must not write them back over that copy.
+  const syncedCopyRef = useRef(null);
   const lastSyncRetryRef = useRef(false); // the last failed sync only needs the connection back
   const [view, setView] = useState('Home');
   // After each screen change, or a cancelled touch, the bottom bar's touch-down marking (pressNav) is put back in step
@@ -523,6 +526,7 @@ function App() {
     }).catch(() => { trialAutoRef.current = ''; });
   }, [session?.user?.id, session?.access_token, prefs.planWelcomeSeen, entitlement, refreshEntitlement, notify]);
   useEffect(() => {
+    if (syncedCopyRef.current?.transactions===rawTxs) syncedCopyRef.current=null;
     if (cloudMode) {
       if (!pendingLocalDataRef.current) setLocalPersistenceWarning(false);
       return;
@@ -532,6 +536,9 @@ function App() {
     if (ownerId) {
       if (offlineOwnerId!==ownerId) return; // auth-transition guard
       const stored=loadOfflineWorkspace(ownerId);
+      const synced=syncedCopyRef.current;
+      // Rows from a render before the sync's clean save are out of date: the sync's own render follows with the new copy.
+      if (synced&&synced.ownerId===ownerId&&stored&&!stored.dirty&&stored.lastConfirmedAt===synced.at)return;
       const data={...(stored?.working||{}),financial_accounts:localAccounts,transactions:rawTxs};
       if (stored) {
         const unchanged=JSON.stringify(data)===JSON.stringify(stored.working);
@@ -665,6 +672,7 @@ function App() {
         lastConfirmedAt:new Date().toISOString(),pendingDeletions:{},deletedRows:{}};
       if(!saveOfflineWorkspace(ownerId,synced))
         throw Error('Device storage could not hold the reconciled copy. Cloud was not enabled; export records and free space.');
+      syncedCopyRef.current={ownerId,at:synced.lastConfirmedAt,transactions:shared.transactions};
       await acknowledgeReconciledWorkspace(ownerId,confirmed,capturedOperations);
       setOfflineOwnerId(ownerId);setLocalAccounts(shared.financial_accounts);setRawTxs(shared.transactions);
       setCloudAccounts(confirmed.financial_accounts);setCloudPostings(postings||[]);
@@ -675,6 +683,8 @@ function App() {
       lastSyncRetryRef.current=false;
       return true;
     }catch(cause){
+      // The screen is reloaded from the device copy below, so later edits must persist as usual.
+      syncedCopyRef.current=null;
       // A lost or slow connection is retried automatically; anything else (a conflict, a plan check) waits for review.
       const retry=isNetworkFailure(cause)||cause?.retryable===true;
       if(retry&&!allowOffline)holdOfflineWorkspaceForApproval(ownerId);
