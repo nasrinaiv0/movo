@@ -1266,10 +1266,15 @@ describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
 
   test('an open sheet closes first, and the screen stays', () => {
     nav(container, 'Wallet');
+    const trigger = container.querySelector('button[aria-label="New account"]');
+    trigger.focus();
     clickButton(container, 'New account');
-    expect(container.querySelector('.sheet-backdrop')).not.toBeNull();
+    const dialog = container.querySelector('.movo-app > .sheet-backdrop [role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog.contains(document.activeElement)).toBe(true);
     swipe(4, 300);
     expect(container.querySelector('.sheet-backdrop')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
     expect(active()).toBe('Wallet');
   });
 });

@@ -98,7 +98,7 @@ export default function TransactionSheet({ currency = 'PHP', form, setForm, edit
   const canSave = !busy && Number.isFinite(value) && value > 0 && form.merchant.trim();
   const submit = (e) => { e.preventDefault(); const v = evaluate(expr); if (hasOp && Number.isFinite(v)) setExpr(String(v)); onSave(e); };
 
-  return <Sheet label={label} onClose={onClose} hideClose className={`tx-sheet tone-${type}`}>{(close) => <form className="tx-form" onSubmit={submit}>
+  return <Sheet label={label} onClose={onClose} size="wide" hideClose className={`tx-sheet tone-${type}`}>{(close) => <form className="tx-form" onSubmit={submit}>
     <div className="tx-top">
       <button type="button" className="tx-round tx-close-compact" onClick={close} aria-label={tr('Close {name}', { name: label })}><Icon name="close" size={18} /></button>
       <div className="tx-seg" role="group" aria-label={tr('Transaction type')}>
