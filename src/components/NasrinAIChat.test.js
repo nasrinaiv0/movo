@@ -292,6 +292,38 @@ describe('NasrinAI consent and legal links', () => {
       }
     });
 
+    test('when the iPhone level meter only reads silence, voice switches to tap-to-finish and still transcribes', async () => {
+      const callbacks = [];
+      const originalNow = Date.now;
+      let now = 10000;
+      Date.now = () => now;
+      window.requestAnimationFrame = (callback) => { callbacks.push(callback); return callbacks.length; };
+      global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ text: 'Lunch 250 at Mang Inasal' }) });
+      try {
+        act(() => button('I understand').click());
+        await act(async () => {
+          button('Talk with NasrinAI').click();
+          await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        // ~1.6 s of a perfectly flat signal: the meter is not receiving the microphone.
+        for (let i = 0; i < 96; i += 1) { now += 16; await act(async () => { callbacks.shift()(); }); }
+        expect(container.querySelector('#movo-ai-prompt').getAttribute('placeholder')).toBe('Listening — tap the mic when you’re done');
+        // Past the usual 8 s silence cut-off, the clip keeps recording instead of being thrown away.
+        now += 9000;
+        await act(async () => { callbacks.shift()(); });
+        expect(global.fetch.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(0);
+        // Tapping the mic finishes and sends the clip for transcription.
+        await act(async () => {
+          button('End voice conversation').click();
+          await new Promise(resolve => setTimeout(resolve, 20));
+        });
+        expect(JSON.parse(global.fetch.mock.calls.find(([, options]) => options?.method === 'POST')[1].body).action).toBe('transcribe');
+        expect(container.querySelector('#movo-ai-prompt').value).toContain('Lunch 250 at Mang Inasal');
+      } finally {
+        Date.now = originalNow;
+      }
+    });
+
     test('transcribes the final iOS-style recording after Stop even when quiet speech was not detected', async () => {
       const originalNow = Date.now;
       let now = 10000;
@@ -386,5 +418,32 @@ describe('NasrinAI consent and legal links', () => {
       expect(JSON.parse(post[1].body).voiceMode).toBe(true);
       expect(spoken).toContain('You spent 500 on food.');
     });
+  });
+});
+describe('charts from on-device records', () => {
+  test('a chart request is drawn at once while offline and signed out, and never sent to NasrinAI', async () => {
+    const { buildChatChart, chartSummary } = jest.requireActual('../lib/chatCharts');
+    const now = new Date();
+    const txs = [{ amount: 300, type: 'expense', category: 'Food & drinks', date: now.toISOString() },
+      { amount: 100, type: 'expense', category: 'Transport', date: now.toISOString() }];
+    const onLocalChart = jest.fn((text) => { const chart = buildChatChart(text, { txs, now }); return chart ? { chart, text: chartSummary(chart) } : null; });
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn();
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => { root.render(<NasrinAIChat session={null} cloudMode={false} onLocalChart={onLocalChart} />); });
+    const box = container.querySelector('#movo-ai-prompt');
+    setTextareaValue(box, 'Show my spending chart');
+    await act(async () => { container.querySelector('button[aria-label="Send message"], .movo-ai-send')?.click(); await new Promise(resolve => setTimeout(resolve, 0)); });
+    const figure = container.querySelector('figure.cc-categories');
+    expect(figure).not.toBeNull();
+    expect(figure.textContent).toContain('Spending by category');
+    expect(figure.textContent).toContain('75%');
+    expect(container.textContent).toContain('Food & Dining is the largest at 75%');
+    expect(global.fetch).not.toHaveBeenCalled();
+    act(() => root.unmount());
+    container.remove();
+    global.fetch = originalFetch;
   });
 });

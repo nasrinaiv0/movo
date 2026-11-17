@@ -4,6 +4,7 @@
  * Only currency codes are requested; no transaction, account, or personal financial data is sent.
  */
 export const CURRENCIES = ['PHP', 'USD', 'EUR', 'GBP', 'JPY', 'CNY', 'KRW', 'INR', 'SGD', 'HKD', 'TWD', 'AUD', 'NZD', 'CAD', 'CHF', 'SEK', 'NOK', 'DKK', 'PLN', 'TRY', 'AED', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR', 'EGP', 'MAD', 'ILS', 'MYR', 'IDR', 'THB', 'VND', 'PKR', 'BDT', 'MXN', 'BRL', 'ARS', 'ZAR', 'NGN'];
+export const KNOWN_CURRENCIES = [...new Set([...CURRENCIES, ...(Intl.supportedValuesOf?.('currency') || [])])];
 const FALLBACK = { USD: 1, PHP: 58, EUR: 0.92, GBP: 0.78, JPY: 150, CNY: 7.2, KRW: 1380, INR: 84, SGD: 1.34, HKD: 7.8, TWD: 32, AUD: 1.52, NZD: 1.66, CAD: 1.37, CHF: 0.88, SEK: 10.6, NOK: 10.8, DKK: 6.9, PLN: 3.95, TRY: 34, AED: 3.6725, SAR: 3.75, QAR: 3.64, KWD: 0.307, BHD: 0.376, OMR: 0.385, EGP: 48.5, MAD: 9.9, ILS: 3.7, MYR: 4.5, IDR: 15800, THB: 35, VND: 25000, PKR: 280, BDT: 118, MXN: 18.5, BRL: 5.5, ARS: 950, ZAR: 18, NGN: 1500 };
 const KEY = 'movo.fx.v1';
 const HISTORY_KEY = 'movo.fx.history.v1';
@@ -36,10 +37,10 @@ export async function refreshRates(current, force = false) {
       const body = await res.json();
       if (body?.result !== 'success' || Number(body?.rates?.USD) !== 1 || !Number.isFinite(Number(body?.time_last_update_unix))) throw new Error('rates_invalid');
       const rates = {};
-      CURRENCIES.forEach(code => {
-        const value = Number(body.rates[code]);
-        if (Number.isFinite(value) && value > 0) rates[code] = value;
-      });
+      for (const [code, rate] of Object.entries(body.rates)) {
+        const value = Number(rate);
+        if (/^[A-Z]{3}$/.test(code) && Number.isFinite(value) && value > 0) rates[code] = value;
+      }
       if (!rates.PHP || !rates.EUR) throw new Error('rates_incomplete');
       const next = { rates, at: Number(body.time_last_update_unix) * 1000, fetched: Date.now(), live: true, provider: 'ExchangeRate-API' };
       try { localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* cache is optional */ }

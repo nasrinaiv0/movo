@@ -35,3 +35,15 @@
 .plan-detail-card li span { color:var(--accent); }
 .plan-detail-card small { font-size:11px; line-height:1.5; opacity:.7; display:block; margin-top:12px; }
 .plan-swipe-hint { display:block; text-align:center; opacity:.65; font-size:11px; margin-bottom:10px; }
+
+/* Aries reacts to Free / Pro / Pro+ while the store prices and action stay in place. */
+.movo-app .sheet.plan-panel .plan-panel-welcome { display: grid; grid-template-columns: minmax(0, 1fr) 100px; align-items: center; width: min(100%, 340px); box-sizing: border-box; padding-inline-end: 22px; margin: -8px auto -10px; min-width: 0; flex-shrink: 0; }
+.movo-app .sheet.plan-panel .plan-panel-welcome .plan-panel-head { min-width: 0; text-align: start; justify-items: start; padding-inline-start: 0; }
+.movo-app .sheet.plan-panel .plan-panel-welcome h2 { overflow-wrap: anywhere; }
+.movo-app .sheet.plan-panel .plan-aries { max-width: 100px; pointer-events: none; }
+.plan-comparison-companion { display: flex; justify-content: center; height: 72px; margin: -8px 0 0; pointer-events: none; }
+.plan-comparison-companion > .aries-mascot { align-self: center; }
+@media (max-width: 359px), (max-height: 720px) {
+  .movo-app .sheet.plan-panel .plan-panel-welcome { grid-template-columns: minmax(0, 1fr) 80px; margin-top: -6px; margin-bottom: -8px; }
+  .movo-app .sheet.plan-panel .plan-aries { max-width: 80px; }
+}

@@ -1,0 +1,69 @@
+/* Aries motion is always confined to the mascot, never the page layout. */
+.aries { display:block; width:100%; height:auto; overflow:visible; contain:layout style; }
+.aries-figure { transform-origin:180px 315px; }
+.aries-head { transform-origin:180px 218px; }
+.aries-arm-left { transform-origin:130px 241px; }
+.aries-arm-right { transform-origin:231px 239px; }
+.aries-leg-left { transform-origin:153px 289px; }
+.aries-leg-right { transform-origin:207px 289px; }
+.aries-eye { transform-box:fill-box; transform-origin:center; }
+.aries.is-animated .aries-figure { animation:aries-breathe 4.2s cubic-bezier(.22,1,.36,1) infinite; }
+.aries.is-animated .aries-eye { animation:aries-blink 6s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--welcome .aries-arm-right,.aries--waving .aries-arm-right { transform:rotate(-118deg); }
+.aries--welcome.is-animated .aries-arm-right,.aries--waving.is-animated .aries-arm-right { animation:aries-wave 2.8s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--happy .aries-head { transform:rotate(-5deg); }
+.aries--happy.is-animated .aries-figure { animation:aries-happy 2.8s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--thinking .aries-head { transform:rotate(8deg); }
+.aries--thinking .aries-arm-right { transform:rotate(-139deg); }
+.aries--thinking.is-animated .aries-thought { animation:aries-float 3s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--celebrate .aries-arm-left,.aries--cheering .aries-arm-left { transform:rotate(142deg); }
+.aries--celebrate .aries-arm-right,.aries--cheering .aries-arm-right { transform:rotate(-142deg); }
+.aries--celebrate.is-animated .aries-figure,.aries--cheering.is-animated .aries-figure { animation:aries-jump 1.7s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--celebrate.is-animated .aries-confetti,.aries--cheering.is-animated .aries-confetti { animation:aries-float 2s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--reminder .aries-head { transform:rotate(-4deg); }
+.aries--reminder .aries-arm-right { transform:rotate(-60deg); }
+.aries--sleeping .aries-head { transform:rotate(10deg) translateY(4px); }
+.aries--sleeping.is-animated .aries-figure { animation:aries-breathe 5s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--sleeping.is-animated .aries-zzz { animation:aries-dream 4s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--shy .aries-head { transform:rotate(-8deg) translateY(3px); }
+.aries--shy .aries-arm-left { transform:rotate(-50deg); }
+.aries--shy .aries-arm-right { transform:rotate(50deg); }
+.aries--love .aries-arm-left { transform:rotate(-36deg); }
+.aries--love .aries-arm-right { transform:rotate(36deg); }
+.aries--love.is-animated .aries-hearts { animation:aries-love 3s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--focused .aries-head { transform:translateY(3px); }
+.aries--focused .aries-arm-left { transform:rotate(-25deg); }
+.aries--focused .aries-arm-right { transform:rotate(25deg); }
+.aries--surprised .aries-arm-left { transform:rotate(34deg); }
+.aries--surprised .aries-arm-right { transform:rotate(-34deg); }
+.aries--surprised.is-animated .aries-head { animation:aries-peek 3.8s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--waving .aries-head { transform:rotate(-6deg); }
+.aries--walking.is-animated .aries-leg-left,.walking .aries.is-animated .aries-leg-left { animation:aries-step-left .6s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--walking.is-animated .aries-leg-right,.walking .aries.is-animated .aries-leg-right { animation:aries-step-right .6s cubic-bezier(.22,1,.36,1) infinite; }
+.aries--walking.is-animated .aries-figure,.walking .aries.is-animated .aries-figure { animation:aries-walk-body .6s cubic-bezier(.22,1,.36,1) infinite; }
+@keyframes aries-breathe { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-3px) scale(1.008,1.015)} }
+@keyframes aries-blink { 0%,43%,47%,100%{transform:scaleY(1)} 45%{transform:scaleY(.09)} }
+@keyframes aries-wave { 0%,28%,100%{transform:rotate(-118deg)} 8%,20%{transform:rotate(-140deg)} 14%,24%{transform:rotate(-106deg)} }
+@keyframes aries-happy { 0%,100%{transform:translateY(0) rotate(-1deg)} 50%{transform:translateY(-4px) rotate(1deg)} }
+@keyframes aries-float { 0%,100%{transform:translateY(0);opacity:.8} 50%{transform:translateY(-5px);opacity:1} }
+@keyframes aries-jump { 0%,45%,100%{transform:translateY(0)} 70%{transform:translateY(-9px)} 90%{transform:translateY(0)} }
+@keyframes aries-dream { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-7px);opacity:1} }
+@keyframes aries-love { 0%,100%{transform:translateY(2px) scale(.99);opacity:.6} 50%{transform:translateY(-4px) scale(1.01);opacity:1} }
+@keyframes aries-peek { 0%,70%,100%{transform:translateY(0)} 76%,90%{transform:translateY(-5px)} }
+@keyframes aries-step-left { 0%,100%{transform:rotate(12deg)} 50%{transform:rotate(-12deg) translateY(-4px)} }
+@keyframes aries-step-right { 0%,100%{transform:rotate(-12deg) translateY(-4px)} 50%{transform:rotate(12deg)} }
+@keyframes aries-walk-body { 0%,50%,100%{transform:translateY(0)} 25%,75%{transform:translateY(-3px)} }
+@media (prefers-reduced-motion:reduce) { .aries.is-animated * { animation:none!important; } }
+
+.aries-mascot { display:inline-block; max-width:100%; flex-shrink:0; line-height:0; vertical-align:middle; }
+.aries-mascot.is-paused * { animation-play-state:paused!important; }
+.aries--sad .aries-head { transform:rotate(-4deg) translateY(3px); }
+.aries--sad .aries-arm-left { transform:rotate(-20deg); }
+.aries--sad .aries-arm-right { transform:rotate(20deg); }
+.aries--angry .aries-arm-left { transform:rotate(-38deg); }
+.aries--angry .aries-arm-right { transform:rotate(38deg); }
+/* Home is anchored to the balance card: expressions can move, its feet cannot. */
+.aries-home .aries-figure,.aries-home .aries-leg { animation:none!important; transform:none!important; }
+@media (prefers-reduced-motion:reduce) {
+  .aries-mascot * { animation:none!important; transition:none!important; }
+}
