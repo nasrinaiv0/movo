@@ -299,9 +299,21 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.menu-hero')).not.toBeNull();
   });
 
-  test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
-    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
+  test('Home has no header photo by default; a free scenery can be turned on, and Pro+ can pick a zodiac header', () => {
+    // Owner, 2026-11-16: the banner is off until someone turns it on.
     const header = () => container.querySelector('.home-hero-block');
+    expect(header()).toBeNull();
+    expect(container.querySelector('.home-header').className).not.toContain('home-hero');
+    const openHeaderPicker = () => {
+      openProfile(container);
+      clickButton(container, 'Settings');
+      act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    };
+    openHeaderPicker();
+    act(() => Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Default').click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('auto');
+    nav(container, 'Home');
+    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
     expect(header().className).toContain('hero-scenery');
     // Pro+ gets the platinum glowing edge (Pro gets gold; Free gets none).
     expect(header().className).toContain('hero-tier-plus');
@@ -309,9 +321,7 @@ describe('MOVO finance frontend', () => {
     expect(header().querySelector('.home-header')).not.toBeNull();
     expect(header().querySelector('.balance-card')).not.toBeNull();
     expect(container.querySelectorAll('.balance-card').length).toBe(1);
-    openProfile(container);
-    clickButton(container, 'Settings');
-    act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    openHeaderPicker();
     const tab = Array.from(container.querySelectorAll('.hero-tabs [role="tab"]')).find(b => b.textContent === 'Zodiac');
     act(() => tab.click());
     const leo = Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Leo');
@@ -567,8 +577,11 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     expect(container.querySelector('h1').textContent).toBe('Profile');
     expect(container.textContent).toContain('Data & Sync');
-    expect(container.textContent).toContain('Manually entered records persist across reloads in this browser');
-    expect(container.textContent).toContain('not synced to other devices or encrypted by MOVO');
+    // The local-storage disclosure stays explicit: browser only, not synced, not encrypted by MOVO.
+    expect(container.textContent).toContain('Kept in this browser. Not synced or encrypted by MOVO.');
+    // The overview names its month, and every Settings row says what is inside it.
+    expect(container.querySelector('.profile-overview .po-head small').textContent).toMatch(/\d{4}/);
+    expect(container.textContent).toContain('Alerts and reminders');
     clickButton(container, 'Settings');
     expect(container.querySelector('h1').textContent).toBe('Settings');
     clickButton(container, 'Back');
@@ -595,7 +608,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: November 17, 2026');
+    expect(container.textContent).toContain('Effective date: November 18, 2026');
     expect(container.textContent).not.toContain('not yet been published');
     expect(container.textContent).toContain('Things you delete in MOVO stay in the Archive for 90 days');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
@@ -968,8 +981,13 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
+    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
     expect(tiles).not.toContain('Profile');
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Friends').click());
+    expect(container.querySelector('h1').textContent).toBe('Friends');
+    expect(container.querySelector('.friends-page')).not.toBeNull();
+    clickButton(container, 'Back');
+    expect(container.querySelector('h1').textContent).toBe('Menu');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Subscriptions')).click());
     expect(container.querySelector('h1').textContent).toBe('Subscriptions');
     clickButton(container, 'Add subscription');
@@ -1271,8 +1289,17 @@ describe('Home header block (owner, 2026-11-12)', () => {
   };
   afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
 
+  test('an earlier default header photo becomes None once; a photo someone chose is kept', () => {
+    start({ homeHero: 'auto' });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('plain');
+    act(() => root.unmount()); container.remove();
+    start({ homeHero: 'scenery:wp-w116' });
+    expect(container.querySelector('.home-hero-block')).not.toBeNull();
+  });
+
   test('when another box comes first, the header stands alone with the background and Total balance stays in the list', () => {
-    start({ layouts: { home: { order: ['summary', 'balance'] } } });
+    start({ homeHero: 'auto', homeHeroDefaultNone: true, layouts: { home: { order: ['summary', 'balance'] } } });
     expect(container.querySelector('.home-hero-block')).toBeNull();
     expect(container.querySelector('.home-header').className).toContain('home-hero');
     expect(container.querySelectorAll('.balance-card').length).toBe(1);

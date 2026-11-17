@@ -59,6 +59,12 @@ module.exports = async function handler(req, res) {
     if (social) {
       const { data, error } = await session.admin.rpc('movo_friend_social', { ...args, p_data: payload });
       if (error || !data) return upstreamError(res, action, error);
+      if (action === 'summary' && data.yourShare && !data.error) {
+        const own = await session.admin.from('movo_friend_summaries').select('snapshot')
+          .eq('connection_id', payload.connectionId).eq('owner_id', session.userId).maybeSingle();
+        if (own.error) return upstreamError(res, action, own.error);
+        return send(res, 200, { ...data, yourShare: Boolean(own.data), yourSummary: own.data?.snapshot || null });
+      }
       return send(res, data.error ? ERRORS[data.error] || 400 : 200, data);
     }
     if (['create', 'preview', 'accept'].includes(action)) {

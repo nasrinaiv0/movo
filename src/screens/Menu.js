@@ -16,16 +16,17 @@ export default function Menu({ c }) {
   const over = budgetList.filter(b => b.level === 'over').length;
   const items = [
 
-    { icon: 'refresh', tone: 'teal', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
-    { icon: 'target', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals'), onClick: () => c.openBudgets('plans') },
-    { icon: 'gift', tone: 'green', title: 'Cashback', sub: tr('Rewards and cashback'), onClick: () => go('Cashback') },
-    { icon: 'calendar-clock', tone: 'orange', title: 'Scheduled', sub: tr('Upcoming payments'), onClick: () => go('ScheduledTransactions') },
-    { icon: 'bank', tone: 'blue', title: 'Financial planning', sub: tr('Bills, loans and debts'), onClick: () => go('FinancialPlanning') },
-    { icon: 'globe', tone: 'teal', title: 'Exchange rates', sub: tr('Convert currencies'), onClick: () => go('ExchangeRates') },
-    { icon: 'chart', tone: 'green', title: 'Crypto market', sub: tr('Prices and watchlist'), onClick: () => go('CryptoMarket') },
-    { icon: 'chart', tone: 'blue', title: 'Stocks market', sub: tr('Prices and watchlist'), onClick: () => go('StocksMarket') },
+    { icon: 'userPlus', tone: 'red', title: 'Friends', sub: tr('Friend requests'), onClick: c.openFriends },
+    { icon: 'renew', tone: 'purple', title: 'Subscriptions', sub: subSummary.activeCount ? tr('{n} active · {amount}/month', { n: subSummary.activeCount, amount: shown(show, money(subSummary.monthly, undefined, 0)) }) : tr('Track renewals before they charge'), badge: c.subsBadge || null, onClick: () => go('Subscriptions') },
+    { icon: 'goal', tone: 'green', title: 'Plans', sub: plans.length ? tr('{n} savings goal(s)', { n: plans.length }) : tr('Savings goals'), onClick: () => c.openBudgets('plans') },
+    { icon: 'cashback', tone: 'pink', title: 'Cashback', sub: tr('Rewards and cashback'), onClick: () => go('Cashback') },
+    { icon: 'calendarClock', tone: 'orange', title: 'Scheduled', sub: tr('Upcoming payments'), onClick: () => go('ScheduledTransactions') },
+    { icon: 'planning', tone: 'blue', title: 'Financial planning', sub: tr('Bills, loans and debts'), onClick: () => go('FinancialPlanning') },
+    { icon: 'exchange', tone: 'teal', title: 'Exchange rates', sub: tr('Convert currencies'), onClick: () => go('ExchangeRates') },
+    { icon: 'crypto', tone: 'amber', title: 'Crypto market', sub: tr('Prices and watchlist'), onClick: () => go('CryptoMarket') },
+    { icon: 'stocks', tone: 'indigo', title: 'Stocks market', sub: tr('Prices and watchlist'), onClick: () => go('StocksMarket') },
     { icon: 'archive', tone: 'gray', title: 'Archive', sub: (c.archive || []).length ? tr('{n} item(s) · kept 90 days', { n: (c.archive || []).length }) : tr('Removed items, kept 90 days'), onClick: () => go('Archive') },
-    { icon: 'limits', tone: 'orange', title: 'Limits', sub: budgetList.length ? (over ? tr('{n} over the limit', { n: over }) : tr('{n} monthly limit(s), all on track', { n: budgetList.length })) : tr('Monthly spending limits'), onClick: () => c.openBudgets('budgets') },
+    { icon: 'limits', tone: 'red', title: 'Limits', sub: budgetList.length ? (over ? tr('{n} over the limit', { n: over }) : tr('{n} monthly limit(s), all on track', { n: budgetList.length })) : tr('Monthly spending limits'), onClick: () => c.openBudgets('budgets') },
   ];
   return <>
     <RootHeader title={tr('Menu')} onSearch={c.openSearch} onBell={() => go('Notifications')} onSettings={() => go('Settings')} unread={c.unread} />
@@ -38,7 +39,7 @@ export default function Menu({ c }) {
     </button>
     <section className="menu-grid" aria-label={tr('Menu')}>
       {items.map(it => <button type="button" key={it.title} className="card menu-tile" onClick={it.onClick}>
-        <span className={`menu-tile-icon tone-${it.tone}`}><Icon name={it.icon} size={18} strokeWidth={2.1} />{it.badge ? <i>{it.badge}</i> : null}</span>
+        <span className={`menu-tile-icon mt-${it.tone}`}><Icon name={it.icon} size={it.icon === 'limits' ? 26 : 22} strokeWidth={1.9} />{it.badge ? <i>{it.badge}</i> : null}</span>
         <strong>{tr(it.title)}</strong><small>{it.sub}</small>
       </button>)}
     </section>
