@@ -90,12 +90,14 @@ export function NavPreview({ accentName }) {
   </div>;
 }
 
-function Row({ icon, title, sub, right, onClick, chevron = true, danger, status }) {
+function Row({ icon, title, sub, right, onClick, chevron = true, danger, status, titleOnly = false }) {
   const Tag = onClick ? 'button' : 'div';
   const descriptionId = sub ? settingDescriptionId(title) : undefined;
-  return <Tag type={onClick ? 'button' : undefined} aria-disabled={!onClick && status ? 'true' : undefined} className={`menu-row${danger ? ' danger' : ''}${status ? ' unavailable-row' : ''}`} onClick={onClick}>
+  return <Tag type={onClick ? 'button' : undefined} aria-disabled={!onClick && status ? 'true' : undefined}
+    aria-label={titleOnly && onClick ? tr(title) : undefined} aria-describedby={titleOnly && onClick ? descriptionId : undefined}
+    className={`menu-row${danger ? ' danger' : ''}${status ? ' unavailable-row' : ''}`} onClick={onClick}>
     <span className="menu-icon bare"><Icon name={icon} size={20} /></span>
-    <span className="menu-main"><strong>{tr(title)}</strong>{sub && <small id={descriptionId}>{tr(sub)}</small>}</span>{right}{status && <span className="pill tone-gray">{tr(status)}</span>}{chevron && onClick && <Icon name="chevron" size={16} />}
+    <span className="menu-main"><strong>{tr(title)}</strong>{sub && <small id={descriptionId} className={titleOnly ? 'sr-only' : undefined}>{tr(sub)}</small>}</span>{right}{status && <span className="pill tone-gray">{tr(status)}</span>}{chevron && onClick && <Icon name="chevron" size={16} />}
   </Tag>;
 }
 
@@ -321,7 +323,8 @@ export default function Settings({ c }) {
     {shown.length > 0 && <div className={`settings-groups${q ? ' settings-results' : ''}`}>
       {shown.map(s => <section className="settings-group" key={s.title}>
         <h2 className="group-title">{s.title}</h2>
-        <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div>
+        <div className="card menu-card">{s.rows.map(r => <Row key={r.title} {...r} titleOnly
+          right={r.toggle ? <Toggle checked={toggleValue(r.toggle)} onChange={v => toggleChange(r.toggle, v)} label={r.title} describedBy={settingDescriptionId(r.title)} disabled={toggleDisabled(r.toggle)} reason={r.toggle === 'email' ? tr('Movo does not send email yet.') : tr('Not available on this device.')} /> : undefined} chevron={!r.toggle} />)}</div>
       </section>)}
     </div>}
     {!shown.length && <p className="empty" role="status">{tr('No settings match “{query}”.', { query })}</p>}
