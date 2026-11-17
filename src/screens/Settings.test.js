@@ -45,6 +45,38 @@ describe('Settings header icon treatment', () => {
   });
 });
 
+test('all main Settings rows show only feature names, including search results', () => {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  const c = makeContext();
+  try {
+    act(() => root.render(<Settings c={c} />));
+    const rows = Array.from(container.querySelectorAll('.menu-row'));
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      const title = row.querySelector('.menu-main > strong');
+      const description = row.querySelector('.menu-main > small');
+      expect(title.textContent).toBeTruthy();
+      expect(description.classList.contains('sr-only')).toBe(true);
+      const action = row.matches('button') ? row : row.querySelector('[role="switch"]');
+      if (action) {
+        expect(action.getAttribute('aria-label')).toBe(title.textContent);
+        expect(action.getAttribute('aria-describedby')).toBe(description.id);
+      }
+    }
+
+    act(() => root.render(<Settings c={{ ...c, query: 'financial backup' }} />));
+    const results = container.querySelectorAll('.menu-row');
+    expect(results).toHaveLength(1);
+    expect(results[0].querySelector('strong').textContent).toBe('Import & Export');
+    expect(results[0].querySelector('small.sr-only')).toBeTruthy();
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
+});
+
 describe('Cloud Sync setting semantics', () => {
   let container;
   let root;
