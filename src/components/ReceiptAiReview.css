@@ -14,6 +14,11 @@
 .scan-ai-meta{color:var(--muted);font-size:12px;line-height:1.45;overflow-wrap:anywhere}
 .scan-ai-category{color:var(--accent-ink,var(--accent));padding:5px 10px;border-radius:12px;background:rgba(var(--accent-rgb),.1);font-size:11px;font-weight:660}
 .scan-review > .acct-pick{width:100%;min-width:0}
+.scan-exchange{display:grid;gap:5px;padding:12px 14px;border-radius:14px;background:var(--field);min-width:0}
+.scan-exchange-total{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:5px 12px}
+.scan-exchange-total span,.scan-exchange small{color:var(--muted);font-size:12px;line-height:1.5}
+.scan-exchange-total strong{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.scan-exchange .link-button{justify-self:start;min-height:44px;padding-inline:0}
 .scan-review-details{min-width:0}
 .scan-review-details > summary{color:var(--muted);font-size:12px;font-weight:600;padding:12px 0;cursor:pointer;min-height:44px}
 .scan-review-details[open]{display:grid;gap:12px}

@@ -33,6 +33,105 @@
 - Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
 - Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
 - Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
+## 2026-11-17 — PR #315 brought up to date with main after #314
+
+- #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
+
+## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
+
+- The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
+- Settings → Appearance → "Colour-coded icons" turns the Menu and Profile icon colours on or off. The friend page drops the sharing-status chips under the name. [Details](engineering/updates/2026-11-17-nav-foil-icon-colours-friend-header.md).
+
+## 2026-11-16 — Glass pop-ups, friend page, offline chat charts, Pro/Pro+ badges, no header by default, Aries shadow
+
+- Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
+- NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
+
+## 2026-11-16 — Profile page: clearer overview and consistent rows
+
+- One Overview card names the month chosen on Home, shows the total balance large, then that month's income and expenses. Trends appear only when meaningful (no "999+%").
+- Every row has a tinted icon tile like Menu, Settings rows say what is inside, and the Local Storage note is one line. [Details](engineering/updates/2026-11-16-profile-page.md).
+
+## 2026-11-16 — Theme picker: one clean look in Profile and Settings
+
+- Removed the square grey strip behind the Light / Dark / System / Custom tiles (Profile).
+- Each swatch now previews its theme in both modes, and its icon is always visible.
+- The selection is an accent ring with the tick inside the swatch, the same on Profile and Settings → Appearance. [Details](engineering/updates/2026-11-16-theme-picker.md).
+
+## 2026-11-16 — NasrinAI: Listen and voice input on iPhone, cleaner chat screen
+
+- Listen now:
+  - no longer cancels and speaks in the same moment (WebKit dropped it);
+  - asks for a playback audio session so the silent switch does not mute it;
+  - falls back to an English voice when the app language has none;
+  - retries once, then explains, instead of staying silent.
+- Voice input resumes an "interrupted" audio context, and switches to tap-to-finish when the iPhone level meter reads only silence.
+- Chat UI: a backdrop behind the composer and tab bar, a fade under the status bar, filled reply cards, no visible "You" label, a lighter Listen chip, and fading shortcut chips. [Details](engineering/updates/2026-11-16-nasrinai-voice-and-chat-ui.md).
+
+## 2026-11-16 — Less space at the top of every page
+
+- On phones in the browser and home-screen web app, every page and Home's header photo start 10 px higher (base 18 px to 8 px). Headers stay aligned across pages. The iPhone app's native top bar and tablet/desktop layouts are unchanged. CSS only. [Details](engineering/updates/2026-11-16-page-top-spacing.md).
+
+## 2026-11-16 — Home header: less space under Total balance
+
+- The scenery under the Total balance card shrinks from 28 px to 10 px: the card's own bottom margin no longer stacks on the header padding inside the header. CSS only. [Details](engineering/updates/2026-11-16-home-header-bottom-gap.md).
+
+## 2026-11-16 — Menu tool icons: one glyph and colour per tool
+
+- Menu tiles get new original glyphs: subscriptions, savings goal, cashback, calendar with clock, planning pie, exchange arrows, crypto block and stocks trend. Each tool has its own colour, tuned for light and dark, on larger 40 px squircles. Scheduled no longer falls back to a sparkle (missing `calendar-clock` icon), and Crypto and Stocks no longer share an icon. [Details](engineering/updates/2026-11-16-menu-tool-icons.md).
+
+## 2026-11-16 — One pop-up surface with an iOS-style edge (light and dark)
+
+- Every pop-up now uses the transaction-details look: a solid surface (white / `#1c1c1e`), a gradient hairline edge that catches light at the top-left like iOS, and a soft shadow, adapted for light and dark. Budgets & Plans and Limits lose their translucent glass panel with its bright outline.
+- On phones, bottom sheets float 8 px from the screen edges with rounded corners all round, and the page behind blurs. CSS only. [Details](engineering/updates/2026-11-16-popup-panel-surface.md).
+
+## 2026-11-16 — Friend money summary sharing: clearer screen, live preview, savings rate
+
+- Friend rows open "Money summary" directly. The received summary is a readable card: month in words, shared date, totals with net, savings rate, colour category bars and the note.
+- Sharing uses switches with a live preview of exactly what the friend will see, and one share button that names the friend. Stop sharing asks first. A new savings-rate option (whole percent, validated server-side) shares less than exact totals. No schema change.
+- Needs Friends migration `20261116070316` on production to work there. [Details](engineering/updates/2026-11-16-friend-summary-sharing.md).
+## 2026-11-17 — Refine the shared Friends Summary
+
+- Refined the mobile overview, tracking note, chart labels, snapshot dates and sharing preview. Moved the preview above app navigation and aligned the cash-flow zero baseline. Chromium passed six fixture scenarios and Jest passed 1,496 tests. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Friends Summary visual refinement
+
+- Grouped approved totals into one overview card, reordered the detail cards, and made sharing a two-step flow with a matching recipient preview. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Dedicated Friends and Summary screens
+
+- [Implementation plan, privacy and verification](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
+
+- The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.
+- Aries, an original vector mascot drawn from the owner's design, guides every step, greets people on the first-run welcome card and heads the Help Center. The Help Center has new sections on the guide, AI receipt scanning and automatic logging.
+- Terms §17 now describes the guide as screenshots. The change is published under main's 2026-11-17 Terms date, so people accept once. [Details, validation and rollback](engineering/updates/2026-11-16-movo-guide-aries.md).
+
+## 2026-11-16 — PR #313: softer Aries across MOVO
+
+- Extended the existing [Aries and MOVO guide PR #313](https://github.com/nasrinaiv0/movo/pull/313) after reviewing all 12 open PRs; no other open branch overlaps this mascot scope. The new shared fluffy vector ram is the default Home mascot, appears in sign-in and plan selection, and responds to real bills and savings progress.
+- Added 14 expressions, gentle motion/walking, viewport/background and live reduced-motion handling, and a local expression preview in the Home mascot sheet. Preserved spending thresholds, photo mascots, guide pose APIs, passwordless auth and store purchase checks.
+- Validation: Node 26.13.1 full Jest 240 suites / 1,491 tests, typecheck, i18n and strict production build. Chromium passes 32 mobile light/dark/text-size screen checks, all 14 expressions, live reduced motion and consent; Home feet stay fixed. Final CSS fixes also pass the strict build and 3 affected suites / 9 tests. [Evidence and remaining gates](engineering/updates/2026-11-16-aries-expressions.md). Real devices and the exact-head hosted preview are not yet checked; merge remains owner-controlled.
+
+## 2026-11-16 — PR #312 integration with foreign-currency receipt review
+
+- Integrated main `da99f181` on the Friends branch. Combined the two progress entries and regenerated locales from both source catalogs. The receipt privacy disclosure and Friends disclosures remain synchronized.
+- Run the strict build, disposable PostgreSQL and the mobile fixture flow against this combined tree.
+
+## 2026-11-16 — Friends discovery, private summaries and profile photos
+
+- Added private username discovery, reciprocal request approval, opt-in monthly snapshots, block/report controls, and shared profile avatars. Fixed native Friends transport and more specific error messages.
+- Disposable PostgreSQL migration history and social isolation passed, as did focused API, localization, support and avatar-upload tests. See [the implementation and rollout notes](engineering/updates/2026-11-16-friends-discovery.md).
+## 2026-11-16 — PR #311 conflict resolution
+
+- Integrated main `77bcacc`. Regenerated receipt and Friends locales from both source catalogs and retained both progress records.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-311-main-conflicts.md).
+
+## 2026-11-16 — Foreign-currency receipt review
+
+- Scanned receipts now convert into the selected account's currency using dated reference rates, with an optional statement amount and an audit note retaining the source total. Ambiguous source currency asks for confirmation.
+- The first strict Node 26 build and 1,460 tests passed, alongside Vercel Sandbox rate fixtures and two isolated Chromium widths. Verify GitHub checks and the protected preview at the PR head. [Engineering notes and acceptance steps](docs/engineering/updates/2026-11-16-foreign-currency-receipts.md).
 
 ## 2026-11-16 — Private friends and compact Profile
 

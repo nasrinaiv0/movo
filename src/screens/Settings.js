@@ -42,7 +42,7 @@ export function ThemePicker({ c, compact }) {
     <section className="theme-segments" role="radiogroup" aria-label={tr('App appearance')}>
       {SEGMENTS.map(([key, label, icon]) => <button type="button" key={key} role="radio" aria-checked={current === key} className={current === key ? 'selected' : ''}
         onClick={() => (key === 'custom' ? c.setSheet({ name: 'themes' }) : applyTheme(c, key))}>
-        <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} /></span>{tr(label)}{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}
+        <span className={`seg-art seg-${key}`}><Icon name={icon} size={compact ? 22 : 26} />{current === key && <i className="check-badge"><Icon name="check" size={11} strokeWidth={3} /></i>}</span><span className="seg-label">{tr(label)}</span>
       </button>)}
     </section>
     <h3 className="mini-title">{compact ? tr('App Theme Color') : tr('Accent Color')}</h3>
@@ -297,7 +297,7 @@ export default function Settings({ c }) {
       { icon: 'scan', title: tr('Receipt Scanner'), sub: tr('Scan receipts and payment screenshots; see your scan log'), onClick: () => c.openScanner?.() },
     ] },
     { title: tr('Help & Support'), rows: [
-      { icon: 'play', title: tr('Video guide'), sub: tr('A one-minute tour of MOVO'), onClick: () => c.openGuide?.() },
+      { icon: 'play', title: tr('MOVO guide'), sub: tr('A two-minute tour of every feature'), onClick: () => c.openGuide?.() },
       { icon: 'help', title: tr('Help Center'), sub: tr('Answers about transactions, storage, privacy, and NasrinAI.'), onClick: () => go('HelpCenter') },
     ] },
     { title: tr('Legal'), rows: [
@@ -373,7 +373,7 @@ const HERO_TABS = [['scenery', 'Scenery'], ['zodiac', 'Zodiac'], ['glow', 'Glow'
 export function HomeHeroPicker({ c }) {
   const { can, requireFeature } = usePlan();
   const { prefs, setPref } = c;
-  const current = prefs.homeHero || 'auto';
+  const current = prefs.homeHero || 'plain';
   const [tab, setTab] = useState(() => (current.startsWith('zodiac:') ? 'zodiac' : current.startsWith('glow:') ? 'glow' : 'scenery'));
   const [all, setAll] = useState(false);
   const premium = can(HERO_FEATURE);
@@ -460,6 +460,7 @@ export function Appearance({ c }) {
     <section className="card menu-card">
       <Row icon="layout" title={tr('Compact Mode')} sub="Show more content" chevron={false} right={<Toggle checked={prefs.compact} onChange={v => setPref('compact', v)} label={tr('Compact Mode')} />} />
       <Row icon="palette" title={tr('Show Category Colors')} sub="Use colors for transaction categories" chevron={false} right={<Toggle checked={prefs.categoryColors} onChange={v => setPref('categoryColors', v)} label={tr('Show Category Colors')} />} />
+      <Row icon="grid" title={tr('Colour-coded icons')} sub={tr('A colour for each tool in Menu and Profile')} chevron={false} right={<Toggle checked={prefs.iconColors !== false} onChange={v => setPref('iconColors', v)} label={tr('Colour-coded icons')} />} />
       <Row icon="card" title={tr('Card View Style')} sub={tr('Bank card or account tile, from Wallet → Sort & view')} onClick={() => go('Wallet')} />
       <Row icon="pin" title={tr('Country or region')} sub={c.country ? countryName(c.country, c.lang?.locale) : tr('Not set')} onClick={() => c.openCountry?.()} />
       <Row icon="globe" title={tr('Language')} sub={c.lang?.name} onClick={() => c.openLanguage?.()} />

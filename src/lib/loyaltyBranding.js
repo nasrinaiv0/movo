@@ -21,7 +21,7 @@ const STYLES = Object.freeze({
   'starbucks': { program: 'Starbucks Rewards', bg: '#00543c', ink: '#f3e6c4', trim: '#c8a96a', accent: '#0b6b4d', motif: 'rings', title: 'serif', logo: 'starbucks.ph' },
   '7-eleven': { program: 'CLiQQ Rewards', bg: '#f7f7f1', ink: '#0b6b3a', trim: '#f47920', accent: '#e11b22', motif: 'stripes', logo: '7-eleven.com.ph' },
   'sm advantage': { program: 'Advantage Card', bg: '#123d8f', ink: '#ffffff', trim: '#e7c35a', accent: '#1d58c4', motif: 'band', logo: 'smadvantage.com' },
-  'jollibee': { program: 'Happy Plus', bg: '#d71f2b', ink: '#ffffff', trim: '#f9c22e', accent: '#b5121d', motif: 'split', logo: 'jollibee.com.ph' },
+  'jollibee': { program: 'Happy Plus', bg: '#d71f2b', ink: '#ffffff', trim: '#f9c22e', accent: '#b5121d', motif: 'split', logo: 'jollibee.com' },
   'mercury drug suki': { program: 'Suki Card', bg: '#f6f3ec', ink: '#c8102e', trim: '#c9a24a', accent: '#c8102e', motif: 'stripes', logo: 'mercurydrug.com' },
   's&r membership': { bg: '#10275a', ink: '#ffffff', trim: '#d4af37', accent: '#c8102e', motif: 'foil' },
   'landers': { bg: '#171717', ink: '#e8c96a', trim: '#d6b25e', accent: '#2a2a2a', motif: 'foil', title: 'serif', logo: 'landers.ph' },
@@ -45,7 +45,8 @@ const STYLES = Object.freeze({
   'caltex': { bg: '#f5f6f8', ink: '#00447c', trim: '#e31937', accent: '#cdeeee', motif: 'band', logo: 'caltex.com' },
   'cebu pacific getgo': { program: 'GetGo', bg: '#fdd023', ink: '#0b3d91', trim: '#00a6d6', accent: '#f6bd00', motif: 'split', logo: 'cebupacificair.com' },
   'tim hortons': { bg: '#802c30', ink: '#ffffff', trim: '#e8c998', accent: '#6c2428', motif: 'rings', logo: 'timhortons.com' },
-  'mcdonald’s': { bg: '#c8102e', ink: '#ffffff', trim: '#ffc72c', accent: '#a50d26', motif: 'split', logo: 'mcdonalds.com.ph' },
+  'mcdonald’s': { bg: '#c8102e', ink: '#ffffff', trim: '#ffc72c', accent: '#a50d26', motif: 'split', logo: 'mcdonalds.com' },
+  'mang inasal': { bg: '#0b6b3a', ink: '#ffffff', trim: '#ffd200', accent: '#0a5a31', motif: 'split', logo: 'manginasal.com' },
 });
 const DEFAULT = Object.freeze({ bg: '#105f47', ink: '#ffffff', trim: '#9fd6bd', accent: '#0d4f3b', motif: 'rings' });
 const key = name => String(name || '').trim().toLowerCase().replace(/'/g, '’');
@@ -62,5 +63,5 @@ export function loyaltyLogoUrl(name) {
   const style = STYLES[key(name)];
   if (!style || !style.logo) return '';
   // Only approved, hard-coded domains. Never request a domain typed by the user.
-  return merchantLogoUrl(name, { size: 64 });
+  return merchantLogoUrl(name, { size: 128 });
 }

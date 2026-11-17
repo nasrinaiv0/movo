@@ -1,6 +1,9 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { EditProfile } from './Profile';
+import { cropProfilePhoto } from '../lib/useProfilePhoto';
+
+jest.mock('../lib/useProfilePhoto', () => ({ cropProfilePhoto: jest.fn() }));
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -10,7 +13,7 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
  */
 const context = () => ({
   user: { name: 'Friend', email: 'person@example.com', initial: 'F' }, prefs: { profileName: 'Friend' },
-  setPref: jest.fn(), go: jest.fn(), notify: jest.fn(), session: null, cloudMode: false,
+  saveProfilePhoto: jest.fn().mockResolvedValue(undefined), setPref: jest.fn(), go: jest.fn(), notify: jest.fn(), session: null, cloudMode: false,
 });
 
 function pick(el, file) {
@@ -28,18 +31,22 @@ test('choosing a file that is not an image says so instead of throwing', () => {
   window.addEventListener('error', onError);
   try { pick(el, new File(['hello'], 'notes.txt', { type: 'text/plain' })); } finally { window.removeEventListener('error', onError); }
   expect(errors).toEqual([]);
-  expect(el.querySelector('.form-error').textContent).toBe('Choose an image under 8 MB.');
+  expect(el.querySelector('.form-error').textContent).toBe('Choose a JPG, PNG, WebP or HEIC image under 20 MB.');
   act(() => root.unmount()); el.remove();
 });
 
-test('an image is accepted by the type check and read from the device', () => {
+test('a selected photo is cropped, saved and acknowledged after the account update', async () => {
   const el = document.createElement('div'); document.body.appendChild(el);
   const root = createRoot(el);
-  act(() => root.render(<EditProfile c={context()} />));
-  const read = jest.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(() => {});
-  let calls = 0;
-  try { pick(el, new File([new Uint8Array([137, 80, 78, 71])], 'me.png', { type: 'image/png' })); calls = read.mock.calls.length; } finally { read.mockRestore(); }
-  expect(calls).toBe(1);
+  const c = context();
+  const cropped = 'data:image/jpeg;base64,/9j/4QAAAAAA/9k=';
+  cropProfilePhoto.mockResolvedValue(cropped);
+  act(() => root.render(<EditProfile c={c} />));
+  const file = new File([new Uint8Array([137, 80, 78, 71])], 'me.png', { type: 'image/png' });
+  await act(async () => pick(el, file));
+  expect(cropProfilePhoto).toHaveBeenCalledWith(file);
+  expect(c.saveProfilePhoto).toHaveBeenCalledWith(cropped);
+  expect(c.notify).toHaveBeenCalledWith('Profile photo updated.');
   expect(el.querySelector('.form-error')).toBeNull();
   act(() => root.unmount()); el.remove();
 });
