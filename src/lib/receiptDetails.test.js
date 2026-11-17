@@ -67,3 +67,16 @@ test('discounted itemized receipts do not treat discounts as extra charges', () 
   expect(d).toMatchObject({ total: 80, subtotal: 90, discount: 10 });
   expect(d.warnings).toEqual([]);
 });
+
+
+test.each([
+  ['TOTAL USD 12.34', 'USD'],
+  ['TOTAL 12.34 USD', 'USD'],
+  ['TOTAL SG$12.34', 'SGD'],
+  ['TOTAL €12.34', 'EUR'],
+  ['TOTAL $12.34', ''],
+  ['TOTAL ¥12.34', ''],
+  ['TOTAL USD 12.34\nTOTAL 12.34 EUR', ''],
+])('reports the supported currency marker on the printed total in %s', (line, currency) => {
+  expect(parseReceiptDetails(line)).toMatchObject({ total: 12.34, currency });
+});

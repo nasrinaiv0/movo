@@ -35,7 +35,7 @@ const originalFetch = global.fetch;
 const providerPayload = () => ({
   result: 'success',
   time_last_update_unix: 1793750400,
-  rates: { USD: 1, PHP: 58.2, EUR: 0.91, SGD: 1.3 },
+  rates: { USD: 1, PHP: 58.2, EUR: 0.91, SGD: 1.3, ISK: 129, invalid: 10 },
 });
 
 afterEach(() => {
@@ -50,6 +50,8 @@ test('fetches and caches validated provider reference rates', async () => {
   expect(next.live).toBe(true);
   expect(next.provider).toBe('ExchangeRate-API');
   expect(next.rates.PHP).toBe(58.2);
+  expect(next.rates.ISK).toBe(129);
+  expect(next.rates.invalid).toBeUndefined();
   expect(JSON.parse(localStorage.getItem('movo.fx.v1')).rates.PHP).toBe(58.2);
   expect(global.fetch).toHaveBeenCalledTimes(1);
 });

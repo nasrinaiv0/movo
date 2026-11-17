@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import Settings from './Settings';
+import Settings, { Appearance } from './Settings';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -112,5 +112,20 @@ describe('Cloud Sync setting semantics', () => {
 
     act(() => toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(context.setCloudSyncEnabled).toHaveBeenCalledWith(true);
+  });
+});
+
+describe('Colour-coded icons switch', () => {
+  test('is on by default and turning it off saves iconColors: false', () => {
+    const container = document.createElement('div'); document.body.appendChild(container);
+    const root = createRoot(container);
+    const c = makeContext();
+    act(() => root.render(<Appearance c={c} />));
+    const toggle = container.querySelector('[role="switch"][aria-label="Colour-coded icons"]');
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    act(() => toggle.click());
+    expect(c.setPref).toHaveBeenCalledWith('iconColors', false);
+    act(() => root.unmount()); container.remove();
   });
 });

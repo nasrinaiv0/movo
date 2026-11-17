@@ -23,7 +23,13 @@ function renderSupplement(kind) {
 function buildStaticPolicy(kind, html) {
   if (!['terms', 'privacy'].includes(kind)) throw new Error('Invalid legal page');
   let result = html.replace(/<div data-legal-supplement="(?:terms|privacy)"[^>]*>[\s\S]*?<\/div><!-- MOVO_LEGAL_SUPPLEMENT_END -->/g, '');
-  result = result.replace(/Effective date: November [0-9]+, 2026/, 'Effective date: November 16, 2026');
+  // The effective dates come from src/lib/legalVersion.js, so the static pages always match the in-app version.
+  const version = fs.readFileSync(path.join(__dirname, '..', 'src', 'lib', 'legalVersion.js'), 'utf8');
+  const iso = (version.match(new RegExp(kind.toUpperCase() + "_EFFECTIVE_DATE = '([0-9-]+)T")) || [])[1];
+  if (!iso) throw new Error('Missing ' + kind + ' effective date in legalVersion.js');
+  const [y, m, d] = iso.split('-').map(Number);
+  const label = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  result = result.replace(/Effective date: [A-Z][a-z]+ [0-9]+, [0-9]{4}/, 'Effective date: ' + label);
   result = result.replace(/\n<\/article>/, '</article>');
   if (!result.includes('</article>')) throw new Error('Legal page is missing article container');
   return result.replace('</article>', renderSupplement(kind) + '\n</article>');
