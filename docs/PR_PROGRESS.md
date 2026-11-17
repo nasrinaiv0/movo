@@ -1,3 +1,20 @@
+## 2026-11-17 — "Auto" in While you were away
+
+- An **Auto** filter, right after All, gathers everything a phone automation logged: Siri, Apple Pay, bank notifications, Google Pay and the Android assistant.
+- Each of those rows carries a small **Auto** pill. Manual and imported records are not tagged.
+- The "Auto" label now has proper translations. [Details](engineering/updates/2026-11-17-while-away-auto.md).
+
+## 2026-11-17 — Smoother on budget Android phones and iPhones; camera and voice on every Android device
+
+- Scrolling no longer hitches.
+  - Every App render rewrote `<html lang/dir>`, which restyled the whole page.
+  - Cards and chips no longer blur the plain page colour. The pixels are identical, and there are 11–15 fewer GPU layers per screen.
+  - Date keys are about 15× faster.
+- Budget Android profile, worst scroll frame: 283 → 83 ms on Home and 233 → 50 ms on Wallet. iPhone-size profile: all three screens about 60 fps.
+- iOS allows 120 Hz on ProMotion iPhones.
+- Android now declares camera and microphone (asked only on use; optional hardware), so receipt scanning and voice work there as on iOS.
+- Play re-scores DEX optimisation (#308) after a new bundle is uploaded. [Details](engineering/updates/2026-11-17-smoothness-all-devices.md).
+
 ## 2026-11-17 — Settings rows show feature names
 
 - The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.

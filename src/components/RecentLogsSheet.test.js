@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import RecentLogsSheet, { kindOf } from './RecentLogsSheet';
+import RecentLogsSheet, { kindOf, isAuto } from './RecentLogsSheet';
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
 const now = new Date('2026-11-02T09:00:00Z');
@@ -32,7 +32,7 @@ test('lists new logs by source, opens on what needs attention, and logs a failed
   expect(el.textContent).toContain('While you were away');
   expect(el.textContent).toContain('3 new · 1 not logged');
   const tabs = [...el.querySelectorAll('[role="tab"]')].map(b => b.textContent);
-  expect(tabs).toEqual(['All4', 'Apple Pay1', 'Google Pay1', 'Manual1', 'Not logged1']); // empty groups are hidden
+  expect(tabs).toEqual(['All4', 'Auto2', 'Apple Pay1', 'Google Pay1', 'Manual1', 'Not logged1']); // empty groups are hidden
   expect(el.querySelector('[role="tab"][aria-selected="true"]').textContent).toBe('Not logged1');
   expect(el.textContent).toContain('Starbucks');
   expect(el.textContent).toContain('Could not tell which account');
@@ -53,5 +53,30 @@ test('lists new logs by source, opens on what needs attention, and logs a failed
   expect(el.textContent).toContain('Jollibee');
   expect(el.textContent).not.toContain('Grab');
   expect(el.textContent).not.toContain('Starbucks');
+  act(() => root.unmount());
+});
+
+test('Auto gathers Siri, Apple Pay and bank notification logs and tags each one; manual entries are untagged', () => {
+  expect(['siri_shortcut', 'applepay', 'apple_pay_export', 'bank', 'notification', 'googlepay', 'manual', 'csv_import'].map(isAuto))
+    .toEqual([true, true, true, true, true, true, false, false]);
+  const mixed = [
+    { id: 'a1', merchant: 'Starbucks', amount: 245, currency: 'PHP', type: 'expense', date: now.toISOString(), source: 'applepay', accountName: 'BPI' },
+    { id: 'a2', merchant: 'Jollibee', amount: 299, currency: 'PHP', type: 'expense', date: now.toISOString(), source: 'siri_shortcut', accountName: 'Cash' },
+    { id: 'a3', merchant: 'Puregold', amount: 1864, currency: 'PHP', type: 'expense', date: now.toISOString(), source: 'notification', accountName: 'BPI' },
+    { id: 'a4', merchant: 'Salary', amount: 50000, currency: 'PHP', type: 'income', date: now.toISOString(), source: 'manual', accountName: 'BDO' },
+  ];
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el);
+  act(() => root.render(<RecentLogsSheet logs={mixed} refDate={now} onOpen={() => {}} onClose={() => {}} />));
+  const tabs = [...el.querySelectorAll('[role="tab"]')].map(b => b.textContent);
+  expect(tabs).toEqual(['All4', 'Auto3', 'Apple Pay1', 'Manual1']);
+  const tagged = () => [...el.querySelectorAll('.tx-row')].filter(r => r.querySelector('.tx-auto-tag')).map(r => r.querySelector('strong').textContent);
+  expect(tagged()).toEqual(['Starbucks', 'Jollibee', 'Puregold']);
+  expect(el.querySelector('.tx-auto-tag').textContent).toBe('Auto');
+  act(() => [...el.querySelectorAll('[role="tab"]')].find(b => b.textContent.startsWith('Auto')).click());
+  const rows = [...el.querySelectorAll('.tx-row strong')].map(s => s.textContent);
+  expect(rows).toEqual(['Starbucks', 'Jollibee', 'Puregold']);
+  expect(el.textContent).toContain('Siri');
+  expect(el.textContent).toContain('Notification');
   act(() => root.unmount());
 });

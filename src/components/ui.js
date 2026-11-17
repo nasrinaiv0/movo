@@ -90,7 +90,11 @@ export function Chips({ items, value, onChange, trailing, label }) {
     const rowEl = row.current;
     const measure = () => {
       const el = rowEl?.querySelector('button[data-chip][aria-pressed="true"]');
-      if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+      if (!el) return;
+      const next = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
+      // Keep the same state when nothing moved (the first ResizeObserver call always repeats the measurement), so
+      // opening a screen does not render and lay out the row twice.
+      setInd(cur => (cur && cur.left === next.left && cur.top === next.top && cur.width === next.width && cur.height === next.height ? cur : next));
     };
     measure();
     if (!rowEl || typeof ResizeObserver === 'undefined') return undefined;
@@ -232,7 +236,7 @@ export function Legend({ data }) {
   return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{tr(d.key)}</span><b>{d.percent}%</b></li>)}</ul>;
 }
 
-export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly, afterBalances }) {
+export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly, afterBalances, tag = '' }) {
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
   const afterAccessible = show && Array.isArray(afterBalances) ? afterBalances.map(entry =>
@@ -242,7 +246,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
       <BrandLogo src={t.type === 'transfer' ? null : merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />
       {(() => { const c = categoryOf(t.type === 'income' || t.type === 'transfer' ? t.type : t.categoryId || t.category); return <span className={`tx-cat-badge tone-${c.tone}`} title={tr(c.label)} aria-hidden="true"><Icon name={c.icon} size={11} strokeWidth={2.4} /></span>; })()}
     </span>
-    <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
+    <span className="tx-main"><strong>{t.merchant}</strong><small>{tag && <em className="tx-auto-tag">{tag}</em>}{meta}</small></span>
     <span className="tx-side">
       <b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>
       {Array.isArray(afterBalances) && afterBalances.length > 0 && <span className="tx-after-balances">
