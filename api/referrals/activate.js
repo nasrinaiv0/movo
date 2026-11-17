@@ -21,13 +21,6 @@ module.exports=async function handler(req,res){
    p_user_id:session.userId,p_challenge_id:challengeId,p_hash:hash,p_platform:platform,p_native_key_hash:nativeKeyHash
   });
   if(error)return send(res,409,{error:'native_referral_claim_rejected'});
-  // A legitimate purchase could already have been verified before attestation.
-  if(data?.awarded){
-   const {data:paid}=await session.admin.from('movo_store_entitlements').select('id')
-     .eq('user_id',session.userId).eq('environment','production').eq('paid_verified',true)
-     .in('status',['active','canceled','grace_period']).gt('expires_at',new Date().toISOString()).limit(1);
-   if(paid?.[0]?.id)await session.admin.rpc('movo_award_referral_upgrade',{p_entitlement_id:paid[0].id,p_user_id:session.userId});
-  }
   return send(res,200,{verified:true,...data});
  }catch(error){
   const message=String(error?.message||'');

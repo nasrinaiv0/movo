@@ -13,6 +13,8 @@ module.exports=async function handler(req,res){
    const code=String(error.message||'');
    return send(res,code.includes('challenge_rate_limit')?429:409,{error:code.includes('no_pending_referral')?'no_pending_referral':'challenge_unavailable'});
   }
-  return send(res,200,{challenge,...data});
+  // Play Integrity needs the public project number even on native builds made outside Vercel.
+  const projectNumber = String(process.env.GOOGLE_PLAY_CLOUD_PROJECT_NUMBER || '').trim();
+  return send(res,200,{challenge,...data,...(/^\d{6,20}$/.test(projectNumber) ? { projectNumber } : {})});
  }catch{return send(res,503,{error:'challenge_unavailable'});}
 };

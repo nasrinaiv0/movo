@@ -149,7 +149,7 @@ export default function Profile({ c }) {
         </section>
       </div>
     </div>
-    {referralOpen && <ReferralSheet session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
+    {referralOpen && <ReferralSheet key={session?.user?.id || 'guest'} session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
     <p className="fineprint">{tr('MOVO does not connect to your bank or read private Apple Pay history automatically. Only add records you choose to provide.')}</p>
   </>;
 }

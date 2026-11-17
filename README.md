@@ -59,6 +59,7 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Separate, explicit consent for sharing a limited user-scoped financial snapshot with NasrinAI. Production chat authentication still requires verification.
 - Private friends through Profile. Share a single-use invite via a QR or HTTPS link, accept explicitly, and remove a connection from either account. Native sharing uses the platform share sheet.
 - Terms of Service, Privacy Policy, Help Center, onboarding acknowledgement, and privacy-request contact links.
+- Refer MOVO uses a personal QR and short code. New members earn 20 points after in-app verification and 100 after the first confirmed paid charge. When enabled, Android and web redeem 500 points for one month of Pro or 750 for one month of Pro+.
 - Light/dark/system appearance, accent colors, balance visibility, and browser preferences.
 - Accessible sheets with keyboard focus handling and Escape dismissal, plus automated UI tests and a production build gate.
 - Baseline HTTP security headers on Vercel.

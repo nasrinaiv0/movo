@@ -1,3 +1,18 @@
+## 2026-11-17 — PR #309 brought up to date with main
+
+- Production already has this PR's referral migration, so no new database change is needed. Profile keeps `main`'s layout. Terms keep the referral-points section. Terms and Privacy are effective November 19, 2026. [Details](engineering/updates/2026-11-17-pr-309-main-integration.md).
+
+## 2026-11-16 — PR #309 conflict resolution
+
+- Integrated main `77bcacc`. Kept Friends and referral layouts, both legal disclosures, and the referral Terms date. Regenerated the combined translations and public legal pages.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-309-main-conflicts.md).
+
+## 2026-11-16 — QR referral and plan rewards
+
+- A referred new member receives 20 points after app verification and a further 100 after their first confirmed positive store charge. The reward selector offers one month of Pro for 500 points or Pro+ for 750.
+- Supabase preserves existing balances and entitlements through the migration. QR and code entry carry through sign-in and trial activation. The server deduplicates awards and debits, and validates the beneficiary and store evidence.
+- Local validation covers the full React suite, strict build, typecheck, disposable PostgreSQL and IAP lease tests. The PR records GitHub and preview results. Signed physical-device and deployment configuration checks remain launch gates.
+- Open PR scopes reviewed against main at `d511f268`: #274, #280, #290, #291, #294–#297, #299, #305, #306 and #308. Existing billing branches overlap the verifier, with this branch limited to verified referral payment evidence and rewards. See [implementation and rollout notes](engineering/updates/2026-11-16-qr-referral-plan-rewards.md).
 ## 2026-11-16 — PR #308 conflict resolution
 
 - Integrated main `77bcacc`. Retained the Android release optimization and the main progress history.
