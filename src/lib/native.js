@@ -36,7 +36,7 @@ export async function getNativeAuthCallback() {
 
 /* ---------- Non-secret local preferences only. Auth tokens are in native Keychain/Keystore. ---------- */
 // Financial read caches migrate from legacy Preferences to AES-GCM, never mirror back as plaintext.
-const KEEP = /^movo\.(?!lock\.|readCache\.v1:)/;
+const KEEP = /^movo\.(?!lock\.|readCache\.v1:|chatHistory\.v1:)/;
 let mirrored = false;
 
 /** Before the app renders: restore MOVO keys missing from localStorage, then mirror every later write. */

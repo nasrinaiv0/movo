@@ -1,3 +1,8 @@
+## 2026-11-18 — Start a fresh MOVO chat after 10 minutes idle
+
+- Added a 10-minute inactivity deadline, a history picker, and device-only encrypted storage for completed local conversations. Existing signed-in history remains available through its account-scoped endpoint.
+- Added tests for elapsed time, background resume, account isolation, encrypted local storage, and saving a complete cloud turn. [Implementation and verification](engineering/updates/2026-11-18-chat-idle-history.md).
+
 ## 2026-11-17 — Settings rows show feature names
 
 - The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.

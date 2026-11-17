@@ -22,6 +22,7 @@ import { activateNativeReferral, claimReferralCode, clearPendingReferralCode, pe
 import { UsageSheet } from './screens/Settings';
 import './components/Plans.css';
 import { applyCardPayments } from './lib/creditCard';
+import { invalidateChatHistoryWrites } from './lib/chatHistory';
 import { buildIndexedBalances } from './lib/indexedBalance';
 import { clearHybridOwner } from './lib/hybridLocalStore';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -1935,6 +1936,7 @@ function App() {
     try {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
       const qrCleanup = Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
+      invalidateChatHistoryWrites();
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
@@ -1953,6 +1955,7 @@ function App() {
       await deleteMyAccount();
       if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
+      invalidateChatHistoryWrites();
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
@@ -2960,6 +2963,7 @@ function App() {
         message: tr('This removes the lock and all MOVO data stored here. Data saved to your account returns after you sign in.'),
         detail: tr('This cannot be undone.'),
         action: () => {
+          invalidateChatHistoryWrites();
           const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
           wipe(localStorage); wipe(sessionStorage); signOut().catch(() => {}).finally(() => window.location.reload());
         },

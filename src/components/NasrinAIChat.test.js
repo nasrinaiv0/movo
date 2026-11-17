@@ -4,9 +4,15 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import NasrinAIChat from './NasrinAIChat';
 import { supabase } from '../lib/supabaseClient';
+import { CHAT_IDLE_MS } from '../lib/chatHistory';
 
 jest.mock('../lib/supabaseClient', () => ({
   supabase: { auth: { getSession: jest.fn() } }
+}));
+jest.mock('../lib/financeCacheCrypto', () => ({
+  CHAT_CACHE_PREFIX: 'movo.chatHistory.v1:',
+  encryptFinancialCache: async (_owner, _name, value) => JSON.stringify(value),
+  decryptFinancialCache: async (_owner, _name, value) => value,
 }));
 
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -36,7 +42,7 @@ describe('NasrinAI consent and legal links', () => {
       data: { session: { access_token: 'test-access-token' } },
       error: null
     });
-    window.sessionStorage.removeItem('movo.ai.newConversation.user-1');
+    window.sessionStorage.clear();
     window.localStorage.clear();
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -57,7 +63,7 @@ describe('NasrinAI consent and legal links', () => {
     act(() => root.unmount());
     container.remove();
     global.fetch = originalFetch;
-    window.sessionStorage.removeItem('movo.ai.newConversation.user-1');
+    window.sessionStorage.clear();
     jest.clearAllMocks();
   });
 
@@ -445,5 +451,115 @@ describe('charts from on-device records', () => {
     act(() => root.unmount());
     container.remove();
     global.fetch = originalFetch;
+  });
+});
+
+describe('chat inactivity and history', () => {
+  let container;
+  let root;
+  let originalFetch;
+  const paidSession = { user: { id: 'chat-owner' }, access_token: 'chat-owner-token' };
+  const reply = (payload) => ({ ok: true, json: async () => payload });
+  const button = (label) => Array.from(document.querySelectorAll('button')).find((item) =>
+    item.getAttribute('aria-label') === label || item.textContent.includes(label));
+  const render = async (props = {}) => act(async () => root.render(<NasrinAIChat {...props} />));
+  const tick = (delay) => act(() => jest.advanceTimersByTime(delay));
+  const submit = async (text) => {
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), text);
+    await act(async () => container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  };
+  const choose = async (label) => act(async () => button(label).click());
+
+  beforeEach(() => {
+    jest.useFakeTimers('modern');
+    jest.setSystemTime(new Date('2026-11-18T08:00:00Z'));
+    localStorage.clear();
+    sessionStorage.clear();
+    originalFetch = global.fetch;
+    global.fetch = jest.fn();
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    global.fetch = originalFetch;
+    jest.useRealTimers();
+  });
+
+  test('typing extends the deadline and a fresh chat preserves the draft and saved local transcript', async () => {
+    await render({ onLocalAnswer: () => 'Saved device answer' });
+    await submit('How much did I spend?');
+    tick(CHAT_IDLE_MS - 1);
+    expect(container.textContent).toContain('Saved device answer');
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Draft for later');
+    tick(CHAT_IDLE_MS - 1);
+    expect(container.textContent).toContain('Saved device answer');
+    tick(1);
+    expect(container.textContent).not.toContain('Saved device answer');
+    expect(container.querySelector('#movo-ai-prompt').value).toBe('Draft for later');
+    await choose('Chat history');
+    await choose('How much did I spend?');
+    expect(container.textContent).toContain('Saved device answer');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  test('opens a blank chat after time away while retaining the previous conversation across remounts', async () => {
+    await render({ onLocalAnswer: () => 'Previous device answer' });
+    await submit('Previous device question');
+    await act(async () => root.render(null));
+    tick(CHAT_IDLE_MS);
+    await render();
+    expect(container.textContent).not.toContain('Previous device answer');
+    await choose('Chat history');
+    await choose('Previous device question');
+    expect(container.textContent).toContain('Previous device answer');
+    await render({ session: paidSession, cloudMode: false });
+    await choose('Chat history');
+    expect(document.querySelector('[role="dialog"]').textContent).toContain('No saved chats yet.');
+  });
+
+  test('checks elapsed time on resume if the mobile timer was suspended', async () => {
+    await render({ onLocalAnswer: () => 'Reply before suspension' });
+    await submit('Question before suspension');
+    jest.setSystemTime(Date.now() + CHAT_IDLE_MS);
+    act(() => window.dispatchEvent(new Event('pageshow')));
+    expect(container.textContent).not.toContain('Reply before suspension');
+    await choose('Chat history');
+    await choose('Question before suspension');
+    expect(container.textContent).toContain('Reply before suspension');
+  });
+
+  test('keeps an in-flight cloud reply in its original chat, starts a new server thread after idle and reopens history', async () => {
+    let complete;
+    global.fetch.mockImplementation((url, options) => {
+      if (options.method === 'POST') {
+        if (!complete) return new Promise((resolve) => { complete = resolve; });
+        return Promise.resolve(reply({ conversationId: 'cloud-2', reply: 'New cloud reply' }));
+      }
+      if (url.includes('history=1')) return Promise.resolve(reply({
+        conversations: [{ id: 'cloud-1', title: 'Previous cloud question', updatedAt: '2026-11-18T08:10:00Z' }],
+      }));
+      return Promise.resolve(reply({ conversationId: 'cloud-1', messages: [{ id: 'saved-a', role: 'assistant', content: 'Saved cloud reply' }] }));
+    });
+    localStorage.setItem('movo.ai.ack.v1.chat-owner', '1');
+    await render({ session: paidSession, cloudMode: true });
+    await submit('Previous cloud question');
+    tick(CHAT_IDLE_MS);
+    expect(container.textContent).toContain('Previous cloud question');
+    await act(async () => { complete(reply({ conversationId: 'cloud-1', reply: 'Saved cloud reply' })); });
+    expect(container.textContent).toContain('Saved cloud reply');
+    tick(CHAT_IDLE_MS);
+    expect(container.textContent).not.toContain('Saved cloud reply');
+    await submit('New cloud question');
+    const sent = global.fetch.mock.calls.filter(([, options]) => options.method === 'POST');
+    expect(JSON.parse(sent[1][1].body).conversationId).toBeNull();
+    await choose('Chat history');
+    await choose('Previous cloud question');
+    expect(container.textContent).toContain('Saved cloud reply');
+    expect(container.textContent).not.toContain('New cloud reply');
   });
 });

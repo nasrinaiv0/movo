@@ -125,7 +125,12 @@
     "Movo does not send email yet.": "Wala pay gipadalang email ang Movo.",
     "Not available on this device.": "Dili magamit niining device.",
     "Default": "Default",
-    "Profile": "Imong profile"
+    "Profile": "Imong profile",
+    "Chat history": "Kasaysayan sa chat",
+    "Earlier messages": "Mga naunang mensahe",
+    "More chats": "Dugang mga chat",
+    "No saved chats yet.": "Wala pay na-save nga chat.",
+    "Chat history could not be saved on this device.": "Dili ma-save ang kasaysayan sa chat niining device."
   },
   "unchanged": ["Default", "Face ID / Touch ID", "Legal", "Liquid Glass"]
 }

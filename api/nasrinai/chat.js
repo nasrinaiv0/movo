@@ -11,6 +11,16 @@ const MAX_UPSTREAM_CONTEXT_CHARS = 3800;
 const MAX_CONTEXT_TRANSACTIONS = 40;
 const MAX_RESPONSE_CHARS = 12000;
 const DEFAULT_NASRINAI_URL = 'https://nasrinai.com';
+const HISTORY_PAGE_SIZE = 25;
+const MESSAGE_PAGE_SIZE = 200;
+
+function pageOffset(value) {
+  if (value === undefined) return 0;
+  if (typeof value !== 'string' || !/^\d{1,9}$/.test(value)) return null;
+  return Number(value);
+}
+
+const historyMessage = ({ id, role, content, created_at }) => ({ id, role, content, createdAt: created_at });
 
 function json(res, status, body) {
   res.status(status).setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -239,7 +249,7 @@ module.exports = async function handler(req, res) {
   }
   // OpenRouter is MOVO's fallback AI provider (api/nasrinai/openrouter-fallback.cjs): chat still works with only it.
   const fallbackReady = openRouterConfigured();
-  if (!nasrinKey && !fallbackReady) {
+  if (req.method === 'POST' && !nasrinKey && !fallbackReady) {
     return json(res, 503, {
       error: 'nasrinai_not_configured',
       message: 'NasrinAI is temporarily unavailable. Please contact support.'
@@ -283,7 +293,22 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
+      if (req.query?.history === '1') {
+        const offset = pageOffset(req.query.offset);
+        if (offset === null) return json(res, 400, { error: 'invalid_history_offset' });
+        const page = await db.from('movo_ai_conversations').select('id,title,updated_at')
+          .eq('user_id', userId).order('updated_at', { ascending: false }).order('id', { ascending: false })
+          .range(offset, offset + HISTORY_PAGE_SIZE);
+        if (page.error) throw new Error('conversation_lookup_failed');
+        const rows = page.data || [];
+        return json(res, 200, {
+          conversations: rows.slice(0, HISTORY_PAGE_SIZE).map(({ id, title, updated_at }) => ({ id, title, updatedAt: updated_at })),
+          nextOffset: rows.length > HISTORY_PAGE_SIZE ? offset + HISTORY_PAGE_SIZE : null,
+        });
+      }
       const requested = safeText(req.query?.conversationId, 64);
+      const offset = pageOffset(req.query?.messageOffset);
+      if (offset === null) return json(res, 400, { error: 'invalid_history_offset' });
       let query = db.from('movo_ai_conversations')
         .select('id,user_id,title,created_at,updated_at')
         .eq('user_id', userId);
@@ -297,12 +322,15 @@ module.exports = async function handler(req, res) {
       const messagesResult = await db.from('movo_ai_messages')
         .select('id,role,content,created_at')
         .eq('user_id', userId).eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: true }).limit(200);
+        .order('created_at', { ascending: false }).order('id', { ascending: false })
+        .range(offset, offset + MESSAGE_PAGE_SIZE);
       if (messagesResult.error) throw new Error('message_history_lookup_failed');
+      const rows = messagesResult.data || [];
       return json(res, 200, {
         conversationId: conversation.id,
         title: conversation.title,
-        messages: (messagesResult.data || []).map((item) => ({ role: item.role, content: item.content, createdAt: item.created_at }))
+        messages: rows.slice(0, MESSAGE_PAGE_SIZE).reverse().map(historyMessage),
+        nextMessageOffset: rows.length > MESSAGE_PAGE_SIZE ? offset + MESSAGE_PAGE_SIZE : null,
       });
     }
 
@@ -315,13 +343,6 @@ module.exports = async function handler(req, res) {
       if (found.error) throw new Error('conversation_lookup_failed');
       conversation = found.data;
       if (!conversation) return json(res, 404, { error: 'conversation_not_found' });
-    } else {
-      const title = message.replace(/\s+/g, ' ').slice(0, 80) || 'New conversation';
-      const created = await db.from('movo_ai_conversations')
-        .insert({ user_id: userId, title })
-        .select('id,user_id,title').single();
-      if (created.error || !created.data) throw new Error('conversation_create_failed');
-      conversation = created.data;
     }
 
     const [accountResult, transactionResult, budgetResult] = await Promise.all([
@@ -347,14 +368,6 @@ module.exports = async function handler(req, res) {
       budgets: budgetResult.data || []
     });
 
-    // Remove empty newly-created conversations on failed upstream requests.
-    // Existing conversations are never deleted by this helper.
-    const cleanupNewConversation = async () => {
-      if (requestedConversationId) return;
-      const cleanup = await db.from('movo_ai_conversations')
-        .delete().eq('id', conversation.id).eq('user_id', userId);
-      if (cleanup.error) console.error('[movo-nasrinai-upstream]', 'empty_conversation_cleanup_failed');
-    };
     // Never attach an upstream conversation ID. The upstream receives the
     // current question and bounded finance context through its enforced MOVO
     // scope, with no prior provider conversation history.
@@ -457,33 +470,45 @@ module.exports = async function handler(req, res) {
       if (fallback.reply) answer = { reply: safeText(fallback.reply, MAX_RESPONSE_CHARS) };
     }
     if (answer.fail || !answer.reply) {
-      await cleanupNewConversation();
       const fail = answer.fail || { status: 502, body: { error: 'invalid_nasrinai_response', message: 'NasrinAI returned an unreadable response.' } };
       if (fail.retryAfterSeconds) res.setHeader('Retry-After', String(fail.retryAfterSeconds));
       return json(res, fail.status, fail.body);
     }
     const reply = answer.reply;
-    // Persist the turn only after NasrinAI successfully produced a reply.
-    // Failed/rate-limited upstream calls must not leave a misleading user-only
-    // message in MOVO history.
-    const userMessage = await db.from('movo_ai_messages').insert({
-      conversation_id: conversation.id, user_id: userId, role: 'user', content: message
-    });
-    if (userMessage.error) throw new Error('message_save_failed');
-
-    const conversationUpdate = await db.from('movo_ai_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversation.id).eq('user_id', userId);
-    if (conversationUpdate.error) throw new Error('conversation_update_failed');
-    const assistantMessage = await db.from('movo_ai_messages').insert({
-      conversation_id: conversation.id, user_id: userId, role: 'assistant', content: reply
-    });
-    if (assistantMessage.error) throw new Error('reply_save_failed');
+    if (!conversation) {
+      const title = message.replace(/\s+/g, ' ').slice(0, 80) || 'New conversation';
+      const created = await db.from('movo_ai_conversations')
+        .insert({ user_id: userId, title }).select('id,user_id,title').single();
+      if (created.error || !created.data) throw new Error('conversation_create_failed');
+      conversation = created.data;
+    }
+    // Insert a completed turn in a single statement so a failed write cannot leave half a turn.
+    const now = Date.now();
+    const turn = await db.from('movo_ai_messages').insert([
+      { conversation_id: conversation.id, user_id: userId, role: 'user', content: message, created_at: new Date(now - 1).toISOString() },
+      { conversation_id: conversation.id, user_id: userId, role: 'assistant', content: reply, created_at: new Date(now).toISOString() },
+    ]).select('id,role,content,created_at');
+    if (turn.error) {
+      if (!requestedConversationId) {
+        const cleanup = await db.from('movo_ai_conversations')
+          .delete().eq('id', conversation.id).eq('user_id', userId);
+        if (cleanup.error) console.error('[movo-nasrinai-chat]', 'empty_conversation_cleanup_failed');
+      }
+      throw new Error('message_save_failed');
+    }
+    // The messages are already saved. Returning a retryable error here could duplicate the turn.
+    const updatedAt = new Date(now).toISOString();
+    try {
+      const conversationUpdate = await db.from('movo_ai_conversations')
+        .update({ updated_at: updatedAt }).eq('id', conversation.id).eq('user_id', userId).lt('updated_at', updatedAt);
+      if (conversationUpdate.error) throw new Error('conversation_update_failed');
+    } catch { console.error('[movo-nasrinai-chat]', 'conversation_update_failed'); }
 
     return json(res, 200, {
       conversationId: conversation.id,
       title: conversation.title,
       reply,
+      messages: (turn.data || []).map(historyMessage),
       ...(answer.audioParts ? { audioParts: answer.audioParts } : {}),
       privacy: { scope: 'current_user_only', dataShared: 'minimum_financial_context' }
     });
