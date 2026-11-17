@@ -1,0 +1,28 @@
+// NasrinAI voice fixes (2026-11-16). Machine-assisted, review before commercial multilingual release.
+/* Columns: English, Filipino, Arabic, Chinese, Spanish, Italian, German, French, Portuguese, Japanese, Korean, Hindi. */
+export default [
+  ["Couldn’t play the reply. Turn off silent mode or raise the volume, then try again.",
+   "Hindi ma-play ang sagot. I-off ang silent mode o lakasan ang volume, saka subukang muli.",
+   "تعذّر تشغيل الرد. أوقف الوضع الصامت أو ارفع مستوى الصوت، ثم حاول مرة أخرى.",
+   "无法播放回复。请关闭静音模式或调高音量，然后重试。",
+   "No se pudo reproducir la respuesta. Desactiva el modo silencio o sube el volumen y vuelve a intentarlo.",
+   "Impossibile riprodurre la risposta. Disattiva la modalità silenziosa o alza il volume, poi riprova.",
+   "Die Antwort konnte nicht abgespielt werden. Schalte den Stummmodus aus oder erhöhe die Lautstärke und versuche es erneut.",
+   "Impossible de lire la réponse. Désactivez le mode silencieux ou montez le volume, puis réessayez.",
+   "Não foi possível reproduzir a resposta. Desative o modo silencioso ou aumente o volume e tente novamente.",
+   "返信を再生できませんでした。消音モードをオフにするか音量を上げてから、もう一度お試しください。",
+   "답변을 재생할 수 없습니다. 무음 모드를 끄거나 볼륨을 높인 후 다시 시도하세요.",
+   "जवाब नहीं चल सका। साइलेंट मोड बंद करें या आवाज़ बढ़ाएँ, फिर दोबारा कोशिश करें।"],
+  ["Listening — tap the mic when you’re done",
+   "Nakikinig — i-tap ang mic kapag tapos ka na",
+   "أستمع — اضغط على الميكروفون عند الانتهاء",
+   "正在聆听 — 说完后点按麦克风",
+   "Escuchando — toca el micrófono cuando termines",
+   "In ascolto — tocca il microfono quando hai finito",
+   "Hört zu – tippe auf das Mikrofon, wenn du fertig bist",
+   "À l’écoute — touchez le micro quand vous avez terminé",
+   "Ouvindo — toque no microfone quando terminar",
+   "聞き取り中 — 話し終えたらマイクをタップ",
+   "듣는 중 — 다 말하면 마이크를 탭하세요",
+   "सुन रहे हैं — बोलना पूरा होने पर माइक पर टैप करें"],
+];
