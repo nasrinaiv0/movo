@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import FriendsDiscovery from './FriendsDiscovery';
-import FriendFinanceSummary from './FriendFinanceSummary';
 import Icon from './Icon';
 import { Sheet } from './ui';
 import { useConfirm } from './ConfirmDialog';
@@ -9,7 +8,7 @@ import { t as tr } from '../lib/i18n';
 import { nativePlatform } from '../lib/platform';
 import { friendDisplayName, friendInviteToken, friendInviteUrl, copyFriendInvite, friendsRequest, shareFriendInvite } from '../lib/friends';
 
-function errorMessage(error) {
+export function friendErrorMessage(error) {
   switch (error?.code) {
     case 'invite_unavailable': return tr('This invite is expired, used or replaced.');
     case 'own_invite': return tr('This is your own friend invite.');
@@ -31,13 +30,16 @@ function errorMessage(error) {
   }
 }
 
-export default function FriendsSheet({ session, inviteToken, finance, onClose, onSignIn, onInviteHandled }) {
-  const socialAvailable = Boolean(finance);
+export default function FriendsSheet({ onClose, ...props }) {
+  return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}><FriendsContent {...props} /></Sheet>;
+}
+
+export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary }) {
+  const socialAvailable = Boolean(onOpenSummary);
   const signedIn = Boolean(session?.user?.id && session.access_token);
   const [friends, setFriends] = useState(null);
   const [directory, setDirectory] = useState(null);
   const [directoryError, setDirectoryError] = useState('');
-  const [summaryFriend, setSummaryFriend] = useState(null);
   const reload = () => setRefresh(value => value + 1);
   const [error, setError] = useState('');
   const [listError, setListError] = useState('');
@@ -70,10 +72,10 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
         setActiveUntil(result.activeInviteUntil);
         setInvite(current => current && result.activeInviteUntil && Date.parse(current.expiresAt) === Date.parse(result.activeInviteUntil) ? current : null);
       })
-      .catch(cause => { if (!controller.signal.aborted) setListError(errorMessage(cause)); });
+      .catch(cause => { if (!controller.signal.aborted) setListError(friendErrorMessage(cause)); });
     if (socialAvailable) friendsRequest({ access_token: session.access_token }, 'directory', {}, controller.signal)
       .then(result => { if (!controller.signal.aborted) { setDirectory(result); setDirectoryError(''); } })
-      .catch(cause => { if (!controller.signal.aborted) setDirectoryError(errorMessage(cause)); });
+      .catch(cause => { if (!controller.signal.aborted) setDirectoryError(friendErrorMessage(cause)); });
     function refreshOnReturn() {
       if (!document.hidden) setRefresh(value => value + 1);
     }
@@ -91,7 +93,7 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
     setError('');
     friendsRequest({ access_token: session.access_token }, 'preview', { token: lookup }, controller.signal)
       .then(result => { if (!controller.signal.aborted) setPreview(result); })
-      .catch(cause => { if (!controller.signal.aborted) { setError(errorMessage(cause)); setLookup(''); } });
+      .catch(cause => { if (!controller.signal.aborted) { setError(friendErrorMessage(cause)); setLookup(''); } });
     return () => controller.abort();
   }, [signedIn, session?.access_token, lookup, mode]);
 
@@ -103,7 +105,6 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
 
   function showMode(next) {
     setMode(next);
-    setSummaryFriend(null);
     if (next !== mode && next !== 'join') setRefresh(value => value + 1);
     setError('');
     setNotice('');
@@ -118,7 +119,7 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
     try {
       onSuccess(await friendsRequest(session, action, payload));
     } catch (cause) {
-      setError(errorMessage(cause));
+      setError(friendErrorMessage(cause));
     } finally {
       setBusy(false);
       lock.current = false;
@@ -185,7 +186,7 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
     if (!(await confirm({ title, message: blocking ? tr('Blocking removes the connection and stops future friend requests.')
       : tr('MOVO support will review your report.'), confirmLabel: title, danger: blocking, icon: 'shield' }))) return;
     run(action, payload, () => {
-      if (blocking) { setSummaryFriend(null); reload(); }
+      if (blocking) reload();
       setNotice(blocking ? tr('User blocked.') : tr('Report sent.'));
     });
   }
@@ -194,25 +195,22 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
     <input value={name} onChange={event => setName(event.target.value)} autoComplete="off" maxLength={80} required />
   </label>;
 
-  return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}>
-    <div className="friends-content">
+  return <div className="friends-content">
       {!signedIn ? <div className="friends-empty">
         <Icon name="userPlus" size={26} />
         <p>{tr('Sign in to send or accept a friend invite.')}</p>
         <button type="button" className="primary-button" onClick={onSignIn}>{tr('Sign in')}</button>
       </div> : <>
-        <nav className={`friends-tabs${finance ? ' friends-tabs-expanded' : ''}`} aria-label={tr('Friends')}>
+        <nav className={`friends-tabs${socialAvailable ? ' friends-tabs-expanded' : ''}`} aria-label={tr('Friends')}>
           <button type="button" disabled={busy} aria-pressed={mode === 'list'} onClick={() => showMode('list')}>{tr('Friends')}</button>
-          {finance && <button type="button" disabled={busy} aria-pressed={mode === 'search'} onClick={() => showMode('search')}>{tr('Add friend')}</button>}
+          {socialAvailable && <button type="button" disabled={busy} aria-pressed={mode === 'search'} onClick={() => showMode('search')}>{tr('Add friend')}</button>}
           <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Invite')}</button>
           <button type="button" disabled={busy} aria-pressed={mode === 'join'} onClick={() => showMode('join')}>{tr('Join')}</button>
         </nav>
         {mode === 'search' && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
           <><p className="friends-note" role={directoryError ? 'alert' : 'status'}>{directoryError || tr('Loading…')}</p>
             {directoryError && <button type="button" className="friends-secondary" onClick={reload}>{tr('Try again')}</button>}</>)}
-        {mode === 'list' && summaryFriend && <FriendFinanceSummary key={summaryFriend.id} friend={summaryFriend} session={session}
-          finance={finance} busy={busy} run={run} onSafety={safetyAction} onClose={() => setSummaryFriend(null)} errorMessage={errorMessage} />}
-        {mode === 'list' && !summaryFriend && <>
+        {mode === 'list' && <>
           {directory?.requests?.length > 0 && <div className="friends-content"><h3>{tr('Friend requests')}</h3>
             <ul className="friends-list friends-directory-results">{directory.requests.map(request => <li key={request.id}>
               <b dir="ltr">@{request.handle}</b><div className="friends-actions">
@@ -230,13 +228,16 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
           {friends?.length === 0 && <div className="friends-empty">
             <Icon name="userPlus" size={26} />
             <p>{tr('Your friends will appear here after they accept an invite.')}</p>
-            <button type="button" className="primary-button" onClick={() => showMode(finance ? 'search' : 'invite')}>{tr('Add a friend')}</button>
+            <button type="button" className="primary-button" onClick={() => showMode(socialAvailable ? 'search' : 'invite')}>{tr('Add a friend')}</button>
           </div>}
           {friends?.length > 0 && <ul className="friends-list">
             {friends.map(friend => <li key={friend.id}>
-              <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
-              <b dir="auto">{friend.name}</b>
-              {finance && <button type="button" className="friends-summary-action" disabled={busy} onClick={() => setSummaryFriend(friend)} aria-label={tr('Summary for {name}', { name: friend.name })}><Icon name="doc" size={18} /></button>}
+              {onOpenSummary ? <button type="button" className="friends-open-summary" disabled={busy} onClick={() => onOpenSummary(friend)}
+                aria-label={tr('Summary for {name}', { name: friend.name })}>
+                <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
+                <b dir="auto">{friend.name}</b><Icon name="chevron" size={16} />
+              </button> : <><span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
+                <b dir="auto">{friend.name}</b></>}
               <button type="button" disabled={busy} onClick={() => removeFriend(friend)} aria-label={tr('Remove {name}', { name: friend.name })}><Icon name="close" size={18} /></button>
             </li>)}
           </ul>}
@@ -278,6 +279,5 @@ export default function FriendsSheet({ session, inviteToken, finance, onClose, o
         {notice && <p className="friends-note friends-success" role="status">{notice}</p>}
         {error && <p className="friends-note friends-error" role="alert">{error}</p>}
       </>}
-    </div>
-  </Sheet>;
+    </div>;
 }

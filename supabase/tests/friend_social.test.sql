@@ -40,6 +40,10 @@ begin
   if public.movo_friend_social(alex,'share_summary',payload||jsonb_build_object('summary',packet)) <> '{"ok":true}' then raise exception 'Share failed'; end if;
   if (public.movo_friend_social(kai,'summary',payload)->'sharedWithYou')-'sharedAt' <> packet then raise exception 'Approved summary unavailable'; end if;
   if public.movo_friend_social(other,'summary',payload)->>'error' <> 'friend_connection_required' then raise exception 'Outsider saw summary'; end if;
+  perform public.movo_friend_social(alex,'share_summary',payload||'{"summary":{"month":"2026-11","currency":"PHP","sections":{"income":0}}}'::jsonb);
+  if (public.movo_friend_social(kai,'summary',payload)->'sharedWithYou')-'sharedAt' <> '{"month":"2026-11","currency":"PHP","sections":{"income":0}}'::jsonb then
+    raise exception 'Replacing a share retained deselected data';
+  end if;
   perform public.movo_friend_social(kai,'revoke_summary',payload);
   if public.movo_friend_social(kai,'summary',payload)->'sharedWithYou' = 'null' then raise exception 'Recipient revoked owner share'; end if;
   perform public.movo_friend_social(alex,'revoke_summary',payload);

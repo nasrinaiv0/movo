@@ -1,3 +1,15 @@
+## 2026-11-17 — Refine the shared Friends Summary
+
+- Refined the mobile overview, tracking note, chart labels, snapshot dates and sharing preview. Moved the preview above app navigation and aligned the cash-flow zero baseline. Chromium passed six fixture scenarios and Jest passed 1,496 tests. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Friends Summary visual refinement
+
+- Grouped approved totals into one overview card, reordered the detail cards, and made sharing a two-step flow with a matching recipient preview. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Dedicated Friends and Summary screens
+
+- [Implementation plan, privacy and verification](engineering/updates/2026-11-17-friends-summary-pages.md).
+
 ## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
 
 - The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.
