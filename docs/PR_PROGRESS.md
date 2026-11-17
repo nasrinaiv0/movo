@@ -35,6 +35,10 @@
 - Each swatch now previews its theme in both modes, and its icon is always visible.
 - The selection is an accent ring with the tick inside the swatch, the same on Profile and Settings → Appearance. [Details](engineering/updates/2026-11-16-theme-picker.md).
 
+## 2026-11-17 — Google Play and Android sign-in fix records consolidated (#295, #296, #297, #299)
+
+- The fixes were already in `main`. This PR adds their engineering records and #296's regression test: expired, paused or on-hold Play subscriptions never regain access. #295, #297 and #299 are closed in favour of it. [Details](engineering/updates/2026-11-17-play-oauth-records-consolidated.md).
+
 ## 2026-11-16 — NasrinAI: Listen and voice input on iPhone, cleaner chat screen
 
 - Listen now:

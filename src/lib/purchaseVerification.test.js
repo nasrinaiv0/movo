@@ -165,6 +165,13 @@ describe('MOVO store purchase verification', () => {
     googleOverrides.lineItems=[{productId:'com.nasrinai.movo.proplus.monthly',expiryTime:new Date(Date.now()-86400000).toISOString()}];
     expect((await verifyGoogle('test-token','com.nasrinai.movo.proplus.monthly',userId)).status).toBe('expired');
   });
+  test('explicitly revoked and expired Google subscriptions never resume access from a future expiry', async () => {
+    googleOverrides.lineItems = [{productId:'com.nasrinai.movo.proplus.monthly', expiryTime: new Date(Date.now() + 86400000).toISOString()}];
+    for (const state of ['SUBSCRIPTION_STATE_EXPIRED','SUBSCRIPTION_STATE_PAUSED','SUBSCRIPTION_STATE_ON_HOLD']) {
+      googleOverrides.subscriptionState = state;
+      expect((await verifyGoogle('token','com.nasrinai.movo.proplus.monthly',userId)).status).not.toBe('active');
+    }
+  });
   test('verifies license-test tokens as sandbox with no paid referral or cross-account bypass',async()=>{
     googleOverrides.testPurchase={};
     orderLookupFailure=true;
