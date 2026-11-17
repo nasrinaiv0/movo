@@ -32,8 +32,19 @@ const dayFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, year: 'numeric',
 const dateFmt = (name, options) => cached(`d:${LOCALE}:${name}`, () => new Intl.DateTimeFormat(LOCALE, { timeZone: TZ, ...options }));
 export const formatDate = (date, options, name = JSON.stringify(options)) => dateFmt(name, options).format(new Date(date));
 
+// TZ is normally the device's own zone, which is also what Date's local getters use.
+const TZ_IS_LOCAL = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone === TZ; } catch { return false; } })();
+const pad2 = (n) => (n < 10 ? '0' : '') + n;
+
 /** yyyy-mm-dd in the device time zone. */
 export function dayKey(date) {
+  // Fast path (called for every record on most screens): local getters give the same day as the formatter, at a
+  // fraction of the cost of formatToParts, which mattered on budget Android phones.
+  if (TZ_IS_LOCAL) {
+    const d = date instanceof Date ? date : new Date(date);
+    const y = d.getFullYear();
+    if (y >= 1000 && y <= 9999) return `${y}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
   const parts = Object.fromEntries(dayFmt.formatToParts(new Date(date)).map(p => [p.type, p.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
