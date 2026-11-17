@@ -7,6 +7,8 @@
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto');
 const CODES = ['fil', 'ar', 'zh', 'es', 'it', 'de', 'fr', 'pt', 'ja', 'ko', 'hi'];
 const dir = path.join(__dirname, '..', 'src', 'i18n');
+const languages = require('../src/i18n/languages.json');
+const preview = require('../src/i18n/preview/core.json');
 
 function loadCatalog() {
   const rows = [];
@@ -37,7 +39,26 @@ function build({ write = true } = {}) {
       else dicts[c][en] = v;
     });
   }
-  if (write) {
+  const codes = new Set(languages.map(([code]) => code));
+  if (codes.size !== languages.length) problems.push('Duplicate language codes');
+  const expected = new Set(['en', ...CODES, ...Object.keys(preview.translations)]);
+  for (const [code, name, englishName, locale, direction = 'ltr'] of languages) {
+    if (!expected.delete(code) || !name || !englishName || !['ltr', 'rtl'].includes(direction)) problems.push(`Invalid language record: ${code}`);
+    try { Intl.getCanonicalLocales([code, locale]); } catch { problems.push(`Invalid locale metadata: ${code} (${locale})`); }
+  }
+  for (const code of expected) problems.push(`Unregistered dictionary: ${code}`);
+  if (new Set(preview.keys).size !== preview.keys.length || preview.keys.some(key => !seen.has(key))) problems.push('Preview translations must reference unique catalogue keys');
+  for (const [code, values] of Object.entries(preview.translations)) {
+    if (CODES.includes(code) || code === 'en' || values.length !== preview.keys.length) {
+      problems.push(`Invalid preview translation row: ${code}`);
+      continue;
+    }
+    if (!values.some((value, index) => value && value !== preview.keys[index])) problems.push(`Preview ${code} lacks translated text`);
+    values.forEach((value, index) => {
+      if (value !== null && (typeof value !== 'string' || !value.trim() || holes(value) !== holes(preview.keys[index]))) problems.push(`Invalid preview translation: ${code} / ${preview.keys[index]}`);
+    });
+  }
+  if (write && !problems.length) {
     fs.mkdirSync(path.join(dir, 'locales'), { recursive: true });
     const hash = crypto.createHash('sha1');
     CODES.forEach(c => { const json = JSON.stringify(dicts[c]); hash.update(json); fs.writeFileSync(path.join(dir, 'locales', `${c}.json`), json); });
@@ -50,5 +71,5 @@ module.exports = { build, loadCatalog, CODES };
 if (require.main === module) {
   const { problems, count } = build();
   if (problems.length) { console.error(problems.join('\n')); process.exit(1); }
-  console.log(`i18n: ${count} strings × ${CODES.length} languages`);
+  console.log(`i18n: ${count} strings × ${CODES.length} full translation catalogs, ${Object.keys(preview.translations).length} language previews`);
 }
