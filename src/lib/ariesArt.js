@@ -65,10 +65,11 @@ export function ariesSVG(state = 'welcome', options = {}) {
     <linearGradient id="${p}-scarf-tail" x1="207" y1="230" x2="237" y2="277" gradientUnits="userSpaceOnUse"><stop stop-color="#346746"/><stop offset="1" stop-color="#204832"/></linearGradient>
     <linearGradient id="${p}-hoof" x1="152" y1="300" x2="160" y2="323" gradientUnits="userSpaceOnUse"><stop stop-color="#616451"/><stop offset="1" stop-color="#3e4438"/></linearGradient>
     <radialGradient id="${p}-blush"><stop stop-color="#e9b49c" stop-opacity=".72"/><stop offset="1" stop-color="#e9b49c" stop-opacity="0"/></radialGradient>
-    <radialGradient id="${p}-shadow"><stop stop-color="#7c8461" stop-opacity=".21"/><stop offset="1" stop-color="#7c8461" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${p}-shadow"><stop stop-color="#1c1d17" stop-opacity=".3"/><stop offset=".55" stop-color="#1c1d17" stop-opacity=".12"/><stop offset="1" stop-color="#1c1d17" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${p}-contact"><stop stop-color="#11120e" stop-opacity=".62"/><stop offset=".6" stop-color="#11120e" stop-opacity=".22"/><stop offset="1" stop-color="#11120e" stop-opacity="0"/></radialGradient>
     <filter id="${p}-soft-shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#615c41" flood-opacity=".09"/></filter>
   </defs>
-  <ellipse class="aries-shadow" cx="180" cy="327" rx="78" ry="13" fill="${url('shadow')}"/>
+  <g class="aries-shadow" aria-hidden="true"><ellipse cx="182" cy="326" rx="94" ry="15" fill="${url('shadow')}"/><ellipse cx="154" cy="321" rx="22" ry="5" fill="${url('contact')}"/><ellipse cx="208" cy="321" rx="22" ry="5" fill="${url('contact')}"/><ellipse cx="181" cy="322" rx="56" ry="6.5" fill="${url('contact')}" opacity=".55"/></g>
   <g class="aries-figure">
     <g class="aries-leg aries-leg-left"><path d="M143 286c-8 6-10 22-5 30 6 7 22 7 29 1l3-29Z" fill="${url('wool')}"/><path d="M137 307q16 6 32 0l-1 10c-4 9-26 10-30 0Z" fill="${url('hoof')}"/><path d="m153 312 1 9" stroke="#93917b" stroke-opacity=".5" stroke-width="1.5"/></g>
     <g class="aries-leg aries-leg-right"><path d="M192 288c-4 9-2 25 3 30 7 6 24 4 28-3 4-9 0-24-5-29Z" fill="${url('wool')}"/><path d="M191 308q15 6 32-2l1 9c-2 9-24 11-29 3Z" fill="${url('hoof')}"/><path d="m208 313 1 8" stroke="#93917b" stroke-opacity=".5" stroke-width="1.5"/></g>

@@ -3,7 +3,7 @@ import ProfileAvatar from '../components/ProfileAvatar';
 import { cropProfilePhoto } from '../lib/useProfilePhoto';
 import Icon from '../components/Icon';
 import { SubHeader, SectionTitle, Trend } from '../components/ui';
-import { money, shown } from '../lib/format';
+import { money, shown, getFormatLocale } from '../lib/format';
 import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
 import { maskEmail } from '../lib/emailPrivacy';
@@ -41,7 +41,21 @@ export default function Profile({ c }) {
   const sum = (arr) => totalBalance(arr, c.toBase || (v => v), c.prefs?.creditCardPayments || {}).total;
   const open = (arr) => arr.filter(a => !a.is_archived);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
-  const menu = [['gearSolid', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
+  const menu = [
+    ['gearSolid', 'gray', 'Financial Settings', 'Settings', 'All MOVO settings'],
+    ['bell', 'red', 'Notifications', 'NotificationSettings', 'Alerts and reminders'],
+    ['shield', 'blue', 'Security & Privacy', 'Settings', 'App lock and your data'],
+    ['sliders', 'purple', 'Preferences', 'Appearance', 'Theme, text and layout'],
+  ];
+  // The overview follows the month chosen on Home; a trend is shown only when it says something (no "999+%" against an
+  // almost-empty last month).
+  const monthName = (() => {
+    const [y, m] = String(c.homeMonthKey || '').split('-').map(Number);
+    if (!y || !m) return '';
+    try { return new Date(y, m - 1, 15).toLocaleDateString(getFormatLocale(), { month: 'long', year: 'numeric' }); } catch { return ''; }
+  })();
+  const meaningful = (d) => Boolean(d && Number.isFinite(d.percent) && Math.abs(d.percent) < 999);
+  const ic = (icon, tone, size = 20) => <span className={`menu-icon pf-ic mt-${tone}`}><Icon name={icon} size={size} strokeWidth={1.9} /></span>;
   return <>
     <SubHeader title={tr('Profile')} onBack={() => (c.goBack || go)('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gearSolid" size={19} /></button>} />
     <div className="card profile-card-wrap">
@@ -65,20 +79,32 @@ export default function Profile({ c }) {
         <small>{tr('Code and QR')}</small>
       </button>
     </div>
-    <section className="stat-grid profile-finance-summary" aria-label={tr('Profile summary')}>
-      {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance], ['Total Income', 'arrowDown', 'green', stats.income, deltas.income], ['Total Expense', 'arrowUp', 'red', stats.expenses, deltas.expenses]].map(([label, icon, tone, value, d]) =>
-        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, c.base))}</strong><Trend value={d} size={11} /></article>)}
+    <section className="card profile-overview" aria-label={tr('Profile summary')}>
+      <div className="po-head"><strong>{tr('Overview')}</strong>{monthName && <small>{monthName}</small>}</div>
+      <div className="po-main">
+        <small>{tr('Total Balance')}</small>
+        <strong>{shown(show, money(stats.balance, c.base))}</strong>
+        {meaningful(deltas.balance) && <Trend value={deltas.balance} chip size={11} />}
+      </div>
+      <div className="po-split">
+        {[['Income', 'arrowDown', 'green', 'income', stats.income, deltas.income], ['Expenses', 'arrowUp', 'red', 'expense', stats.expenses, deltas.expenses]].map(([label, icon, tone, kind, value, d]) =>
+          <div className={`po-stat po-${kind}`} key={label}>
+            {ic(icon, tone, 16)}
+            <span className="po-text"><small>{tr(label)}</small><strong>{shown(show, money(value, c.base))}</strong></span>
+            {meaningful(d) && <Trend value={d} size={10} />}
+          </div>)}
+      </div>
     </section>
 
     <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
     <section className="card menu-card">
       {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
+        {ic(icon, { bank: 'blue', card: 'purple', wallet: 'teal' }[icon])}<span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
       </button>)}
     </section>
     <SectionTitle>{tr('Settings')}</SectionTitle>
     <section className="card menu-card">
-      {menu.map(([icon, label, view]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong></span><Icon name="chevron" size={16} /></button>)}
+      {menu.map(([icon, tone, label, view, sub]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}>{ic(icon, tone)}<span className="menu-main"><strong>{tr(label)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}
     </section>
 
     <SectionTitle action={tr('See All')} onAction={() => go('Appearance')}>{tr('App Appearance')}</SectionTitle>
@@ -87,9 +113,9 @@ export default function Profile({ c }) {
     <SectionTitle>{tr('Data & Sync')}</SectionTitle>
     <section className="card menu-card">
       <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
-        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
+        {ic('cloud', 'blue')}<span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
       </button>
-      <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Manually entered records persist across reloads in this browser; they are not synced to other devices or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
+      <div className="menu-row">{ic('database', 'gray')}<span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Kept in this browser. Not synced or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
     </section>
 
     <SectionTitle>{tr('About')}</SectionTitle>
@@ -98,18 +124,18 @@ export default function Profile({ c }) {
         const action = title === 'Terms of Service' ? () => c.openLegal?.('TermsOfService') : title === 'Privacy Policy' ? () => c.openLegal?.('PrivacyPolicy') : null;
         const Tag = action ? 'button' : 'div';
         return <Tag key={title} type={action ? 'button' : undefined} className="menu-row" onClick={action}>
-          <span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong>{sub && <small>{tr(sub)}</small>}</span>{action && <Icon name="chevron" size={16} />}
+          {ic(icon, 'gray')}<span className="menu-main"><strong>{tr(title)}</strong>{sub && <small>{tr(sub)}</small>}</span>{action && <Icon name="chevron" size={16} />}
         </Tag>;
       })}
     </section>
     <section className="card menu-card gap">
-      <button type="button" className="menu-row" onClick={exportCsv}><span className="menu-icon bare"><Icon name="download" size={20} /></span><span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
+      <button type="button" className="menu-row" onClick={exportCsv}>{ic('download', 'green')}<span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
       {session && <button type="button" className="menu-row" onClick={revokeOtherDevices} disabled={revokingOtherSessions} aria-busy={revokingOtherSessions}>
-        <span className="menu-icon bare"><Icon name="shield" size={20} /></span>
+        {ic('shield', 'orange')}
         <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
         <Icon name="chevron" size={16} />
       </button>}
-      {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
+      {session ? <button type="button" className="menu-row danger" onClick={signOutNow}>{ic('logout', 'red')}<span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
         : null}
     </section>
     {referralOpen && <ReferralSheet session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
