@@ -1,3 +1,9 @@
+## 2026-11-17 — "Auto" in While you were away
+
+- An **Auto** filter, right after All, gathers everything a phone automation logged: Siri, Apple Pay, bank notifications, Google Pay and the Android assistant.
+- Each of those rows carries a small **Auto** pill. Manual and imported records are not tagged.
+- The "Auto" label now has proper translations. [Details](engineering/updates/2026-11-17-while-away-auto.md).
+
 ## 2026-11-17 — Smoother on budget Android phones and iPhones; camera and voice on every Android device
 
 - Scrolling no longer hitches.

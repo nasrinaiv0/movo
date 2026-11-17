@@ -21,7 +21,10 @@ const REASON = {
 export const kindOf = (source) => (source === 'applepay' || source === 'apple_pay_export' ? 'applepay'
   : source === 'googlepay' ? 'googlepay'
     : ['bank', 'bank_sync', 'notification', 'siri_shortcut', 'android_assistant'].includes(source) ? 'auto' : 'manual');
-const FILTERS = [['all', 'All'], ['applepay', 'Apple Pay'], ['googlepay', 'Google Pay'], ['auto', 'Automatic'], ['manual', 'Manual'], ['failed', 'Not logged']];
+/** Logged by a phone automation (Apple Pay, Google Pay, Siri, bank notifications), not typed in by the person. */
+export const isAuto = (source) => kindOf(source) !== 'manual';
+// "Auto" (owner, 2026-11-17) gathers every automatic log: Siri, Apple Pay, bank notifications and the other automations.
+const FILTERS = [['all', 'All'], ['auto', 'Auto'], ['applepay', 'Apple Pay'], ['googlepay', 'Google Pay'], ['manual', 'Manual'], ['failed', 'Not logged']];
 
 function FailedRow({ item, accounts, show, onLog, onDismiss }) {
   const [open, setOpen] = useState(false);
@@ -62,11 +65,11 @@ function FailedRow({ item, accounts, show, onLog, onDismiss }) {
 export default function RecentLogsSheet({ logs = [], failed = [], accounts = [], show = true, refDate, onLog, onDismiss, onOpen, onClose, transactionBalances, showBalanceAfterTransaction = true }) {
   const counts = useMemo(() => {
     const c = { all: logs.length + failed.length, applepay: 0, googlepay: 0, auto: 0, manual: 0, failed: failed.length };
-    logs.forEach(t => { c[kindOf(t.source)] += 1; });
+    logs.forEach(t => { const kind = kindOf(t.source); if (kind !== 'auto') c[kind] += 1; if (isAuto(t.source)) c.auto += 1; });
     return c;
   }, [logs, failed]);
   const [filter, setFilter] = useState(failed.length ? 'failed' : 'all');
-  const shownLogs = filter === 'all' ? logs : filter === 'failed' ? [] : logs.filter(t => kindOf(t.source) === filter);
+  const shownLogs = filter === 'all' ? logs : filter === 'failed' ? [] : filter === 'auto' ? logs.filter(t => isAuto(t.source)) : logs.filter(t => kindOf(t.source) === filter);
   const shownFailed = filter === 'all' || filter === 'failed' ? failed : [];
   const summary = [logs.length ? tr('{n} new', { n: logs.length }) : '', failed.length ? tr('{n} not logged', { n: failed.length }) : ''].filter(Boolean).join(' · ');
 
@@ -82,7 +85,7 @@ export default function RecentLogsSheet({ logs = [], failed = [], accounts = [],
     </section>}
     {shownLogs.length > 0 && <section className="rl-section" aria-label={tr('Logged')}>
       {shownFailed.length > 0 && <h3 className="rl-head">{tr('Logged')}</h3>}
-      <div className="card rl-logged">{shownLogs.slice(0, 50).map(t => <TransactionRow key={t.id} t={t} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={onOpen} accountLabel={`${tr(SOURCE_LABEL[t.source] || 'Manual')} · ${t.accountName || t.method || ''}`} />)}</div>
+      <div className="card rl-logged">{shownLogs.slice(0, 50).map(t => <TransactionRow key={t.id} t={t} afterBalances={showBalanceAfterTransaction ? transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={onOpen} tag={isAuto(t.source) ? tr('Auto') : ''} accountLabel={`${tr(SOURCE_LABEL[t.source] || 'Manual')} · ${t.accountName || t.method || ''}`} />)}</div>
     </section>}
     {!shownFailed.length && !shownLogs.length && <p className="rl-empty">{tr('Nothing new while you were away.')}</p>}
     <button type="button" className="primary-button rl-done" onClick={onClose}>{tr('Done')}</button>

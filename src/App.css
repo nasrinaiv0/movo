@@ -9415,3 +9415,12 @@ html:not(.native-chrome) .movo-app.movo-app.movo-app.movo-app:not(.layout-tablet
 .movo-app:not(.has-scenery) :is(.card, .chip-row > button):not(.home-hero-block *) {
   -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
 }
+
+/* ===== "Auto" in While you were away (owner, 2026-11-17) =====
+   Rows logged by a phone automation (Siri, Apple Pay, bank notifications, Google Pay) carry a small "Auto" pill before
+   their time and source, and the Auto filter gathers them all. */
+.movo-app .tx-auto-tag {
+  display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 999px; vertical-align: 1px;
+  font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: .02em; line-height: 1.5;
+  color: var(--accent-ink, var(--accent)); background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
