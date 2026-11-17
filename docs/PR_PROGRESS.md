@@ -15,6 +15,11 @@
 - Android now declares camera and microphone (asked only on use; optional hardware), so receipt scanning and voice work there as on iOS.
 - Play re-scores DEX optimisation (#308) after a new bundle is uploaded. [Details](engineering/updates/2026-11-17-smoothness-all-devices.md).
 
+## 2026-11-17 — Settings rows show feature names
+
+- The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.
+- Local Node 26 typecheck, strict build and regression tests passed (244 suites, 1,541 tests). The Vercel sandbox passed 12 focused tests. Open PR scopes #274, #290 and #291 were reviewed. [Implementation and rollback notes](engineering/updates/2026-11-17-settings-feature-names.md).
+
 ## 2026-11-17 — PR #309 brought up to date with main
 
 - Production already has this PR's referral migration, so no new database change is needed. Profile keeps `main`'s layout. Terms keep the referral-points section. Terms and Privacy are effective November 19, 2026. [Details](engineering/updates/2026-11-17-pr-309-main-integration.md).
@@ -60,6 +65,11 @@
 ## 2026-11-17 — Expanded language selection
 
 - Added the requested 95 language groups to Settings → Language, with separate Punjabi and Kurdish choices for 97 entries. The 85 additions have offline preview labels and an English fallback. The 12 existing language choices retain their current catalog behavior. [Coverage, validation and review](engineering/updates/2026-11-17-expanded-language-selection.md).
+
+## 2026-11-17 — Expand Cebuano and validate language catalogs
+
+- Cebuano coverage increased to 146 of 3,221 catalog messages. The 97 registered options include 12 complete catalogs and 85 limited catalogs.
+- The app loads supplemental dictionaries on demand and retains their existing offline preview labels. Build validation checks message keys, placeholders and intentionally unchanged text. [Translation workflow and remaining coverage](engineering/updates/2026-11-17-language-catalog-coverage.md).
 
 ## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
 
