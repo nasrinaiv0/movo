@@ -119,10 +119,14 @@ test('in the app, MOVO keys missing from web storage are restored and later writ
   set.mockClear();
   window.localStorage.setItem('movo.local.accounts.v1', '[]');
   window.localStorage.setItem('unrelated', '1');
-  expect(set).toHaveBeenCalledTimes(1);
-  expect(set).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1', value: '[]' });
+  expect(set).not.toHaveBeenCalled();
+  const sealed = 'movo.finance.sealed.v1:movo.local.accounts.v1';
+  window.localStorage.setItem(sealed, '{"__movo_finance_sealed_v1":1}');
+  expect(set).toHaveBeenCalledWith({ key: sealed, value: '{"__movo_finance_sealed_v1":1}' });
   window.localStorage.removeItem('movo.local.accounts.v1');
-  expect(remove).toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
+  expect(remove).not.toHaveBeenCalledWith({ key: 'movo.local.accounts.v1' });
+  window.localStorage.removeItem(sealed);
+  expect(remove).toHaveBeenCalledWith({ key: sealed });
   // Encrypted finance cache storage is never copied to native Preferences.
   set.mockClear();
   const cacheKey = 'movo.readCache.v1:11111111-1111-4111-8111-111111111111:loans';

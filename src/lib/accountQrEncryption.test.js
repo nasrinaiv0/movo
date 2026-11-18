@@ -98,4 +98,7 @@ test('invalid plaintext cannot bypass image validation during migration', async 
   await putRaw({ id: 'local:wrong-mime', dataUrl: 'data:text/html;base64,PHNjcmlwdD4=' });
   await expect(migrateLocalAccountQrEncryption()).rejects.toThrow('corrupt_legacy_data');
   expect((await rawRows())[0].dataUrl).toContain('data:text/html');
+  await putRaw({ id: 'local:another-bank', dataUrl: QR });
+  await expect(getLocalAccountQr('local:another-bank')).resolves.toBe(QR);
+  expect((await rawRows()).find(row => row.id === 'local:another-bank')).not.toHaveProperty('dataUrl');
 });

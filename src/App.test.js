@@ -16,7 +16,7 @@ jest.mock('./lib/planAccess', () => {
     canUseFeatureInMode: (e, f, cloud, now) => (global.__movoPauseLocalPlans ? actual.canUseFeatureInMode(e, f, cloud, now) : actual.canUseFeature(e, f, now)),
     effectiveAccessPlan: (e, cloud, now) => (global.__movoPauseLocalPlans ? actual.effectiveAccessPlan(e, cloud, now) : actual.effectivePlan(e, now)) };
 });
-import { loadLocalAccounts, loadLocalTransactions } from './lib/localFinanceStore';
+import { loadLocalAccounts, loadLocalTransactions, saveLocalTransactions } from './lib/localFinanceStore';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -942,7 +942,7 @@ describe('MOVO finance frontend', () => {
   test('warns when local financial records cannot be saved and retries after storage recovers', () => {
     const originalSetItem = Storage.prototype.setItem;
     const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
-      if (['movo.local.transactions.v1', 'movo.local.accounts.v1', 'movo.samples.enabled.v1'].includes(String(key))) {
+      if (String(key).startsWith('movo.finance.sealed.v1:') || key === 'movo.samples.enabled.v1') {
         throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
       }
       return originalSetItem.call(this, key, value);
@@ -1069,7 +1069,7 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, onboarded: true, logsSeenAt: '2026-10-29T02:00:00.000Z' }));
     const txs = loadLocalTransactions();
     const account = loadLocalAccounts()[0];
-    window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{ id: 'away-1', merchant: 'Away Cafe', amount: 333, currency: 'PHP', transaction_type: 'expense', category: 'Food & drinks', account_id: account.id, occurred_at: '2026-10-29T02:30:00.000Z', created_at: '2026-10-29T02:30:00.000Z', source: 'applepay' }, ...txs]));
+    saveLocalTransactions([{ id: 'away-1', merchant: 'Away Cafe', amount: 333, currency: 'PHP', transaction_type: 'expense', category: 'Food & drinks', account_id: account.id, occurred_at: '2026-10-29T02:30:00.000Z', created_at: '2026-10-29T02:30:00.000Z', source: 'applepay' }, ...txs]);
     root = createRoot(container);
     act(() => root.render(<App />));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });

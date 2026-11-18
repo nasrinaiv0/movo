@@ -278,7 +278,7 @@ export default function Settings({ c }) {
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'shield', title: tr('Security & Privacy'), sub: tr('Read how MOVO handles your information'), onClick: () => Browser.open({ url: 'https://movo.nasrinai.com/security' }).catch(() => {}) },
       { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
-      ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
+      ...(c.session?.user?.id ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount', ownerId: c.session.user.id }), danger: true }] : []),
     ] },
     { title: tr('Transaction History'), rows: [
       { icon: 'list', title: tr('Show balance after each transaction'),

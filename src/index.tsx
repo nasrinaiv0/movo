@@ -53,8 +53,9 @@ function showFinanceVaultBlocked() {
       <h1>Saved financial records are locked</h1>
       <p>MOVO could not safely unlock records stored on this device. Your existing
         offline records have not been deleted.</p>
-      <p>Do not uninstall MOVO or clear its app data. Reopen the app after unlocking
-        your device, or contact support@nasrinai.com for assistance.</p>
+      <p>Close other MOVO tabs and unlock your device, then retry. Keep the app and
+        its saved data on your device. For help, contact support@nasrinai.com.</p>
+      <button type="button" onClick={() => window.location.reload()}>Retry</button>
     </main>
   );
 }
@@ -66,13 +67,16 @@ function showFinanceVaultBlocked() {
       await initialiseFinanceVault();
       await migrateFinanceLocalStorage();
       await migrateHybridFinanceEncryption();
-      await migrateLocalAccountQrEncryption();
     }
     // Automation auth secrets have a separate fail-closed vault. An automation
     // vault error must not prevent the finance data already verified from loading.
     await restoreNativeAutomationKey().catch(() => {});
     render();
-    if (!ownerRoute) migrateLegacyOfflineReadCache().catch(() => {});
+    if (!ownerRoute) {
+      // Optional media/cache failures must not lock a verified wallet or ledger.
+      migrateLocalAccountQrEncryption().catch(() => {});
+      migrateLegacyOfflineReadCache().catch(() => {});
+    }
   } catch {
     if (ownerRoute) render(); // Owner portal does not load customer records.
     else showFinanceVaultBlocked();

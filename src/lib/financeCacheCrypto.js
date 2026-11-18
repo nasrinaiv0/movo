@@ -46,7 +46,6 @@ function fromBase64(value) {
 function cacheContainsCiphertext() {
   try {
     const storage = globalThis.localStorage;
-    if (storage.getItem('movo.finance.vault.initialized.v1')) return true;
     for (let i = 0; i < storage.length; i++) {
       const name = storage.key(i);
       if (name?.startsWith(CACHE_PREFIX) && /"v"\s*:\s*2/.test(storage.getItem(name) || '')) return true;
@@ -55,12 +54,12 @@ function cacheContainsCiphertext() {
   return false;
 }
 
-async function getNativeKey(engine) {
+async function getNativeKey(engine, beforeCreate) {
   const result = await MovoNative.secureGet({ key: CACHE_VAULT_KEY });
   let encoded = result?.value;
   if (!encoded) {
     // Never replace a lost/invalid vault key while encrypted data exists.
-    if (cacheContainsCiphertext()) throw new Error('offline_cache_key_missing');
+    if (cacheContainsCiphertext() || await beforeCreate?.()) throw new Error('offline_cache_key_missing');
     const random = engine.getRandomValues(new Uint8Array(32));
     encoded = toBase64(random);
     await MovoNative.secureSet({ key: CACHE_VAULT_KEY, value: encoded });
@@ -117,11 +116,11 @@ async function getWebKey(engine) {
   });
 }
 
-function getKey() {
+function getKey(beforeNativeCreate) {
   if (!keyPromise) {
     keyPromise = (async () => {
       const engine = cryptoEngine();
-      return isNativeApp() ? getNativeKey(engine) : getWebKey(engine);
+      return isNativeApp() ? getNativeKey(engine, beforeNativeCreate) : getWebKey(engine);
     })().catch(error => { keyPromise = null; throw error; });
   }
   return keyPromise;
@@ -155,4 +154,4 @@ export async function decryptFinancialCache(ownerId, cacheName, envelope) {
 }
 
 /** Non-extractable WebCrypto key used by finance vault bootstrap. */
-export async function initialiseFinanceCacheKey() { return getKey(); }
+export async function initialiseFinanceCacheKey(beforeNativeCreate) { return getKey(beforeNativeCreate); }

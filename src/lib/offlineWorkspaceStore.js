@@ -1,4 +1,4 @@
-import { loadFinanceJson, saveFinanceJson } from './financeVault';
+import { loadFinanceJson, removeFinanceJson, saveFinanceJson } from './financeVault';
 /**
  * Atomic, account-scoped offline workspace for a verified signed-in user.
  * Each snapshot contains a last-confirmed common ancestor + working rows.
@@ -83,7 +83,7 @@ export function restoreOfflineRows(ownerId, group, rows){
 }
 export function clearOfflineWorkspace(ownerId){
  const k=key(ownerId);if(!k)return false;
- try {storage()?.removeItem(k);return !storage()?.getItem(k);}catch{return false;}
+ try {return removeFinanceJson(k);}catch{return false;}
 }
 
 /** A network outage creates a manual-approval boundary, but never clears data. */

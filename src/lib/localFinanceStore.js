@@ -1,4 +1,4 @@
-import { loadFinanceJson, saveFinanceJson } from './financeVault';
+import { loadFinanceJson, removeFinanceJson, saveFinanceJson } from './financeVault';
 const TRANSACTIONS_KEY = 'movo.local.transactions.v1';
 const ACCOUNTS_KEY = 'movo.local.accounts.v1';
 const SAMPLES_KEY = 'movo.samples.enabled.v1'; // legacy flag, removed on Clear All
@@ -37,8 +37,9 @@ export function clearLocalFinanceData() {
   const store = storage();
   if (!store) return false;
   let cleared = true;
-  [TRANSACTIONS_KEY, ACCOUNTS_KEY, SAMPLES_KEY].forEach(key => {
-    try { store.removeItem(key); } catch { cleared = false; }
+  [TRANSACTIONS_KEY, ACCOUNTS_KEY].forEach(key => {
+    try { if (!removeFinanceJson(key)) cleared = false; } catch { cleared = false; }
   });
+  try { store.removeItem(SAMPLES_KEY); } catch { cleared = false; }
   return cleared;
 }

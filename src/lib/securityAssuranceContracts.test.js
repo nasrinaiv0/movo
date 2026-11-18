@@ -37,13 +37,13 @@ test('finance vault migrates data before the customer app begins rendering', () 
   const ready = entry.indexOf('await initialiseFinanceVault()');
   const local = entry.indexOf('await migrateFinanceLocalStorage()');
   const journal = entry.indexOf('await migrateHybridFinanceEncryption()');
-  const qr = entry.indexOf('await migrateLocalAccountQrEncryption()');
+  const qr = entry.indexOf('migrateLocalAccountQrEncryption().catch(');
   const render = entry.indexOf('    render();\n    if (!ownerRoute)');
   expect(ready).toBeGreaterThan(0);
   expect(local).toBeGreaterThan(ready);
   expect(journal).toBeGreaterThan(local);
-  expect(qr).toBeGreaterThan(journal);
-  expect(render).toBeGreaterThan(qr);
+  expect(render).toBeGreaterThan(journal);
+  expect(qr).toBeGreaterThan(render);
 });
 
 test('native secure storage and mobile backup guards remain in place', () => {
@@ -68,6 +68,6 @@ test('QR, local finance and outbox cannot silently downgrade to plaintext', () =
   expect(qr).toContain('account_qr_envelope_corrupt');
   expect(vault).toContain('financial_encryption_envelope_corrupt');
   expect(vault).toContain('saveFinanceJson');
-  expect(journal).toContain("db.transaction(storeNames, 'readwrite')");
-  expect(journal).toContain('transaction.abort()');
+  expect(journal).toContain('opening.onupgradeneeded');
+  expect(journal).toContain('tx.abort()');
 });

@@ -4,6 +4,8 @@
 <dict>
   <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -56,7 +58,7 @@
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>MOVO uses the camera to scan receipts you choose to record. The text is read on your device.</string>
+	<string>MOVO uses the camera to capture receipts you choose to scan.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MOVO uses the microphone only while you talk to NasrinAI or dictate a record.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -74,8 +76,6 @@
 			</array>
 		</dict>
 	</array>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

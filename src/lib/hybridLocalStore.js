@@ -1,6 +1,9 @@
 import { sameSyncedFinanceFields } from './offlineReconciliation';
 import { secureHybridEntry, revealHybridEntry } from './financeVault';
+import { openHybridFinanceStore } from './hybridFinanceEncryption';
 import { eligibleSyncOperations, makeSyncOperation, pendingOfflineSyncCount, SyncOrigin, SyncStatus } from './hybridSyncPolicy';
+
+export { openHybridFinanceStore };
 
 /**
  * IndexedDB is the durable local ledger/outbox for the staged hybrid-sync engine.
@@ -8,8 +11,6 @@ import { eligibleSyncOperations, makeSyncOperation, pendingOfflineSyncCount, Syn
  * Existing localStorage workspaces remain authoritative until the migration is
  * separately proven; they are never silently erased by this module.
  */
-const DB_NAME = 'movo.hybrid.finance.v1';
-const DB_VERSION = 1;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const GROUPS = new Set(['financial_accounts', 'transactions']);
 const DEFAULT_LEASE_MS = 60_000;
@@ -50,30 +51,22 @@ function completed(transaction) {
     transaction.onerror = () => { /* onabort owns the rejection */ };
   });
 }
-export function openHybridFinanceStore() {
-  if (typeof indexedDB === 'undefined') return Promise.reject(new Error('Secure local database unavailable'));
-  return new Promise((resolve, reject) => {
-    const opening = indexedDB.open(DB_NAME, DB_VERSION);
-    opening.onupgradeneeded = () => {
-      const db = opening.result;
-      if (!db.objectStoreNames.contains('records')) {
-        const records = db.createObjectStore('records', { keyPath: ['ownerId', 'group', 'recordId'] });
-        records.createIndex('owner_group', ['ownerId', 'group']);
-      }
-      if (!db.objectStoreNames.contains('operations')) {
-        const operations = db.createObjectStore('operations', { keyPath: 'id' });
-        operations.createIndex('owner', 'ownerId');
-      }
-      if (!db.objectStoreNames.contains('metadata')) db.createObjectStore('metadata', { keyPath: 'ownerId' });
-    };
-    opening.onsuccess = () => {
-      const db = opening.result;
-      db.onversionchange = () => db.close();
-      resolve(db);
-    };
-    opening.onerror = () => reject(opening.error || new Error('Unable to open local finance database'));
-    opening.onblocked = () => reject(new Error('A prior local finance database connection must close before upgrading'));
-  });
+async function writeHybridFinance(storeNames, mutate) {
+  const db = await openHybridFinanceStore();
+  let tx, done;
+  try {
+    tx = db.transaction(storeNames, 'readwrite');
+    done = completed(tx);
+    done.catch(() => {});
+    const result = await mutate(tx);
+    await done;
+    return result;
+  } catch (error) {
+    // JS failures (including encryption errors) don't abort IndexedDB on their own.
+    try { tx?.abort(); } catch { /* already complete or aborted */ }
+    if (done) await done.catch(() => {});
+    throw error;
+  } finally { db.close(); }
 }
 const key = (ownerId, group, recordId) => [ownerId, group, recordId];
 
@@ -189,10 +182,7 @@ export async function claimHybridSyncBatch({
   if (!Number.isSafeInteger(now) || now < 0 ||
       !Number.isSafeInteger(leaseMs) || leaseMs < 1000 || leaseMs > MAX_LEASE_MS ||
       !Number.isSafeInteger(now + leaseMs)) throw new Error('Invalid sync lease');
-  const db = await openHybridFinanceStore();
-  try {
-    const tx = db.transaction('operations', 'readwrite');
-    const done = completed(tx);
+  return writeHybridFinance('operations', async tx => {
     const store = tx.objectStore('operations');
     const owned = await request(store.index('owner').getAll(IDBKeyRange.only(ownerId)));
     // Approval is durable for the complete explicit selection, even when an
@@ -210,7 +200,6 @@ export async function claimHybridSyncBatch({
     // batch while an earlier worker still owns a live lease for this owner.
     if (owned.some(op => op.status === SyncStatus.IN_FLIGHT &&
       Number.isSafeInteger(op.leaseExpiresAt) && op.leaseExpiresAt > now)) {
-      await done;
       return [];
     }
     const ordered = owned.sort((a, b) => {
@@ -251,9 +240,8 @@ export async function claimHybridSyncBatch({
       claimed.push(next);
       if (claimed.length >= limit) break;
     }
-    await done;
     return claimed;
-  } finally { db.close(); }
+  });
 }
 
 /**
@@ -262,10 +250,7 @@ export async function claimHybridSyncBatch({
  */
 export async function finalizeHybridSyncOperation({ ownerId, operationId, confirmedRevision, claimGeneration }) {
   validOwner(ownerId);
-  const db = await openHybridFinanceStore();
-  try {
-    const tx = db.transaction('operations', 'readwrite');
-    const done = completed(tx);
+  return writeHybridFinance('operations', async tx => {
     const store = tx.objectStore('operations');
     const op = await request(store.get(operationId));
     if (!op || op.ownerId !== ownerId || op.status !== SyncStatus.IN_FLIGHT ||
@@ -273,25 +258,20 @@ export async function finalizeHybridSyncOperation({ ownerId, operationId, confir
         !Number.isSafeInteger(confirmedRevision) || confirmedRevision < op.revision)
       throw new Error('Unverified or superseded sync operation acknowledgement');
     store.put(secureHybridEntry({ ...op, status: SyncStatus.CONFIRMED, confirmedRevision, leaseExpiresAt: null }));
-    await done;
-  } finally { db.close(); }
+  });
 }
 
 /** Requeue only a claim still owned by this worker. Never demote a newer claim. */
 export async function requeueHybridSyncOperation({ ownerId, operationId, claimGeneration }) {
   validOwner(ownerId);
-  const db = await openHybridFinanceStore();
-  try {
-    const tx = db.transaction('operations', 'readwrite');
-    const done = completed(tx);
+  return writeHybridFinance('operations', async tx => {
     const store = tx.objectStore('operations');
     const op = await request(store.get(operationId));
     if (!op || op.ownerId !== ownerId || op.status !== SyncStatus.IN_FLIGHT ||
         !Number.isSafeInteger(claimGeneration) || op.claimGeneration !== claimGeneration)
       throw new Error('Sync claim is no longer owned by this worker');
     store.put(secureHybridEntry({ ...op, status: SyncStatus.PENDING, leaseExpiresAt: null }));
-    await done;
-  } finally { db.close(); }
+  });
 }
 export async function countHeldOfflineOperations(ownerId) {
   return pendingOfflineSyncCount(await listOwnerSyncOperations(ownerId), ownerId);
@@ -300,10 +280,7 @@ export async function countHeldOfflineOperations(ownerId) {
 /** Delete one verified identity's local finance records and operations on account deletion. */
 export async function clearHybridOwner(ownerId) {
   validOwner(ownerId);
-  const db = await openHybridFinanceStore();
-  try {
-    const tx = db.transaction(['records', 'operations', 'metadata'], 'readwrite');
-    const done = completed(tx);
+  return writeHybridFinance(['records', 'operations', 'metadata'], async tx => {
     const recordStore = tx.objectStore('records');
     const opStore = tx.objectStore('operations');
     for (const group of GROUPS) {
@@ -313,9 +290,8 @@ export async function clearHybridOwner(ownerId) {
     const opKeys = await request(opStore.index('owner').getAllKeys(IDBKeyRange.only(ownerId)));
     for (const operationKey of opKeys) opStore.delete(operationKey);
     tx.objectStore('metadata').delete(ownerId);
-    await done;
     return true;
-  } finally { db.close(); }
+  });
 }
 
 /** A direct foreground write uses the same durable intent and verified server ACK. */
@@ -400,10 +376,8 @@ export async function readHybridMigrationBackup(ownerId) {
 export async function acknowledgeReconciledWorkspace(ownerId, confirmed, expectedOperationIds) {
   validOwner(ownerId);
   const allowed=new Set(expectedOperationIds);
-  const db=await openHybridFinanceStore();
-  try {
-    const tx=db.transaction('operations','readwrite');
-    const done=completed(tx), store=tx.objectStore('operations');
+  return writeHybridFinance('operations', async tx => {
+    const store=tx.objectStore('operations');
     const ops=await request(store.index('owner').getAll(IDBKeyRange.only(ownerId)));
     const remoteMaps=new Map([...GROUPS].map(group=>[group,new Map((confirmed[group]||[]).map(row=>[row.id,row]))]));
     const grouped=new Map();
@@ -425,17 +399,14 @@ export async function acknowledgeReconciledWorkspace(ownerId, confirmed, expecte
       for(const op of rows)if(allowed.has(op.id)&&op.status!==SyncStatus.CONFIRMED)
         store.put(secureHybridEntry({...op,status:SyncStatus.CONFIRMED,reconciledAt:new Date().toISOString()}));
     }
-    await done;
-  } finally {db.close();}
+  });
 }
 
 /** Confirmed server rejection is not a retryable local save. Keep audit, restore prior projection. */
 export async function rejectDirectHybridWrite(ownerId, operationId, previousRecord) {
   validOwner(ownerId);
-  const db=await openHybridFinanceStore();
-  try {
-    const tx=db.transaction(['operations','records'],'readwrite');
-    const done=completed(tx), store=tx.objectStore('operations');
+  return writeHybridFinance(['operations', 'records'], async tx => {
+    const store=tx.objectStore('operations');
     const op=await request(store.get(operationId));
     if(op?.ownerId===ownerId&&op.status===SyncStatus.PENDING){
       store.put(secureHybridEntry({...op,status:SyncStatus.FAILED}));
@@ -445,8 +416,7 @@ export async function rejectDirectHybridWrite(ownerId, operationId, previousReco
         else tx.objectStore('records').delete(key(ownerId,op.group,op.recordId));
       }
     }
-    await done;
-  }finally{db.close();}
+  });
 }
 
 /** Multi-row imports and related local edits either persist entirely or not at all. */
@@ -478,12 +448,12 @@ export async function commitLocalFinanceBatch(ownerId, changes, origin='offline'
 }
 
 export async function approveHybridOperations(ownerId, operationIds) {
-  validOwner(ownerId);const ids=new Set(operationIds),db=await openHybridFinanceStore();
-  try{
-    const tx=db.transaction('operations','readwrite'),done=completed(tx),store=tx.objectStore('operations');
+  validOwner(ownerId);
+  const ids=new Set(operationIds);
+  return writeHybridFinance('operations', async tx => {
+    const store=tx.objectStore('operations');
     const ops=await request(store.index('owner').getAll(IDBKeyRange.only(ownerId)));
     for(const op of ops)if(ids.has(op.id)&&op.origin==='offline'&&!op.approvedAt)
       store.put(secureHybridEntry({...op,approvedAt:new Date().toISOString()}));
-    await done;
-  }finally{db.close();}
+  });
 }

@@ -44,14 +44,14 @@ function openDatabase() {
  * every row update, leaving legacy images recoverable for a later retry.
  * Never return or draw unverified plaintext from a failed migration.
  */
-export async function migrateLocalAccountQrEncryption({ failAfter = -1 } = {}) {
+export async function migrateLocalAccountQrEncryption({ id, failAfter = -1 } = {}) {
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
     let tx, cause, changed = 0;
     try { tx = db.transaction(STORE_NAME, 'readwrite'); }
     catch (error) { reject(error); return; }
     const store = tx.objectStore(STORE_NAME);
-    const request = store.openCursor();
+    const request = id === undefined ? store.openCursor() : store.openCursor(IDBKeyRange.only(id));
     request.onsuccess = () => {
       const cursor = request.result;
       if (!cursor) return;
@@ -127,7 +127,7 @@ export async function getLocalAccountQr(id) {
   if (!isSealedFinance(row.sealedData)) {
     if (row.sealedData !== undefined) throw new Error('account_qr_envelope_corrupt');
     // Older app versions may write a plaintext entry after the startup sweep.
-    await migrateLocalAccountQrEncryption();
+    await migrateLocalAccountQrEncryption({ id });
     row = await readRaw(id);
   }
   if (!row || !isSealedFinance(row.sealedData))

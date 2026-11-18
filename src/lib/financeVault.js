@@ -20,6 +20,9 @@ const VAULT_DB = 'movo.finance.vault.v1';
 const VAULT_STORE = 'keys';
 const VAULT_ID = 'hmac-sha256-v1';
 const KEY_SENTINEL = 'movo.finance.vault.initialized.v1';
+const STORAGE_PREFIX = 'movo.finance.sealed.v1:';
+const RECOVERY_PREFIX = 'movo.finance.recovery.v2:';
+const PREVIEW_RECOVERY_PREFIX = 'movo.finance.recovery.v1:';
 const MAX_PLAINTEXT = 8_000_000;
 export const SEALED_TAG = '__movo_finance_sealed_v1';
 let inMemoryKey = process.env.NODE_ENV === 'test' && globalThis.__MOVO_TEST_FINANCE_KEY__ instanceof Uint8Array
@@ -41,8 +44,13 @@ function base64(bytes) {
     str += String.fromCharCode(...bytes.subarray(i, i + 0x6000));
   return btoa(str);
 }
-function unbase64(str) {
-  if (typeof str !== 'string' || !/^(?:[\w+/]{4})*(?:[\w+/]{2}==|[\w+/]{3}=)?$/.test(str))
+function unbase64(str, maxBytes) {
+  // A repeated-group validation regex can exhaust the stack on a large workspace.
+  if (typeof str !== 'string' || str.length > Math.ceil(maxBytes / 3) * 4 ||
+    str.length % 4 !== 0 || /[^A-Za-z0-9+/=]/.test(str))
+    throw new Error('financial_encryption_invalid_base64');
+  const padding = str.indexOf('=');
+  if (padding !== -1 && (str.length - padding > 2 || !/^={1,2}$/.test(str.slice(padding))))
     throw new Error('financial_encryption_invalid_base64');
   return Uint8Array.from(atob(str), c => c.charCodeAt(0));
 }
@@ -82,38 +90,84 @@ export function sealFinance(value, scope) {
 export function unsealFinance(value, scope) {
   if (!isSealedFinance(value) || value.alg !== 'XCHACHA20-POLY1305')
     throw new Error('financial_encryption_envelope_invalid');
-  const nonce = unbase64(value.n), cipher = unbase64(value.c);
+  const nonce = unbase64(value.n, 24), cipher = unbase64(value.c, MAX_PLAINTEXT + 16);
   if (nonce.length !== 24 || cipher.length < 16 || cipher.length > MAX_PLAINTEXT + 16)
     throw new Error('financial_encryption_ciphertext_invalid');
   const bytes = xchacha20poly1305(assertKey(), nonce, verifyAad(scope)).decrypt(cipher);
   return JSON.parse(decode(bytes));
 }
 
-export function loadFinanceJson(storageKey) {
+export function sealedFinanceStorageKey(storageKey) {
   if (!isSensitiveLocalKey(storageKey)) throw new Error('financial_encryption_storage_key_invalid');
-  const raw = globalThis.localStorage.getItem(storageKey);
-  if (raw === null) return null;
-  let parsed;
-  try { parsed = JSON.parse(raw); }
-  catch { throw new Error('financial_encryption_local_data_corrupt'); }
-  // Old clients may have written an entry after startup. Migrate it atomically
-  // before returning data, never allow unencrypted writes or silent empty lists.
-  if (!isSealedFinance(parsed)) {
-    if (looksLikeEnvelope(parsed)) throw new Error('financial_encryption_envelope_corrupt');
-    saveFinanceJson(storageKey, parsed);
-    return parsed;
-  }
-  return unsealFinance(parsed, 'local:' + storageKey);
+  return STORAGE_PREFIX + storageKey;
 }
-export function saveFinanceJson(storageKey, value) {
-  if (!isSensitiveLocalKey(storageKey)) throw new Error('financial_encryption_storage_key_invalid');
-  const ciphertext = JSON.stringify(sealFinance(value, 'local:' + storageKey));
-  globalThis.localStorage.setItem(storageKey, ciphertext);
-  if (globalThis.localStorage.getItem(storageKey) !== ciphertext)
-    throw new Error('financial_encryption_write_unverified');
-  // Verify authenticity before reporting success to the synchronous caller.
-  unsealFinance(JSON.parse(ciphertext), 'local:' + storageKey);
+
+function parseLocal(raw, scope, requireSealed = false) {
+  let value;
+  try { value = JSON.parse(raw); }
+  catch { throw new Error('financial_encryption_local_data_corrupt'); }
+  if (isSealedFinance(value)) return unsealFinance(value, scope);
+  if (requireSealed || looksLikeEnvelope(value))
+    throw new Error('financial_encryption_envelope_corrupt');
+  return value;
+}
+
+function writeVerified(storage, name, ciphertext) {
+  storage.setItem(name, ciphertext);
+  if (storage.getItem(name) !== ciphertext) throw new Error('financial_encryption_write_unverified');
+}
+
+function verifiedEnvelope(value, scope) {
+  const sealed = sealFinance(value, scope);
+  unsealFinance(sealed, scope);
+  return JSON.stringify(sealed);
+}
+
+function readLocalCopies(storage, logicalKey) {
+  const destination = sealedFinanceStorageKey(logicalKey);
+  const scope = 'local:' + logicalKey;
+  const encrypted = storage.getItem(destination);
+  const legacy = storage.getItem(logicalKey);
+  const raw = encrypted ?? legacy;
+  const current = raw === null ? null : parseLocal(raw, scope, encrypted !== null);
+  if (encrypted !== null && legacy !== null && JSON.stringify(parseLocal(legacy, scope)) !== JSON.stringify(current))
+    throw new Error('financial_encryption_legacy_writer_conflict');
+  return { destination, scope, current, encrypted, legacy };
+}
+
+function settleLegacyStorage(storage, logicalKey) {
+  const { destination, scope, current, encrypted, legacy } = readLocalCopies(storage, logicalKey);
+  if (legacy !== null) {
+    if (encrypted === null) writeVerified(storage, destination, verifiedEnvelope(current, scope));
+    // Older open tabs cannot address the encrypted namespace. If they change
+    // the legacy value during the upgrade, retain it and stop instead of guessing.
+    if (storage.getItem(logicalKey) !== legacy)
+      throw new Error('financial_encryption_legacy_writer_conflict');
+    storage.removeItem(logicalKey);
+  }
+  return current;
+}
+
+export function loadFinanceJson(logicalKey) {
+  return settleLegacyStorage(globalThis.localStorage, logicalKey);
+}
+
+export function saveFinanceJson(logicalKey, value) {
+  const storage = globalThis.localStorage;
+  const destination = sealedFinanceStorageKey(logicalKey);
+  // Preserve any prior ciphertext if an older client wrote to the legacy namespace.
+  if (storage.getItem(logicalKey) !== null || storage.getItem(destination) !== null)
+    settleLegacyStorage(storage, logicalKey);
+  writeVerified(storage, destination, verifiedEnvelope(value, 'local:' + logicalKey));
   return true;
+}
+
+export function removeFinanceJson(logicalKey) {
+  const storage = globalThis.localStorage;
+  storage.removeItem(sealedFinanceStorageKey(logicalKey));
+  storage.removeItem(logicalKey);
+  return storage.getItem(sealedFinanceStorageKey(logicalKey)) === null &&
+    storage.getItem(logicalKey) === null;
 }
 
 /** Protect sensitive fields, not indexed owner/sequence/lease metadata. */
@@ -148,65 +202,82 @@ export function revealHybridEntry(entry) {
   if (!entry || typeof entry !== 'object' || entry instanceof Date) return entry;
   const next = { ...entry };
   for (const field of FIELDS) {
-    if (looksLikeEnvelope(entry[field]) && !isSealedFinance(entry[field]))
-      throw new Error('financial_encryption_envelope_corrupt');
-    if (isSealedFinance(entry[field])) next[field] = unsealFinance(entry[field], fieldScope(entry, field));
+    if (entry[field] === null || entry[field] === undefined) continue;
+    if (!isSealedFinance(entry[field])) throw new Error('financial_encryption_envelope_corrupt');
+    next[field] = unsealFinance(entry[field], fieldScope(entry, field));
   }
   return next;
 }
 
-async function keyExistsInData() {
-  let found = false;
-  try {
-    const storage = globalThis.localStorage;
-    for (let i = 0; i < storage.length; i++) {
-      const name = storage.key(i);
-      if (!isSensitiveLocalKey(name)) continue;
-      const v = storage.getItem(name);
-      if (v && v.includes(SEALED_TAG)) return true;
-    }
-    if (storage.getItem(KEY_SENTINEL)) return true;
-  } catch { throw new Error('financial_encryption_storage_unavailable'); }
-  if (typeof indexedDB === 'undefined') return false;
-  // Detect encrypted orphaned IDB data before attempting fresh key creation.
-  const db = await new Promise((resolve, reject) => {
-    const open = indexedDB.open('movo.hybrid.finance.v1', 1);
-    open.onsuccess = () => resolve(open.result);
-    open.onerror = () => reject(open.error);
+function ciphertextKey(name) {
+  return typeof name === 'string' && (isSensitiveLocalKey(name) ||
+    name.startsWith(STORAGE_PREFIX) || name.startsWith(RECOVERY_PREFIX) ||
+    name.startsWith(PREVIEW_RECOVERY_PREFIX));
+}
+
+function encryptedStorageValue(name, raw) {
+  return raw !== null && raw !== undefined && (
+    name.startsWith(STORAGE_PREFIX) || name.startsWith(RECOVERY_PREFIX) ||
+    name.startsWith(PREVIEW_RECOVERY_PREFIX) || raw.includes(SEALED_TAG));
+}
+
+function existingDatabaseContainsCiphertext(name, stores) {
+  if (typeof indexedDB === 'undefined') return Promise.resolve(false);
+  return new Promise((resolve, reject) => {
+    let complete = false;
+    const open = indexedDB.open(name);
+    const finish = (callback, result) => {
+      if (complete) return;
+      complete = true; callback(result);
+    };
     open.onupgradeneeded = () => {
-      // A first-time app may not have this IDB database yet. Build the exact
-      // schema expected by hybridLocalStore so we never leave an empty v1 DB.
-      const d = open.result;
-      if (!d.objectStoreNames.contains('records')) {
-        const records = d.createObjectStore('records', { keyPath: ['ownerId', 'group', 'recordId'] });
-        records.createIndex('owner_group', ['ownerId', 'group']);
-      }
-      if (!d.objectStoreNames.contains('operations')) {
-        const operations = d.createObjectStore('operations', { keyPath: 'id' });
-        operations.createIndex('owner', 'ownerId');
-      }
-      if (!d.objectStoreNames.contains('metadata'))
-        d.createObjectStore('metadata', { keyPath: 'ownerId' });
+      // A missing database is not encrypted data. Keep this probe read-only.
+      open.transaction.abort();
+      finish(resolve, false);
+    };
+    open.onblocked = () => finish(reject, new Error('financial_encryption_database_blocked'));
+    open.onerror = () => finish(reject, open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      if (complete) { db.close(); return; }
+      const names = stores.filter(store => db.objectStoreNames.contains(store));
+      if (!names.length) { db.close(); finish(resolve, false); return; }
+      const tx = db.transaction(names, 'readonly');
+      let found = false;
+      const scan = entry => {
+        const value = entry.target.result;
+        if (!value || found) return;
+        found = Object.keys(value.value || {}).some(field => (
+          (FIELDS.includes(field) || field === 'sealedData') && looksLikeEnvelope(value.value[field])
+        ));
+        if (!found) value.continue();
+      };
+      for (const store of names) tx.objectStore(store).openCursor().onsuccess = scan;
+      tx.oncomplete = () => { db.close(); finish(resolve, found); };
+      tx.onabort = () => { db.close(); finish(reject, tx.error || new Error('financial_encryption_probe_failed')); };
     };
   });
-  try {
-    for (const name of ['records', 'operations', 'metadata']) {
-      if (!db.objectStoreNames.contains(name)) continue;
-      const foundStore = await new Promise((resolve, reject) => {
-        const tx = db.transaction(name, 'readonly'), cursor = tx.objectStore(name).openCursor();
-        cursor.onsuccess = () => {
-          const row = cursor.result;
-          if (!row) return resolve(false);
-          if (FIELDS.some(field => isSealedFinance(row.value?.[field]))) resolve(true);
-          else row.continue();
-        };
-        cursor.onerror = () => reject(cursor.error);
-      });
-      if (foundStore) return true;
-    }
-    return found;
-  } finally { db.close(); }
 }
+
+async function keyExistsInData(includeNative = false) {
+  const storage = globalThis.localStorage;
+  if (storage.getItem(KEY_SENTINEL)) return true;
+  for (let i = 0; i < storage.length; i++) {
+    const name = storage.key(i);
+    if (ciphertextKey(name) && encryptedStorageValue(name, storage.getItem(name))) return true;
+  }
+  if (includeNative) {
+    const { keys } = await Preferences.keys();
+    for (const name of keys) {
+      if (!ciphertextKey(name) && name !== KEY_SENTINEL) continue;
+      const { value } = await Preferences.get({ key: name });
+      if (name === KEY_SENTINEL ? value !== null : encryptedStorageValue(name, value)) return true;
+    }
+  }
+  return await existingDatabaseContainsCiphertext('movo.hybrid.finance.v1', ['records', 'operations', 'metadata']) ||
+    await existingDatabaseContainsCiphertext('movo-account-media-v1', ['account-qr']);
+}
+
 async function getWebHmacKey(engine) {
   if (typeof indexedDB === 'undefined') throw new Error('financial_encryption_browser_vault_unavailable');
   const db = await new Promise((resolve, reject) => {
@@ -245,12 +316,13 @@ async function deriveFinanceKey(engine) {
   }
   // Reuse the existing native vault entry ONLY as key material for HKDF.
   // Domain-separated data keys prevent cross-protocol key reuse with AES-GCM.
-  await initialiseFinanceCacheKey();
+  await initialiseFinanceCacheKey(() => keyExistsInData(true));
   const { value } = await MovoNative.secureGet({ key: CACHE_VAULT_KEY });
-  const seed = unbase64(value);
+  const seed = unbase64(value, 32);
   if (seed.length !== 32) throw new Error('financial_encryption_native_key_invalid');
-  const material = await engine.subtle.importKey('raw', seed, 'HKDF', false, ['deriveBits']);
-  seed.fill(0);
+  let material;
+  try { material = await engine.subtle.importKey('raw', seed, 'HKDF', false, ['deriveBits']); }
+  finally { seed.fill(0); }
   return new Uint8Array(await engine.subtle.deriveBits({
     name: 'HKDF', hash: 'SHA-256', salt: encode('movo-finance-native-v1'),
     info: encode('synchronous-guest-owner-idb-v1')
@@ -269,64 +341,72 @@ export async function initialiseFinanceVault() {
   return initPromise;
 }
 
+async function preserveNativeCopy(storage, logicalKey, value) {
+  const serialized = JSON.stringify(value);
+  const subtle = cryptoEngine().subtle;
+  const root = await subtle.importKey('raw', assertKey(), 'HKDF', false, ['deriveKey']);
+  const fingerprintKey = await subtle.deriveKey({
+    name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: encode('movo-finance-recovery-index-v2')
+  }, root, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const digest = new Uint8Array(await subtle.sign('HMAC', fingerprintKey, encode(logicalKey + '|' + serialized)));
+  const suffix = Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('');
+  const name = RECOVERY_PREFIX + logicalKey + ':' + suffix;
+  const scope = 'recovery:' + logicalKey + ':' + suffix;
+  const previous = storage.getItem(name);
+  const { value: nativePrevious } = await Preferences.get({ key: name });
+  const ciphertext = previous ?? nativePrevious ?? verifiedEnvelope(value, scope);
+  if (JSON.stringify(parseLocal(ciphertext, scope, true)) !== serialized)
+    throw new Error('financial_encryption_recovery_conflict');
+  if (previous === null) writeVerified(storage, name, ciphertext);
+  await Preferences.set({ key: name, value: ciphertext });
+  const { value: saved } = await Preferences.get({ key: name });
+  if (saved !== ciphertext) throw new Error('financial_encryption_recovery_write_failed');
+}
+
 export async function migrateFinanceLocalStorage() {
   assertKey();
-  const store = globalThis.localStorage;
+  const storage = globalThis.localStorage;
+  const native = isNativeApp();
   const names = new Set();
-  for (let i = 0; i < store.length; i++) {
-    const name = store.key(i);
-    if (isSensitiveLocalKey(name)) names.add(name);
+  const add = name => {
+    const logicalKey = name?.startsWith(STORAGE_PREFIX) ? name.slice(STORAGE_PREFIX.length) : name;
+    if (isSensitiveLocalKey(logicalKey)) names.add(logicalKey);
+  };
+  for (let i = 0; i < storage.length; i++) add(storage.key(i));
+  if (native) {
+    const { keys } = await Preferences.keys();
+    keys.forEach(add);
   }
-  if (isNativeApp()) {
-    const { keys = [] } = await Preferences.keys();
-    keys.filter(isSensitiveLocalKey).forEach(name => names.add(name));
-  }
-  for (const name of names) {
-    const oldNative = isNativeApp() ? (await Preferences.get({ key: name }))?.value : null;
-    let raw = store.getItem(name) ?? oldNative;
-    if (!raw) continue;
-    let parsed;
-    try { parsed = JSON.parse(raw); }
-    catch { throw new Error('financial_encryption_legacy_corrupt'); }
-    if (looksLikeEnvelope(parsed) && !isSealedFinance(parsed))
-      throw new Error('financial_encryption_envelope_corrupt');
-    let ciphertext;
-    if (isSealedFinance(parsed)) {
-      unsealFinance(parsed, 'local:' + name);
-      ciphertext = raw;
-    } else {
-      ciphertext = JSON.stringify(sealFinance(parsed, 'local:' + name));
+  for (const logicalKey of names) {
+    if (!native) { settleLegacyStorage(storage, logicalKey); continue; }
+    const destination = sealedFinanceStorageKey(logicalKey);
+    const scope = 'local:' + logicalKey;
+    const { value: oldLegacy } = await Preferences.get({ key: logicalKey });
+    const { value: oldSealed } = await Preferences.get({ key: destination });
+    const { current, encrypted, legacy } = readLocalCopies(storage, logicalKey);
+    const nativeCurrent = oldSealed == null ? null : parseLocal(oldSealed, scope, true);
+    const nativeLegacy = oldLegacy == null ? null : parseLocal(oldLegacy, scope);
+    const value = current ?? nativeCurrent ?? nativeLegacy;
+    if (value === null) continue;
+    for (const old of [nativeCurrent, nativeLegacy]) {
+      if (old !== null && JSON.stringify(old) !== JSON.stringify(value)) await preserveNativeCopy(storage, logicalKey, old);
     }
-    // If local and native copies diverged, preserve native contents as an
-    // encrypted recovery capsule rather than silently discarding an old edit.
-    if (oldNative !== null && oldNative !== undefined && oldNative !== raw) {
-      let old;
-      try { old = JSON.parse(oldNative); }
-      catch { throw new Error('financial_encryption_native_legacy_corrupt'); }
-      if (looksLikeEnvelope(old) && !isSealedFinance(old))
-        throw new Error('financial_encryption_native_envelope_corrupt');
-      const recover = isSealedFinance(old) ? oldNative : JSON.stringify(sealFinance(old, 'local:' + name));
-      const recoveryKey = 'movo.finance.recovery.v1:' + name;
-      // A recovery capsule is never interpreted as the current record.
-      // Do not overwrite an existing recovery copy with different contents.
-      const existing = store.getItem(recoveryKey);
-      if (existing && existing !== recover) throw new Error('financial_encryption_recovery_conflict');
-      if (!existing) store.setItem(recoveryKey, recover);
-      if (store.getItem(recoveryKey) !== recover) throw new Error('financial_encryption_recovery_write_failed');
+    // Keep native originals until the destination is authenticated and read back.
+    if (storage.getItem(destination) !== encrypted || storage.getItem(logicalKey) !== legacy)
+      throw new Error('financial_encryption_legacy_writer_conflict');
+    const ciphertext = encrypted ?? verifiedEnvelope(value, scope);
+    if (encrypted === null) writeVerified(storage, destination, ciphertext);
+    await Preferences.set({ key: destination, value: ciphertext });
+    const { value: saved } = await Preferences.get({ key: destination });
+    if (saved !== ciphertext) throw new Error('financial_encryption_native_write_unverified');
+    if (legacy !== null) {
+      if (storage.getItem(logicalKey) !== legacy) throw new Error('financial_encryption_legacy_writer_conflict');
+      storage.removeItem(logicalKey);
     }
-    if (store.getItem(name) !== ciphertext) {
-      store.setItem(name, ciphertext);
-      if (store.getItem(name) !== ciphertext) throw new Error('financial_encryption_legacy_write_failed');
-    }
-    // Authenticate and round-trip before any old native Preferences are
-    // replaced. A failed native write retains the old copy and blocks boot.
-    const decoded = unsealFinance(JSON.parse(ciphertext), 'local:' + name);
-    if (!isSealedFinance(parsed) && JSON.stringify(decoded) !== JSON.stringify(parsed))
-      throw new Error('financial_encryption_legacy_verify_failed');
-    if (isNativeApp()) {
-      await Preferences.set({ key: name, value: ciphertext });
-      const { value: verified } = await Preferences.get({ key: name });
-      if (verified !== ciphertext) throw new Error('financial_encryption_native_write_unverified');
+    if (oldLegacy != null) {
+      await Preferences.remove({ key: logicalKey });
+      const { value: remaining } = await Preferences.get({ key: logicalKey });
+      if (remaining != null) throw new Error('financial_encryption_native_scrub_failed');
     }
   }
 }

@@ -1,4 +1,5 @@
 import { useProfilePhoto } from './lib/useProfilePhoto';
+import { Preferences } from '@capacitor/preferences';
 import FriendsSheet, { FriendsContent } from './components/FriendsSheet';
 import FriendFinanceSummary from './components/FriendFinanceSummary';
 import NavTierDefs from './components/NavTierDefs';
@@ -1957,18 +1958,65 @@ function App() {
   /* Delete the MOVO account itself (App Store 5.1.1(v)): server deletes the account and its cloud data, then this
      device is cleared and signed out. */
   const deleteAccount = async () => {
-    if (clearText.trim().toUpperCase() !== 'DELETE') return;
+    if (busy || sheet?.accountDeleted || clearText.trim().toUpperCase() !== 'DELETE') return;
+    const ownerId = sheet?.ownerId;
+    if (!ownerId || session?.user?.id !== ownerId) {
+      setError(tr('The signed-in account changed. Close this window and open Delete Account again.'));
+      return;
+    }
     setBusy(true); setError('');
     try {
-      await deleteMyAccount();
-      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
-      await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
-      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
-      setSheet(null); setClearText('');
-      notify(tr('Your MOVO account was deleted.'));
-      signOut().catch(() => {}).finally(() => window.location.reload());
-    } catch { setError(tr('Could not delete your account. Check your connection and try again.')); }
+      await deleteMyAccount(ownerId);
+      const stillOwnsDeviceSession = () => !cloudAuthUserRef.current || cloudAuthUserRef.current === ownerId;
+      const cleanup = [Promise.resolve().then(() => {
+        if (!clearOfflineWorkspace(ownerId)) throw new Error('workspace_cleanup_failed');
+      })];
+      if (typeof indexedDB !== 'undefined') cleanup.push(clearHybridOwner(ownerId));
+      if (stillOwnsDeviceSession()) {
+        ++cloudLoadEpochRef.current;
+        pendingLocalDataRef.current = null;
+        if (typeof indexedDB !== 'undefined') cleanup.push(clearLocalAccountQr(), clearLocalAttachments());
+        cleanup.push(Promise.resolve().then(() => {
+          for (const store of [window.localStorage, window.sessionStorage]) {
+            Object.keys(store).filter(key => key.startsWith('movo.')).forEach(key => store.removeItem(key));
+          }
+          if (!clearCustomStickers()) throw new Error('sticker_cleanup_failed');
+        }));
+        if (isNativeApp()) cleanup.push((async () => {
+          const { keys } = await Preferences.keys();
+          if (!stillOwnsDeviceSession()) throw new Error('account_changed');
+          const nativeCleanup = await Promise.allSettled([
+            ...keys.filter(key => key.startsWith('movo.')).map(key => Preferences.remove({ key })),
+            saveNativeAutomationKey(''),
+          ]);
+          if (nativeCleanup.some(result => result.status === 'rejected')) throw new Error('native_cleanup_failed');
+        })());
+      } else cleanup.push(Promise.reject(new Error('account_changed')));
+      const results = await Promise.allSettled(cleanup);
+      let signedOut = false;
+      try {
+        const activeOwner = (await getCurrentSession())?.user?.id;
+        if (!activeOwner) signedOut = true;
+        else if (activeOwner === ownerId && stillOwnsDeviceSession()) {
+          await signOut();
+          signedOut = true;
+        }
+      } catch { /* Keep the partial cleanup notice visible. */ }
+      if (signedOut && results.every(result => result.status === 'fulfilled')) {
+        setSheet(null); setClearText('');
+        window.location.reload();
+        return;
+      }
+      if (stillOwnsDeviceSession()) {
+        setSession(null); setCloudMode(false); setOfflineOwnerId(null);
+        setRawTxs([]); setLocalAccounts([]); setCloudAccounts([]); setCloudBudgets([]);
+        setCloudBills([]); setCloudBillOccurrences([]); setCloudPostings([]); setCloudActivities([]);
+        setInbox([]); setPendingLog(null); setPrefs({ ...DEFAULTS }); setSceneryPhotoState('');
+      }
+      setClearText('');
+      setSheet(current => current?.name === 'deleteAccount' && current.ownerId === ownerId ? { ...current, accountDeleted: true } : current);
+      setError(tr('Some data may remain on this device. Contact support for help clearing the remaining copy.'));
+    } catch { setError(tr('Could not confirm account deletion. Try again or contact support.')); }
     finally { setBusy(false); }
   };
   /* ---------- automation links (Apple Pay / Google Pay / notifications) ---------- */
@@ -2215,18 +2263,19 @@ function App() {
   }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, entitlement, cloudMode]);
   useEffect(() => {
     const sync = prefsSync.current;
-    if (!sync.ready || !sync.user || !can('cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
+    if (!sync.ready || !userId || sync.user !== userId || !can('cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
     clearTimeout(sync.timer);
     sync.timer = setTimeout(() => {
+      if (!sync.ready || sync.user !== userId || cloudAuthUserRef.current !== userId) return;
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
       let size = 0;
       const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
       const shared = cloudSafePreferences(prefs);
       if ((shared.mascot || '').length > 120_000) delete shared.mascot;
-      savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
+      savePreferences(userId, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
     return () => clearTimeout(sync.timer);
-  }, [prefs, stickerTick, entitlement, cloudMode]);
+  }, [userId, prefs, stickerTick, entitlement, cloudMode]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
@@ -3012,14 +3061,16 @@ function App() {
 
         </div>
       </Sheet>}
-      {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} subtitle={tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
+      {sheet?.name === 'deleteAccount' && <Sheet title={sheet.accountDeleted ? tr('Your MOVO account was deleted.') : tr('Delete your account?')} subtitle={sheet.accountDeleted ? undefined : tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { if (!busy) { setSheet(null); setClearText(''); } }} label={tr('Delete Account')}>
+        {sheet.accountDeleted ? <><p className="form-error" role="alert">{error}</p><button type="button" className="secondary-button" onClick={() => setSheet(null)}>{tr('Done')}</button></> : <>
         <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
         <p className="form-hint">{tr('You can request account deletion in MOVO or at movo.nasrinai.com/account-deletion.html. Deleting your MOVO account does not automatically cancel a subscription billed by Apple or Google; cancel it in your store account to stop renewal.')}</p>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); deleteAccount(); }}>
           <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
         </form>
+        </>}
       </Sheet>}
       {sheet?.name === 'clear' && <Sheet title={tr('Clear all data?')} subtitle={cloudMode ? tr('Permanently deletes everything in your MOVO account (transactions, accounts, budgets and NasrinAI chats) and all MOVO data on this device. Your sign-in stays.') : tr('Permanently deletes all MOVO data on this device: transactions, accounts, budgets, plans, scans, mascot, card styles and preferences.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear all data')}>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); clearAll(); }}>
