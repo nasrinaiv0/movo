@@ -56,6 +56,10 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
                 case "bridgeVaultPersistsAcrossActivityRecreation":
                     bridgeVaultPersistsAcrossActivityRecreation();
                     break;
+                case "seedOfflineWallet":
+                    awaitJs("initial Home before writing the synthetic wallet", "!!document.querySelector('main[data-view=\"Home\"]')", 45000);
+                    seedWallet();
+                    break;
                 case "offlineWalletLogoStyleAndSyntheticOAuthCallback":
                     offlineWalletLogoStyleAndSyntheticOAuthCallback();
                     break;
@@ -148,19 +152,16 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
 
     private void offlineWalletLogoStyleAndSyntheticOAuthCallback() throws Exception {
         assertBridgeContracts();
-        seedWallet();
-        runOnMainSync(() -> {
-            WebView view = requireWebView(activity);
-            // Native local-server interception still serves packaged assets. External
-            // network loads are blocked, rather than merely faking navigator.onLine.
-            view.getSettings().setBlockNetworkLoads(true);
-            view.setNetworkAvailable(false);
-            view.reload();
-        });
-        awaitJs("offline bundled application reload", "!!document.querySelector('main[data-view=\"Home\"]')", 45000);
-        clickJs(".bottom-nav button[aria-label='Wallet']");
+        // ADB already isolated the entire emulator before this fresh app process booted.
+        // Seeding runs in a separate process so we cannot click a document that is being replaced.
+        runOnMainSync(() -> requireWebView(activity).setNetworkAvailable(false));
+        awaitJs("offline Home rendered from the saved wallet", "navigator.onLine === false && " +
+            "!!document.querySelector('main[data-view=\"Home\"]') && " +
+            "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT), 45000);
+        clickJs("Wallet button", "document.querySelector('.bottom-nav button[aria-label=Wallet]')");
         awaitJs("offline Wallet route", "!!document.querySelector('main[data-view=\"Wallet\"]')", 15000);
-        eval("Array.from(document.querySelectorAll('.wallet-chip-bar button')).find(b=>b.textContent.trim()==='Cards')?.click()");
+        clickJs("Cards filter", "Array.from(document.querySelectorAll('.wallet-chip-bar button[data-chip]'))" +
+            ".find(button=>button.textContent.trim()==='Cards')");
         awaitJs("bundled logo and saved card finish", "(() => {const c=document.querySelector('.credit-card');" +
             "const img=c?.querySelector('.ccx-logo img');return !!c && c.textContent.includes('BPI') && c.textContent.includes('7788') && " +
             "c.classList.contains('ink-dark') && getComputedStyle(c).getPropertyValue('--card-tint').trim()==='#7f8792' && " +
@@ -245,8 +246,10 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         return result.getJSONObject("value");
     }
 
-    private void clickJs(String selector) throws Exception {
-        assertEquals("Required navigation control missing: " + selector, "true", eval("(() => {const b=document.querySelector(" + quote(selector) + ");if(!b)return false;b.click();return true;})()"));
+    private void clickJs(String label, String button) throws Exception {
+        awaitJs("enabled " + label, "!!(" + button + ")?.matches(':enabled')", 15000);
+        assertEquals("Could not click " + label, "true", eval("(() => {" +
+            "const target=" + button + ";if(!target||target.disabled)return false;target.click();return true;})()"));
     }
 
     private void awaitJs(String label, String expression, long timeoutMs) throws Exception {
@@ -255,7 +258,11 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             if ("true".equals(eval("(() => {try{return !!(" + expression + ");}catch(_){return false;}})()"))) return;
             SystemClock.sleep(100);
         }
-        throw new AssertionError("Timed out waiting for " + label);
+        String state = eval("JSON.stringify({view:document.querySelector('main')?.dataset.view, " +
+            "online:navigator.onLine, visibility:document.visibilityState, " +
+            "walletDisabled:document.querySelector('button[aria-label=Wallet]')?.disabled, " +
+            "splash:!!document.getElementById('movo-splash')})");
+        throw new AssertionError("Timed out waiting for " + label + "; page state: " + state);
     }
 
     private String eval(String script) throws Exception {

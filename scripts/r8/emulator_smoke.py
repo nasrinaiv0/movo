@@ -127,7 +127,8 @@ def main():
             (folder / "cold-launch.txt").write_text(cold)
             if "Status: ok" not in cold:
                 raise RuntimeError("Cold launch failed")
-            for method in ("bridgeVaultPersistsAcrossActivityRecreation", "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
+            for method in ("bridgeVaultPersistsAcrossActivityRecreation", "seedOfflineWallet",
+                           "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
                 adb("shell", "am", "force-stop", PACKAGE)
                 instrument(folder, method, legal)
             adb("shell", "am", "force-stop", PACKAGE)

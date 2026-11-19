@@ -1,3 +1,9 @@
+## 2026-11-20 — Verify offline Wallet after a separate process restart
+
+- Run 44590024327 at 4eee1fb3a9880da9541fde89242dde668843d67e passed cold launch, the framework instrumentation test and encrypted bridge storage through Activity recreation. The Wallet test stayed on Home after a click. Its screenshot shows the fixture profile and a -₱125.50 balance on offline Home, confirming that the app read the synthetic wallet.
+- The old test could match Home before the asynchronous WebView reload replaced the document. Seed in a dedicated instrumentation invocation, then force-stop and open a fresh process behind the existing emulator-wide firewall. Require the saved account, offline browser state and enabled Wallet/Cards controls before exercising the actual Wallet and callback UI. Print a small, synthetic-only DOM state summary on assertion timeout.
+- Upload a separate small emulator evidence archive alongside the full R8 build artifacts. This change is restricted to experiment code and its workflow. Thirteen local Python checks pass; the complete paired emulator run must pass at the new head.
+
 ## 2026-11-20 — Run the release smoke checks without AndroidX test dependencies
 
 - Experiment 44586272868 on 742ae42937fdcb6d243ff198dd75a8d58147aaa4 built the two minified releases and ran the official analyzer. R8 8.13.6 output was byte-identical for the paired DEX (1,366,480 bytes) and APK/AAB sizes matched. The R8 9.4.34 pair matched at 92.58% optimization, 93.44% obfuscation and 93.25% shrinking, with 1,351,216 DEX bytes each. These are diagnostic scores from a different compiler, and the removed keep rule produced zero gain.
