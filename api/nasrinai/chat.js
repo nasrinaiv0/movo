@@ -5,6 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { classifyNasrinAIKeyFormat } = require('./key-format.cjs');
 const { parseVoiceResponse } = require('./voice-stream.cjs');
 const { askOpenRouter, openRouterConfigured } = require('./openrouter-fallback.cjs');
+const { transcribeAudio } = require('./transcription.cjs');
 
 const MAX_MESSAGE_CHARS = 1600;
 const MAX_UPSTREAM_CONTEXT_CHARS = 3800;
@@ -35,6 +36,12 @@ function allowedOrigin(req) {
   try { parsed = new URL(origin); } catch { return false; }
   const configured = String(process.env.MOVO_ALLOWED_ORIGINS || 'https://movo.nasrinai.com,https://movo-lime.vercel.app')
     .split(',').map((s) => s.trim()).filter(Boolean);
+  // Permit only this deployment's own HTTPS origin for preview acceptance.
+  // Production never trusts arbitrary previews, sibling deployments or aliases.
+  const previewHost = String(process.env.VERCEL_URL || '').toLowerCase();
+  if (process.env.VERCEL_ENV === 'preview' && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.vercel\.app$/.test(previewHost)) {
+    configured.push('https://' + previewHost);
+  }
   if (process.env.NODE_ENV !== 'production') configured.push('http://localhost:3000');
   return parsed.protocol === 'https:' && configured.includes(parsed.origin)
     || process.env.NODE_ENV !== 'production' && parsed.origin === 'http://localhost:3000';
@@ -264,32 +271,20 @@ module.exports = async function handler(req, res) {
     const userId = authData.user.id;
     if (req.method === 'POST' && !(await hasPlan(db, userId))) return json(res, 403, { error: 'pro_required' });
 
-    // Model-backed STT for MOVO hands-free chat. Audio is transient and is
-    // forwarded only to the configured NasrinAI service; never persisted/logged.
+    // Audio is transient. Use the existing server-only OpenRouter fallback when
+    // NasrinAI cannot transcribe, with no finance records or user IDs attached.
     if (req.method === 'POST' && req.body?.action === 'transcribe') {
-      if (!nasrinKey) return json(res, 503, { error: 'transcription_unavailable' });
       const encoded = typeof req.body?.audioBase64 === 'string' ? req.body.audioBase64 : '';
-      const mime = typeof req.body?.mime === 'string' && /^audio\/(webm|mp4|ogg|wav|mpeg)(;|$)/i.test(req.body.mime) ? req.body.mime.split(';')[0] : '';
+      const mime = typeof req.body?.mime === 'string' && /^audio\/(webm|mp4|ogg|wav|mpeg)(;|$)/i.test(req.body.mime) ? req.body.mime.split(';')[0].toLowerCase() : '';
       if (!mime || !encoded || encoded.length > 3_200_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
         return json(res, 400, { error: 'invalid_audio' });
       }
       const audio = Buffer.from(encoded, 'base64');
       if (!audio.length || audio.length > 2_400_000) return json(res, 413, { error: 'audio_too_large' });
-      let stt;
-      try {
-        stt = await fetch(nasrinBase + '/v1/transcriptions?name=' + encodeURIComponent(mime.includes('webm') ? 'movo-voice.webm' : mime.includes('mp4') ? 'movo-voice.m4a' : mime.includes('ogg') ? 'movo-voice.ogg' : mime.includes('mpeg') ? 'movo-voice.mp3' : 'movo-voice.wav'), {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + nasrinKey, 'Content-Type': mime, Accept: 'application/json', 'X-Client-Info': 'movo-voice-stt' },
-          body: audio,
-          signal: AbortSignal.timeout(20000)
-        });
-      } catch (err) {
-        return json(res, 502, { error: err?.name === 'TimeoutError' ? 'transcription_timeout' : 'transcription_unavailable' });
-      }
-      if (!stt.ok) return json(res, stt.status === 429 ? 429 : 502, { error: stt.status === 429 ? 'transcription_busy' : 'transcription_unavailable' });
-      const result = await stt.json().catch(() => null);
-      const text = safeText(result?.text, MAX_MESSAGE_CHARS);
-      return text ? json(res, 200, { text }) : json(res, 200, { text: '' });
+      if (audio.toString('base64') !== encoded) return json(res, 400, { error: 'invalid_audio' });
+      const result = await transcribeAudio({ audio, mime, nasrinKey, nasrinBase });
+      if (result.error) return json(res, result.error === 'transcription_busy' ? 429 : 502, { error: result.error });
+      return json(res, 200, { text: safeText(result.text, MAX_MESSAGE_CHARS) });
     }
 
     if (req.method === 'GET') {

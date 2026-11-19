@@ -230,14 +230,15 @@ describe('NasrinAI consent and legal links', () => {
 
 
   describe('voice conversation', () => {
-    let contexts; let spoken; let saved;
+    let contexts; let spoken; let saved; let recorders; let track;
     beforeEach(() => {
-      contexts = []; spoken = [];
+      contexts = []; spoken = []; recorders = [];
+      track = { stop: jest.fn(), addEventListener: jest.fn() };
       saved = { AudioContext: window.AudioContext, MediaRecorder: global.MediaRecorder, mediaDevices: navigator.mediaDevices, speechSynthesis: window.speechSynthesis, Utterance: global.SpeechSynthesisUtterance, Audio: window.Audio, raf: window.requestAnimationFrame };
       window.AudioContext = class {
         constructor() { this.state = 'suspended'; this.destination = {}; this.createdBeforeMic = !navigator.mediaDevices.getUserMedia.mock.calls.length; contexts.push(this); }
         resume() { this.state = 'running'; return Promise.resolve(); }
-        close() { return Promise.resolve(); }
+        close = jest.fn(() => Promise.resolve());
         createBuffer() { return {}; }
         createBufferSource() { return { connect() {}, start() {}, stop() {} }; }
         createMediaStreamSource() { return { connect() {} }; }
@@ -247,7 +248,7 @@ describe('NasrinAI consent and legal links', () => {
       };
       global.MediaRecorder = class {
         static isTypeSupported() { return false; }
-        constructor() { this.state = 'inactive'; this.mimeType = 'audio/mp4'; }
+        constructor() { this.state = 'inactive'; this.mimeType = 'audio/mp4'; recorders.push(this); }
         start() { this.state = 'recording'; }
         stop() {
           this.state = 'inactive';
@@ -255,7 +256,7 @@ describe('NasrinAI consent and legal links', () => {
           this.onstop?.();
         }
       };
-      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: jest.fn().mockResolvedValue({ getTracks: () => [{ stop() {} }] }) } });
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: { getUserMedia: jest.fn().mockResolvedValue({ getTracks: () => [track] }) } });
       window.speechSynthesis = { speak: jest.fn(u => spoken.push(u.text)), cancel: jest.fn() };
       global.SpeechSynthesisUtterance = function Utterance(text) { this.text = text; };
       window.Audio = function BlockedAudio() { this.play = () => Promise.reject(new Error('NotAllowedError')); this.pause = () => {}; };
@@ -266,6 +267,136 @@ describe('NasrinAI consent and legal links', () => {
       window.AudioContext = saved.AudioContext; global.MediaRecorder = saved.MediaRecorder; window.speechSynthesis = saved.speechSynthesis;
       global.SpeechSynthesisUtterance = saved.Utterance; window.Audio = saved.Audio; window.requestAnimationFrame = saved.raf;
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: saved.mediaDevices });
+      jest.restoreAllMocks();
+      jest.useRealTimers();
+    });
+
+    const settleVoice = async () => { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); };
+    const startCapture = async () => {
+      act(() => button('I understand')?.click());
+      await act(async () => { button('Talk with NasrinAI').click(); });
+    };
+    const segment = async (advance) => {
+      const callbacks = [];
+      let now = 10000;
+      jest.spyOn(Date, 'now').mockImplementation(() => now);
+      window.requestAnimationFrame = callback => { callbacks.push(callback); return callbacks.length; };
+      await startCapture();
+      contexts[contexts.length - 1].sampleValue = 140;
+      await act(async () => callbacks.shift()());
+      contexts[contexts.length - 1].sampleValue = 128;
+      now += 1000;
+      await act(async () => callbacks.shift()());
+      if (advance) now += advance;
+    };
+
+    test('an active transcription failure stops capture, keeps the draft and permits a clean retry', async () => {
+      setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Keep my typed words');
+      global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'transcription_unavailable' }) });
+      await segment();
+      await settleVoice();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('.live')).toBeNull();
+      expect(container.querySelector('#movo-ai-prompt').placeholder).not.toContain('Listening');
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('Keep my typed words');
+      expect(global.fetch).toHaveBeenCalledTimes(1); // no final upload after failure
+      await startCapture();
+      expect(button('End voice conversation')).toBeTruthy();
+      expect(contexts[1].close).not.toHaveBeenCalled();
+      expect(container.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    test('a stalled upload times out, aborts and releases the microphone', async () => {
+      const schedule = global.setTimeout;
+      let expire;
+      jest.spyOn(global, 'setTimeout').mockImplementation((callback, delay, ...args) => {
+        if (delay === 40000) expire = callback;
+        return schedule(callback, delay, ...args);
+      });
+      global.fetch.mockImplementationOnce(() => new Promise(() => {}));
+      await segment();
+      await settleVoice();
+      const signal = global.fetch.mock.calls[0][1].signal;
+      await act(async () => expire());
+      expect(signal.aborted).toBe(true);
+      expect(container.querySelector('.live')).toBeNull();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+    });
+
+    test('a late permission result cannot replace the new recording or leak an old microphone stream', async () => {
+      let allowOld;
+      const oldTrack = { stop: jest.fn() };
+      navigator.mediaDevices.getUserMedia.mockImplementationOnce(() => new Promise(resolve => { allowOld = resolve; }));
+      await startCapture();
+      act(() => button('End voice conversation').click());
+      await startCapture();
+      await act(async () => allowOld({ getTracks: () => [oldTrack] }));
+      expect(oldTrack.stop).toHaveBeenCalledTimes(1);
+      expect(track.stop).not.toHaveBeenCalled();
+      expect(recorders).toHaveLength(1);
+      act(() => button('End voice conversation').click());
+      expect(track.stop).toHaveBeenCalledTimes(1);
+    });
+
+    test('old transcription results never enter a restarted voice session', async () => {
+      let finishOld;
+      global.fetch.mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve; }));
+      await segment();
+      await settleVoice();
+      act(() => button('End voice conversation').click());
+      await startCapture();
+      await act(async () => finishOld({ ok: true, json: async () => ({ text: 'Obsolete words' }) }));
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+      expect(button('End voice conversation')).toBeTruthy();
+    });
+
+    test.each(['recorder', 'track', 'pagehide'])('%s interruption stops capture without uploading unfinished audio', async (kind) => {
+      await startCapture();
+      act(() => {
+        if (kind === 'recorder') recorders[0].onerror();
+        if (kind === 'track') track.addEventListener.mock.calls[0][1]();
+        if (kind === 'pagehide') window.dispatchEvent(new Event('pagehide'));
+      });
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('backgrounding aborts an upload and ignores its late result', async () => {
+      let finish;
+      global.fetch.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+      await segment();
+      await settleVoice();
+      const signal = global.fetch.mock.calls[0][1].signal;
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      act(() => document.dispatchEvent(new Event('visibilitychange')));
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      await act(async () => finish({ ok: true, json: async () => ({ text: 'Late words' }) }));
+      expect(signal.aborted).toBe(true);
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('#movo-ai-prompt').value).toBe('');
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+    });
+
+    test('a recorder start failure releases capture instead of leaving Listening active', async () => {
+      jest.spyOn(MediaRecorder.prototype, 'start').mockImplementation(() => { throw new Error('capture interrupted'); });
+      await startCapture();
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('leaving chat aborts transcription and releases the microphone', async () => {
+      global.fetch.mockImplementationOnce(() => new Promise(() => {}));
+      await segment();
+      await settleVoice();
+      const signal = global.fetch.mock.calls[0][1].signal;
+      await act(async () => root.render(<p>Home</p>));
+      expect(signal.aborted).toBe(true);
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(contexts[0].close).toHaveBeenCalledTimes(1);
     });
 
     test('shows recognized speech in the composer without auto-sending it', async () => {

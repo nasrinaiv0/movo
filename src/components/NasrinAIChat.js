@@ -28,6 +28,7 @@ import { identifyChatMessages } from '../lib/chatHistory';
 function friendlyError(code) {
   if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI did not confirm it used only your Movo data, so its reply was not shown.');
   if (code === 'sign_in_required' || code === 'invalid_session') return tr('Sign in to MOVO to use your private financial copilot.');
+  if (code === 'pro_required') return tr('Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.');
   if (code === 'nasrinai_not_configured') return tr('NasrinAI is not configured on the MOVO server yet.');
   if (code === 'conversation_not_found') return tr('This conversation is not available in your account.');
   if (code === 'financial_context_consent_required') return tr('Please confirm consent before sharing financial context with NasrinAI.');
@@ -302,7 +303,10 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
   const frameRef = useRef(null);
   const heardSpeechRef = useRef(false);
   const lastVoiceAtRef = useRef(0);
-  const transcribingRef = useRef(false);
+  const voiceGenerationRef = useRef(0);
+  const transcriptionAbortRef = useRef(null);
+  const pendingSegmentsRef = useRef(0);
+  const segmentTimerRef = useRef(null);
   const transcriptionQueueRef = useRef(Promise.resolve());
   const finalSegmentRef = useRef(false);
   const voiceMountedRef = useRef(true);
@@ -398,10 +402,22 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
     window.speechSynthesis?.cancel();
   };
 
-  const stopVoice = () => {
-    // Keep the final clip eligible for STT even after the user taps Stop.
-    finalSegmentRef.current = recorderRef.current?.state === 'recording';
+  const stopVoice = (discard = false) => {
+    // An intentional Stop drains captured speech. Failure, interruption and
+    // leaving the page discard unfinished audio and invalidate every old callback.
+    finalSegmentRef.current = !discard && recorderRef.current?.state === 'recording';
     voiceRef.current = false; setListening(false); setVoiceManual(false);
+    clearTimeout(segmentTimerRef.current);
+    segmentTimerRef.current = null;
+    if (discard) {
+      voiceGenerationRef.current += 1;
+      transcriptionAbortRef.current?.abort();
+      transcriptionAbortRef.current = null;
+      transcriptionQueueRef.current = Promise.resolve();
+      pendingSegmentsRef.current = 0;
+      heardSpeechRef.current = false;
+      setTranscribing(false);
+    }
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
     setAudioSessionType('auto');
@@ -411,39 +427,64 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
     streamRef.current = null;
     audioContextRef.current?.close?.().catch(() => {});
     audioContextRef.current = null;
-    pendingVoiceTextsRef.current = [];
     stopPlayback();
     spokenRef.current = '';
   };
 
-  const transcribeSegment = (blob, final = false) => {
-    if (!blob || blob.size < 120 || blob.size > 2_400_000 || (!voiceRef.current && !final)) return;
-    const accountEpoch = requestEpochRef.current;
-    transcriptionQueueRef.current = transcriptionQueueRef.current
-      .then(() => transcribeSegmentNow(blob, final, accountEpoch))
-      .catch(() => {});
+  const failVoice = (cause) => {
+    stopVoice(true);
+    const code = cause?.message;
+    setError(code === 'invalid_session' || code === 'sign_in_required' || code === 'pro_required'
+      ? friendlyError(code)
+      : code === 'transcription_busy' ? friendlyError('nasrinai_rate_limited')
+        : tr('Voice transcription is temporarily unavailable. Please try again.'));
   };
 
-  const transcribeSegmentNow = async (blob, final, accountEpoch) => {
-    if ((!voiceRef.current && !final) || !voiceMountedRef.current || accountEpoch !== requestEpochRef.current) return;
-    transcribingRef.current = true;
+  const transcribeSegment = (blob, generation) => {
+    if (!voiceMountedRef.current || generation !== voiceGenerationRef.current || !blob || blob.size < 120) return;
+    // Bound transient audio held in memory if a connection is too slow.
+    if (blob.size > 2_400_000 || pendingSegmentsRef.current >= 3) { failVoice(); return; }
+    const accountEpoch = requestEpochRef.current;
+    pendingSegmentsRef.current += 1;
+    transcriptionQueueRef.current = transcriptionQueueRef.current
+      .then(() => transcribeSegmentNow(blob, generation, accountEpoch))
+      .catch(() => {})
+      .finally(() => { if (generation === voiceGenerationRef.current) pendingSegmentsRef.current -= 1; });
+  };
+
+  const transcribeSegmentNow = async (blob, generation, accountEpoch) => {
+    const isCurrent = () => voiceMountedRef.current && generation === voiceGenerationRef.current && accountEpoch === requestEpochRef.current;
+    if (!isCurrent()) return;
+    const controller = new AbortController();
+    transcriptionAbortRef.current = controller;
     setTranscribing(true);
+    let deadline;
+    let onAbort;
     try {
-      const token = await chatAccessToken(session);
-      if (!token) throw new Error('invalid_session');
-      if ((!voiceRef.current && !final) || !voiceMountedRef.current || accountEpoch !== requestEpochRef.current) return;
-      const bytes = new Uint8Array(await blobBuffer(blob));
-      let binary = '';
-      for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
-      const response = await fetch(apiUrl('/api/nasrinai/chat'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({ action: 'transcribe', audioBase64: btoa(binary), mime: blob.type || 'audio/webm', consent: privacyAccepted })
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'transcription_unavailable');
-      const text = String(result.text || '').trim();
-      if (text && (voiceRef.current || final) && voiceMountedRef.current && accountEpoch === requestEpochRef.current) {
+      const request = async () => {
+        const token = await chatAccessToken(session);
+        if (!isCurrent() || controller.signal.aborted) return null;
+        if (!token) throw new Error('invalid_session');
+        const bytes = new Uint8Array(await blobBuffer(blob));
+        if (!isCurrent() || controller.signal.aborted) return null;
+        let binary = '';
+        for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + 0x8000, bytes.length)));
+        const response = await fetch(apiUrl('/api/nasrinai/chat'), {
+          method: 'POST', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ action: 'transcribe', audioBase64: btoa(binary), mime: blob.type || 'audio/webm', consent: privacyAccepted })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'transcription_unavailable');
+        if (typeof result.text !== 'string') throw new Error('transcription_unavailable');
+        return result.text.trim();
+      };
+      const text = await Promise.race([request(), new Promise((_, reject) => {
+        onAbort = () => reject(new Error('voice_cancelled'));
+        controller.signal.addEventListener('abort', onAbort, { once: true });
+        deadline = setTimeout(() => { reject(new Error('transcription_timeout')); controller.abort(); }, 40000);
+      })]);
+      if (text && isCurrent()) {
         const spoken = spokenRef.current;
         const heard = text.toLowerCase().split(/\s+/).filter(Boolean);
         const echo = spoken && heard.length && heard.filter(word => spoken.includes(word)).length / heard.length >= 0.7;
@@ -457,63 +498,68 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
           setError('');
         }
       }
-    } catch {
-      if (voiceMountedRef.current && accountEpoch === requestEpochRef.current && (voiceRef.current || final)) {
-        setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
-      }
+    } catch (cause) {
+      if (isCurrent()) failVoice(cause);
     } finally {
-      transcribingRef.current = false;
-      if (voiceMountedRef.current) setTranscribing(false);
+      clearTimeout(deadline);
+      controller.signal.removeEventListener('abort', onAbort);
+      if (transcriptionAbortRef.current === controller) {
+        transcriptionAbortRef.current = null;
+        if (voiceMountedRef.current) setTranscribing(false);
+      }
     }
   };
 
-  const startVoice = async () => {
+  const startVoice = async (generation, accountEpoch) => {
+    const isCurrent = () => voiceMountedRef.current && voiceRef.current && generation === voiceGenerationRef.current && accountEpoch === requestEpochRef.current;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-      if (!voiceRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
+      if (!isCurrent()) { stream.getTracks().forEach(t => t.stop()); return; }
       streamRef.current = stream;
+      stream.getTracks().forEach(track => track.addEventListener?.('ended', () => { if (isCurrent()) failVoice(); }, { once: true }));
       const context = audioContextRef.current;
       if (!context || typeof MediaRecorder === 'undefined') throw new Error('voice_not_supported');
       // iOS can leave the context 'interrupted' (not just 'suspended') once the microphone starts.
       if (context.state !== 'running') await context.resume().catch(() => {});
+      if (!isCurrent()) return;
       const source = context.createMediaStreamSource(stream);
       const analyser = context.createAnalyser();
       analyser.fftSize = 1024; source.connect(analyser);
       const samples = new Uint8Array(analyser.fftSize);
       let recorder = null;
-      let chunks = [];
       let segmentStart = 0;
       let peakRms = 0;
       let deadFrames = 0;
       let manual = false;
       const beginSegment = () => {
-        if (!voiceRef.current || recorder?.state === 'recording') return;
-        const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
-        try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
-        catch { recorder = new MediaRecorder(stream); }
-        chunks = []; segmentStart = Date.now(); peakRms = 0;
-        const activeRecorder = recorder;
-        activeRecorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
-        activeRecorder.onstop = () => {
-          const blob = new Blob(chunks, { type: activeRecorder.mimeType || 'audio/webm' });
-          const final = finalSegmentRef.current && !voiceRef.current;
-          finalSegmentRef.current = false;
-          const hasSpeech = heardSpeechRef.current || (final && Date.now() - segmentStart >= 600 && peakRms >= 0.006);
-          heardSpeechRef.current = false;
-          // When stopped manually, always check a sufficiently long final clip: quiet
-          // speech on iOS may fall below the visual voice-activity threshold.
-          if (hasSpeech || (final && Date.now() - segmentStart >= 600)) transcribeSegment(blob, final);
-          if (voiceRef.current) setTimeout(beginSegment, 100);
-        };
-        activeRecorder.onerror = () => {
-          if (voiceRef.current && voiceMountedRef.current) setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
-        };
-        recorder.start();
-        recorderRef.current = recorder;
+        if (!isCurrent() || recorder?.state === 'recording') return;
+        try {
+          const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+          try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
+          catch { recorder = new MediaRecorder(stream); }
+          const chunks = []; segmentStart = Date.now(); peakRms = 0;
+          const activeRecorder = recorder;
+          activeRecorder.ondataavailable = event => { if (event.data?.size) chunks.push(event.data); };
+          activeRecorder.onstop = () => {
+            if (!voiceMountedRef.current || generation !== voiceGenerationRef.current || accountEpoch !== requestEpochRef.current) return;
+            const blob = new Blob(chunks, { type: activeRecorder.mimeType || 'audio/webm' });
+            const final = finalSegmentRef.current && !voiceRef.current;
+            finalSegmentRef.current = false;
+            const hasSpeech = heardSpeechRef.current || (final && Date.now() - segmentStart >= 600 && peakRms >= 0.006);
+            heardSpeechRef.current = false;
+            // When stopped manually, always check a sufficiently long final clip: quiet
+            // speech on iOS may fall below the visual voice-activity threshold.
+            if (hasSpeech || (final && Date.now() - segmentStart >= 600)) transcribeSegment(blob, generation);
+            if (isCurrent()) segmentTimerRef.current = setTimeout(beginSegment, 100);
+          };
+          activeRecorder.onerror = () => { if (isCurrent()) failVoice(); };
+          recorderRef.current = recorder;
+          recorder.start();
+        } catch (cause) { if (isCurrent()) failVoice(cause); }
       };
       beginSegment();
       const detect = () => {
-        if (!voiceRef.current) return;
+        if (!isCurrent()) return;
         analyser.getByteTimeDomainData(samples);
         let sum = 0;
         let flat = true;
@@ -556,8 +602,9 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
       };
       frameRef.current = requestAnimationFrame(detect);
     } catch {
+      if (!isCurrent()) return;
       setError(tr('Allow microphone access and use a browser that supports audio recording to talk with NasrinAI.'));
-      stopVoice();
+      stopVoice(true);
     }
   };
 
@@ -573,6 +620,7 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
       else setError(tr('Sign in to MOVO to use voice chat.'));
       return;
     }
+    stopVoice(true);
     // iOS/Safari only allow sound that starts inside a tap: create and resume the audio context here, and prime the
     // device voice, before the first await.
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -585,23 +633,24 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
       const silent = context.createBuffer(1, 1, 22050); const tick = context.createBufferSource();
       tick.buffer = silent; tick.connect(context.destination); tick.start(0);
       audioContextRef.current = context;
-    } catch { setError(tr('Model-backed voice input is not supported in this browser.')); return; }
+    } catch { stopVoice(true); setError(tr('Model-backed voice input is not supported in this browser.')); return; }
     try { const synth = window.speechSynthesis; if (synth && typeof SpeechSynthesisUtterance !== 'undefined') { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; synth.speak(u); } } catch { /* optional */ }
-    finalSegmentRef.current = false;
     setError(''); voiceRef.current = true; setListening(true);
-    startVoice();
+    startVoice(voiceGenerationRef.current, requestEpochRef.current);
   };
-  useEffect(() => () => {
-    voiceMountedRef.current = false;
-    finalSegmentRef.current = false;
-    voiceRef.current = false;
-    if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    try { recorderRef.current?.stop?.(); } catch { /* cleanup */ }
-    streamRef.current?.getTracks?.().forEach(track => track.stop());
-    audioContextRef.current?.close?.().catch(() => {});
-    listenSpeechRef.current?.cancel?.();
-    deviceSpeechRef.current?.cancel?.();
-    window.speechSynthesis?.cancel();
+  useEffect(() => {
+    voiceMountedRef.current = true;
+    const hidden = () => { if (document.visibilityState === 'hidden') stopVoice(true); };
+    const leave = () => stopVoice(true);
+    document.addEventListener('visibilitychange', hidden);
+    window.addEventListener('pagehide', leave);
+    return () => {
+      voiceMountedRef.current = false;
+      document.removeEventListener('visibilitychange', hidden);
+      window.removeEventListener('pagehide', leave);
+      stopVoice(true);
+    };
+    // Cleanup uses refs so every render shares the current capture/request.
   }, []);
 
   const speak = (text, index) => {
