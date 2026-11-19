@@ -3,10 +3,12 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
 
 from metrics import build_metrics, compare
@@ -28,6 +30,26 @@ def command(args, log, cwd=ANDROID):
             output.write(line)
         if process.wait():
             raise subprocess.CalledProcessError(process.returncode, args)
+
+
+MAVEN_CENTRAL_RATE_LIMIT = re.compile(
+    r"Could not (?:GET|HEAD) 'https://repo\.maven\.apache\.org/[^']+'\. Received status code 429\b"
+)
+
+
+def build_with_repository_backoff(args, log):
+    """Keep each Gradle failure and retry only a confirmed Maven Central rate limit."""
+    for delay in (60, 120):
+        try:
+            command(args, log)
+            return
+        except subprocess.CalledProcessError:
+            if not MAVEN_CENTRAL_RATE_LIMIT.search(log.read_text(errors="replace")):
+                raise
+            log.rename(log.with_name(f"build-rate-limited-{delay}s.log"))
+            print(f"Maven Central returned HTTP 429. Waiting {delay}s before trying the same Gradle build.", flush=True)
+            time.sleep(delay)
+    command(args, log)
 
 
 def fetch_skill(destination):
@@ -89,7 +111,7 @@ def main():
             gradle = ["bash", "gradlew", *tasks, "--no-daemon", "--stacktrace", "--no-build-cache", "--rerun-tasks", "-PmovoR8ReleaseSmoke=true"]
             if args.mode == "analyzer":
                 gradle.append("-Dcom.android.tools.r8.dumpkeepradiustodirectory=" + str(report_dir))
-            command(gradle, folder / "build.log")
+            build_with_repository_backoff(gradle, folder / "build.log")
             shutil.copy2(ANDROID / "app/build/outputs/apk/release/app-release.apk", folder)
             shutil.copy2(ANDROID / "app/build/outputs/bundle/release/app-release.aab", folder)
             if args.mode == "default":

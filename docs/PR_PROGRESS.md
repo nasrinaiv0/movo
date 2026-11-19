@@ -1,3 +1,9 @@
+## 2026-11-20 — Back off on Maven Central throttling in the R8 experiment
+
+- Attempts 1 and 2 of 44599470076 at 42eb503c50f4b9417febeaaea8da616869724519 hit Maven Central HTTP 429 before the Kotlin/Gradle dependencies resolved. The separate Android native security and test-signing jobs passed.
+- Cache Gradle dependencies in the isolated workflow. If the official Maven Central endpoint explicitly reports 429, preserve the failed log and wait 60 then 120 seconds before retrying the same build. Java/Kotlin failures propagate immediately. The final failure always fails the experiment.
+- Fifteen local Python tests pass, including bounded retries, preserved logs and immediate compiler failures. Browser offline Wallet verification with the synthetic fixture also passed. Re-run the hosted KVM experiment at the new head.
+
 ## 2026-11-20 — Verify offline Wallet after a separate process restart
 
 - Run 44590024327 at 4eee1fb3a9880da9541fde89242dde668843d67e passed cold launch, the framework instrumentation test and encrypted bridge storage through Activity recreation. The Wallet test stayed on Home after a click. Its screenshot shows the fixture profile and a -₱125.50 balance on offline Home, confirming that the app read the synthetic wallet.

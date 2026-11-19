@@ -47,3 +47,7 @@ The first baseline instrumentation process crashed before any MOVO test ran. And
 ## Offline Wallet navigation after the harness fix
 
 Run 44590024327 at 4eee1fb3a988 passed encrypted-storage persistence through Activity recreation. The saved synthetic profile and balance rendered on offline Home, but Wallet navigation did not complete. The old readiness predicate could accept the old Home document while WebView reload was pending. The harness now seeds the wallet in its own invocation and force-stops the app before verification, leaving the emulator offline throughout. The verifier requires the restored local account and enabled UI before clicking, and captures a minimal DOM state on timeouts. A small artifact now publishes only the emulator screenshots and diagnostics for quick failure analysis. The same rule comparison and application checks remain required.
+
+## Maven Central rate limits
+
+Two 44599470076 attempts at 42eb503c50f4 failed resolving pinned Gradle dependencies from Maven Central with HTTP 429. Neither reached Android compilation. This isolated workflow caches Gradle dependencies and waits 60 and 120 seconds for a confirmed Maven Central throttle, preserving both failure logs. Compiler failures and final attempts remain hard failures. Node 26 browser verification of the same offline wallet fixture passed, including the bundled BPI logo and saved silver card finish.
