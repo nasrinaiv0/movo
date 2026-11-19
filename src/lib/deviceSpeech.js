@@ -64,19 +64,26 @@ export function startDeviceSpeech(text, { language = 'en-US', onEnd, onError, on
   let position = 0;
   let current = null;
   let started = false;
+  let announced = false;
   let retried = false;
+  let delayedStart = null;
   let watchdog = null;
   const clearWatchdog = () => { if (watchdog) { clearTimeout(watchdog); watchdog = null; } };
-  const complete = () => { if (!stopped) { stopped = true; current = null; clearWatchdog(); onEnd?.(); } };
-  const fail = (error) => { if (!stopped) { stopped = true; current = null; clearWatchdog(); onError?.(error); } };
+  const clearPending = () => { clearWatchdog(); clearTimeout(delayedStart); delayedStart = null; };
+  const complete = () => { if (!stopped) { stopped = true; current = null; clearPending(); onEnd?.(); } };
+  const fail = (error) => { if (!stopped) { stopped = true; current = null; clearPending(); onError?.(error); } };
   const utter = (textPart) => {
     const utterance = new Utterance(textPart);
     let voices = [];
     try { voices = synth.getVoices?.() || []; } catch { /* voices not loaded yet */ }
     const voice = pickVoice(voices, language, typeof navigator !== 'undefined' ? navigator.language : '');
     if (voice) { utterance.voice = voice; utterance.lang = voice.lang; } else utterance.lang = language;
-    utterance.onstart = () => { if (current === utterance && !started) { started = true; clearWatchdog(); onStart?.(); } };
-    utterance.onend = () => { if (current === utterance) { started = true; clearWatchdog(); next(); } };
+    utterance.onstart = () => {
+      if (current !== utterance || stopped) return;
+      started = true; clearWatchdog();
+      if (!announced) { announced = true; onStart?.(); }
+    };
+    utterance.onend = () => { if (current === utterance && !stopped) { clearWatchdog(); next(); } };
     utterance.onerror = (event) => {
       if (current !== utterance || stopped) return;
       if (event?.error === 'canceled' || event?.error === 'interrupted') complete();
@@ -97,16 +104,23 @@ export function startDeviceSpeech(text, { language = 'en-US', onEnd, onError, on
       if (stopped || started || synth.speaking) return;
       if (!retried) {
         retried = true;
+        // WebKit may synchronously dispatch interrupted from cancel(). Detach
+        // the old utterance before cancelling so it cannot complete the retry.
+        current = null;
         try { synth.cancel(); } catch { /* nothing to cancel */ }
         position = Math.max(0, position - 1);
-        next();
+        delayedStart = setTimeout(() => {
+          try { next(true); } catch (error) { fail(error); }
+        }, 80);
         return;
       }
       fail({ error: 'not-started' });
     }, START_TIMEOUT_MS);
   };
-  function next() {
+  function next(retry = false) {
     if (stopped) return;
+    started = false;
+    if (!retry) retried = false;
     if (position >= parts.length) { complete(); return; }
     const utterance = utter(parts[position++]);
     speakNow(utterance);
@@ -117,14 +131,14 @@ export function startDeviceSpeech(text, { language = 'en-US', onEnd, onError, on
     // actually playing, and then give the engine a moment before speaking (still inside the tap's activation window).
     if (synth.speaking || synth.pending) {
       synth.cancel();
-      setTimeout(() => { try { next(); } catch (error) { fail(error); } }, 80);
+      delayedStart = setTimeout(() => { try { next(); } catch (error) { fail(error); } }, 80);
     } else next();
   } catch (error) { fail(error); return null; }
   return { cancel: () => {
     if (stopped) return;
     stopped = true;
     current = null;
-    clearWatchdog();
+    clearPending();
     try { synth.cancel(); } catch { /* already stopped */ }
   } };
 }

@@ -1,3 +1,11 @@
+## 2026-11-20 — Solid popups, combined plans/limits and voice lifecycle repair
+
+- Consolidated Menu tools into Financial planning > Plans & limits, preserving local access and both editors. Replaced popup glass override with opaque light/dark surfaces; improved Plan & Usage, 44px close controls, focus/scroll behavior and 320px plan-row wrapping.
+- Fixed WebKit speech retry cancellation and later-chunk watchdogs. Preserve final recorded audio until encoder stop, with bounded 1.5-second release and immediate privacy/navigation cleanup.
+- 251 suites / 1,636 tests, typecheck, safety prebuild checks and strict production build pass; 30 responsive component render checks pass. Independent review corrections applied; Claude unavailable. Physical microphone/speaker acceptance remains required.
+- Vercel Sandbox billing and protected-preview temporary-access review block are documented. Local exact-source rendering used; no production secrets or access controls changed. Separate follow-on PR; only #326 has owner merge authorization.
+- [Implementation, evidence and device acceptance](engineering/updates/2026-11-20-solid-panels-planning-voice.md).
+
 ## 2026-11-20 — PR #326 merge preparation and iOS launch recovery
 
 - Owner now authorizes fixing and merging PR #326 after passing CI and preview. Earlier experiment hold is superseded for this PR only; real-account OAuth and store billing acceptance remain separate release gates.

@@ -419,3 +419,17 @@ test('loan receiving account and repayment card are separate, and a preferred ca
   expect([...document.getElementById('edit-loan-receiving-account').options].some(option => option.value === card.id)).toBe(false);
   act(() => root.unmount()); el.remove();
 });
+
+
+test.each([false, true])('Plans and limits are reachable from financial planning with cloudMode=%s', async cloudMode => {
+  const el = document.createElement('div'); document.body.appendChild(el);
+  const root = createRoot(el); const openBudgets = jest.fn();
+  try {
+    await act(async () => root.render(<FinancialPlanning c={{ cloudMode, base: 'PHP', show: true, accountsView: accounts, toBase: v => v, go: jest.fn(), openBudgets }} />));
+    const buttons = el.querySelectorAll('.fp-plans-limits');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0].textContent).toContain('Plans & limits');
+    await act(async () => buttons[0].click());
+    expect(openBudgets).toHaveBeenCalledWith('plans');
+  } finally { act(() => root.unmount()); el.remove(); }
+});

@@ -20,7 +20,6 @@ import legalCore from '../lib/legalCore.json';
 
 const readAck = readAIConsent;
 const MAX = 1600;
-const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 import './NasrinAIChat.css';
 import { apiUrl } from '../lib/platform';
 import useChatThreads, { chatAccessToken } from '../lib/useChatThreads';
@@ -101,7 +100,6 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
   const [recordAction, setRecordAction] = useState(false);
   // The iPhone's level meter can read pure silence after the mic starts; then voice falls back to tap-to-finish.
   const [voiceManual, setVoiceManual] = useState(false);
-  const recognition = useRef(null);
   const fileRef = useRef(null);
   const [phase, setPhase] = useState('reading');
   const clearComposer = useCallback((discardDraft) => {
@@ -305,6 +303,7 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
   const loudFramesRef = useRef(0);
   const streamRef = useRef(null);
   const recorderRef = useRef(null);
+  const captureFinalizersRef = useRef(new Set());
   const audioContextRef = useRef(null);
   const frameRef = useRef(null);
   const heardSpeechRef = useRef(false);
@@ -405,7 +404,7 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
     listenSpeechRef.current?.cancel?.();
     listenSpeechRef.current = null;
     audioPlayingRef.current = false;
-    window.speechSynthesis?.cancel();
+    try { window.speechSynthesis?.cancel(); } catch { /* unavailable device speech engine */ }
   };
 
   const stopVoice = (discard = false) => {
@@ -426,13 +425,34 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
     }
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
-    setAudioSessionType('auto');
-    try { recorderRef.current?.stop?.(); } catch { /* already stopped */ }
+    if (discard) [...captureFinalizersRef.current].forEach(release => release());
+    const recorder = recorderRef.current;
+    const stream = streamRef.current;
+    const context = audioContextRef.current;
     recorderRef.current = null;
-    streamRef.current?.getTracks?.().forEach((track) => track.stop());
     streamRef.current = null;
-    audioContextRef.current?.close?.().catch(() => {});
     audioContextRef.current = null;
+    let releaseTimer;
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      clearTimeout(releaseTimer);
+      captureFinalizersRef.current.delete(release);
+      stream?.getTracks?.().forEach(track => track.stop());
+      context?.close?.().catch(() => {});
+      if (!voiceRef.current) setAudioSessionType('auto');
+    };
+    if (!discard && recorder?.state === 'recording') {
+      // stop() emits the final encoded data asynchronously. Keep the microphone
+      // and audio session alive until onstop, otherwise Safari can lose this clip.
+      const onStopped = recorder.onstop;
+      recorder.onstop = (...args) => { release(); onStopped?.(...args); };
+      captureFinalizersRef.current.add(release);
+      // A broken recorder must never retain microphone access indefinitely.
+      releaseTimer = setTimeout(release, 1500);
+    } else release();
+    try { recorder?.stop?.(); } catch { release(); }
     stopPlayback();
     spokenRef.current = '';
   };
@@ -547,7 +567,8 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
       const beginSegment = () => {
         if (!isCurrent() || recorder?.state === 'recording') return;
         try {
-          const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '';
+          const mime = typeof MediaRecorder.isTypeSupported === 'function'
+            ? ['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type => MediaRecorder.isTypeSupported(type)) || '' : '';
           try { recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); }
           catch { recorder = new MediaRecorder(stream); }
           const chunks = []; segmentStart = Date.now(); peakRms = 0;
