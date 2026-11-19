@@ -1,4 +1,5 @@
 import tempfile
+import subprocess
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -55,6 +56,34 @@ class EmulatorSafetyTests(unittest.TestCase):
             with self.subTest(output=output), tempfile.TemporaryDirectory() as folder:
                 with patch.object(smoke, 'adb', side_effect=[output, '']), self.assertRaises(RuntimeError):
                     smoke.instrument(Path(folder), 'testMethod', legal)
+
+    def test_adb_deadline_is_a_hard_failure_even_for_best_effort_command(self):
+        with patch.object(smoke.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['adb'], 90)) as run:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                smoke.adb('shell', 'true', check=False)
+            self.assertEqual(run.call_args.kwargs['timeout'], 90)
+
+    def test_partial_success_marker_cannot_turn_timeout_into_acceptance(self):
+        timeout = subprocess.TimeoutExpired(['adb'], 240, output=b'MOVO_R8_SMOKE_PASS testMethod\n')
+        with tempfile.TemporaryDirectory() as directory, patch.object(smoke, 'adb', side_effect=timeout) as adb:
+            folder = Path(directory)
+            with self.assertRaises(subprocess.TimeoutExpired):
+                smoke.instrument(folder, 'testMethod', {'date': '2026-11-19', 'revision': ''})
+            self.assertIn('acceptance FAILED', (folder / 'testMethod.txt').read_text())
+            self.assertIn('MOVO_R8_SMOKE_PASS', (folder / 'testMethod.txt').read_text())
+            self.assertEqual(adb.call_args.kwargs['timeout'], 240)
+
+    def test_stalled_diagnostics_do_not_prevent_remaining_evidence(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(smoke, 'adb') as adb, patch.object(smoke.subprocess, 'run') as run:
+            folder = Path(directory)
+            adb.side_effect = [subprocess.TimeoutExpired(['adb', 'logcat'], 30), 'activity evidence', 'pulled screenshots']
+            run.side_effect = subprocess.TimeoutExpired(['adb', 'screencap'], 30)
+            smoke.capture(folder)
+            self.assertEqual((folder / 'activity.txt').read_text(), 'activity evidence')
+            self.assertEqual(adb.call_count, 3)
+            self.assertEqual(adb.call_args.args[0], 'pull')
+            self.assertIn('logcat:', (folder / 'diagnostic-errors.txt').read_text())
+            self.assertIn('screenshot:', (folder / 'diagnostic-errors.txt').read_text())
 
 
 if __name__ == '__main__':
