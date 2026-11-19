@@ -114,6 +114,8 @@ def main():
             "private invite lifecycle, two-party visibility and account deletion")
         sql((ROOT / "supabase/tests/friend_social.test.sql").read_text(),
             "discoverable usernames, recipient approval, snapshot revocation and avatar isolation")
+        sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
+            "loan payment account isolation, currency and single-ledger posting")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_"):

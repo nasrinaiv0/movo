@@ -61,8 +61,8 @@ test('plan selection changes Aries for every tier while the website keeps real p
   act(() => tiles[2].click());
   expect(hasMood('.plan-aries', 'celebrate')).toBe(true);
   expect(tiles[2].getAttribute('aria-checked')).toBe('true');
-  expect(tiles[2].textContent).toContain('Price in app');
-  expect(host.querySelector('.plan-price')).toBeNull();
+  expect(tiles[2].textContent).toContain('₱149.00/mo');
+  expect(host.querySelector('.plan-price')).not.toBeNull();
   expect(host.querySelectorAll('.plan-tile .movo-mark')).toHaveLength(3);
 });
 

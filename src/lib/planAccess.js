@@ -15,11 +15,12 @@ export function canUseFeature(entitlement, feature, now = Date.now()) {
   return false;
 }
 
-// Storage mode controls feature access, not the underlying paid subscription.
-// Local-only mode must never unlock Pro/Pro+ features using a cached entitlement.
+// A verified, unexpired plan keeps its on-device features in either storage mode.
+// Remote writes still require cloud access and independent server authorization.
 export function effectiveAccessPlan(entitlement, cloudMode, now = Date.now()) {
-  return cloudMode === true ? effectivePlan(entitlement, now) : 'free';
+  return typeof cloudMode === 'boolean' ? effectivePlan(entitlement, now) : 'free';
 }
 export function canUseFeatureInMode(entitlement, feature, cloudMode, now = Date.now()) {
-  return cloudMode === true && canUseFeature(entitlement, feature, now);
+  return typeof cloudMode === 'boolean' && (feature !== 'cloudWrite' || cloudMode === true)
+    && canUseFeature(entitlement, feature, now);
 }

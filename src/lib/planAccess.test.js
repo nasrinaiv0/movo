@@ -20,18 +20,18 @@ test('unknown features and exact expiry fail closed', () => {
 });
 
 
-describe('local-mode paid access suspension without subscription cancellation', () => {
+describe('verified local plan access', () => {
   const paid = entitlement('pro_plus');
-  test('a verified plan remains on record but has no active paid access while local-only', () => {
+  test('local display and device features keep verified paid access', () => {
     expect(effectivePlan(paid, now)).toBe('pro_plus');
-    expect(effectiveAccessPlan(paid, false, now)).toBe('free');
+    expect(effectiveAccessPlan(paid, false, now)).toBe('pro_plus');
     for (const feature of [...PRO_FEATURES, ...PLUS_FEATURES]) {
-      expect(canUseFeatureInMode(paid, feature, false, now)).toBe(false);
+      expect(canUseFeatureInMode(paid, feature, false, now)).toBe(feature !== 'cloudWrite');
     }
     expect(paid.active).toBe(true);
     expect(paid.tier).toBe('pro_plus');
   });
-  test('turning cloud back on restores only verified unexpired access', () => {
+  test('cloud writes require cloud mode and an unexpired plan', () => {
     expect(effectiveAccessPlan(paid, true, now)).toBe('pro_plus');
     expect(canUseFeatureInMode(paid, 'automation', true, now)).toBe(true);
     expect(canUseFeatureInMode(paid, 'cloudWrite', true, now)).toBe(true);

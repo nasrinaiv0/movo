@@ -1036,14 +1036,14 @@ describe('MOVO finance frontend', () => {
     expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
   });
 
-test('in local mode a payment link opens MOVO plans once and is cleared, instead of re-opening on every render', async () => {
+test('a verified local plan can review a payment link without a second upgrade prompt', async () => {
     global.__movoPauseLocalPlans = true;
     try {
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
       window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';
       act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
-      expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).toBeNull();
-      expect(document.querySelectorAll('[role="dialog"][aria-label="Offline feature access"]')).toHaveLength(1);
+      expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).not.toBeNull();
+      expect(document.querySelectorAll('[role="dialog"][aria-label="Offline feature access"]')).toHaveLength(0);
       expect(window.location.hash).toBe('');
     } finally { global.__movoPauseLocalPlans = false; }
   });

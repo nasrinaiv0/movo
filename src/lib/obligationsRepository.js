@@ -88,7 +88,7 @@ export async function createLoan(input, userId) {
     opening_principal: newProceeds ? 0 : principal, lender: typeof input?.lender === 'string' ? input.lender.trim().slice(0, 120) || null : null,
     currency: validCurrency(input?.currency), principal_amount: principal, outstanding_principal: newProceeds ? 0 : principal,
     interest_rate: interestSchedule.length ? 0 : Math.max(0, Number(input?.interest_rate) || 0), interest_schedule: interestSchedule, due_date: validDate(input?.due_date),
-    account_id: input?.account_id || null, notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
+    account_id: input?.account_id || null, payment_account_id: input?.payment_account_id || null, notes: typeof input?.notes === 'string' ? input.notes.trim().slice(0, 2000) || null : null,
   }).select().single());
   if (!newProceeds) return loan;
   try {
@@ -115,6 +115,7 @@ export async function updateLoan(loanId, input, userId) {
   return unwrap(await requireClient().from('financial_loans').update({
     name: validName(input.name), lender: String(input.lender || '').trim().slice(0, 120) || null,
     obligation_type: input.obligation_type === 'debt' ? 'debt' : 'loan',
+    account_id: input.account_id || null, payment_account_id: input.payment_account_id || null,
     due_date: dueDate, interest_rate: schedule.length ? 0 : rate, interest_schedule: schedule,
     notes: String(input.notes || '').trim().slice(0, 2000) || null, updated_at: new Date().toISOString(),
   }).eq('id', loanId).eq('user_id', userId).neq('status', 'archived').select().single());

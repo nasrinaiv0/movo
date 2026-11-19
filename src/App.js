@@ -335,12 +335,13 @@ function App() {
   /*
    * Paid features follow the server-verified plan. Offline-first: while Cloud Sync is on but the connection is down
    * (or a sync is waiting), a signed-in owner keeps them on this account's device copy; the entitlement is still the
-   * last one the server verified for this person and still expires on time. Only turning Cloud Sync off pauses them
-   * (#245), and a person whose plan was never verified gets nothing extra.
+   * last one the server verified for this person and still expires on time. Turning Cloud Sync off preserves
+   * on-device features; remote writes still require a connection and current server authorization.
    */
-  const deviceCopyAccess = !cloudMode && !!session?.user?.id && prefs.cloudSyncEnabled !== false && offlineOwnerId === session.user.id;
+  const deviceCopyAccess = !cloudMode && !!session?.user?.id && offlineOwnerId === session.user.id;
+  const cloudBudgetCopyAccess = deviceCopyAccess && prefs.cloudSyncEnabled !== false;
   const safeCloudAccess = (cloudMode || deviceCopyAccess) && syncState.status !== 'blocked';
-  const can = feature => canUseFeatureInMode(entitlement, feature, safeCloudAccess);
+  const can = feature => canUseFeatureInMode(entitlement, feature, cloudMode);
   const plan = effectiveAccessPlan(entitlement, safeCloudAccess);
   const cloudSyncRequestedRef = useRef(prefs.cloudSyncEnabled !== false);
   const cloudLoadEpochRef = useRef(0);
@@ -1179,7 +1180,7 @@ function App() {
   }, [monthStats, txFilter, search]);
   const recent = useMemo(() => homeStats.list.filter(t => t.type !== 'transfer' || t.transaction_type === 'allocation').slice(0, 4), [homeStats]);
   // Offline, a signed-in subscriber keeps their synced budgets (the device copy), not this device's guest list.
-  const budgets = useMemo(() => (cloudMode || deviceCopyAccess ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, deviceCopyAccess, cloudBudgets, prefs.budgets, toBase, base]);
+  const budgets = useMemo(() => (cloudMode || cloudBudgetCopyAccess ? cloudBudgets : (prefs.budgets || [])).map(b => ({ ...b, category: categoryOf(b.category).label, categoryId: categoryId(b.category) || b.category, monthly_limit: toBase(Number(b.monthly_limit), b.currency || 'PHP'), currency: base })), [cloudMode, cloudBudgetCopyAccess, cloudBudgets, prefs.budgets, toBase, base]);
   const budgetList = useMemo(() => budgetProgress(budgets, homeStats.list), [budgets, homeStats]);
   const spendingLimitList = useMemo(() => spendingLimitProgress((prefs.spendingLimits || []).map(l => ({ ...l, monthly_limit: toBase(Number(l.monthly_limit), l.currency || 'PHP'), currency: base })), homeStats.list, accountsView), [prefs.spendingLimits, homeStats, accountsView, toBase, base]);
   /* ---------- subscriptions (saved on this device) and NasrinAI's daily briefing ---------- */
@@ -1858,7 +1859,7 @@ function App() {
     // Budgets are kept per compact category id (custom text stays as written).
     const c = categoryOf(picked); const category = c.custom ? picked : c.primary;
     // Budgets of a cloud account are changed in the cloud; offline they stay readable until the connection returns.
-    if (!cloudMode && deviceCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return; }
+    if (!cloudMode && cloudBudgetCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return; }
     if (cloudMode && session?.user) {
       const row = id ? await updateBudget(id, { category, monthly_limit, currency: base }) : await createBudget({ category, monthly_limit, currency: base }, session.user.id);
       setCloudBudgets(cur => [...cur.filter(b => b.id !== row.id), row]);
@@ -1869,7 +1870,7 @@ function App() {
     notify(tr('Budget saved.'));
   };
   const deleteBudget = (id) => {
-    if (!cloudMode && deviceCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return Promise.resolve(false); }
+    if (!cloudMode && cloudBudgetCopyAccess) { notify(tr('You can change budgets again when you’re back online.')); return Promise.resolve(false); }
     const row = (cloudMode ? cloudBudgets : (prefs.budgets || [])).find(b => b.id === id);
     return confirm({
       ...deleteRecord(row ? categoryFullLabel(row.category) : '', { impact: [tr('Your transactions are not changed.'), tr('It stays in the Archive for 90 days, where you can restore it.')].join(' ') }),
@@ -2120,7 +2121,7 @@ function App() {
   const qrMigrationRef = useRef(new Set());
   const [stickerTick, setStickerTick] = useState(0);
   useEffect(() => subscribeCustomStickers(() => setStickerTick(t => t + 1)), []);
-  const userId = cloudMode ? session?.user?.id || '' : '';
+  const userId = session?.user?.id || '';
   useEffect(() => {
     const retry = () => setQrRetryTick(value => value + 1);
     const onVisibility = () => { if (document.visibilityState === 'visible') retry(); };
@@ -2144,6 +2145,10 @@ function App() {
         try { return [accountId, await getLocalAccountQr(cacheKey) || '']; } catch { return [accountId, '']; }
       }
       if (!userId || typeof value !== 'string') return [accountId, ''];
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; }
+        catch { return [accountId, '']; }
+      }
       try { const signedUrl = await getAccountQrSignedUrl(userId, value); cacheSignedAccountQr(userId, accountId, signedUrl).catch(() => {}); return [accountId, signedUrl]; }
       catch {
         try { return [accountId, await getLocalAccountQr(`${userId}:${accountId}`) || '']; }
@@ -2155,7 +2160,7 @@ function App() {
   useEffect(() => {
     const sync = prefsSync.current;
     sync.user = userId; sync.ready = false;
-    if (!userId) return undefined;
+    if (!userId || !cloudMode) return undefined;
     let live = true;
     loadPreferences(userId).then(row => {
       if (!live) return;
@@ -2167,9 +2172,9 @@ function App() {
       setStickerTick(t => t + 1); // upload the merged copy (or this device's on a first sign-in)
     }).catch(() => { /* table unavailable: stay device-only */ });
     return () => { live = false; };
-  }, [userId]);
+  }, [userId, cloudMode]);
   useEffect(() => {
-    if (!userId || !can('cloudWrite') || !prefsSync.current.ready || !prefs.accountQrCodes) return;
+    if (!userId || !cloudMode || !can('cloudWrite') || !prefsSync.current.ready || !prefs.accountQrCodes) return;
     const pendingMap = new Map(Object.entries(prefs.accountQrCodes).filter(([id, value]) => isAccountQrDataUrl(value)));
     Object.keys(prefs.accountQrPending || {}).forEach(id => pendingMap.set(id, { cacheKey: `${userId}:${id}` }));
     Object.entries(prefs.accountQrCodes).forEach(([id, value]) => {
@@ -2208,18 +2213,19 @@ function App() {
   }, [userId, prefs.accountQrCodes, prefs.accountQrPending, cloudAccounts, qrRetryTick, entitlement, cloudMode]);
   useEffect(() => {
     const sync = prefsSync.current;
-    if (!sync.ready || !sync.user || !can('cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
+    if (!cloudMode || !sync.ready || sync.user !== userId || !userId || !can('cloudWrite') || prefs.cloudSyncEnabled === false) return undefined;
     clearTimeout(sync.timer);
     sync.timer = setTimeout(() => {
+      if (!sync.ready || sync.user !== userId) return;
       // Newest stickers first, within the row's size limit; the scenery photo stays on its device.
       let size = 0;
       const stickers = getCustomStickers().filter(st => (size += (st.src || '').length + 200) < 3_800_000);
       const shared = cloudSafePreferences(prefs);
       if ((shared.mascot || '').length > 120_000) delete shared.mascot;
-      savePreferences(sync.user, shared, stickers).catch(() => { /* retried on the next change */ });
+      savePreferences(userId, shared, stickers).catch(() => { /* retried on the next change */ });
     }, 1500);
     return () => clearTimeout(sync.timer);
-  }, [prefs, stickerTick, entitlement, cloudMode]);
+  }, [userId, prefs, stickerTick, entitlement, cloudMode]);
 
   /* ---------- alerts delivered by the browser (Push Notifications), held during quiet hours ---------- */
   useEffect(() => {
@@ -2821,7 +2827,7 @@ function App() {
     }
   })();
 
-  return <PlanProvider entitlement={entitlement} cloudMode={safeCloudAccess} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+  return <PlanProvider entitlement={entitlement} cloudMode={cloudMode} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} data-view={view} key={view}>

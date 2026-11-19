@@ -118,8 +118,8 @@ describe('Cloud Sync setting semantics', () => {
 
     const row = findCloudSyncRow(container);
     expect(row).toBeTruthy();
-    expect(row.textContent).toContain('Turning it off pauses paid features');
-    expect(row.textContent).toContain('cloud-only records are not copied automatically');
+    expect(row.textContent).toContain('Cloud Sync is on');
+    expect(row.textContent).toContain('appearance remain available offline');
     const toggle = row.querySelector('[role="switch"]');
     expect(toggle).toBeTruthy();
     expect(toggle.getAttribute('aria-checked')).toBe('true');
@@ -133,12 +133,13 @@ describe('Cloud Sync setting semantics', () => {
     context = makeContext(false);
     context.session = { user: { id: 'user-1' } };
     context.prefs.cloudSyncEnabled = false;
+    context.deviceCopyAccess = true;
     root = createRoot(container);
     act(() => root.render(<Settings c={context} />));
 
     const row = findCloudSyncRow(container);
-    expect(row.textContent).toContain('paid features paused');
-    expect(row.textContent).toContain('cloud records remain stored in your account');
+    expect(row.textContent).toContain('verified plan features are available offline');
+    expect(row.textContent).toContain('Sync and purchases need a connection');
     const toggle = row.querySelector('[role="switch"]');
     expect(toggle).toBeTruthy();
     expect(toggle.getAttribute('aria-checked')).toBe('false');
