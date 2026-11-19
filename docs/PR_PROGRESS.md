@@ -1,3 +1,9 @@
+## 2026-11-20 — Repair R8 instrumentation-only compiler annotation dependency
+
+- Exact head 79fd7f72c6f086d0e7060a4c7ed6ce61d00eb83a failed native experiment run 44585073902 at minifyReleaseAndroidTestWithR8, after the app release APK/AAB tasks succeeded. The test dependency's Error Prone CLASS-retention annotation references absent JDK compiler enum javax.lang.model.element.Modifier.
+- Add only that missing-type diagnostic rule to an opt-in testProguardFiles file. Keep the instrumentation class name stable for explicit am instrument class/method selection. Application proguardFiles and the measured baseline/candidate rules are unchanged.
+- Thirteen Python checks pass. Updated engineering record before committing. Re-run native compilation and emulator checks at the new exact head; no score/size result is claimed from the failed run. Main, production and stores unchanged.
+
 ## 2026-11-20 — Publish measured R8 evidence in job logs
 
 - Emit each completed baseline/candidate metrics JSON into the workflow's text log, including real analyzer scores/rule impact, hashes and DEX bytes. Artifact evidence remains unchanged. This allows independent review without downloading the binary artifact ZIP.

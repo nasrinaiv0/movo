@@ -33,3 +33,7 @@ Keep the experiment open and unmerged. Compare default DEX sizes and runtime evi
 Follow-up review confirmed both initial fixes; binary screencap now also explicitly pins the verified emulator serial. Thirteen local Python checks still pass. Re-run all native CI on this exact update.
 
 Each completed build also emits its metrics JSON into the job log, so measured scores, rule impact and DEX evidence remain reviewable without downloading an artifact ZIP. This does not change the compiler or runtime checks.
+
+## First native compiler finding
+
+Run 44585073902 at 79fd7f72 compiled the baseline release APK/AAB, then failed while minifying the separate test APK. Error Prone's compile-time IncompatibleModifiers/RequiredModifiers annotation references javax.lang.model.element.Modifier, a JDK compiler API absent from Android. Add an opt-in testProguardFiles rule for exactly that type, plus stable names for the explicitly selected test class. These are test-APK rules only; the app rule set, measurements and runtime remain unchanged. Thirteen Python checks pass; the complete controlled experiment must rerun.

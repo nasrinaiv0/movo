@@ -69,6 +69,10 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (project.findProperty('movoR8ReleaseSmoke') == 'true') {
+                // Separate test-APK rules; never change the app's R8 inputs.
+                testProguardFiles 'r8-smoke-test-rules.pro'
+            }
         }
     }
 }
