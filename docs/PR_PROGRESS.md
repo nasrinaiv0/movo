@@ -1,3 +1,13 @@
+## 2026-11-20 — Isolated Android R8 measurement and release emulator gate
+
+- Continued the Android optimization handoff from main `a3193b8361e32ea559d8350deaeb6a3e75041759`. No changes to main, production, store uploads or signing secrets.
+- Candidate removes only the redundant class-specific MovoNativePlugin keep; the annotation-based full plugin keep remains. No size/score gain is claimed before matched measurements.
+- Added a read-only-permission PR workflow: identical bundled UI, temporary synthetic signing, default-compiler baseline/candidate APK+AAB and diagnostic R8 9.4.34 baseline/candidate with Google's pinned analyzer. Restores original settings/rules and uploads source hashes, mappings, DEX bytes, reports, logs and screenshots.
+- Opt-in instrumentation targets non-debuggable minified releases. Checks reflected bridge contracts, secure-storage ciphertext/round-trip/removal, activity and separate-process restart, offline bundled bank logo/card style, and a synthetic OAuth provider error callback. Successful live login and Play/Apple billing are separate unverified gates.
+- Independent Codex review found and fixed two harness defects: refuse physical/ambiguous ADB devices before any root/network/uninstall operation, and reject skipped/assumption-failed instrumentation as failures. Claude is unavailable in this runtime; no Claude review is claimed.
+- Local Python verification: 13 tests passed; diff whitespace check passed. Native SDK/KVM are unavailable in the managed workspace. Vercel Sandbox returned HTTP 402 payment_required and no Vercel CLI is installed; run native measurements on disposable GitHub KVM runner.
+- Engineering evidence and acceptance limits: `docs/engineering/updates/2026-11-20-android-r8-controlled-experiment.md`. Documentation recorded before committing/publishing. Do not merge or promote this experiment without complete native and real-account/store acceptance.
+
 ## 2026-11-19 — Voice transcription recovery and loading-screen branding
 
 - Preview acceptance follow-up, documented before commit: live metadata confirms MOVO_ALLOWED_ORIGINS contains only the two production origins. Allow this exact Vercel deployment origin only in VERCEL_ENV=preview, retaining production rejection of preview/sibling hosts, and add four boundary regressions. Repeated verification passed all 1,612 tests and the strict production build; independent security review passed. Provider credentials remain unchanged; OpenRouter fallback is currently configured only for production, so real fallback acceptance needs separate preview credentials or an approved staged release.

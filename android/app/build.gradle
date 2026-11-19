@@ -3,6 +3,14 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.nasrinai.movo"
     compileSdk = rootProject.ext.compileSdkVersion
+    // Experiment only: instrument the minified release APK, never a debug substitute.
+    // Signing still comes solely from the existing ephemeral/CI environment.
+    if (project.findProperty('movoR8ReleaseSmoke') == 'true') {
+        testBuildType 'release'
+        defaultConfig {
+            testInstrumentationRunnerArguments movoR8Smoke: 'true'
+        }
+    }
     defaultConfig {
         applicationId "com.nasrinai.movo"
         manifestPlaceholders = [movoAuthScheme: "movo"]

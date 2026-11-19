@@ -25,7 +25,7 @@
 -repackageclasses
 
 # Preserve Capacitor plugin classes and reflected JS bridge method names.
-# Native security vault cannot be removed or renamed by the release shrinker.
+# This includes the annotated MovoNativePlugin security vault; a separate
+# class-wide keep for that same class would add no protection.
 -keep @com.getcapacitor.annotation.CapacitorPlugin class * { *; }
--keep class com.nasrinai.movo.MovoNativePlugin { *; }
 -keepattributes RuntimeVisibleAnnotations,Signature,InnerClasses
