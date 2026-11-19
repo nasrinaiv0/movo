@@ -15,9 +15,10 @@ import { MovoMark } from './MovoLogo';
 import { SubIcon } from '../screens/Subscriptions';
 import { catalogFor } from '../lib/subscriptions';
 import { MOVO_FINANCIAL_SUGGESTIONS, MOVO_PLACEHOLDER_EXAMPLES } from '../lib/movoPrompts';
+import { readAIConsent, setAIConsent, watchAIConsent } from '../lib/aiConsent';
+import legalCore from '../lib/legalCore.json';
 
-const ackKey = (id) => `movo.ai.ack.v1.${id}`;
-const readAck = (id) => { try { return !!id && localStorage.getItem(ackKey(id)) === '1'; } catch { return false; } };
+const readAck = readAIConsent;
 const MAX = 1600;
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 import './NasrinAIChat.css';
@@ -90,6 +91,8 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
   const [error, setError] = useState('');
   const { can, requireFeature } = usePlan();
   const [privacyAccepted, setPrivacyAccepted] = useState(() => readAck(session?.user?.id));
+  const privacyAcceptedRef = useRef(privacyAccepted);
+  privacyAcceptedRef.current = privacyAccepted;
   const [consentOpen, setConsentOpen] = useState(false);
   const [listening, setListening] = useState(false);
   const [attaching, setAttaching] = useState(false);
@@ -221,11 +224,14 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
       const accessToken = await chatAccessToken(session);
       if (!isCurrentRequest()) return;
       if (!accessToken) throw new Error('invalid_session');
-      const ask = () => fetch(apiUrl('/api/nasrinai/chat'), {
+      const ask = () => {
+        if (!privacyAcceptedRef.current) throw new Error('financial_context_consent_required');
+        return fetch(apiUrl('/api/nasrinai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
         body: JSON.stringify({ message, conversationId, consent: privacyAccepted, language: getLanguage().code, voiceMode: voiceRef.current })
-      });
+        });
+      };
       let response = await ask();
       let result = await response.json().catch(() => ({}));
       // A momentary NasrinAI failure is retried once before telling the person.
@@ -279,7 +285,7 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
   };
 
   const accept = () => {
-    try { localStorage.setItem(ackKey(session.user.id), '1'); } catch { /* storage unavailable: accepted for this visit */ }
+    setAIConsent(session.user.id, true);
     setPrivacyAccepted(true); setConsentOpen(false); setError('');
     inputRef.current?.focus();
   };
@@ -430,6 +436,13 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
     stopPlayback();
     spokenRef.current = '';
   };
+
+  useEffect(() => watchAIConsent(session?.user?.id, accepted => {
+    privacyAcceptedRef.current = accepted;
+    setPrivacyAccepted(accepted);
+    if (!accepted) stopVoice(true);
+    // Current resources are held in refs; one subscription per account session.
+  }), [session?.user?.id]);
 
   const failVoice = (cause) => {
     stopVoice(true);
@@ -794,6 +807,7 @@ function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoL
           <li><Icon name="shield" size={16} strokeWidth={2} /><span>{tr('Financial actions are not performed from chat.')}</span></li>
         </ul>
         <p className="movo-ai-consent-legal">{rich('By continuing you consent to share limited financial context with NasrinAI, as described in the {privacy} and {terms}.', { privacy: <button type="button" onClick={() => onOpenLegal?.('PrivacyPolicy')}>{tr('Privacy Policy')}</button>, terms: <button type="button" onClick={() => onOpenLegal?.('TermsOfService')}>{tr('Terms')}</button> })}</p>
+        <p className="movo-ai-consent-reason" lang="en">{legalCore.aiConsentShort[0]}</p>
         <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => setConsentOpen(false)}>{tr('Not now')}</button><button type="button" className="primary-button" onClick={accept} autoFocus>{tr('I understand')}</button></div>
       </div>
     </div>}

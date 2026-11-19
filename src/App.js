@@ -46,7 +46,9 @@ import { BriefingSheet } from './components/Briefing';
 import Walkthrough from './components/Walkthrough';
 import SetupAgreement from './components/SetupAgreement';
 import CloudPlanNotice from './components/CloudPlanNotice';
-import { LEGAL_VERSION, hasAcceptedLegal } from './lib/legalVersion';
+import legalCore from './lib/legalCore.json';
+import { setAIConsent } from './lib/aiConsent';
+import { LEGAL_VERSION, LEGAL_ACCEPTANCE_DATE, hasAcceptedLegal } from './lib/legalVersion';
 import LockScreen from './components/LockScreen';
 import CardArt from './components/CardArt';
 import AccountTile from './components/AccountTile';
@@ -182,7 +184,7 @@ const DEFAULTS = {
   theme: 'system', glass: true, clarity: 55, scenery: '', sceneryVisibility: 45, accent: 'green', customColor: '#13b45f', navAccent: 'plan', showBalance: true, showBalanceAfterTransaction: true, compact: false, fontStyle: 'default', fontSize: 'default', categoryColors: true, iconColors: true,
   notifications: true, push: false, email: false, inapp: true, cloudSyncEnabled: true, autoSyncOnReconnect: false, catTransactions: true, catAccount: true, catAi: true, catPromo: true, catReports: true,
   biometrics: true, cloudSync: true, localStorage: false, autocat: true, profileName: '', phone: '', location: '', readIds: [], notifSeenAt: '', logsSeenAt: '', subsSeen: '', quietOn: false, quietStart: '22:00', quietEnd: '07:00', pushed: [], devices: [], streak: null, cardStyles: {},
-  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedAt: '', homeHero: 'plain', homeHeroDefaultNone: true, cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
+  accountStyles: {}, accountQrCodes: {}, accountQrPending: {}, membershipCards: [], loyaltyRewardRules: {}, layouts: {}, budgets: [], plans: [], spendingLimits: [], subscriptions: [], archive: [], briefing: true, briefingDay: '', onboarded: false, tutorialSeen: false, legalAccepted: '', legalAcceptedRevision: '', legalAcceptedAt: '', homeHero: 'plain', homeHeroDefaultNone: true, cloudPlanNoticeDay: '', mascot: '', mascotStyle: 'ram', appIcon: 'default', autoLog: false, autoLogKey: '', autoLogAccount: '', language: '', currency: 'PHP', country: '', cryptoWatchlist: ['btc-bitcoin', 'eth-ethereum', 'sol-solana'], stockWatchlist: ['AAPL', 'MSFT', 'NVDA'], cryptoAlerts: [], cryptoHoldings: [], fxPairs: ['USD:PHP', 'EUR:PHP', 'SGD:PHP', 'JPY:PHP', 'GBP:PHP', 'AUD:PHP'],
 };
 const ROOT_FOR = { ScheduledTransactions: 'Menu', Archive: 'Menu', FinancialPlanning: 'Menu', Cashback: 'Menu', ExchangeRates: 'Menu', CryptoMarket: 'Menu', StocksMarket: 'Menu', Home: 'Home', Notifications: 'Home', NotificationDetail: 'Home', NotificationSettings: 'Home', Wallet: 'Wallet', Transactions: 'Transactions', NasrinAI: 'NasrinAI', Menu: 'Menu', Profile: 'Menu', Friends: 'Menu', FriendSummary: 'Menu', Subscriptions: 'Menu', Settings: 'Menu', Appearance: 'Menu', EditProfile: 'Menu', HelpCenter: 'Menu', TermsOfService: 'Menu', PrivacyPolicy: 'Menu' };
 // Screens reachable while setup is unfinished (see setupDone in App).
@@ -1938,13 +1940,14 @@ function App() {
       if (cloudMode && session?.user) { await deleteAllCloudData(session.user.id); setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
       const qrCleanup = Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       invalidateChatHistoryWrites();
+      setAIConsent(session?.user?.id, false);
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefs({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
       await qrCleanup;
       if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
-      notify(cloudMode ? tr('All MOVO data was deleted from this device and your account.') : tr('All MOVO data on this device was deleted.'));
-    } catch { setError(tr('Some cloud data could not be deleted. Nothing on this device was removed; please try again.')); }
+      notify(tr('Records cleared.'));
+    } catch { setError(tr('Some records could not be cleared. Review your data and try again.')); }
     finally { setBusy(false); }
   };
   /* Delete the MOVO account itself (App Store 5.1.1(v)): server deletes the account and its cloud data, then this
@@ -1957,6 +1960,7 @@ function App() {
       if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       invalidateChatHistoryWrites();
+      setAIConsent(session?.user?.id, false);
       const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') || k.startsWith('sb-')).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
       wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
       setSheet(null); setClearText('');
@@ -2960,8 +2964,9 @@ function App() {
         onClose={() => { setCloudPlanNotice(false); setPref('cloudPlanNoticeDay', todayKey); }} />}
       {/* Last setup step, after the free-month panel above: accept the Terms and Privacy Policy, then the dashboard
           opens. Reading either one returns here. */}
-      {setupGateOn && authReady && !locked && prefs.onboarded && prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && <SetupAgreement onOpenLegal={openLegal}
-        onAccept={() => { setPrefs(cur => ({ ...cur, legalAccepted: LEGAL_VERSION, legalAcceptedAt: new Date().toISOString() })); go('Home'); }} />}
+      {setupGateOn && authReady && !locked && prefs.onboarded && prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && sheet?.name !== 'deleteAccount' && <SetupAgreement onOpenLegal={openLegal}
+        onDeleteAccount={session?.user ? () => setSheet({ name: 'deleteAccount' }) : undefined}
+        onAccept={() => { setPrefs(cur => ({ ...cur, legalAccepted: LEGAL_ACCEPTANCE_DATE, legalAcceptedRevision: LEGAL_VERSION, legalAcceptedAt: new Date().toISOString() })); go('Home'); }} />}
       {locked && <LockScreen account={session?.user} onUnlock={unlock} onForgot={() => confirm({
         // Only offered for guest or legacy locks with no account to verify. Email recovery does not erase data.
         // Erases every MOVO record on this device, so the person types DELETE first.
@@ -3012,7 +3017,8 @@ function App() {
 
         </div>
       </Sheet>}
-      {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} subtitle={tr('Permanently deletes your MOVO account and everything in it: transactions, accounts, budgets, bills, plans, automations and NasrinAI chats, plus MOVO data on this device. This cannot be undone.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
+      {sheet?.name === 'deleteAccount' && <Sheet title={tr('Delete your account?')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Delete Account')}>
+        <p className="form-hint" lang="en">{legalCore.deleteScope[0]}</p>
         <p className="form-hint">{tr('Subscriptions are billed and managed by Apple or Google. Cancel in your store account to stop renewal.')}</p>
         <p className="form-hint">{tr('You can request account deletion in MOVO or at movo.nasrinai.com/account-deletion.html. Deleting your MOVO account does not automatically cancel a subscription billed by Apple or Google; cancel it in your store account to stop renewal.')}</p>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); deleteAccount(); }}>
@@ -3021,12 +3027,13 @@ function App() {
           <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Delete my account')}</button></div>
         </form>
       </Sheet>}
-      {sheet?.name === 'clear' && <Sheet title={tr('Clear all data?')} subtitle={cloudMode ? tr('Permanently deletes everything in your MOVO account (transactions, accounts, budgets and NasrinAI chats) and all MOVO data on this device. Your sign-in stays.') : tr('Permanently deletes all MOVO data on this device: transactions, accounts, budgets, plans, scans, mascot, card styles and preferences.')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear all data')}>
+      {sheet?.name === 'clear' && <Sheet title={tr('Clear records')} onClose={() => { setSheet(null); setClearText(''); }} label={tr('Clear records')}>
+        <p className="form-note" lang="en">{legalCore.clearScope[0]}</p>
         <form className="sheet-form" onSubmit={e => { e.preventDefault(); clearAll(); }}>
           <p className="form-note">{tr('Export a CSV first if you want a copy. This cannot be undone.')}</p>
           <label>{tr('Type DELETE to confirm')}<input aria-label={tr('Type DELETE to confirm')} autoComplete="off" value={clearText} onChange={e => setClearText(e.target.value)} placeholder={tr('DELETE')} /></label>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Clear all data')}</button></div>
+          <div className="sheet-actions"><button type="button" className="secondary-button" onClick={() => { setSheet(null); setClearText(''); }}>{tr('Cancel')}</button><button type="submit" className="danger-button" disabled={busy || clearText.trim().toUpperCase() !== 'DELETE'}>{busy ? tr('Deleting…') : tr('Clear records')}</button></div>
         </form>
       </Sheet>}
 

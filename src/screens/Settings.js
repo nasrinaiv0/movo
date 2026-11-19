@@ -17,6 +17,7 @@ import { FONT_SIZES, FONT_STYLES, fontStyleOf } from '../lib/fontPrefs';
 import { lockState, setPasscode, removeLock, validPasscode, biometricAvailable, enableBiometric, disableBiometric, verifyPasscode } from '../lib/appLock';
 import { getStoreProducts, getStoreEntitlements, purchaseStoreProduct, syncStorePurchases, isNativePurchasePlatform } from '../lib/nativePurchases';
 import SubscriptionLinks from '../components/SubscriptionLinks';
+import { readAIConsent, setAIConsent, watchAIConsent } from '../lib/aiConsent';
 
 export const ACCENTS = [['green', '#086b3a'], ['blue', '#2f6bff'], ['purple', '#7c4dff'], ['orange', '#ff8a1f'], ['red', '#d32f2f'], ['slate', '#334155']];
 export const THEMES = [
@@ -235,13 +236,24 @@ export default function Settings({ c }) {
   const [panel, setPanel] = useState('');
   const [bio, setBio] = useState(false);
   const [, rerender] = useState(0);
+  const [aiSharing, setAiSharing] = useState(() => readAIConsent(c.session?.user?.id));
+  useEffect(() => {
+    const owner = c.session?.user?.id;
+    setAiSharing(readAIConsent(owner));
+    return watchAIConsent(owner, setAiSharing);
+  }, [c.session?.user?.id]);
   const searchInput = useRef(null);
   useEffect(() => { biometricAvailable().then(setBio); }, []);
   const lock = lockState();
   const pushOn = !!prefs.push && pushGranted();
-  const toggleValue = (key) => (key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? (c.cloudMode || (!!c.deviceCopyAccess && prefs.cloudSyncEnabled !== false)) : prefs[key] !== false && !!prefs[key]);
+  const toggleValue = (key) => (key === 'aiConsent' ? aiSharing : key === 'push' ? pushOn : key === 'biometrics' ? lock.biometric : key === 'email' ? false : key === 'cloudSync' ? (c.cloudMode || (!!c.deviceCopyAccess && prefs.cloudSyncEnabled !== false)) : prefs[key] !== false && !!prefs[key]);
   const toggleDisabled = (key) => (key === 'email' || (key === 'push' && !pushSupported()) || (key === 'biometrics' && (!bio || !lock.enabled)));
   const toggleChange = async (key, v) => {
+    if (key === 'aiConsent') {
+      if (!v) setAIConsent(c.session?.user?.id, false);
+      else go('NasrinAI'); // Consent must be reviewed in chat; this switch cannot grant it.
+      return;
+    }
     if (key === 'push') return togglePush(c, v);
     if (key === 'biometrics') {
       try { if (v) { await enableBiometric(); c.notify(tr('Face ID / Touch ID can now unlock Movo.')); } else disableBiometric(); } catch { c.notify(tr('Face ID / Touch ID was not set up.')); }
@@ -277,8 +289,9 @@ export default function Settings({ c }) {
       { icon: 'face', title: tr('Face ID / Touch ID'), sub: !bio ? tr('This device or browser does not offer Face ID / Touch ID.') : lock.enabled ? tr('Unlock Movo with your face or fingerprint.') : tr('Turn on App Lock first.'), toggle: 'biometrics' },
       { icon: 'shield', title: tr('Privacy & Data'), sub: tr('Read how MOVO handles your information'), onClick: () => c.openLegal?.('PrivacyPolicy') },
       { icon: 'shield', title: tr('Security & Privacy'), sub: tr('Read how MOVO handles your information'), onClick: () => Browser.open({ url: 'https://movo.nasrinai.com/security' }).catch(() => {}) },
-      { icon: 'trash', title: tr('Clear All Data'), sub: c.cloudMode ? 'Delete all activity and data on this device and in your MOVO account' : 'Delete all activity and data stored on this device', onClick: () => c.setSheet({ name: 'clear' }), danger: true },
-      ...(c.cloudMode ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Permanently delete your MOVO account and everything in it'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
+      ...(c.session?.user ? [{ icon: 'spark', title: tr('AI data sharing'), sub: tr('Read how MOVO handles your information'), toggle: 'aiConsent' }] : []),
+      { icon: 'trash', title: tr('Clear records'), sub: tr('Read how MOVO handles your information'), onClick: () => c.setSheet({ name: 'clear' }), danger: true },
+      ...(c.session?.user ? [{ icon: 'trash', title: tr('Delete Account'), sub: tr('Read how MOVO handles your information'), onClick: () => c.setSheet({ name: 'deleteAccount' }), danger: true }] : []),
     ] },
     { title: tr('Transaction History'), rows: [
       { icon: 'list', title: tr('Show balance after each transaction'),

@@ -15,7 +15,7 @@ export const AGREEMENT_POINTS = [
   { icon: 'card', text: 'MOVO digital subscriptions use Apple In-App Purchase on iOS and Google Play Billing on Android.' },
 ];
 
-export default function SetupAgreement({ onAccept, onOpenLegal }) {
+export default function SetupAgreement({ onAccept, onOpenLegal, onDeleteAccount }) {
   const [agreed, setAgreed] = useState(false);
   return <div className="setup-agreement" role="presentation">
     <section className="setup-agreement-card" role="dialog" aria-modal="true" aria-labelledby="setup-agreement-title" aria-describedby="setup-agreement-text">
@@ -29,8 +29,9 @@ export default function SetupAgreement({ onAccept, onOpenLegal }) {
         <button type="button" className="link-button" onClick={() => onOpenLegal('TermsOfService')}>{tr('Terms of Service')} <Icon name="chevron" size={14} /></button>
         <button type="button" className="link-button" onClick={() => onOpenLegal('PrivacyPolicy')}>{tr('Privacy Policy')} <Icon name="chevron" size={14} /></button>
       </div>
-      <label className="setup-agreement-check"><input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} /><span>{tr('I have read and agree to the Terms of Service and Privacy Policy.')}</span></label>
+      <label className="setup-agreement-check"><input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} /><span>{tr('I am at least 18 years old.')} {tr('I agree to the Terms of Service and acknowledge the Privacy Policy.')}</span></label>
       <button type="button" className="primary-button setup-agreement-accept" disabled={!agreed} onClick={() => { if (agreed) onAccept(); }}>{tr('Accept and continue')}</button>
+      {onDeleteAccount && <button type="button" className="link-button" onClick={onDeleteAccount}>{tr('Delete Account')}</button>}
     </section>
   </div>;
 }

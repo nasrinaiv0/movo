@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import NasrinAIChat from './NasrinAIChat';
 import { supabase } from '../lib/supabaseClient';
 import { CHAT_IDLE_MS } from '../lib/chatHistory';
+import { setAIConsent } from '../lib/aiConsent';
 
 jest.mock('../lib/supabaseClient', () => ({
   supabase: { auth: { getSession: jest.fn() } }
@@ -229,6 +230,24 @@ describe('NasrinAI consent and legal links', () => {
   });
 
 
+  test('withdrawing consent prevents automatic retransmission after an in-flight chat failure', async () => {
+    let complete;
+    global.fetch.mockImplementationOnce(() => new Promise(resolve => { complete = resolve; }));
+    act(() => button('I understand').click());
+    setTextareaValue(container.querySelector('#movo-ai-prompt'), 'Review my spending');
+    await act(async () => {
+      container.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise(resolve => setTimeout(resolve, 20));
+    });
+    await act(async () => {
+      setAIConsent('user-1', false);
+      complete({ ok: false, json: async () => ({ error: 'nasrinai_timeout' }) });
+      await new Promise(resolve => setTimeout(resolve, 1300));
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('#movo-ai-prompt').value).toBe('Review my spending');
+  });
+
   describe('voice conversation', () => {
     let contexts; let spoken; let saved; let recorders; let track;
     beforeEach(() => {
@@ -276,6 +295,17 @@ describe('NasrinAI consent and legal links', () => {
       act(() => button('I understand')?.click());
       await act(async () => { button('Talk with NasrinAI').click(); });
     };
+
+    test('withdrawing AI consent stops active voice and asks again before a new capture', async () => {
+      await startCapture();
+      await act(async () => setAIConsent('user-1', false));
+      expect(track.stop).toHaveBeenCalledTimes(1);
+      expect(button('Talk with NasrinAI')).toBeTruthy();
+      act(() => button('Talk with NasrinAI').click());
+      expect(container.textContent).toContain('Before you start');
+      expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalledTimes(1);
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
     const segment = async (advance) => {
       const callbacks = [];
       let now = 10000;

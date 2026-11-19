@@ -18,7 +18,8 @@
       "heading": "14. Paid subscriptions, restoration and refunds",
       "paragraphs": [
         "If paid features become available through the iOS or Android app, the relevant app store displays the applicable price, billing period, trial terms and any taxes before you confirm a purchase. Eligible subscriptions renew automatically according to the terms shown by that store unless cancelled there. The store manages payment processing, billing changes, cancellation and applicable refund requests; MOVO cannot cancel your store subscription merely by deleting your MOVO account.",
-        "Restore Purchases can restore an eligible, verified purchase to the MOVO account originally linked to it. Restores and access depend on valid store verification, account matching and product availability. Refunds and statutory consumer rights are determined under applicable law and the relevant store rules. MOVO will not describe disabled checkout as a functioning purchase option."
+        "Restore Purchases can restore an eligible, verified purchase to the MOVO account originally linked to it. Restores and access depend on valid store verification, account matching and product availability. Refunds and statutory consumer rights are determined under applicable law and the relevant store rules. MOVO will not describe disabled checkout as a functioning purchase option.",
+        "Cancelling renewal normally preserves verified paid access until the current paid period expires, unless a refund, revocation or another lawful store action changes that access. A MOVO promotional trial does not by itself authorize a charge. A store-managed trial may renew at the price and interval shown by the store unless cancelled under those terms. Contact MOVO for access or verification problems; mandatory consumer rights still apply."
       ],
       "links": [
         {
@@ -48,7 +49,7 @@
     {
       "heading": "17. Accepting these terms during setup",
       "paragraphs": [
-        "When you first set up MOVO, and again after these Terms or the Privacy Policy change, MOVO asks you to accept them before the app opens. The version you accepted and the time you accepted it are saved with your MOVO preferences on this device and, when you are signed in, with your account preferences.",
+        "During setup, and after a material policy revision, MOVO asks you to agree to the Terms and acknowledge the Privacy Policy before the app opens. Optional AI sharing and device permissions require their own choices. The accepted revision and acceptance time are saved in your device preferences and, when signed in, supported account preferences.",
         "The guide shown during setup uses screenshots with invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
       ]
     },
@@ -64,7 +65,7 @@
       "heading": "10. Why we process information and the applicable basis",
       "paragraphs": [
         "We use the information you provide to deliver requested tracking, authentication, cloud sync, transaction logging, support and exports; to maintain service integrity and prevent misuse; and to meet legal obligations where applicable. Depending on the processing and the law that applies, these activities may rely on your request or agreement, legitimate interests that do not override your rights, legal obligations or your consent where required.",
-        "Financial-context sharing with NasrinAI is optional and requires a separate in-app choice. You may decline it and continue using non-AI MOVO features. Withdrawing consent limits future optional sharing; it does not automatically retract material already processed by a third-party provider. Contact support@nasrinai.com for privacy requests."
+        "Optional financial-context sharing with NasrinAI and its configured providers requires a separate in-app choice. You may decline and continue manual tracking. This device’s chat and voice consent can be withdrawn in Settings → Security & Privacy → AI data sharing. Already submitted material and other devices are handled as described in section 5."
       ]
     },
     {
@@ -92,7 +93,7 @@
     {
       "heading": "14. How long data stays and how deletion works",
       "paragraphs": [
-        "Local-only data remains on the current device or browser profile until you clear it, delete app/browser storage or the device removes it. Signed-in cloud records, chat history and preferences remain while your account is active unless you delete them or request a supported removal. Certain items moved into MOVO's Archive are retained for up to 90 days before scheduled removal; this Archive period does not apply to every type of deleted record.",
+        "Retention varies by record, storage location and the deletion function used. The record-specific Archive limits, local copies, Clear records scope and account-deletion exceptions are described in section 6; the 90-day cleanup window is not a universal retention period or a guaranteed scheduled purge.",
         "Use Settings → Delete Account in MOVO or the public account-deletion page to request removal of your cloud account and associated personal data. Local data on another device may need separate clearing. Some data may remain temporarily in backups, security logs or records that must lawfully be retained for accounting, fraud prevention, dispute resolution or legal claims; such exceptions should be limited to applicable purposes and retention requirements. Deleting MOVO does not cancel an Apple or Google subscription.",
         "Backup, incident and legally retained records may have different retention periods depending on the underlying service and legal obligations. This notice does not promise immediate removal from every backup or third-party system; contact our privacy team to ask about a particular record."
       ],
@@ -107,7 +108,8 @@
       "heading": "15. Your choices and privacy rights",
       "paragraphs": [
         "Where applicable, you may ask to be informed about processing, access or correct personal data, object to qualifying processing, withdraw consent, request deletion or blocking, obtain a portable copy, and raise a complaint with the appropriate regulator. You may export available financial records in MOVO and contact support@nasrinai.com for additional requests.",
-        "We may need to verify your identity before disclosing or deleting cloud records. We will assess requests under the applicable law, including lawful retention exceptions, without asking you to email passwords or full payment-card information."
+        "We may need to verify your identity before disclosing or deleting cloud records. We will assess requests under the applicable law, including lawful retention exceptions, without asking you to email passwords or full payment-card information.",
+        "Contact dpo@nasrinai.com to exercise these rights. Where the GDPR applies, requests are normally answered within one month; a legally permitted extension is explained within that first month. Other applicable legal deadlines still govern. Requests are normally free, subject to lawful exceptions. You may complain to a competent regulator without contacting MOVO first."
       ],
       "links": [
         {
@@ -126,8 +128,8 @@
     {
       "heading": "17. Children, policy updates and operator information",
       "paragraphs": [
-        "MOVO is not designed for children. If you believe a minor's data was submitted improperly, please contact support@nasrinai.com so it can be reviewed.",
-        "MOVO is operated by the developer or legal operator identified in the applicable app-store listing. For identity or privacy questions and requests, contact support@nasrinai.com. Material policy changes will be dated and communicated as required by law; changes in optional processing may require renewed notice or consent."
+        "MOVO is intended for adults aged 18 or older. Age eligibility and privacy-contact details are set out in sections 1 and 9.",
+        "MOVO is a product of NasrinAI. Material changes will be dated and communicated as required. Acceptance of the Terms and acknowledgement of the Privacy Policy are separate from optional AI and device-permission choices; a policy update does not by itself authorize new optional processing."
       ]
     },
     {
