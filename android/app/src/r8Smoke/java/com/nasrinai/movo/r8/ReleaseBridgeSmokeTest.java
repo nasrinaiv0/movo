@@ -300,7 +300,8 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             });
         });
         assertTrue("Wallet did not render an Android WebView frame", frame.await(10, TimeUnit.SECONDS));
-        waitForIdleSync();
+        // The visual-state fence and following animation frame are the required
+        // render signal. A global idle wait can stall on continuously animated UI.
     }
 
     private void screenshot(String name) throws Exception {

@@ -1504,3 +1504,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 ### 2026-11-15 — PR #304 manifest regression test update (documented before commit)
 - Old `androidManifestRelease.test.js` assumed `android:scheme="movo"` was hardcoded twice in source, but new secure build contract uses a placeholder for the auth callback. Retain strict security assertions: placeholder is present, production and authTest build types use **distinct exact values**, quick-log scheme remains `movo`, no wildcard/catchall/secret payload, and backups disabled.
 - Native build's `aapt` manifest verification remains mandatory; this is not a test bypass. Require exact-head full CI rerun and Android real-device acceptance. No production changes.
+
+
+## 2026-11-20 — PR #326 stalled emulator continuation (pre-implementation)
+- Run 44620678294 completed compiler comparisons, but its emulator step remained active for over 30 minutes; the precise command is unconfirmed because live logs are unavailable.
+- Preserve the explicit WebView frame/screenshot assertions, remove the newly added unbounded post-frame idle wait, bound ADB/instrumentation and the workflow step, and retain partial timeout output plus independent diagnostics.
+- Every timeout remains a hard failure. New Python regressions and exact-head native CI are required; no store upload or broader release approval. See the Android R8 engineering update.
+- Local validation after implementation: all 18 R8 Python tests and whitespace checks pass. Native exact-head evidence is pending; no timeout is converted into success.

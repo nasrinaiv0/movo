@@ -37,9 +37,9 @@ def legal_fixture(source):
     return {"date": accepted, "revision": revision}
 
 
-def adb(*args, check=True):
+def adb(*args, check=True, timeout=90):
     prefix = ["adb", "-s", ADB_SERIAL] if ADB_SERIAL else ["adb"]
-    result = subprocess.run([*prefix, *args], text=True, capture_output=True)
+    result = subprocess.run([*prefix, *args], text=True, capture_output=True, timeout=timeout)
     if check and result.returncode:
         print(result.stdout + result.stderr, file=sys.stderr)
         raise subprocess.CalledProcessError(result.returncode, result.args)
@@ -73,7 +73,15 @@ def instrument(folder, method, legal, phase=None):
         args.extend(["-e", "movoLegalRevision", legal["revision"]])
     if phase:
         args.extend(["-e", "movoPersistencePhase", phase])
-    result = adb(*args, RUNNER)
+    print("Starting instrumentation: " + label, flush=True)
+    try:
+        result = adb(*args, RUNNER, timeout=240)
+    except subprocess.TimeoutExpired as error:
+        partial = error.stdout or ""
+        if isinstance(partial, bytes):
+            partial = partial.decode("utf-8", errors="replace")
+        (folder / (label + ".txt")).write_text(partial + "\nInstrumentation timed out; acceptance FAILED.\n")
+        raise
     (folder / (label + ".txt")).write_text(result)
     print(result, flush=True)
     # adb can exit zero even when instrumentation never ran or failed.
@@ -87,11 +95,25 @@ def instrument(folder, method, legal, phase=None):
 
 
 def capture(folder):
-    (folder / "logcat.txt").write_text(adb("logcat", "-d", "-v", "threadtime", check=False))
-    with (folder / "screen.png").open("wb") as image:
-        subprocess.run(["adb", "-s", ADB_SERIAL, "exec-out", "screencap", "-p"], stdout=image, check=False)
-    (folder / "activity.txt").write_text(adb("shell", "dumpsys", "activity", "activities", check=False))
-    adb("pull", "/sdcard/Android/data/" + PACKAGE + "/files/r8-smoke", str(folder / "screenshots"), check=False)
+    errors = []
+    def collect(name, action):
+        try:
+            action()
+        except (OSError, subprocess.SubprocessError) as error:
+            errors.append(name + ": " + str(error))
+    collect("logcat", lambda: (folder / "logcat.txt").write_text(
+        adb("logcat", "-d", "-v", "threadtime", check=False, timeout=30)))
+    def screen():
+        with (folder / "screen.png").open("wb") as image:
+            subprocess.run(["adb", "-s", ADB_SERIAL, "exec-out", "screencap", "-p"],
+                           stdout=image, check=True, timeout=30)
+    collect("screenshot", screen)
+    collect("activity", lambda: (folder / "activity.txt").write_text(
+        adb("shell", "dumpsys", "activity", "activities", check=False, timeout=30)))
+    collect("screenshots", lambda: adb("pull", "/sdcard/Android/data/" + PACKAGE + "/files/r8-smoke",
+                                      str(folder / "screenshots"), check=False, timeout=30))
+    if errors:
+        (folder / "diagnostic-errors.txt").write_text("\n".join(errors) + "\n")
 
 
 def main():
@@ -114,6 +136,7 @@ def main():
         adb("shell", tool, "-I", "OUTPUT", "1", "-j", "DROP")
         adb("shell", tool, "-C", "OUTPUT", "-j", "DROP")
     for label in ("baseline", "candidate"):
+        print("Starting minified release acceptance: " + label, flush=True)
         built = output / "default" / label
         folder = built / "device"
         folder.mkdir(parents=True, exist_ok=True)

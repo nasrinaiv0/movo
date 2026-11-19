@@ -78,6 +78,7 @@ jobs:
           sudo chmod a+rw /dev/kvm
       # Verified v2 annotated tag -> commit a421e438; Google skill is pinned in experiment.py.
       - name: Offline emulator acceptance on DEFAULT release baseline and candidate
+        timeout-minutes: 25
         if: always() && steps.default-build.outcome == 'success'
         uses: ReactiveCircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
