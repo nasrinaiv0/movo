@@ -57,7 +57,7 @@ test('creates a single QR after entering a share name and clears it after revoca
     return { friends: [], activeInviteUntil };
   });
   const { el, close } = await mount({ session });
-  await click(el, 'Invite');
+  await click(el, 'Share profile');
   type(el, 'Nas');
   await click(el, 'Create invite');
   expect(el.querySelector('.friends-qr title').textContent).toBe('Friend invite QR code');
@@ -65,5 +65,39 @@ test('creates a single QR after entering a share name and clears it after revoca
   await click(el, 'Revoke invite');
   expect(el.querySelector('.friends-qr')).toBeNull();
   expect(el.textContent).toContain('Invite revoked.');
+  close();
+});
+
+test('Add friend offers scanning and pasted links, then requires review before acceptance', async () => {
+  friendsRequest.mockImplementation(async (_auth, action) => action === 'preview' ? { name: 'Dirk', connected: false } : { friends: [], activeInviteUntil: null });
+  const { el, close } = await mount({ session });
+  await click(el, 'Add friend');
+  expect(el.textContent).toContain('Scan QR code');
+  await click(el, 'Paste invite link');
+  type(el, 'https://untrusted.example/friend#invite=' + token);
+  await click(el, 'Review invite');
+  expect(el.textContent).toContain('Enter a valid MOVO invite link.');
+  expect(friendsRequest.mock.calls.some(call => call[1] === 'preview')).toBe(false);
+  type(el, 'https://movo.nasrinai.com/friend#invite=' + token);
+  await click(el, 'Review invite');
+  expect(el.querySelector('.friends-recipient').textContent).toBe('Dirk');
+  expect(friendsRequest.mock.calls.some(call => call[1] === 'accept')).toBe(false);
+  close();
+});
+
+test('an existing QR keeps its original display name after reviewing another invite', async () => {
+  const expiresAt = new Date(Date.now() + 60000).toISOString();
+  let activeInviteUntil = null;
+  friendsRequest.mockImplementation(async (_auth, action) => {
+    if (action === 'create') { activeInviteUntil = expiresAt; return { token, expiresAt }; }
+    if (action === 'preview') return { name: 'Other friend', connected: false };
+    return { friends: [], activeInviteUntil };
+  });
+  const { el, close } = await mount({ session });
+  await click(el, 'Share profile'); type(el, 'Alice'); await click(el, 'Create invite');
+  await click(el, 'Add friend'); await click(el, 'Paste invite link');
+  type(el, 'https://movo.nasrinai.com/friend#invite=' + token); await click(el, 'Review invite');
+  type(el, 'Bob'); await click(el, 'Share profile');
+  expect(el.querySelector('.friend-profile-card h3').textContent).toBe('Alice');
   close();
 });

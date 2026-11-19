@@ -29,3 +29,10 @@ test('tries curated favicon fallbacks in order before showing the fallback', () 
   expect(el.querySelector('.brand-fallback')).not.toBeNull();
   act(() => root.unmount());
 });
+
+test('known bank artwork is bundled so it renders without an external connection', () => {
+  const el = document.createElement('div'); const root = createRoot(el);
+  act(() => root.render(<BrandLogo src="https://www.google.com/s2/favicons?domain=bpi.com.ph&sz=128" />));
+  expect(el.querySelector('img').getAttribute('src')).toBe('/brands/offline/bpi.com.ph.png');
+  act(() => root.unmount());
+});

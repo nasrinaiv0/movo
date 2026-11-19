@@ -1,3 +1,15 @@
+## 2026-11-19 — Offline appearance, visible plan prices, loans and Friends
+
+- Preserved saved logos, card names, verified local plan features and downloaded artwork offline; generated an isolated offline web shell.
+- Displayed all four paid plan amounts with fresh/cached/reference labels, guarded annual savings and exact checkout quotes.
+- Reduced card/bank elevation, especially dark mode, and preserved explicit Cloud Sync off semantics.
+- Added separate receiving and repayment account choices for loans/debts, including cards, plus an owner/currency-validated nullable metadata migration.
+- Added Friends QR camera/photo scanning, pasted links and a MOVO profile-style QR card with native/web image sharing.
+- Updated privacy disclosures and translation catalogs. Browser, regression and native/SQL CI evidence is linked in the PR. No production or store release is performed here.
+- Final visual review separated plan amounts into a readable two-column grid and compacted the loan consent rows. Integrated local verification passes 248 suites / 1,572 tests; QR PNG export-to-scan and offline reload checks pass. The original isolated finance, sync and purchase integrity checks passed. Final exact-head CI is tracked on PR #323.
+- [Implementation, validation and rollout details](engineering/updates/2026-11-19-offline-appearance-plans-friends-loans.md).
+
+
 ## 2026-11-18 — Start a fresh MOVO chat after 10 minutes idle
 
 - Added a 10-minute inactivity deadline, a history picker, and device-only encrypted storage for completed local conversations. Existing signed-in history remains available through its account-scoped endpoint.

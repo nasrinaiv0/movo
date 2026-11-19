@@ -4,6 +4,7 @@ import LocalAuthentication
 import Security
 import StoreKit
 import UniformTypeIdentifiers
+import ImageIO
 
 /// MOVO's native bridge (JS name "MovoNative").
 /// - Face ID / Touch ID for App Lock (LocalAuthentication; nothing leaves the device).
@@ -38,12 +39,27 @@ public class MovoNativePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func shareFriendInvite(_ call: CAPPluginCall) {
         guard let url = friendInviteURL(call) else { return }
+        var items: [Any] = [url]
+        if let encoded = call.getString("image") {
+            let prefix = "data:image/png;base64,"
+            guard encoded.hasPrefix(prefix), encoded.utf8.count <= 1_500_000,
+                  let data = Data(base64Encoded: String(encoded.dropFirst(prefix.count))), data.count <= 1_000_000,
+                  data.starts(with: [137, 80, 78, 71, 13, 10, 26, 10]),
+                  let source = CGImageSourceCreateWithData(data as CFData, nil),
+                  let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+                  let width = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+                  let height = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+                  width.intValue > 0, height.intValue > 0, width.intValue <= 1200, height.intValue <= 1200,
+                  let image = UIImage(data: data) else { call.reject("invalid_friend_card"); return }
+            items.insert(image, at: 0)
+        }
+        let activityItems = items
         DispatchQueue.main.async { [weak self] in
             guard let presenter = self?.bridge?.viewController, presenter.presentedViewController == nil else {
                 call.reject("share_unavailable")
                 return
             }
-            let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            let share = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
             share.popoverPresentationController?.sourceView = presenter.view
             share.popoverPresentationController?.sourceRect = CGRect(
                 x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 1, height: 1

@@ -1,4 +1,5 @@
 import React from 'react';
+import { isNativeApp } from './lib/platform';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
@@ -50,3 +51,10 @@ Promise.all([restoreNativeStorage(), refreshNativeNotifyPermission()])
     // Owner portal is isolated from customer financial storage.
     if (!ownerRoute) migrateLegacyOfflineReadCache().catch(() => {});
   });
+
+// Native builds already bundle the app. Web installs retain only static resources.
+if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator && !isNativeApp()) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
+  });
+}

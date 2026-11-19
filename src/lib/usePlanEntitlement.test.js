@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { usePlanEntitlement } from './usePlanEntitlement';
 import { getStoreEntitlements } from './nativePurchases';
 import { CLOUD_READ_TIMEOUT_MS } from './networkFailure';
+import { readOfflineEntitlement, saveOfflineEntitlement } from './offlineEntitlement';
+
+jest.mock('./offlineEntitlement', () => ({ readOfflineEntitlement: jest.fn(), saveOfflineEntitlement: jest.fn() }));
 
 jest.mock('./nativePurchases', () => ({ getStoreEntitlements: jest.fn(), isNativePurchasePlatform: () => false }));
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -13,6 +16,8 @@ const session = { user: { id: 'owner' }, access_token: 'token' };
 describe('entitlement startup requests', () => {
   let root; let container;
   beforeEach(() => {
+    readOfflineEntitlement.mockResolvedValue(null);
+    saveOfflineEntitlement.mockResolvedValue();
     jest.useFakeTimers();
     container = document.createElement('div'); root = createRoot(container);
   });
@@ -50,5 +55,29 @@ describe('entitlement startup requests', () => {
     await act(async () => { resolve({ active: true, tier: 'pro' }); });
     expect(latest.entitlement.tier).toBe('free');
     expect(latest.entitlement.owner).toBe('other');
+  });
+
+  test('annual access survives the maximum browser timeout chunk', async () => {
+    jest.spyOn(global, 'setInterval').mockImplementation(() => 0);
+    const cached = { owner: 'owner', active: true, tier: 'pro_plus', expiresAt: new Date(Date.now() + 365 * 86400000).toISOString() };
+    readOfflineEntitlement.mockResolvedValue(cached);
+    getStoreEntitlements.mockRejectedValue(new Error('offline'));
+    await act(async () => root.render(<Probe session={session} />));
+    await act(async () => { jest.advanceTimersByTime(2147483647); });
+    expect(latest.entitlement).toEqual(cached);
+    global.setInterval.mockRestore();
+  });
+
+  test('an offline restart keeps the verified plan and a later server revocation replaces it', async () => {
+    const cached = { owner: 'owner', active: true, tier: 'pro_plus', expiresAt: '2099-01-01T00:00:00Z' };
+    readOfflineEntitlement.mockResolvedValue(cached);
+    getStoreEntitlements.mockRejectedValue(new Error('offline'));
+    await act(async () => root.render(<Probe session={session} />));
+    expect(latest.entitlement).toEqual(cached);
+    expect(latest.entitlementReady).toBe(true);
+    getStoreEntitlements.mockResolvedValue({ active: false, tier: 'free' });
+    await act(async () => { await latest.refreshEntitlement(); });
+    expect(latest.entitlement.active).toBe(false);
+    expect(saveOfflineEntitlement).toHaveBeenLastCalledWith('owner', { active: false, tier: 'free' });
   });
 });

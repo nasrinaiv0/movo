@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.57.0",
     "appattest-checker-node": "1.0.3",
     "googleapis": "^189.0.0",
+    "jsqr": "1.4.0",
     "pdfjs-dist": "^4.10.38",
     "qrcode.react": "4.2.0",
     "react": "^18.2.0",
@@ -31,14 +32,15 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --watchAll=false",
-    "prebuild": "node scripts/validate-supabase-email-template.cjs && npm run i18n && npm run typecheck && react-scripts test --watchAll=false --runInBand",
+    "prebuild": "node --test scripts/build-offline-worker.test.cjs && node scripts/validate-supabase-email-template.cjs && npm run i18n && npm run typecheck && react-scripts test --watchAll=false --runInBand",
     "typecheck": "tsc --noEmit",
     "audit:production": "npm audit --omit=dev",
     "i18n": "node scripts/i18n-build.js",
     "brands": "node scripts/fetch-brand-logos.mjs",
     "ios:sync": "npm run build && cap sync ios",
     "prestart": "npm run i18n",
-    "pretest": "npm run i18n"
+    "pretest": "npm run i18n",
+    "postbuild": "node scripts/build-offline-worker.cjs"
   },
   "browserslist": {
     "production": [

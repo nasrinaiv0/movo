@@ -1,4 +1,5 @@
 import { supabase, supabaseConfigured } from './supabaseClient';
+import { readDisplayAsset, saveDisplayAsset } from './displayAssetCache';
 
 export const PREMIUM_STICKER_BUCKET = 'premium-stickers';
 const STORAGE_PREFIX = 'storage:';
@@ -27,8 +28,12 @@ export async function listPremiumStickers() {
 }
 
 export async function resolvePremiumStickerUrl(path) {
-  if (!path || !supabaseConfigured || !supabase) return '';
+  if (!path) return '';
+  const cached = await readDisplayAsset(path).catch(() => '');
+  if (cached) return cached;
+  if (!supabaseConfigured || !supabase) return '';
   const { data, error } = await supabase.storage.from(PREMIUM_STICKER_BUCKET).createSignedUrl(path, 1800);
   if (error) throw error;
-  return data && data.signedUrl ? data.signedUrl : '';
+  if (data?.signedUrl) saveDisplayAsset(path, data.signedUrl).catch(() => {});
+  return data?.signedUrl || '';
 }

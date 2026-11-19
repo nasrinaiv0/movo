@@ -2,7 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { NativePurchases, PURCHASE_TYPE } from '@capgo/native-purchases';
 import { supabase } from './supabaseClient';
 import { apiUrl, isNativeApp } from './platform';
-import { STORE_PRODUCTS } from './storeProducts';
+import { STORE_PRODUCTS, cacheStorePrices } from './storeProducts';
 
 let configurationPromise;
 function ensureConfigured() {
@@ -79,7 +79,7 @@ export async function getStoreProducts() {
     productType: PURCHASE_TYPE.SUBS,
   });
   const platform = Capacitor.getPlatform();
-  return (products || []).map((item) => {
+  const matched = (products || []).map((item) => {
     // Android's identifier is the base plan; planIdentifier is the subscription product ID.
     const productIdentifier = platform === 'android'
       ? (item.planIdentifier || item.productIdentifier)
@@ -90,6 +90,8 @@ export async function getStoreProducts() {
     );
     return configured ? { ...item, productIdentifier, basePlanId: configured.basePlanId, period: configured.period } : null;
   }).filter(Boolean);
+  cacheStorePrices(matched);
+  return matched;
 }
 
 export async function getStoreEntitlements(session) {
