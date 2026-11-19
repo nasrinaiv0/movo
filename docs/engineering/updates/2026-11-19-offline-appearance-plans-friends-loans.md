@@ -18,9 +18,9 @@ The update preserves saved account presentation offline, makes plan amounts visi
 
 ## Validation and remaining release gates
 
-- Node 26 regression run before the last review refinements: 247 suites, 1,561 tests passed; final exact-tree verification is recorded in the PR.
+- Integrated Node 26 regression run: 248 suites, 1,572 tests passed, with typecheck and strict production build. Final visual refinements use a two-column price grid and compact loan checkbox rows; exact-head checks are recorded in the PR.
 - Worker test covers private-request exclusion and cache-storage failure recovery.
-- Browser checks exercise genuine offline reload, bundled logo decoding, all four plan amounts, restrained computed shadows and overflow at 320, 390 and 1440 pixels.
+- Browser checks pass genuine offline reload, bundled logo decoding, all four plan amounts, restrained computed shadows and overflow at 320, 390 and 1440 pixels. Exported profile PNGs are decoded through the actual QR-photo scanner at 320 and 390 pixels in both themes; scanning still requires acceptance.
 - Focused loan and Friends tests cover separate methods, card repayment, untrusted links, review-before-accept, invite-name stability and delayed camera permission cleanup. SQL fixture covers owner/currency isolation and a single card repayment posting.
 - Exact-head CI, Vercel preview and native compilation must be green before merge. Real-device camera, AirDrop/Quick Share, Apple/Google purchase/restoration and subscription expiry acceptance remain required before a public paid release.
 

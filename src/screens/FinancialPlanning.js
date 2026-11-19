@@ -382,7 +382,7 @@ export default function FinancialPlanning({ c }) {
     </Sheet>}
 
     {sheet?.kind === 'loan' && <Sheet title={tr('Add a loan or debt')} onClose={() => setSheet(null)} label={tr('Add a loan or debt')}>
-      <form className="sheet-form" onSubmit={e => { e.preventDefault(); run(() => createLoan(form, c.session?.user?.id), 'Loan or debt added.'); }}>
+      <form className="sheet-form loan-details-form" onSubmit={e => { e.preventDefault(); run(() => createLoan(form, c.session?.user?.id), 'Loan or debt added.'); }}>
         {error && <p className="app-alert" role="alert">{error}</p>}
         <label>{tr('Record type')}<select value={form.obligation_type} onChange={e => set({ obligation_type: e.target.value })}><option value="loan">{tr('Loan')}</option><option value="debt">{tr('Other debt')}</option></select></label>
         <label>{tr('Name')}<input required maxLength="120" value={form.name} onChange={e => set({ name: e.target.value })} /></label>

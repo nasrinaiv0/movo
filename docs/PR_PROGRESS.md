@@ -6,6 +6,7 @@
 - Added separate receiving and repayment account choices for loans/debts, including cards, plus an owner/currency-validated nullable metadata migration.
 - Added Friends QR camera/photo scanning, pasted links and a MOVO profile-style QR card with native/web image sharing.
 - Updated privacy disclosures and translation catalogs. Browser, regression and native/SQL CI evidence is linked in the PR. No production or store release is performed here.
+- Final visual review separated plan amounts into a readable two-column grid and compacted the loan consent rows. Integrated local verification passes 248 suites / 1,572 tests; QR PNG export-to-scan and offline reload checks pass. The original isolated finance, sync and purchase integrity checks passed. Final exact-head CI is tracked on PR #323.
 - [Implementation, validation and rollout details](engineering/updates/2026-11-19-offline-appearance-plans-friends-loans.md).
 
 

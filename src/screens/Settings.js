@@ -211,7 +211,7 @@ export function UsageSheet({ c, onClose }) {
     <ul className="plan-usage-stats">{stats.map(([k, v]) => <li key={k}><strong>{v}</strong><small>{k}</small></li>)}</ul>
     {!c.session?.access_token && <p className="form-hint">{tr('Sign in to MOVO to link and restore your store purchases.')}</p>}
     <h3 className="group-title">{tr('Available plans')}</h3>
-    <div className="card pad">
+    <div className="card plan-store-prices">
       {priceRows.map(product => <div className="settings-row" key={product.productIdentifier}>
         <div className="settings-row-main"><strong>{PLAN_LABELS[product.tier]}</strong><small>{product.priceString} · {tr(product.period === 'monthly' ? 'Monthly' : 'Annual')}</small></div>
         {nativePurchases && <button type="button" className="primary-button" disabled={purchaseBusy || !c.session?.access_token || product.priceSource !== 'store'}

@@ -8762,6 +8762,17 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
 .referral-points-redeem small { white-space: normal; }
 .referral-points-redeem button { max-width: 50%; white-space: normal; overflow-wrap: anywhere; }
 
+/* Offline and live store quotes keep their amount and billing period readable. */
+.movo-app .plan-usage-sheet .plan-store-prices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+.movo-app .plan-store-prices .settings-row { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 8px; border-radius: 12px; background: var(--field); }
+.movo-app .plan-store-prices .settings-row-main { display: grid; gap: 5px; min-width: 0; }
+.movo-app .plan-store-prices .settings-row-main strong { font-size: 14px; font-weight: 650; }
+.movo-app .plan-store-prices .settings-row-main small { font-size: 12px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+.movo-app .plan-store-prices .settings-row > button { min-height: 40px; padding: 8px; font-size: 12px; }
+.movo-app .loan-details-form > .legal-disclosure-check { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding-block: 4px; }
+.movo-app .loan-details-form > .legal-disclosure-check input[type="checkbox"] { flex: 0 0 18px; width: 18px; min-height: 18px; height: 18px; margin: 2px 0 0; padding: 0; }
+.movo-app .loan-details-form > .legal-disclosure-check > span { flex: 1; font-size: 12px; line-height: 1.5; }
+
 /* Profile actions and private friend invites */
 .movo-app .profile-card-wrap > .profile-card { gap: 12px; min-height: 84px; padding: 12px 14px; }
 .profile-card .avatar.big { width: 50px; height: 50px; flex: 0 0 50px; }
