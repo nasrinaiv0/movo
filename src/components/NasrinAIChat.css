@@ -9,6 +9,15 @@
 .movo-ai-composer {
   flex-wrap: wrap;
 }
+.movo-ai-history-sheet .sheet-card { min-height: 48px; gap: 10px; text-align: start; }
+.movo-ai-history-sheet .sheet-card > svg { flex-shrink: 0; color: var(--accent); }
+.movo-ai-history-sheet .sheet-card .account-main { min-width: 0; }
+.movo-ai-history-sheet .sheet-card strong { overflow-wrap: anywhere; white-space: normal; }
+.movo-ai-history-status { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; color: var(--muted); font-size: 13px; }
+.movo-ai-history-more { align-self: center; min-height: 44px; }
+@media (max-width: 420px) {
+  .movo-ai-chat .movo-ai-chat-header { gap: 6px; }
+}
 .movo-ai-consent-reason + .sr-only {
   margin-top: 0;
 }

@@ -4,13 +4,13 @@ import Icon, { NasrinMark } from './Icon';
 import NasrinAIMessage from './NasrinAIMessage';
 import ChatChart from './ChatChart';
 import { categoryOf } from '../lib/categories';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { readImageText } from '../lib/ocr';
 import { t as tr, rich, getLanguage } from '../lib/i18n';
 import { parseLogMessage } from '../lib/chatLog';
 import { money, shown, formatDate } from '../lib/format';
-import { Tile } from './ui';
+import { Sheet, Tile } from './ui';
 import { MovoMark } from './MovoLogo';
 import { SubIcon } from '../screens/Subscriptions';
 import { catalogFor } from '../lib/subscriptions';
@@ -22,6 +22,8 @@ const MAX = 1600;
 const SpeechRecognition = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 import './NasrinAIChat.css';
 import { apiUrl } from '../lib/platform';
+import useChatThreads, { chatAccessToken } from '../lib/useChatThreads';
+import { identifyChatMessages } from '../lib/chatHistory';
 
 function friendlyError(code) {
   if (code === 'nasrinai_scope_unconfirmed') return tr('NasrinAI did not confirm it used only your Movo data, so its reply was not shown.');
@@ -69,10 +71,11 @@ const blobBuffer = (blob) => (typeof blob.arrayBuffer === 'function' ? blob.arra
   reader.readAsArrayBuffer(blob);
 }));
 
-export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, onLocalChart, shortcuts = [], show = true }) {
-  const [messages, setMessages] = useState([]);
-  const [conversationId, setConversationId] = useState(null);
-  const requestEpochRef = useRef(0);
+export default function NasrinAIChat(props) {
+  return <ChatSession key={JSON.stringify([props.session?.user?.id || null, Boolean(props.cloudMode)])} {...props} />;
+}
+
+function ChatSession({ session, cloudMode, onOpenLegal, onSignIn, onLog, onUndoLog, onViewLog, onLocalAnswer, onLocalChart, shortcuts = [], show = true }) {
   const [draft, setDraft] = useState('');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   useEffect(() => {
@@ -90,24 +93,20 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const [listening, setListening] = useState(false);
   const [attaching, setAttaching] = useState(false);
   const [speaking, setSpeaking] = useState(-1);
+  const [transcribing, setTranscribing] = useState(false);
+  const [recordAction, setRecordAction] = useState(false);
   // The iPhone's level meter can read pure silence after the mic starts; then voice falls back to tap-to-finish.
   const [voiceManual, setVoiceManual] = useState(false);
   const recognition = useRef(null);
   const fileRef = useRef(null);
-  const [newConversationPending, setNewConversationPending] = useState(() => {
-    try { return !!session?.user?.id && window.sessionStorage.getItem('movo.ai.newConversation.' + session.user.id) === 'true'; } catch { return false; }
-  });
   const [phase, setPhase] = useState('reading');
-  // Invalidate in-flight UI work whenever the signed-in identity or cloud mode changes.
-  useEffect(() => {
-    requestEpochRef.current += 1;
-    setMessages([]);
-    setConversationId(null);
-    setDraft('');
+  const clearComposer = useCallback((discardDraft) => {
     setError('');
-    setBusy(false);
-    setPrivacyAccepted(readAck(session?.user?.id));
-  }, [session?.user?.id, cloudMode]);
+    if (discardDraft) setDraft('');
+  }, []);
+  const chatBlocked = busy || listening || attaching || transcribing || speaking >= 0 || recordAction;
+  const threads = useChatThreads({ session, cloudMode, blocked: chatBlocked, clearComposer });
+  const { messages, setMessages, appendDevice, touch, loading, threadEpoch: requestEpochRef } = threads;
   const endRef = useRef(null);
   const inputRef = useRef(null);
   const composerRef = useRef(null);
@@ -132,7 +131,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     return () => { clearTimeout(toThinking); clearTimeout(toAlmost); };
   }, [busy]);
 
-  useEffect(() => { if (typeof endRef.current?.scrollIntoView === 'function') endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, busy]);
+  const newestMessage = messages.at(-1);
+  useEffect(() => { if (typeof endRef.current?.scrollIntoView === 'function') endRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [newestMessage, busy]);
 
   // Transcribed voice is dictation first: keep it visible and editable in the composer.
   // If a segment finishes while chat is busy, append it after the request settles instead of auto-sending it.
@@ -142,58 +142,41 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     if (queued.length) setDraft((current) => [current.trim(), ...queued].filter(Boolean).join(' ').slice(0, MAX));
   }, [busy]);
 
+  const userId = session?.user?.id;
+  const needsConsent = can('fullAI') && Boolean(userId && cloudMode);
   useEffect(() => {
-    let active = true;
-    const loadHistory = async () => {
-      const accepted = readAck(session?.user?.id);
-      setPrivacyAccepted(accepted);
-      setConsentOpen(can('fullAI') && !!session?.user && cloudMode && !accepted);
-    if (!session?.user || !cloudMode || !supabase) { setMessages([]); setConversationId(null); return; }
-      if (newConversationPending) { setMessages([]); setConversationId(null); return; }
-      // One clean start per account after the MOVO-only change, so an older thread that quoted outside material is not
-      // reopened (or fed back as context). Earlier chats stay in the account; they are just not reopened.
-      try {
-        const freshKey = 'movo.ai.fresh.v2.' + session.user.id;
-        if (localStorage.getItem(freshKey) !== '1') { localStorage.setItem(freshKey, '1'); setMessages([]); setConversationId(null); return; }
-      } catch { /* storage unavailable: load as usual */ }
-      try {
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        const token = data?.session?.access_token || session?.access_token;
-        if (sessionError || !token) return;
-        const response = await fetch(apiUrl('/api/nasrinai/chat'), { headers: { Authorization: 'Bearer ' + token } });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'history_load_failed');
-        if (active) {
-          setConversationId(result.conversationId || null);
-          setMessages(Array.isArray(result.messages) ? result.messages.map((item) => ({ role: item.role, content: item.content })) : []);
-        }
-      } catch {
-        if (active) setError(tr('Your previous chat could not be loaded. You can still start a new conversation.'));
-      }
-    };
-    loadHistory();
-    return () => { active = false; };
-  }, [session?.user?.id, cloudMode, newConversationPending]);
+    if (needsConsent && !readAck(userId)) setConsentOpen(true);
+  }, [needsConsent, userId]);
 
   const send = async (event, spoken) => {
     event?.preventDefault?.();
     const message = String(spoken ?? draft).trim();
-    if (!message || busy) return;
+    if (!message || busyRef.current || loading) return;
+    const thread = touch();
+    const conversationId = thread?.cloudId || null;
+    const requestEpoch = requestEpochRef.current;
+    const isCurrentRequest = () => threads.mounted.current && requestEpochRef.current === requestEpoch;
+    const localUser = { role: 'user', content: message, local: true };
     // Logging is handled on this device and never sent to NasrinAI, so it needs no sign-in or AI consent.
     const entries = onLog && can('fullAI') ? parseLogMessage(message) : [];
     if (entries.length) {
       setError(''); setDraft('');
-      setMessages((current) => [...current, { role: 'user', content: message, local: true }]);
+      busyRef.current = true;
       setBusy(true);
       try {
         const items = await onLog(entries);
-        setMessages((current) => [...current, { role: 'log', items, removed: [] }]);
+        if (!isCurrentRequest()) return;
         const added = items.filter(i => !i.duplicateOf).length;
-        say(added ? tr('Logged {n} record(s).', { n: added }) : tr('That was already logged, so I did not add it twice.'));
+        const content = added ? tr('Logged {n} record(s).', { n: added }) : tr('That was already logged, so I did not add it twice.');
+        appendDevice([localUser, { role: 'log', items, removed: [], content }]);
+        say(content);
       } catch (cause) {
+        if (!isCurrentRequest()) return;
         const content = cause.message === 'account_required' ? tr('Add an account or card in Wallet first, then I can log this for you.') : tr('That could not be saved. Please try again.');
-        setMessages((current) => [...current, { role: 'assistant', local: true, content }]); say(content);
-      } finally { setBusy(false); if (!voiceRef.current) inputRef.current?.focus(); }
+        appendDevice([localUser, { role: 'assistant', content }]); say(content);
+      } finally {
+        if (isCurrentRequest()) { busyRef.current = false; setBusy(false); if (!voiceRef.current) inputRef.current?.focus(); }
+      }
       return;
     }
     // A request for a chart, graph, breakdown or trend is drawn at once from the records on this device, online or
@@ -201,7 +184,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const drawn = onLocalChart ? onLocalChart(message) : null;
     if (drawn?.chart) {
       setError(''); setDraft('');
-      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', content: drawn.text, chart: drawn.chart, local: true }]);
+      appendDevice([localUser, { role: 'assistant', content: drawn.text, chart: drawn.chart }]);
       say(drawn.text);
       return;
     }
@@ -209,36 +192,34 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
     const local = onLocalAnswer ? onLocalAnswer(message) : null;
     if (local) {
       setError(''); setDraft('');
-      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', content: local, local: true }]);
+      appendDevice([localUser, { role: 'assistant', content: local }]);
       say(local);
       return;
     }
     if (!can('fullAI')) {
       setDraft('');
-      setMessages(current => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', local: true, content: 'Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.' }]);
+      appendDevice([localUser, { role: 'assistant', content: 'Free can read your stored balances and transactions. Pro unlocks full NasrinAI. Use Add transaction to record expenses.' }]);
       return;
     }
     if (!session?.user || !cloudMode || !supabase) {
       setDraft('');
-      setMessages((current) => [...current, { role: 'user', content: message, local: true }, { role: 'assistant', local: true, content: tr('I can log records here on this device. Try “Spent 250 on Grab”, “Salary 50000”, or several lines at once. Sign in to ask me questions about your money.') }]);
+      appendDevice([localUser, { role: 'assistant', content: tr('I can log records here on this device. Try “Spent 250 on Grab”, “Salary 50000”, or several lines at once. Sign in to ask me questions about your money.') }]);
       return;
     }
     if (!privacyAccepted) {
       setConsentOpen(true);
       return;
     }
-    const requestEpoch = requestEpochRef.current;
-    const requestUserId = session?.user?.id || null;
-    const isCurrentRequest = () => requestEpochRef.current === requestEpoch && (session?.user?.id || null) === requestUserId;
     setError('');
     setDraft('');
-    setMessages((current) => [...current, { role: 'user', content: message }]);
+    const [optimistic] = identifyChatMessages([{ role: 'user', content: message }]);
+    setMessages((current) => [...current, optimistic]);
+    busyRef.current = true;
     setBusy(true);
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const accessToken = await chatAccessToken(session);
       if (!isCurrentRequest()) return;
-      const accessToken = sessionData?.session?.access_token || session?.access_token;
-      if (sessionError || !accessToken) throw new Error('invalid_session');
+      if (!accessToken) throw new Error('invalid_session');
       const ask = () => fetch(apiUrl('/api/nasrinai/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + accessToken },
@@ -254,20 +235,21 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       }
       if (!isCurrentRequest()) return;
       if (!response.ok) throw new Error(result.error || 'chat_request_failed');
-      if (result.conversationId) setConversationId(result.conversationId);
-      setNewConversationPending(false);
-      try { if (session?.user?.id) window.sessionStorage.removeItem('movo.ai.newConversation.' + session.user.id); } catch { /* storage unavailable */ }
-      setMessages((current) => [...current, { role: 'assistant', content: result.reply }]);
+      threads.attachCloud(result.conversationId);
+      const saved = result.messages?.length ? result.messages
+        : [optimistic, ...identifyChatMessages([{ role: 'assistant', content: result.reply }])];
+      setMessages((current) => [...current.filter((item) => item.id !== optimistic.id), ...saved]);
       say(result.reply, result.audioParts);
     } catch (cause) {
       if (!isCurrentRequest()) return;
-      setMessages((current) => current.filter((item, index) => !(index === current.length - 1 && item.role === 'user' && item.content === message)));
+      setMessages((current) => current.filter((item) => item.id !== optimistic.id));
       setDraft(message);
       // The short code lets support find the exact cause in the server log; it carries no personal data.
       const code = /^[a-z_]{3,60}$/.test(cause.message || '') ? cause.message : 'chat_request_failed';
       setError(`${friendlyError(code)} ${tr('Error code: {code}', { code })}`);
     } finally {
       if (isCurrentRequest()) {
+        busyRef.current = false;
         setBusy(false);
         inputRef.current?.focus();
       }
@@ -275,20 +257,24 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   };
 
   const logAnyway = async (index, row) => {
-    if (!requireFeature('fullAI')) return;
+    if (recordAction || !requireFeature('fullAI')) return;
+    setRecordAction(true);
     try {
       const [added] = await onLog([row.entry], true);
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, items: m.items.map(x => (x.id === row.id ? added : x)) } : m)));
     } catch { setError(tr('That could not be saved. Please try again.')); }
+    finally { setRecordAction(false); }
   };
 
   const undo = async (index, id) => {
-    if (!requireFeature('fullAI')) return;
+    if (recordAction || !requireFeature('fullAI')) return;
+    setRecordAction(true);
     try {
       // The app asks first; a cancelled confirmation leaves the record and the chat as they were.
       if (await onUndoLog?.(id) === false) return;
       setMessages((current) => current.map((m, i) => (i === index ? { ...m, removed: [...m.removed, id] } : m)));
     } catch { setError(tr('That record could not be removed. Please try again.')); }
+    finally { setRecordAction(false); }
   };
 
   const accept = () => {
@@ -441,9 +427,9 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
   const transcribeSegmentNow = async (blob, final, accountEpoch) => {
     if ((!voiceRef.current && !final) || !voiceMountedRef.current || accountEpoch !== requestEpochRef.current) return;
     transcribingRef.current = true;
+    setTranscribing(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token || session?.access_token;
+      const token = await chatAccessToken(session);
       if (!token) throw new Error('invalid_session');
       if ((!voiceRef.current && !final) || !voiceMountedRef.current || accountEpoch !== requestEpochRef.current) return;
       const bytes = new Uint8Array(await blobBuffer(blob));
@@ -462,6 +448,7 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
         const heard = text.toLowerCase().split(/\s+/).filter(Boolean);
         const echo = spoken && heard.length && heard.filter(word => spoken.includes(word)).length / heard.length >= 0.7;
         if (!echo) {
+          touch();
           stopPlayback();
           // Do not auto-submit or immediately clear the recognized words. Showing them in
           // the composer lets the user verify/correct dictation before sending financial data.
@@ -474,7 +461,10 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       if (voiceMountedRef.current && accountEpoch === requestEpochRef.current && (voiceRef.current || final)) {
         setError(tr('Voice transcription is temporarily unavailable. Please try again.'));
       }
-    } finally { transcribingRef.current = false; }
+    } finally {
+      transcribingRef.current = false;
+      if (voiceMountedRef.current) setTranscribing(false);
+    }
   };
 
   const startVoice = async () => {
@@ -663,45 +653,42 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
 
   // Shortcuts: log actions open MOVO's own forms; read actions answer here from this device's records (never sent to NasrinAI).
   const runShortcut = (item) => {
+    touch();
+    const request = { role: 'user', content: tr(item.label) };
     if (item.draw) {
       const drawn = item.draw();
-      if (drawn?.chart) setMessages((current) => [...current, { role: 'user', content: tr(item.label), local: true }, { role: 'assistant', content: drawn.text, chart: drawn.chart, local: true }]);
+      if (drawn?.chart) appendDevice([request, { role: 'assistant', content: drawn.text, chart: drawn.chart }]);
       return;
     }
-    if (item.say) { setMessages((current) => [...current, { role: 'user', content: tr(item.label), local: true }, { role: 'assistant', content: item.say(), local: true }]); return; }
+    if (item.say) { appendDevice([request, { role: 'assistant', content: item.say() }]); return; }
     item.run?.();
   };
 
-  const reset = () => {
-    setMessages([]);
-    setConversationId(null);
-    setDraft('');
-    setError('');
-    setNewConversationPending(true);
-    try { if (session?.user?.id) window.sessionStorage.setItem('movo.ai.newConversation.' + session.user.id, 'true'); } catch { /* storage unavailable */ }
-  };
-
-  return <section className="movo-ai-chat" ref={chatRef} aria-label={tr('NasrinAI financial copilot')}>
+  return <section className="movo-ai-chat" ref={chatRef} aria-label={tr('NasrinAI financial copilot')}
+    onPointerDownCapture={touch} onKeyDownCapture={touch} onTouchMoveCapture={touch} onWheelCapture={touch}>
     <header className="movo-ai-chat-header">
       <div className="movo-ai-avatar" aria-hidden="true"><NasrinMark size={24} state={busy ? phase : undefined} /></div>
       <div className="movo-ai-heading"><h1>{tr('NasrinAI')}</h1><p>{tr('Private financial copilot · MOVO')}</p></div>
       <a className="movo-ai-open-site" href="https://nasrinai.com" target="_blank" rel="noopener noreferrer" aria-label={tr('Open NasrinAI.com in a new tab')} title={tr('NasrinAI.com')}><Icon name="external" size={17} strokeWidth={2} /></a>
-      <button type="button" className="movo-ai-reset" onClick={reset} disabled={busy} aria-label={tr('Start a new chat')} title={tr('Start a new chat')}><Icon name="plus" size={18} strokeWidth={2} /></button>
+      <button type="button" className="movo-ai-reset" onClick={threads.openHistory} disabled={chatBlocked || loading} aria-label={tr('Chat history')} title={tr('Chat history')}><Icon name="clock" size={18} strokeWidth={2} /></button>
+      <button type="button" className="movo-ai-reset" onClick={() => threads.startNew(true)} disabled={chatBlocked} aria-label={tr('Start a new chat')} title={tr('Start a new chat')}><Icon name="plus" size={18} strokeWidth={2} /></button>
     </header>
     <div className="movo-ai-thread" role="log" aria-live="polite" aria-label={tr('Conversation')}>
-      {!messages.length && <div className="movo-ai-welcome">
+      {loading && <span className="movo-ai-history-status" role="status"><span className="spinner" />{tr('Loading…')}</span>}
+      {!loading && threads.olderOffset !== null && <button type="button" className="link-button movo-ai-history-more" disabled={chatBlocked} onClick={threads.loadOlder}>{tr('Earlier messages')}</button>}
+      {!messages.length && !loading && <div className="movo-ai-welcome">
         <h2>{tr('Your money, with context.')}</h2>
         <p>{tr('Ask about spending, income, categories, accounts, or budgets. NasrinAI receives a limited, user-scoped snapshot—not access to your MOVO database.')}</p>
         <div className="movo-ai-suggestions">
           {MOVO_FINANCIAL_SUGGESTIONS.map(({ label, prompt }) =>
-            <button key={label} type="button" onClick={() => send(null, prompt)} disabled={busy} aria-label={label}><span>{label}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
+            <button key={label} type="button" onClick={() => send(null, prompt)} disabled={busy || loading} aria-label={label}><span>{label}</span><Icon name="arrow" size={15} strokeWidth={2} /></button>
           )}
         </div>
       </div>}
-      {messages.map((message, index) => message.role === 'log' ? <article key={index} className="movo-ai-message log">
+      {messages.map((message, index) => message.role === 'log' ? <article key={message.id || index} className="movo-ai-message log">
         <span className="movo-ai-message-label">{tr('NasrinAI')}</span>
         <LogCard items={message.items} removed={message.removed} show={show} onUndo={(id) => undo(index, id)} onLogAnyway={(row) => logAnyway(index, row)} onView={onViewLog} />
-      </article> : <article key={index} className={'movo-ai-message ' + message.role}>
+      </article> : <article key={message.id || index} className={'movo-ai-message ' + message.role}>
         <span className={'movo-ai-message-label' + (message.role === 'user' ? ' sr-only' : '')}>{message.role === 'user' ? tr('You') : tr('NasrinAI')}</span>
         {message.role === 'user' ? <p className="movo-ai-user-text">{message.content}</p> : <NasrinAIMessage content={message.content} />}
         {message.chart && <ChatChart chart={message.chart} fmt={(value) => shown(show, money(value))} />}
@@ -710,6 +697,8 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
       {busy && <div className="movo-ai-thinking" role="status"><span className="movo-ai-thinking-orb" aria-hidden="true"><NasrinMark size={22} state={phase} /></span><span key={phase} className="movo-ai-thinking-label">{tr(PHASE_LABELS[phase])}</span></div>}
       <div ref={endRef} />
     </div>
+    {threads.historyError && <p className="movo-ai-history-status" role="alert">{tr('Your previous chat could not be loaded. You can still start a new conversation.')} <button type="button" className="link-button" disabled={chatBlocked || loading} onClick={threads.loadOlder}>{tr('Try again')}</button></p>}
+    {threads.storageError && <p className="movo-ai-history-status" role="alert">{tr('Chat history could not be saved on this device.')}</p>}
     {error && <div className="movo-ai-error" role="alert"><Icon name="info" size={16} strokeWidth={2} /><p>{error}</p><button type="button" aria-label={tr('Dismiss message')} onClick={() => setError('')}><Icon name="close" size={14} strokeWidth={2} /></button></div>}
     {!session?.user || !cloudMode
       ? <div className="movo-ai-signin compact"><p>{tr('Logging works on this device. Sign in to ask NasrinAI about your money.')}</p><button type="button" className="link-button" onClick={onSignIn}>{tr('Sign in to MOVO')}</button></div>
@@ -717,18 +706,35 @@ export default function NasrinAIChat({ session, cloudMode, onOpenLegal, onSignIn
           <form className="movo-ai-composer" ref={composerRef} onSubmit={send}>
         <input ref={fileRef} type="file" accept="image/*,.txt,.csv,text/plain,text/csv" hidden onChange={attach} aria-label={tr('Attach a photo or file')} />
         {shortcuts.length > 0 && <div className="movo-ai-shortcuts" role="toolbar" aria-label={tr('Shortcuts')}>
-          {shortcuts.map((item) => <button key={item.id} type="button" onClick={() => runShortcut(item)} disabled={busy}><Icon name={item.icon} size={14} strokeWidth={2} />{tr(item.label)}</button>)}
+          {shortcuts.map((item) => <button key={item.id} type="button" onClick={() => runShortcut(item)} disabled={busy || loading}><Icon name={item.icon} size={14} strokeWidth={2} />{tr(item.label)}</button>)}
         </div>}
         <label className="sr-only" htmlFor="movo-ai-prompt">{tr('Message NasrinAI')}</label>
         {/* Enter starts a new line; only the send button sends. */}
-        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={attaching ? tr('Reading your photo…') : listening ? (voiceManual ? tr('Listening — tap the mic when you’re done') : tr('Listening — pause briefly to transcribe')) : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
+        <textarea id="movo-ai-prompt" ref={inputRef} rows="2" maxLength={MAX} value={draft} onChange={(e) => { touch(); setDraft(e.target.value); }} placeholder={attaching ? tr('Reading your photo…') : listening ? (voiceManual ? tr('Listening — tap the mic when you’re done') : tr('Listening — pause briefly to transcribe')) : tr(MOVO_PLACEHOLDER_EXAMPLES[placeholderIndex])} className="movo-ai-prompt-input" disabled={busy} enterKeyHint="enter" />
         <div className="movo-ai-composer-bar">
           <button type="button" className="movo-ai-circle" onClick={() => fileRef.current?.click()} disabled={busy || attaching} aria-label={tr('Attach a photo or file')} title={tr('Attach a photo or file')}>{attaching ? <span className="spinner" aria-hidden="true" /> : <Icon name="plus" size={16} strokeWidth={2.2} />}</button>
           <span className="movo-ai-composer-gap" />
           <button type="button" className={`movo-ai-circle${listening ? ' live' : ''}`} onClick={toggleMic} disabled={busy && !listening} aria-pressed={listening} aria-label={listening ? tr('End voice conversation') : tr('Talk with NasrinAI')} title={listening ? tr('End voice conversation') : tr('Talk with NasrinAI')}><Icon name={listening ? 'stop' : 'mic'} size={16} strokeWidth={2} /></button>
-          <button type="submit" className="movo-ai-circle movo-ai-send" disabled={busy || !draft.trim()} aria-label={tr('Send message')}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={16} strokeWidth={2.4} />}</button>
+          <button type="submit" className="movo-ai-circle movo-ai-send" disabled={busy || loading || !draft.trim()} aria-label={tr('Send message')}>{busy ? <span className="spinner" aria-hidden="true" /> : <Icon name="arrowUp" size={16} strokeWidth={2.4} />}</button>
         </div>
       </form>
+    {threads.historyOpen && <Sheet title={tr('Chat history')} onClose={threads.closeHistory} className="movo-ai-history-sheet">
+      {threads.rows.length > 0 && <div className="sheet-list">
+        {threads.rows.map((thread) => <button key={thread.id} type="button" className="sheet-card" onClick={() => threads.openThread(thread)}>
+          <Icon name="message" size={18} />
+          <span className="account-main">
+            <strong>{thread.title || tr('Conversation')}</strong>
+            {thread.updatedAt && <small>{formatDate(thread.updatedAt, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</small>}
+          </span>
+          <Icon name="chevron" size={16} />
+        </button>)}
+      </div>}
+      {(threads.listStatus === 'loading' || threads.deviceHistoryLoading) && <p className="movo-ai-history-status" role="status">{tr('Loading…')}</p>}
+      {threads.listStatus === 'error' && <p className="movo-ai-history-status" role="alert">{tr('Your previous chat could not be loaded. You can still start a new conversation.')} <button type="button" className="link-button" onClick={threads.loadMore}>{tr('Try again')}</button></p>}
+      {threads.deviceHistoryError && <p className="movo-ai-history-status" role="alert">{tr('Your previous chat could not be loaded. You can still start a new conversation.')} <button type="button" className="link-button" onClick={threads.loadDeviceList}>{tr('Try again')}</button></p>}
+      {!threads.listStatus && !threads.deviceHistoryLoading && !threads.deviceHistoryError && !threads.rows.length && <p className="empty">{tr('No saved chats yet.')}</p>}
+      {threads.listMore && <button type="button" className="link-button movo-ai-history-more" onClick={threads.loadMore}>{tr('More chats')}</button>}
+    </Sheet>}
     {consentOpen && <div className="movo-ai-consent-backdrop" role="presentation">
       <div className="movo-ai-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="movo-ai-consent-title" aria-describedby="movo-ai-context-disclosure">
         <span className="movo-ai-consent-mark" aria-hidden="true"><NasrinMark size={30} /></span>

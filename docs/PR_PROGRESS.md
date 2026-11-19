@@ -1,3 +1,16 @@
+## 2026-11-18 — Start a fresh MOVO chat after 10 minutes idle
+
+- Added a 10-minute inactivity deadline, a history picker, and device-only encrypted storage for completed local conversations. Existing signed-in history remains available through its account-scoped endpoint.
+- Added tests for elapsed time, background resume, account isolation, encrypted local storage, and saving a complete cloud turn. [Implementation and verification](engineering/updates/2026-11-18-chat-idle-history.md).
+- Integrated current main `5edd47d` and the pending Security & Privacy guide. Regenerated the shared locale files from both source catalogs. [Integration and validation](engineering/updates/2026-11-18-chat-history-main-integration.md).
+
+## 2026-11-18 — Compact Security & Privacy guide
+
+- The guide linked from Settings has a persistent Back to Home button, quick section links, compact light and dark layouts, and expandable FAQs. It retains the current storage and encryption disclosures.
+- Typecheck, strict production build and all 1,543 local tests passed. [Scope and verification](engineering/updates/2026-11-18-compact-security-privacy.md).
+- The header can wrap at larger browser text sizes. Chromium verified that anchored sections clear the sticky header at 150% and 200% text sizes from 320 to 1440 px.
+- Integrated current main `5edd47d` and retained both release entries. [Integration and validation](engineering/updates/2026-11-18-security-privacy-main-integration.md).
+
 ## 2026-11-17 — "Auto" in While you were away
 
 - An **Auto** filter, right after All, gathers everything a phone automation logged: Siri, Apple Pay, bank notifications, Google Pay and the Android assistant.
