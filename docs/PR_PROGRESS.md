@@ -1,3 +1,11 @@
+## 2026-11-19 — Finance integrity audit fixes
+
+- Restricted direct transaction UPDATE/DELETE privileges; sync and reversal RPCs retain ownership, entitlement, CAS and audit checks. Linked payment edits now protect `is_pending`.
+- Goal/plan allocation balances and automatic reconciliation exclude pending income, expenses and transfers, including pending foreign-currency records.
+- Cloud reset uses an owner-verified transaction reversal RPC; transaction-phase failures roll back earlier reversals. The remaining reset/storage steps retain their separate-request behavior.
+- Added SQL regressions to finance isolation CI and client reset failure tests. All 251 JavaScript suites / 1,629 tests, typecheck and strict production compilation passed after the final owner-parameter change. Local PostgreSQL migration, tenant-isolation and integrity checks passed; old behavior failed each of the three targeted regressions. Production deployment and hosted CI/preview remain separate release steps.
+- [Implementation, validation and rollout](engineering/updates/2026-11-19-finance-integrity-audit-fixes.md).
+
 ## 2026-11-19 — Legal/privacy audit and centered Friends QR
 
 - Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
