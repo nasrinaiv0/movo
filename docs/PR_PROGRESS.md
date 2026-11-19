@@ -1,3 +1,10 @@
+## 2026-11-20 — Run the release smoke checks without AndroidX test dependencies
+
+- Experiment 44586272868 on 742ae42937fdcb6d243ff198dd75a8d58147aaa4 built the two minified releases and ran the official analyzer. R8 8.13.6 output was byte-identical for the paired DEX (1,366,480 bytes) and APK/AAB sizes matched. The R8 9.4.34 pair matched at 92.58% optimization, 93.44% obfuscation and 93.25% shrinking, with 1,351,216 DEX bytes each. These are diagnostic scores from a different compiler, and the removed keep rule produced zero gain.
+- The emulator booted and cold launch completed. The crash buffer shows AndroidJUnitRunner preparing the application fell into a missing method in a target-loaded class, followed by missing androidx.tracing.Trace. No bridge assertion had run.
+- Use the framework Instrumentation class for the opt-in release test APK and give it a dedicated source directory. Keep ordinary AndroidX test configuration and application keep rules intact. Verify an explicit case-specific result plus the framework success code and print the bounded crash buffer on failure. Preserve bridge, secure-storage, Activity/process, offline wallet and OAuth error checks.
+- Thirteen Python tests and whitespace verification pass. The controlled build, analyzer and emulator must rerun at the new head.
+
 ## 2026-11-20 — Repair R8 instrumentation-only compiler annotation dependency
 
 - Exact head 79fd7f72c6f086d0e7060a4c7ed6ce61d00eb83a failed native experiment run 44585073902 at minifyReleaseAndroidTestWithR8, after the app release APK/AAB tasks succeeded. The test dependency's Error Prone CLASS-retention annotation references absent JDK compiler enum javax.lang.model.element.Modifier.

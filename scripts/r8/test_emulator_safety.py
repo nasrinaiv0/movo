@@ -39,12 +39,22 @@ class EmulatorSafetyTests(unittest.TestCase):
             smoke.adb('shell', 'true')
             self.assertEqual(run.call_args.args[0], ['adb', '-s', 'emulator-5554', 'shell', 'true'])
 
-    def test_assumption_failure_cannot_be_reported_as_pass(self):
-        for code in (-1, -2, -3, -4):
-            output = f'INSTRUMENTATION_STATUS_CODE: {code}\nOK (1 test)\n'
-            with self.subTest(code=code), tempfile.TemporaryDirectory() as folder, patch.object(smoke, 'adb', return_value=output):
-                with self.assertRaises(RuntimeError):
-                    smoke.instrument(Path(folder), 'testMethod', {'date': '2026-11-19', 'revision': ''})
+    def test_only_matching_explicit_framework_success_counts(self):
+        legal = {'date': '2026-11-19', 'revision': ''}
+        passed = 'INSTRUMENTATION_RESULT: stream=\nMOVO_R8_SMOKE_PASS testMethod\nINSTRUMENTATION_CODE: -1\n'
+        with tempfile.TemporaryDirectory() as folder, patch.object(smoke, 'adb', return_value=passed):
+            smoke.instrument(Path(folder), 'testMethod', legal)
+        rejected = (
+            'INSTRUMENTATION_CODE: -1\n',
+            passed.replace('testMethod', 'otherMethod'),
+            passed.replace('CODE: -1', 'CODE: 0'),
+            passed + 'INSTRUMENTATION_RESULT: shortMsg=Process crashed.\n',
+            passed + 'MOVO_R8_SMOKE_PASS testMethod\n',
+        )
+        for output in rejected:
+            with self.subTest(output=output), tempfile.TemporaryDirectory() as folder:
+                with patch.object(smoke, 'adb', side_effect=[output, '']), self.assertRaises(RuntimeError):
+                    smoke.instrument(Path(folder), 'testMethod', legal)
 
 
 if __name__ == '__main__':

@@ -37,3 +37,9 @@ Each completed build also emits its metrics JSON into the job log, so measured s
 ## First native compiler finding
 
 Run 44585073902 at 79fd7f72 compiled the baseline release APK/AAB, then failed while minifying the separate test APK. Error Prone's compile-time IncompatibleModifiers/RequiredModifiers annotation references javax.lang.model.element.Modifier, a JDK compiler API absent from Android. Add an opt-in testProguardFiles rule for exactly that type, plus stable names for the explicitly selected test class. These are test-APK rules only; the app rule set, measurements and runtime remain unchanged. Thirteen Python checks pass; the complete controlled experiment must rerun.
+
+## First emulator result and instrumentation fix
+
+Run 44586272868 at 742ae42937fd built both variants and booted an API 35 emulator. The default R8 8.13.6 APK/AAB each contained 1,366,480 DEX bytes, and both DEX hashes matched. Diagnostic R8 9.4.34 produced 1,351,216 DEX bytes per variant and matching scores of 92.58% optimization, 93.44% obfuscation and 93.25% shrinking. The removed keep rule had no measurable effect. Compiler versions are evaluated separately.
+
+The first baseline instrumentation process crashed before any MOVO test ran. AndroidJUnitRunner's AppComponentFactoryRegistry hit NoSuchMethodError in a class loaded from the minified target APK, then NoClassDefFoundError for androidx.tracing.Trace while reporting the failure. The opt-in release harness now uses Android framework Instrumentation with no AndroidX test dependencies. It requires a completed, case-specific marker and RESULT_OK for each check. Crash log excerpts are printed with failures. This does not add application keep rules or change the app under test. Re-run the paired emulator gate and confirm that each baseline and candidate assertion executes.

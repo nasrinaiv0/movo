@@ -29,7 +29,7 @@ class LegalFixtureTests(unittest.TestCase):
 
     def test_instrumentation_receives_both_markers(self):
         legal = {"date": "2026-11-19", "revision": "2026-11-19-r2"}
-        with tempfile.TemporaryDirectory() as folder, patch("emulator_smoke.adb", return_value="OK (1 test)") as adb:
+        with tempfile.TemporaryDirectory() as folder, patch("emulator_smoke.adb", return_value="MOVO_R8_SMOKE_PASS fixtureMethod\nINSTRUMENTATION_CODE: -1") as adb:
             instrument(Path(folder), "fixtureMethod", legal)
             args = adb.call_args.args
             self.assertIn("movoLegalDate", args)

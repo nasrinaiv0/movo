@@ -1,53 +1,93 @@
 package com.nasrinai.movo.r8;
 
-import static org.junit.Assert.*;
-
 import android.app.Activity;
+import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
-import androidx.test.core.app.ActivityScenario;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONObject;
 import org.json.JSONTokener;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Opt-in minified-release acceptance on a CLEAN disposable emulator only.
  * No app hooks, WebView debugging, real account, provider login or store purchase.
- * Tests reference platform Activity/WebView APIs, not names R8 may rename inside Capacitor.
+ * Uses framework classes to avoid shared AndroidX dependencies in the minified target process.
  */
-@RunWith(AndroidJUnit4.class)
-public final class ReleaseBridgeSmokeTest {
+public final class ReleaseBridgeSmokeTest extends Instrumentation {
     private static final String PACKAGE = "com.nasrinai.movo";
     private static final String VAULT_KEY = "sb-movo-r8-smoke-auth-token";
     private static final String RESTART_KEY = "sb-movo-r8-restart-auth-token";
     private static final String VALUE = "SYNTHETIC_R8_VAULT_VALUE_NOT_A_SESSION";
     private static final String ACCOUNT = "ce9eb35d-7060-46b4-8cef-bc3bbcd70001";
-    private ActivityScenario<Activity> scenario;
+    private Bundle arguments;
+    private Activity activity;
     private Context target;
 
-    @Before
-    public void launchRelease() throws Exception {
-        Assume.assumeTrue("Enable only with -PmovoR8ReleaseSmoke=true",
-            "true".equals(InstrumentationRegistry.getArguments().getString("movoR8Smoke")));
-        target = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    @Override
+    public void onCreate(Bundle arguments) {
+        super.onCreate(arguments);
+        this.arguments = arguments == null ? new Bundle() : arguments;
+        start();
+    }
+
+    @Override
+    public void onStart() {
+        String test = arguments.getString("movoTest", "");
+        String phase = arguments.getString("movoPersistencePhase", "");
+        Throwable failure = null;
+        try {
+            assertTrue("Enable only with movoR8Smoke=true", "true".equals(arguments.getString("movoR8Smoke")));
+            launchRelease();
+            switch (test) {
+                case "bridgeVaultPersistsAcrossActivityRecreation":
+                    bridgeVaultPersistsAcrossActivityRecreation();
+                    break;
+                case "offlineWalletLogoStyleAndSyntheticOAuthCallback":
+                    offlineWalletLogoStyleAndSyntheticOAuthCallback();
+                    break;
+                case "processPersistencePhase":
+                    processPersistencePhase(phase);
+                    break;
+                default:
+                    throw new AssertionError("Unknown MOVO release smoke test: " + test);
+            }
+        } catch (Throwable error) {
+            failure = error;
+        } finally {
+            try {
+                closeActivity();
+            } catch (Throwable cleanup) {
+                if (failure == null) failure = cleanup;
+                else failure.addSuppressed(cleanup);
+            }
+        }
+        Bundle result = new Bundle();
+        String label = phase.isEmpty() ? test : phase;
+        if (failure == null) {
+            result.putString(REPORT_KEY_STREAMRESULT, "\nMOVO_R8_SMOKE_PASS " + label + "\n");
+            finish(Activity.RESULT_OK, result);
+        } else {
+            result.putString(REPORT_KEY_STREAMRESULT, "\n" + Log.getStackTraceString(failure));
+            finish(Activity.RESULT_CANCELED, result);
+        }
+    }
+
+    private void launchRelease() throws Exception {
+        target = getTargetContext();
         assertEquals("Never run this on another package", PACKAGE, target.getPackageName());
         assertEquals("Smoke test must target the non-debuggable RELEASE APK", 0,
             target.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE);
@@ -58,28 +98,35 @@ public final class ReleaseBridgeSmokeTest {
         }
         Intent launch = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
             .setClassName(PACKAGE, PACKAGE + ".MainActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        scenario = ActivityScenario.launch(launch);
+        activity = startActivitySync(launch);
         awaitJs("cold bundled WebView and JavaScript bridge", "document.readyState === 'complete' && " +
             "document.querySelector('#root')?.children.length > 0 && typeof window.Capacitor?.nativePromise === 'function'", 45000);
     }
 
-    @After
-    public void closeActivity() {
-        if (scenario != null) {
-            try { screenshot("last-state.png"); }
-            catch (Exception failure) { throw new AssertionError("Could not capture synthetic release test state", failure); }
-            finally {
-            scenario.onActivity(activity -> {
-                WebView view = findWebView(activity.getWindow().getDecorView());
-                if (view != null) { view.getSettings().setBlockNetworkLoads(false); view.setNetworkAvailable(true); }
-            });
-            scenario.close();
-            }
+    private void closeActivity() throws Exception {
+        if (activity == null) return;
+        try {
+            screenshot("last-state.png");
+        } finally {
+            runOnMainSync(() -> activity.finish());
         }
     }
 
-    @Test
-    public void bridgeVaultPersistsAcrossActivityRecreation() throws Exception {
+    private void recreateActivity() {
+        Activity original = activity;
+        ActivityMonitor monitor = addMonitor(PACKAGE + ".MainActivity", null, false);
+        try {
+            runOnMainSync(original::recreate);
+            Activity recreated = monitor.waitForActivityWithTimeout(45000);
+            assertTrue("Expected a new MainActivity after recreation", recreated != null && recreated != original);
+            activity = recreated;
+            waitForIdleSync();
+        } finally {
+            removeMonitor(monitor);
+        }
+    }
+
+    private void bridgeVaultPersistsAcrossActivityRecreation() throws Exception {
         assertBridgeContracts();
         screenshot("cold-bridge.png");
         JSONObject result = asyncJs("(async () => {const C=window.Capacitor;" +
@@ -89,7 +136,7 @@ public final class ReleaseBridgeSmokeTest {
         String saved = target.getSharedPreferences("movo_auth_ciphertext", Context.MODE_PRIVATE).getString(VAULT_KEY, "");
         assertFalse("Vault must persist ciphertext, never the synthetic plaintext", saved.contains(VALUE));
         assertTrue("Native AES-GCM IV:ciphertext record missing", saved.contains(":"));
-        scenario.recreate();
+        recreateActivity();
         awaitJs("bridge after Activity recreation", "typeof window.Capacitor?.nativePromise === 'function'", 45000);
         assertEquals(VALUE, asyncJs("window.Capacitor.nativePromise('MovoNative','secureGet',{key:" + quote(VAULT_KEY) + "})").getString("value"));
         JSONObject removed = asyncJs("(async () => {await window.Capacitor.nativePromise('MovoNative','secureRemove',{key:" + quote(VAULT_KEY) + "});" +
@@ -99,11 +146,10 @@ public final class ReleaseBridgeSmokeTest {
             target.getSharedPreferences("movo_auth_ciphertext", Context.MODE_PRIVATE).contains(VAULT_KEY));
     }
 
-    @Test
-    public void offlineWalletLogoStyleAndSyntheticOAuthCallback() throws Exception {
+    private void offlineWalletLogoStyleAndSyntheticOAuthCallback() throws Exception {
         assertBridgeContracts();
         seedWallet();
-        scenario.onActivity(activity -> {
+        runOnMainSync(() -> {
             WebView view = requireWebView(activity);
             // Native local-server interception still serves packaged assets. External
             // network loads are blocked, rather than merely faking navigator.onLine.
@@ -128,7 +174,7 @@ public final class ReleaseBridgeSmokeTest {
             Uri.parse("movo://auth-callback?error=r8_synthetic_denial"))
             .addCategory(Intent.CATEGORY_BROWSABLE).setPackage(PACKAGE)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        assertNotNull("Release manifest lost the native OAuth callback route", target.getPackageManager().resolveActivity(callback, 0));
+        assertTrue("Release manifest lost the native OAuth callback route", target.getPackageManager().resolveActivity(callback, 0) != null);
         target.startActivity(callback);
         awaitJs("native callback reached the MOVO sign-in error handler",
             "document.body.innerText.includes('OA-PROVIDER') && !document.body.innerText.includes('r8_synthetic_denial')", 20000);
@@ -141,10 +187,8 @@ public final class ReleaseBridgeSmokeTest {
      * `am force-stop com.nasrinai.movo` BETWEEN runs (outside instrumentation).
      * Killing the target from inside instrumentation kills its runner as well.
      */
-    @Test
-    public void processPersistencePhase() throws Exception {
-        String phase = InstrumentationRegistry.getArguments().getString("movoPersistencePhase", "");
-        Assume.assumeTrue("Separate process phase is optional", phase.equals("seed") || phase.equals("verify"));
+    private void processPersistencePhase(String phase) throws Exception {
+        assertTrue("Expected an explicit process-restart phase", phase.equals("seed") || phase.equals("verify"));
         assertBridgeContracts();
         if (phase.equals("seed")) {
             asyncJs("(async () => {await window.Capacitor.nativePromise('MovoNative','secureSet',{key:" + quote(RESTART_KEY) + ",value:" + quote(VALUE) + "}); return {};})()");
@@ -167,8 +211,8 @@ public final class ReleaseBridgeSmokeTest {
     }
 
     private void seedWallet() throws Exception {
-        String legalDate = InstrumentationRegistry.getArguments().getString("movoLegalDate", "");
-        String legalRevision = InstrumentationRegistry.getArguments().getString("movoLegalRevision", "");
+        String legalDate = arguments.getString("movoLegalDate", "");
+        String legalRevision = arguments.getString("movoLegalRevision", "");
         assertTrue("Pass the checked-out app's effective date as movoLegalDate", legalDate.matches("\\d{4}-\\d{2}-\\d{2}"));
         assertTrue("Invalid synthetic legal revision", legalRevision.isEmpty() || legalRevision.matches(legalDate + "-r[1-9]\\d*"));
         for (String key : target.getSharedPreferences("movo_auth_ciphertext", Context.MODE_PRIVATE).getAll().keySet()) {
@@ -211,14 +255,14 @@ public final class ReleaseBridgeSmokeTest {
             if ("true".equals(eval("(() => {try{return !!(" + expression + ");}catch(_){return false;}})()"))) return;
             SystemClock.sleep(100);
         }
-        fail("Timed out waiting for " + label);
+        throw new AssertionError("Timed out waiting for " + label);
     }
 
     private String eval(String script) throws Exception {
         CountDownLatch done = new CountDownLatch(1);
         AtomicReference<String> value = new AtomicReference<>();
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        scenario.onActivity(activity -> {
+        runOnMainSync(() -> {
             try { requireWebView(activity).evaluateJavascript(script, result -> { value.set(result); done.countDown(); }); }
             catch (Throwable error) { failure.set(error); done.countDown(); }
         });
@@ -230,13 +274,35 @@ public final class ReleaseBridgeSmokeTest {
     private static String quote(String value) { return JSONObject.quote(value); }
 
     private void screenshot(String name) throws Exception {
-        Bitmap image = InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
-        assertNotNull("Instrumentation could not capture the disposable emulator", image);
+        Bitmap image = getUiAutomation().takeScreenshot();
+        assertTrue("Instrumentation could not capture the disposable emulator", image != null);
         File folder = new File(target.getExternalFilesDir(null), "r8-smoke");
         assertTrue("Synthetic screenshot directory unavailable", folder.isDirectory() || folder.mkdirs());
         try (FileOutputStream output = new FileOutputStream(new File(folder, name))) {
             assertTrue("Synthetic screenshot write failed", image.compress(Bitmap.CompressFormat.PNG, 100, output));
         } finally { image.recycle(); }
+    }
+
+    private static void assertTrue(String message, boolean condition) {
+        if (!condition) throw new AssertionError(message);
+    }
+
+    private static void assertTrue(boolean condition) {
+        assertTrue("Expected true", condition);
+    }
+
+    private static void assertFalse(String message, boolean condition) {
+        assertTrue(message, !condition);
+    }
+
+    private static void assertEquals(String message, Object expected, Object actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new AssertionError(message + " (expected " + expected + ", got " + actual + ")");
+        }
+    }
+
+    private static void assertEquals(Object expected, Object actual) {
+        assertEquals("Unexpected value", expected, actual);
     }
 
     private static WebView requireWebView(Activity activity) {

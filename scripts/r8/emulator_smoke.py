@@ -11,7 +11,7 @@ import sys
 PACKAGE = "com.nasrinai.movo"
 TEST_PACKAGE = PACKAGE + ".test"
 CLASS = PACKAGE + ".r8.ReleaseBridgeSmokeTest"
-RUNNER = TEST_PACKAGE + "/androidx.test.runner.AndroidJUnitRunner"
+RUNNER = TEST_PACKAGE + "/" + CLASS
 ADB_SERIAL = None
 
 
@@ -67,7 +67,7 @@ def require_disposable_emulator(opt_in):
 
 def instrument(folder, method, legal, phase=None):
     label = phase or method
-    args = ["shell", "am", "instrument", "-w", "-r", "-e", "movoR8Smoke", "true", "-e", "class", CLASS + "#" + method]
+    args = ["shell", "am", "instrument", "-w", "-r", "-e", "movoR8Smoke", "true", "-e", "movoTest", method]
     args.extend(["-e", "movoLegalDate", legal["date"]])
     if legal["revision"]:
         args.extend(["-e", "movoLegalRevision", legal["revision"]])
@@ -76,8 +76,13 @@ def instrument(folder, method, legal, phase=None):
     result = adb(*args, RUNNER)
     (folder / (label + ".txt")).write_text(result)
     print(result, flush=True)
-    # `am instrument` may exit zero even when the instrumentation itself failed.
-    if re.search(r"FAILURES!!!|INSTRUMENTATION_FAILED|Process crashed|shortMsg=|INSTRUMENTATION_STATUS_CODE:\s*-\d+", result) or not re.search(r"OK \(1 tests?\)", result):
+    # adb can exit zero even when instrumentation never ran or failed.
+    markers = re.findall(r"(?m)^MOVO_R8_SMOKE_PASS (\S+)[ \t]*\r?$", result)
+    codes = re.findall(r"(?m)^INSTRUMENTATION_CODE:[ \t]*(-?\d+)[ \t]*\r?$", result)
+    if markers != [label] or codes != ["-1"] or re.search(r"INSTRUMENTATION_FAILED|Process crashed|shortMsg=", result):
+        crash_log = adb("logcat", "-b", "crash", "-d", check=False)
+        if crash_log:
+            print(crash_log[-8000:], file=sys.stderr, flush=True)
         raise RuntimeError("Instrumentation failed or skipped: " + label)
 
 
