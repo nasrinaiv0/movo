@@ -36,6 +36,12 @@ function allowedOrigin(req) {
   try { parsed = new URL(origin); } catch { return false; }
   const configured = String(process.env.MOVO_ALLOWED_ORIGINS || 'https://movo.nasrinai.com,https://movo-lime.vercel.app')
     .split(',').map((s) => s.trim()).filter(Boolean);
+  // Permit only this deployment's own HTTPS origin for preview acceptance.
+  // Production never trusts arbitrary previews, sibling deployments or aliases.
+  const previewHost = String(process.env.VERCEL_URL || '').toLowerCase();
+  if (process.env.VERCEL_ENV === 'preview' && /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.vercel\.app$/.test(previewHost)) {
+    configured.push('https://' + previewHost);
+  }
   if (process.env.NODE_ENV !== 'production') configured.push('http://localhost:3000');
   return parsed.protocol === 'https:' && configured.includes(parsed.origin)
     || process.env.NODE_ENV !== 'production' && parsed.origin === 'http://localhost:3000';

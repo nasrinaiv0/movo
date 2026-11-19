@@ -134,4 +134,21 @@ describe('authenticated transcription route', () => {
     expect(res.statusCode).toBe(kind === 'session' ? 401 : 403);
     expect(global.fetch).not.toHaveBeenCalled();
   });
+
+  test.each([
+    ['preview', 'movo-test.vercel.app', 'https://movo-test.vercel.app', 200],
+    ['preview', 'movo-test.vercel.app', 'https://sibling.vercel.app', 403],
+    ['production', 'movo-test.vercel.app', 'https://movo-test.vercel.app', 403],
+    ['preview', 'movo-test.vercel.app/extra', 'https://movo-test.vercel.app', 403],
+  ])('limits preview origin acceptance to its own deployment (%s / %s / %s)', async (environment, host, origin, status) => {
+    process.env.NODE_ENV = 'production';
+    process.env.VERCEL_ENV = environment;
+    process.env.VERCEL_URL = host;
+    process.env.MOVO_ALLOWED_ORIGINS = 'https://movo.nasrinai.com,https://movo-lime.vercel.app';
+    const req = request(); req.headers.origin = origin;
+    const res = response();
+    await handler(req, res);
+    expect(res.statusCode).toBe(status);
+    expect(global.fetch).toHaveBeenCalledTimes(status === 200 ? 1 : 0);
+  });
 });

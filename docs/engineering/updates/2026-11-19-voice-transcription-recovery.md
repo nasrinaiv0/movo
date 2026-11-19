@@ -32,6 +32,8 @@ The existing NasrinAI service route `/v1/transcriptions` accepts raw audio and a
 
 ## Remaining device acceptance
 
+Follow-up before committing preview acceptance: the hosted build reached READY and returns the exact new brand and offline worker (HTTP 200). Read-only MOVO_ALLOWED_ORIGINS metadata showed only the production domains, so same-origin chat POST from the unique preview URL would be rejected. Add only the server-provided exact VERCEL_URL HTTPS hostname when VERCEL_ENV is preview; production, sibling preview hosts and malformed host values stay rejected. Four boundary regressions cover this. The repeated full run passed 249 suites / 1,612 tests, typecheck, the strict production build and 229-resource offline shell; independent review found no security regression in this exact-origin addition. No origin or credential configuration is changed. OPENROUTER_API_KEY exists only in production, so live fallback acceptance still requires an operator-provided separate preview key or an approved staged deployment; synthetic tests do not claim that provider acceptance.
+
 1. On the preview with a verified Pro session and voice consent, record a short English and Filipino/Bisaya phrase, pause and verify the words appear in the composer. Tap Send separately.
 2. On iPhone, speak quietly and tap Stop; confirm the final words are retained. Repeat with silent mode and tap-to-finish.
 3. Interrupt connectivity during capture; after failure verify the red Stop/Listening UI resets and the OS microphone indicator clears. Retry once connectivity returns, preserving typed words.
