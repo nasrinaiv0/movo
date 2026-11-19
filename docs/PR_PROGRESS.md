@@ -1,3 +1,10 @@
+## 2026-11-20 — PR #326 merge preparation and iOS launch recovery
+
+- Owner now authorizes fixing and merging PR #326 after passing CI and preview. Earlier experiment hold is superseded for this PR only; real-account OAuth and store billing acceptance remain separate release gates.
+- Merged current main into the experiment branch, preserving both progress records. Exact prior head f976d385 passed Android native, isolated paired R8/emulator, finance isolation, Phase 1 and Vercel; iOS compiled successfully but both launch calls timed out.
+- Corrected the misleading cold-boot retry: after a launch timeout, require shutdown/boot/bootstatus before one final launch. App crashes, recovery errors and repeated timeout remain hard failures; native URL and screenshot stay mandatory.
+- Independent native review completed (Claude is unavailable). Python orchestration and R8 tests are rerun before commit. The new exact head must pass hosted native CI and preview before merge; no store upload authorized.
+
 ## 2026-11-20 — Match the Android Wallet screenshot to the verified Cards view
 
 - Exact run 44601407555 at 46e5d31cde48f5976172c97d61c6ca104aef2f70 passed both minified builds, the diagnostic analyzer and all ten emulator checks. The controlled rule produced identical 1,366,480-byte DEX files. The newest iOS job is separate.
@@ -48,6 +55,14 @@
 - Independent Codex review found and fixed two harness defects: refuse physical/ambiguous ADB devices before any root/network/uninstall operation, and reject skipped/assumption-failed instrumentation as failures. Claude is unavailable in this runtime; no Claude review is claimed.
 - Local Python verification: 13 tests passed; diff whitespace check passed. Native SDK/KVM are unavailable in the managed workspace. Vercel Sandbox returned HTTP 402 payment_required and no Vercel CLI is installed; run native measurements on disposable GitHub KVM runner.
 - Engineering evidence and acceptance limits: `docs/engineering/updates/2026-11-20-android-r8-controlled-experiment.md`. Documentation recorded before committing/publishing. Do not merge or promote this experiment without complete native and real-account/store acceptance.
+## 2026-11-19 — Legal/privacy audit and centered Friends QR
+
+- Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
+- Added revision-aware acknowledgement and paired preference merging, adult self-declaration, targeted device AI withdrawal with capture/retry shutdown, and Delete Account for signed-in sync-off owners.
+- Centered the square Friends camera frame, video crop and profile QR. Kept QR parsing and permission behavior intact.
+- Documented remaining encryption, IAP retention, operator/store and territorial release blockers. This is not a certification of legal compliance.
+- Independent final review passed after fixing legacy-client revision compatibility and deletion before agreement. Thirteen browser checks and the final251 suites /1,626 tests with strict production build passed. Exact-head CI/preview is tracked in the PR.
+- [Audit and required operator actions](audits/2026-11-19-legal-privacy-release-audit.md) · [Engineering and validation](engineering/updates/2026-11-19-legal-privacy-and-friends-qr.md).
 
 ## 2026-11-19 — Voice transcription recovery and loading-screen branding
 

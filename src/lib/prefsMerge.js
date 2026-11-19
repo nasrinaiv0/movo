@@ -5,12 +5,13 @@
  * "seen" markers keep the newest value.
  */
 import { mergeStreak } from './streak';
+import { mergeLegalAcceptance } from './legalVersion';
 
 const MAPS = ['cardStyles', 'accountStyles', 'layouts', 'cardBankLinks', 'accountQrCodes', 'loyaltyRewardRules', 'cashbackRules'];
 const ID_LISTS = ['budgets', 'plans', 'subscriptions', 'devices', 'archive', 'cryptoHoldings', 'spendingLimits', 'membershipCards'];
 const STRING_LISTS = { readIds: 500, pushed: 200 };
-// legalAccepted is a version date (YYYY-MM-DD) and legalAcceptedAt an ISO time: the newest acceptance wins.
-const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay', 'legalAccepted', 'legalAcceptedAt'];
+// Legal acceptance is merged separately as one revision/timestamp pair.
+const NEWEST = ['notifSeenAt', 'subsSeen', 'briefingDay'];
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const list = (v) => (Array.isArray(v) ? v : []);
@@ -49,6 +50,7 @@ export function mergePreferences(defaults, local, cloud) {
     out[k] = [...new Set([...list(c[k]), ...list(l[k])].filter(x => typeof x === 'string'))].slice(0, max);
   });
   NEWEST.forEach(k => { const a = String(l[k] || ''); const b = String(c[k] || ''); out[k] = a > b ? a : b; });
+  Object.assign(out, mergeLegalAcceptance(l, c));
   out.streak = mergeStreak(l.streak, c.streak);
   if (!c.mascot && l.mascot) out.mascot = l.mascot; // large photos stay on their device
   out.onboarded = true;

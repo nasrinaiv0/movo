@@ -34,19 +34,19 @@ test('security guide exists, is navigable and does not require third-party scrip
   }
 });
 
-test('production encryption copy is honest and distinguishes pending PRs', () => {
+test('security disclosures distinguish encrypted caches from unencrypted working copies', () => {
   const page = read('public/security.html');
   const guide = read('docs/security/MOVO_USER_DATA_SECURITY_GUIDE.md');
   const terms = read('public/terms.html');
   const privacy = read('public/privacy.html');
-  expect(page).toMatch(/production MOVO app does\s*<strong>not<\/strong> yet encrypt all local financial records/i);
-  expect(page).toContain('Additional application-level encryption');
-  expect(page).toContain('not yet in the production release');
-  expect(terms).toContain('Browser storage is not encrypted by MOVO itself.');
-  expect(privacy).toContain('MOVO does not encrypt browser storage itself;');
-  expect(guide).toContain('not yet live');
+  expect(page).toContain('AES-256-GCM');
+  expect(page).toContain('not all encrypted by MOVO');
+  expect(page).toContain('not end-to-end encryption');
+  expect(terms).toContain('not every local financial record');
+  expect(privacy).toContain('not all protected by that encryption');
+  expect(guide).toContain('Remaining unencrypted copies');
   expect(guide).toContain('not a bank');
-  expect(guide).toContain('does **not**');
+  expect(guide).toContain('not end-to-end encryption');
 });
 
 test('existing privacy, terms and Settings link to the new guide without implying it is a separate policy', () => {

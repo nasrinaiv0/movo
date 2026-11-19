@@ -1,0 +1,72 @@
+export default [
+  [
+    "AI data sharing",
+    "Pagbabahagi ng data sa AI",
+    "مشاركة البيانات مع الذكاء الاصطناعي",
+    "AI 数据共享",
+    "Compartir datos con IA",
+    "Condivisione dati con IA",
+    "Datenfreigabe für KI",
+    "Partage de données avec l’IA",
+    "Compartilhamento de dados com IA",
+    "AIへのデータ共有",
+    "AI 데이터 공유",
+    "AI के साथ डेटा साझा करना"
+  ],
+  [
+    "Clear records",
+    "Burahin ang mga tala",
+    "مسح السجلات",
+    "清除记录",
+    "Borrar registros",
+    "Cancella registrazioni",
+    "Einträge löschen",
+    "Effacer les enregistrements",
+    "Limpar registros",
+    "記録を消去",
+    "기록 지우기",
+    "रिकॉर्ड मिटाएँ"
+  ],
+  [
+    "Records cleared.",
+    "Nabura ang mga tala.",
+    "تم مسح السجلات.",
+    "记录已清除。",
+    "Registros borrados.",
+    "Registrazioni cancellate.",
+    "Einträge gelöscht.",
+    "Enregistrements effacés.",
+    "Registros apagados.",
+    "記録を消去しました。",
+    "기록을 지웠습니다.",
+    "रिकॉर्ड मिटा दिए गए।"
+  ],
+  [
+    "Some records could not be cleared. Review your data and try again.",
+    "May mga talang hindi nabura. Suriin ang iyong data at subukang muli.",
+    "تعذر مسح بعض السجلات. راجع بياناتك وحاول مجددًا.",
+    "部分记录无法清除。请检查数据后重试。",
+    "No se pudieron borrar algunos registros. Revisa tus datos e inténtalo de nuevo.",
+    "Impossibile cancellare alcune registrazioni. Controlla i dati e riprova.",
+    "Einige Einträge konnten nicht gelöscht werden. Prüfe deine Daten und versuche es erneut.",
+    "Certains enregistrements n’ont pas pu être effacés. Vérifiez vos données et réessayez.",
+    "Alguns registros não puderam ser apagados. Confira seus dados e tente novamente.",
+    "一部の記録を消去できませんでした。データを確認して再試行してください。",
+    "일부 기록을 지우지 못했습니다. 데이터를 확인한 후 다시 시도하세요.",
+    "कुछ रिकॉर्ड नहीं मिटाए जा सके। अपना डेटा जाँचें और दोबारा कोशिश करें।"
+  ],
+  [
+    "I am at least 18 years old.",
+    "Ako ay 18 taong gulang o higit pa.",
+    "عمري 18 عامًا على الأقل.",
+    "我已年满18岁。",
+    "Tengo al menos 18 años.",
+    "Ho almeno 18 anni.",
+    "Ich bin mindestens 18 Jahre alt.",
+    "J’ai au moins 18 ans.",
+    "Tenho pelo menos 18 anos.",
+    "私は18歳以上です。",
+    "저는 만 18세 이상입니다.",
+    "मेरी उम्र कम से कम 18 वर्ष है।"
+  ]
+];
