@@ -108,6 +108,9 @@ def main():
             metrics = build_metrics(folder, args.mode, label, source, hashlib.sha256(rules).hexdigest())
             if args.mode == "analyzer" and metrics["r8_version"] != ANALYZER_R8:
                 raise RuntimeError("Temporary R8 override was not used")
+            # Keep measured results reviewable in text logs as well as the ZIP.
+            # This includes real analyzer scores/impact and artifact hashes.
+            print(json.dumps(metrics, indent=2), flush=True)
         print(json.dumps(compare(output, args.mode), indent=2))
     finally:
         RULES.write_bytes(original_rules)

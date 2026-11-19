@@ -1,3 +1,8 @@
+## 2026-11-20 — Publish measured R8 evidence in job logs
+
+- Emit each completed baseline/candidate metrics JSON into the workflow's text log, including real analyzer scores/rule impact, hashes and DEX bytes. Artifact evidence remains unchanged. This allows independent review without downloading the binary artifact ZIP.
+- Thirteen Python checks and whitespace verification pass. The dated engineering note was updated before commit. Exact-head CI must complete; no gain is claimed while builds run. Main/production/store unchanged.
+
 ## 2026-11-20 — R8 review follow-up: pin screenshot evidence target
 
 - Follow-up independent review confirmed both safety fixes and 13 passing Python checks; identified the direct binary screencap subprocess as the only remaining ADB invocation without the verified serial. Pin that command as well, so device evidence cannot drift if another ADB target connects. This affects evidence capture only.

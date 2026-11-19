@@ -31,3 +31,5 @@ Vercel Sandbox creation returned 402 payment_required; no local Vercel CLI, Andr
 Keep the experiment open and unmerged. Compare default DEX sizes and runtime evidence first; review diagnostic rule-impact scores separately. If no measurable benefit, keep the evidence and decide whether this small cleanup warrants promotion. Any failure blocks promotion. Reverting the candidate restores the one keep rule; instrumentation/workflow are opt-in test infrastructure and do not introduce application hooks or web debugging.
 
 Follow-up review confirmed both initial fixes; binary screencap now also explicitly pins the verified emulator serial. Thirteen local Python checks still pass. Re-run all native CI on this exact update.
+
+Each completed build also emits its metrics JSON into the job log, so measured scores, rule impact and DEX evidence remain reviewable without downloading an artifact ZIP. This does not change the compiler or runtime checks.
