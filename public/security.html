@@ -194,7 +194,7 @@ summary::marker { color: var(--accent); }
 
 <section class="content" id="storage">
 <h2>Local and cloud storage</h2>
-<div class="notice encryption"><h3>Offline financial-data encryption</h3><p>As of 13 November 2026, the production MOVO app does <strong>not</strong> yet encrypt all local financial records with MOVO-managed application-layer encryption. People with access to an unlocked device or browser profile may be able to inspect locally saved records.</p><p>Additional application-level encryption for offline read caches and local financial records is being tested. These improvements are not yet in the production release and require careful device migration checks. We will update this guide and our Privacy Policy when verified changes ship.</p></div>
+<div class="notice encryption"><h3>Offline encryption coverage</h3><p>Supported financial read caches, local chat-history caches and verified-plan caches use AES-256-GCM. Main local finance records, offline workspaces, queued sync payloads, attachments, QR images and some preferences are not all encrypted by MOVO. This is not end-to-end encryption. Protect your device and exports; an app lock does not independently encrypt those copies.</p></div>
 <div class="table-wrap"><table aria-label="Local mode and eligible cloud mode comparison">
 <colgroup><col><col><col></colgroup>
 <thead><tr><th scope="col">Question</th><th scope="col">Local mode</th><th scope="col">Eligible cloud mode</th></tr></thead>
@@ -222,11 +222,11 @@ summary::marker { color: var(--accent); }
 <details><summary>Can MOVO move money out of my bank account?</summary><p>No. MOVO tracks information that you provide. It does not execute bank transfers or independently connect to your online banking.</p></details>
 <details><summary>Does MOVO ask for my banking login, PIN, or CVV?</summary><p>No. Never enter banking passwords, PINs, CVVs, or one-time passcodes into MOVO fields, notes, or chat.</p></details>
 <details><summary>Can another MOVO customer view my cloud records?</summary><p>Account authentication and database access policies are designed to prevent cross-user access. Like any online service, MOVO cannot guarantee that security incidents are impossible.</p></details>
-<details><summary>Are all financial records encrypted in the current release?</summary><p>No. Native sign-in credentials use protected device storage, but MOVO-managed application-layer encryption for the main offline finance records is still under review and not yet deployed.</p></details>
+<details><summary>Are all financial records encrypted in the current release?</summary><p>No. Some caches use application-level AES-256-GCM and native sign-in credentials use protected device storage. Other financial working copies and pending sync payloads are not all encrypted. Read the <a href="/privacy">Privacy Policy</a> for the current coverage and limits.</p></details>
 <details><summary>Must I use NasrinAI or share my financial details with AI?</summary><p>No. Financial-context sharing is optional and requires a separate in-app choice. External AI processing may occur if you grant consent and request the feature.</p></details>
 <details><summary>What if I lose my phone or delete MOVO?</summary><p>Eligible cloud-synced records may be available after signing in again. Local-only or unsynced records can be lost. Keep backups securely, and review sync status before clearing a device.</p></details>
 <details><summary>Does deleting my MOVO account cancel my subscription?</summary><p>No. Mobile subscriptions are billed by Apple or Google. Cancel the renewal separately in your store account.</p></details>
-<details><summary>How do I request deletion or report a privacy concern?</summary><p>Open Settings → Privacy &amp; Data → Delete Account, use the <a href="/account-deletion.html">account-deletion instructions</a>, or email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>. Please do not send passwords, PINs, CVVs, or one-time codes.</p></details>
+<details><summary>How do I request deletion or report a privacy concern?</summary><p>Open Settings → Security &amp; Privacy → Delete Account, use the <a href="/account-deletion.html">account-deletion instructions</a>, or email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>. Please do not send passwords, PINs, CVVs, or one-time codes.</p></details>
 </section>
 
 <section class="content features" id="features" aria-label="MOVO features">
@@ -248,7 +248,7 @@ summary::marker { color: var(--accent); }
 <div class="notice"><h3>Security is an ongoing responsibility</h3><p>This guide explains MOVO's design and current limitations. It is not a certification, formal audit, guarantee of breach-free operation, promise of uninterrupted service, or substitute for the <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>. Product capabilities and controls may evolve.</p></div>
 </main>
 <footer class="footer shell">
-<div><strong>MOVO · Money Organizer &amp; Visual Outflow</strong><small>For privacy or security questions: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a><br>Last reviewed: 13 November 2026. Protect your device and keep secure copies of important records.</small></div>
+<div><strong>MOVO · A product of NasrinAI · Money Organizer &amp; Visual Outflow</strong><small>For privacy or security questions: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a><br>Last reviewed: 19 November 2026. Protect your device and keep secure copies of important records.</small></div>
 <div class="footer-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/account-deletion.html">Delete account</a><a href="/">Open MOVO</a></div>
 </footer>
 </body>

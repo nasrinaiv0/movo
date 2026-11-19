@@ -610,10 +610,10 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
     expect(container.textContent).toContain('Effective date: November 19, 2026');
     expect(container.textContent).not.toContain('not yet been published');
-    expect(container.textContent).toContain('Things you delete in MOVO stay in the Archive for 90 days');
+    expect(container.textContent).toContain('removal is not guaranteed on day 90');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
-    expect(container.textContent).toContain('The MOVO service team operates MOVO');
-    expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
+    expect(container.textContent).toContain('MOVO (Money Organizer & Visual Outflow) is a product of NasrinAI');
+    expect(container.textContent).toContain('custom stickers, including image data, may also be saved in account preferences');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
@@ -707,18 +707,20 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('NasrinAI Update');
   });
 
-  test('Clear All Data requires typing DELETE, then resets preferences and removes local records', () => {
+  test('Clear records requires typing DELETE, then resets preferences and removes local records', () => {
     openProfile(container);
     clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear records');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
-    expect(dialog.textContent).toContain('Permanently deletes all MOVO data on this device');
+    expect(dialog.textContent).toContain('resets supported MOVO records and preferences on this device');
+    expect(dialog.textContent).toContain('Other cloud records');
+    expect(dialog.textContent).toContain('Your sign-in account remains');
     expect(container.querySelector('button.danger-button').disabled).toBe(true);
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
-    clickButton(container, 'Clear all data');
+    act(() => dialog.querySelector('button.danger-button').click());
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
     expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');
@@ -1162,7 +1164,7 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
 
 
 describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 2026-11-11)', () => {
-  const { LEGAL_VERSION } = require('./lib/legalVersion');
+  const { LEGAL_VERSION, LEGAL_ACCEPTANCE_DATE } = require('./lib/legalVersion');
   let container; let root;
   const prefs = () => JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
   const start = async (stored) => {
@@ -1198,7 +1200,8 @@ describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 
     expect(accept.disabled).toBe(false);
     act(() => accept.click());
     expect(agreement()).toBeNull();
-    expect(prefs().legalAccepted).toBe(LEGAL_VERSION);
+    expect(prefs().legalAccepted).toBe(LEGAL_ACCEPTANCE_DATE);
+    expect(prefs().legalAcceptedRevision).toBe(LEGAL_VERSION);
     expect(Number.isNaN(Date.parse(prefs().legalAcceptedAt))).toBe(false);
     expect(navButtons().some(b => b.disabled)).toBe(false);
     act(() => navButtons().find(b => b.getAttribute('aria-label') === 'Wallet').click());
@@ -1229,7 +1232,7 @@ describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 
     await start({ legalAccepted: '2026-11-06' });
     expect(agreement()).not.toBeNull();
     act(() => root.unmount()); container.remove();
-    await start({ legalAccepted: LEGAL_VERSION });
+    await start({ legalAccepted: LEGAL_ACCEPTANCE_DATE, legalAcceptedRevision: LEGAL_VERSION });
     expect(agreement()).toBeNull();
     expect(navButtons().some(b => b.disabled)).toBe(false);
   });

@@ -1,3 +1,12 @@
+## 2026-11-19 — Legal/privacy audit and centered Friends QR
+
+- Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
+- Added revision-aware acknowledgement and paired preference merging, adult self-declaration, targeted device AI withdrawal with capture/retry shutdown, and Delete Account for signed-in sync-off owners.
+- Centered the square Friends camera frame, video crop and profile QR. Kept QR parsing and permission behavior intact.
+- Documented remaining encryption, IAP retention, operator/store and territorial release blockers. This is not a certification of legal compliance.
+- Independent final review passed after fixing legacy-client revision compatibility and deletion before agreement. Thirteen browser checks and the final251 suites /1,626 tests with strict production build passed. Exact-head CI/preview is tracked in the PR.
+- [Audit and required operator actions](audits/2026-11-19-legal-privacy-release-audit.md) · [Engineering and validation](engineering/updates/2026-11-19-legal-privacy-and-friends-qr.md).
+
 ## 2026-11-19 — Voice transcription recovery and loading-screen branding
 
 - Preview acceptance follow-up, documented before commit: live metadata confirms MOVO_ALLOWED_ORIGINS contains only the two production origins. Allow this exact Vercel deployment origin only in VERCEL_ENV=preview, retaining production rejection of preview/sibling hosts, and add four boundary regressions. Repeated verification passed all 1,612 tests and the strict production build; independent security review passed. Provider credentials remain unchanged; OpenRouter fallback is currently configured only for production, so real fallback acceptance needs separate preview credentials or an approved staged release.
