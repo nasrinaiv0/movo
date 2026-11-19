@@ -146,11 +146,16 @@ def main():
             adb("install", "-r", str(built / "app-release.apk"))
             adb("install", "-r", "-t", str(built / "app-release-androidTest.apk"))
             adb("logcat", "-c")
+            # Seed native Preferences before any WebView/React state can write
+            # defaults over an out-of-band fixture. The first real startup must
+            # restore it through the production Preferences bridge.
+            instrument(folder, "seedOfflineWallet", legal)
+            adb("shell", "am", "force-stop", PACKAGE)
             cold = adb("shell", "am", "start", "-S", "-W", "-n", PACKAGE + "/.MainActivity")
             (folder / "cold-launch.txt").write_text(cold)
             if "Status: ok" not in cold:
                 raise RuntimeError("Cold launch failed")
-            for method in ("bridgeVaultPersistsAcrossActivityRecreation", "seedOfflineWallet",
+            for method in ("bridgeVaultPersistsAcrossActivityRecreation",
                            "offlineWalletLogoStyleAndSyntheticOAuthCallback"):
                 adb("shell", "am", "force-stop", PACKAGE)
                 instrument(folder, method, legal)

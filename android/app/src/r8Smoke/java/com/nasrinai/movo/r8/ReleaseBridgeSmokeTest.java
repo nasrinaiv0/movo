@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -20,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import org.json.JSONTokener;
 
 /**
@@ -51,14 +53,17 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         Throwable failure = null;
         try {
             assertTrue("Enable only with movoR8Smoke=true", "true".equals(arguments.getString("movoR8Smoke")));
+            if (test.equals("seedOfflineWallet")) seedWalletBeforeLaunch();
             launchRelease();
             switch (test) {
                 case "bridgeVaultPersistsAcrossActivityRecreation":
                     bridgeVaultPersistsAcrossActivityRecreation();
                     break;
                 case "seedOfflineWallet":
-                    awaitJs("initial Home before writing the synthetic wallet", "!!document.querySelector('main[data-view=\"Home\"]')", 45000);
-                    seedWallet();
+                    awaitJs("synthetic wallet restored by the real startup bridge",
+                        "!!document.querySelector('main[data-view=\"Home\"]') && " +
+                        "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT) + " && " +
+                        "JSON.parse(localStorage.getItem('movo.preferences.v3'))?.onboarded===true", 45000);
                     break;
                 case "offlineWalletLogoStyleAndSyntheticOAuthCallback":
                     offlineWalletLogoStyleAndSyntheticOAuthCallback();
@@ -219,7 +224,11 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         assertTrue(result.getBoolean("ok"));
     }
 
-    private void seedWallet() throws Exception {
+    private void seedWalletBeforeLaunch() throws Exception {
+        target = getTargetContext();
+        assertEquals("Never seed another package", PACKAGE, target.getPackageName());
+        SharedPreferences store = target.getSharedPreferences("CapacitorStorage", Context.MODE_PRIVATE);
+        assertTrue("Fixture must precede the first app launch on a fresh installation", store.getAll().isEmpty());
         String legalDate = arguments.getString("movoLegalDate", "");
         String legalRevision = arguments.getString("movoLegalRevision", "");
         assertTrue("Pass the checked-out app's effective date as movoLegalDate", legalDate.matches("\\d{4}-\\d{2}-\\d{2}"));
@@ -228,20 +237,25 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             assertTrue("Use a clean disposable emulator; auth data appeared during startup",
                 key.equals(VAULT_KEY) || key.equals(RESTART_KEY) || key.equals("movo-finance-cache-key-v1"));
         }
-        asyncJs("(async () => {" +
-            "const old=JSON.parse(localStorage.getItem('movo.local.accounts.v1')||'[]');" +
-            "const txs=JSON.parse(localStorage.getItem('movo.local.transactions.v1')||'[]');" +
-            "const prefs=JSON.parse(localStorage.getItem('movo.preferences.v3')||'{}');" +
-            "if(old.some(a=>a.id!==" + quote(ACCOUNT) + ") || txs.length || Object.keys(localStorage).some(k=>k.startsWith('sb-')) || (prefs.profileName && prefs.profileName!=='R8 Synthetic')) throw Error('Use a clean disposable emulator');" +
-            "Object.assign(prefs,{onboarded:true,tutorialSeen:true,planWelcomeSeen:true,legalAccepted:" + quote(legalDate) + "," +
-            (legalRevision.isEmpty() ? "" : "legalAcceptedRevision:" + quote(legalRevision) + ",") +
-            "legalAcceptedAt:" + quote(legalDate + "T00:00:00.000Z") + ",profileName:'R8 Synthetic',language:'en',country:'PH',currency:'PHP'," +
-            "theme:'light',showBalance:true,cloudSyncEnabled:false,briefing:false,accountStyles:{[" + quote(ACCOUNT) + "]:{cardKind:'credit',creditLimit:5000,chip:'silver',cardNetwork:'visa'}}," +
-            "cardStyles:{[" + quote(ACCOUNT) + "]:'finish:silver'}});" +
-            "const rows=[{id:" + quote(ACCOUNT) + ",name:'R8 Synthetic Card',institution_name:'BPI',account_type:'card',cardKind:'credit'," +
-            "currency:'PHP',opening_balance:-125.5,mask:'7788',source:'Manual'}];" +
-            "const values={'movo.preferences.v3':JSON.stringify(prefs),'movo.local.accounts.v1':JSON.stringify(rows),'movo.local.transactions.v1':'[]'};" +
-            "for(const [key,value] of Object.entries(values)){localStorage.setItem(key,value);await window.Capacitor.nativePromise('Preferences','set',{key,value});} return {};})()");
+        JSONObject style = new JSONObject().put("cardKind", "credit").put("creditLimit", 5000)
+            .put("chip", "silver").put("cardNetwork", "visa");
+        JSONObject prefs = new JSONObject().put("onboarded", true).put("tutorialSeen", true)
+            .put("planWelcomeSeen", true).put("legalAccepted", legalDate)
+            .put("legalAcceptedAt", legalDate + "T00:00:00.000Z").put("profileName", "R8 Synthetic")
+            .put("language", "en").put("country", "PH").put("currency", "PHP").put("theme", "light")
+            .put("showBalance", true).put("cloudSyncEnabled", false).put("briefing", false)
+            .put("accountStyles", new JSONObject().put(ACCOUNT, style))
+            .put("cardStyles", new JSONObject().put(ACCOUNT, "finish:silver"));
+        if (!legalRevision.isEmpty()) prefs.put("legalAcceptedRevision", legalRevision);
+        String accounts = new JSONArray().put(new JSONObject().put("id", ACCOUNT).put("name", "R8 Synthetic Card")
+            .put("institution_name", "BPI").put("account_type", "card").put("cardKind", "credit")
+            .put("currency", "PHP").put("opening_balance", -125.5).put("mask", "7788").put("source", "Manual")).toString();
+        assertTrue("Synthetic fixture must reach disk before starting React", store.edit()
+            .putString("movo.preferences.v3", prefs.toString()).putString("movo.local.accounts.v1", accounts)
+            .putString("movo.local.transactions.v1", "[]").commit());
+        assertEquals(prefs.toString(), store.getString("movo.preferences.v3", null));
+        assertEquals(accounts, store.getString("movo.local.accounts.v1", null));
+        assertEquals("[]", store.getString("movo.local.transactions.v1", null));
     }
 
     private JSONObject asyncJs(String expression) throws Exception {

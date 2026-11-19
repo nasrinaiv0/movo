@@ -1511,3 +1511,10 @@ Implemented production-only Apple/Google verification, pinned Apple trust root, 
 - Preserve the explicit WebView frame/screenshot assertions, remove the newly added unbounded post-frame idle wait, bound ADB/instrumentation and the workflow step, and retain partial timeout output plus independent diagnostics.
 - Every timeout remains a hard failure. New Python regressions and exact-head native CI are required; no store upload or broader release approval. See the Android R8 engineering update.
 - Local validation after implementation: all 18 R8 Python tests and whitespace checks pass. Native exact-head evidence is pending; no timeout is converted into success.
+
+
+## 2026-11-20 — R8 synthetic fixture startup race (pre-implementation)
+- Completed run 44627570656 shows a first-run tour instead of restored synthetic settings/account after an in-app fixture write.
+- Seed the fresh disposable installation's native Preferences synchronously before its first activity, refuse nonempty preferences, verify restore through the real bridge, and preserve every later acceptance assertion. Application/production storage code is unchanged.
+- After implementation: 18 R8 Python tests and whitespace checks pass; native fixture compilation and paired emulator acceptance remain pending.
+- PR #326 at 56b36b10 passed both emulator variants. This additional fixture repair is for PR #327 only and does not move the verified #326 head.
