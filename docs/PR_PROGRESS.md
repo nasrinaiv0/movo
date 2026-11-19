@@ -1,3 +1,9 @@
+## 2026-11-20 — Match the Android Wallet screenshot to the verified Cards view
+
+- Exact run 44601407555 at 46e5d31cde48f5976172c97d61c6ca104aef2f70 passed both minified builds, the diagnostic analyzer and all ten emulator checks. The controlled rule produced identical 1,366,480-byte DEX files. The newest iOS job is separate.
+- Reviewing the emulator images showed that the Wallet assertion could inspect a card in the All view and capture the transition frame. Assert the Cards filter is selected, scope the bank artwork and style assertion to the Cards deck, then wait for the WebView frame before recording the screenshot. The app and optimization rules are unchanged.
+- Fifteen Python tests and the Node 26 browser fixture check pass. The selected-Cards assertion and screenshots must pass on both minified build variants.
+
 ## 2026-11-20 — Back off on Maven Central throttling in the R8 experiment
 
 - Attempts 1 and 2 of 44599470076 at 42eb503c50f4b9417febeaaea8da616869724519 hit Maven Central HTTP 429 before the Kotlin/Gradle dependencies resolved. The separate Android native security and test-signing jobs passed.

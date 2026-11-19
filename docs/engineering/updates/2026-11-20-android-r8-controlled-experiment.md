@@ -51,3 +51,7 @@ Run 44590024327 at 4eee1fb3a988 passed encrypted-storage persistence through Act
 ## Maven Central rate limits
 
 Two 44599470076 attempts at 42eb503c50f4 failed resolving pinned Gradle dependencies from Maven Central with HTTP 429. Neither reached Android compilation. This isolated workflow caches Gradle dependencies and waits 60 and 120 seconds for a confirmed Maven Central throttle, preserving both failure logs. Compiler failures and final attempts remain hard failures. Node 26 browser verification of the same offline wallet fixture passed, including the bundled BPI logo and saved silver card finish.
+
+## Verify the Cards frame before screenshot capture
+
+At 46e5d31cde48, both minified variants passed the emulator gate including offline Wallet and native OAuth error delivery. The two Wallet screenshots showed the Cards transition at different points. Require the selected Cards filter, check the BPI asset and saved style inside the Cards deck, and wait for the corresponding Android WebView frame before capture. The application, keep rule and measured compiler configuration are untouched.

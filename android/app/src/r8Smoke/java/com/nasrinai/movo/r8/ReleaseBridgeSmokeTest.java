@@ -160,13 +160,21 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT), 45000);
         clickJs("Wallet button", "document.querySelector('.bottom-nav button[aria-label=Wallet]')");
         awaitJs("offline Wallet route", "!!document.querySelector('main[data-view=\"Wallet\"]')", 15000);
-        clickJs("Cards filter", "Array.from(document.querySelectorAll('.wallet-chip-bar button[data-chip]'))" +
-            ".find(button=>button.textContent.trim()==='Cards')");
-        awaitJs("bundled logo and saved card finish", "(() => {const c=document.querySelector('.credit-card');" +
-            "const img=c?.querySelector('.ccx-logo img');return !!c && c.textContent.includes('BPI') && c.textContent.includes('7788') && " +
-            "c.classList.contains('ink-dark') && getComputedStyle(c).getPropertyValue('--card-tint').trim()==='#7f8792' && " +
-            "!!img && img.complete && img.naturalWidth>0 && new URL(img.currentSrc).pathname==='/brands/offline/bpi.com.ph.png';})()", 20000);
+        String cardsFilter = "Array.from(document.querySelectorAll('.wallet-chip-bar button[data-chip]'))" +
+            ".find(button=>button.textContent.trim()==='Cards')";
+        clickJs("Cards filter", cardsFilter);
+        awaitJs("selected Cards view with the bundled logo and saved finish", "(() => {" +
+            "const screen=document.querySelector('main[data-view=Wallet]');" +
+            "const card=screen?.querySelector('.adaptive-wallet-cards .credit-card');" +
+            "const image=card?.querySelector('.ccx-logo img');" +
+            "return (" + cardsFilter + ")?.getAttribute('aria-pressed')==='true' && " +
+            "getComputedStyle(screen).opacity==='1' && !!card && " +
+            "card.textContent.includes('BPI') && card.textContent.includes('7788') && card.classList.contains('ink-dark') && " +
+            "getComputedStyle(card).getPropertyValue('--card-tint').trim()==='#7f8792' && " +
+            "!!image && image.complete && image.naturalWidth>0 && " +
+            "new URL(image.currentSrc).pathname==='/brands/offline/bpi.com.ph.png';})()", 20000);
         awaitJs("synthetic wallet fixture persisted", "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))[0].id===" + quote(ACCOUNT), 1000);
+        awaitWalletFrame();
         screenshot("offline-wallet.png");
         assertBridgeContracts();
         // A real Android ACTION_VIEW reaches Capacitor App -> the actual React
@@ -279,6 +287,21 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
     }
 
     private static String quote(String value) { return JSONObject.quote(value); }
+
+    private void awaitWalletFrame() throws InterruptedException {
+        CountDownLatch frame = new CountDownLatch(1);
+        runOnMainSync(() -> {
+            WebView view = requireWebView(activity);
+            view.postVisualStateCallback(1, new WebView.VisualStateCallback() {
+                @Override
+                public void onComplete(long requestId) {
+                    view.postOnAnimation(frame::countDown);
+                }
+            });
+        });
+        assertTrue("Wallet did not render an Android WebView frame", frame.await(10, TimeUnit.SECONDS));
+        waitForIdleSync();
+    }
 
     private void screenshot(String name) throws Exception {
         Bitmap image = getUiAutomation().takeScreenshot();
