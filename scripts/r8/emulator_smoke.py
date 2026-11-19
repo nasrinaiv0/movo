@@ -84,7 +84,7 @@ def instrument(folder, method, legal, phase=None):
 def capture(folder):
     (folder / "logcat.txt").write_text(adb("logcat", "-d", "-v", "threadtime", check=False))
     with (folder / "screen.png").open("wb") as image:
-        subprocess.run(["adb", "exec-out", "screencap", "-p"], stdout=image, check=False)
+        subprocess.run(["adb", "-s", ADB_SERIAL, "exec-out", "screencap", "-p"], stdout=image, check=False)
     (folder / "activity.txt").write_text(adb("shell", "dumpsys", "activity", "activities", check=False))
     adb("pull", "/sdcard/Android/data/" + PACKAGE + "/files/r8-smoke", str(folder / "screenshots"), check=False)
 

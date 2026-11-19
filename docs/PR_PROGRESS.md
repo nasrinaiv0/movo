@@ -1,3 +1,8 @@
+## 2026-11-20 — R8 review follow-up: pin screenshot evidence target
+
+- Follow-up independent review confirmed both safety fixes and 13 passing Python checks; identified the direct binary screencap subprocess as the only remaining ADB invocation without the verified serial. Pin that command as well, so device evidence cannot drift if another ADB target connects. This affects evidence capture only.
+- Updated the dated engineering record before committing. Native CI must rerun on the new exact head; no main, production or store changes.
+
 ## 2026-11-20 — Isolated Android R8 measurement and release emulator gate
 
 - Continued the Android optimization handoff from main `a3193b8361e32ea559d8350deaeb6a3e75041759`. No changes to main, production, store uploads or signing secrets.
