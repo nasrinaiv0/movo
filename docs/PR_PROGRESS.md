@@ -1,3 +1,9 @@
+## 2026-11-20 — PR #327 Android dependency runner alignment
+
+- Native Android jobs 44630551757 and 44648057066 both selected Ubuntu 26.04 and failed in Gradle classpath resolution before compilation. Pin the independent native build to Ubuntu 24.04, matching the established paired R8 workflow, and reuse the same Gradle dependency caching option.
+- All native build variants, package checks, dependency versions and failures remain intact. Run the native and paired emulator gates on the new head.
+- The preceding touch-input change passed 1,636 local tests and a strict build, 30 responsive browser checks, and hit-tested offline Wallet/Cards touch with the saved BPI logo and silver card. Android emulator acceptance remains separately required.
+
 ## 2026-11-20 — PR #327 Android Wallet input recovery
 
 - Run 44630552132 restored the synthetic wallet and passed bridge/Activity recreation. A WebView evaluateJavascript callback stalled during the Wallet click. Use Android touchscreen events on the visible Wallet and Cards controls, while keeping rendered route, selected tab, saved card, bundled logo, frame, screenshot, synthetic callback and vault assertions.
