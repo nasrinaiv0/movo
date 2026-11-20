@@ -1,3 +1,7 @@
+## 2026-11-20 — Native acceptance fixture with explicit guest provenance
+
+- Updated the disposable R8 fixture to seed the versioned guest preference snapshot before React launches. The compatibility key holds only appearance/setup fields. The card/style data remains a known synthetic guest record; no ownership guard or emulator assertion is bypassed. Fresh native/emulator CI is required.
+
 ## 2026-11-20 — Execute the product-audit account-isolation remedy
 
 - Added separate guest and owner preference/artwork snapshots, a safe device-setting allowlist and byte-preserving quarantine for unassigned legacy data. No financial list is inherited merely because someone signs in.

@@ -21,3 +21,5 @@ Initial full validation passed 253 suites / 1,643 tests before the final native-
 ## Rollout and rollback
 
 Deploy the scope-aware client only after checks pass. An old client sees safe appearance/setup fields and cannot recover scoped financial lists automatically. Prefer roll-forward recovery; never put owner financial data back into the shared key. Keep recovery snapshots until an explicit owner-reviewed recovery or deletion. Do not clear a device carrying unsynced records to complete acceptance. A browser/device reset can still remove local data and keys.
+
+The disposable Android R8 fixture now writes an explicit guest preference envelope before first launch, plus a safe compatibility key. Its card, artwork and callback assertions remain unchanged. This prevents acceptance tests from relying on the very anonymous preference ownership assumption being removed. Fresh Android release/emulator CI must compile and exercise this fixture.
