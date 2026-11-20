@@ -96,6 +96,7 @@ import { getCurrentSession, listAccounts, listTransactions, createAccount, updat
 import { addToArchive, archiveEntry, purgeArchive, removeFromArchive } from './lib/archive';
 import { listenForAndroidBack, listenForAppUrls, listenForWearActions } from './lib/native';
 import { startNativeChrome } from './lib/nativeChrome';
+import { startIosInterface } from './lib/iosInterface';
 import { enableFontScaling, fontScaleOf, fontStyleOf, loadFontStyle } from './lib/fontPrefs';
 import RecentLogsSheet, { SOURCE_LABEL } from './components/RecentLogsSheet';
 import { AUTOMATION_SOURCES } from './lib/transactionSources';
@@ -997,6 +998,7 @@ function App() {
   }, []);
 
   /* iOS app: the native Liquid Glass top bar and dock mirror the web header and dock (no-op on the web). */
+  useEffect(() => startIosInterface(), []);
   useEffect(() => startNativeChrome(), []);
 
   /* iOS app: movo://auth-callback finishes Google/Apple sign-in (the auth listener below picks up the session);
@@ -2871,12 +2873,12 @@ function App() {
   const accentHex = accentName === 'custom' ? prefs.customColor : (ACCENTS.find(([n]) => n === accentName)?.[1] || '#086b3a');
   /* Text: size scales every font-size through --font-scale (see lib/fontPrefs.js); the style swaps the font stack. */
   const fontScale = fontScaleOf(prefs.fontSize);
-  const fontStack = fontStyleOf(prefs.fontStyle).stack;
+  const fontStack = fontStyleOf(nativePlatform() === 'ios' && prefs.fontStyle === 'default' ? 'system' : prefs.fontStyle).stack;
   useEffect(() => {
-    if (fontScale !== 1) enableFontScaling();
+    if (fontScale !== 1 || nativePlatform() === 'ios') enableFontScaling();
     loadFontStyle(prefs.fontStyle);
     const root = document.documentElement.style;
-    root.setProperty('--font-scale', String(fontScale));
+    root.setProperty('--font-scale', `calc(${fontScale} * var(--ios-text-scale, 1))`);
     root.setProperty('--app-font', fontStack);
   }, [fontScale, fontStack, prefs.fontStyle]);
   // Bottom navigation (owner, 2026-11-12): the tapped tab is marked active on touch-down without a React render (see
@@ -2898,7 +2900,7 @@ function App() {
   if (navIdx !== 2 && navIdx >= 0) lastTab.current = navIdx;
   const pillIdx = lastTab.current;
 
-  if (!authReady) return <div className={rootClass} style={rootStyle}><div className="loading-screen"><span className="brand-mark">m</span><p>{tr('Preparing your secure MOVO space…')}</p></div></div>;
+  if (!authReady) return <div className={rootClass} data-appearance={prefs.theme === 'system' ? 'system' : resolved} style={rootStyle}><div className="loading-screen"><span className="brand-mark">m</span><p>{tr('Preparing your secure MOVO space…')}</p></div></div>;
   const detailTx = sheet?.name === 'tx' ? txs.find(t => t.id === sheet.id) : null;
   const formAccounts = accountsView.filter(a => !a.is_archived);
   const rawIds = new Set(rawTxs.map(t => t.id));
@@ -2953,7 +2955,7 @@ function App() {
   const showSetupAgreement = setupGateOn && authReady && !locked && prefs.onboarded &&
     prefs.planWelcomeSeen && !legalAccepted && !SETUP_READING.has(view) && sheet?.name !== 'deleteAccount';
 
-  return <PlanProvider entitlement={entitlement} cloudMode={cloudMode} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} style={rootStyle} dir={lang.dir} lang={lang.code}>
+  return <PlanProvider entitlement={entitlement} cloudMode={cloudMode} onUpgrade={feature => setSheet({ name: 'planOffer', feature })}><ConfirmProvider value={confirm}><div className={rootClass} data-appearance={prefs.theme === 'system' ? 'system' : resolved} style={rootStyle} dir={lang.dir} lang={lang.code}>
     {scenery && <div className="scenery" aria-hidden="true" style={{ backgroundImage: `url("${scenery}")` }} />}
     <div className="app-shell">
       <main className={`screen enter-${motion}${scrolled ? ' is-scrolled' : ''}`} data-view={view} key={view}

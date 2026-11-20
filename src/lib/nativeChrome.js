@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { isNativeApp } from './platform';
 import { MovoNative } from './native';
+import { applyIosInterface } from './iosInterface';
 
 /*
  * iOS app: the native Liquid Glass top bar and dock mirror the web app's own header and dock.
@@ -23,20 +24,22 @@ export function readChrome(doc = document) {
   const overlay = !!doc.querySelector('[aria-modal="true"], .search-overlay');
   return {
     overlay,
+    appearance: doc.querySelector('.movo-app')?.getAttribute('data-appearance'),
     top: {
       hidden: overlay || !header,
       title: isHome ? '' : (header?.querySelector('h1')?.textContent || '').trim(),
       back: !!back,
       backLabel: back?.getAttribute('aria-label') || 'Back',
+      backDisabled: !!back && (back.disabled || back.getAttribute('aria-disabled') === 'true'),
       backSvg: back?.querySelector('svg') || null,
       // primary: the Plus ("add") action, drawn as a filled circle; the other icons have no background.
-      actions: actions.map(b => ({ label: b.getAttribute('aria-label') || b.textContent.trim(), dot: !!b.querySelector('.red-dot'), primary: b.classList.contains('header-add-action') || b.classList.contains('accent'), svg: b.querySelector('svg') })),
+      actions: actions.map(b => ({ disabled: b.disabled || b.getAttribute('aria-disabled') === 'true', label: b.getAttribute('aria-label') || b.textContent.trim(), dot: !!b.querySelector('.red-dot'), primary: b.classList.contains('header-add-action') || b.classList.contains('accent'), svg: b.querySelector('svg') })),
     },
     dock: {
       // Hidden during setup too: the web nav is locked (App.js setupDone) until the Terms are accepted.
       hidden: overlay || !navItems.length || !!doc.querySelector('nav.bottom-nav.is-locked'),
       active: navItems.findIndex(b => b.classList.contains('nav-active')),
-      tabs: navItems.map(b => ({ label: b.getAttribute('aria-label') || '', badge: !!b.querySelector('.nav-badge'), original: b.classList.contains('nav-center'), svg: b.querySelector('svg') })),
+      tabs: navItems.map(b => ({ disabled: b.disabled || b.getAttribute('aria-disabled') === 'true', label: b.getAttribute('aria-label') || '', badge: !!b.querySelector('.nav-badge'), original: b.classList.contains('nav-center'), svg: b.querySelector('svg') })),
     },
     buttons: { back, actions, tabs: navItems },
   };
@@ -83,13 +86,15 @@ export function startNativeChrome() {
   // Only iOS installs native Liquid Glass bars. Android must retain the web header and dock.
   if (!isNativeApp() || Capacitor.getPlatform() !== 'ios' || typeof document === 'undefined') return () => {};
   const root = document.documentElement;
-  root.classList.add('native-chrome');
+  let stopped = false;
+  let generation = 0;
   let buttons = { back: null, actions: [], tabs: [] };
   let timer = 0; let last = '';
 
   const sync = async () => {
+    if (stopped) return;
+    const current = ++generation;
     const state = readChrome(document);
-    buttons = state.buttons;
     const styles = getComputedStyle(document.querySelector('.movo-app') || document.body);
     const dark = !!document.querySelector('.theme-dark') || root.classList.contains('theme-dark');
     const [backIcon, actionIcons, tabIcons] = await Promise.all([
@@ -98,29 +103,43 @@ export function startNativeChrome() {
       Promise.all(state.dock.tabs.map(t => iconPng(t.svg, t.original))),
     ]);
     const payload = {
-      theme: dark ? 'dark' : 'light',
+      theme: state.appearance === 'system' && root.classList.contains('ios-system-appearance') ? 'system' : dark ? 'dark' : 'light',
       // The iOS dock tints its active tab with this colour: the plan colour (platinum / gold, a solid tone because the
       // native bar cannot draw the web gradient) when the navigation follows the plan, else the app accent.
       accent: toHex(styles.getPropertyValue('--nav-tier').trim() || styles.getPropertyValue('--accent').trim() || '#10a866'),
-      top: { hidden: state.top.hidden, title: state.top.title, back: state.top.back, backLabel: state.top.backLabel, backIcon, actions: state.top.actions.map((a, i) => ({ label: a.label, dot: a.dot, primary: a.primary, icon: actionIcons[i] })) },
-      dock: { ...state.dock, tabs: state.dock.tabs.map((t, i) => ({ label: t.label, badge: t.badge, original: t.original, icon: tabIcons[i] })) },
+      top: { hidden: state.top.hidden, title: state.top.title, back: state.top.back, backLabel: state.top.backLabel, backDisabled: state.top.backDisabled, backIcon, actions: state.top.actions.map((a, i) => ({ disabled: a.disabled, label: a.label, dot: a.dot, primary: a.primary, icon: actionIcons[i] })) },
+      dock: { ...state.dock, tabs: state.dock.tabs.map((t, i) => ({ disabled: t.disabled, label: t.label, badge: t.badge, original: t.original, icon: tabIcons[i] })) },
     };
-    const key = JSON.stringify(payload);
+    if (stopped || current !== generation) return;
+    // System mode keeps UIKit unspecified, but a resolved light/dark change must refresh its semantic colors.
+    const key = JSON.stringify({ ...payload, resolvedTheme: dark ? 'dark' : 'light' });
     if (key === last) return;
-    last = key;
-    MovoNative.setChrome(payload).catch(() => {});
+    try {
+      const settings = await MovoNative.setChrome(payload);
+      if (!stopped && current === generation && settings?.supportsSystemAppearance === true) applyIosInterface(settings, root);
+      if (!stopped && current === generation) { buttons = state.buttons; last = key; root.classList.add('native-chrome'); }
+    } catch {
+      if (!stopped && current === generation) {
+        last = '';
+        if (root.classList.contains('native-chrome')) root.classList.remove('native-chrome');
+        MovoNative.setChrome({ top: { hidden: true }, dock: { hidden: true } }).catch(() => {});
+      }
+    }
   };
   const schedule = () => { clearTimeout(timer); timer = setTimeout(sync, 50); };
 
   const observer = new MutationObserver(schedule);
-  observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['class', 'aria-label', 'aria-current', 'aria-modal'] });
+  observer.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true, attributeFilter: ['class', 'aria-label', 'aria-current', 'aria-modal', 'disabled', 'aria-disabled', 'data-appearance'] });
   const tap = MovoNative.addListener('chromeTap', ({ kind, index }) => {
     const target = kind === 'back' ? buttons.back : kind === 'action' ? buttons.actions[index] : kind === 'tab' ? buttons.tabs[index] : null;
-    target?.click();
+    if (!target?.isConnected || target.disabled || target.getAttribute('aria-disabled') === 'true') return;
+    if (readChrome(document).overlay) return;
+    target.click();
   });
   sync();
 
   return () => {
+    stopped = true; ++generation;
     clearTimeout(timer); observer.disconnect();
     Promise.resolve(tap).then(h => h?.remove()).catch(() => {});
     root.classList.remove('native-chrome');

@@ -50,6 +50,8 @@ CI (`.github/workflows/phase1-ci.yml`, job `verify`) runs install → tests → 
 - Sign-in is passwordless (`components/AuthPanel.js`): Apple, Google, or an email one-time code (`sendEmailCode` / `verifyEmailCode`). Do not reintroduce passwords.
 
 ## UI conventions (owner-approved)
+
+- iOS adaptation (2026-11-20): keep the hybrid screens and shared components. `iosInterface.js` consumes ephemeral UIKit text/accessibility and semantic-color settings; do not persist them in account preferences. Default installed-iOS fonts follow the system; custom choices remain overrides. Native chrome uses safe-area/flexible constraints and mirrors disabled state. Panels follow the visual viewport; avoid per-screen fixed iPhone geometry. See [interface review](docs/audits/2026-11-20-ios-interface-review.md).
 - Match the approved mockups: iOS-style layout, Liquid Glass theme with a user clarity slider, light/dark/tinted themes, accent colours.
 - One icon set in `Icon.js`: smooth, rounded, round caps/joins; filled variant for the active tab. Bottom dock is icon-only with a sliding capsule highlight.
 - Shape language: cards `--r-card` (22px), tiles/menu/stat icons `--r-tile` (30% squircle), chips and deltas pills, buttons ≥48px tall with 16px radius.

@@ -44,14 +44,26 @@ private extension UIColor {
 /// A glass surface that reports layout changes (used to keep the dock's selection capsule in place).
 private final class GlassSurface: UIVisualEffectView {
     var onLayout: (() -> Void)?
+    private let clearSurface: Bool
 
     /// `clear` gives a plain, transparent container (no glass, no border): used for the top bar's buttons.
     init(radius: CGFloat, clear: Bool = false) {
+        clearSurface = clear
         super.init(effect: clear ? nil : chromeGlassEffect())
         translatesAutoresizingMaskIntoConstraints = false
         layer.cornerRadius = radius
         layer.cornerCurve = .continuous
         clipsToBounds = true
+        refreshMaterial()
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshMaterial), name: UIAccessibility.reduceTransparencyStatusDidChangeNotification, object: nil)
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
+
+    @objc private func refreshMaterial() {
+        guard !clearSurface else { return }
+        effect = UIAccessibility.isReduceTransparencyEnabled ? nil : chromeGlassEffect()
+        backgroundColor = UIAccessibility.isReduceTransparencyEnabled ? .secondarySystemBackground : .clear
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -72,6 +84,17 @@ private final class FadingBlur: UIVisualEffectView {
         fade.colors = [UIColor.black.cgColor, UIColor.black.cgColor, UIColor.clear.cgColor]
         fade.locations = [0, 0.62, 1]
         layer.mask = fade
+        refreshMaterial()
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshMaterial), name: UIAccessibility.reduceTransparencyStatusDidChangeNotification, object: nil)
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
+
+    @objc private func refreshMaterial() {
+        let reduced = UIAccessibility.isReduceTransparencyEnabled
+        effect = reduced ? nil : UIBlurEffect(style: .systemUltraThinMaterial)
+        backgroundColor = reduced ? .systemBackground : .clear
+        layer.mask = reduced ? nil : fade
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -85,7 +108,7 @@ private final class FadingBlur: UIVisualEffectView {
 private final class ChromeButton: UIButton {
     private let dot = UIView()
 
-    init(size: CGFloat) {
+    init(size: CGFloat, flexible: Bool = false) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
         imageView?.contentMode = .scaleAspectFit
@@ -96,13 +119,17 @@ private final class ChromeButton: UIButton {
         dot.translatesAutoresizingMaskIntoConstraints = false
         addSubview(dot)
         NSLayoutConstraint.activate([
-            widthAnchor.constraint(equalToConstant: size),
-            heightAnchor.constraint(equalToConstant: size),
+            widthAnchor.constraint(greaterThanOrEqualToConstant: 44),
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
             dot.widthAnchor.constraint(equalToConstant: 8),
             dot.heightAnchor.constraint(equalToConstant: 8),
             dot.topAnchor.constraint(equalTo: topAnchor, constant: size * 0.2),
             dot.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -size * 0.2)
         ])
+        if !flexible {
+            widthAnchor.constraint(equalToConstant: max(44, size)).isActive = true
+            heightAnchor.constraint(equalToConstant: max(44, size)).isActive = true
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -140,6 +167,7 @@ final class GlassChrome: NSObject {
     private let actionsGlass = GlassSurface(radius: 22, clear: true)
     private let actionsStack = UIStackView()
     private var actionButtons: [ChromeButton] = []
+    private var contentHeight: NSLayoutConstraint!
     private var titleAfterBack: NSLayoutConstraint!
     private var titleAtEdge: NSLayoutConstraint!
 
@@ -156,6 +184,17 @@ final class GlassChrome: NSObject {
         super.init()
         buildTopBar(in: host)
         buildDock(in: host)
+        updateTypography()
+        NotificationCenter.default.addObserver(self, selector: #selector(updateTypography), name: UIContentSizeCategory.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(updateTypography), name: UIAccessibility.boldTextStatusDidChangeNotification, object: nil)
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
+
+    @objc private func updateTypography() {
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        contentHeight.constant = max(56, titleLabel.font.lineHeight + 16)
+        host?.setNeedsLayout()
     }
 
     // MARK: Layout
@@ -172,7 +211,8 @@ final class GlassChrome: NSObject {
         actionsGlass.contentView.addSubview(actionsStack)
 
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.adjustsFontForContentSizeCategory = true
         titleLabel.adjustsFontSizeToFitWidth = true
         titleLabel.minimumScaleFactor = 0.8
         titleLabel.accessibilityTraits = .header
@@ -185,14 +225,15 @@ final class GlassChrome: NSObject {
 
         let content = UILayoutGuide()
         topBar.addLayoutGuide(content)
+        contentHeight = content.heightAnchor.constraint(equalToConstant: 56)
         titleAfterBack = titleLabel.leadingAnchor.constraint(equalTo: backGlass.trailingAnchor, constant: 12)
         titleAtEdge = titleLabel.leadingAnchor.constraint(equalTo: topBar.leadingAnchor, constant: 20)
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: host.topAnchor),
-            topBar.leadingAnchor.constraint(equalTo: host.leadingAnchor),
-            topBar.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            topBar.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor),
+            topBar.trailingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.trailingAnchor),
             content.topAnchor.constraint(equalTo: host.safeAreaLayoutGuide.topAnchor),
-            content.heightAnchor.constraint(equalToConstant: 56),
+            contentHeight,
             content.leadingAnchor.constraint(equalTo: topBar.leadingAnchor),
             content.trailingAnchor.constraint(equalTo: topBar.trailingAnchor),
             topBar.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: 14),
@@ -238,8 +279,8 @@ final class GlassChrome: NSObject {
         let nearSafeBottom = dockGlass.bottomAnchor.constraint(equalTo: host.safeAreaLayoutGuide.bottomAnchor, constant: 4)
         nearSafeBottom.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            dockGlass.leadingAnchor.constraint(equalTo: host.leadingAnchor, constant: 20),
-            dockGlass.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -20),
+            dockGlass.leadingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.leadingAnchor, constant: 20),
+            dockGlass.trailingAnchor.constraint(equalTo: host.safeAreaLayoutGuide.trailingAnchor, constant: -20),
             dockGlass.heightAnchor.constraint(equalToConstant: 62),
             nearSafeBottom,
             dockGlass.bottomAnchor.constraint(lessThanOrEqualTo: host.bottomAnchor, constant: -12),
@@ -254,7 +295,7 @@ final class GlassChrome: NSObject {
 
     func apply(theme: String?, accent hex: String?, top: JSObject?, dock: JSObject?) {
         if let theme = theme {
-            let style: UIUserInterfaceStyle = theme == "dark" ? .dark : .light
+            let style: UIUserInterfaceStyle = theme == "system" ? .unspecified : theme == "dark" ? .dark : .light
             topBar.overrideUserInterfaceStyle = style
             dockGlass.overrideUserInterfaceStyle = style
             host?.window?.overrideUserInterfaceStyle = style // status bar, keyboard and pickers follow MOVO's theme
@@ -277,9 +318,11 @@ final class GlassChrome: NSObject {
         titleAfterBack.isActive = hasBack
         backButton.configure(image: chromeImage(top["backIcon"] as? String) ?? UIImage(systemName: "chevron.left"), label: top["backLabel"] as? String ?? "Back", showDot: false, tint: .label)
 
+        backButton.isEnabled = !flag(top["backDisabled"])
+
         let actions = (top["actions"] as? JSArray ?? []).compactMap { $0 as? JSObject }
         while actionButtons.count < actions.count {
-            let button = ChromeButton(size: 40)
+            let button = ChromeButton(size: 44)
             button.tag = actionButtons.count
             button.addTarget(self, action: #selector(tapAction(_:)), for: .touchUpInside)
             actionButtons.append(button)
@@ -289,6 +332,7 @@ final class GlassChrome: NSObject {
             guard index < actions.count else { button.isHidden = true; continue }
             let action = actions[index]
             button.isHidden = false
+            button.isEnabled = !flag(action["disabled"])
             let primary = flag(action["primary"])
             button.configure(image: chromeImage(action["icon"] as? String), label: action["label"] as? String, showDot: flag(action["dot"]), tint: .label, fill: primary ? accent : nil)
             // A little room before the filled Plus; the plain icons sit edge to edge.
@@ -301,7 +345,7 @@ final class GlassChrome: NSObject {
         setVisible(dockGlass, !flag(dock["hidden"]))
         let tabs = (dock["tabs"] as? JSArray ?? []).compactMap { $0 as? JSObject }
         while tabButtons.count < tabs.count {
-            let button = ChromeButton(size: 50)
+            let button = ChromeButton(size: 50, flexible: true)
             button.tag = tabButtons.count
             button.addTarget(self, action: #selector(tapTab(_:)), for: .touchUpInside)
             tabButtons.append(button)
@@ -311,6 +355,7 @@ final class GlassChrome: NSObject {
         for (index, button) in tabButtons.enumerated() {
             guard index < tabs.count else { button.isHidden = true; continue }
             let tab = tabs[index]
+            button.isEnabled = !flag(tab["disabled"])
             let isActive = index == active
             let template = !flag(tab["original"])
             let icon = chromeImage((isActive ? tab["iconActive"] : tab["icon"]) as? String ?? tab["icon"] as? String, template: template)
@@ -336,7 +381,7 @@ final class GlassChrome: NSObject {
             self.selection.frame = frame
             self.selection.alpha = 1
         }
-        if animated {
+        if animated && !UIAccessibility.isReduceMotionEnabled {
             UIView.animate(withDuration: 0.32, delay: 0, options: [.curveEaseOut, .beginFromCurrentState], animations: update)
         } else {
             update()
@@ -345,6 +390,7 @@ final class GlassChrome: NSObject {
 
     private func setVisible(_ view: UIView, _ visible: Bool) {
         view.isUserInteractionEnabled = visible
+        view.accessibilityElementsHidden = !visible
         let target: CGFloat = visible ? 1 : 0
         guard view.alpha != target else { return }
         if UIAccessibility.isReduceMotionEnabled {

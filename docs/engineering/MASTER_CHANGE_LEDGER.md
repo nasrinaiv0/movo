@@ -1,5 +1,12 @@
 # MOVO Master Change Ledger
 
+## 2026-11-20 — iOS system-adaptive controls and panels (#330)
+
+Native UIKit navigation now follows system text/appearance/accessibility settings, uses minimum 44pt actions and flexible dock constraints, preserves disabled state and retains a web fallback if native activation fails. The shared web panels use keyboard viewport/safe-area bounds, semantic surface tokens and growing rows; Wallet actions reflow with text size. iOS system text scale multiplies app preferences without persisting device settings or changing financial structures.
+
+Full local regression: 256 suites / 1,682 tests; focused interface/bridge/font tests: 23. Exact-head native and hosted acceptance remain required. [Review and screenshots](../audits/2026-11-20-ios-interface-review.md) · [Engineering record](updates/2026-11-20-ios-system-interface.md). Vercel's API now confirms the team has an overdue balance; unpause alone did not restore service.
+
+
 ## 2026-11-20 — PR #329 follow-up: device cleanup, navigation and financial submission
 
 Re-audited the #329 source, whose complete changes shipped through #327/main `73e293bf`; keep #329 closed as superseded. Extended #330 with selective owner-bound device cleanup, visible cleanup failure/retry, translated accessible tab names with stable highlight matching, and submission of the amount actually displayed on the keypad. Preserve guest/foreign caches, files, profile photos, chat state and unassigned recovery. No schema, record/API format, navigation or visual redesign.

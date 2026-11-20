@@ -18,6 +18,12 @@ This is the current continuation point for the historical [implementation handof
 
 Public production currently returns **HTTP 402 DEPLOYMENT_DISABLED** and Vercel reports **Account is blocked**. This supersedes earlier HTTP 200 observations. Resolve through the account owner/provider and retest the hosted commit; do not bypass protection or create a replacement deployment. Fresh #330 exact-head CI is required. Its prior paired R8 check failed dependency downloads with Maven HTTP 429 after bounded retries. No emulator pass is inferred.
 
+## iOS interface continuation
+
+The owner requested system-adaptive iOS buttons and panels. #330 now extends native UIKit typography, flexible safe-area layout, disabled-state mirroring and bridge fallback; the shared web panels follow device text/accessibility and keyboard viewport settings. Preserve custom appearance options and the existing hybrid architecture. See [current interface review](../../audits/2026-11-20-ios-interface-review.md) and [engineering record](../updates/2026-11-20-ios-system-interface.md). New exact-head iOS builds and device acceptance are required.
+
+Vercel recovery now has an explicit provider diagnosis: `402 resource_creation_blocked`, overdue team balance, valid payment method required. The authorized unpause returned without an API error but production remained HTTP 402; retrying the existing production deployment was rejected. Billing resolution is an account-owner action; no paid settings changed.
+
 ## Audit execution
 
 | Audit remedy | Execution state | Remaining acceptance |

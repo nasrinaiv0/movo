@@ -1,5 +1,7 @@
 # MOVO
 
+The iOS candidate now connects Dynamic Type, semantic system surfaces and accessibility settings to shared controls and panels, while retaining custom appearance choices and the existing hybrid architecture. See [the iOS interface review](docs/audits/2026-11-20-ios-interface-review.md) for measured coverage and native acceptance limits.
+
 The [PR #329 follow-up audit](docs/audits/2026-11-20-pr329-remediation-review.md) records owner-safe cleanup, financial-entry and localized-navigation fixes in #330, plus dependency hardening in #331. Current production returns HTTP 402 DEPLOYMENT_DISABLED; hosted acceptance and release remain blocked. Existing architecture and financial formats are preserved.
 
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
