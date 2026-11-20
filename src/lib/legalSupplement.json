@@ -18,7 +18,8 @@
       "heading": "14. Paid subscriptions, restoration and refunds",
       "paragraphs": [
         "If paid features become available through the iOS or Android app, the relevant app store displays the applicable price, billing period, trial terms and any taxes before you confirm a purchase. Eligible subscriptions renew automatically according to the terms shown by that store unless cancelled there. The store manages payment processing, billing changes, cancellation and applicable refund requests; MOVO cannot cancel your store subscription merely by deleting your MOVO account.",
-        "Restore Purchases can restore an eligible, verified purchase to the MOVO account originally linked to it. Restores and access depend on valid store verification, account matching and product availability. Refunds and statutory consumer rights are determined under applicable law and the relevant store rules. MOVO will not describe disabled checkout as a functioning purchase option."
+        "Restore Purchases can restore an eligible, verified purchase to the MOVO account originally linked to it. Restores and access depend on valid store verification, account matching and product availability. Refunds and statutory consumer rights are determined under applicable law and the relevant store rules. MOVO will not describe disabled checkout as a functioning purchase option.",
+        "Cancelling renewal normally preserves verified paid access until the current paid period expires, unless a refund, revocation or another lawful store action changes that access. A MOVO promotional trial does not by itself authorize a charge. A store-managed trial may renew at the price and interval shown by the store unless cancelled under those terms. Contact MOVO for access or verification problems; mandatory consumer rights still apply."
       ],
       "links": [
         {
@@ -42,15 +43,20 @@
       "heading": "16. Third-party content and support",
       "paragraphs": [
         "Bank and payment-network names, merchant logos and product names may belong to their respective owners and do not imply partnership or endorsement. Market-data and AI services can provide information that is incomplete or unavailable. Third-party services may have additional terms.",
-        "To report an inaccurate calculation, disputed purchase entitlement, unauthorized access or data-handling concern, contact support@nasrinai.com. Include the affected feature and relevant non-secret details only; do not email passwords, one-time codes or full card numbers.",
-        "MOVO's published contact address is 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines. The Data Protection Officer is Nasrin Abubakar (dpo@nasrinai.com); general support remains support@nasrinai.com."
+        "To report an inaccurate calculation, disputed purchase entitlement, unauthorized access or data-handling concern, contact support@nasrinai.com. Include the affected feature and relevant non-secret details only; do not email passwords, one-time codes or full card numbers."
       ]
     },
     {
       "heading": "17. Accepting these terms during setup",
       "paragraphs": [
-        "When you first set up MOVO, and again after these Terms or the Privacy Policy change, MOVO asks you to accept them before the app opens. The version you accepted and the time you accepted it are saved with your MOVO preferences on this device and, when you are signed in, with your account preferences.",
-        "The video guide shown during setup uses invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
+        "During setup, and after a material policy revision, MOVO asks you to agree to the Terms and acknowledge the Privacy Policy before the app opens. Optional AI sharing and device permissions require their own choices. The accepted revision and acceptance time are saved in your device preferences and, when signed in, supported account preferences.",
+        "The guide shown during setup uses screenshots with invented sample records, not anyone's real financial data. Logos that appear in it are shown only to identify the type of record, as described in section 16."
+      ]
+    },
+    {
+      "heading": "18. Sharing with friends",
+      "paragraphs": [
+        "Only share content you have the right to share. MOVO prohibits harassment, threats, sexually exploitative material, impersonation, and disclosure of someone else’s private information through Friends. You can block a user or report a request or shared summary in the app. Contact support@nasrinai.com for help."
       ]
     }
   ],
@@ -59,7 +65,7 @@
       "heading": "10. Why we process information and the applicable basis",
       "paragraphs": [
         "We use the information you provide to deliver requested tracking, authentication, cloud sync, transaction logging, support and exports; to maintain service integrity and prevent misuse; and to meet legal obligations where applicable. Depending on the processing and the law that applies, these activities may rely on your request or agreement, legitimate interests that do not override your rights, legal obligations or your consent where required.",
-        "Financial-context sharing with NasrinAI is optional and requires a separate in-app choice. You may decline it and continue using non-AI MOVO features. Withdrawing consent limits future optional sharing; it does not automatically retract material already processed by a third-party provider. Contact support@nasrinai.com for privacy requests."
+        "Optional financial-context sharing with NasrinAI and its configured providers requires a separate in-app choice. You may decline and continue manual tracking. This device’s chat and voice consent can be withdrawn in Settings → Security & Privacy → AI data sharing. Already submitted material and other devices are handled as described in section 5."
       ]
     },
     {
@@ -87,8 +93,8 @@
     {
       "heading": "14. How long data stays and how deletion works",
       "paragraphs": [
-        "Local-only data remains on the current device or browser profile until you clear it, delete app/browser storage or the device removes it. Signed-in cloud records, chat history and preferences remain while your account is active unless you delete them or request a supported removal. Eligible Archive entries expire after 90 days. Cleanup timing differs between cloud and local storage.",
-        "Use Settings → Security & Privacy → Delete Account in MOVO or the public account-deletion page to request removal of your cloud account and associated personal data. Local data on another device may need separate clearing. Some data may remain temporarily in backups, security logs or records that must lawfully be retained for accounting, fraud prevention, dispute resolution or legal claims; such exceptions should be limited to applicable purposes and retention requirements. Deleting MOVO does not cancel an Apple or Google subscription.",
+        "Retention varies by record, storage location and the deletion function used. The record-specific Archive limits, local copies, Clear records scope and account-deletion exceptions are described in section 6; the 90-day cleanup window is not a universal retention period or a guaranteed scheduled purge.",
+        "Use Settings → Delete Account in MOVO or the public account-deletion page to request removal of your cloud account and associated personal data. Local data on another device may need separate clearing. Some data may remain temporarily in backups, security logs or records that must lawfully be retained for accounting, fraud prevention, dispute resolution or legal claims; such exceptions should be limited to applicable purposes and retention requirements. Deleting MOVO does not cancel an Apple or Google subscription.",
         "Backup, incident and legally retained records may have different retention periods depending on the underlying service and legal obligations. This notice does not promise immediate removal from every backup or third-party system; contact our privacy team to ask about a particular record."
       ],
       "links": [
@@ -102,7 +108,8 @@
       "heading": "15. Your choices and privacy rights",
       "paragraphs": [
         "Where applicable, you may ask to be informed about processing, access or correct personal data, object to qualifying processing, withdraw consent, request deletion or blocking, obtain a portable copy, and raise a complaint with the appropriate regulator. You may export available financial records in MOVO and contact support@nasrinai.com for additional requests.",
-        "We may need to verify your identity before disclosing or deleting cloud records. We will assess requests under the applicable law, including lawful retention exceptions, without asking you to email passwords or full payment-card information."
+        "We may need to verify your identity before disclosing or deleting cloud records. We will assess requests under the applicable law, including lawful retention exceptions, without asking you to email passwords or full payment-card information.",
+        "Contact dpo@nasrinai.com to exercise these rights. Where the GDPR applies, requests are normally answered within one month; a legally permitted extension is explained within that first month. Other applicable legal deadlines still govern. Requests are normally free, subject to lawful exceptions. You may complain to a competent regulator without contacting MOVO first."
       ],
       "links": [
         {
@@ -121,10 +128,8 @@
     {
       "heading": "17. Children, policy updates and operator information",
       "paragraphs": [
-        "MOVO is for adults aged 18 and older. If you believe a minor's data was submitted improperly, please contact support@nasrinai.com so it can be reviewed.",
-        "MOVO is operated by the developer or legal operator identified in the applicable app-store listing. For identity or privacy questions and requests, contact support@nasrinai.com. Material policy changes will be dated and communicated as required by law; changes in optional processing may require renewed notice or consent.",
-        "MOVO's designated Data Protection Officer is Nasrin Abubakar. To request access, correction, deletion or other privacy rights or report a suspected privacy incident, email dpo@nasrinai.com. General support is support@nasrinai.com. A DPO contact does not substitute for publishing the verified legal controller and its physical address or appointing any required local representatives.",
-        "MOVO's contact and privacy correspondence address is 142 Pag-asa Village, Matina Aplaya, Davao City, Davao del Sur, 8000, Philippines. This address is supplied for publication; identification and registration of the legal controller and any locally required representatives must still be independently verified before international paid distribution."
+        "MOVO is intended for adults aged 18 or older. Age eligibility and privacy-contact details are set out in sections 1 and 9.",
+        "MOVO is a product of NasrinAI. Material changes will be dated and communicated as required. Acceptance of the Terms and acknowledgement of the Privacy Policy are separate from optional AI and device-permission choices; a policy update does not by itself authorize new optional processing."
       ]
     },
     {
@@ -132,7 +137,8 @@
       "paragraphs": [
         "Each signed-in MOVO account has a short referral code, for example M78038. Your code is part of your Refer MOVO download links and QR codes. It identifies the account that shared the link and contains no name, email address or financial information.",
         "When someone opens your Android link, Google Play receives the code as part of the store address and keeps it as the app’s install referrer. On its first launch, the MOVO Android app asks Google Play for that referrer once, on the device, and keeps only a valid referral code, which is filled in so the person can add it after signing in. On iPhone, the download page shows the code and copies it to the clipboard only when its button is tapped.",
-        "A referral code counts only after the person signs in and the MOVO service accepts it. MOVO then records which account referred which, and any referral points, with both accounts. Referral codes are not used for advertising."
+        "A referral code counts only after the person signs in and the MOVO service accepts it. MOVO then records which account referred which, and any referral points, with both accounts. Referral codes are not used for advertising.",
+        "MOVO uses Apple App Attest or Google Play Integrity to confirm that the official app was used for the referral. MOVO records the linked accounts, verification result, confirmed store payment or refund status, and points earned or used. The referral process does not collect your payment card details."
       ]
     },
     {
@@ -140,6 +146,7 @@
       "paragraphs": [
         "When you choose Analyze with AI on a receipt photo, MOVO sends that selected photo, or extracted text from a PDF receipt, to the MOVO server and its configured AI provider (OpenRouter and the underlying model provider) to read merchant, date, item, amount, tax and payment fields and suggest categories. MOVO requests that its AI provider not collect prompts for training, but provider handling, cross-border processing and retention remain subject to applicable service terms and laws. Do not include passwords, PINs, card verification codes, one-time passcodes or unrelated people's information in receipts.",
         "AI receipt scanning requires sign-in, qualifying access and a separate in-app confirmation for each receipt. You can decline and instead use basic on-device text recognition, or discard the scan without creating a financial transaction. MOVO does not store the scanned photo or full source text in its AI proxy or provider request logs. When you select Log, the details you approve become a MOVO transaction under your selected account, which may sync to your cloud account under your chosen storage settings. The provider may process the submitted receipt as needed to return the result; cancelling or deleting the MOVO review does not guarantee removal from third-party systems.",
+        "If the receipt and selected payment account use different currencies, MOVO downloads general exchange rates from ExchangeRate-API and calculates an estimate on your device. The rate request carries no receipt, amount, account, or sign-in data. A bank or card statement may show a different amount. If you log the transaction, MOVO saves the original receipt total and the conversion or statement amount with the transaction.",
         "AI-extracted fields and categories can be wrong. MOVO shows a summary for review, allows correction, and does not choose your bank, card, e-wallet or cash account on your behalf. VAT included in a total, cash tendered and change are not separate transactions. You remain responsible for checking the logged amount, currency, date, merchant, categories, payment account and any duplicates before relying on reports."
       ]
     },
@@ -147,7 +154,11 @@
       "heading": "20. Private friend invites",
       "paragraphs": [
         "Friends is optional. To create or accept an invite, sign in and choose the display name you want to share. Anyone who has an active invite link and a verified MOVO account can see the name attached to that invite. Invite links carry a random code and expire after 24 hours or after one person accepts. Creating a replacement or revoking the active invite disables the previous link.",
-        "MOVO stores a hashed invite code, account identifiers, chosen display names and connection timestamps to manage Friends. Your friends can see the display name you shared. Friends does not upload contacts or share emails, profile photos or financial records. Either person can remove a connection, and account deletion removes the account’s friend connections."
+        "MOVO stores a hashed invite code, account identifiers, chosen display names, usernames, requests and connection timestamps to manage Friends. Verified members can search usernames that their owners choose to make discoverable. The search shows only usernames. Recipients choose whether to accept connection requests.",
+        "When you preview and approve a monthly tracking summary, MOVO stores the selected snapshot for the friend you chose. The sections you select may include your note, income, expenses, savings balance, weekly net cash flow, financial planning totals, budget and plan progress, and spending category percentages. Friends cannot open your underlying transactions, receipts or accounts. You can revoke access, and removing a friend removes any shared snapshots for that connection.",
+        "MOVO saves your uploaded profile photo privately on the account when you are signed in and makes it available to you on your devices. Guests keep their photo on the current device. Search results and shared summaries do not include your photo, email or contacts. Account deletion removes the account’s photo and Friends records.",
+        "If you block or report someone, MOVO stores the accounts involved and the type of report for safety and support review. A report does not copy the contents of a financial summary into the report record.",
+        "When you choose Scan QR code, MOVO reads camera frames or a selected QR photo on your device. These images are not uploaded or stored by Friends. Only a validated MOVO invitation code is sent for review; scanning does not accept the invite automatically. You can instead paste an invite link. A profile QR image you choose to share contains your chosen display name, initial and temporary invitation code, without your photo, contact details or financial records. Recipients and sharing apps may keep a copy; revoking the invite disables its code, not those copies."
       ]
     }
   ]

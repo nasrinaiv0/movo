@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from './Icon';
 import { tileFor, smoothPath, BUCKETS, chipTone, chipLabel, shown, money, relativeDay, timeLabel, signed, HIDDEN } from '../lib/format';
 import { canAnimate, useCountUp } from '../lib/motion';
@@ -89,7 +90,11 @@ export function Chips({ items, value, onChange, trailing, label }) {
     const rowEl = row.current;
     const measure = () => {
       const el = rowEl?.querySelector('button[data-chip][aria-pressed="true"]');
-      if (el) setInd({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+      if (!el) return;
+      const next = { left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight };
+      // Keep the same state when nothing moved (the first ResizeObserver call always repeats the measurement), so
+      // opening a screen does not render and lay out the row twice.
+      setInd(cur => (cur && cur.left === next.left && cur.top === next.top && cur.width === next.width && cur.height === next.height ? cur : next));
     };
     measure();
     if (!rowEl || typeof ResizeObserver === 'undefined') return undefined;
@@ -111,13 +116,17 @@ export function SectionTitle({ children, action, onAction }) {
   return <div className="section-title"><h2>{children}</h2>{action && <button type="button" className="link-button" onClick={onAction}>{action}{' '}<Icon name="chevron" size={14} /></button>}</div>;
 }
 
-export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false, center = false }) {
+export function Sheet({ title, subtitle, onClose, children, label, className = '', hideClose = false, center = false, size = 'regular' }) {
   const [closing, setClosing] = useState(false);
   const [dy, setDy] = useState(0);
   const drag = useRef(null);
   const dialogRef = useRef(null);
   const previousFocusRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
   const closeRef = useRef(null);
+  // Screen entrances create stacking contexts. Mount over the app shell so every
+  // sheet can cover navigation while still inheriting MOVO's theme and direction.
+  const [host] = useState(() => typeof document === 'undefined' ? null : document.querySelector('.movo-app'));
+
   const close = () => {
     if (closing) return;
     if (!canAnimate()) { onClose(); return; }
@@ -134,9 +143,8 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )).filter(element => !element.hasAttribute('hidden') && element.getAttribute('aria-hidden') !== 'true');
     if (!dialog.contains(document.activeElement)) {
-      const first = getFocusable()[0];
-      if (first) first.focus();
-      else dialog.focus();
+      const first = getFocusable()[0] || dialog;
+      first.focus({ preventScroll: true });
     }
     const handleTab = event => {
       if (event.key !== 'Tab') return;
@@ -156,15 +164,15 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       leaveBackLayer();
       document.removeEventListener('keydown', handleTab);
       const previous = previousFocusRef.current;
-      if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus();
+      if (previous && previous !== document.body && previous.isConnected && typeof previous.focus === 'function') previous.focus({ preventScroll: true });
     };
   }, []);
   closeRef.current = close;
   const down = (e) => { drag.current = { y: e.clientY }; try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* not supported */ } };
   const move = (e) => { if (drag.current) setDy(Math.max(0, e.clientY - drag.current.y)); };
   const up = () => { if (!drag.current) return; const far = dy > 110; drag.current = null; if (far) close(); else setDy(0); };
-  return <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
-    <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
+  const sheet = <div className={`sheet-backdrop${center ? ' center' : ''}${closing ? ' closing' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) close(); }}>
+    <section ref={dialogRef} className={`sheet${center ? ' sheet-center' : ''}${className ? ` ${className}` : ''}${closing ? ' closing' : ''}${drag.current ? ' dragging' : ''}`} data-size={size} role="dialog" aria-modal="true" aria-label={label || title} tabIndex={-1} style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
       {!center && <div className="sheet-handle" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}><span className="sheet-grabber" /></div>}
       {!hideClose && <button type="button" className="sheet-close" aria-label={tr('Close {name}', { name: label || title })} onClick={close}><Icon name="close" size={18} /></button>}
       {title && <h2 className="sheet-title">{title}</h2>}
@@ -172,6 +180,7 @@ export function Sheet({ title, subtitle, onClose, children, label, className = '
       {typeof children === 'function' ? children(close) : children}
     </section>
   </div>;
+  return host ? createPortal(sheet, host) : sheet;
 }
 
 export function Sparkline({ values, width = 170, height = 70 }) {
@@ -227,7 +236,7 @@ export function Legend({ data }) {
   return <ul className="legend">{data.map((d, i) => <li key={d.key} style={{ '--i': i }}><i style={{ background: d.color }} /><span>{tr(d.key)}</span><b>{d.percent}%</b></li>)}</ul>;
 }
 
-export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly, afterBalances }) {
+export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, timeOnly, afterBalances, tag = '' }) {
   const meta = `${timeOnly ? '' : `${relativeDay(t.date, refDate)}, `}${timeLabel(t.date)} • ${accountLabel || t.method || t.accountName}`;
   const cls = t.type === 'income' ? 'pos' : '';
   const afterAccessible = show && Array.isArray(afterBalances) ? afterBalances.map(entry =>
@@ -237,7 +246,7 @@ export function TransactionRow({ t, show, refDate, chip, onOpen, accountLabel, t
       <BrandLogo src={t.type === 'transfer' ? null : merchantLogoUrl(t.merchant)} className="tile tile-logo" size={44} />
       {(() => { const c = categoryOf(t.type === 'income' || t.type === 'transfer' ? t.type : t.categoryId || t.category); return <span className={`tx-cat-badge tone-${c.tone}`} title={tr(c.label)} aria-hidden="true"><Icon name={c.icon} size={11} strokeWidth={2.4} /></span>; })()}
     </span>
-    <span className="tx-main"><strong>{t.merchant}</strong><small>{meta}</small></span>
+    <span className="tx-main"><strong>{t.merchant}</strong><small>{tag && <em className="tx-auto-tag">{tag}</em>}{meta}</small></span>
     <span className="tx-side">
       <b className={cls}>{shown(show, signed(t.type, t.amount, t.currency))}</b>
       {Array.isArray(afterBalances) && afterBalances.length > 0 && <span className="tx-after-balances">

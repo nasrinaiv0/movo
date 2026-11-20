@@ -5,15 +5,17 @@ global.IS_REACT_ACT_ENVIRONMENT = true;
 let root, host;
 beforeEach(()=>{host=document.createElement('div');document.body.append(host);root=createRoot(host)});
 afterEach(()=>{act(()=>root.unmount());host.remove()});
-test('unreviewed BPI uses a local icon without any Google request',()=>{
+test('Your Cards picker shows approved Google BPI favicon, not initials',()=>{
   act(()=>root.render(<AccountBrandMark account={{name:'BPI',institution_name:'BPI',account_type:'card'}}/>));
-  expect(host.querySelector('img')).toBeNull();
-  expect(host.querySelector('svg')).not.toBeNull();
+  const img=host.querySelector('img');
+  expect(img).not.toBeNull();
+  expect(img.src).toBe('http://localhost/brands/offline/bpi.com.ph.png');
+  expect(img.getAttribute('referrerpolicy')).toBe('no-referrer');
+  expect(host.textContent).not.toContain('BP');
 });
-test('e-wallet and unknown banks use local icons until verified brand clearance',()=>{
+test('bank and e-wallet names fetch curated favicons and unknown names retain an icon fallback',()=>{
   act(()=>root.render(<AccountBrandMark account={{name:'GCash',account_type:'e_wallet'}}/>));
-  expect(host.querySelector('img')).toBeNull();
-  expect(host.querySelector('svg')).not.toBeNull();
+  expect(host.querySelector('img').src).toContain('/brands/offline/gcash.com.png');
   act(()=>root.render(<AccountBrandMark account={{name:'Random Unregistered Bank',account_type:'bank'}}/>));
   expect(host.querySelector('img')).toBeNull();
   expect(host.querySelector('svg')).not.toBeNull();

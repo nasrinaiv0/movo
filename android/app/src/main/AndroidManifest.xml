@@ -41,6 +41,13 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="movo" android:host="log" />
             </intent-filter>
+            <!-- Untrusted, fixed watch handoff; phone never writes automatically. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="movo" android:host="wear-log" />
+            </intent-filter>
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -65,4 +72,13 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Receipt scanning and NasrinAI voice (asked only when the person starts them, like on iOS). The WebView needs
+         these declared or Android refuses the camera and microphone. Optional hardware: MOVO still installs on
+         tablets, Chromebooks and phones without a camera or microphone (they upload a photo or type instead). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>

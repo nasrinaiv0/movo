@@ -38,9 +38,20 @@ describe('Android release deep-link routing', () => {
     expect(friends[0]).toContain('android.intent.category.BROWSABLE');
   });
 
+  test('Wear links use only the MOVO scheme and open the phone form', () => {
+    const wear = filters.filter(filter => filter.includes('android:host="wear-log"'));
+    expect(wear).toHaveLength(1);
+    expect(wear[0]).toContain('android:scheme="movo"');
+    expect(wear[0]).toContain('android.intent.action.VIEW');
+    expect(wear[0]).toContain('android.intent.category.DEFAULT');
+    expect(wear[0]).toContain('android.intent.category.BROWSABLE');
+  });
+
   test('neither source manifest nor Gradle declares a permissive or credential-bearing callback', () => {
     expect(manifest).toContain('android:exported="true"');
-    expect(filters).toHaveLength(4); // launcher, OAuth, quick-log and friends
+    expect(filters).toHaveLength(5); // launcher, OAuth, quick-log, friends and Wear
+    expect(filters.flatMap(filter => [...filter.matchAll(/android:host="([^"]+)"/g)].map(match => match[1])).sort())
+      .toEqual(['auth-callback', 'friend', 'log', 'wear-log']);
     expect(manifest).not.toMatch(/<data\s+android:scheme="movo"\s*\/>/);
     expect(manifest).not.toMatch(/access_token|refresh_token|client_secret/i);
     expect(gradle).not.toMatch(/movoAuthScheme:\s*".*\*/);
@@ -55,5 +66,31 @@ describe('Android release deep-link routing', () => {
       const rules = extraction.split('<' + section + '>')[1].split('</' + section + '>')[0];
       for (const domain of domains) expect(rules).toContain('<exclude domain="' + domain + '" path="." />');
     }
+  });
+});
+
+describe('Android works on every device (2026-11-17)', () => {
+  const permissions = Array.from(manifest.matchAll(/<uses-permission android:name="([^"]+)"/g), m => m[1]).sort();
+  const features = Object.fromEntries(Array.from(manifest.matchAll(/<uses-feature android:name="([^"]+)" android:required="(true|false)"/g), m => [m[1], m[2]]));
+
+  test('receipt scanning and voice can reach the camera and microphone through the WebView', () => {
+    expect(permissions).toEqual(expect.arrayContaining(['android.permission.CAMERA', 'android.permission.RECORD_AUDIO', 'android.permission.MODIFY_AUDIO_SETTINGS']));
+  });
+
+  test('camera and microphone stay optional, so Google Play still offers MOVO to devices without them', () => {
+    // A camera or microphone permission without these lines makes Play hide the app from tablets, Chromebooks and TVs.
+    expect(features).toEqual({ 'android.hardware.camera': 'false', 'android.hardware.camera.autofocus': 'false', 'android.hardware.microphone': 'false' });
+  });
+
+  test('no location, contacts, storage or phone permissions are requested', () => {
+    expect(permissions).toEqual(['android.permission.CAMERA', 'android.permission.INTERNET', 'android.permission.MODIFY_AUDIO_SETTINGS',
+      'android.permission.RECORD_AUDIO', 'com.android.vending.BILLING']);
+  });
+});
+
+describe('iOS smoothness', () => {
+  test('ProMotion iPhones may animate MOVO above 60 Hz', () => {
+    const plist = readFileSync(path.resolve(__dirname, '../../ios/App/App/Info.plist'), 'utf8');
+    expect(plist).toMatch(/<key>CADisableMinimumFrameDurationOnPhone<\/key>\s*<true\/>/);
   });
 });

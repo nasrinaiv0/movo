@@ -18,7 +18,7 @@ async function render(props) {
 const fills = node => Array.from(node.querySelectorAll('svg.movo-mark path')).map(p => p.getAttribute('fill'));
 const button = (el, text) => Array.from(el.querySelectorAll('button')).find(b => b.textContent.trim() === text);
 
-beforeEach(() => { isNativePurchasePlatform.mockReturnValue(false); getStoreProducts.mockResolvedValue([]); });
+beforeEach(() => { isNativePurchasePlatform.mockReturnValue(false); getStoreProducts.mockResolvedValue([]); localStorage.removeItem('movo.store-prices.v1'); });
 
 test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ tiles with their MOVO marks', async () => {
   const { el, cleanup } = await render({ session, entitlement: { tier: 'free', active: false, trialEligible: false } });
@@ -37,12 +37,12 @@ test('one panel: MOVO header, Monthly/Annual, Free · Gold Pro · Platinum Pro+ 
   // No "Gold MOVO" / "Platinum MOVO" labels on the tiles: the mark's colour says it (owner, 2026-11-09).
   expect(el.querySelector('.plan-tile-chip')).toBeNull();
   // Every tile shows its amount (owner, 2026-11-12): Free ₱0; paid plans the store price, or "Price in app" without a store.
-  expect(tiles.map(t => t.textContent)).toEqual(['CurrentFree₱0', 'ProPrice in app', 'Pro+Price in app']);
+  expect(tiles.map(t => t.textContent)).toEqual(['CurrentFree₱0.00', 'Pro₱99.00/mo', 'Pro+₱149.00/mo']);
   expect(tiles[1].getAttribute('aria-checked')).toBe('true');
   // On the web no price is invented: paid tiles say "Price in app"; the only amount is Free's ₱0.
-  expect(el.querySelectorAll('.plan-tile-price.is-note')).toHaveLength(2);
-  expect(el.textContent).not.toMatch(/₱\s?[1-9]/);
-  expect(el.querySelector('.plan-price')).toBeNull();
+  expect(el.textContent).toContain('PHP reference prices');
+  expect(el.textContent).toContain('₱99.00');
+  expect(el.querySelector('.plan-price')).not.toBeNull();
   // "Save 20%" sits on the Pro and Pro+ plans once Annual is chosen (owner, 2026-11-12): the owner's annual pricing,
   // since the website has no store prices. Free keeps its "Current" badge; Monthly shows no saving.
   const saves = () => Array.from(el.querySelectorAll('.plan-tile')).map(t => t.querySelector('.plan-tile-badge.is-save')?.textContent || '');
@@ -97,8 +97,8 @@ test('the referral code field is there as soon as the panel opens, signed in or 
 test('in the app, the store price drives the panel and Continue buys the selected plan and period', async () => {
   isNativePurchasePlatform.mockReturnValue(true);
   getStoreProducts.mockResolvedValue([
-    { productIdentifier: 'com.nasrinai.movo.proplus.monthly', priceString: '₱349.00', price: 349 },
-    { productIdentifier: 'com.nasrinai.movo.proplus.annual', priceString: '₱3,490.00', price: 3490 },
+    { productIdentifier: 'com.nasrinai.movo.proplus.monthly', priceString: '₱349.00', price: 349, currencyCode: 'PHP' },
+    { productIdentifier: 'com.nasrinai.movo.proplus.annual', priceString: '₱3,490.00', price: 3490, currencyCode: 'PHP' },
   ]);
   purchaseStoreProduct.mockResolvedValue({});
   const { el, handlers, cleanup } = await render({ session, entitlement: { tier: 'pro', active: true, expiresAt: future, trialEligible: false } });

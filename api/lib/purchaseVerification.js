@@ -166,10 +166,11 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
   };
   const status = statusMap[state] || 'pending';
   const purchaseTokenHash = crypto.createHash('sha256').update(purchaseToken).digest('hex');
+  const orderId = lineItem.latestSuccessfulOrderId || data.latestOrderId;
   let paidVerified = false;
-  if (!isLicenseTest && !skipPaymentCheck && ['active', 'grace_period'].includes(status) && data.latestOrderId && publisher.orders?.get) {
+  if (!isLicenseTest && !skipPaymentCheck && ['active', 'grace_period'].includes(status) && !lineItem.offerPhase?.freeTrial && orderId && publisher.orders?.get) {
     // Only an actual positive, processed order qualifies; free trials do not.
-    const order = (await publisher.orders.get({ packageName, orderId: data.latestOrderId }, { timeout: 15000 }))?.data;
+    const order = (await publisher.orders.get({ packageName, orderId }, { timeout: 15000 }))?.data;
     const purchasedLine = order?.lineItems?.find(item => item.productId === productId);
     paidVerified = order?.state === 'PROCESSED' && !!purchasedLine && (Number(purchasedLine.total?.units || 0) > 0 || Number(purchasedLine.total?.nanos || 0) > 0);
   }
@@ -183,7 +184,7 @@ async function verifyGoogle(purchaseToken, productId, userId, { skipPaymentCheck
     productId,
     tier: product.tier,
     storeSubscriptionKey: purchaseTokenHash,
-    storeTransactionId: String(data.latestOrderId || purchaseTokenHash),
+    storeTransactionId: String(orderId || purchaseTokenHash),
     originalTransactionId: null,
     purchaseTokenHash,
     status,

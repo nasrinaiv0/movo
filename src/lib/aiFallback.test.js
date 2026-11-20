@@ -16,13 +16,19 @@ const fakeDb = () => {
   const builder = (table) => {
     const state = { table, op: 'select', payload: null };
     const result = () => {
-      if (state.op === 'insert') { saved.push({ table, payload: state.payload }); return { data: table === 'movo_ai_conversations' ? { id: 'conv-1', user_id: USER, title: 'Hi' } : null, error: null }; }
+      if (state.op === 'insert') {
+        saved.push({ table, payload: state.payload });
+        const data = table === 'movo_ai_conversations'
+          ? { id: 'conv-1', user_id: USER, title: 'Hi' }
+          : state.payload.map((item, index) => ({ ...item, id: `message-${index}` }));
+        return { data, error: null };
+      }
       if (state.op === 'delete') { saved.push({ table, deleted: true }); return { data: null, error: null }; }
       if (state.op === 'update') return { data: null, error: null };
       return { data: rows[table] || [], error: null };
     };
     const b = {
-      select: () => b, eq: () => b, order: () => b, limit: () => b,
+      select: () => b, eq: () => b, order: () => b, limit: () => b, lt: () => b,
       insert: (payload) => { state.op = 'insert'; state.payload = payload; return b; },
       update: () => { state.op = 'update'; return b; },
       delete: () => { state.op = 'delete'; return b; },
@@ -59,7 +65,9 @@ test('when NasrinAI fails, OpenRouter answers with the same bounded context and 
   const result = await ask();
   expect(result.status).toBe(200);
   expect(result.body.reply).toBe('You spent ₱120 on Food.');
-  expect(saved.filter(s => s.table === 'movo_ai_messages').map(s => s.payload.role)).toEqual(['user', 'assistant']);
+  const writes = saved.filter(s => s.table === 'movo_ai_messages');
+  expect(writes).toHaveLength(1);
+  expect(writes[0].payload.map(item => item.role)).toEqual(['user', 'assistant']);
   const [url, init] = global.fetch.mock.calls.find(([u]) => String(u).includes('openrouter.ai'));
   expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
   const sent = JSON.parse(init.body);
@@ -96,13 +104,12 @@ test('a reached NasrinAI budget is not bypassed through the fallback', async () 
   expect(global.fetch.mock.calls.some(([u]) => String(u).includes('openrouter.ai'))).toBe(false);
 });
 
-test('when both fail: the original error, the empty conversation removed, nothing saved', async () => {
+test('when both providers fail, returns the original error without writing a conversation', async () => {
   global.fetch = jest.fn(async (url) => String(url).includes('openrouter.ai') ? reply({ error: 'down' }, false, 500) : reply({}, false, 429));
   const result = await ask();
   expect(result.status).toBe(429);
   expect(result.body.error).toBe('nasrinai_rate_limited');
-  expect(saved.some(s => s.table === 'movo_ai_messages')).toBe(false);
-  expect(saved.some(s => s.table === 'movo_ai_conversations' && s.deleted)).toBe(true);
+  expect(saved).toEqual([]);
 });
 
 test('without a valid OpenRouter key nothing extra is called', async () => {

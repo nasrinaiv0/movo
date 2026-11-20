@@ -6,6 +6,12 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import androidx.core.content.FileProvider;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.UUID;
 import android.os.Build;
 import android.os.PersistableBundle;
 import android.security.keystore.KeyGenParameterSpec;
@@ -60,9 +66,39 @@ public class MovoNativePlugin extends Plugin {
     public void shareFriendInvite(PluginCall call) {
         String url = friendInviteUrl(call);
         if (url == null) return;
+        final Uri imageUri;
+        String image = call.getString("image");
+        try {
+            if (image != null) {
+                String prefix = "data:image/png;base64,";
+                if (!image.startsWith(prefix) || image.length() > 1500000) throw new IllegalArgumentException();
+                byte[] bytes = Base64.decode(image.substring(prefix.length()), Base64.DEFAULT);
+                byte[] signature = {(byte)137,80,78,71,13,10,26,10};
+                if (bytes.length < 24 || bytes.length > 1000000) throw new IllegalArgumentException();
+                for (int i = 0; i < signature.length; i++) if (bytes[i] != signature[i]) throw new IllegalArgumentException();
+                BitmapFactory.Options bounds = new BitmapFactory.Options(); bounds.inJustDecodeBounds = true;
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
+                if (bounds.outWidth < 1 || bounds.outHeight < 1 || bounds.outWidth > 1200 || bounds.outHeight > 1200) throw new IllegalArgumentException();
+                File folder = new File(getContext().getCacheDir(), "friend-invites");
+                if (!folder.isDirectory() && !folder.mkdirs()) throw new java.io.IOException();
+                File[] previous = folder.listFiles();
+                if (previous != null) for (File item : previous) {
+                    if (item.lastModified() < System.currentTimeMillis() - 3600000L) item.delete();
+                }
+                File file = new File(folder, UUID.randomUUID().toString() + ".png");
+                try (FileOutputStream output = new FileOutputStream(file)) { output.write(bytes); }
+                imageUri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
+                getBridge().getWebView().postDelayed(() -> file.delete(), 3600000L);
+            } else imageUri = null;
+        } catch (Exception error) { call.reject("invalid_friend_card"); return; }
         getActivity().runOnUiThread(() -> {
             Intent share = new Intent(Intent.ACTION_SEND);
-            share.setType("text/plain");
+            share.setType(imageUri == null ? "text/plain" : "image/png");
+            if (imageUri != null) {
+                share.putExtra(Intent.EXTRA_STREAM, imageUri);
+                share.setClipData(ClipData.newRawUri("MOVO friend profile", imageUri));
+                share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
             share.putExtra(Intent.EXTRA_TEXT, url);
             try {
                 getActivity().startActivity(Intent.createChooser(share, null));

@@ -1,0 +1,22 @@
+/* Aries' local expression preview. English, fil, ar, zh, es, it, de, fr, pt, ja, ko, hi. */
+export default [
+  ['Meet Aries', 'Kilalanin si Aries', 'تعرّف على آريس', '认识 Aries', 'Conoce a Aries', 'Conosci Aries', 'Lerne Aries kennen', 'Voici Aries', 'Conheça Aries', 'Ariesに会おう', 'Aries를 만나보세요', 'Aries से मिलें'],
+  ['Expressions', 'Mga ekspresyon', 'التعبيرات', '表情', 'Expresiones', 'Espressioni', 'Gesichtsausdrücke', 'Expressions', 'Expressões', '表情', '표정', 'भाव-भंगिमाएँ'],
+  ['Welcome', 'Maligayang pagdating', 'ترحيب', '欢迎', 'Bienvenida', 'Benvenuto', 'Willkommen', 'Bienvenue', 'Boas-vindas', 'ようこそ', '환영', 'स्वागत'],
+  ['Happy', 'Masaya', 'سعيد', '开心', 'Feliz', 'Felice', 'Fröhlich', 'Joyeux', 'Feliz', 'うれしい', '행복', 'खुश'],
+  ['Thinking', 'Nag-iisip', 'يفكّر', '思考', 'Pensando', 'Pensieroso', 'Nachdenklich', 'Pensif', 'Pensativo', '考え中', '생각 중', 'सोच में'],
+  ['Celebrating', 'Nagdiriwang', 'يحتفل', '庆祝', 'Celebrando', 'In festa', 'Feiernd', 'En fête', 'Comemorando', 'お祝い', '축하', 'जश्न'],
+  ['Gentle reminder', 'Magiliw na paalala', 'تذكير لطيف', '温馨提醒', 'Recordatorio amable', 'Promemoria gentile', 'Freundliche Erinnerung', 'Petit rappel', 'Lembrete gentil', 'やさしいお知らせ', '다정한 알림', 'प्यार भरी याद'],
+  ['Sleepy', 'Inaantok', 'نعسان', '困了', 'Soñoliento', 'Assonnato', 'Schläfrig', 'Endormi', 'Sonolento', 'ねむい', '졸림', 'उनींदा'],
+  ['Shy', 'Mahiyain', 'خجول', '害羞', 'Tímido', 'Timido', 'Schüchtern', 'Timide', 'Tímido', 'てれや', '수줍음', 'शर्मीला'],
+  ['Loved', 'Minamahal', 'محبوب', '被爱着', 'Querido', 'Amato', 'Geliebt', 'Aimé', 'Amado', '愛されてる', '사랑받음', 'प्यार मिला'],
+  ['Focused', 'Nakatutok', 'مركّز', '专注', 'Concentrado', 'Concentrato', 'Konzentriert', 'Concentré', 'Concentrado', '集中', '집중', 'एकाग्र'],
+  ['Surprised', 'Nagulat', 'متفاجئ', '惊讶', 'Sorprendido', 'Sorpreso', 'Überrascht', 'Surpris', 'Surpreso', 'びっくり', '놀람', 'हैरान'],
+  ['Cheering', 'Sumusuporta', 'يشجّع', '加油', 'Animando', 'Fa il tifo', 'Anfeuernd', 'Encourageant', 'Torcendo', '応援', '응원', 'हौसला बढ़ाना'],
+  ['Waving', 'Kumakaway', 'يلوّح', '挥手', 'Saludando', 'Saluta', 'Winkend', 'Fait coucou', 'Acenando', '手をふる', '손 흔들기', 'हाथ हिलाना'],
+  ['Concerned', 'Nag-aalala', 'قلق', '担心', 'Preocupado', 'Preoccupato', 'Besorgt', 'Inquiet', 'Preocupado', '心配', '걱정', 'चिंतित'],
+  ['Determined', 'Determinado', 'مصمّم', '坚定', 'Decidido', 'Determinato', 'Entschlossen', 'Déterminé', 'Determinado', 'やる気', '결심', 'दृढ़'],
+  ['Pause animation', 'I-pause ang animation', 'إيقاف الحركة مؤقتًا', '暂停动画', 'Pausar animación', 'Pausa animazione', 'Animation pausieren', 'Mettre en pause', 'Pausar animação', 'アニメーションを一時停止', '애니메이션 일시 정지', 'एनिमेशन रोकें'],
+  ['Play animation', 'I-play ang animation', 'تشغيل الحركة', '播放动画', 'Reproducir animación', 'Riproduci animazione', 'Animation abspielen', 'Lancer l’animation', 'Reproduzir animação', 'アニメーションを再生', '애니메이션 재생', 'एनिमेशन चलाएँ'],
+  ['Expression preview only. On Home, Aries follows your spending limits.', 'Preview lang ito ng ekspresyon. Sa Home, sumusunod si Aries sa iyong mga limitasyon sa paggastos.', 'هذه معاينة للتعبيرات فقط. في الصفحة الرئيسية، يتفاعل آريس مع حدود إنفاقك.', '仅为表情预览。在首页，Aries 会根据你的支出限额作出反应。', 'Solo es una vista previa de las expresiones. En Inicio, Aries reacciona a tus límites de gasto.', 'È solo un’anteprima delle espressioni. In Home, Aries reagisce ai tuoi limiti di spesa.', 'Nur eine Vorschau der Gesichtsausdrücke. Auf der Startseite reagiert Aries auf deine Ausgabenlimits.', 'Il s’agit d’un aperçu des expressions. Sur l’accueil, Aries réagit à vos limites de dépenses.', 'É apenas uma prévia das expressões. No Início, Aries reage aos seus limites de gastos.', '表情のプレビューです。ホームでは、Ariesは支出の上限に合わせて反応します。', '표정 미리보기입니다. 홈에서 Aries는 지출 한도에 따라 반응해요.', 'यह केवल भावों का पूर्वावलोकन है। होम पर Aries आपकी खर्च सीमाओं के अनुसार प्रतिक्रिया देता है।'],
+];

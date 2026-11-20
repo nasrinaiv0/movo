@@ -21,7 +21,31 @@
 		A1B2C3D4E5F6071829304003 /* GlassChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304013 /* GlassChrome.swift */; };
 		A1B2C3D4E5F6071829304004 /* MOVOAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */; };
 		A1B2C3D4E5F6071829304005 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */; };
+		B00000000000000000000002 /* MOVOWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000001 /* MOVOWatchApp.swift */; };
+		B00000000000000000000004 /* MOVOWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B00000000000000000000003 /* MOVOWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B0000000000000000000000C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B0000000000000000000000A;
+			remoteInfo = MOVOWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B00000000000000000000009 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (B00000000000000000000004 /* MOVOWatch.app in Embed Watch Content */, );
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -40,6 +64,8 @@
 		A1B2C3D4E5F6071829304013 /* GlassChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassChrome.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304014 /* MOVOAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOVOAppIntents.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304015 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B00000000000000000000001 /* MOVOWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MOVOWatchApp.swift; sourceTree = "<group>"; };
+		B00000000000000000000003 /* MOVOWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MOVOWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +77,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B00000000000000000000006 /* Watch Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -59,6 +86,7 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				B00000000000000000000005 /* MOVOWatch */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +95,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				B00000000000000000000003 /* MOVOWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -92,6 +121,12 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		B00000000000000000000005 /* MOVOWatch */ = {
+			isa = PBXGroup;
+			children = (B00000000000000000000001 /* MOVOWatchApp.swift */, );
+			path = MOVOWatch;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -102,10 +137,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				B00000000000000000000009 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B0000000000000000000000B /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -113,6 +150,21 @@
 			);
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B0000000000000000000000A /* MOVOWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B0000000000000000000000F /* Watch build configuration list */;
+			buildPhases = (
+				B00000000000000000000007 /* Watch Sources */,
+				B00000000000000000000006 /* Watch Frameworks */,
+				B00000000000000000000008 /* Watch Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = MOVOWatch;
+			productName = MOVOWatch;
+			productReference = B00000000000000000000003 /* MOVOWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -129,6 +181,7 @@
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
 					};
+					B0000000000000000000000A = { ProvisioningStyle = Automatic; };
 				};
 			};
 			buildConfigurationList = 504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */;
@@ -148,6 +201,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				B0000000000000000000000A /* MOVOWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -167,6 +221,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B00000000000000000000008 /* Watch Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -183,7 +238,12 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B00000000000000000000007 /* Watch Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (B00000000000000000000002 /* MOVOWatchApp.swift in Sources */, ); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B0000000000000000000000B /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = B0000000000000000000000A /* MOVOWatch */; targetProxy = B0000000000000000000000C /* PBXContainerItemProxy */; };
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -343,6 +403,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Bronze AppIcon-Silver AppIcon-Gold AppIcon-Platinum";
+				CODE_SIGN_ENTITLEMENTS = App/AppAttest.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
@@ -357,6 +418,48 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B0000000000000000000000D /* Debug Watch */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MOVO;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasrinai.movo;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nasrinai.movo.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		B0000000000000000000000E /* Release Watch */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = MOVO;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasrinai.movo;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nasrinai.movo.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Release;
 		};
@@ -378,6 +481,12 @@
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
 			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B0000000000000000000000F /* Watch build configuration list */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (B0000000000000000000000D /* Debug Watch */, B0000000000000000000000E /* Release Watch */, );
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};

@@ -1,6 +1,6 @@
 import {
   activateNativeReferral, captureReferralFromUrl, claimReferralCode, clearPendingReferralCode, downloadUrl,
-  normalizeReferralCode, pendingReferralCode, redeemReferralPoints, trialReferralCode,
+  normalizeReferralCode, pendingReferralCode, pendingReferralSubmission, redeemReferralPoints, savePendingReferralCode, trialReferralCode,
 } from './referrals';
 import { AppAttest } from '@capgo/capacitor-app-attest';
 import { isNativeApp } from './platform';
@@ -86,9 +86,10 @@ test('native signup proof is generated for a server challenge, never a client-is
   AppAttest.createAttestation.mockResolvedValue({ platform: 'ios', format: 'apple-app-attest', token: 'signed-attestation', keyId: 'native-key' });
   global.fetch = jest.fn()
     .mockResolvedValueOnce(ok({ pointsEnabled: true, pendingNativeProof: true }))
-    .mockResolvedValueOnce(ok({ challenge: 'c'.repeat(64), challengeId: '01234567-aaaa-4aaa-aaaa-0123456789ab' }))
+    .mockResolvedValueOnce(ok({ projectNumber: '12345678901', challenge: 'c'.repeat(64), challengeId: '01234567-aaaa-4aaa-aaaa-0123456789ab' }))
     .mockResolvedValueOnce(ok({ verified: true }));
   expect(await activateNativeReferral(session)).toBe(true);
+  expect(AppAttest.prepare).toHaveBeenCalledWith({ cloudProjectNumber: '12345678901' });
   expect(AppAttest.createAttestation).toHaveBeenCalledWith(expect.objectContaining({ keyId: 'native-key', challenge: 'c'.repeat(64) }));
   const body = JSON.parse(global.fetch.mock.calls[2][1].body);
   expect(body.points).toBeUndefined();
@@ -102,10 +103,27 @@ test('the server verifier refuses web tokens and unsigned client declarations', 
   await expect(verify({ platform: 'ios', format: 'apple-app-attest', token: 'x'.repeat(90), challenge: 'a', keyId: 'fake' })).rejects.toThrow('attestation_not_configured');
 });
 
-test('redeeming sends only how many months; the server checks and spends the points', async () => {
-  global.fetch = jest.fn().mockResolvedValue(ok({ redeemedMonths: 1 }));
-  await redeemReferralPoints(session);
-  const [url, request] = global.fetch.mock.calls[0];
+test('an install code is prefilled, and an explicitly submitted code survives sign-in', () => {
+  savePendingReferralCode('M78038');
+  expect(pendingReferralCode()).toBe('M78038');
+  expect(pendingReferralSubmission()).toBe('');
+  savePendingReferralCode('M78038', { submitAfterSignIn: true });
+  expect(pendingReferralSubmission()).toBe('M78038');
+  savePendingReferralCode('M78039');
+  expect(pendingReferralSubmission()).toBe('');
+  clearPendingReferralCode();
+  expect(pendingReferralCode()).toBe('');
+});
+
+test('a redemption retry sends the same request id and tier after losing the first response', async () => {
+  global.fetch = jest.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(ok({ redeemedMonths: 1 }));
+  await expect(redeemReferralPoints(session, 'pro_plus')).rejects.toThrow('offline');
+  await redeemReferralPoints(session, 'pro_plus');
+  const [url, first] = global.fetch.mock.calls[0];
   expect(url).toBe('/api/referrals/redeem');
-  expect(JSON.parse(request.body)).toEqual({ months: 1 });
+  const body = JSON.parse(first.body);
+  expect(body).toMatchObject({ months: 1, tier: 'pro_plus', requestId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+  expect(JSON.parse(global.fetch.mock.calls[1][1].body)).toEqual(body);
+  await redeemReferralPoints(session, 'pro_plus');
+  expect(JSON.parse(global.fetch.mock.calls[2][1].body).requestId).not.toBe(body.requestId);
 });

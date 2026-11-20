@@ -203,37 +203,41 @@ export default function Wallet({ c }) {
     {walletFilter === 'All' && <EditableBoxes title={tr('Wallet')} boxes={boxes} layout={prefs.layouts?.wallet} editing={editing} onEdit={() => setEditing(true)} onDone={() => setEditing(false)} onChange={(l) => setPref('layouts', { ...(prefs.layouts || {}), wallet: l })} />}
 
 
-    {walletFilter === 'Cards' && (cards.length ? <>
-      <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
-      <section className="card action-strip">
-        {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['limits', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
-          <button type="button" key={label} onClick={fn}><Icon name={icon} size={26} />{tr(label)}</button>)}
-      </section>
-      {selectedCard && (() => {
-        const isCredit = selectedCard.cardKind === 'credit';
-        const info = isCredit ? creditInfo(selectedCard) : null;
-        const label = isCredit ? tr('Remaining credit') : tr('Available Balance');
-        const amount = isCredit
-          ? (info ? shown(show, money(info.available, selectedCard.currency)) : '—')
-          : shown(show, money(selectedCard.balance, selectedCard.currency));
-        return <button
-          type="button"
-          className={`card wallet-balance-spending-card${isCredit ? ' is-credit' : ' is-debit'}`}
-          onClick={() => setSheet({ name: 'cards' })}
-          aria-label={label}
-        >
-          <span className="wallet-balance-spending-copy">
-            <small>{label}</small>
-            <strong>{amount}</strong>
-          </span>
-          <span className="wallet-balance-spending-divider" aria-hidden="true" />
-          <SpendingBars days={selectedCardSpending} />
-          <Icon name="chevron" size={22} />
-        </button>;
-      })()}
-      <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
-      <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
-    </> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
+    {walletFilter === 'Cards' && (cards.length ? <div className="adaptive-wallet-cards">
+      <div>
+        <CardDeck cards={cards} selectedId={selectedCard?.id} onSelect={setSelectedCardId} renderCard={cardVisual} orientation={wv.cardFormat === 'portrait' ? 'portrait' : 'landscape'} effect={wv.cardFormat === 'portrait' ? wv.fxPortrait : wv.fxLandscape} />
+        <section className="card action-strip">
+          {[['info', 'View Details', () => setSheet({ name: 'cardDetails' })], ['plus', 'Add amount', () => setAddAmount(selectedCard)], ['limits', 'Limits', () => c.openBudgets?.('budgets')], ['more', 'More', () => setSheet({ name: 'actions' })]].map(([icon, label, fn]) =>
+            <button type="button" key={label} onClick={fn}><Icon name={icon} size={26} />{tr(label)}</button>)}
+        </section>
+        {selectedCard && (() => {
+          const isCredit = selectedCard.cardKind === 'credit';
+          const info = isCredit ? creditInfo(selectedCard) : null;
+          const label = isCredit ? tr('Remaining credit') : tr('Available Balance');
+          const amount = isCredit
+            ? (info ? shown(show, money(info.available, selectedCard.currency)) : '—')
+            : shown(show, money(selectedCard.balance, selectedCard.currency));
+          return <button
+            type="button"
+            className={`card wallet-balance-spending-card${isCredit ? ' is-credit' : ' is-debit'}`}
+            onClick={() => setSheet({ name: 'cards' })}
+            aria-label={label}
+          >
+            <span className="wallet-balance-spending-copy">
+              <small>{label}</small>
+              <strong>{amount}</strong>
+            </span>
+            <span className="wallet-balance-spending-divider" aria-hidden="true" />
+            <SpendingBars days={selectedCardSpending} />
+            <Icon name="chevron" size={22} />
+          </button>;
+        })()}
+      </div>
+      <div>
+        <SectionTitle action={tr('See All')} onAction={() => go('Transactions')}>{tr('Recent Transactions')}</SectionTitle>
+        <section className="card list-card">{cardTx.map(t => <TransactionRow key={t.id} t={t} afterBalances={c.prefs?.showBalanceAfterTransaction !== false ? c.transactionBalances?.get(t.id) : undefined} show={show} refDate={refDate} onOpen={c.openTx} />)}{!cardTx.length && <p className="empty">{tr('No transactions for this card yet.')}</p>}</section>
+      </div>
+    </div> : <div className="card empty-card"><div className="empty-preview"><CardArt preview show a={{ id: 'sample-card', name: 'Your Bank', institution_name: 'Visa', mask: '1234', balance: 0, currency: 'PHP' }} holder={holder} /></div><h3>{tr('No cards yet')}</h3><p>{tr('Add a card, then dress it with any of 270+ stickers.')}</p><button type="button" className="primary-button" onClick={() => setSheet({ name: 'account', type: 'card' })}>{tr('Add card')}</button></div>)}
 
     {(walletFilter === 'Bank Accounts' || walletFilter === 'E-Wallets' || walletFilter === 'Others' || walletFilter === 'Cash & Other') && <>
       {!['Others','Cash & Other'].includes(walletFilter) && <SectionTitle>{tr(walletFilter)}</SectionTitle>}

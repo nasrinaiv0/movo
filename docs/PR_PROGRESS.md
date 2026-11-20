@@ -1,3 +1,9 @@
+## 2026-11-20 — Erasure PR integration review
+
+- Reconciled #274 with current main and #328. Retained the current consent UI, legal disclosures, brand rendering and controlled transaction reset, alongside the proposed atomic server erasure, upload freeze, schedule-owner constraints and retention enforcement.
+- New erasure/retention migrations require separate explicit production approval before this PR can merge. In particular, retention changes can remove old Archive copies and completed processing jobs; #328 approval does not cover that work.
+- Local regression, build and hosted disposable-container SQL validation are tracked at the updated PR head. The SQL rehearsal deliberately rejects this local non-container host.
+
 ## 2026-11-16 — PR #274 conflict resolution
 
 - Integrated main `77bcacc`. Preserved both finance vault keys and regressions, Friends isolation, current simulator recovery and billing behavior, and the PR’s erasure and retention coverage. Kept both privacy changes and regenerated static policies and locale output.
@@ -128,6 +134,282 @@ Validation: original branch source reported 1,190 Jest tests across 194 suites, 
 - UI regression for Clear All Data now awaits its verified asynchronous QR, attachment, hybrid-store and native-storage cleanup before asserting that records disappeared; this preserves the stricter completion contract rather than relying on an unsafe synchronous assumption.
 
 - The privacy cleanup regression exposed an IndexedDB-absent runtime: account QR removal already treats unavailable IndexedDB as an empty store, but receipt attachment removal threw before the local ledger could be cleared. Both now skip only absent IndexedDB, while actual database write/clear errors remain blocking. The local-finance-key removal result is also checked before claiming success.
+## 2026-11-19 — Finance integrity audit fixes
+
+- Restricted direct transaction UPDATE/DELETE privileges; sync and reversal RPCs retain ownership, entitlement, CAS and audit checks. Linked payment edits now protect `is_pending`.
+- Goal/plan allocation balances and automatic reconciliation exclude pending income, expenses and transfers, including pending foreign-currency records.
+- Cloud reset uses an owner-verified transaction reversal RPC; transaction-phase failures roll back earlier reversals. The remaining reset/storage steps retain their separate-request behavior.
+- Added SQL regressions to finance isolation CI and client reset failure tests. All 251 JavaScript suites / 1,629 tests, typecheck and strict production compilation passed after the final owner-parameter change. Local PostgreSQL migration, tenant-isolation and integrity checks passed; old behavior failed each of the three targeted regressions. Production deployment and hosted CI/preview remain separate release steps.
+- [Implementation, validation and rollout](engineering/updates/2026-11-19-finance-integrity-audit-fixes.md).
+
+## 2026-11-19 — Legal/privacy audit and centered Friends QR
+
+- Confirmed MOVO is a product of NasrinAI. Corrected encryption, cloud stickers, purchase tokens, Archive retention, reset/deletion and AI processor disclosures through shared core policy content and synchronized public pages.
+- Added revision-aware acknowledgement and paired preference merging, adult self-declaration, targeted device AI withdrawal with capture/retry shutdown, and Delete Account for signed-in sync-off owners.
+- Centered the square Friends camera frame, video crop and profile QR. Kept QR parsing and permission behavior intact.
+- Documented remaining encryption, IAP retention, operator/store and territorial release blockers. This is not a certification of legal compliance.
+- Independent final review passed after fixing legacy-client revision compatibility and deletion before agreement. Thirteen browser checks and the final251 suites /1,626 tests with strict production build passed. Exact-head CI/preview is tracked in the PR.
+- [Audit and required operator actions](audits/2026-11-19-legal-privacy-release-audit.md) · [Engineering and validation](engineering/updates/2026-11-19-legal-privacy-and-friends-qr.md).
+
+## 2026-11-19 — Voice transcription recovery and loading-screen branding
+
+- Preview acceptance follow-up, documented before commit: live metadata confirms MOVO_ALLOWED_ORIGINS contains only the two production origins. Allow this exact Vercel deployment origin only in VERCEL_ENV=preview, retaining production rejection of preview/sibling hosts, and add four boundary regressions. Repeated verification passed all 1,612 tests and the strict production build; independent security review passed. Provider credentials remain unchanged; OpenRouter fallback is currently configured only for production, so real fallback acceptance needs separate preview credentials or an approved staged release.
+- Reproduced the source failure behind the screenshot: unsuccessful STT left the microphone, recording controls and Listening placeholder active. Added explicit capture shutdown, request cancellation/deadlines, generation checks, interruption/background cleanup and bounded transient audio queues.
+- Added one server-only OpenRouter transcription fallback using the already configured chat provider. Authentication, Pro entitlement and explicit consent remain mandatory; audio is transient, carries no finance context or user identifiers, and deliberate upstream budget limits block fallback.
+- Changed the loading screen and page metadata to **MOVO / Money Organizer & Visual Outflow**, with responsive subtitle wrapping and retained dark/reduced-motion styles.
+- Initial integrated verification: 249 suites / 1,608 tests passed. Production compile caught an unsupported lint-rule suppression comment; removed it and repeated the strict build. Strict production build and seven browser checks passed; focused final tests passed 64/64. Exact-head CI, hosted preview and physical iPhone/Android voice acceptance are tracked in the engineering record and PR. No production deployment or store release is performed here.
+- [Scope, evidence and acceptance checks](engineering/updates/2026-11-19-voice-transcription-recovery.md).
+
+## 2026-11-19 — Offline appearance, visible plan prices, loans and Friends
+
+- Preserved saved logos, card names, verified local plan features and downloaded artwork offline; generated an isolated offline web shell.
+- Displayed all four paid plan amounts with fresh/cached/reference labels, guarded annual savings and exact checkout quotes.
+- Reduced card/bank elevation, especially dark mode, and preserved explicit Cloud Sync off semantics.
+- Added separate receiving and repayment account choices for loans/debts, including cards, plus an owner/currency-validated nullable metadata migration.
+- Added Friends QR camera/photo scanning, pasted links and a MOVO profile-style QR card with native/web image sharing.
+- Updated privacy disclosures and translation catalogs. Browser, regression and native/SQL CI evidence is linked in the PR. No production or store release is performed here.
+- Final visual review separated plan amounts into a readable two-column grid and compacted the loan consent rows. Integrated local verification passes 248 suites / 1,572 tests; QR PNG export-to-scan and offline reload checks pass. The original isolated finance, sync and purchase integrity checks passed. Final exact-head CI is tracked on PR #323.
+- [Implementation, validation and rollout details](engineering/updates/2026-11-19-offline-appearance-plans-friends-loans.md).
+
+
+## 2026-11-18 — Start a fresh MOVO chat after 10 minutes idle
+
+- Added a 10-minute inactivity deadline, a history picker, and device-only encrypted storage for completed local conversations. Existing signed-in history remains available through its account-scoped endpoint.
+- Added tests for elapsed time, background resume, account isolation, encrypted local storage, and saving a complete cloud turn. [Implementation and verification](engineering/updates/2026-11-18-chat-idle-history.md).
+- Integrated current main `5edd47d` and the pending Security & Privacy guide. Regenerated the shared locale files from both source catalogs. [Integration and validation](engineering/updates/2026-11-18-chat-history-main-integration.md).
+
+## 2026-11-18 — Compact Security & Privacy guide
+
+- The guide linked from Settings has a persistent Back to Home button, quick section links, compact light and dark layouts, and expandable FAQs. It retains the current storage and encryption disclosures.
+- Typecheck, strict production build and all 1,543 local tests passed. [Scope and verification](engineering/updates/2026-11-18-compact-security-privacy.md).
+- The header can wrap at larger browser text sizes. Chromium verified that anchored sections clear the sticky header at 150% and 200% text sizes from 320 to 1440 px.
+- Integrated current main `5edd47d` and retained both release entries. [Integration and validation](engineering/updates/2026-11-18-security-privacy-main-integration.md).
+
+## 2026-11-17 — "Auto" in While you were away
+
+- An **Auto** filter, right after All, gathers everything a phone automation logged: Siri, Apple Pay, bank notifications, Google Pay and the Android assistant.
+- Each of those rows carries a small **Auto** pill. Manual and imported records are not tagged.
+- The "Auto" label now has proper translations. [Details](engineering/updates/2026-11-17-while-away-auto.md).
+
+## 2026-11-17 — Smoother on budget Android phones and iPhones; camera and voice on every Android device
+
+- Scrolling no longer hitches.
+  - Every App render rewrote `<html lang/dir>`, which restyled the whole page.
+  - Cards and chips no longer blur the plain page colour. The pixels are identical, and there are 11–15 fewer GPU layers per screen.
+  - Date keys are about 15× faster.
+- Budget Android profile, worst scroll frame: 283 → 83 ms on Home and 233 → 50 ms on Wallet. iPhone-size profile: all three screens about 60 fps.
+- iOS allows 120 Hz on ProMotion iPhones.
+- Android now declares camera and microphone (asked only on use; optional hardware), so receipt scanning and voice work there as on iOS.
+- Play re-scores DEX optimisation (#308) after a new bundle is uploaded. [Details](engineering/updates/2026-11-17-smoothness-all-devices.md).
+
+## 2026-11-17 — Settings rows show feature names
+
+- The main Settings list and search results display feature names with their existing controls. Search still matches descriptions, and assistive technology can still read them.
+- Local Node 26 typecheck, strict build and regression tests passed (244 suites, 1,541 tests). The Vercel sandbox passed 12 focused tests. Open PR scopes #274, #290 and #291 were reviewed. [Implementation and rollback notes](engineering/updates/2026-11-17-settings-feature-names.md).
+
+## 2026-11-17 — PR #309 brought up to date with main
+
+- Production already has this PR's referral migration, so no new database change is needed. Profile keeps `main`'s layout. Terms keep the referral-points section. Terms and Privacy are effective November 19, 2026. [Details](engineering/updates/2026-11-17-pr-309-main-integration.md).
+
+## 2026-11-16 — PR #309 conflict resolution
+
+- Integrated main `77bcacc`. Kept Friends and referral layouts, both legal disclosures, and the referral Terms date. Regenerated the combined translations and public legal pages.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-309-main-conflicts.md).
+
+## 2026-11-16 — QR referral and plan rewards
+
+- A referred new member receives 20 points after app verification and a further 100 after their first confirmed positive store charge. The reward selector offers one month of Pro for 500 points or Pro+ for 750.
+- Supabase preserves existing balances and entitlements through the migration. QR and code entry carry through sign-in and trial activation. The server deduplicates awards and debits, and validates the beneficiary and store evidence.
+- Local validation covers the full React suite, strict build, typecheck, disposable PostgreSQL and IAP lease tests. The PR records GitHub and preview results. Signed physical-device and deployment configuration checks remain launch gates.
+- Open PR scopes reviewed against main at `d511f268`: #274, #280, #290, #291, #294–#297, #299, #305, #306 and #308. Existing billing branches overlap the verifier, with this branch limited to verified referral payment evidence and rewards. See [implementation and rollout notes](engineering/updates/2026-11-16-qr-referral-plan-rewards.md).
+## 2026-11-16 — PR #308 conflict resolution
+
+- Integrated main `77bcacc`. Retained the Android release optimization and the main progress history.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-308-main-conflicts.md).
+
+## 2026-11-17 — PR #316 brought up to date with main
+
+- Profile keeps this PR's tablet and desktop grid, with #315's tinted rows inside. Appearance keeps this PR's grouped sections and adds the Colour-coded icons switch. [Details](engineering/updates/2026-11-17-pr-316-main-integration.md).
+
+## 2026-11-17 — Tablet and desktop layouts
+
+- Improved the desktop and tablet workspace, dashboard grids, reading widths and centered panels. Node 26 passes 1,491 tests and the strict build. Chromium verified 22 customer routes at two widths and the owner workspace in a fixture session. [Baseline, scope and verification](engineering/updates/2026-11-17-tablet-desktop-layouts.md).
+- Compact refinement covers shared spacing, Menu actions, ledger rows and transaction entry on standard tablets.
+- Settings follow-up makes the header, preference groups, Appearance controls and Notification Settings more compact. Search also matches group names and can be cleared without leaving the keyboard. [Settings notes and verification](engineering/updates/2026-11-17-compact-settings.md).
+- Final Settings review aligns column headers, improves theme icon contrast, and puts Quiet Hours beside the notification channel controls.
+
+## 2026-11-16 — Android release optimization for Google Play bundle 11
+
+- Play Console reports 0% DEX optimization, 93% obfuscation, 92% code shrinking, R8 full mode, and 16 KB page-size support. The release configuration uses the legacy Android rules file with `-dontoptimize`. The screenshot cuts off the total uncompressed DEX size.
+- Use the optimized R8 rules, enable resource shrinking and the optimized resource shrinking pipeline, and explicitly enable class repackaging with AGP 8.13.0. Keep the Capacitor and MOVO native bridge rules for reflected classes and methods. Leave native packaging and signing settings in place. AGP 9 is a separate toolchain migration.
+- Precommit verification: a Python diff check verified optimization flags, preserved bridge rules, and isolated the app changes to its release build type. Verify the Android native and disposable-key AAB builds in PR CI. After review, generate a signed AAB from `main` with a version code greater than every code already uploaded. In Play Internal testing, compare the DEX size and all three DEX percentages, the R8 configuration flags, and 16 KB support against bundle 11. Run the Play-delivered build on Android and check Google and email sign-in, sign-in after restart, receipt scanning, notifications, and Play license-test purchase and restore before promotion.
+- Phase 1 CI on the initial head stopped at the per-commit documentation check. The revised commit includes this entry and the [dated engineering update](engineering/updates/2026-11-16-android-release-r8-optimization.md).
+- Open PRs reviewed during preparation: #274, #280, #290, #291, #294, #295, #296, #297, #299, #305, and #306. This change is scoped to optimization and release validation.
+## 2026-11-17 — PR #315 brought up to date with main after #314
+
+- #314's Friends and Summary pages replace this PR's own friend page and single-snapshot sharing. All other #315 changes are kept. [Details](engineering/updates/2026-11-17-pr-315-main-integration.md).
+
+## 2026-11-17 — Expanded language selection
+
+- Added the requested 95 language groups to Settings → Language, with separate Punjabi and Kurdish choices for 97 entries. The 85 additions have offline preview labels and an English fallback. The 12 existing language choices retain their current catalog behavior. [Coverage, validation and review](engineering/updates/2026-11-17-expanded-language-selection.md).
+
+## 2026-11-17 — Expand Cebuano and validate language catalogs
+
+- Cebuano coverage increased to 146 of 3,221 catalog messages. The 97 registered options include 12 complete catalogs and 85 limited catalogs.
+- The app loads supplemental dictionaries on demand and retains their existing offline preview labels. Build validation checks message keys, placeholders and intentionally unchanged text. [Translation workflow and remaining coverage](engineering/updates/2026-11-17-language-catalog-coverage.md).
+
+## 2026-11-17 — Glowing foil nav icon, colour-coded icons switch, simpler friend header
+
+- The active tab icon in the plan colour (Pro+ platinum, Pro gold) is a blended, slowly drifting foil with a soft glow, not stripes. It is still with Reduce Motion.
+- Settings → Appearance → "Colour-coded icons" turns the Menu and Profile icon colours on or off. The friend page drops the sharing-status chips under the name. [Details](engineering/updates/2026-11-17-nav-foil-icon-colours-friend-header.md).
+
+## 2026-11-16 — Glass pop-ups, friend page, offline chat charts, Pro/Pro+ badges, no header by default, Aries shadow
+
+- Pop-ups are frosted Liquid Glass (not see-through), adaptive in light and dark. Tapping a friend opens their own page with everything they shared (totals, savings ring, category donut, note), sharing controls and safety actions.
+- NasrinAI draws charts from on-device records for chart, trend, breakdown, income-vs-expenses and budget requests, offline and on any plan. Badges read Pro / Pro+. Home has no header photo until someone turns on a free one. The System swatch is a glowing day/night mix that drifts slowly. Aries casts a ground shadow. [Details](engineering/updates/2026-11-16-glass-friend-page-charts.md).
+
+## 2026-11-16 — PR #280 conflict resolution
+
+- Integrated main `77bcacc`. Kept Wear quick-log and build targets alongside the isolated Android auth build, Friends, and legacy WebView URL parsing. Wear URLs still open only a blank phone form.
+- iOS CI exposed a phone-only distribution check. The corrected check verifies phone and Watch bundle identities, rejects mismatched companions, and preserves the existing iPhone release checks.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-280-main-conflicts.md).
+
+## 2026-11-12 — Wear OS and Apple Watch compatibility companion branch
+
+- Scope: separate Android Wear OS :wear AAB, embedded SwiftUI watchOS companion target, and privacy-first Quick Log handoff to the existing phone form. No raw watch finance API, payment, auth token, account, bank logo/favicons or transaction content.
+- Phone-side implementation: strict Android movo://wear-log deep link allowlist, iOS WatchConnectivity fixed-action receiver and one-shot native bridge; requests wait for setup, auth readiness, phone unlock and absence of another sheet. All writes remain manual and phone-side.
+- New test gates: watch manifest/security contract, Jest deep-link abuse tests, unsigned Android Wear debug/release bundle compile, unsigned watchOS Simulator compile. Manual paired watches and store packaging/signing remain release blockers.
+- Documentation: docs/engineering/updates/2026-11-12-wearable-companions.md and docs/wearable-compatibility-2026-11-12.md.
+- No production changes or migration. PR is review-only and must not auto-merge until all native builds and physical device tests pass.
+
+- **2026-11-12 PR #280 CI fix (pre-merge):** Android and hybrid regression checks executed 203 suites / 1,235 tests. 1,234 passed; the only failing check was the prior Android manifest contract asserting exactly two allowable `movo://` hosts. Updated this test to explicitly enumerate exactly `auth-callback`, `log`, and `wear-log`, including VIEW/DEFAULT/BROWSABLE safety requirements. This is a test correction; no production code change. iOS/native and preview still require exact-head verification.
+
+## 2026-11-16 — Profile page: clearer overview and consistent rows
+
+- One Overview card names the month chosen on Home, shows the total balance large, then that month's income and expenses. Trends appear only when meaningful (no "999+%").
+- Every row has a tinted icon tile like Menu, Settings rows say what is inside, and the Local Storage note is one line. [Details](engineering/updates/2026-11-16-profile-page.md).
+
+## 2026-11-16 — Theme picker: one clean look in Profile and Settings
+
+- Removed the square grey strip behind the Light / Dark / System / Custom tiles (Profile).
+- Each swatch now previews its theme in both modes, and its icon is always visible.
+- The selection is an accent ring with the tick inside the swatch, the same on Profile and Settings → Appearance. [Details](engineering/updates/2026-11-16-theme-picker.md).
+
+## 2026-11-17 — Google Play and Android sign-in fix records consolidated (#295, #296, #297, #299)
+
+- The fixes were already in `main`. This PR adds their engineering records and #296's regression test: expired, paused or on-hold Play subscriptions never regain access. #295, #297 and #299 are closed in favour of it. [Details](engineering/updates/2026-11-17-play-oauth-records-consolidated.md).
+
+## 2026-11-16 — NasrinAI: Listen and voice input on iPhone, cleaner chat screen
+
+- Listen now:
+  - no longer cancels and speaks in the same moment (WebKit dropped it);
+  - asks for a playback audio session so the silent switch does not mute it;
+  - falls back to an English voice when the app language has none;
+  - retries once, then explains, instead of staying silent.
+- Voice input resumes an "interrupted" audio context, and switches to tap-to-finish when the iPhone level meter reads only silence.
+- Chat UI: a backdrop behind the composer and tab bar, a fade under the status bar, filled reply cards, no visible "You" label, a lighter Listen chip, and fading shortcut chips. [Details](engineering/updates/2026-11-16-nasrinai-voice-and-chat-ui.md).
+
+## 2026-11-16 — Less space at the top of every page
+
+- On phones in the browser and home-screen web app, every page and Home's header photo start 10 px higher (base 18 px to 8 px). Headers stay aligned across pages. The iPhone app's native top bar and tablet/desktop layouts are unchanged. CSS only. [Details](engineering/updates/2026-11-16-page-top-spacing.md).
+
+## 2026-11-16 — PR #294 conflict resolution
+
+- Integrated main `77bcacc`. Preserved the Security & Data Guide navigation and the current Friends and receipt privacy disclosures.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-294-main-conflicts.md).
+
+## 2026-11-13 — PR #294 safe conflict integration, precommit record
+
+- Compared PR #294 exact head a05152d, latest main 2922eef, and their common doc baseline before building this integration.
+- Keep PR #294's documented guide and CI repairs; retain ALL newer main progress, including referral and iOS release-harness entries.
+- Retain main's full legal policy and recent referral disclosures; add only the reviewed Security & Data Guide navigation link. Do not alter legal clauses, policy dates, or data retention.
+- The remaining eight PR file objects are reused verbatim. No production, schema, native code, cloud account, or billing changes.
+- Post-integration requirements: exact-head CI, Vercel preview and legal review; physical screen reader and phone-device tests remain unverified and are not claimed complete.
+
+## 2026-11-13 — PR #294 CI 2nd regression: Jest resets module mock implementations
+
+- Exact commit `1396197` GitHub Phase 1 and Vercel preview each failed on **one** Settings guide click test, while 224 of 225 test suites and 1,354 of 1,355 tests passed. Read-only finance tenant isolation passed.
+- Unlike the previous Capacitor proxy spy failure, `Browser.open` is now a Jest mock function. However, MOVO Jest setup resets mock implementations between tests, causing a bare `Browser.open()` to return undefined; the actual Settings handler expects a Promise and calls `.catch()`.
+- Fix in test setup: explicitly `Browser.open.mockReset()` and `Browser.open.mockImplementation(() => Promise.resolve())` immediately before the click. **Do not change the production async Browser.open handler or suppress rejection handling.**
+- Precommit documentation recorded before the fix. Exact-head full regression + preview must be rerun. Keep PR open and production untouched.
+
+## 2026-11-13 — PR #294 preview CI repair (documented before commit)
+
+- First exact-head `eecbfbd` Vercel build stopped on one new Jest test, not a runtime compile error: `src/screens/Settings.test.js` attempted `jest.spyOn(Browser, 'open')`, but Capacitor exposes a proxied method and returned a non-Jest method; `.mockResolvedValue` was undefined.
+- Result in the Vercel runner: 224/225 suites passed and 1,354/1,355 tests passed, then the build script exited nonzero. Correct the **test double**, not the product plugin or security gate.
+- Add a `jest.mock('@capacitor/browser')` module mock with a real `jest.fn()` and assert the Settings row invokes `Browser.open` with the canonical security URL.
+- Customer clarity: remove internal PR numbers from the public HTML and say the enhanced offline encryption is in testing and **not part of the current production release**. Retain exact PR references in internal engineering notes and the source docs.
+- No production release, merge, database mutation, security control relaxation, or third-party API change. Rerun exact-head GitHub CI and Vercel preview after the fix.
+
+## 2026-11-13 — Customer-readable MOVO security and features guide (PRECOMMIT)
+
+- Reviewed deployed `main` security code/legal disclaimers and read-only Supabase controls. Production local financial browser storage is not yet MOVO-encrypted; PRs #289/#290 remain unmerged. Customer copy must not pretend otherwise.
+- Drafted standalone `/security` guide, companion editorial markdown, legal-policy navigation links, and Settings entry point via Capacitor Browser; no existing legal clauses or policy dates changed.
+- Added tests for disclosure consistency, links, access, security-copy boundaries and a Settings click. Reused translated keys to respect i18n, and followed accessible, no-JS responsive design.
+- Word customer guide rendered to four pages and visually inspected. New PR only; no commits to `main`, merges, production deploys, DB migrations, or paid integrations.
+- Full evidence and release gate list: `docs/engineering/updates/2026-11-13-user-facing-trust-security-guide.md`. CI/preview gates pending exact-head verification.
+
+## 2026-11-16 — Home header: less space under Total balance
+
+- The scenery under the Total balance card shrinks from 28 px to 10 px: the card's own bottom margin no longer stacks on the header padding inside the header. CSS only. [Details](engineering/updates/2026-11-16-home-header-bottom-gap.md).
+
+## 2026-11-16 — Menu tool icons: one glyph and colour per tool
+
+- Menu tiles get new original glyphs: subscriptions, savings goal, cashback, calendar with clock, planning pie, exchange arrows, crypto block and stocks trend. Each tool has its own colour, tuned for light and dark, on larger 40 px squircles. Scheduled no longer falls back to a sparkle (missing `calendar-clock` icon), and Crypto and Stocks no longer share an icon. [Details](engineering/updates/2026-11-16-menu-tool-icons.md).
+
+## 2026-11-16 — One pop-up surface with an iOS-style edge (light and dark)
+
+- Every pop-up now uses the transaction-details look: a solid surface (white / `#1c1c1e`), a gradient hairline edge that catches light at the top-left like iOS, and a soft shadow, adapted for light and dark. Budgets & Plans and Limits lose their translucent glass panel with its bright outline.
+- On phones, bottom sheets float 8 px from the screen edges with rounded corners all round, and the page behind blurs. CSS only. [Details](engineering/updates/2026-11-16-popup-panel-surface.md).
+
+## 2026-11-16 — Friend money summary sharing: clearer screen, live preview, savings rate
+
+- Friend rows open "Money summary" directly. The received summary is a readable card: month in words, shared date, totals with net, savings rate, colour category bars and the note.
+- Sharing uses switches with a live preview of exactly what the friend will see, and one share button that names the friend. Stop sharing asks first. A new savings-rate option (whole percent, validated server-side) shares less than exact totals. No schema change.
+- Needs Friends migration `20261116070316` on production to work there. [Details](engineering/updates/2026-11-16-friend-summary-sharing.md).
+## 2026-11-17 — Refine the shared Friends Summary
+
+- Refined the mobile overview, tracking note, chart labels, snapshot dates and sharing preview. Moved the preview above app navigation and aligned the cash-flow zero baseline. Chromium passed six fixture scenarios and Jest passed 1,496 tests. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Friends Summary visual refinement
+
+- Grouped approved totals into one overview card, reordered the detail cards, and made sharing a two-step flow with a matching recipient preview. [Design and checks](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-17 — Dedicated Friends and Summary screens
+
+- [Implementation plan, privacy and verification](engineering/updates/2026-11-17-friends-summary-pages.md).
+
+## 2026-11-16 — MOVO guide on screenshots, Aries the welcoming mascot, AI receipt scan and automation
+
+- The tutorial video is replaced by a 20-step guide on real screenshots. Each feature stays sharp while the rest blurs. The voice is Kokoro (female, not ElevenLabs), with translated captions. It now covers AI receipt scanning (consented, part of Pro) and automatic logging (part of Pro+). The sample data uses sharper merchant, bank and e-wallet logos, including Atome and SeaBank.
+- Aries, an original vector mascot drawn from the owner's design, guides every step, greets people on the first-run welcome card and heads the Help Center. The Help Center has new sections on the guide, AI receipt scanning and automatic logging.
+- Terms §17 now describes the guide as screenshots. The change is published under main's 2026-11-17 Terms date, so people accept once. [Details, validation and rollback](engineering/updates/2026-11-16-movo-guide-aries.md).
+
+## 2026-11-16 — PR #313: softer Aries across MOVO
+
+- Extended the existing [Aries and MOVO guide PR #313](https://github.com/nasrinaiv0/movo/pull/313) after reviewing all 12 open PRs; no other open branch overlaps this mascot scope. The new shared fluffy vector ram is the default Home mascot, appears in sign-in and plan selection, and responds to real bills and savings progress.
+- Added 14 expressions, gentle motion/walking, viewport/background and live reduced-motion handling, and a local expression preview in the Home mascot sheet. Preserved spending thresholds, photo mascots, guide pose APIs, passwordless auth and store purchase checks.
+- Validation: Node 26.13.1 full Jest 240 suites / 1,491 tests, typecheck, i18n and strict production build. Chromium passes 32 mobile light/dark/text-size screen checks, all 14 expressions, live reduced motion and consent; Home feet stay fixed. Final CSS fixes also pass the strict build and 3 affected suites / 9 tests. [Evidence and remaining gates](engineering/updates/2026-11-16-aries-expressions.md). Real devices and the exact-head hosted preview are not yet checked; merge remains owner-controlled.
+
+## 2026-11-16 — PR #312 integration with foreign-currency receipt review
+
+- Integrated main `da99f181` on the Friends branch. Combined the two progress entries and regenerated locales from both source catalogs. The receipt privacy disclosure and Friends disclosures remain synchronized.
+- Run the strict build, disposable PostgreSQL and the mobile fixture flow against this combined tree.
+
+## 2026-11-16 — Friends discovery, private summaries and profile photos
+
+- Added private username discovery, reciprocal request approval, opt-in monthly snapshots, block/report controls, and shared profile avatars. Fixed native Friends transport and more specific error messages.
+- Disposable PostgreSQL migration history and social isolation passed, as did focused API, localization, support and avatar-upload tests. See [the implementation and rollout notes](engineering/updates/2026-11-16-friends-discovery.md).
+## 2026-11-16 — PR #311 conflict resolution
+
+- Integrated main `77bcacc`. Regenerated receipt and Friends locales from both source catalogs and retained both progress records.
+- [Conflict resolution and validation scope](engineering/updates/2026-11-16-pr-311-main-conflicts.md).
+
+## 2026-11-16 — Foreign-currency receipt review
+
+- Scanned receipts now convert into the selected account's currency using dated reference rates, with an optional statement amount and an audit note retaining the source total. Ambiguous source currency asks for confirmation.
+- The first strict Node 26 build and 1,460 tests passed, alongside Vercel Sandbox rate fixtures and two isolated Chromium widths. Verify GitHub checks and the protected preview at the PR head. [Engineering notes and acceptance steps](docs/engineering/updates/2026-11-16-foreign-currency-receipts.md).
+
 ## 2026-11-16 — Private friends and compact Profile
 
 - Added Profile → Friends with single-use QR/link invites, native AirDrop and Android Sharesheet, deliberate acceptance, and reciprocal removal.

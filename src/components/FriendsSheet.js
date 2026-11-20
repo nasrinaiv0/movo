@@ -1,29 +1,56 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import FriendsDiscovery from './FriendsDiscovery';
 import Icon from './Icon';
+import { MovoMark } from './MovoLogo';
+import { friendCardImage } from '../lib/friendCardImage';
+import './FriendsConnect.css';
 import { Sheet } from './ui';
 import { useConfirm } from './ConfirmDialog';
 import { t as tr } from '../lib/i18n';
 import { nativePlatform } from '../lib/platform';
 import { friendDisplayName, friendInviteToken, friendInviteUrl, copyFriendInvite, friendsRequest, shareFriendInvite } from '../lib/friends';
 
-function errorMessage(error) {
+const FriendQrScanner = React.lazy(() => import('./FriendQrScanner'));
+
+export function friendErrorMessage(error) {
   switch (error?.code) {
     case 'invite_unavailable': return tr('This invite is expired, used or replaced.');
     case 'own_invite': return tr('This is your own friend invite.');
     case 'friend_limit': return tr('One of these accounts has reached the friends limit.');
+    case 'sign_in_required': return tr('Your session expired. Sign in again to use Friends.');
+    case 'friends_network': return tr('Could not connect to Friends. Check your connection and try again.');
+    case 'friends_update_pending': return tr('Friends is being updated. Try again shortly.');
+    case 'invalid_friend_handle': return tr('Use 3–24 letters, numbers or underscores.');
+    case 'friend_handle_taken': return tr('That MOVO username is already taken.');
+    case 'friend_handle_required': return tr('Set a MOVO username before you send a request.');
+    case 'friend_request_received': return tr('This person has already sent you a request. Check your Friends list.');
+    case 'already_friends': return tr('You are already friends.');
+    case 'friend_rate_limit': return tr('Too many requests. Try again later.');
+    case 'friend_request_unavailable': return tr('This friend request is unavailable or expired.');
+    case 'friend_connection_required': return tr('This friend connection is no longer available.');
+    case 'invalid_friend_summary': return tr('Check the summary details and try again.');
     case 'verified_account_required': return tr('Verify your account to use Friends.');
     default: return tr('Friends are unavailable right now. Try again.');
   }
 }
 
-export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, onInviteHandled }) {
+export default function FriendsSheet({ onClose, ...props }) {
+  return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}><FriendsContent {...props} /></Sheet>;
+}
+
+export function FriendsContent({ session, inviteToken, onSignIn, onInviteHandled, onOpenSummary }) {
+  const socialAvailable = Boolean(onOpenSummary);
   const signedIn = Boolean(session?.user?.id && session.access_token);
   const [friends, setFriends] = useState(null);
+  const [directory, setDirectory] = useState(null);
+  const [directoryError, setDirectoryError] = useState('');
+  const reload = () => setRefresh(value => value + 1);
   const [error, setError] = useState('');
   const [listError, setListError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [mode, setMode] = useState(inviteToken ? 'join' : 'list');
   const [refresh, setRefresh] = useState(0);
   const [incoming, setIncoming] = useState('');
@@ -34,6 +61,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
   const [activeUntil, setActiveUntil] = useState(null);
   const [inviteClock, setInviteClock] = useState(Date.now);
   const lock = useRef(false);
+  const card = useRef(null);
   const confirm = useConfirm();
   const validName = friendDisplayName(name);
   const hasActiveInvite = Date.parse(activeUntil) > inviteClock;
@@ -49,9 +77,12 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
         setListError('');
         setFriends(result.friends);
         setActiveUntil(result.activeInviteUntil);
-        setInvite(current => Date.parse(current?.expiresAt) === Date.parse(result.activeInviteUntil) ? current : null);
+        setInvite(current => current && result.activeInviteUntil && Date.parse(current.expiresAt) === Date.parse(result.activeInviteUntil) ? current : null);
       })
-      .catch(cause => { if (!controller.signal.aborted) setListError(errorMessage(cause)); });
+      .catch(cause => { if (!controller.signal.aborted) setListError(friendErrorMessage(cause)); });
+    if (socialAvailable) friendsRequest({ access_token: session.access_token }, 'directory', {}, controller.signal)
+      .then(result => { if (!controller.signal.aborted) { setDirectory(result); setDirectoryError(''); } })
+      .catch(cause => { if (!controller.signal.aborted) setDirectoryError(friendErrorMessage(cause)); });
     function refreshOnReturn() {
       if (!document.hidden) setRefresh(value => value + 1);
     }
@@ -60,7 +91,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
       controller.abort();
       document.removeEventListener('visibilitychange', refreshOnReturn);
     };
-  }, [signedIn, session?.access_token, refresh]);
+  }, [signedIn, session?.access_token, refresh, socialAvailable]);
 
   useEffect(() => {
     if (!signedIn || !lookup || mode !== 'join') return undefined;
@@ -69,7 +100,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     setError('');
     friendsRequest({ access_token: session.access_token }, 'preview', { token: lookup }, controller.signal)
       .then(result => { if (!controller.signal.aborted) setPreview(result); })
-      .catch(cause => { if (!controller.signal.aborted) { setError(errorMessage(cause)); setLookup(''); } });
+      .catch(cause => { if (!controller.signal.aborted) { setError(friendErrorMessage(cause)); setLookup(''); } });
     return () => controller.abort();
   }, [signedIn, session?.access_token, lookup, mode]);
 
@@ -80,6 +111,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
   }, [invite]);
 
   function showMode(next) {
+    setScanning(false);
     setMode(next);
     if (next !== mode && next !== 'join') setRefresh(value => value + 1);
     setError('');
@@ -95,7 +127,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     try {
       onSuccess(await friendsRequest(session, action, payload));
     } catch (cause) {
-      setError(errorMessage(cause));
+      setError(friendErrorMessage(cause));
     } finally {
       setBusy(false);
       lock.current = false;
@@ -110,22 +142,35 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     setLookup(token);
   }
 
+  function scanned(value) {
+    const token = friendInviteToken(value);
+    if (!token) { setError(tr('Enter a valid MOVO invite link.')); return; }
+    setError(''); setScanning(false); setMode('join'); setIncoming(''); setLookup(token);
+  }
+
+  const connectMethods = <div className="friend-connect-methods" role="group" aria-label={tr('Add friend')}>
+    <button type="button" onClick={() => { showMode('join'); setLookup(''); setPreview(null); setScanning(true); }}><Icon name="scan" size={19} />{tr('Scan QR code')}</button>
+    <button type="button" onClick={() => { showMode('join'); setLookup(''); setPreview(null); }}><Icon name="link" size={19} />{tr('Paste invite link')}</button>
+  </div>;
+
   async function share(copyOnly = false) {
-    if (!url || busy) return;
-    setError('');
+    if (!url || busy || lock.current) return;
+    lock.current = true; setBusy(true); setError('');
     try {
-      const outcome = copyOnly ? await copyFriendInvite(url).then(() => 'copied') : await shareFriendInvite(url, tr('MOVO friend invite'));
+      const image = copyOnly ? undefined : await friendCardImage(card.current?.querySelector('svg.friends-qr'), invite.name, tr('An invite can be used once and expires after 24 hours.'));
+      const outcome = copyOnly ? await copyFriendInvite(url).then(() => 'copied') : await shareFriendInvite(url, tr('MOVO friend invite'), image);
+      if (outcome === 'downloaded') setNotice(tr('Profile QR image downloaded.'));
       if (outcome === 'copied') setNotice(tr('Invite link copied.'));
     } catch (cause) {
       if (cause?.name !== 'AbortError') setError(tr('Sharing is unavailable. Scan the QR or select and copy the link.'));
-    }
+    } finally { lock.current = false; setBusy(false); }
   }
 
   function createInvite(event) {
     event.preventDefault();
     if (!validName) return;
     run('create', { name: validName }, result => {
-      setInvite(result);
+      setInvite({ ...result, name: validName });
       setInviteClock(Date.now());
       setActiveUntil(result.expiresAt);
       setRefresh(value => value + 1);
@@ -151,8 +196,19 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
       confirmLabel: tr('Remove'), icon: 'user', danger: true,
     }))) return;
     run('remove', { connectionId: friend.id }, () => {
-      setFriends(current => current.filter(item => item.id !== friend.id));
+      setFriends(current => current?.filter(item => item.id !== friend.id) ?? null);
       setNotice(tr('Friend removed.'));
+    });
+  }
+
+  async function safetyAction(action, payload) {
+    const blocking = action === 'block';
+    const title = blocking ? tr('Block user') : tr('Report to MOVO');
+    if (!(await confirm({ title, message: blocking ? tr('Blocking removes the connection and stops future friend requests.')
+      : tr('MOVO support will review your report.'), confirmLabel: title, danger: blocking, icon: 'shield' }))) return;
+    run(action, payload, () => {
+      if (blocking) reload();
+      setNotice(blocking ? tr('User blocked.') : tr('Report sent.'));
     });
   }
 
@@ -160,8 +216,7 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
     <input value={name} onChange={event => setName(event.target.value)} autoComplete="off" maxLength={80} required />
   </label>;
 
-  return <Sheet title={tr('Friends')} className="friends-sheet" onClose={onClose}>
-    <div className="friends-content">
+  return <div className="friends-content">
       {!signedIn ? <div className="friends-empty">
         <Icon name="userPlus" size={26} />
         <p>{tr('Sign in to send or accept a friend invite.')}</p>
@@ -169,20 +224,41 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
       </div> : <>
         <nav className="friends-tabs" aria-label={tr('Friends')}>
           <button type="button" disabled={busy} aria-pressed={mode === 'list'} onClick={() => showMode('list')}>{tr('Friends')}</button>
-          <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Invite')}</button>
-          <button type="button" disabled={busy} aria-pressed={mode === 'join'} onClick={() => showMode('join')}>{tr('Join')}</button>
+          <button type="button" disabled={busy} aria-pressed={mode === 'search' || mode === 'join'} onClick={() => showMode('search')}>{tr('Add friend')}</button>
+          <button type="button" disabled={busy} aria-pressed={mode === 'invite'} onClick={() => showMode('invite')}>{tr('Share profile')}</button>
         </nav>
+        {mode === 'search' && connectMethods}
+        {mode === 'search' && socialAvailable && (directory ? <FriendsDiscovery directory={directory} busy={busy} run={run} reload={reload} /> :
+          <><p className="friends-note" role={directoryError ? 'alert' : 'status'}>{directoryError || tr('Loading…')}</p>
+            {directoryError && <button type="button" className="friends-secondary" onClick={reload}>{tr('Try again')}</button>}</>)}
         {mode === 'list' && <>
+          {directory?.requests?.length > 0 && <div className="friends-content"><h3>{tr('Friend requests')}</h3>
+            <ul className="friends-list friends-directory-results">{directory.requests.map(request => <li key={request.id}>
+              <b dir="ltr">@{request.handle}</b><div className="friends-actions">
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => run('accept_request', { requestId: request.id }, reload)}>{tr('Accept')}</button>
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => run('decline_request', { requestId: request.id }, reload)}>{tr('Decline')}</button>
+              </div>
+              <div className="friends-actions friends-safety">
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => safetyAction('report', { requestId: request.id })}>{tr('Report to MOVO')}</button>
+                <button type="button" className="friends-secondary" disabled={busy} onClick={() => safetyAction('block', { requestId: request.id })}>{tr('Block user')}</button>
+              </div>
+            </li>)}</ul>
+          </div>}
+
           {friends === null && !listError && <p className="friends-note" role="status">{tr('Loading…')}</p>}
           {friends?.length === 0 && <div className="friends-empty">
             <Icon name="userPlus" size={26} />
             <p>{tr('Your friends will appear here after they accept an invite.')}</p>
-            <button type="button" className="primary-button" onClick={() => showMode('invite')}>{tr('Add a friend')}</button>
+            <button type="button" className="primary-button" onClick={() => showMode('search')}>{tr('Add a friend')}</button>
           </div>}
           {friends?.length > 0 && <ul className="friends-list">
             {friends.map(friend => <li key={friend.id}>
-              <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
-              <b dir="auto">{friend.name}</b>
+              {onOpenSummary ? <button type="button" className="friends-open-summary" disabled={busy} onClick={() => onOpenSummary(friend)}
+                aria-label={tr('Summary for {name}', { name: friend.name })}>
+                <span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
+                <b dir="auto">{friend.name}</b><Icon name="chevron" size={16} />
+              </button> : <><span aria-hidden="true" className="friends-initial">{Array.from(friend.name)[0]?.toLocaleUpperCase()}</span>
+                <b dir="auto">{friend.name}</b></>}
               <button type="button" disabled={busy} onClick={() => removeFriend(friend)} aria-label={tr('Remove {name}', { name: friend.name })}><Icon name="close" size={18} /></button>
             </li>)}
           </ul>}
@@ -191,10 +267,17 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
         </>}
         {mode === 'invite' && <>
           {url ? <div className="friends-invite">
-            <QRCodeSVG className="friends-qr" value={url} size={164} level="M" marginSize={4} title={tr('Friend invite QR code')} />
+            <div ref={card} className="friend-profile-card" aria-label={tr('Friend invite profile card')}>
+              <span className="friend-profile-initial" aria-hidden="true">{Array.from(invite.name || '')[0]?.toLocaleUpperCase()}</span>
+              <h3 dir="auto">{invite.name}</h3>
+              {directory?.handle && <span className="friend-profile-handle" dir="ltr">@{directory.handle}</span>}
+              <QRCodeSVG className="friends-qr" value={url} size={224} level="M" marginSize={4} title={tr('Friend invite QR code')} />
+              <span className="friend-profile-brand"><MovoMark size={21} tone="mono" />MOVO</span>
+              <small className="friend-profile-expiry">{tr('An invite can be used once and expires after 24 hours.')}</small>
+            </div>
             <label className="friends-field"><span>{tr('Invite link')}</span><input dir="ltr" readOnly value={url} onFocus={event => event.target.select()} /></label>
             <div className="friends-actions">
-              <button type="button" className="primary-button" onClick={() => share()}><Icon name="send" size={17} />{tr('Share invite')}</button>
+              <button type="button" className="primary-button" onClick={() => share()}><Icon name="send" size={17} />{tr('Share profile')}</button>
               <button type="button" className="friends-secondary" onClick={() => share(true)}><Icon name="copy" size={17} />{tr('Copy link')}</button>
             </div>
             <p className="friends-note">{platform === 'ios' ? tr('Choose AirDrop in the share sheet.') : platform === 'android' ? tr('Choose Quick Share when it appears in the share sheet.') : tr('Ask a friend to scan the QR with their phone camera.')}</p>
@@ -206,7 +289,8 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
           {hasActiveInvite && <button type="button" className="friends-secondary" disabled={busy}
             onClick={() => run('revoke', {}, () => { setInvite(null); setActiveUntil(null); setRefresh(value => value + 1); setNotice(tr('Invite revoked.')); })}>{tr('Revoke invite')}</button>}
         </>}
-        {mode === 'join' && (preview ? <form className="friends-form" onSubmit={acceptInvite}>
+        {mode === 'join' && !preview && connectMethods}
+        {mode === 'join' && scanning ? <React.Suspense fallback={<p role="status">{tr('Loading…')}</p>}><FriendQrScanner onScan={scanned} onClose={() => setScanning(false)} /></React.Suspense> : mode === 'join' && (preview ? <form className="friends-form" onSubmit={acceptInvite}>
           <div className="friends-recipient"><Icon name="user" size={20} /><strong dir="auto">{preview.name}</strong></div>
           {preview.connected ? <p className="friends-note">{tr('You are already friends.')}</p> : <>
             {nameField}
@@ -224,6 +308,5 @@ export default function FriendsSheet({ session, inviteToken, onClose, onSignIn, 
         {notice && <p className="friends-note friends-success" role="status">{notice}</p>}
         {error && <p className="friends-note friends-error" role="alert">{error}</p>}
       </>}
-    </div>
-  </Sheet>;
+    </div>;
 }

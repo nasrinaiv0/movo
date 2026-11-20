@@ -177,6 +177,10 @@ def main():
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
             "Hybrid sync idempotency, CAS, precision, tenant isolation and entitlement")
+        sql((ROOT / "supabase/tests/transaction_mutation_integrity.test.sql").read_text(),
+            "Transaction grants, linked posting status, reversal reset and tenant isolation")
+        sql((ROOT / "supabase/tests/posted_allocation_balances.test.sql").read_text(),
+            "Pending income/expense/transfer exclusion and posted allocation reconciliation")
         sql((ROOT / "supabase/tests/release_fk_covering_indexes.test.sql").read_text(),
             "five audited foreign-key covering index assertions")
         sql((ROOT / "supabase/tests/owner_account_deletion_fks.test.sql").read_text(),
@@ -189,6 +193,10 @@ def main():
             "obligation cash-posting and authorization contracts")
         sql((ROOT / "supabase/tests/private_friends.test.sql").read_text(),
             "private invite lifecycle, two-party visibility and account deletion")
+        sql((ROOT / "supabase/tests/friend_social.test.sql").read_text(),
+            "discoverable usernames, recipient approval, snapshot revocation and avatar isolation")
+        sql((ROOT / "supabase/tests/loan_payment_accounts.test.sql").read_text(),
+            "loan payment account isolation, currency and single-ledger posting")
         print("PASS isolated finance authorization: no customer database accessed")
     finally:
         if not DATABASE.startswith("movo_security_test_") or not RESTORE_DATABASE.startswith("movo_rollback_test_"):

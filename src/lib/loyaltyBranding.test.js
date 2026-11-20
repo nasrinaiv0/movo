@@ -1,7 +1,7 @@
 import { loyaltyCardStyle, loyaltyLogoUrl, loyaltyTypeLabel } from './loyaltyBranding';
-test('unreviewed brands are displayed without remote icons or untrusted URLs', () => {
-  expect(loyaltyLogoUrl('Starbucks')).toBe('');
-  expect(loyaltyLogoUrl('7-Eleven')).toBe('');
+test('famous brands use curated compact logos, no merchant-supplied URL', () => {
+  expect(loyaltyLogoUrl('Starbucks')).toContain('starbucks.ph');
+  expect(loyaltyLogoUrl('7-Eleven')).toContain('7-eleven.com.ph');
   expect(loyaltyLogoUrl('https://ev.il/?token=secret')).toBe('');
   expect(loyaltyCardStyle('7-Eleven').bg).not.toBe(loyaltyCardStyle('Starbucks').bg);
 });

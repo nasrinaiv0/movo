@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f7f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111713" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Understand MOVO's money-tracking features, privacy choices, sign-in protections, cloud and local data storage, and the limits of its security.">
+<title>Security &amp; Privacy | MOVO</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root {
+  color-scheme: light dark;
+  --page: #f5f7f5;
+  --surface: #fff;
+  --tint: #ebf3ed;
+  --line: #d9e3da;
+  --text: #142018;
+  --muted: #48584e;
+  --accent: #155e3b;
+  --action: #155e3b;
+  --on-action: #fff;
+  --focus: #177b4c;
+  --notice-bg: #fff6e1;
+  --notice-line: #b77b22;
+  --notice-text: #603b07;
+  --header-offset: max(72px, 5rem);
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: var(--header-offset); }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font: 400 .96rem/1.56 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--accent); text-underline-offset: .2em; }
+a:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 5px;
+}
+.shell { width: min(calc(100% - 32px), 58rem); margin-inline: auto; }
+.skip-link {
+  position: fixed;
+  top: 8px;
+  inset-inline-start: 12px;
+  z-index: 3;
+  transform: translateY(-150%);
+  padding: 8px 12px;
+  background: var(--surface);
+}
+.skip-link:focus { transform: none; }
+.site-header { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); }
+.site-bar { min-height: 60px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; padding-block: 7px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-weight: 750; letter-spacing: .055em; text-decoration: none; }
+.brand img { display: block; width: 27px; height: 27px; }
+.home-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--action);
+  color: var(--on-action);
+  font-size: .85rem;
+  font-weight: 690;
+  text-decoration: none;
+  transition: opacity .16s ease;
+}
+.home-link:hover { opacity: .88; }
+.home-link span { font-size: 1.08rem; line-height: 1; }
+.hero { padding-block: clamp(20px, 4vw, 38px) 15px; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: clamp(1.9rem, 5.7vw, 3.2rem); line-height: 1.12; font-weight: 750; letter-spacing: -.045em; }
+h2 { font-size: clamp(1.22rem, 2.1vw, 1.6rem); font-weight: 710; letter-spacing: -.025em; line-height: 1.28; }
+h3 { font-size: .99rem; font-weight: 690; line-height: 1.35; }
+.lead { max-width: 65ch; margin-top: 8px; color: var(--muted); }
+.reviewed { margin-top: 10px; color: var(--muted); font-size: .8rem; }
+.section-links { display: flex; flex-wrap: wrap; gap: 4px 7px; margin: 0 0 13px; }
+.section-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 7px;
+  font-size: .83rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.section-links a:hover { background: var(--tint); text-decoration: underline; }
+.important, .notice { border-radius: 11px; padding: 12px 14px; }
+.important { margin: 0 0 18px; border-inline-start: 3px solid var(--accent); background: var(--tint); }
+.important strong { font-size: .91rem; }
+.important p, .notice p { margin-top: 4px; font-size: .88rem; }
+.content { padding: 16px 0; border-top: 1px solid var(--line); }
+.content > h2 { margin-bottom: 9px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.card { min-width: 0; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; }
+.card p { margin-top: 4px; color: var(--muted); font-size: .88rem; }
+.muted { color: var(--muted); }
+.section-note { margin-top: 9px; font-size: .88rem; }
+.table-wrap { margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table col:first-child { width: 26%; }
+table col:nth-child(2) { width: 30%; }
+th, td { padding: 8px 9px; border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; overflow-wrap: anywhere; font-size: .85rem; }
+thead th { background: var(--tint); }
+tbody th, td { background: var(--surface); }
+tbody th { font-weight: 640; }
+tr:last-child > :is(th, td) { border-bottom: 0; }
+thead tr:last-child > th { border-bottom: 1px solid var(--line); }
+.notice { margin-top: 9px; background: var(--surface); border: 1px solid var(--line); }
+.notice.encryption { margin-top: 0; background: var(--notice-bg); border: 0; border-inline-start: 3px solid var(--notice-line); }
+.notice.encryption h3 { color: var(--notice-text); }
+.notice p + p { margin-top: 6px; }
+.questions details { border-bottom: 1px solid var(--line); }
+.questions details:last-child { border-bottom: 0; }
+summary { min-height: 44px; padding: 10px 2px; cursor: pointer; font-weight: 640; }
+summary::marker { color: var(--accent); }
+.questions details p { padding: 0 2px 10px 15px; color: var(--muted); font-size: .89rem; }
+.features summary { padding-top: 0; }
+.features .grid { margin-top: 9px; }
+.footer { margin-top: 20px; padding: 14px 0 25px; border-top: 1px solid var(--line); }
+.footer small { display: block; margin-top: 3px; color: var(--muted); }
+.footer-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 9px; font-size: .87rem; }
+@media (max-width: 35rem) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .section-links { gap: 2px 3px; }
+  .section-links a { padding-inline: 7px; }
+  th, td { padding-inline: 6px; font-size: .81rem; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #111713;
+    --surface: #19221b;
+    --tint: #223229;
+    --line: #38483b;
+    --text: #eff4ef;
+    --muted: #bccbbf;
+    --accent: #b9edca;
+    --action: #b9edca;
+    --on-action: #13291c;
+    --focus: #b9edca;
+    --notice-bg: #30291b;
+    --notice-line: #d9a65c;
+    --notice-text: #f6d7a3;
+  }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+@media (prefers-reduced-motion: reduce) { .home-link { transition: none; } }
+@media print {
+  .site-header { position: static; }
+  :is(.skip-link, .home-link, .section-links) { display: none; }
+  :is(.card, .notice, tr) { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <nav class="site-bar shell" aria-label="MOVO website">
+    <a class="brand" href="/"><img src="/favicon.svg" alt="" width="27" height="27">MOVO</a>
+    <a class="home-link" href="/"><span aria-hidden="true">←</span>Back to Home</a>
+  </nav>
+</header>
+<main class="shell" id="main">
+<div class="hero">
+  <h1>Security &amp; Privacy</h1>
+  <p class="lead">See how MOVO protects and stores your data, and which privacy choices you control.</p>
+  <p class="reviewed">Security &amp; Data Guide · Reviewed <time datetime="2026-11-13">13 November 2026</time></p>
+</div>
+<nav class="section-links" aria-label="On this page">
+  <a href="#protection">Protection</a>
+  <a href="#storage">Storage</a>
+  <a href="#choices">Your choices</a>
+  <a href="#questions">FAQs</a>
+  <a href="#features">Features</a>
+  <a href="/privacy">Privacy Policy</a>
+</nav>
+<div class="important"><strong>Current security limits</strong><p>MOVO uses multiple protections, but no service is risk-free. We do not claim that all local records are currently encrypted, that the system is certified, or that a lost device can always recover unsynced data.</p></div>
+
+<section class="content" id="protection">
+<h2>How MOVO protects your data</h2>
+<div class="grid">
+<article class="card"><h3>Signed-in account separation</h3><p>MOVO's cloud records use authentication and PostgreSQL Row-Level Security policies to limit user access. Account-scoped server checks add protection; no control eliminates every risk.</p></article>
+<article class="card"><h3>Protected native sign-in credentials</h3><p>Applicable iOS credentials are stored using Apple Keychain, and Android credentials use Keystore-backed secure storage. This is different from encrypting every saved transaction.</p></article>
+<article class="card"><h3>Browser and network safeguards</h3><p>The MOVO website uses HTTPS deployment and configured security headers, including frame protection, HSTS, and a Content Security Policy.</p></article>
+<article class="card"><h3>Optional app lock</h3><p>App Lock and supported biometric unlock can discourage casual access. They do not replace account authentication or independently encrypt local finance records.</p></article>
+</div>
+</section>
+
+<section class="content" id="storage">
+<h2>Local and cloud storage</h2>
+<div class="notice encryption"><h3>Offline encryption coverage</h3><p>Supported financial read caches, local chat-history caches and verified-plan caches use AES-256-GCM. Main local finance records, offline workspaces, queued sync payloads, attachments, QR images and some preferences are not all encrypted by MOVO. This is not end-to-end encryption. Protect your device and exports; an app lock does not independently encrypt those copies.</p></div>
+<div class="table-wrap"><table aria-label="Local mode and eligible cloud mode comparison">
+<colgroup><col><col><col></colgroup>
+<thead><tr><th scope="col">Question</th><th scope="col">Local mode</th><th scope="col">Eligible cloud mode</th></tr></thead>
+<tbody>
+<tr><th scope="row">Where are records?</th><td>On this device/browser</td><td>In your signed-in cloud account; some device copies may also exist</td></tr>
+<tr><th scope="row">Do they appear on other devices?</th><td>Not automatically</td><td>Eligible records can sync after successful sign-in and reconciliation</td></tr>
+<tr><th scope="row">What happens offline?</th><td>Available device records remain usable when supported</td><td>Eligible cached data and pending changes may be available; some functions need internet</td></tr>
+<tr><th scope="row">What if I clear device storage?</th><td>Local-only records can be lost</td><td>Cloud records may remain; unsynced device changes can be lost</td></tr>
+</tbody></table></div>
+</section>
+
+<section class="content" id="choices">
+<h2>Your privacy choices</h2>
+<div class="grid">
+<article class="card"><h3>Optional AI consent</h3><p>Financial context is shared with NasrinAI only after the relevant in-app consent and request. External AI providers may process submitted content. Other MOVO features can be used without that optional sharing.</p></article>
+<article class="card"><h3>Manual or automated tracking</h3><p>Keep manual entry or configure supported phone automations. Review results; bank notifications and imports can be incomplete or misclassified.</p></article>
+<article class="card"><h3>Local or eligible cloud access</h3><p>Choose how you work, subject to plan and device capabilities. Not all data syncs; always check pending records before switching devices.</p></article>
+<article class="card"><h3>Export and account deletion</h3><p>Export important data carefully. Cloud account deletion is available through MOVO; clear local-only copies on each device separately. Apple/Google subscriptions require separate cancellation.</p></article>
+</div>
+<p class="muted section-note">Security tip: use a device passcode, keep the operating system updated, review app permissions, and never share your banking PIN, CVV, OTP, or account password.</p>
+</section>
+
+<section class="content questions" id="questions">
+<h2>Frequently asked questions</h2>
+<details><summary>Can MOVO move money out of my bank account?</summary><p>No. MOVO tracks information that you provide. It does not execute bank transfers or independently connect to your online banking.</p></details>
+<details><summary>Does MOVO ask for my banking login, PIN, or CVV?</summary><p>No. Never enter banking passwords, PINs, CVVs, or one-time passcodes into MOVO fields, notes, or chat.</p></details>
+<details><summary>Can another MOVO customer view my cloud records?</summary><p>Account authentication and database access policies are designed to prevent cross-user access. Like any online service, MOVO cannot guarantee that security incidents are impossible.</p></details>
+<details><summary>Are all financial records encrypted in the current release?</summary><p>No. Some caches use application-level AES-256-GCM and native sign-in credentials use protected device storage. Other financial working copies and pending sync payloads are not all encrypted. Read the <a href="/privacy">Privacy Policy</a> for the current coverage and limits.</p></details>
+<details><summary>Must I use NasrinAI or share my financial details with AI?</summary><p>No. Financial-context sharing is optional and requires a separate in-app choice. External AI processing may occur if you grant consent and request the feature.</p></details>
+<details><summary>What if I lose my phone or delete MOVO?</summary><p>Eligible cloud-synced records may be available after signing in again. Local-only or unsynced records can be lost. Keep backups securely, and review sync status before clearing a device.</p></details>
+<details><summary>Does deleting my MOVO account cancel my subscription?</summary><p>No. Mobile subscriptions are billed by Apple or Google. Cancel the renewal separately in your store account.</p></details>
+<details><summary>How do I request deletion or report a privacy concern?</summary><p>Open Settings → Security &amp; Privacy → Delete Account, use the <a href="/account-deletion.html">account-deletion instructions</a>, or email <a href="mailto:support@nasrinai.com">support@nasrinai.com</a>. Please do not send passwords, PINs, CVVs, or one-time codes.</p></details>
+</section>
+
+<section class="content features" id="features" aria-label="MOVO features">
+<details>
+<summary>MOVO features</summary>
+<p class="muted">Some features depend on your plan, device, or network connection.</p>
+<div class="grid">
+<article class="card"><h3>Wallet &amp; accounts</h3><p>Organize bank, card, e-wallet, cash, and other manually tracked accounts. See calculated balances and account activity—not verified live bank balances.</p></article>
+<article class="card"><h3>Income &amp; expenses</h3><p>Log spending, income, transfers, and payments. Review transaction history and itemized records.</p></article>
+<article class="card"><h3>Optional automation</h3><p>Set up supported phone shortcuts and notifications to reduce repetitive entry. MOVO does not log in to your bank.</p></article>
+<article class="card"><h3>Financial planning</h3><p>Plan budgets, subscriptions, bills, savings goals, loans, and receivables. Track upcoming due dates where enabled.</p></article>
+<article class="card"><h3>Money flow &amp; insights</h3><p>Understand spending trends, summaries, and eligible financial briefings; figures depend on the accuracy of your records.</p></article>
+<article class="card"><h3>Markets &amp; NasrinAI</h3><p>Review informational market data and request optional AI help. Prices and responses can be inaccurate or delayed.</p></article>
+</div>
+<div class="notice"><h3>Not a bank. Not a money-moving app.</h3><p>MOVO does not need your bank password, card PIN, or CVV. It does not access your online banking independently, move money between accounts, or execute trades. A recorded transfer represents your own tracking entry.</p></div>
+</details>
+</section>
+
+<div class="notice"><h3>Security is an ongoing responsibility</h3><p>This guide explains MOVO's design and current limitations. It is not a certification, formal audit, guarantee of breach-free operation, promise of uninterrupted service, or substitute for the <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>. Product capabilities and controls may evolve.</p></div>
+</main>
+<footer class="footer shell">
+<div><strong>MOVO · A product of NasrinAI · Money Organizer &amp; Visual Outflow</strong><small>For privacy or security questions: <a href="mailto:support@nasrinai.com">support@nasrinai.com</a><br>Last reviewed: 19 November 2026. Protect your device and keep secure copies of important records.</small></div>
+<div class="footer-links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/account-deletion.html">Delete account</a><a href="/">Open MOVO</a></div>
+</footer>
+</body>
+</html>

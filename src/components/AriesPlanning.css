@@ -1,0 +1,27 @@
+/* Aries accompanies real planning states without obscuring amounts or actions. */
+.movo-app .aries-planning-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 10px;
+}
+.movo-app .aries-planning-heading .section-title {
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+  margin: 10px 2px;
+}
+.movo-app .aries-planning-heading .section-title h2 { min-width: 0; }
+.movo-app .aries-planning-heading .aries-bills-companion,
+.movo-app .fp-goal-head .aries-goal-companion,
+.movo-app .aries-goals-empty > .aries-mascot {
+  flex: none;
+}
+.movo-app .aries-goals-empty { width: 100%; }
+.movo-app .aries-goals-empty > span { min-width: 0; }
+@media (max-width: 359px) {
+  .movo-app .fp-goal-head .aries-goal-companion { width: 44px !important; height: 44px !important; }
+  .movo-app .aries-planning-heading .aries-bills-companion { width: 56px !important; height: 56px !important; }
+  .movo-app .aries-goals-empty > .aries-mascot { width: 60px !important; height: 60px !important; }
+}

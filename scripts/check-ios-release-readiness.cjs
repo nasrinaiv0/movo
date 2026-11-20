@@ -24,18 +24,27 @@ function checkReleaseContract({ capacitor, project, info, icon, codemagic }) {
     'StoreKit transactions must be finished only after server verification');
 
   assert(typeof project === 'string' && typeof info === 'string', 'native project missing');
-  const xcodeIds = [...project.matchAll(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;\s]+)\s*;/g)].map(m => m[1]);
-  assert(xcodeIds.length >= 2 && xcodeIds.every(id => id === BUNDLE_ID),
-    'Xcode bundle IDs must be identical for Debug and Release');
-  const versions = [...project.matchAll(/CURRENT_PROJECT_VERSION\s*=\s*(\d+)\s*;/g)].map(m => Number(m[1]));
-  assert(versions.length >= 2 && versions.every(version => Number.isSafeInteger(version) && version > 0),
-    'Xcode build number must be positive for both configurations');
-  const marketing = [...project.matchAll(/MARKETING_VERSION\s*=\s*([\d.]+)\s*;/g)].map(m => m[1]);
-  assert(marketing.length >= 2 && marketing.every(version => /^\d+(?:\.\d+){1,2}$/.test(version)),
+  const buildSettings = [...project.matchAll(/buildSettings = \{([\s\S]*?)^\s*\};/gm)]
+    .map(match => match[1]);
+  const phoneSettings = buildSettings.filter(settings => /(?:^|\n)\s*INFOPLIST_FILE = App\/Info\.plist;/.test(settings));
+  const setting = (settings, key) => settings.match(new RegExp('(?:^|\\n)\\s*' + key + '\\s*=\\s*([^;]+);'))?.[1].trim();
+  assert(phoneSettings.length === 2 && phoneSettings.every(settings => setting(settings, 'PRODUCT_BUNDLE_IDENTIFIER') === BUNDLE_ID),
+    'Xcode bundle IDs must be identical for iPhone Debug and Release');
+  assert(phoneSettings.every(settings => /^[1-9]\d*$/.test(setting(settings, 'CURRENT_PROJECT_VERSION') || '')),
+    'Xcode build number must be positive for both iPhone configurations');
+  assert(phoneSettings.every(settings => /^\d+(?:\.\d+){1,2}$/.test(setting(settings, 'MARKETING_VERSION') || '')),
     'Xcode marketing version must be a valid dotted version');
-  assert(project.includes('TARGETED_DEVICE_FAMILY = 1;'), 'MOVO is an iPhone-only release');
-  assert(project.includes('ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;'),
+  assert(phoneSettings.every(settings => setting(settings, 'TARGETED_DEVICE_FAMILY') === '1'),
+    'MOVO is an iPhone-only release');
+  assert(phoneSettings.every(settings => setting(settings, 'ASSETCATALOG_COMPILER_APPICON_NAME') === 'AppIcon'),
     'AppIcon asset is not selected in Xcode');
+
+  const watchSettings = buildSettings.filter(settings => setting(settings, 'SDKROOT') === 'watchos');
+  assert(watchSettings.length === 2 && watchSettings.every(settings =>
+    setting(settings, 'PRODUCT_BUNDLE_IDENTIFIER') === BUNDLE_ID + '.watchkitapp'
+    && setting(settings, 'INFOPLIST_KEY_WKCompanionAppBundleIdentifier') === BUNDLE_ID
+    && setting(settings, 'TARGETED_DEVICE_FAMILY') === '4'),
+  'Xcode Watch bundle IDs and iPhone companion must match for Watch Debug and Release');
 
   for (const key of ['NSCameraUsageDescription', 'NSMicrophoneUsageDescription',
       'NSPhotoLibraryUsageDescription', 'NSFaceIDUsageDescription']) {

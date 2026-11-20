@@ -1,0 +1,13 @@
+# Legal/privacy truth and centered Friends QR — pre-commit record
+
+The owner requested a legal audit, confirmed MOVO is a product of NasrinAI, and requested a centered Friends QR scanner. Implementation corrects canonical core disclosures, public/in-app parity, current revision acceptance, paired acceptance merge, targeted device AI withdrawal and signed-in deletion availability independent of sync. Clear records now describes the actual limited reset and preserves typed DELETE. Setup includes an adult self-declaration and acknowledges Privacy separately from optional AI consent.
+
+Friends scanner is width:min(100%,320px), square and centered, with centered video cropping and automatic profile-QR margins. Camera/photo processing and invite validation are unchanged. Independent reviewer supplied this CSS-only change and the technical privacy/code findings. Root reviewed the diff.
+
+Audit report: docs/audits/2026-11-19-legal-privacy-release-audit.md. Red release gaps remain explicit: incomplete offline encryption and unbounded/orphanable pending purchase-token jobs. This pass does not change accounting, encrypt/migrate customer records, delete customer data or claim worldwide compliance. Current brand/operator confirmation does not establish a registered company identity.
+
+Initial focused tests 61 passed. First full run exposed obsolete disclosure contracts and a confirmation test hitting the underlying row; updated those tests to validate current truthful content and the actual dialog action. Full verification and rendered previews are in progress. Documentation exists before committing. No main/production/store or secret changes.
+
+Independent review corrected rights and compatibility issues: signed-in users can delete the account from the revision gate without accepting, and the legacy date is retained while a separate legalAcceptedRevision stores the new revision. Date, revision and timestamp merge together.
+
+Final local verification passed251 suites /1,626 tests and strict production build, with229-resource offline shell. Two legacy setup fixtures were updated to assert separate date/revision fields. Thirteen Chromium checks passed: centered square scanner and overlay at320/390/430/768/1280px in light/dark, centered profile QR, privacy and sync-off Settings rendering. Synthetic camera/profile only. Final review found no remaining material compatibility issue after keeping the legacy date plus separate revision and allowing signed-in deletion from the agreement gate. No Claude runtime was available; an independent reviewer reviewed the code. Exact-head hosted CI/preview remains to be checked.

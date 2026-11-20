@@ -3,18 +3,20 @@
  *
  * Only curated names map to a domain; a domain is never derived from what the person typed. The merchant text is
  * matched on this device (whole words at the start, case-insensitive), and only the curated domain is sent to the
- * Google S2 favicon endpoint only when per-provider legal/icon rights review is recorded.
- * A historical owner preference alone is not permission to use the remote artwork.
+ * Google S2 favicon endpoint, with no referrer, amount or account detail. Owner-approved on 2026-11-01 for
+ * identification only (see docs/legal/THIRD_PARTY_BRANDS_DYNAMIC_FAVICONS_AND_SUBSCRIPTIONS.md); set
+ * reviewStatus: 'BLOCKED' on an entry to stop its remote icon.
  */
-import { APPROVED_STATUSES } from './institutionFavicons';
+import { APPROVED_STATUSES, OWNER_APPROVAL } from './institutionFavicons';
 import { institutionLogoUrl } from './institutions';
 import { SUBSCRIPTION_APP_FAVICONS } from './subscriptionAppFavicons';
 
 export const MERCHANT_FAVICONS = {
   // Food and delivery
   Grab: { domain: 'grab.com' }, 'GrabFood': { domain: 'grab.com' }, Foodpanda: { domain: 'foodpanda.ph' },
-  Jollibee: { domain: 'jollibee.com.ph' }, "McDonald's": { domain: 'mcdonalds.com.ph' }, McDonalds: { domain: 'mcdonalds.com.ph' },
-  Starbucks: { domain: 'starbucks.ph' }, 'Tim Hortons': { domain: 'timhortons.com' }, 'Coffee Bean & Tea Leaf': { domain: 'coffeebean.com' }, KFC: { domain: 'kfc.com.ph' }, Chowking: { domain: 'chowking.com' },
+  // Where a brand's Philippine site only publishes a tiny icon, its own main site is used so the logo is sharp.
+  Jollibee: { domain: 'jollibee.com' }, "McDonald's": { domain: 'mcdonalds.com' }, McDonalds: { domain: 'mcdonalds.com' }, McDo: { domain: 'mcdonalds.com' },
+  Starbucks: { domain: 'starbucks.ph' }, 'Tim Hortons': { domain: 'timhortons.com' }, 'Coffee Bean & Tea Leaf': { domain: 'coffeebean.com' }, KFC: { domain: 'kfc.com' }, Chowking: { domain: 'chowking.com' },
   'Mang Inasal': { domain: 'manginasal.com' }, Greenwich: { domain: 'greenwich.com.ph' },
   // Shopping and groceries
   'Watsons': { domain: 'watsons.com.ph' }, 'Landers': { domain: 'landers.ph' }, 'SM Advantage': { domain: 'smadvantage.com' },
@@ -23,7 +25,7 @@ export const MERCHANT_FAVICONS = {
   'MR DIY': { domain: 'mrdiy.com' }, 'MR. DIY': { domain: 'mrdiy.com' }, 'MR.DIY': { domain: 'mrdiy.com' },
   Uniqlo: { domain: 'uniqlo.com' }, IKEA: { domain: 'ikea.com' }, Amazon: { domain: 'amazon.com' }, Apple: { domain: 'apple.com' },
   // Bills and utilities
-  Meralco: { domain: 'meralco.com.ph' }, Globe: { domain: 'globe.com.ph' }, Smart: { domain: 'smart.com.ph' },
+  Meralco: { domain: 'www.meralco.com.ph' }, Globe: { domain: 'globe.com.ph' }, Smart: { domain: 'smart.com.ph' },
   PLDT: { domain: 'pldthome.com' }, Converge: { domain: 'convergeict.com' }, Maynilad: { domain: 'mayniladwater.com.ph' },
   'Manila Water': { domain: 'manilawater.com' },
   // Transport, fuel and travel
@@ -45,11 +47,12 @@ function match(text, keys) {
   return hit ? hit[1] : null;
 }
 
-const url = (domain, size) => `${ENDPOINT}?${new URLSearchParams({ domain, sz: String([16, 32, 48, 64, 128].includes(size) ? size : 64) })}`;
-const approved = (entry) => APPROVED_STATUSES.includes(entry?.reviewStatus);
+// 128 px by default: rows show logos at about 44 px, which needs up to 132 px on a 3x phone screen.
+const url = (domain, size) => `${ENDPOINT}?${new URLSearchParams({ domain, sz: String([16, 32, 48, 64, 128].includes(size) ? size : 128) })}`;
+const approved = (entry) => APPROVED_STATUSES.includes(entry.reviewStatus || OWNER_APPROVAL);
 
 /** Logo URL for a transaction's merchant (curated merchants, subscriptions, then banks/e-wallets), or ''. */
-export function merchantLogoUrl(merchant, { size = 64 } = {}) {
+export function merchantLogoUrl(merchant, { size = 128 } = {}) {
   const m = match(merchant, KEYS);
   if (m && approved(MERCHANT_FAVICONS[m])) return url(MERCHANT_FAVICONS[m].domain, size);
   const s = match(merchant, SUBS);

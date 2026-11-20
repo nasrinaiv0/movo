@@ -270,32 +270,34 @@ export default function CryptoMarket({ c }) {
         <span><small>QUOTE CURRENCY</small><strong>{quote}</strong></span>
         <p>Latest provider market data. Prices may be delayed; they are not executable trading quotes.</p>
       </section>
-      <section className="crypto-market-section">
-        {favoriteCoins.length ? <section className="crypto-watchlist card">
-          <div className="crypto-section-heading"><div><small>YOUR TRACKED ASSETS</small><h2>Watchlist</h2></div><span className="crypto-live-label"><i /> Auto-refresh · 3 min</span></div>
-          <div className="crypto-watchlist-items">{favoriteCoins.map((coin) => <button type="button" className="crypto-watch-item" key={coin.id} onClick={() => setSelected(coin)}>
-            <CryptoLogo coin={coin} size={34} />
-            <span className="crypto-watch-meta"><strong>{coin.symbol}</strong><small>{money(coin.price, quote)}</small></span>
-            <span className={"crypto-watch-change " + (coin.change24h > 0 ? 'up' : coin.change24h < 0 ? 'down' : 'flat')}>{changeText(coin.change24h)}</span>
-          </button>)}</div>
-        </section> : <p className="crypto-empty">Star a coin to keep it here.</p>}
-      </section>
-      <section className="crypto-market-section">
-        <div className="crypto-section-heading"><div><small>MARKET DISCOVERY</small><h2>Top cryptocurrencies</h2></div><span>{updatedAt ? stamp(updatedAt) : '—'}</span></div>
-        <label className="crypto-search"><Icon name="search" size={17} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or symbol" aria-label="Search cryptocurrencies" /></label>
-        <div className="crypto-sort" aria-label="Sort cryptocurrency market">{[['rank','Market cap'],['change','24h change'],['price','Price']].map(([key,label]) => <button type="button" key={key} aria-pressed={sort === key} className={sort === key ? 'active' : ''} onClick={() => setSort(key)}>{label}</button>)}</div>
-        {loading ? <div className="card pad"><Skeleton lines={5} label="Loading crypto market…" /></div> : error && !coins.length ? <div className="card crypto-error" role="status"><Icon name="info" size={20} /><p>{error}</p></div> : <div className="crypto-list">
-          {visible.map((coin) => <article className="card crypto-row" key={coin.id}>
-            <button type="button" className="crypto-row-main" onClick={() => setSelected(coin)}>
-              <span className="crypto-rank">{coin.rank || '—'}</span><CryptoLogo coin={coin} /><span className="crypto-coin-name"><strong>{coin.name}</strong><small>{coin.symbol}</small></span>
-              <span className="crypto-price"><strong>{money(coin.price, quote)}</strong><small className={coin.change24h >= 0 ? 'up' : 'down'}>{changeText(coin.change24h)}</small></span>
-            </button>
-            <button type="button" className="crypto-star" onClick={() => toggleWatch(coin.id)} aria-label={watchlist.includes(coin.id) ? `Remove ${coin.name} from watchlist` : `Add ${coin.name} to watchlist`}><Icon name={watchlist.includes(coin.id) ? 'star-filled' : 'star'} size={17} /></button>
-          </article>)}
-          {!visible.length && <p className="crypto-empty">No cryptocurrencies match your search.</p>}
-        </div>}
-        {error && coins.length > 0 && <p className="crypto-warning" role="status">{error}</p>}
-      </section>
+      <div className="adaptive-crypto-market">
+        <section className="crypto-market-section">
+          {favoriteCoins.length ? <section className="crypto-watchlist card">
+            <div className="crypto-section-heading"><div><small>YOUR TRACKED ASSETS</small><h2>Watchlist</h2></div><span className="crypto-live-label"><i /> Auto-refresh · 3 min</span></div>
+            <div className="crypto-watchlist-items">{favoriteCoins.map((coin) => <button type="button" className="crypto-watch-item" key={coin.id} onClick={() => setSelected(coin)}>
+              <CryptoLogo coin={coin} size={34} />
+              <span className="crypto-watch-meta"><strong>{coin.symbol}</strong><small>{money(coin.price, quote)}</small></span>
+              <span className={"crypto-watch-change " + (coin.change24h > 0 ? 'up' : coin.change24h < 0 ? 'down' : 'flat')}>{changeText(coin.change24h)}</span>
+            </button>)}</div>
+          </section> : <p className="crypto-empty">Star a coin to keep it here.</p>}
+        </section>
+        <section className="crypto-market-section">
+          <div className="crypto-section-heading"><div><small>MARKET DISCOVERY</small><h2>Top cryptocurrencies</h2></div><span>{updatedAt ? stamp(updatedAt) : '—'}</span></div>
+          <label className="crypto-search"><Icon name="search" size={17} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name or symbol" aria-label="Search cryptocurrencies" /></label>
+          <div className="crypto-sort" aria-label="Sort cryptocurrency market">{[['rank','Market cap'],['change','24h change'],['price','Price']].map(([key,label]) => <button type="button" key={key} aria-pressed={sort === key} className={sort === key ? 'active' : ''} onClick={() => setSort(key)}>{label}</button>)}</div>
+          {loading ? <div className="card pad"><Skeleton lines={5} label="Loading crypto market…" /></div> : error && !coins.length ? <div className="card crypto-error" role="status"><Icon name="info" size={20} /><p>{error}</p></div> : <div className="crypto-list">
+            {visible.map((coin) => <article className="card crypto-row" key={coin.id}>
+              <button type="button" className="crypto-row-main" onClick={() => setSelected(coin)}>
+                <span className="crypto-rank">{coin.rank || '—'}</span><CryptoLogo coin={coin} /><span className="crypto-coin-name"><strong>{coin.name}</strong><small>{coin.symbol}</small></span>
+                <span className="crypto-price"><strong>{money(coin.price, quote)}</strong><small className={coin.change24h >= 0 ? 'up' : 'down'}>{changeText(coin.change24h)}</small></span>
+              </button>
+              <button type="button" className="crypto-star" onClick={() => toggleWatch(coin.id)} aria-label={watchlist.includes(coin.id) ? `Remove ${coin.name} from watchlist` : `Add ${coin.name} to watchlist`}><Icon name={watchlist.includes(coin.id) ? 'star-filled' : 'star'} size={17} /></button>
+            </article>)}
+            {!visible.length && <p className="crypto-empty">No cryptocurrencies match your search.</p>}
+          </div>}
+          {error && coins.length > 0 && <p className="crypto-warning" role="status">{error}</p>}
+        </section>
+      </div>
       <section className="crypto-provider-note card"><strong>Market data by CoinBeacon · Binance fallback</strong><p>Prices are delayed reference data, not live exchange quotes. Market data updates are subject to provider refresh intervals and free API limits. MOVO does not trade or custody cryptocurrency.</p><small>Market-cap rankings and coin details by CoinMarketCap.</small><small>Last provider update: {updatedAt ? stamp(updatedAt) : 'Not available'}</small></section>
       </>}
     </>}

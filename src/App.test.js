@@ -299,9 +299,21 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('.menu-hero')).not.toBeNull();
   });
 
-  test('Home has a pinned scenery header by default; Pro+ can pick a zodiac header in Appearance', () => {
-    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
+  test('Home has no header photo by default; a free scenery can be turned on, and Pro+ can pick a zodiac header', () => {
+    // Owner, 2026-11-16: the banner is off until someone turns it on.
     const header = () => container.querySelector('.home-hero-block');
+    expect(header()).toBeNull();
+    expect(container.querySelector('.home-header').className).not.toContain('home-hero');
+    const openHeaderPicker = () => {
+      openProfile(container);
+      clickButton(container, 'Settings');
+      act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    };
+    openHeaderPicker();
+    act(() => Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Default').click());
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('auto');
+    nav(container, 'Home');
+    // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
     expect(header().className).toContain('hero-scenery');
     // Pro+ gets the platinum glowing edge (Pro gets gold; Free gets none).
     expect(header().className).toContain('hero-tier-plus');
@@ -309,9 +321,7 @@ describe('MOVO finance frontend', () => {
     expect(header().querySelector('.home-header')).not.toBeNull();
     expect(header().querySelector('.balance-card')).not.toBeNull();
     expect(container.querySelectorAll('.balance-card').length).toBe(1);
-    openProfile(container);
-    clickButton(container, 'Settings');
-    act(() => Array.from(container.querySelectorAll('.menu-row')).find(r => r.querySelector('strong')?.textContent === 'Theme').click());
+    openHeaderPicker();
     const tab = Array.from(container.querySelectorAll('.hero-tabs [role="tab"]')).find(b => b.textContent === 'Zodiac');
     act(() => tab.click());
     const leo = Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Leo');
@@ -567,8 +577,11 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     expect(container.querySelector('h1').textContent).toBe('Profile');
     expect(container.textContent).toContain('Data & Sync');
-    expect(container.textContent).toContain('Manually entered records persist across reloads in this browser');
-    expect(container.textContent).toContain('not synced to other devices or encrypted by MOVO');
+    // The local-storage disclosure stays explicit: browser only, not synced, not encrypted by MOVO.
+    expect(container.textContent).toContain('Kept in this browser. Not synced or encrypted by MOVO.');
+    // The overview names its month, and every Settings row says what is inside it.
+    expect(container.querySelector('.profile-overview .po-head small').textContent).toMatch(/\d{4}/);
+    expect(container.textContent).toContain('Alerts and reminders');
     clickButton(container, 'Settings');
     expect(container.querySelector('h1').textContent).toBe('Settings');
     clickButton(container, 'Back');
@@ -591,16 +604,16 @@ describe('MOVO finance frontend', () => {
     openProfile(container);
     clickButton(container, 'Terms of Service');
     expect(container.querySelector('h1').textContent).toBe('Terms of Service');
-    expect(container.textContent).toContain('Effective date: November 11, 2026');
+    expect(container.textContent).toContain('Effective date: November 19, 2026');
     expect(container.textContent).toContain('Custom card-sticker artwork is cropped in your browser');
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(container.textContent).toContain('Effective date: November 16, 2026');
+    expect(container.textContent).toContain('Effective date: November 19, 2026');
     expect(container.textContent).not.toContain('not yet been published');
-    expect(container.textContent).toContain('Eligible items moved to Archive can be restored for up to 90 days');
+    expect(container.textContent).toContain('removal is not guaranteed on day 90');
     expect(container.textContent).toContain('Data Privacy Act of 2012');
-    expect(container.textContent).toContain('The MOVO service team operates MOVO');
-    expect(container.textContent).toContain('Custom card-sticker artwork is processed in your browser and saved locally');
+    expect(container.textContent).toContain('MOVO (Money Organizer & Visual Outflow) is a product of NasrinAI');
+    expect(container.textContent).toContain('custom stickers, including image data, may also be saved in account preferences');
     clickButton(container, 'Back');
     expect(container.querySelector('h1').textContent).toBe('Profile');
   });
@@ -694,23 +707,20 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('NasrinAI Update');
   });
 
-  test('Clear All Data requires typing DELETE, awaits cleanup, then resets preferences and removes local records', async () => {
+  test('Clear records requires typing DELETE, then resets preferences and removes local records', () => {
     openProfile(container);
     clickButton(container, 'Settings');
-    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear All Data');
+    const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear records');
     expect(clearRow).toBeTruthy();
     act(() => clearRow.click());
     const dialog = container.querySelector('[role="dialog"]');
     expect(dialog).toBeTruthy();
-    expect(dialog.textContent).toContain('Permanently deletes all MOVO data on this device');
+    expect(dialog.textContent).toContain('resets supported MOVO records and preferences on this device');
+    expect(dialog.textContent).toContain('Other cloud records');
+    expect(dialog.textContent).toContain('Your sign-in account remains');
     expect(container.querySelector('button.danger-button').disabled).toBe(true);
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
-    await act(async () => {
-      const button = [...container.querySelectorAll('button')]
-        .find(item => item.textContent.trim() === 'Clear all data');
-      expect(button).toBeDefined();
-      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    });
+    act(() => dialog.querySelector('button.danger-button').click());
     expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
     expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');
@@ -833,6 +843,11 @@ describe('MOVO finance frontend', () => {
     act(() => helpRow.click());
     expect(container.querySelector('h1').textContent).toBe('Help Center');
     expect(container.textContent).toContain('does not move money between banks');
+    // Aries, the welcoming mascot, heads the page; receipt scanning and automatic logging are explained.
+    expect(container.querySelector('.help-aries .aries-mascot')).not.toBeNull();
+    expect(container.textContent).toContain('Only after you agree for that receipt');
+    expect(container.textContent).toContain('it never opens your bank or wallet apps');
+    expect(Array.from(container.querySelectorAll('button')).some(b => b.textContent.trim() === 'Open the MOVO guide')).toBe(true);
     clickButton(container, 'Privacy Policy');
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
   });
@@ -968,8 +983,13 @@ describe('MOVO finance frontend', () => {
     nav(container, 'Menu');
     expect(container.querySelector('h1').textContent).toBe('Menu');
     const tiles = Array.from(container.querySelectorAll('.menu-tile strong')).map(n => n.textContent);
-    expect(tiles).toEqual(['Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
+    expect(tiles).toEqual(['Friends', 'Subscriptions', 'Plans', 'Cashback', 'Scheduled', 'Financial planning', 'Exchange rates', 'Crypto market', 'Stocks market', 'Archive', 'Limits']);
     expect(tiles).not.toContain('Profile');
+    act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.querySelector('strong')?.textContent === 'Friends').click());
+    expect(container.querySelector('h1').textContent).toBe('Friends');
+    expect(container.querySelector('.friends-page')).not.toBeNull();
+    clickButton(container, 'Back');
+    expect(container.querySelector('h1').textContent).toBe('Menu');
     act(() => Array.from(container.querySelectorAll('.menu-tile')).find(tile => tile.textContent.includes('Subscriptions')).click());
     expect(container.querySelector('h1').textContent).toBe('Subscriptions');
     clickButton(container, 'Add subscription');
@@ -1018,14 +1038,14 @@ describe('MOVO finance frontend', () => {
     expect(Array.from(container.querySelectorAll('[data-chip] .red-dot'))).toHaveLength(0);
   });
 
-test('in local mode a payment link opens MOVO plans once and is cleared, instead of re-opening on every render', async () => {
+test('a verified local plan can review a payment link without a second upgrade prompt', async () => {
     global.__movoPauseLocalPlans = true;
     try {
       await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
       window.location.hash = '#log?src=applepay&k=untrusted&amount=109&merchant=Gadc&card=BPI%20Visa';
       act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
-      expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).toBeNull();
-      expect(document.querySelectorAll('[role="dialog"][aria-label="Offline feature access"]')).toHaveLength(1);
+      expect(container.querySelector('[role="alertdialog"][aria-label="Log this payment?"]')).not.toBeNull();
+      expect(document.querySelectorAll('[role="dialog"][aria-label="Offline feature access"]')).toHaveLength(0);
       expect(window.location.hash).toBe('');
     } finally { global.__movoPauseLocalPlans = false; }
   });
@@ -1144,7 +1164,7 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
 
 
 describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 2026-11-11)', () => {
-  const { LEGAL_VERSION } = require('./lib/legalVersion');
+  const { LEGAL_VERSION, LEGAL_ACCEPTANCE_DATE } = require('./lib/legalVersion');
   let container; let root;
   const prefs = () => JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
   const start = async (stored) => {
@@ -1180,7 +1200,8 @@ describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 
     expect(accept.disabled).toBe(false);
     act(() => accept.click());
     expect(agreement()).toBeNull();
-    expect(prefs().legalAccepted).toBe(LEGAL_VERSION);
+    expect(prefs().legalAccepted).toBe(LEGAL_ACCEPTANCE_DATE);
+    expect(prefs().legalAcceptedRevision).toBe(LEGAL_VERSION);
     expect(Number.isNaN(Date.parse(prefs().legalAcceptedAt))).toBe(false);
     expect(navButtons().some(b => b.disabled)).toBe(false);
     act(() => navButtons().find(b => b.getAttribute('aria-label') === 'Wallet').click());
@@ -1211,7 +1232,7 @@ describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 
     await start({ legalAccepted: '2026-11-06' });
     expect(agreement()).not.toBeNull();
     act(() => root.unmount()); container.remove();
-    await start({ legalAccepted: LEGAL_VERSION });
+    await start({ legalAccepted: LEGAL_ACCEPTANCE_DATE, legalAcceptedRevision: LEGAL_VERSION });
     expect(agreement()).toBeNull();
     expect(navButtons().some(b => b.disabled)).toBe(false);
   });
@@ -1248,10 +1269,15 @@ describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
 
   test('an open sheet closes first, and the screen stays', () => {
     nav(container, 'Wallet');
+    const trigger = container.querySelector('button[aria-label="New account"]');
+    trigger.focus();
     clickButton(container, 'New account');
-    expect(container.querySelector('.sheet-backdrop')).not.toBeNull();
+    const dialog = container.querySelector('.movo-app > .sheet-backdrop [role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog.contains(document.activeElement)).toBe(true);
     swipe(4, 300);
     expect(container.querySelector('.sheet-backdrop')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
     expect(active()).toBe('Wallet');
   });
 });
@@ -1266,8 +1292,17 @@ describe('Home header block (owner, 2026-11-12)', () => {
   };
   afterEach(() => { act(() => root.unmount()); container.remove(); window.localStorage.clear(); });
 
+  test('an earlier default header photo becomes None once; a photo someone chose is kept', () => {
+    start({ homeHero: 'auto' });
+    expect(container.querySelector('.home-hero-block')).toBeNull();
+    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('plain');
+    act(() => root.unmount()); container.remove();
+    start({ homeHero: 'scenery:wp-w116' });
+    expect(container.querySelector('.home-hero-block')).not.toBeNull();
+  });
+
   test('when another box comes first, the header stands alone with the background and Total balance stays in the list', () => {
-    start({ layouts: { home: { order: ['summary', 'balance'] } } });
+    start({ homeHero: 'auto', homeHeroDefaultNone: true, layouts: { home: { order: ['summary', 'balance'] } } });
     expect(container.querySelector('.home-hero-block')).toBeNull();
     expect(container.querySelector('.home-header').className).toContain('home-hero');
     expect(container.querySelectorAll('.balance-card').length).toBe(1);

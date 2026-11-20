@@ -128,43 +128,45 @@ export default function Transactions({ c }) {
     <div className="chip-bar tx-chip-bar"><Chips label={tr('Filter transactions by type')} items={FILTERS} value={txFilter} onChange={setTxFilter} />{cycleFilter}</div>
     {c.search && <p className="search-note">{tr('Showing results for “{query}”', { query: c.search })} <button type="button" className="link-button" onClick={() => c.setSearch('')}>{tr('Clear')}</button></p>}
 
-    {txFilter === 'All' && <>
-      <section className="card total-card billing-cycle-summary" aria-label={tr('Total spent')}>
-        <div className="billing-cycle-summary-head">
-          <div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
-          <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
-          {show && selectedCycle !== 'all' && (
-            <div className={'billing-cycle-summary-compare' + (previousSpendTrend ? ' ' + previousSpendTrend.tone : '')}
-              aria-label={previousSpendTrend ? (previousSpendTrend.direction + ' ' + percentLabel(previousSpendTrend.percent) + ' ' + tr('vs previous cycle')) : tr('No previous cycle')}>
-              {previousSpendTrend ? <><Icon name={previousSpendTrend.direction === 'up' ? 'arrowUp' : previousSpendTrend.direction === 'down' ? 'arrowDown' : 'minus'} size={12}/><strong>{percentLabel(previousSpendTrend.percent)}</strong><span>{tr('vs previous cycle')}</span></> : <span>{tr('No previous cycle')}</span>}
-            </div>
-          )}
-        </div>
-        <BillingCycleChart cycles={chartCycles} visible={show} title={chartTitle} selectedKey={chartSelected}/>
-      </section>
-      <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
-        {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
-          <button type="button" className={`card stat-card is-link tint-${tone}${txFilter === label ? ' is-active' : ''}`} key={label} aria-pressed={txFilter === label} aria-label={tr('Show {label}', { label: tr(label) })} onClick={() => setTxFilter(label)}><div className="stat-head"><span className={`stat-icon tone-${tone}`}><Icon name={icon} size={15} strokeWidth={2.2} /></span><span>{tr(label)}</span></div>
-            <strong><Money value={value} show={show} /></strong>{isCurrent && <Trend value={d} />}</button>)}
-      </section>
-    </>}
+    <div className="adaptive-transaction-summary">
+      {txFilter === 'All' && <>
+        <section className="card total-card billing-cycle-summary" aria-label={tr('Total spent')}>
+          <div className="billing-cycle-summary-head">
+            <div className="balance-label">{tr('Total Spent')} <button type="button" className="plain-icon" aria-label={show ? tr('Hide balances') : tr('Show balances')} onClick={() => setShow(!show)}><Icon name="eye" size={17} /></button></div>
+            <div className="balance-amount md"><Money value={monthStats.expenses} show={show} /></div>
+            {show && selectedCycle !== 'all' && (
+              <div className={'billing-cycle-summary-compare' + (previousSpendTrend ? ' ' + previousSpendTrend.tone : '')}
+                aria-label={previousSpendTrend ? (previousSpendTrend.direction + ' ' + percentLabel(previousSpendTrend.percent) + ' ' + tr('vs previous cycle')) : tr('No previous cycle')}>
+                {previousSpendTrend ? <><Icon name={previousSpendTrend.direction === 'up' ? 'arrowUp' : previousSpendTrend.direction === 'down' ? 'arrowDown' : 'minus'} size={12}/><strong>{percentLabel(previousSpendTrend.percent)}</strong><span>{tr('vs previous cycle')}</span></> : <span>{tr('No previous cycle')}</span>}
+              </div>
+            )}
+          </div>
+          <BillingCycleChart cycles={chartCycles} visible={show} title={chartTitle} selectedKey={chartSelected}/>
+        </section>
+        <section className="stat-grid" aria-label={tr('Income, expenses and transfers')}>
+          {[['Income', 'arrowDown', 'green', monthStats.income, deltas.income], ['Expenses', 'arrowUp', 'red', monthStats.expenses, deltas.expenses], ['Transfers', 'transfer', 'blue', monthStats.transfers, deltas.transfers]].map(([label, icon, tone, value, d]) =>
+            <button type="button" className={`card stat-card is-link tint-${tone}${txFilter === label ? ' is-active' : ''}`} key={label} aria-pressed={txFilter === label} aria-label={tr('Show {label}', { label: tr(label) })} onClick={() => setTxFilter(label)}><div className="stat-head"><span className={`stat-icon tone-${tone}`}><Icon name={icon} size={15} strokeWidth={2.2} /></span><span>{tr(label)}</span></div>
+              <strong><Money value={value} show={show} /></strong>{isCurrent && <Trend value={d} />}</button>)}
+        </section>
+      </>}
 
-    {txFilter === 'Expenses' && <section className="card breakdown-card" aria-label={tr('Expenses breakdown')}>
-      <div className="breakdown-head"><h2>{tr('Expenses Breakdown')}</h2></div>
-      {breakdown.data.length ? <div className="breakdown-body"><Donut data={breakdown.data} total={breakdown.total} caption={tr('Total Spent')} show={show} size={124} /><Legend data={breakdown.data} /></div> : <p className="empty">{tr('No expenses in this month.')}</p>}
-    </section>}
+      {txFilter === 'Expenses' && <section className="card breakdown-card" aria-label={tr('Expenses breakdown')}>
+        <div className="breakdown-head"><h2>{tr('Expenses Breakdown')}</h2></div>
+        {breakdown.data.length ? <div className="breakdown-body"><Donut data={breakdown.data} total={breakdown.total} caption={tr('Total Spent')} show={show} size={124} /><Legend data={breakdown.data} /></div> : <p className="empty">{tr('No expenses in this month.')}</p>}
+      </section>}
 
-    {txFilter === 'Transfers' && <section className="card transfer-card" aria-label={tr('Total transfers')}>
-      <span className="tile tone-blue big"><Icon name="transfer" size={26} /></span>
-      <div><small>{tr('Total Transfers')}</small><div className="balance-amount md">{shown(show, money(monthStats.transfers))}</div><small>{monthStats.transferCount} transactions</small></div>
-      <Bars values={monthStats.bars.slice(-6)} />
-    </section>}
+      {txFilter === 'Transfers' && <section className="card transfer-card" aria-label={tr('Total transfers')}>
+        <span className="tile tone-blue big"><Icon name="transfer" size={26} /></span>
+        <div><small>{tr('Total Transfers')}</small><div className="balance-amount md">{shown(show, money(monthStats.transfers))}</div><small>{monthStats.transferCount} transactions</small></div>
+        <Bars values={monthStats.bars.slice(-6)} />
+      </section>}
 
-    {txFilter === 'Income' && <section className="card transfer-card income" aria-label={tr('Total income')}>
-      <span className="tile tone-green big"><Icon name="arrowDown" size={26} /></span>
-      <div><small>{tr('Total Income')}</small><div className="balance-amount md">{shown(show, money(monthStats.income))}</div><small>{monthStats.incomeCount} transactions</small></div>
-    </section>}
+      {txFilter === 'Income' && <section className="card transfer-card income" aria-label={tr('Total income')}>
+        <span className="tile tone-green big"><Icon name="arrowDown" size={26} /></span>
+        <div><small>{tr('Total Income')}</small><div className="balance-amount md">{shown(show, money(monthStats.income))}</div><small>{monthStats.incomeCount} transactions</small></div>
+      </section>}
 
+    </div>
     {txFilter !== 'All' && <div className="tx-sort-bar" style={{ '--tx-sort-count': sorts.length }}>
       <Chips label={tr('Sort transactions')} items={sorts} value={sort} onChange={setSortKey} />
     </div>}

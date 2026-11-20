@@ -1,7 +1,9 @@
 import React, { useRef, useState } from 'react';
+import ProfileAvatar from '../components/ProfileAvatar';
+import { cropProfilePhoto } from '../lib/useProfilePhoto';
 import Icon from '../components/Icon';
 import { SubHeader, SectionTitle, Trend } from '../components/ui';
-import { money, shown } from '../lib/format';
+import { money, shown, getFormatLocale } from '../lib/format';
 import { ThemePicker } from './Settings';
 import { t as tr } from '../lib/i18n';
 import { maskEmail } from '../lib/emailPrivacy';
@@ -39,12 +41,26 @@ export default function Profile({ c }) {
   const sum = (arr) => totalBalance(arr, c.toBase || (v => v), c.prefs?.creditCardPayments || {}).total;
   const open = (arr) => arr.filter(a => !a.is_archived);
   const rows = [['Bank Accounts', 'bank', accountsByType.bank, 'Bank Accounts', 'account'], ['Cards', 'card', accountsByType.card, 'Cards', 'account'], ['E-Wallets', 'wallet', accountsByType.e_wallet, 'E-Wallets', 'account']];
-  const menu = [['gearSolid', 'Financial Settings', 'Settings'], ['bell', 'Notifications', 'NotificationSettings'], ['shield', 'Security & Privacy', 'Settings'], ['sliders', 'Preferences', 'Appearance']];
+  const menu = [
+    ['gearSolid', 'gray', 'Financial Settings', 'Settings', 'All MOVO settings'],
+    ['bell', 'red', 'Notifications', 'NotificationSettings', 'Alerts and reminders'],
+    ['shield', 'blue', 'Security & Privacy', 'Settings', 'App lock and your data'],
+    ['sliders', 'purple', 'Preferences', 'Appearance', 'Theme, text and layout'],
+  ];
+  // The overview follows the month chosen on Home; a trend is shown only when it says something (no "999+%" against an
+  // almost-empty last month).
+  const monthName = (() => {
+    const [y, m] = String(c.homeMonthKey || '').split('-').map(Number);
+    if (!y || !m) return '';
+    try { return new Date(y, m - 1, 15).toLocaleDateString(getFormatLocale(), { month: 'long', year: 'numeric' }); } catch { return ''; }
+  })();
+  const meaningful = (d) => Boolean(d && Number.isFinite(d.percent) && Math.abs(d.percent) < 999);
+  const ic = (icon, tone, size = 20) => <span className={`menu-icon pf-ic mt-${tone}`}><Icon name={icon} size={size} strokeWidth={1.9} /></span>;
   return <>
     <SubHeader title={tr('Profile')} onBack={() => (c.goBack || go)('Menu')} right={<button type="button" className="round-button" aria-label={tr('Settings')} onClick={() => go('Settings')}><Icon name="gearSolid" size={19} /></button>} />
     <div className="card profile-card-wrap">
       <button type="button" className="profile-card" onClick={() => go('EditProfile')} aria-label={tr('Edit profile')}>
-        <span className="avatar big">{c.prefs?.profilePhoto ? <img className="avatar-photo" src={c.prefs.profilePhoto} alt="" /> : user.initial}<i><Icon name="camera" size={13} /></i></span>
+        <ProfileAvatar user={user} size="big"><i><Icon name="camera" size={13} /></i></ProfileAvatar>
         <span className="profile-text"><strong>{user.name}</strong><small>{maskEmail(user.email)}</small>{(c.plan === 'pro' || c.plan === 'pro_plus') && <em className="plan-pill"><PlanBadge plan={c.plan} trial={c.entitlement?.source === 'trial'} size={18} label /></em>}</span>
         <span className="profile-edit-icon" aria-hidden="true"><Icon name="edit" size={17} /></span>
       </button>
@@ -63,54 +79,77 @@ export default function Profile({ c }) {
         <small>{tr('Code and QR')}</small>
       </button>
     </div>
-    <section className="stat-grid profile-finance-summary" aria-label={tr('Profile summary')}>
-      {[['Total Balance', 'chart', 'blue', stats.balance, deltas.balance], ['Total Income', 'arrowDown', 'green', stats.income, deltas.income], ['Total Expense', 'arrowUp', 'red', stats.expenses, deltas.expenses]].map(([label, icon, tone, value, d]) =>
-        <article className="card stat-card plain" key={label}><span className={`stat-icon big tone-${tone}`}><Icon name={icon} size={18} strokeWidth={2.2} /></span><small>{tr(label)}</small><strong>{shown(show, money(value, c.base))}</strong><Trend value={d} size={11} /></article>)}
+    <section className="card profile-overview" aria-label={tr('Profile summary')}>
+      <div className="po-head"><strong>{tr('Overview')}</strong>{monthName && <small>{monthName}</small>}</div>
+      <div className="po-main">
+        <small>{tr('Total Balance')}</small>
+        <strong>{shown(show, money(stats.balance, c.base))}</strong>
+        {meaningful(deltas.balance) && <Trend value={deltas.balance} chip size={11} />}
+      </div>
+      <div className="po-split">
+        {[['Income', 'arrowDown', 'green', 'income', stats.income, deltas.income], ['Expenses', 'arrowUp', 'red', 'expense', stats.expenses, deltas.expenses]].map(([label, icon, tone, kind, value, d]) =>
+          <div className={`po-stat po-${kind}`} key={label}>
+            {ic(icon, tone, 16)}
+            <span className="po-text"><small>{tr(label)}</small><strong>{shown(show, money(value, c.base))}</strong></span>
+            {meaningful(d) && <Trend value={d} size={10} />}
+          </div>)}
+      </div>
     </section>
 
-    <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
-    <section className="card menu-card">
-      {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
-        <span className="menu-icon"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
-      </button>)}
-    </section>
-    <SectionTitle>{tr('Settings')}</SectionTitle>
-    <section className="card menu-card">
-      {menu.map(([icon, label, view]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}><span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(label)}</strong></span><Icon name="chevron" size={16} /></button>)}
-    </section>
+    <div className="adaptive-settings-grid">
+      <div>
+        <SectionTitle action={tr('See All')} onAction={() => go('Wallet')}>{tr('Accounts')}</SectionTitle>
+        <section className="card menu-card">
+          {rows.map(([label, icon, list, filter]) => <button type="button" key={label} className="menu-row" onClick={() => { c.setWalletFilter(filter); go('Wallet'); }}>
+            {ic(icon, { bank: 'blue', card: 'purple', wallet: 'teal' }[icon])}<span className="menu-main"><strong>{tr(label)}</strong><small>{open(list).length === 1 ? tr('1 account') : tr('{n} accounts', { n: open(list).length })}</small></span><b>{shown(show, money(sum(list), c.base))}</b><Icon name="chevron" size={16} />
+          </button>)}
+        </section>
+      </div>
+      <div>
+        <SectionTitle>{tr('Settings')}</SectionTitle>
+        <section className="card menu-card">
+          {menu.map(([icon, tone, label, view, sub]) => <button type="button" key={label} className="menu-row" onClick={() => go(view)}>{ic(icon, tone)}<span className="menu-main"><strong>{tr(label)}</strong><small>{tr(sub)}</small></span><Icon name="chevron" size={16} /></button>)}
+        </section>
 
-    <SectionTitle action={tr('See All')} onAction={() => go('Appearance')}>{tr('App Appearance')}</SectionTitle>
-    <ThemePicker c={c} compact />
+      </div>
+      <div>
+        <SectionTitle action={tr('See All')} onAction={() => go('Appearance')}>{tr('App Appearance')}</SectionTitle>
+        <ThemePicker c={c} compact />
 
-    <SectionTitle>{tr('Data & Sync')}</SectionTitle>
-    <section className="card menu-card">
-      <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
-        <span className="menu-icon bare"><Icon name="cloud" size={20} /></span><span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
-      </button>
-      <div className="menu-row"><span className="menu-icon bare"><Icon name="database" size={20} /></span><span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Manually entered records persist across reloads in this browser; they are not synced to other devices or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
-    </section>
-
-    <SectionTitle>{tr('About')}</SectionTitle>
-    <section className="card menu-card">
-      {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => {
-        const action = title === 'Terms of Service' ? () => c.openLegal?.('TermsOfService') : title === 'Privacy Policy' ? () => c.openLegal?.('PrivacyPolicy') : null;
-        const Tag = action ? 'button' : 'div';
-        return <Tag key={title} type={action ? 'button' : undefined} className="menu-row" onClick={action}>
-          <span className="menu-icon bare"><Icon name={icon} size={20} /></span><span className="menu-main"><strong>{tr(title)}</strong>{sub && <small>{tr(sub)}</small>}</span>{action && <Icon name="chevron" size={16} />}
-        </Tag>;
-      })}
-    </section>
-    <section className="card menu-card gap">
-      <button type="button" className="menu-row" onClick={exportCsv}><span className="menu-icon bare"><Icon name="download" size={20} /></span><span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
-      {session && <button type="button" className="menu-row" onClick={revokeOtherDevices} disabled={revokingOtherSessions} aria-busy={revokingOtherSessions}>
-        <span className="menu-icon bare"><Icon name="shield" size={20} /></span>
-        <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
-        <Icon name="chevron" size={16} />
-      </button>}
-      {session ? <button type="button" className="menu-row danger" onClick={signOutNow}><span className="menu-icon bare"><Icon name="logout" size={20} /></span><span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
-        : null}
-    </section>
-    {referralOpen && <ReferralSheet session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
+      </div>
+      <div>
+        <SectionTitle>{tr('Data & Sync')}</SectionTitle>
+        <section className="card menu-card">
+          <button type="button" className="menu-row" onClick={() => c.cloudMode ? c.notify('Cloud sync is active for this signed-in account. Sign out to use local-only mode.') : go(session?.user ? 'Settings' : 'Sign in')}>
+            {ic('cloud', 'blue')}<span className="menu-main"><strong>{tr('Cloud Sync')}</strong><small>{c.cloudMode ? tr('Active for your signed-in account') : session?.user ? (c.syncState?.message || tr('Changes are kept on this device until safely reconciled.')) : tr('Sign in to use cloud storage')}</small></span><span className="pill tone-blue">{c.cloudMode ? tr('Active') : session?.user ? tr('Off') : tr('Sign in')}</span><Icon name="chevron" size={16} />
+          </button>
+          <div className="menu-row">{ic('database', 'gray')}<span className="menu-main"><strong>{tr('Local Storage')}</strong><small>{tr('Kept in this browser. Not synced or encrypted by MOVO.')}</small></span><span className="pill tone-gray">{tr('Automatic')}</span></div>
+        </section>
+      </div>
+      <div>
+        <SectionTitle>{tr('About')}</SectionTitle>
+        <section className="card menu-card">
+          {[['star', 'MOVO App', 'Version 1.0.0'], ['doc', 'Terms of Service'], ['shield', 'Privacy Policy']].map(([icon, title, sub]) => {
+            const action = title === 'Terms of Service' ? () => c.openLegal?.('TermsOfService') : title === 'Privacy Policy' ? () => c.openLegal?.('PrivacyPolicy') : null;
+            const Tag = action ? 'button' : 'div';
+            return <Tag key={title} type={action ? 'button' : undefined} className="menu-row" onClick={action}>
+              {ic(icon, 'gray')}<span className="menu-main"><strong>{tr(title)}</strong>{sub && <small>{tr(sub)}</small>}</span>{action && <Icon name="chevron" size={16} />}
+            </Tag>;
+          })}
+        </section>
+        <section className="card menu-card gap">
+          <button type="button" className="menu-row" onClick={exportCsv}>{ic('download', 'green')}<span className="menu-main"><strong>{tr('Export transactions (CSV)')}</strong></span><Icon name="chevron" size={16} /></button>
+          {session && <button type="button" className="menu-row" onClick={revokeOtherDevices} disabled={revokingOtherSessions} aria-busy={revokingOtherSessions}>
+            {ic('shield', 'orange')}
+            <span className="menu-main"><strong>{tr('Sign out of other devices')}</strong><small>{tr('Keep this device signed in')}</small></span>
+            <Icon name="chevron" size={16} />
+          </button>}
+          {session ? <button type="button" className="menu-row danger" onClick={signOutNow}>{ic('logout', 'red')}<span className="menu-main"><strong>{tr('Log out')}</strong></span></button>
+            : null}
+        </section>
+      </div>
+    </div>
+    {referralOpen && <ReferralSheet key={session?.user?.id || 'guest'} session={session} entitlement={c.entitlement} onPlanChanged={c.refreshEntitlement} onClose={() => setReferralOpen(false)} onSignIn={() => { setReferralOpen(false); go('Sign in'); }} notify={c.notify} />}
     <p className="fineprint">{tr('MOVO does not connect to your bank or read private Apple Pay history automatically. Only add records you choose to provide.')}</p>
   </>;
 }
@@ -126,32 +165,31 @@ export function EditProfile({ c }) {
   const [photoError, setPhotoError] = useState('');
   const confirm = useConfirm();
   const photoInput = useRef(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const savePhoto = async (file) => {
+    if (photoBusy) return;
+    setPhotoBusy(true);
+    setPhotoError('');
+    try {
+      const photo = file ? await cropProfilePhoto(file) : '';
+      await c.saveProfilePhoto(photo);
+      c.notify(tr(photo ? 'Profile photo updated.' : 'Profile photo removed.'));
+    } catch (cause) {
+      setPhotoError(cause?.message === 'invalid_profile_photo'
+        ? tr('This image could not be opened. Try a JPG, PNG or WebP photo.')
+        : tr('Could not save your profile photo. Check your connection and try again.'));
+    } finally { setPhotoBusy(false); }
+  };
   const handlePhotoFile = (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!/^image\//i.test(file.type || '') || file.size > 8 * 1024 * 1024) { setPhotoError(tr('Choose an image under 8 MB.')); return; }
-    const reader = new FileReader();
-    reader.onerror = () => setPhotoError(tr('This image could not be read.'));
-    reader.onload = () => {
-      const image = new Image();
-      image.onerror = () => setPhotoError(tr('This image could not be opened.'));
-      image.onload = () => {
-        try {
-          const side = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
-          if (!side) throw new Error();
-          const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 512;
-          const sx = ((image.naturalWidth || image.width) - side) / 2;
-          const sy = ((image.naturalHeight || image.height) - side) / 2;
-          const ctx = canvas.getContext('2d'); if (!ctx) throw new Error();
-          ctx.drawImage(image, sx, sy, side, side, 0, 0, 512, 512);
-          setPref('profilePhoto', canvas.toDataURL('image/jpeg', 0.78));
-          setPhotoError(''); c.notify(tr('Profile photo updated on this device.'));
-        } catch { setPhotoError(tr('This image could not be cropped. Try another photo.')); }
-      };
-      image.src = String(reader.result || '');
-    };
-    reader.readAsDataURL(file);
+    if (file.size > 20 * 1024 * 1024 || !(/^(image\/(jpeg|png|webp|heic|heif))$/i.test(file.type) ||
+      (!file.type && /\.(jpe?g|png|webp|hei[cf])$/i.test(file.name)))) {
+      setPhotoError(tr('Choose a JPG, PNG, WebP or HEIC image under 20 MB.'));
+      return;
+    }
+    savePhoto(file);
   };
   const saveProfile = (event) => {
     event.preventDefault();
@@ -182,9 +220,14 @@ export function EditProfile({ c }) {
     <SubHeader title={tr('Profile')} onBack={() => go('Profile')} right={<button type="submit" form="movo-profile-form" className="link-button strong">{tr('Save')}</button>} />
     <div className="edit-profile">
       <header className="ep-head">
-        <span className="avatar huge">{prefs.profilePhoto ? <img className="avatar-photo" src={prefs.profilePhoto} alt="" /> : (draft.profileName.trim() || user.name).slice(0, 1).toUpperCase()}</span>
-        <div className="ep-photo-actions"><button type="button" className="link-button" onClick={() => photoInput.current?.click()}><Icon name="camera" size={16} /> {tr('Change photo')}</button>{prefs.profilePhoto && <button type="button" className="link-button" onClick={async () => { if (!(await confirm({ title: tr('Remove your photo?'), message: tr('Your profile photo is removed from MOVO. You can add a new one at any time.'), confirmLabel: tr('Remove'), danger: true, icon: 'user' }))) return; setPref('profilePhoto', ''); setPhotoError(''); }}>{tr('Remove photo')}</button>}</div>
-        <input ref={photoInput} type="file" accept="image/*" hidden onChange={handlePhotoFile} />
+        <ProfileAvatar user={{ ...user, initial: (draft.profileName.trim() || user.name).slice(0, 1).toUpperCase() }} size="huge" />
+        <div className="ep-photo-actions">
+          <button type="button" className="link-button" disabled={photoBusy} onClick={() => photoInput.current?.click()}><Icon name="camera" size={16} /> {tr(photoBusy ? 'Saving…' : 'Change photo')}</button>
+          {user.photo && <button type="button" className="link-button" disabled={photoBusy} onClick={async () => {
+            if (await confirm({ title: tr('Remove your photo?'), message: tr('You can add a new profile photo at any time.'), confirmLabel: tr('Remove'), danger: true, icon: 'user' })) savePhoto(null);
+          }}>{tr('Remove photo')}</button>}
+        </div>
+        <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" hidden onChange={handlePhotoFile} />
         {photoError && <p className="form-error" role="alert">{photoError}</p>}
         <strong>{draft.profileName.trim() || user.name}</strong>
         <small>{maskEmail(user.email)}</small>
