@@ -1,3 +1,10 @@
+## 2026-11-20 — PR #327 Android Wallet input recovery
+
+- Run 44630552132 restored the synthetic wallet and passed bridge/Activity recreation. A WebView evaluateJavascript callback stalled during the Wallet click. Use Android touchscreen events on the visible Wallet and Cards controls, while keeping rendered route, selected tab, saved card, bundled logo, frame, screenshot, synthetic callback and vault assertions.
+- Run 44630551757 stopped before compilation while resolving pinned Gradle dependencies. Requested a retry of the existing failed job, with no dependency or repository edits.
+- Local checks passed: 18 R8 and 25 iOS orchestration tests. The changed test APK requires exact-head GitHub compilation and paired emulator acceptance.
+- [Failure evidence and rollback](engineering/updates/2026-11-20-android-r8-controlled-experiment.md#pr-327-touch-input-for-offline-wallet-navigation).
+
 ## 2026-11-20 — Solid popups, combined plans/limits and voice lifecycle repair
 
 - Consolidated Menu tools into Financial planning > Plans & limits, preserving local access and both editors. Replaced popup glass override with opaque light/dark surfaces; improved Plan & Usage, 44px close controls, focus/scroll behavior and 320px plan-row wrapping.

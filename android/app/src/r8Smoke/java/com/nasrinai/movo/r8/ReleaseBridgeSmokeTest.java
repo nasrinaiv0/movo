@@ -11,6 +11,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.InputDevice;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
@@ -163,11 +165,11 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         awaitJs("offline Home rendered from the saved wallet", "navigator.onLine === false && " +
             "!!document.querySelector('main[data-view=\"Home\"]') && " +
             "JSON.parse(localStorage.getItem('movo.local.accounts.v1'))?.[0]?.id===" + quote(ACCOUNT), 45000);
-        clickJs("Wallet button", "document.querySelector('.bottom-nav button[aria-label=Wallet]')");
+        tapControl("Wallet button", "document.querySelector('.bottom-nav button[aria-label=Wallet]')");
         awaitJs("offline Wallet route", "!!document.querySelector('main[data-view=\"Wallet\"]')", 15000);
         String cardsFilter = "Array.from(document.querySelectorAll('.wallet-chip-bar button[data-chip]'))" +
             ".find(button=>button.textContent.trim()==='Cards')";
-        clickJs("Cards filter", cardsFilter);
+        tapControl("Cards filter", cardsFilter);
         awaitJs("selected Cards view with the bundled logo and saved finish", "(() => {" +
             "const screen=document.querySelector('main[data-view=Wallet]');" +
             "const card=screen?.querySelector('.adaptive-wallet-cards .credit-card');" +
@@ -268,16 +270,54 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
         return result.getJSONObject("value");
     }
 
-    private void clickJs(String label, String button) throws Exception {
-        awaitJs("enabled " + label, "!!(" + button + ")?.matches(':enabled')", 15000);
-        assertEquals("Could not click " + label, "true", eval("(() => {" +
-            "const target=" + button + ";if(!target||target.disabled)return false;target.click();return true;})()"));
+    private void tapControl(String label, String button) throws Exception {
+        String hit = "(() => {" +
+            "const button=" + button + "; if(!button?.matches(':enabled')) return null;" +
+            "const rect=button.getBoundingClientRect();" +
+            "const x=rect.left+rect.width/2, y=rect.top+rect.height/2;" +
+            "const top=document.elementFromPoint(x,y);" +
+            "if(!rect.width || !rect.height || !top || !button.contains(top)) return null;" +
+            "return JSON.stringify({x,y,viewportWidth:innerWidth});})()";
+        awaitJs("visible and tappable " + label, hit, 15000);
+        Object result = new JSONTokener(eval("screen coordinates of " + label, hit)).nextValue();
+        assertTrue("Control stopped being tappable: " + label, result instanceof String);
+        JSONObject point = new JSONObject((String) result);
+
+        // Use WebView JavaScript only to locate the control. A real Android tap
+        // exercises pointer/click navigation without a JS action callback
+        // competing with the route change in the renderer.
+        int[] origin = new int[2];
+        int[] size = new int[2];
+        runOnMainSync(() -> {
+            WebView view = requireWebView(activity);
+            view.getLocationOnScreen(origin);
+            size[0] = view.getWidth();
+            size[1] = view.getHeight();
+        });
+        double viewportWidth = point.getDouble("viewportWidth");
+        assertTrue("Release WebView has no visible bounds", viewportWidth > 0 && size[0] > 0 && size[1] > 0);
+        double scale = size[0] / viewportWidth;
+        float x = (float) (point.getDouble("x") * scale);
+        float y = (float) (point.getDouble("y") * scale);
+        assertTrue("Tap falls outside the release WebView: " + label,
+            x >= 0 && x < size[0] && y >= 0 && y < size[1]);
+        long downTime = SystemClock.uptimeMillis();
+        for (int action : new int[] {MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP}) {
+            MotionEvent event = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(), action,
+                origin[0] + x, origin[1] + y, 0);
+            try {
+                event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+                assertTrue("Android rejected tap input for " + label, getUiAutomation().injectInputEvent(event, false));
+            } finally {
+                event.recycle();
+            }
+        }
     }
 
     private void awaitJs(String label, String expression, long timeoutMs) throws Exception {
         long end = SystemClock.uptimeMillis() + timeoutMs;
         while (SystemClock.uptimeMillis() < end) {
-            if ("true".equals(eval("(() => {try{return !!(" + expression + ");}catch(_){return false;}})()"))) return;
+            if ("true".equals(eval(label, "(() => {try{return !!(" + expression + ");}catch(_){return false;}})()"))) return;
             SystemClock.sleep(100);
         }
         String state = eval("JSON.stringify({view:document.querySelector('main')?.dataset.view, " +
@@ -288,6 +328,10 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
     }
 
     private String eval(String script) throws Exception {
+        return eval("release WebView inspection", script);
+    }
+
+    private String eval(String label, String script) throws Exception {
         CountDownLatch done = new CountDownLatch(1);
         AtomicReference<String> value = new AtomicReference<>();
         AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -295,7 +339,7 @@ public final class ReleaseBridgeSmokeTest extends Instrumentation {
             try { requireWebView(activity).evaluateJavascript(script, result -> { value.set(result); done.countDown(); }); }
             catch (Throwable error) { failure.set(error); done.countDown(); }
         });
-        assertTrue("WebView JavaScript callback stalled", done.await(10, TimeUnit.SECONDS));
+        assertTrue("WebView JavaScript callback stalled: " + label, done.await(10, TimeUnit.SECONDS));
         if (failure.get() != null) throw new AssertionError("Release WebView unavailable", failure.get());
         return value.get();
     }

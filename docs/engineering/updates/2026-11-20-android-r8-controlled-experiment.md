@@ -73,3 +73,11 @@ Before implementation: on the verified freshly installed disposable test app, se
 Host verification after the fixture change: all 18 R8 Python regressions and whitespace checks pass. The new Android fixture assertions verify a fresh preference namespace, durable commit/round trip and real startup restore; native compilation and both release variants remain pending CI. Rollback is a revert of this test-fixture commit, with no production data-format change.
 
 Scope correction after completed evidence: PR #326 at 56b36b10 passed every baseline/candidate emulator assertion in run 44627447539. Keep that verified head unchanged. Publish this deterministic fixture repair only in follow-on PR #327, where run 44627570656 exposed the race; its application sources remain unchanged.
+
+## PR #327 touch input for offline Wallet navigation
+
+The original #327 head `1f242e302e87` restored the synthetic account and passed the minified bridge and Activity-recreation check in [run 44630552132](https://github.com/nasrinaiv0/movo/actions/runs/44630552132). The JavaScript callback stalled during the Wallet action. The separately failing [Android build](https://github.com/nasrinaiv0/movo/actions/runs/44630551757) was still resolving unrelated pinned Maven artifacts at the failure point. Started a GitHub retry of that failing job to check infrastructure recovery.
+
+The test JavaScript now checks that the target is enabled and hit-testable, then reads its center. Framework instrumentation translates the point through the WebView bounds and dispatches Android touchscreen down/up events. Navigation and Cards selection are still verified separately. Missing controls, rejected input, callback/route/frame timeouts and lost offline styling continue to fail. Timeout messages identify the operation. The disposable offline emulator, synthetic fixture, both compiler variants, complete restarts and screenshots remain required.
+
+Validation before commit: 18 Python R8 and 25 iOS orchestration tests pass. GitHub compiles and executes the Android instrumentation for the new head. The isolated workspace has no Android SDK or KVM. The change is in the opt-in test APK and introduces no production app logic, data format, dependency, provider or R8 rule change. Rollback is a revert of this test-input change. Real microphone/playback and signed store acceptance remain separate.
