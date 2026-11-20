@@ -5,6 +5,9 @@ import App from './App';
 import { restoreNativeStorage, refreshNativeNotifyPermission } from './lib/native';
 import { restoreNativeAutomationKey } from './lib/nativeAutomationKey';
 import { migrateLegacyOfflineReadCache } from './lib/offlineReadCache';
+import { initialiseFinanceVault, migrateFinanceLocalStorage } from './lib/financeVault';
+import { migrateHybridFinanceEncryption } from './lib/hybridFinanceEncryption';
+import { migrateLocalAccountQrEncryption } from './lib/accountQrLocalStore';
 import { captureReferralFromUrl } from './lib/referrals';
 import { captureInstallReferral } from './lib/installReferral';
 import { installInteractionTracking } from './lib/interaction';
@@ -40,21 +43,43 @@ const render = () => root.render(
   </React.StrictMode>
 );
 
-// In the iOS app, restore records iOS may have cleared from web storage before the first render. On the web this
-// resolves immediately.
-Promise.all([restoreNativeStorage(), refreshNativeNotifyPermission()])
-  .then(() => restoreNativeAutomationKey())
-  .catch(() => { /* Native vault failure disables use of the cached automation secret. */ })
-  .finally(() => {
-    render();
-    // Migrate existing plaintext lists after first paint; failed items remain for safe retry.
-    // Owner portal is isolated from customer financial storage.
-    if (!ownerRoute) migrateLegacyOfflineReadCache().catch(() => {});
-  });
-
-// Native builds already bundle the app. Web installs retain only static resources.
-if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator && !isNativeApp()) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
-  });
+// The customer app MUST have its persistent encryption key and its legacy
+// snapshots/journal migrated BEFORE React can read or mutate financial records.
+// Never render an empty wallet on vault failure: doing so risks overwriting the
+// only surviving copy of un-synced financial records.
+function showFinanceVaultBlocked() {
+  document.getElementById('movo-splash')?.remove();
+  root.render(
+    <main role="alert" style={{ maxWidth: 520, margin: '12vh auto', padding: 28, lineHeight: 1.55 }}>
+      <h1>Saved financial records are locked</h1>
+      <p>MOVO could not safely unlock records stored on this device. Your existing
+        offline records have not been deleted.</p>
+      <p>Close other MOVO tabs and unlock your device, then retry. Keep the app and
+        its saved data on your device. For help, contact support@nasrinai.com.</p>
+      <button type="button" onClick={() => window.location.reload()}>Retry</button>
+    </main>
+  );
 }
+
+(async () => {
+  try {
+    await Promise.all([restoreNativeStorage(), refreshNativeNotifyPermission()]);
+    if (!ownerRoute) {
+      await initialiseFinanceVault();
+      await migrateFinanceLocalStorage();
+      await migrateHybridFinanceEncryption();
+    }
+    // Automation auth secrets have a separate fail-closed vault. An automation
+    // vault error must not prevent the finance data already verified from loading.
+    await restoreNativeAutomationKey().catch(() => {});
+    render();
+    if (!ownerRoute) {
+      // Optional media/cache failures must not lock a verified wallet or ledger.
+      migrateLocalAccountQrEncryption().catch(() => {});
+      migrateLegacyOfflineReadCache().catch(() => {});
+    }
+  } catch {
+    if (ownerRoute) render(); // Owner portal does not load customer records.
+    else showFinanceVaultBlocked();
+  }
+})();

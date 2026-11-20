@@ -7,10 +7,9 @@ const { createClient } = require('@supabase/supabase-js');
  * Auth; the user id always comes from that verified token, never from the request body. The body must also carry
  * `{ "confirm": "DELETE" }` so a stray request cannot delete an account.
  *
- * What: private bank QR objects are removed first, then transactions (they reference accounts with ON DELETE RESTRICT), then the Auth user through
- * the Admin API, which also ends sessions and removes linked Google/Apple identities. Every other MOVO table
- * references auth.users ON DELETE CASCADE, so accounts, budgets, bills, plans, automations, the automation inbox,
- * preferences and NasrinAI chats go with it. The service-role key stays on the server.
+ * Private QR and receipt objects are removed through Storage. Transactions and schedules are removed before the
+ * Auth user because each can restrict deletion of the user's financial accounts. Owner-linked records then follow
+ * their database deletion policies. The service-role key stays on the server.
  */
 const MAX_BODY_BYTES = 2048;
 
@@ -102,9 +101,11 @@ module.exports = async function handler(req, res) {
       await removeUserBucketObjects(api.admin, bucketName, userId);
     }
 
-    stage = 'delete_transactions';
-    const { error: txError } = await api.admin.from('transactions').delete().eq('user_id', userId);
-    if (txError) throw txError;
+    for (const table of ['scheduled_transactions', 'transactions']) {
+      stage = 'delete_' + table;
+      const { error: rowError } = await api.admin.from(table).delete().eq('user_id', userId);
+      if (rowError) throw rowError;
+    }
 
     stage = 'delete_auth_user';
     const { error: userError } = await api.admin.auth.admin.deleteUser(userId);
@@ -112,9 +113,9 @@ module.exports = async function handler(req, res) {
 
     console.info('[movo-account] account deleted');
     return json(res, 200, { deleted: true });
-  } catch (cause) {
-    // No ids, tokens or personal data in logs.
-    console.error('[movo-account] delete failed', { stage, message: String(cause?.message || 'unknown').slice(0, 160) });
+  } catch {
+    // Storage and database error messages can contain object paths or account data.
+    console.error('[movo-account] delete failed', { stage });
     return json(res, 500, { error: 'delete_failed' });
   }
 };

@@ -39,7 +39,7 @@ test('signed-in users can delete the account with Cloud Sync off; guests cannot'
   const deletion = Array.from(container.querySelectorAll('button')).find(x => x.textContent.includes('Delete Account'));
   expect(deletion).toBeTruthy();
   act(() => deletion.click());
-  expect(context.setSheet).toHaveBeenCalledWith({ name: 'deleteAccount' });
+  expect(context.setSheet).toHaveBeenCalledWith({ name: 'deleteAccount', ownerId: 'sync-off-owner' });
   act(() => root.render(<Settings c={makeContext(false)} />));
   expect(container.textContent).not.toContain('Delete Account');
   act(() => root.unmount()); container.remove();
@@ -181,6 +181,25 @@ describe('Cloud Sync setting semantics', () => {
   });
 });
 
+
+test('account deletion is available to the signed-in owner with sync disabled, and hidden for guests', () => {
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  const c = makeContext(false);
+  const findDeletion = () => container.querySelector('button[aria-label="Delete Account"]');
+  try {
+    act(() => root.render(<Settings c={c} />));
+    expect(findDeletion()).toBe(null);
+
+    act(() => root.render(<Settings c={{ ...c, session: { user: { id: 'user-1' } } }} />));
+    expect(findDeletion()).toBeTruthy();
+    act(() => findDeletion().click());
+    expect(c.setSheet).toHaveBeenCalledWith({ name: 'deleteAccount', ownerId: 'user-1' });
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+  }
+});
 
 test('Security & Privacy guide opens the public, transparent data-security explanation', async () => {
   const { Browser } = require('@capacitor/browser');
