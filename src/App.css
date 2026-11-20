@@ -8413,11 +8413,13 @@ body:has(.movo-app.theme-light:not(.has-scenery):not(.tint-blue):not(.tint-purpl
    and dialogs finish their entrance within about 200ms with their content already in place, and premium header
    glows stay still instead of repainting every frame. */
 .movo-app.movo-app.movo-app :is(button, [role="button"], a):active { transition-duration: 0s !important; }
-.movo-app.movo-app.movo-app .sheet { animation-duration: 200ms !important; }
-.movo-app.movo-app.movo-app .sheet > :nth-child(n+3),
-.movo-app.movo-app.movo-app .sheet :is(.sheet-list > *, .list-card > *, .account-list > *, .tx-groups section) { animation-duration: 160ms !important; animation-delay: 0ms !important; }
-.movo-app.movo-app.movo-app .sheet-backdrop { animation-duration: 160ms !important; }
-.movo-app.movo-app.movo-app .confirm-dialog, .movo-app.movo-app.movo-app .confirm-backdrop { animation-duration: 180ms !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .movo-app.movo-app.movo-app .sheet { animation-duration: 200ms !important; }
+  .movo-app.movo-app.movo-app .sheet > :nth-child(n+3),
+  .movo-app.movo-app.movo-app .sheet :is(.sheet-list > *, .list-card > *, .account-list > *, .tx-groups section) { animation-duration: 160ms !important; animation-delay: 0ms !important; }
+  .movo-app.movo-app.movo-app .sheet-backdrop { animation-duration: 160ms !important; }
+  .movo-app.movo-app.movo-app .confirm-dialog, .movo-app.movo-app.movo-app .confirm-backdrop { animation-duration: 180ms !important; }
+}
 .movo-app.movo-app.movo-app .screen > :is(.screen-header.home-header.home-hero, .home-hero-block):is(.hero-zodiac, .hero-glow)::after { animation: none !important; transform: translate3d(12%, 0, 0); }
 .movo-app .bottom-nav .nav-pill { will-change: transform; }
 

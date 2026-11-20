@@ -1,6 +1,6 @@
 {
-  "short_name": "Movo",
-  "name": "Movo — Financial Tracker",
+  "short_name": "MOVO",
+  "name": "MOVO — Money Organizer & Visual Outflow",
   "icons": [
     { "src": "favicon.svg", "type": "image/svg+xml", "sizes": "any" },
     { "src": "icon-192.png", "type": "image/png", "sizes": "192x192" },

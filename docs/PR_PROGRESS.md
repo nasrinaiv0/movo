@@ -89,6 +89,12 @@
 - Cloud reset uses an owner-verified transaction reversal RPC; transaction-phase failures roll back earlier reversals. The remaining reset/storage steps retain their separate-request behavior.
 - Added SQL regressions to finance isolation CI and client reset failure tests. All 251 JavaScript suites / 1,629 tests, typecheck and strict production compilation passed after the final owner-parameter change. Local PostgreSQL migration, tenant-isolation and integrity checks passed; old behavior failed each of the three targeted regressions. Production deployment and hosted CI/preview remain separate release steps.
 - [Implementation, validation and rollout](engineering/updates/2026-11-19-finance-integrity-audit-fixes.md).
+## 2026-11-20 — Full production audit and accessibility remediation
+
+- Recorded the read-only production audit baseline at `44f3ab4d` with the responsive, financial, sharing, privacy, performance and store evidence. Mapped accounting, sheet/voice and storage work to existing PRs.
+- Added setup agreement keyboard containment and background isolation, corrected sheet reduced-motion timing, and aligned the PWA install name.
+- Local Node 26 strict production build and all 1,627 tests passed. Four Chromium cases verified keyboard, legal navigation and motion at three phone widths.
+- [Full audit and remedy matrix](audits/2026-11-20-full-movo-product-audit.md) · [Implementation and acceptance](engineering/updates/2026-11-20-product-audit-accessibility-remediation.md).
 
 ## 2026-11-19 — Legal/privacy audit and centered Friends QR
 
