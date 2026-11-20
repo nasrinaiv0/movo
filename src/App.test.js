@@ -708,7 +708,7 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).not.toContain('NasrinAI Update');
   });
 
-  test('Clear records requires typing DELETE, then resets preferences and removes local records', () => {
+  test('Clear records requires typing DELETE, then resets preferences and removes local records', async () => {
     openProfile(container);
     clickButton(container, 'Settings');
     const clearRow = Array.from(container.querySelectorAll('.menu-row')).find(row => row.querySelector('strong')?.textContent === 'Clear records');
@@ -721,7 +721,7 @@ describe('MOVO finance frontend', () => {
     expect(dialog.textContent).toContain('Your sign-in account remains');
     expect(container.querySelector('button.danger-button').disabled).toBe(true);
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
-    act(() => dialog.querySelector('button.danger-button').click());
+    await act(async () => { dialog.querySelector('button.danger-button').click(); });
     expect(JSON.parse(readPreferenceFixture(null)).theme).toBe('system');
     expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');

@@ -1,5 +1,14 @@
 ## 2026-11-20 — Handover review preserves MOVO structures and recovery copies
 
+## 2026-11-20 — PR #329 follow-up: device cleanup, navigation and financial submission
+
+Re-audited the #329 source, whose complete changes shipped through #327/main `73e293bf`; keep #329 closed as superseded. Extended #330 with selective owner-bound device cleanup, visible cleanup failure/retry, translated accessible tab names with stable highlight matching, and submission of the amount actually displayed on the keypad. Preserve guest/foreign caches, files, profile photos, chat state and unassigned recovery. No schema, record/API format, navigation or visual redesign.
+
+Final local source: 255 suites / 1,670 tests, type checking and strict build pass on Node 26.13.1; 140 responsive measurements and eight browser interaction assertions pass. [Audit report and inspected synthetic screenshots](audits/2026-11-20-pr329-remediation-review.md). [Separate #331](https://github.com/nasrinaiv0/movo/pull/331) patches compatible build-tool advisories (31→19; production zero).
+
+Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLED; fresh exact-head CI and hosted acceptance required. Prior #330 paired R8 run failed Maven HTTP 429, not a passing emulator result. #274 production erasure/retention approval and native/store/device acceptance remain separate. [Engineering record](engineering/updates/2026-11-20-pr329-followup-remediation.md).
+
+
 - Reconciled historical Claude handoffs with the November 20 audit and current execution matrix. Corrected shared-cache, password-auth and already deployed finance-rollout guidance; retained all historical evidence and superseded-plan context.
 - Reproduced two destructive preference-reset failures with synthetic data. Clearing one scope now retains other guest/account preference copies and unassigned recovery. Delayed clear/deletion results check their captured account before affecting the active device view. Reused #291's confirmed-owner deletion request guard without changing its HTTP payload.
 - No schema, accounting model, dependency, native production code, screen or navigation restructure. [Preservation review and validation boundaries](engineering/updates/2026-11-20-handover-preservation-review.md).

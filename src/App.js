@@ -8,7 +8,7 @@ import { listOwnerSyncOperations, acknowledgeReconciledWorkspace, approveHybridO
 import FinanceBackupSheet from './components/FinanceBackupSheet';
 import { prepareFinanceBackupRestore } from './lib/financeBackupRestore';
 import { planPreferenceRestore } from './lib/backupPreferences';
-import { putLocalAttachment, getLocalAttachment, clearLocalAttachments } from './lib/localAttachments';
+import { putLocalAttachment, getLocalAttachment, removeLocalAttachments } from './lib/localAttachments';
 import { PlanProvider } from './lib/PlanContext';
 import { usePlanEntitlement } from './lib/usePlanEntitlement';
 import { canUseFeatureInMode, effectiveAccessPlan, effectivePlan } from './lib/planAccess';
@@ -73,7 +73,7 @@ import { uploadAccountQr, getAccountQrSignedUrl, cacheSignedAccountQr, removeAcc
 import { supportsAccountQr } from './lib/accountQrEligibility';
 import LoyaltySheet from './components/LoyaltySheet';
 import { isLoyaltyType, normalizeLoyaltyCard, visibleLoyaltyCards } from './lib/loyaltyCards';
-import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearLocalAccountQr } from './lib/accountQrLocalStore';
+import { saveLocalAccountQr, getLocalAccountQr, removeLocalAccountQr, clearOwnedAccountQr } from './lib/accountQrLocalStore';
 import { canAnimate, revealChange, showInstantly } from './lib/motion';
 import { convert, loadRates, refreshRates, CURRENCIES, currencyName } from './lib/fx';
 import { LANGUAGES, detectLanguage, setLanguage, loadLanguage, t as tr } from './lib/i18n';
@@ -123,7 +123,8 @@ import { IMPORT_MAX_BYTES, parseImportFile, planImport } from './lib/dataImport'
 import { money, shown, dayKey, monthKey, monthLabel, longDate, timeLabelFull, BUCKETS, bucketOf, setFormatLocale, setBaseCurrency, formatDate } from './lib/format';
 import { ACCENTS } from './screens/Settings';
 import { buildCsv } from './lib/csvExport';
-import { hasUnassignedPreferences, preservePreferenceCopy, readPreferenceScope, savePreferenceScope } from './lib/ownerPreferences';
+import { hasUnassignedPreferences, readPreferenceScope, savePreferenceScope } from './lib/ownerPreferences';
+import { collectDeviceFiles, preserveDeviceCopy } from './lib/deviceCleanup';
 import { clearCustomStickers, getCustomStickers, replaceCustomStickers, resetCustomStickerView, subscribeCustomStickers } from './lib/stickers';
 import { apiUrl, isNativeApp, nativePlatform } from './lib/platform';
 import { noteActiveDay, readReviewState, requestStoreReview, shouldAskForReview, writeReviewState } from './lib/reviewPrompt';
@@ -310,8 +311,7 @@ function App() {
   // with the real screen: the active tab and the highlight position.
   const syncNavToView = useCallback(() => {
     const root = ROOT_FOR[viewRef.current];
-    const label = NAV.find(n => n[2] === root)?.[0];
-    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.toggle('nav-active', item.getAttribute('aria-label') === label));
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.toggle('nav-active', item.dataset.navTarget === root));
     const pill = document.querySelector('.bottom-nav .nav-pill');
     if (pill) { pill.style.setProperty('--idx', String(lastTab.current)); pill.classList.toggle('hidden', root === 'NasrinAI'); }
   }, []);
@@ -2027,19 +2027,24 @@ function App() {
     if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) return;
     setBusy(true); setError('');
     try {
+      const files = collectDeviceFiles(ownerId, { accounts: [...localAccounts, ...cloudAccounts], transactions: rawTxs, prefs: prefsRef.current, workspace: ownerId ? loadOfflineWorkspace(ownerId) : null });
       if (cloudMode && session?.user) await deleteAllCloudData(ownerId);
       if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
+      await Promise.all([
+        clearOwnedAccountQr(ownerId, files.accountIds), removeLocalAttachments(files.receiptKeys),
+        ...(ownerId && typeof indexedDB !== 'undefined' ? [clearHybridOwner(ownerId)] : []),
+      ]);
+      if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       if (cloudMode && session?.user) { setCloudAccounts([]); setCloudBudgets([]); setCloudBills([]); setCloudBillOccurrences([]); }
-      const qrCleanup = Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
       invalidateChatHistoryWrites();
       setAIConsent(session?.user?.id, false);
-      const wipe = (store) => { try { Object.keys(store).filter(k => k.startsWith('movo.') && !preservePreferenceCopy(k, ownerId)).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
+      const wipe = (store) => { Object.keys(store).filter(k => k.startsWith('movo.') && !preserveDeviceCopy(k, ownerId)).forEach(k => store.removeItem(k)); };
       ++preferenceEpochRef.current; clearTimeout(prefsSync.current.timer); prefsSync.current.ready = false;
+      wipe(localStorage); wipe(sessionStorage); if (ownerId === null && !clearLocalFinanceData()) throw new Error('local_cleanup_failed');
+      if (!clearCustomStickers()) throw new Error('sticker_cleanup_failed');
       preferenceRecoveryRef.current.delete(ownerId); preferenceBlockedRef.current.delete(ownerId); prefsRef.current = { ...DEFAULTS };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers(); setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
+      setSceneryPhotoState(''); pendingLocalDataRef.current = null; setLocalPersistenceWarning(false);
       setPrefsState({ ...DEFAULTS }); setRawTxs([]); setLocalAccounts([]); setPendingLog(null); setSheet(null); setClearText('');
-      await qrCleanup;
-      if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       notify(tr('Records cleared.'));
     } catch { setError(tr('Some records could not be cleared. Review your data and try again.')); }
     finally { setBusy(false); }
@@ -2053,19 +2058,21 @@ function App() {
     if (!ownerId || preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) return;
     setBusy(true); setError('');
     try {
+      const files = collectDeviceFiles(ownerId, { accounts: [...localAccounts, ...cloudAccounts], transactions: rawTxs, prefs: prefsRef.current, workspace: loadOfflineWorkspace(ownerId) });
       await deleteMyAccount(ownerId);
       if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       if(session?.user?.id && typeof indexedDB !== 'undefined') await clearHybridOwner(session.user.id);
       if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
-      await Promise.all([clearLocalAccountQr(), clearLocalAttachments()]).catch(() => {});
+      await Promise.all([clearOwnedAccountQr(ownerId, files.accountIds), removeLocalAttachments(files.receiptKeys)]);
       if (preferenceOwnerRef.current !== ownerId || preferenceEpochRef.current !== epoch) throw new Error('account_changed');
       preferenceErasureRef.current = true;
       preferenceRecoveryRef.current.delete(ownerId);
       prefsRef.current = { ...DEFAULTS };
       invalidateChatHistoryWrites();
       setAIConsent(session?.user?.id, false);
-      const wipe = (store) => { try { Object.keys(store).filter(k => (k.startsWith('movo.') || k.startsWith('sb-')) && !preservePreferenceCopy(k, ownerId)).forEach(k => store.removeItem(k)); } catch { /* storage unavailable */ } };
-      wipe(localStorage); wipe(sessionStorage); clearLocalFinanceData(); clearCustomStickers();
+      const wipe = (store) => { Object.keys(store).filter(k => k.startsWith('movo.') && !preserveDeviceCopy(k, ownerId)).forEach(k => store.removeItem(k)); };
+      wipe(localStorage); wipe(sessionStorage);
+      if (!clearCustomStickers()) throw new Error('sticker_cleanup_failed');
       setSheet(null); setClearText('');
       notify(tr('Your MOVO account was deleted.'));
       signOut().catch(() => {}).finally(() => window.location.reload());
@@ -2973,7 +2980,7 @@ function App() {
           // Touch-down: the highlight slides and the tapped tab turns active at once, before any React render; the
           // effect on `view` below puts the bar back in step if the screen does not change.
           const pressNav = (e) => { if (center || e.button > 0) return; const bar = e.currentTarget.parentElement; const pill = bar?.querySelector('.nav-pill'); const idx = NAV.findIndex(n => n[2] === target); if (pill && idx >= 0) { pill.style.setProperty('--idx', String(idx)); pill.classList.remove('hidden'); } bar?.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('nav-active', item === e.currentTarget)); };
-          return <button type="button" key={label} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onPointerDown={pressNav} onPointerCancel={syncNavToView} onClick={() => goTab(target)} aria-current={active ? 'page' : undefined} aria-label={label} title={tr(label)}>
+          return <button type="button" key={label} data-nav-target={target} className={`nav-item${center ? ' nav-center' : ''}${active ? ' nav-active' : ''}`} disabled={!setupDone} onPointerDown={pressNav} onPointerCancel={syncNavToView} onClick={() => goTab(target)} aria-current={active ? 'page' : undefined} aria-label={tr(label)} title={tr(label)}>
             <span className="nav-icon">{center ? <span className="orb"><NasrinMark size={27} /></span> : <><Icon name={icon} size={29} strokeWidth={1.8} className="nav-glyph-off" /><Icon name={icon} size={29} strokeWidth={1.8} filled className="nav-glyph-on" /></>}</span>
             {target === 'Home' && unread && <i className="nav-badge" aria-label={tr('New activity')} />}
           </button>;

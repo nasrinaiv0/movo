@@ -1,5 +1,14 @@
 # MOVO Master Change Ledger
 
+## 2026-11-20 — PR #329 follow-up: device cleanup, navigation and financial submission
+
+Re-audited the #329 source, whose complete changes shipped through #327/main `73e293bf`; keep #329 closed as superseded. Extended #330 with selective owner-bound device cleanup, visible cleanup failure/retry, translated accessible tab names with stable highlight matching, and submission of the amount actually displayed on the keypad. Preserve guest/foreign caches, files, profile photos, chat state and unassigned recovery. No schema, record/API format, navigation or visual redesign.
+
+Final local source: 255 suites / 1,670 tests, type checking and strict build pass on Node 26.13.1; 140 responsive measurements and eight browser interaction assertions pass. [Audit report and inspected synthetic screenshots](../audits/2026-11-20-pr329-remediation-review.md). [Separate #331](https://github.com/nasrinaiv0/movo/pull/331) patches compatible build-tool advisories (31→19; production zero).
+
+Release held: Vercel account blocked and public MOVO HTTP 402 DEPLOYMENT_DISABLED; fresh exact-head CI and hosted acceptance required. Prior #330 paired R8 run failed Maven HTTP 429, not a passing emulator result. #274 production erasure/retention approval and native/store/device acceptance remain separate. [Engineering record](updates/2026-11-20-pr329-followup-remediation.md).
+
+
 ## 2026-11-20 — Audit handover and account preference preservation
 
 Historical handoffs now lead to the current audit execution matrix. Preserve the existing architecture, financial models, APIs and screens. Reset/deletion results are bound to the confirmed owner; other guest/account preference envelopes and unassigned recovery are retained. No production erasure/retention migration is applied. See [preservation review](updates/2026-11-20-handover-preservation-review.md) and [execution handover](handovers/2026-11-20-audit-gap-execution.md).

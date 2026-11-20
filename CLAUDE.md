@@ -2,6 +2,8 @@
 
 Guidance for Claude Code in this repository. Read this first, then `README.md`, `docs/PR_WORKFLOW.md` and `docs/PR_PROGRESS.md`.
 
+**2026-11-20 PR #329 follow-up:** See [the current remediation review](docs/audits/2026-11-20-pr329-remediation-review.md). #329 was consolidated into released #327. Continue focused fixes in #330 and development-tool patches in #331. Production currently returns HTTP 402 DEPLOYMENT_DISABLED; do not treat old READY records as availability. No #274 production migration approval is inferred.
+
 **2026-11-20 audit continuation:** Start with [the current audit execution handover](docs/engineering/handovers/2026-11-20-audit-gap-execution.md). Earlier handovers are historical snapshots. Preserve the existing React/Supabase/Capacitor architecture, financial record shapes, accounting rules and navigation; use focused fixes and the existing PRs. Do not restore old pricing, authentication or cache behavior from a historical task list.
 
 **2026-11-09 continuation handover:** Before touching offline/cloud, import, security, trial, or iOS branches, read [docs/engineering/handovers/2026-11-09-claude-post-commit-handover.md](docs/engineering/handovers/2026-11-09-claude-post-commit-handover.md). This dated post-commit snapshot lists the six open draft PRs, the #245→#246 dependency, follow-on safety commits, test boundaries, and unresolved release blockers. Recheck live PR statuses; do not interpret it as merge approval.

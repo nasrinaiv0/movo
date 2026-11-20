@@ -1,6 +1,8 @@
 import 'fake-indexeddb/auto';
 import { webcrypto } from 'crypto';
 import { clearHybridOwner } from './lib/hybridLocalStore';
+import { saveLocalAccountQr, getLocalAccountQr } from './lib/accountQrLocalStore';
+import { putLocalAttachment, getLocalAttachment } from './lib/localAttachments';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -187,6 +189,65 @@ describe('account preference isolation through real App auth transitions', () =>
     expect(readPreferenceScope({}, B).prefs.subscriptions).toEqual([]);
   });
 
+  test('clearing B preserves foreign wallets, offline workspaces, chats and files', async () => {
+    await auth(B);
+    const ownAccount = '123e4567-e89b-42d3-a456-426614174010';
+    const ownReceipt = 'localreceipt:synthetic-b';
+    const otherReceipt = 'localreceipt:synthetic-a';
+    const otherWorkspace = JSON.stringify({ synthetic: 'pending A records' });
+    const guestAccounts = '[{"id":"guest-cash","name":"Guest cash","account_type":"cash","opening_balance":100}]';
+    const guestTransactions = '[{"id":"guest-tx","account_id":"guest-cash","merchant":"Guest private","amount":5,"transaction_type":"expense","occurred_at":"2026-11-20T09:00:00Z"}]';
+    localStorage.setItem('movo.local.accounts.v1', guestAccounts);
+    localStorage.setItem('movo.local.transactions.v1', guestTransactions);
+    localStorage.setItem('movo.offline.workspace.v2.' + A, otherWorkspace);
+    localStorage.setItem('movo.chatHistory.v1:user.' + A + ':thread:turn', 'synthetic-sealed-a-chat');
+    localStorage.setItem('movo.readCache.v1:' + A + ':loans', 'synthetic-sealed-a-loans');
+    localStorage.setItem('movo.ai.ack.v1.' + A, '1');
+    localStorage.setItem('movo.profile-photo.v1.' + A, 'synthetic-a-photo');
+    localStorage.setItem('movo.chatHistory.v1:user.' + B + ':thread:turn', 'synthetic-b-chat');
+    sessionStorage.setItem('movo.ai.active.v1.user.' + A + '.device', 'synthetic-a-active');
+    sessionStorage.setItem('movo.ai.active.v1.user.' + B + '.device', 'synthetic-b-active');
+    saveOfflineWorkspace(B, { baseline: { financial_accounts: [], transactions: [] }, working: {
+      financial_accounts: [{ id: ownAccount, name: 'B cash', account_type: 'cash', user_id: B }],
+      transactions: [{ id: '123e4567-e89b-42d3-a456-426614174011', account_id: ownAccount, user_id: B, receipt_path: ownReceipt }],
+    } });
+    await putLocalAttachment(new File(['a'], 'a.png', { type: 'image/png' }), otherReceipt);
+    await putLocalAttachment(new File(['b'], 'b.png', { type: 'image/png' }), ownReceipt);
+    const image = 'data:image/png;base64,iVBORw0KGgo=';
+    await saveLocalAccountQr(A + ':account-a', image);
+    await saveLocalAccountQr(B + ':' + ownAccount, image);
+    await submitClear();
+    expect(localStorage.getItem('movo.local.accounts.v1')).toBe(guestAccounts);
+    expect(localStorage.getItem('movo.local.transactions.v1')).toBe(guestTransactions);
+    expect(localStorage.getItem('movo.offline.workspace.v2.' + A)).toBe(otherWorkspace);
+    expect(localStorage.getItem('movo.chatHistory.v1:user.' + A + ':thread:turn')).toBe('synthetic-sealed-a-chat');
+    expect(localStorage.getItem('movo.readCache.v1:' + A + ':loans')).toBe('synthetic-sealed-a-loans');
+    expect(localStorage.getItem('movo.ai.ack.v1.' + A)).toBe('1');
+    expect(localStorage.getItem('movo.profile-photo.v1.' + A)).toBe('synthetic-a-photo');
+    expect(localStorage.getItem('movo.chatHistory.v1:user.' + B + ':thread:turn')).toBeNull();
+    expect(sessionStorage.getItem('movo.ai.active.v1.user.' + A + '.device')).toBe('synthetic-a-active');
+    expect(sessionStorage.getItem('movo.ai.active.v1.user.' + B + '.device')).toBeNull();
+    expect(await getLocalAttachment(otherReceipt)).not.toBeNull();
+    expect(await getLocalAttachment(ownReceipt)).toBeNull();
+    expect(await getLocalAccountQr(A + ':account-a')).toBe(image);
+    expect(await getLocalAccountQr(B + ':' + ownAccount)).toBeNull();
+  });
+
+  test('a file cleanup failure is reported and retains preferences for a safe retry', async () => {
+    await auth(B);
+    const cleanup = jest.spyOn(require('./lib/localAttachments'), 'removeLocalAttachments')
+      .mockRejectedValue(new Error('synthetic storage failure'));
+    try {
+      await submitClear();
+      expect(container.textContent).toContain('Some records could not be cleared.');
+      expect(container.textContent).not.toContain('Records cleared.');
+      expect(readPreferenceScope({}, B).prefs.subscriptions.map(item => item.id)).toEqual(['b']);
+    } finally { cleanup.mockRestore(); }
+    await submitClear();
+    expect(container.textContent).toContain('Records cleared.');
+    expect(readPreferenceScope({}, B).prefs.subscriptions).toEqual([]);
+  });
+
   test('a clear request started by A cannot reset B after an account switch', async () => {
     let releaseClear;
     mockClearCloud.mockImplementation(() => new Promise(resolve => { releaseClear = resolve; }));
@@ -228,6 +289,21 @@ describe('account preference isolation through real App auth transitions', () =>
       expect(readPreferenceScope({}, B).prefs.profileName).toBe('Bob active');
       expect(readPreferenceScope({}, B).prefs.subscriptions.map(item => item.id)).toEqual(['b']);
     } finally { cleanup.mockRestore(); }
+  });
+
+  test('localized navigation keeps readable labels and restores the selected tab after a cancelled touch', async () => {
+    const arabic = require('./i18n/locales/ar.json');
+    await act(async () => {
+      mockContext.setPref('language', 'ar');
+      await new Promise(resolve => setTimeout(resolve, 100));
+    });
+    const wallet = Array.from(container.querySelectorAll('.bottom-nav button')).find(button => button.title === arabic.Wallet);
+    expect(wallet).toBeTruthy();
+    expect(wallet.getAttribute('aria-label')).toBe(arabic.Wallet);
+    await act(async () => { wallet.click(); });
+    expect(container.querySelector('main').getAttribute('data-view')).toBe('Wallet');
+    await act(async () => { wallet.dispatchEvent(new MouseEvent('pointercancel', { bubbles: true })); });
+    expect(wallet.classList.contains('nav-active')).toBe(true);
   });
 
   test('callbacks captured in A cannot change B preferences after the session switch', async () => {
