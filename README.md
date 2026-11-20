@@ -1,5 +1,7 @@
 # MOVO
 
+Build-tool security remediation and its remaining release gates are recorded in [the November 20 engineering update](docs/engineering/updates/2026-11-20-build-tool-security.md). This candidate does not change application structures or production dependencies.
+
 MOVO is a financial-tracking web app prototype with a calm, iOS-inspired interface.
 
 ## UI redesign (mockup match)
