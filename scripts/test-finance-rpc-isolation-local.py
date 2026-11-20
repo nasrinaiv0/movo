@@ -106,6 +106,10 @@ def main():
             "12 SECURITY DEFINER cross-tenant denials and owner-only controls")
         sql((ROOT / "supabase/tests/hybrid_sync_operations.test.sql").read_text(),
             "Hybrid sync idempotency, CAS, precision, tenant isolation and entitlement")
+        sql((ROOT / "supabase/tests/transaction_mutation_integrity.test.sql").read_text(),
+            "Transaction grants, linked posting status, reversal reset and tenant isolation")
+        sql((ROOT / "supabase/tests/posted_allocation_balances.test.sql").read_text(),
+            "Pending income/expense/transfer exclusion and posted allocation reconciliation")
         sql((ROOT / "supabase/tests/release_fk_covering_indexes.test.sql").read_text(),
             "five audited foreign-key covering index assertions")
         sql((ROOT / "supabase/tests/owner_account_deletion_fks.test.sql").read_text(),
