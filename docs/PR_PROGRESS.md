@@ -1,5 +1,12 @@
 ## 2026-11-20 — Open PR consolidation
 
+## 2026-11-20 — Build-tool security advisory remediation
+
+Pinned patched development-only transitive packages without replacing Create React App or changing application/native code: serialize-javascript 7.1.4, underscore 1.13.8 and SockJS UUID 11.1.1. The clean-install production dependency graph is unchanged. npm audit falls from 31 findings (16 high) to 19 (9 high); production audit remains zero. The remaining development-tool advisories require a separate compatibility-reviewed toolchain upgrade.
+
+Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](engineering/updates/2026-11-20-build-tool-security.md).
+
+
 - #328 merged as `45b9e968` after its explicitly approved production migration and green hosted checks. Catalog verification confirms raw transaction writes denied and anonymous reset denied.
 - #327 integrates the complete #326 harness, current main accounting fixes and #329 setup/accessibility changes. Both source PR records are preserved. Final integrated CI must pass before merge.
 - #290 is superseded by #291; encryption and erasure remain separate reviews, with no permission inferred for additional production migrations.

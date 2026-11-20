@@ -1,5 +1,12 @@
 # MOVO Master Change Ledger
 
+## 2026-11-20 — Build-tool security advisory remediation
+
+Pinned patched development-only transitive packages without replacing Create React App or changing application/native code: serialize-javascript 7.1.4, underscore 1.13.8 and SockJS UUID 11.1.1. The clean-install production dependency graph is unchanged. npm audit falls from 31 findings (16 high) to 19 (9 high); production audit remains zero. The remaining development-tool advisories require a separate compatibility-reviewed toolchain upgrade.
+
+Node 26.13.1: clean install, full build (including offline-worker, localization and email checks), type checking and 252 suites / 1,644 tests pass. New compatibility regressions exercise actual serializer, UUID undersized buffers, SockJS and JSONPath contracts. Hosted checks remain pending; Vercel reports the account blocked. See [engineering record](updates/2026-11-20-build-tool-security.md).
+
+
 ## 2026-11-09 — Vercel Sandbox access restored; PR #247 verification
 
 820 tests / 146 suites, typecheck, optimized build without source maps, isolated plan/RLS SQL including 150 first-time Pro grants, 36 component + 6 app + 30 header cases, and exact-cent Free local save/reload passed. Header 0.5px padding and 34 build/test dependency advisories remain. Production plan RPC/trigger migration and cross-user cloud/offline release blockers remain unresolved; no production changes or signed-device certification. See the dated access/finance/UI audit for scope and failure/retry evidence.
