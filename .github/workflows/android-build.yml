@@ -18,7 +18,8 @@ permissions:
 
 jobs:
   native-android:
-    runs-on: ubuntu-latest
+    # Match the qualified runner used by the paired Android R8 workflow.
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +28,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+          cache: gradle
       # ubuntu-latest already provides the Android command-line SDK. Avoid
       # setup-android@v3's obsolete 'sdkmanager tools' package installation.
       - name: Verify Android SDK and install API 36 packages

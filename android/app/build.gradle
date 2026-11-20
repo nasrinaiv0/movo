@@ -1,8 +1,16 @@
 apply plugin: 'com.android.application'
 
+def r8ReleaseSmoke = project.findProperty('movoR8ReleaseSmoke') == 'true'
+
 android {
     namespace = "com.nasrinai.movo"
     compileSdk = rootProject.ext.compileSdkVersion
+    // Experiment only: instrument the minified release APK, never a debug substitute.
+    // Signing still comes solely from the existing ephemeral/CI environment.
+    if (r8ReleaseSmoke) {
+        testBuildType 'release'
+        sourceSets.androidTest.java.setSrcDirs(['src/r8Smoke/java'])
+    }
     defaultConfig {
         applicationId "com.nasrinai.movo"
         manifestPlaceholders = [movoAuthScheme: "movo"]
@@ -18,7 +26,7 @@ android {
         }
         versionCode releaseVersionCode
         versionName "1.0"
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner(r8ReleaseSmoke ? "com.nasrinai.movo.r8.ReleaseBridgeSmokeTest" : "androidx.test.runner.AndroidJUnitRunner")
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -61,6 +69,10 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (r8ReleaseSmoke) {
+                // Separate test-APK rules; never change the app's R8 inputs.
+                testProguardFiles 'r8-smoke-test-rules.pro'
+            }
         }
     }
 }
@@ -82,8 +94,10 @@ dependencies {
     implementation "com.android.installreferrer:installreferrer:2.2"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
-    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
-    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    if (!r8ReleaseSmoke) {
+        androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+        androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    }
     implementation project(':capacitor-cordova-android-plugins')
 }
 

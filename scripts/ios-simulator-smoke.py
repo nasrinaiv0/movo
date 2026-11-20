@@ -67,16 +67,20 @@ def choose_iphone(simulator_json):
 
 
 def recover_stalled_simulator(device_id, *, runner=run_command):
-    """After OS-service timeout, restart the test device WITHOUT erasing app/user data."""
+    """Restart the selected disposable simulator without erasing installed data."""
     runner(["xcrun", "simctl", "shutdown", device_id], timeout=90)
     runner(["xcrun", "simctl", "boot", device_id], timeout=90)
-    runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=600)
+    runner(["xcrun", "simctl", "bootstatus", device_id, "-b"], timeout=450)
+
 
 def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.sleep, recovery=None):
-    """Retry ONLY a launch timeout, after restarting the stalled CoreSimulator.
+    """Cold restart the disposable CI simulator after one launch timeout.
 
-    A real launch exit error or a failed device recovery must fail the job.
-    The second timeout must also fail; never claim success without app launch.
+    A booted simulator can retain stuck launch services after first-boot migration;
+    sleeping and repeating the same launch does not reset those services. Preserve
+    the installed app, require shutdown/boot/bootstatus to succeed, then retry once.
+    Never recover a nonzero launch exit, which may represent an app crash. A second
+    timeout still fails CI; deep-link and screenshot checks remain mandatory.
     """
     launch = ["xcrun", "simctl", "launch", device_id, BUNDLE_ID]
     for attempt in (1, 2):
@@ -86,8 +90,8 @@ def launch_with_cold_boot_retry(device_id, *, runner=run_command, sleeper=time.s
         except SmokeFailure as error:
             if not error.timed_out or attempt == 2:
                 raise
-            print("::warning::CoreSimulator launch timed out; restarting the test "
-                  "simulator and waiting for a complete fresh boot before one retry.", flush=True)
+            print("::warning::CoreSimulator launch timed out on first attempt; "
+                  "cold restarting the disposable simulator before one final launch.", flush=True)
             if recovery is None:
                 recover_stalled_simulator(device_id, runner=runner)
             else:
