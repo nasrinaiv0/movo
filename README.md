@@ -31,6 +31,8 @@ The front end follows the supplied mobile mockups: floating bottom navigation wi
 - Buttons use 44 px touch targets, iOS-style press feedback, filled SF-style tab icons, and squircle icon tiles.
 - Preferences are stored under `movo.preferences.v3` (v2 values are migrated).
 
+Owner-preference isolation is being hardened in `fix/owner-preference-isolation`: financial preferences and custom artwork use explicit guest/account scopes; ambiguous legacy copies are retained for recovery. See [audit execution handoff](docs/engineering/handovers/2026-11-20-audit-gap-execution.md) for validation and remaining release gates. This source change is not yet a deployed release.
+
 ## Current functional scope
 
 ### Implemented frontend behavior

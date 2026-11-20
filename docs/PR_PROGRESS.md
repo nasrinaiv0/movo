@@ -1,3 +1,11 @@
+## 2026-11-20 — Execute the product-audit account-isolation remedy
+
+- Added separate guest and owner preference/artwork snapshots, a safe device-setting allowlist and byte-preserving quarantine for unassigned legacy data. No financial list is inherited merely because someone signs in.
+- Bound state setters, delayed cloud responses/uploads, image decoders and imports to their captured owner/session generation. Corrupt snapshots block preference writes rather than becoming empty replacements. Native automation keys require server owner verification before reactivation.
+- Initial full regression passes 253 suites / 1,643 tests; the final native credential race case passes separately. Final validation must repeat after integration with released #327. Earlier parallel local builds were killed by the host (SIGKILL); no successful compile is claimed from those attempts.
+- #328 is deployed after explicit approval. #327 merged as `73e293bf` after every applicable check passed; its tree matches tested head `305323ed`. #274 production erasure/retention approval and signed store/device acceptance remain separate gates.
+- [Execution handoff](engineering/handovers/2026-11-20-audit-gap-execution.md) · [Implementation](engineering/updates/2026-11-20-owner-preference-isolation.md).
+
 ## 2026-11-19 — Finance integrity audit fixes
 
 - Restricted direct transaction UPDATE/DELETE privileges; sync and reversal RPCs retain ownership, entitlement, CAS and audit checks. Linked payment edits now protect `is_pending`.

@@ -1,3 +1,4 @@
+import { readPreferenceFixture, seedPreferenceFixture } from './testPreferenceFixtures';
 // Existing feature regression scenarios run with a verified Pro+ fixture.
 // Free/expiry behavior is covered independently by PlanRestrictions.test.js.
 // The fixture is one stable object, like the real hook's state, so effects that depend on it do not re-run on
@@ -86,7 +87,7 @@ describe('MOVO finance frontend', () => {
     };
     window.localStorage.clear();
     seedLocalRecords();
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen:true }));
+    seedPreferenceFixture(null, JSON.stringify({ ...JSON.parse(readPreferenceFixture(null) || '{}'), planWelcomeSeen:true }));
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
@@ -198,7 +199,7 @@ describe('MOVO finance frontend', () => {
     await press('Confirm save locally');
     const accounts = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'));
     const transactions = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1'));
-    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    const prefs = JSON.parse(readPreferenceFixture(null));
     const bank = accounts.find(a => a.name === 'Transfer Bank'); const card = accounts.find(a => a.name === 'Transfer Card');
     expect(bank && card).toBeTruthy();
     expect(bank.id).not.toBe('old-bank');
@@ -229,8 +230,8 @@ describe('MOVO finance frontend', () => {
     expect(pill().classList.contains('in-notch')).toBe(true);
     expect(pill().classList.contains('short')).toBe(false);
     act(() => root.unmount());
-    const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...saved, fontSize: 'largest' }));
+    const saved = JSON.parse(readPreferenceFixture(null) || '{}');
+    seedPreferenceFixture(null, JSON.stringify({ ...saved, fontSize: 'largest' }));
     root = createRoot(container);
     act(() => root.render(<App />));
     expect(pill().classList.contains('short')).toBe(true);
@@ -311,7 +312,7 @@ describe('MOVO finance frontend', () => {
     };
     openHeaderPicker();
     act(() => Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Default').click());
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('auto');
+    expect(JSON.parse(readPreferenceFixture(null)).homeHero).toBe('auto');
     nav(container, 'Home');
     // The pinned header block reaches down to Total balance, which is drawn inside it (and not again below).
     expect(header().className).toContain('hero-scenery');
@@ -326,7 +327,7 @@ describe('MOVO finance frontend', () => {
     act(() => tab.click());
     const leo = Array.from(container.querySelectorAll('.hero-tile')).find(b => b.textContent === 'Leo');
     act(() => leo.click());
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('zodiac:leo');
+    expect(JSON.parse(readPreferenceFixture(null)).homeHero).toBe('zodiac:leo');
     nav(container, 'Home');
     expect(header().className).toContain('hero-zodiac');
     expect(header().getAttribute('data-hero')).toBe('zodiac:leo');
@@ -341,15 +342,15 @@ describe('MOVO finance frontend', () => {
     expect(options()[0].getAttribute('aria-checked')).toBe('true');
     act(() => options()[1].click());
     expect(root_().className).not.toContain('nav-tier-');
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).navAccent).toBe('app');
+    expect(JSON.parse(readPreferenceFixture(null)).navAccent).toBe('app');
     act(() => options()[0].click());
     expect(root_().className).toContain('nav-tier-platinum');
   });
 
   test('tapping a membership card opens the same Account details layout as other cards, with Edit card leading to the editor', () => {
     act(() => root.unmount());
-    const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...saved, membershipCards: [{ id: 'tim-card', type: 'membership', name: 'Tim Hortons', program: 'Tim Hortons', memberNumber: '99887766', points: '120', pointsUnit: 'points', noExpiry: true }] }));
+    const saved = JSON.parse(readPreferenceFixture(null) || '{}');
+    seedPreferenceFixture(null, JSON.stringify({ ...saved, membershipCards: [{ id: 'tim-card', type: 'membership', name: 'Tim Hortons', program: 'Tim Hortons', memberNumber: '99887766', points: '120', pointsUnit: 'points', noExpiry: true }] }));
     root = createRoot(container);
     act(() => root.render(<App />));
     nav(container, 'Wallet');
@@ -509,7 +510,7 @@ describe('MOVO finance frontend', () => {
     await answerConfirm(container, true);
     expect(stored()).toHaveLength(0);
     expect(container.querySelector('button[aria-label="SM Supermarket, −₱1,250.00"]')).toBeNull();
-    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    const prefs = JSON.parse(readPreferenceFixture(null));
     expect(prefs.archive.some(entry => entry.kind === 'transaction' && entry.item.id === 'demo-1')).toBe(true);
     // The ₱1,250 expense no longer counts: the wallet total rises by exactly that much.
     expect(Math.round((walletBalance() - balanceBefore) * 100) / 100).toBe(1250);
@@ -554,10 +555,10 @@ describe('MOVO finance frontend', () => {
     expect(container.textContent).toContain('saved in this browser only');
     setInputValue(name, '  Nasrin Test  ');
     setInputValue(phone, '+63 912 345 6789');
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).profileName || '').not.toBe('Nasrin Test');
+    expect(JSON.parse(readPreferenceFixture(null)).profileName || '').not.toBe('Nasrin Test');
     clickButton(container, 'Save');
     expect(container.querySelector('h1').textContent).toBe('Profile');
-    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    const prefs = JSON.parse(readPreferenceFixture(null));
     expect(prefs.profileName).toBe('Nasrin Test');
     expect(prefs.phone).toBe('+63 912 345 6789');
     expect(container.textContent).toContain('Nasrin Test');
@@ -623,10 +624,10 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Settings');
     const privacyRow = Array.from(container.querySelectorAll('button.menu-row')).find(item => item.querySelector('strong')?.textContent === 'Privacy & Data');
     expect(privacyRow).toBeTruthy();
-    const before = JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance;
+    const before = JSON.parse(readPreferenceFixture(null)).showBalance;
     act(() => privacyRow.click());
     expect(container.querySelector('h1').textContent).toBe('Privacy Policy');
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).showBalance).toBe(before);
+    expect(JSON.parse(readPreferenceFixture(null)).showBalance).toBe(before);
   });
 
   test('theme choices update the app theme and persist preferences', () => {
@@ -634,7 +635,7 @@ describe('MOVO finance frontend', () => {
     clickButton(container, 'Dark');
     expect(container.querySelector('.movo-app, .theme-dark')).not.toBeNull();
     expect(container.firstChild.className).toContain('theme-dark');
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('dark');
+    expect(JSON.parse(readPreferenceFixture(null)).theme).toBe('dark');
     clickButton(container, 'Purple accent');
     expect(container.firstChild.className).toContain('accent-purple');
   });
@@ -670,7 +671,7 @@ describe('MOVO finance frontend', () => {
     expect(autocat.disabled).toBe(false);
     expect(autocat.getAttribute('aria-checked')).toBe('true');
     act(() => autocat.click());
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).autocat).toBe(false);
+    expect(JSON.parse(readPreferenceFixture(null)).autocat).toBe(false);
   });
 
   test('notification channels and quiet hours', () => {
@@ -687,7 +688,7 @@ describe('MOVO finance frontend', () => {
     expect(from.value).toBe('22:00');
     expect(to.value).toBe('07:00');
     setInputValue(from, '23:30');
-    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    const prefs = JSON.parse(readPreferenceFixture(null));
     expect(prefs.quietOn).toBe(true);
     expect(prefs.quietStart).toBe('23:30');
   });
@@ -702,7 +703,7 @@ describe('MOVO finance frontend', () => {
       expect(toggle.getAttribute('aria-checked')).toBe('true');
     });
     act(() => container.querySelector('button[aria-label="NasrinAI Updates"]').click());
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).catAi).toBe(false);
+    expect(JSON.parse(readPreferenceFixture(null)).catAi).toBe(false);
     clickButton(container, 'Back');
     expect(container.textContent).not.toContain('NasrinAI Update');
   });
@@ -721,7 +722,7 @@ describe('MOVO finance frontend', () => {
     expect(container.querySelector('button.danger-button').disabled).toBe(true);
     setInputValue(container.querySelector('input[aria-label="Type DELETE to confirm"]'), 'delete');
     act(() => dialog.querySelector('button.danger-button').click());
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).theme).toBe('system');
+    expect(JSON.parse(readPreferenceFixture(null)).theme).toBe('system');
     expect(window.localStorage.getItem('movo.customStickers.v1')).toBeNull();
     nav(container, 'Home');
     expect(container.textContent).not.toContain('SM Supermarket');
@@ -768,7 +769,7 @@ describe('MOVO finance frontend', () => {
     const slider = container.querySelector('input[aria-label="Glass clarity"]');
     act(() => { const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set; setter.call(slider, '90'); slider.dispatchEvent(new Event('input', { bubbles: true })); });
     expect(container.firstChild.style.getPropertyValue('--glass-blur')).toBe('7px');
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).clarity).toBe(90);
+    expect(JSON.parse(readPreferenceFixture(null)).clarity).toBe(90);
     const toggle = container.querySelector('button[aria-label="Liquid Glass"][role="switch"]');
     act(() => toggle.dispatchEvent(new MouseEvent('click', { bubbles: true })));
     expect(container.firstChild.className).not.toContain('glass-on');
@@ -888,11 +889,11 @@ describe('MOVO finance frontend', () => {
     const created = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1')).find(a => a.account_type === 'card' && a.name === 'GoTyme');
     expect(created).toBeTruthy();
     expect(created.opening_balance).toBe(-1200); // owed, not taken from the issuing bank
-    const savedPrefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3'));
+    const savedPrefs = JSON.parse(readPreferenceFixture(null));
     expect(savedPrefs.accountStyles[created.id]).toMatchObject({ creditLimit: 50000, issuerBankId: 'demo-gotyme' });
     expect((savedPrefs.cardBankLinks || {})[created.id]).toBeUndefined(); // the bank's balance is never shared
     // The chosen card network is kept and drawn on the card.
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).accountStyles[created.id].cardNetwork).toBe('mastercard');
+    expect(JSON.parse(readPreferenceFixture(null)).accountStyles[created.id].cardNetwork).toBe('mastercard');
     expect(container.querySelector('.ccx-net.net-mastercard')).not.toBeNull();
     clickButton(container, 'Cards');
     const goTymeCard = container.querySelector('button[aria-label="Show GoTyme card"]');
@@ -1002,7 +1003,7 @@ describe('MOVO finance frontend', () => {
     expect(form.querySelector('[role="alert"]').textContent).toContain('amount greater than zero');
     setInputValue(form.querySelector('input[inputmode="decimal"]'), '549');
     clickButton(container, 'Save');
-    const saved = JSON.parse(window.localStorage.getItem('movo.preferences.v3')).subscriptions;
+    const saved = JSON.parse(readPreferenceFixture(null)).subscriptions;
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({ name: 'Netflix', amount: 549, cycle: 'monthly', status: 'active' });
     expect(container.querySelector('[aria-label="Subscription summary"]').textContent).toContain('549');
@@ -1066,8 +1067,8 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
 
   test('opening MOVO shows what was logged while it was unused, then remembers it was seen', async () => {
     act(() => root.unmount());
-    const prefs = JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs, onboarded: true, logsSeenAt: '2026-10-29T02:00:00.000Z' }));
+    const prefs = JSON.parse(readPreferenceFixture(null) || '{}');
+    seedPreferenceFixture(null, JSON.stringify({ ...prefs, onboarded: true, logsSeenAt: '2026-10-29T02:00:00.000Z' }));
     const txs = JSON.parse(window.localStorage.getItem('movo.local.transactions.v1') || '[]');
     const account = JSON.parse(window.localStorage.getItem('movo.local.accounts.v1'))[0];
     window.localStorage.setItem('movo.local.transactions.v1', JSON.stringify([{ id: 'away-1', merchant: 'Away Cafe', amount: 333, currency: 'PHP', transaction_type: 'expense', category: 'Food & drinks', account_id: account.id, occurred_at: '2026-10-29T02:30:00.000Z', created_at: '2026-10-29T02:30:00.000Z', source: 'applepay' }, ...txs]));
@@ -1083,13 +1084,13 @@ test('Apple Pay payment prompt Log button opens a prefilled expense form', async
     act(() => Array.from(dialog().querySelectorAll('button')).find(b => b.textContent.trim() === 'Done').click());
     expect(dialog()).toBeNull();
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
-    expect(Date.parse(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).logsSeenAt)).toBeGreaterThan(Date.parse('2026-10-29T02:30:00.000Z'));
+    expect(Date.parse(JSON.parse(readPreferenceFixture(null)).logsSeenAt)).toBeGreaterThan(Date.parse('2026-10-29T02:30:00.000Z'));
   });
 
   test('trusted Apple Pay links log with their own source, and the bank alert for the same purchase is not added twice', async () => {
     const key = 'f'.repeat(32);
     act(() => root.unmount());
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), autoLog: true, autoLogKey: key, onboarded: true }));
+    seedPreferenceFixture(null, JSON.stringify({ ...JSON.parse(readPreferenceFixture(null) || '{}'), autoLog: true, autoLogKey: key, onboarded: true }));
     root = createRoot(container);
     act(() => root.render(<App />));
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
@@ -1166,11 +1167,11 @@ test('accent-filled controls choose a WCAG-strong foreground for every accent fa
 describe('setup gate: Terms and Privacy acceptance before the dashboard (owner, 2026-11-11)', () => {
   const { LEGAL_VERSION, LEGAL_ACCEPTANCE_DATE } = require('./lib/legalVersion');
   let container; let root;
-  const prefs = () => JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}');
+  const prefs = () => JSON.parse(readPreferenceFixture(null) || '{}');
   const start = async (stored) => {
     window.localStorage.clear();
     seedLocalRecords();
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...prefs(), planWelcomeSeen: true, onboarded: true, tutorialSeen: true, ...stored }));
+    seedPreferenceFixture(null, JSON.stringify({ ...prefs(), planWelcomeSeen: true, onboarded: true, tutorialSeen: true, ...stored }));
     container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
     await act(async () => { root.render(<App />); });
     await act(async () => { await new Promise(r => setTimeout(r, 0)); });
@@ -1250,7 +1251,7 @@ describe('edge swipe back (iPhone app; owner, 2026-11-12)', () => {
     window.__MOVO_EDGE_SWIPE__ = true;
     Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
     window.localStorage.clear(); seedLocalRecords();
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true }));
+    seedPreferenceFixture(null, JSON.stringify({ ...JSON.parse(readPreferenceFixture(null) || '{}'), planWelcomeSeen: true }));
     container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
     await act(async () => { root.render(<App />); });
   });
@@ -1286,7 +1287,7 @@ describe('Home header block (owner, 2026-11-12)', () => {
   let container; let root;
   const start = (prefs) => {
     window.localStorage.clear(); seedLocalRecords();
-    window.localStorage.setItem('movo.preferences.v3', JSON.stringify({ ...JSON.parse(window.localStorage.getItem('movo.preferences.v3') || '{}'), planWelcomeSeen: true, ...prefs }));
+    seedPreferenceFixture(null, JSON.stringify({ ...JSON.parse(readPreferenceFixture(null) || '{}'), planWelcomeSeen: true, ...prefs }));
     container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
     act(() => root.render(<App />));
   };
@@ -1295,7 +1296,7 @@ describe('Home header block (owner, 2026-11-12)', () => {
   test('an earlier default header photo becomes None once; a photo someone chose is kept', () => {
     start({ homeHero: 'auto' });
     expect(container.querySelector('.home-hero-block')).toBeNull();
-    expect(JSON.parse(window.localStorage.getItem('movo.preferences.v3')).homeHero).toBe('plain');
+    expect(JSON.parse(readPreferenceFixture(null)).homeHero).toBe('plain');
     act(() => root.unmount()); container.remove();
     start({ homeHero: 'scenery:wp-w116' });
     expect(container.querySelector('.home-hero-block')).not.toBeNull();
